@@ -2356,10 +2356,8 @@ function vcrStop() {
 }
 
 function openLB(list, idx) {
-  lbList=list; lbIdx=idx;
-  drawLB();
-  document.getElementById('lb').classList.add('open');
-  document.body.style.overflow='hidden';
+  const v = list[idx];
+  window.open(`https://www.youtube.com/watch?v=${v.video_id}`, '_blank');
 }
 function drawLB() {
   const v = lbList[lbIdx];
