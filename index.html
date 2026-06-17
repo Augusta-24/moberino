@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>MOBERINO</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Russo+One&family=Permanent+Marker&display=swap" rel="stylesheet">
@@ -179,6 +179,7 @@ body::after {
 /* Home page locks to viewport — no dead scroll below content */
 #pg-home {
   height: 100svh;
+  max-height: 100svh;
   overflow: hidden;
   flex-direction: column;
   justify-content: center;
@@ -335,6 +336,12 @@ body.on-timeline #collage::after {
   font-size: 10px; letter-spacing: 2px;
   color: rgba(242,239,232,1);
   padding: 10px 14px 2px;
+}
+#home-drop-meta.nores {
+  font-size: 16px; letter-spacing: 3px;
+  color: rgba(242,239,232,0.45);
+  text-align: center;
+  padding: 40px 14px;
 }
 #home-drop .vgrid {
   grid-template-columns: 1fr 1fr;
@@ -1124,12 +1131,14 @@ body.rec-open { overflow-y: auto; }
    MAP
 ══════════════════════════════════════ */
 #pg-map {
-  min-height: 100dvh;
-  padding-bottom: 40px;
+  height: 100svh;
   position: relative; z-index: 1;
   flex-direction: column;
+  overflow: hidden;
 }
 #pg-map.active { display: flex; }
+#pg-map .cats-header,
+#pg-map .sub-page-title { flex-shrink: 0; }
 .map-hdr {
   padding: 2px 16px 6px;
   font-family: 'Bebas Neue', cursive;
@@ -1529,14 +1538,20 @@ button.cats-search-wrap {
    RESPONSIVE
 ══════════════════════════════════════ */
 @media (max-height: 500px) and (orientation: landscape) {
-  #pg-home { justify-content: flex-start; overflow-y: auto; height: auto; min-height: 100svh; }
-  .home-hero { transform: translateY(0); padding: 10px 24px; gap: 3px; }
-  .hero-logo-wrap { width: min(38vw, 260px); margin-bottom: -8%; }
-  .search-wrap { padding: 7px 12px; }
+  #pg-home { justify-content: center; overflow-y: auto; height: 100svh; }
+  .home-hero {
+    transform: translateY(0);
+    flex-direction: row;
+    align-items: center;
+    padding: 12px 24px;
+    gap: 20px;
+  }
+  .hero-logo-wrap { width: min(30vw, 220px); margin-bottom: 0; flex-shrink: 0; }
+  .hero-lower { gap: 6px; flex: 1; }
+  .search-wrap { padding: 8px 12px; }
   .hero-cta-btn { padding: 5px 6px; font-size: 12px; }
-  .hero-icon-btn { width: 38px; height: 38px; }
+  .hero-icon-btn { width: 36px; height: 36px; }
   .hero-icon-btn svg { width: 20px; height: 20px; }
-  .hero-lower { gap: 6px; }
 }
 
 @media (max-width: 599px) {
@@ -1672,6 +1687,27 @@ button.cats-search-wrap {
 .decade-chip .chip-ct { font-size: 8px; opacity: 0.5; margin-left: 4px; }
 
 /* ── C: SHAKE OVERLAY ── */
+#back-top {
+  position: fixed;
+  bottom: 24px; right: 20px;
+  width: 40px; height: 40px;
+  background: rgba(8,16,42,0.82);
+  border: 1px solid rgba(242,239,232,0.22);
+  border-radius: 50%;
+  color: rgba(242,239,232,0.85);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  z-index: 9000;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+#back-top.visible { opacity: 1; pointer-events: auto; }
+#back-top:active { transform: scale(0.9); }
+#back-top svg { width: 18px; height: 18px; }
+
 #shake-overlay {
   display: none; position: fixed; inset: 0; z-index: 96000;
   background: #050202;
@@ -2472,7 +2508,7 @@ function initMap() {
   if(mapInited) return;
   mapInited = true;
   requestAnimationFrame(() => {
-    leafletMap = L.map('map-container', { zoomControl: true }).setView([39.5, -98.35], 4);
+    leafletMap = L.map('map-container', { zoomControl: true }).setView([40.85, -73.3], 10);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '© OpenStreetMap © CARTO',
       subdomains: 'abcd', maxZoom: 19
@@ -2788,6 +2824,7 @@ function doSearch(q) {
     drop.classList.remove('open');
     dropGrid.innerHTML = '';
     dropMeta.textContent = '';
+    dropMeta.classList.remove('nores');
     homeQ.value = '';
     clearBtn.style.display = 'none';
   }
@@ -2799,6 +2836,7 @@ function doSearch(q) {
     homeQ.blur();
     const hits = search(q).slice(0, 20);
     dropMeta.textContent = hits.length ? `${hits.length} RESULT${hits.length !== 1 ? 'S' : ''}` : 'NO RESULTS';
+    dropMeta.classList.toggle('nores', !hits.length);
     dropGrid.innerHTML = '';
     if (hits.length) {
       const g = document.createElement('div');
@@ -2835,6 +2873,14 @@ function doSearch(q) {
   window.addEventListener('resize', () => {
     if (drop.classList.contains('open')) positionDrop();
   });
+})();
+
+// ── BACK TO TOP ──
+(function() {
+  const btn = document.getElementById('back-top');
+  window.addEventListener('scroll', () => {
+    btn.classList.toggle('visible', window.scrollY > 80);
+  }, { passive: true });
 })();
 
 // ── INIT ──
@@ -2928,6 +2974,10 @@ heroCassette.addEventListener('animationend', function() {
 </div>
 
 <!-- ── C: SHAKE OVERLAY ── -->
+<button id="back-top" aria-label="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+
 <div id="shake-overlay">
   <img id="shake-tape-img" src="Untitled_Artwork.png" alt="">
   <div id="shake-msg">LOADING MYSTERY TAPE...</div>
