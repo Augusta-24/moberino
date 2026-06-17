@@ -233,7 +233,8 @@ body::after {
   pointer-events: none;
   z-index: 999999;
 }
-body.on-detail #collage::after {
+body.on-detail #collage::after,
+body.on-timeline #collage::after {
   background: rgba(8,16,42,0.98);
 }
 
@@ -1879,7 +1880,6 @@ button.cats-search-wrap {
     </div>
   </div>
   <div class="sub-page-title">MAP</div>
-  <div class="map-note">ADD A "LAT" AND "LNG" COLUMN TO YOUR SPREADSHEET TO PIN VIDEOS HERE</div>
   <div id="map-container"></div>
 </div>
 
@@ -2421,11 +2421,13 @@ function buildShelf() {
       const hSty = VHS_STYLES[_hash(hVid.video_id + 'hs') % VHS_STYLES.length];
       const horiz = document.createElement('div');
       horiz.className = 'tape-horiz';
-      const topPx   = 8  + (_hash(cat + 'ht' + h) % 38);
-      const leftPct = 12 + (_hash(cat + 'hl' + h) % 52);
-      const widthPx = 130 + (_hash(hVid.video_id + 'hw') % 70);
-      const tiltDeg = (_hash(hVid.video_id + 'hd') % 9) - 4;
-      horiz.style.cssText = `top:${topPx}px;left:${leftPct}%;width:${widthPx}px;transform:rotate(${tiltDeg}deg);`;
+      const bottomPx = h * 64 + (_hash(cat + 'hb' + h) % 20);
+      const leftPct  = h === 0
+        ? 5  + (_hash(cat + 'hl0') % 28)
+        : 48 + (_hash(cat + 'hl1') % 28);
+      const widthPx = 130 + (_hash(hVid.video_id + 'hw') % 60);
+      const tiltDeg = (_hash(hVid.video_id + 'hd') % 7) - 3;
+      horiz.style.cssText = `bottom:${bottomPx}px;left:${leftPct}%;width:${widthPx}px;transform:rotate(${tiltDeg}deg);`;
       horiz.innerHTML = `
         <div class="tape-horiz-brand" style="background:${hSty.top}">
           <span style="color:${hSty.topC};writing-mode:vertical-rl;transform:rotate(180deg)">${hSty.brand}</span>
@@ -2573,6 +2575,7 @@ function nav(p) {
   document.getElementById('hdr').style.display = (showCollage || onShelf) ? 'none' : 'flex';
   document.body.classList.toggle('on-home', onHome);
   document.body.classList.toggle('on-detail', onDetail);
+  document.body.classList.toggle('on-timeline', onTL);
   if(onTL)    buildTimeline();
   if(onMap)   initMap();
   if(onShelf) { buildShelf(); drawShelfBg(); }

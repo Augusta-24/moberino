@@ -9,7 +9,9 @@
       "Bash(ffmpeg -y -ss 00:00:08 -i \"/Users/kevinseverino/Downloads/videos/1991 Disney.mp4\" -frames:v 1 -q:v 2 /Users/kevinseverino/Documents/moberino/thumbnails/hunx2GNkTJk.jpg)",
       "Bash(ffmpeg -y -ss 00:00:08 -i \"/Users/kevinseverino/Downloads/videos/Beach.mp4\" -frames:v 1 -q:v 2 /Users/kevinseverino/Documents/moberino/thumbnails/5V0IufbS8_Q.jpg)",
       "Bash(python3 -c \"import geopy; print\\('geopy ok'\\)\")",
-      "Bash(python3 geocode.py)"
+      "Bash(python3 geocode.py)",
+      "Bash(curl -s http://localhost:11434/api/tags)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\([m['name'] for m in d.get\\('models',[]\\)]\\)\")"
     ]
   }
 }
