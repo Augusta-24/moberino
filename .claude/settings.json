@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ' *)",
+      "Bash(python3 generate_main_title.py)",
+      "Bash(node -e ' *)",
+      "Bash(python3 generate_data.py)",
+      "Bash(awk '/id=\"pg-map\"/{found=1} found && /<\\\\/div>/{count++; if\\(count==2\\){print NR\": \"$0; found=0}}' /Users/kevinseverino/Documents/moberino/index.html)"
+    ]
+  }
+}

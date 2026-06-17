@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:moberino.wixsite.com)",
+      "Bash(python3 download_thumbnails.py)",
+      "Bash(open /Users/kevinseverino/Documents/moberino/index.html)",
+      "Bash(yt-dlp --version)",
+      "Bash(brew install *)",
+      "Bash(pip3 install *)",
+      "Bash(python3 -c \"import pytesseract; print\\('ok'\\)\")",
+      "Bash(python3 -c \"from PIL import Image; print\\('PIL ok'\\)\")",
+      "Bash(python3 -c \"import pytesseract, PIL; print\\('deps ok'\\)\")",
+      "Bash(python3 enrich_csv.py)",
+      "Bash(brew list *)",
+      "Read(//usr/local/**)",
+      "Bash(find /opt /usr/local /usr -name \"tesseract\" -type f 2>/dev/null | head -5)",
+      "Read(//opt/**)",
+      "Bash(python3 -c \"import easyocr; print\\('easyocr ok'\\)\")",
+      "Bash(python3 -c \"import objc; print\\('pyobjc ok'\\)\")",
+      "Bash(xargs '-I{}' python3 -c ' *)",
+      "Bash(mdls -name kMDItemTextContent thumbnails/7zg2qq4mBo8.jpg)",
+      "Bash(swift ocr_vision.swift \"$\\(pwd\\)/thumbnails/7zg2qq4mBo8.jpg\")",
+      "Bash(swiftc -O -o ocr_vision ocr_vision.swift)",
+      "Bash(./ocr_vision \"$\\(pwd\\)/thumbnails/7zg2qq4mBo8.jpg\")",
+      "Bash(./ocr_vision \"$\\(pwd\\)/thumbnails/7tH2ncn-lxU.jpg\")"
+    ]
+  }
+}
