@@ -23,7 +23,7 @@ except ImportError:
     print("ERROR: geopy not installed.  Run:  pip install geopy")
     sys.exit(1)
 
-CSV_IN  = "moberino_videos_cat.csv"
+CSV_IN  = "moberino_videos_geocoded.csv"
 CSV_OUT = "moberino_videos_geocoded.csv"
 
 geo = Nominatim(user_agent="moberino_family_archive", timeout=10)

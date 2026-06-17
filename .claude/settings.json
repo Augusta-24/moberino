@@ -7,7 +7,9 @@
       "Bash(python3 generate_data.py)",
       "Bash(awk '/id=\"pg-map\"/{found=1} found && /<\\\\/div>/{count++; if\\(count==2\\){print NR\": \"$0; found=0}}' /Users/kevinseverino/Documents/moberino/index.html)",
       "Bash(ffmpeg -y -ss 00:00:08 -i \"/Users/kevinseverino/Downloads/videos/1991 Disney.mp4\" -frames:v 1 -q:v 2 /Users/kevinseverino/Documents/moberino/thumbnails/hunx2GNkTJk.jpg)",
-      "Bash(ffmpeg -y -ss 00:00:08 -i \"/Users/kevinseverino/Downloads/videos/Beach.mp4\" -frames:v 1 -q:v 2 /Users/kevinseverino/Documents/moberino/thumbnails/5V0IufbS8_Q.jpg)"
+      "Bash(ffmpeg -y -ss 00:00:08 -i \"/Users/kevinseverino/Downloads/videos/Beach.mp4\" -frames:v 1 -q:v 2 /Users/kevinseverino/Documents/moberino/thumbnails/5V0IufbS8_Q.jpg)",
+      "Bash(python3 -c \"import geopy; print\\('geopy ok'\\)\")",
+      "Bash(python3 geocode.py)"
     ]
   }
 }

@@ -2453,26 +2453,57 @@ let leafletMap = null;
 function initMap() {
   if(mapInited) return;
   mapInited = true;
-  // Wait one frame so the container is visible and has dimensions
   requestAnimationFrame(() => {
     leafletMap = L.map('map-container', { zoomControl: true }).setView([39.5, -98.35], 4);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '© OpenStreetMap © CARTO',
       subdomains: 'abcd', maxZoom: 19
     }).addTo(leafletMap);
-    // Sample pins — replace with real lat/lng from spreadsheet
-    const samplePins = [
-      { lat: 40.71, lng: -74.01, label: 'New York' },
-      { lat: 41.88, lng: -87.63, label: 'Chicago' },
-      { lat: 34.05, lng: -118.24, label: 'Los Angeles' },
-      { lat: 25.77, lng: -80.19, label: 'Miami' },
-    ];
-    const icon = L.divIcon({
-      className: '',
-      html: '<div style="width:10px;height:10px;background:rgba(242,239,232,0.9);border-radius:50%;border:2px solid rgba(242,239,232,0.4);box-shadow:0 0 8px rgba(242,239,232,0.5)"></div>',
-      iconSize: [10, 10], iconAnchor: [5, 5]
+
+    // Group videos by lat/lng
+    const groups = {};
+    VIDEOS.forEach(v => {
+      if (v.lat == null || v.lng == null) return;
+      const key = `${v.lat.toFixed(4)},${v.lng.toFixed(4)}`;
+      if (!groups[key]) groups[key] = { lat: v.lat, lng: v.lng, location: v.location, videos: [] };
+      groups[key].videos.push(v);
     });
-    samplePins.forEach(p => L.marker([p.lat, p.lng], {icon}).bindPopup(`<b>${p.label}</b><br><small>Add videos here</small>`).addTo(leafletMap));
+
+    Object.values(groups).forEach(g => {
+      const count = g.videos.length;
+      const icon = L.divIcon({
+        className: '',
+        html: `<div style="
+          display:flex;align-items:center;justify-content:center;
+          width:${count > 1 ? 28 : 10}px;height:${count > 1 ? 28 : 10}px;
+          background:rgba(242,239,232,${count > 1 ? '0.15' : '0.9'});
+          border-radius:50%;
+          border:2px solid rgba(242,239,232,${count > 1 ? '0.6' : '0.4'});
+          box-shadow:0 0 8px rgba(242,239,232,0.4);
+          font-family:'VCR',monospace;font-size:9px;
+          color:rgba(242,239,232,0.9);
+        ">${count > 1 ? count : ''}</div>`,
+        iconSize: count > 1 ? [28, 28] : [10, 10],
+        iconAnchor: count > 1 ? [14, 14] : [5, 5]
+      });
+
+      const rows = g.videos.map(v =>
+        `<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.1)">
+          <a href="https://www.youtube.com/watch?v=${v.video_id}" target="_blank"
+             style="color:#f2efe8;font-size:12px;text-decoration:none">
+            ${v.title}${v.year ? ' <span style="opacity:0.5">· ' + v.year + '</span>' : ''}
+          </a>
+        </div>`
+      ).join('');
+
+      const popup = `
+        <div style="font-family:'VCR',monospace;max-width:220px">
+          <div style="font-size:11px;letter-spacing:1px;margin-bottom:6px;opacity:0.6">${g.location.toUpperCase()}</div>
+          ${rows}
+        </div>`;
+
+      L.marker([g.lat, g.lng], { icon }).bindPopup(popup).addTo(leafletMap);
+    });
   });
 }
 

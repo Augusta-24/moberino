@@ -2,7 +2,7 @@
 """Convert moberino_videos_cat.csv to data.js for the Moberino website."""
 import csv, json, os, re
 
-CSV_FILE = "moberino_videos_tagged.csv"
+CSV_FILE = "moberino_videos_geocoded.csv"
 
 CATEGORIES = [
     "Moberg Christmas",
@@ -54,7 +54,13 @@ with open(CSV_FILE, newline="", encoding="utf-8") as f:
         thumb = local_thumb if os.path.exists(local_thumb) \
             else f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
 
-        objects = (row.get("objects") or "").strip()
+        objects  = (row.get("objects") or "").strip()
+        location = (row.get("location") or "").strip()
+        try:
+            lat = float(row.get("lat") or "")
+            lng = float(row.get("lng") or "")
+        except ValueError:
+            lat = lng = None
 
         videos.append({
             "title":        title,
@@ -65,6 +71,9 @@ with open(CSV_FILE, newline="", encoding="utf-8") as f:
             "category":     category,
             "year":         year,
             "objects":      objects,
+            "location":     location,
+            "lat":          lat,
+            "lng":          lng,
         })
 
 CAT_THUMBS = {
