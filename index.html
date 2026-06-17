@@ -178,7 +178,7 @@ body::after {
 ══════════════════════════════════════ */
 /* Home page locks to viewport — no dead scroll below content */
 #pg-home {
-  height: 100dvh;
+  height: 100svh;
   overflow: hidden;
   flex-direction: column;
   justify-content: center;
@@ -439,13 +439,14 @@ body.on-timeline #collage::after {
 .hero-cta-btn:active  { transform: translateY(1px) rotate(0deg); }
 
 /* Play button inside search bar */
-.search-play-btn {
+.search-play-btn, .search-clear-btn {
   background: none; border: none; padding: 2px 0 2px 6px;
-  color: rgba(242,239,232,1); cursor: pointer; flex-shrink: 0;
+  color: rgba(242,239,232,0.7); cursor: pointer; flex-shrink: 0;
   display: flex; align-items: center;
   -webkit-tap-highlight-color: transparent;
 }
-.search-play-btn:active { color: var(--white); }
+.search-clear-btn svg { width: 12px; height: 12px; }
+.search-play-btn:active, .search-clear-btn:active { color: var(--white); }
 
 /* Recommended — inline below CTA buttons, above icon row */
 #memories {
@@ -1528,13 +1529,14 @@ button.cats-search-wrap {
    RESPONSIVE
 ══════════════════════════════════════ */
 @media (max-height: 500px) and (orientation: landscape) {
-  #pg-home { justify-content: flex-start; overflow-y: auto; padding-top: 12px; }
-  .home-hero { transform: translateY(0); padding: 8px 24px; gap: 4px; }
-  .hero-logo-wrap { width: min(46vw, 300px); margin-bottom: -10%; }
-  .search-wrap { padding: 8px 12px; }
-  .hero-cta-btn { padding: 6px; font-size: 13px; }
-  .hero-icon-btn { width: 42px; height: 42px; }
-  .hero-icon-btn svg { width: 22px; height: 22px; }
+  #pg-home { justify-content: flex-start; overflow-y: auto; height: auto; min-height: 100svh; }
+  .home-hero { transform: translateY(0); padding: 10px 24px; gap: 3px; }
+  .hero-logo-wrap { width: min(38vw, 260px); margin-bottom: -8%; }
+  .search-wrap { padding: 7px 12px; }
+  .hero-cta-btn { padding: 5px 6px; font-size: 12px; }
+  .hero-icon-btn { width: 38px; height: 38px; }
+  .hero-icon-btn svg { width: 20px; height: 20px; }
+  .hero-lower { gap: 6px; }
 }
 
 @media (max-width: 599px) {
@@ -1738,7 +1740,10 @@ button.cats-search-wrap {
         <div class="search-row">
           <div class="search-wrap" id="homeSearchWrap">
             <input id="homeQ" type="search" placeholder="SEARCH 258 MEMORIES..." autocomplete="off" spellcheck="false" class="home-search-input">
-            <button class="search-play-btn" aria-label="Search" onclick="document.getElementById('homeQ').focus()">
+            <button class="search-clear-btn" id="homeQClear" aria-label="Clear" style="display:none" onclick="homeSearchClear()">
+              <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="1" y1="1" x2="13" y2="13"/><line x1="13" y1="1" x2="1" y2="13"/></svg>
+            </button>
+            <button class="search-play-btn" id="homeQSubmit" aria-label="Search" onclick="homeSearchSubmit()">
               <svg viewBox="0 0 10 12" fill="currentColor"><polygon points="0,0 10,6 0,12"/></svg>
             </button>
           </div>
@@ -2764,9 +2769,10 @@ function doSearch(q) {
   res.forEach((v,i,a)=>grid.appendChild(vcard(v,a,i,matchReason(v,q))));
 }
 
-// ── HOME SEARCH (inline dropdown) ──
+// ── HOME SEARCH (submit to show results) ──
 (function() {
   const homeQ    = document.getElementById('homeQ');
+  const clearBtn = document.getElementById('homeQClear');
   const drop     = document.getElementById('home-drop');
   const dropMeta = document.getElementById('home-drop-meta');
   const dropGrid = document.getElementById('home-drop-grid');
@@ -2783,16 +2789,14 @@ function doSearch(q) {
     dropGrid.innerHTML = '';
     dropMeta.textContent = '';
     homeQ.value = '';
+    clearBtn.style.display = 'none';
   }
   window.closeHomeDrop = closeDrop;
 
-  homeQ.addEventListener('blur', () => {
-    setTimeout(() => window.scrollTo({ top: 0, behavior: 'instant' }), 100);
-  });
-
-  homeQ.addEventListener('input', () => {
+  function runSearch() {
     const q = homeQ.value.trim();
-    if (!q) { drop.classList.remove('open'); dropGrid.innerHTML = ''; dropMeta.textContent = ''; return; }
+    if (!q) return;
+    homeQ.blur();
     const hits = search(q).slice(0, 20);
     dropMeta.textContent = hits.length ? `${hits.length} RESULT${hits.length !== 1 ? 'S' : ''}` : 'NO RESULTS';
     dropGrid.innerHTML = '';
@@ -2804,25 +2808,30 @@ function doSearch(q) {
     }
     positionDrop();
     drop.classList.add('open');
+  }
+  window.homeSearchSubmit = runSearch;
+  window.homeSearchClear  = closeDrop;
+
+  // Show/hide X button as user types
+  homeQ.addEventListener('input', () => {
+    clearBtn.style.display = homeQ.value ? 'flex' : 'none';
   });
 
   homeQ.addEventListener('keydown', e => {
+    if (e.key === 'Enter')  { e.preventDefault(); runSearch(); }
     if (e.key === 'Escape') closeDrop();
   });
 
-  // Close drop after a result is clicked — fires during bubble phase, after vcard onclick
   drop.addEventListener('click', e => {
     if (e.target.closest('.vcard')) closeDrop();
   });
 
-  // Close on outside click
   document.addEventListener('click', e => {
     if (!drop.contains(e.target) && !document.getElementById('homeSearchWrap').contains(e.target)) {
       drop.classList.remove('open');
     }
   });
 
-  // Reposition on resize
   window.addEventListener('resize', () => {
     if (drop.classList.contains('open')) positionDrop();
   });
