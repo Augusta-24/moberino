@@ -1527,7 +1527,18 @@ button.cats-search-wrap {
 /* ══════════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════════ */
+@media (max-height: 500px) and (orientation: landscape) {
+  #pg-home { justify-content: flex-start; overflow-y: auto; padding-top: 12px; }
+  .home-hero { transform: translateY(0); padding: 8px 24px; gap: 4px; }
+  .hero-logo-wrap { width: min(46vw, 300px); margin-bottom: -10%; }
+  .search-wrap { padding: 8px 12px; }
+  .hero-cta-btn { padding: 6px; font-size: 13px; }
+  .hero-icon-btn { width: 42px; height: 42px; }
+  .hero-icon-btn svg { width: 22px; height: 22px; }
+}
+
 @media (max-width: 599px) {
+  .home-hero { transform: translateY(-120px); }
   .cgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ctile-lbl { font-size: 18px; height: 54px; }
   .cats-search-wrap { padding: 5px 8px; }
@@ -2774,6 +2785,10 @@ function doSearch(q) {
     homeQ.value = '';
   }
   window.closeHomeDrop = closeDrop;
+
+  homeQ.addEventListener('blur', () => {
+    setTimeout(() => window.scrollTo({ top: 0, behavior: 'instant' }), 100);
+  });
 
   homeQ.addEventListener('input', () => {
     const q = homeQ.value.trim();
