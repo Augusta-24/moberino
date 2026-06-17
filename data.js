@@ -6,7 +6,8 @@ const VIDEOS = [
     "thumb": "thumbnails/aI-NV8f2YfE.jpg",
     "published_at": "2020-12-23T16:38:00Z",
     "category": "Moberg Classics",
-    "year": 1955
+    "year": 1955,
+    "objects": ""
   },
   {
     "title": "Haugesund",
@@ -15,7 +16,8 @@ const VIDEOS = [
     "thumb": "thumbnails/oi37D-usQ8w.jpg",
     "published_at": "2020-12-23T16:19:07Z",
     "category": "Moberg Classics",
-    "year": 1955
+    "year": 1955,
+    "objects": ""
   },
   {
     "title": "Ed's Graduation",
@@ -24,7 +26,8 @@ const VIDEOS = [
     "thumb": "thumbnails/i2YvlHD_LvE.jpg",
     "published_at": "2020-12-23T16:03:15Z",
     "category": "Moberg Classics",
-    "year": 1955
+    "year": 1955,
+    "objects": ""
   },
   {
     "title": "Christmas 2010",
@@ -33,7 +36,8 @@ const VIDEOS = [
     "thumb": "thumbnails/_SrJp5_nDv0.jpg",
     "published_at": "2020-08-27T00:01:21Z",
     "category": "Severino Christmas",
-    "year": 2010
+    "year": 2010,
+    "objects": "door,interior_room,celebration,christmas_tree,tree,christmas_decoration,frame,fireplace,chair,armchair,cabinet,toy,gift,living_room,teen,stuffed_animals,sofa,suit,pillow,tool,decorative_plant,machine,appliance,stove,kitchen,kitchen_countertop,curtain,tableware,utensil,cup,restaurant,container,carton"
   },
   {
     "title": "Christmas 2009",
@@ -42,7 +46,8 @@ const VIDEOS = [
     "thumb": "thumbnails/-_zGeijSBR8.jpg",
     "published_at": "2020-08-26T23:59:30Z",
     "category": "Severino Christmas",
-    "year": 2009
+    "year": 2009,
+    "objects": "raw_glass,frame,celebration,christmas_tree,tree,christmas_decoration,light,lamp,door,sign,fence,suit,necktie"
   },
   {
     "title": "Christmas 1998 Connecticut",
@@ -51,7 +56,8 @@ const VIDEOS = [
     "thumb": "thumbnails/0-vCZ7dY0PA.jpg",
     "published_at": "2020-08-12T19:20:47Z",
     "category": "Moberg Christmas",
-    "year": 1998
+    "year": 1998,
+    "objects": "baby,celebration,christmas_tree,tree,christmas_decoration,tool,pillow"
   },
   {
     "title": "Christmas -1960s Part 1",
@@ -60,7 +66,8 @@ const VIDEOS = [
     "thumb": "thumbnails/0BGpqUkaa8o.jpg",
     "published_at": "2020-08-26T04:19:26Z",
     "category": "1960s Sev",
-    "year": 2020
+    "year": 2020,
+    "objects": "curtain,teen,door,music,musical_instrument,string_instrument,guitar,celebration,tree,christmas_tree,sign,jacket"
   },
   {
     "title": "Christmas 1959",
@@ -69,7 +76,8 @@ const VIDEOS = [
     "thumb": "thumbnails/0mVu7etBnNg.jpg",
     "published_at": "2020-12-23T15:03:32Z",
     "category": "60s Moberg Christmas",
-    "year": 1959
+    "year": 1959,
+    "objects": "curtain,outdoor,sky,night_sky,necktie,suit,drinking_glass,tableware,utensil,consumer_electronics,machine"
   },
   {
     "title": "Norway 1958",
@@ -78,7 +86,8 @@ const VIDEOS = [
     "thumb": "thumbnails/i53P4LJvVMI.jpg",
     "published_at": "2020-12-23T03:37:59Z",
     "category": "Moberg Classics",
-    "year": 1958
+    "year": 1958,
+    "objects": "crowd,suit,outdoor,curtain,liquid,water,tableware,utensil,plate,drinking_glass,land,hill,water_body,lake,sky,interior_room,restaurant,machine,cabinet,frame,seat,night_sky,consumer_electronics,computer,laptop,fire,flame,decorative_plant,container,bottle,bowl,vehicle,automobile,car,blue_sky,frozen,snow"
   },
   {
     "title": "Sylvia's Wedding Shower",
@@ -87,7 +96,8 @@ const VIDEOS = [
     "thumb": "thumbnails/Yr1gQKF9VoA.jpg",
     "published_at": "2020-12-23T03:24:05Z",
     "category": "Moberg Classics",
-    "year": 1960
+    "year": 1960,
+    "objects": ""
   },
   {
     "title": "Sylvia & Ed's Honeymoon",
@@ -96,7 +106,8 @@ const VIDEOS = [
     "thumb": "thumbnails/-4oJb60tM_0.jpg",
     "published_at": "2020-12-23T03:01:47Z",
     "category": "Moberg Classics",
-    "year": 1960
+    "year": 1960,
+    "objects": ""
   },
   {
     "title": "Sylvia & Ed's Wedding",
@@ -105,7 +116,8 @@ const VIDEOS = [
     "thumb": "thumbnails/SwwKJqd7pfQ.jpg",
     "published_at": "2020-12-23T02:35:25Z",
     "category": "Moberg Classics",
-    "year": 1960
+    "year": 1960,
+    "objects": ""
   },
   {
     "title": "Christmas Eve 1996 Moberg House",
@@ -114,7 +126,8 @@ const VIDEOS = [
     "thumb": "thumbnails/11VBMUltAjg.jpg",
     "published_at": "2020-08-12T19:01:15Z",
     "category": "Moberg Christmas",
-    "year": 1996
+    "year": 1996,
+    "objects": "celebration,christmas_tree,tree,sofa,lamp,light,christmas_decoration,interior_room,chair,armchair,pillow,tool,living_room,cabinet,door,gift,decorative_plant,restaurant,crowd,container,carton,tableware,utensil,drinking_glass,frame,costume"
   },
   {
     "title": "Christmas Eve 1991 Moberg House Part",
@@ -123,7 +136,8 @@ const VIDEOS = [
     "thumb": "thumbnails/1ESnvlCECIU.jpg",
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Moberg Christmas",
-    "year": 1991
+    "year": 1991,
+    "objects": "curtain,sofa,celebration,christmas_tree,tree,christmas_decoration,frame,crowd,light,lamp,painting,baby,outdoor,sky,blue_sky,necktie,suit"
   },
   {
     "title": "2013 Kristen's Birthday",
@@ -132,7 +146,8 @@ const VIDEOS = [
     "thumb": "thumbnails/8T1PskyegOU.jpg",
     "published_at": "2020-08-27T00:03:33Z",
     "category": "Birthdays",
-    "year": 2013
+    "year": 2013,
+    "objects": "door,hat,headgear,baseball_hat,container,bottle,interior_room,restaurant,fence,machine,consumer_electronics,television,tableware,utensil,food,baked_goods,cake,dessert,birthday_cake,suit,drinking_glass,sign,candle,light,fire,flame,outdoor,night_sky,sky,arch,foliage,decorative_plant"
   },
   {
     "title": "October 2012 Freddy's Birthday",
@@ -141,7 +156,8 @@ const VIDEOS = [
     "thumb": "thumbnails/fmTzZZkX8dw.jpg",
     "published_at": "2020-08-27T00:03:26Z",
     "category": "Birthdays",
-    "year": 2012
+    "year": 2012,
+    "objects": "cabinet,suit,interior_room,kitchen,kitchen_countertop,door,frame,utensil,tableware,curtain,plate,arch,sign,food,jacket,machine,hoodie,baked_goods,cake,dessert,birthday_cake,clock,dial,timepiece,appliance,stove,jeans,tool,wheelchair"
   },
   {
     "title": "Christmas Eve 1995 Moberg House Severino Cam",
@@ -150,7 +166,8 @@ const VIDEOS = [
     "thumb": "thumbnails/1ZcXJglZqHU.jpg",
     "published_at": "2020-08-12T15:35:48Z",
     "category": "Moberg Christmas",
-    "year": 1995
+    "year": 1995,
+    "objects": "frame,celebration,door,christmas_tree,tree,christmas_decoration,lamp,light,brick,crowd,interior_room,living_room,sofa,fireplace,gift,necktie,suit,container,carton,chair,armchair,machine,clock,dial,timepiece,cabinet"
   },
   {
     "title": "December 2010 Tony And Sheila Vow Renewal",
@@ -159,7 +176,8 @@ const VIDEOS = [
     "thumb": "thumbnails/o_NDdk4RHkE.jpg",
     "published_at": "2020-08-27T00:02:12Z",
     "category": "Severino Family",
-    "year": 2010
+    "year": 2010,
+    "objects": "suit,interior_room,decorative_plant,arch,foliage,podium,outdoor,night_sky,sky,building,cityscape,candlestick,fence,light,tableware,utensil,skyscraper,candle,stained_glass,statue,drinking_glass,chandelier,bar,container,bottle,restaurant,drink,liquid,wine,wine_bottle,spoon,crowd,celebration,tree,christmas_tree,christmas_decoration"
   },
   {
     "title": "Christmas Morning 1991 Frog Pond",
@@ -168,7 +186,8 @@ const VIDEOS = [
     "thumb": "thumbnails/2ga_wP-23Gw.jpg",
     "published_at": "2020-08-12T13:51:12Z",
     "category": "Christmas Morn Sev",
-    "year": 1991
+    "year": 1991,
+    "objects": "sofa,container,pillow,tool,celebration,carton,christmas_tree,tree,christmas_decoration,gift,door,cabinet,cardboard_box,document,book,machine,appliance,refrigerator,teen"
   },
   {
     "title": "Christmas 1991 Church Concert",
@@ -177,7 +196,8 @@ const VIDEOS = [
     "thumb": "thumbnails/7QhkvZG-eEs.jpg",
     "published_at": "2020-08-12T13:51:11Z",
     "category": "Christmas Program",
-    "year": 1991
+    "year": 1991,
+    "objects": "microphone,performance,recreation,entertainer,singer,podium,teen,polka_dots,jeans,decorative_plant,interior_room,door,military_uniform,music,speakers_music"
   },
   {
     "title": "Thanksgiving 2008",
@@ -186,7 +206,8 @@ const VIDEOS = [
     "thumb": "thumbnails/cEtke2r5_lw.jpg",
     "published_at": "2020-08-26T23:59:13Z",
     "category": "Severino Holidays",
-    "year": 2008
+    "year": 2008,
+    "objects": "cabinet,door,machine,frame,jacket,clock,dial,timepiece,suit,utensil,tableware,appliance,teen,sign,optical_equipment,eyeglasses,bowl,light,chandelier,consumer_electronics,television,curtain,cup,drinking_glass,container,bottle,scarf,jeans,interior_room,kitchen,kitchen_countertop,stove"
   },
   {
     "title": "Palisades Amusement Park",
@@ -195,7 +216,8 @@ const VIDEOS = [
     "thumb": "thumbnails/vlo665-DqbY.jpg",
     "published_at": "2020-08-26T05:04:23Z",
     "category": "1960s Sev",
-    "year": 1960
+    "year": 1960,
+    "objects": "fence,crowd,outdoor,land,park,amusement_park,carousel,document,handwriting,arch,balcony,raw_glass"
   },
   {
     "title": "Ted's Birthday",
@@ -204,7 +226,8 @@ const VIDEOS = [
     "thumb": "thumbnails/ujsmYO94hS0.jpg",
     "published_at": "2020-08-26T05:02:36Z",
     "category": "Birthdays",
-    "year": 1960
+    "year": 1960,
+    "objects": "curtain,illustrations,seat,teen,sign,bedding,housewares,baby,machine,consumer_electronics,television,balloon"
   },
   {
     "title": "Train Trip",
@@ -213,7 +236,18 @@ const VIDEOS = [
     "thumb": "thumbnails/PoCjKsQZkC0.jpg",
     "published_at": "2020-08-26T04:39:20Z",
     "category": "1960s Sev",
-    "year": 1960
+    "year": 1960,
+    "objects": "outdoor,fence,sky,foliage,machine,wheel,tire,rim,light,lamppost,door,cloudy,sunset_sunrise,blue_sky,land,path,food,herb,seasonings,dandelion"
+  },
+  {
+    "title": "Christmas 1991 Church Concert",
+    "video_id": "7QhkvZG-eEs",
+    "youtube_url": "https://www.youtube.com/watch?v=7QhkvZG-eEs",
+    "thumb": "thumbnails/7QhkvZG-eEs.jpg",
+    "published_at": "2020-08-12T13:51:11Z",
+    "category": "Christmas Program",
+    "year": 1991,
+    "objects": "microphone,performance,recreation,entertainer,singer,podium,teen,polka_dots,jeans,decorative_plant,interior_room,door,military_uniform,music,speakers_music"
   },
   {
     "title": "Catskill Game Farm",
@@ -222,7 +256,8 @@ const VIDEOS = [
     "thumb": "thumbnails/MkiHpuZH_h4.jpg",
     "published_at": "2020-08-26T04:18:56Z",
     "category": "1960s Sev",
-    "year": 1960
+    "year": 1960,
+    "objects": "fence,crowd,frozen,liquid,snow,water,wood_natural,animal,mammal,rhinoceros,bench,teen,door,ungulates"
   },
   {
     "title": "Communion",
@@ -231,7 +266,8 @@ const VIDEOS = [
     "thumb": "thumbnails/eqIxMSxFKe4.jpg",
     "published_at": "2020-08-26T04:16:18Z",
     "category": "1960s Sev",
-    "year": 1960
+    "year": 1960,
+    "objects": "outdoor,suit,sky,night_sky,land,grass,fence,shrub,tuxedo,jacket,roof,bowtie,crib"
   },
   {
     "title": "Long Island Game Farm",
@@ -240,7 +276,8 @@ const VIDEOS = [
     "thumb": "thumbnails/6mq67JNarso.jpg",
     "published_at": "2020-08-26T04:15:53Z",
     "category": "1960s Sev",
-    "year": 1960
+    "year": 1960,
+    "objects": "fence,machine,vehicle,automobile,car,wood_natural,outdoor,land,road,street,wheel,tire,rim,suit,cage,brick,convertible,path,sidewalk,recreation,interior_room,hospital,baby"
   },
   {
     "title": "Christmas 1962",
@@ -249,7 +286,8 @@ const VIDEOS = [
     "thumb": "thumbnails/7tH2ncn-lxU.jpg",
     "published_at": "2020-12-23T15:46:54Z",
     "category": "60s Moberg Christmas",
-    "year": 1962
+    "year": 1962,
+    "objects": "curtain,teen,door,music,musical_instrument,string_instrument,guitar,celebration,tree,christmas_tree,sign,jacket"
   },
   {
     "title": "Football & Beach",
@@ -258,7 +296,8 @@ const VIDEOS = [
     "thumb": "thumbnails/5V0IufbS8_Q.jpg",
     "published_at": "2020-08-26T04:11:58Z",
     "category": "1960s Sev",
-    "year": 1960
+    "year": 1960,
+    "objects": "crowd,document,handwriting,door,jacket,machine,automobile,vehicle,car,roof"
   },
   {
     "title": "At Home",
@@ -267,7 +306,8 @@ const VIDEOS = [
     "thumb": "thumbnails/CvmRc-9Jum4.jpg",
     "published_at": "2020-08-26T04:10:59Z",
     "category": "1960s Sev",
-    "year": 1960
+    "year": 1960,
+    "objects": "jacket,frozen,liquid,snow,water,outdoor,sky,night_sky,bench,rocks,fence,branch,snowman"
   },
   {
     "title": "April 1997 Sheila & Tommy Birthday",
@@ -276,7 +316,8 @@ const VIDEOS = [
     "thumb": "thumbnails/rYE930ScbwU.jpg",
     "published_at": "2020-08-24T19:13:10Z",
     "category": "Birthdays",
-    "year": 1997
+    "year": 1997,
+    "objects": "cabinet,door,sofa,pillow,tool,bedding,housewares,interior_room,machine,frame,bed,bedroom,consumer_electronics,television,suit,container,bottle,sign,balloon,appliance,stove"
   },
   {
     "title": "May 1997 Memorial Day",
@@ -285,7 +326,8 @@ const VIDEOS = [
     "thumb": "thumbnails/cIE_oTOuYfo.jpg",
     "published_at": "2020-08-24T19:12:16Z",
     "category": "Severino Holidays",
-    "year": 1997
+    "year": 1997,
+    "objects": "cabinet,frame,foliage,door,baseball_hat,hat,headgear,utensil,light,baby,jeans,pillow,tool,machine,consumer_electronics,television,brick,umbrella,suit,high_chair,food,baked_goods,cake,dessert,birthday_cake,candle,arch,tableware,plate,bowl,lamp"
   },
   {
     "title": "October 1997 Florida (Tommy, Tony +Fam) Our Vacation Florida Trip",
@@ -294,7 +336,8 @@ const VIDEOS = [
     "thumb": "thumbnails/2YAlNVkxDGQ.jpg",
     "published_at": "2020-08-24T19:09:31Z",
     "category": "Florida",
-    "year": 1997
+    "year": 1997,
+    "objects": "crowd,hat,headgear,baseball_hat,outdoor,fence,optical_equipment,sunglasses,sign,blue_sky,sky,land,road,street,wood_natural,foliage,rocks,suit,light,lamppost,palm_tree,tree,cloudy,brick,balloon,recreation,sport,sports_equipment,ball,illustrations,teen,liquid,water,pool,stairs"
   },
   {
     "title": "June 1997 Father's Day",
@@ -303,7 +346,8 @@ const VIDEOS = [
     "thumb": "thumbnails/K3vCjE1usMU.jpg",
     "published_at": "2020-08-24T19:10:41Z",
     "category": "Severino Holidays",
-    "year": 1997
+    "year": 1997,
+    "objects": "fence,shrub,foliage,utensil,umbrella,machine,vehicle,automobile,car,wheel,tire,rim,jeans,crowd,raw_glass,patio,optical_equipment,sunglasses,roof,outdoor,land,grass"
   },
   {
     "title": "March 1995 Disney Character Breakfast Kevin & Kristen",
@@ -312,7 +356,8 @@ const VIDEOS = [
     "thumb": "thumbnails/40YbMYDL0CM.jpg",
     "published_at": "2020-08-12T16:08:21Z",
     "category": "Florida",
-    "year": 1995
+    "year": 1995,
+    "objects": "interior_room,restaurant,frame,crowd,tableware,utensil,sofa,drinking_glass,seat,plate,celebration,costume,light,lamp,curtain,painting,raw_glass,optical_equipment,eyeglasses,polka_dots,door"
   },
   {
     "title": "July 1999 Hershey Park",
@@ -321,7 +366,8 @@ const VIDEOS = [
     "thumb": "thumbnails/jXECYMO5-gM.jpg",
     "published_at": "2020-08-24T17:25:59Z",
     "category": "Severino Family",
-    "year": 1999
+    "year": 1999,
+    "objects": "outdoor,fence,land,blue_sky,sky,teen,amusement_park,park,rollercoaster,cloudy,machine,foliage,interior_room,restaurant,atm,seat,road,street,vehicle,automobile,grass,truck,raw_glass,frozen,liquid,snow,water,parking_lot,roof,headgear,helmet,decorative_plant,utensil,tableware,cup,drinking_glass,container,luggage,backpack,sign,necktie,suit,recreation,footwear,shoes,sneaker,sport,sports_equipment,skateboard,skating,skateboarding"
   },
   {
     "title": "Halloween 2000",
@@ -330,7 +376,8 @@ const VIDEOS = [
     "thumb": "thumbnails/dFgM4sk273w.jpg",
     "published_at": "2020-08-24T17:24:48Z",
     "category": "Severino Holidays",
-    "year": 2000
+    "year": 2000,
+    "objects": "frame,cabinet,door,sign,sofa,suit,curtain,flag,balloon,pillow,tool,chair,armchair,painting,headgear,hat,baseball_hat,utensil,tableware,bowl,document,handwriting"
   },
   {
     "title": "Thanksgiving 1998",
@@ -339,7 +386,8 @@ const VIDEOS = [
     "thumb": "thumbnails/FOKF4BebXX0.jpg",
     "published_at": "2020-08-24T17:24:11Z",
     "category": "Severino Holidays",
-    "year": 1998
+    "year": 1998,
+    "objects": "interior_room,crowd,frame,suit,light,chandelier,machine,door,bottle,container,utensil,tableware,restaurant,consumer_electronics,television,sofa,living_room,sign,bar,cabinet,appliance,stove,drinking_glass,fireplace,brick,curtain,eyeglasses,optical_equipment,plate,jacket,necktie"
   },
   {
     "title": "August 1999 Grandma Quinn's Birthday",
@@ -348,7 +396,8 @@ const VIDEOS = [
     "thumb": "thumbnails/Ez4nek9G0V0.jpg",
     "published_at": "2020-08-24T17:23:51Z",
     "category": "Birthdays",
-    "year": 1999
+    "year": 1999,
+    "objects": "fence,foliage,sofa,cabinet,curtain,interior_room,wood_natural,decorative_plant,statue,pillow,tool,living_room,door,bedding,housewares,bedroom"
   },
   {
     "title": "June 1999 Anthony's Birthday",
@@ -357,7 +406,8 @@ const VIDEOS = [
     "thumb": "thumbnails/LDvRc0FGU4M.jpg",
     "published_at": "2020-08-24T17:23:31Z",
     "category": "Birthdays",
-    "year": 1999
+    "year": 1999,
+    "objects": "outdoor,land,grass,wood_natural,fence,foliage,machine,teen,container,bottle,wheel,tire,headgear,hat,baseball_hat,forest,vegetation,raw_glass,utensil,tableware,cup,baby,shrub,recreation,workout,brick,toy,vehicle_toy,door,vehicle,automobile,car,van,chair,folding_chair,food,baked_goods,birthday_cake,cake,dessert,candle,light"
   },
   {
     "title": "March 1998 Ted & Kevin Birthday",
@@ -366,7 +416,8 @@ const VIDEOS = [
     "thumb": "thumbnails/uYAnhbEMvkA.jpg",
     "published_at": "2020-08-24T17:22:51Z",
     "category": "Birthdays",
-    "year": 1998
+    "year": 1998,
+    "objects": "brick,curtain,suit,tableware,utensil,sofa,frame,necktie,chair,drinking_glass,interior_room,restaurant,hat,headgear,baseball_hat,cabinet,door,folding_chair,rocks,pillow,tool,armchair,container,bottle,seat,candle,light,balloon,sign"
   },
   {
     "title": "April 1997 Tony Jr. Birthday",
@@ -375,7 +426,8 @@ const VIDEOS = [
     "thumb": "thumbnails/Dn7HcPAUDAc.jpg",
     "published_at": "2020-08-24T17:19:47Z",
     "category": "Birthdays",
-    "year": 1997
+    "year": 1997,
+    "objects": "sofa,baby,cabinet,pillow,tool,tableware,utensil,interior_room,restaurant,machine,consumer_electronics,television,crowd,food,baked_goods,birthday_cake,cake,dessert,light,candle,frame,plate"
   },
   {
     "title": "June 1998 Anthony's Birthday",
@@ -384,7 +436,8 @@ const VIDEOS = [
     "thumb": "thumbnails/YeviWSQiYIE.jpg",
     "published_at": "2020-08-24T17:19:28Z",
     "category": "Birthdays",
-    "year": 1998
+    "year": 1998,
+    "objects": "curtain,tableware,utensil,plate,teen,frame,door,balloon,raw_glass,sofa,pillow,tool,footwear,shoes,high_heel,cup"
   },
   {
     "title": "Easter 1998",
@@ -393,7 +446,8 @@ const VIDEOS = [
     "thumb": "thumbnails/OJmzrRWcL7k.jpg",
     "published_at": "2020-08-24T17:18:38Z",
     "category": "Severino Holidays",
-    "year": 1998
+    "year": 1998,
+    "objects": "suit,outdoor,land,grass,machine,door,sky,blue_sky,shrub,automobile,vehicle,foliage,necktie,cabinet,curtain,car,fence,crowd,wood_natural,appliance,oven,microwave,consumer_electronics,television,bouquet,flower_arrangement,wheel,tire,rim,roof,domicile,house_single,headgear,hat,baseball_hat,branch,bench,arch,van,jacket,decorative_plant,celebration,ceremony,wedding,groom,brick"
   },
   {
     "title": "Halloween 1998",
@@ -402,7 +456,8 @@ const VIDEOS = [
     "thumb": "thumbnails/PdUlbV4VH-I.jpg",
     "published_at": "2020-08-24T17:18:24Z",
     "category": "Severino Holidays",
-    "year": 1998
+    "year": 1998,
+    "objects": "door,frame,stairs,cabinet,suit,document,bookshelf,music,musical_instrument,string_instrument,guitar,container,bottle,tool,toilet_seat,raw_glass,sofa,interior_room,restaurant,crowd"
   },
   {
     "title": "1998 Alex's Birthday",
@@ -411,7 +466,8 @@ const VIDEOS = [
     "thumb": "thumbnails/pTRNm2lvhuM.jpg",
     "published_at": "2020-08-24T17:18:08Z",
     "category": "Birthdays",
-    "year": 1998
+    "year": 1998,
+    "objects": "tableware,utensil,balloon,suit,frame,cup,cabinet,sofa,bowl,crowd,food,baked_goods,cake,dessert,birthday_cake,candle,light,music,musical_instrument,drum,headgear,hat,fedora,chopsticks,interior_room,restaurant,jacket,plate,baby,pillow,tool"
   },
   {
     "title": "May 1998 Alex Communion & Lunch",
@@ -420,7 +476,8 @@ const VIDEOS = [
     "thumb": "thumbnails/6-N5q_YivCA.jpg",
     "published_at": "2020-08-24T17:17:35Z",
     "category": "Severino Holidays",
-    "year": 1998
+    "year": 1998,
+    "objects": "suit,crowd,interior_room,wood_natural,restaurant,fence,door,outdoor,container,luggage,purse,sky,cloudy,blue_sky,frame,necktie,stairs,brick,arch,celebration,ceremony,wedding,groom,bride,wedding_dress,machine,vehicle,automobile,car,land,grass,shrub,path,classroom,hospital,lab_coat,cabinet,tableware,utensil,plate,drinking_glass"
   },
   {
     "title": "Halloween 1996",
@@ -429,7 +486,8 @@ const VIDEOS = [
     "thumb": "thumbnails/KhEctI_uePU.jpg",
     "published_at": "2020-08-24T17:17:28Z",
     "category": "Severino Holidays",
-    "year": 1996
+    "year": 1996,
+    "objects": "baby,utensil,tableware,bowl,door,sign,high_chair,headgear,tiara,cabinet,frame,machine,consumer_electronics,computer,curtain,cup"
   },
   {
     "title": "June 1997 Anthony's Birthday",
@@ -438,7 +496,8 @@ const VIDEOS = [
     "thumb": "thumbnails/9wK1_S07YCk.jpg",
     "published_at": "2020-08-24T17:16:35Z",
     "category": "Birthdays",
-    "year": 1997
+    "year": 1997,
+    "objects": "outdoor,land,fence,grass,foliage,utensil,umbrella,park,playground,slide_toy,sky,blue_sky,high_chair,balloon,road,street,crowd,machine,vehicle,automobile,car,jeans,swing_playground,chair,folding_chair,food,baked_goods,cake,dessert,birthday_cake,tool,toilet_seat,door,interior_room,bathroom,tableware,plate,container,trash_can,stairs,hat,headgear,baseball_hat"
   },
   {
     "title": "Easter 1996",
@@ -447,7 +506,8 @@ const VIDEOS = [
     "thumb": "thumbnails/xzltK30uHEA.jpg",
     "published_at": "2020-08-24T17:16:23Z",
     "category": "Severino Holidays",
-    "year": 1996
+    "year": 1996,
+    "objects": "curtain,frame,cabinet,suit,machine,door,document,lamp,light,frozen,liquid,snow,water,wood_natural,fence,appliance,refrigerator,clock,dial,timepiece,desk,consumer_electronics,computer,computer_monitor,raw_glass,interior_room,restaurant,utensil,tableware,cup,bouquet,flower_arrangement"
   },
   {
     "title": "1996 Alex's Birthday",
@@ -456,7 +516,8 @@ const VIDEOS = [
     "thumb": "thumbnails/fwAgXxcJYi4.jpg",
     "published_at": "2020-08-24T17:16:09Z",
     "category": "Birthdays",
-    "year": 1996
+    "year": 1996,
+    "objects": "cabinet,frame,food,baked_goods,cake,dessert,birthday_cake,hat,headgear,baseball_hat,suit,games,chess,curtain,teen,raw_glass,candle,light,bookshelf,interior_room,kitchen"
   },
   {
     "title": "May 1999 Tony Birthday",
@@ -465,7 +526,8 @@ const VIDEOS = [
     "thumb": "thumbnails/WTUeO7p01nk.jpg",
     "published_at": "2020-08-15T17:56:51Z",
     "category": "Birthdays",
-    "year": 1999
+    "year": 1999,
+    "objects": "outdoor,land,grass,fence,bench,shrub,door,teen,arch,wood_natural,flag,decorative_plant"
   },
   {
     "title": "2002 Kristen's Baton Recital",
@@ -474,7 +536,8 @@ const VIDEOS = [
     "thumb": "thumbnails/Sr61OWGfEnM.jpg",
     "published_at": "2020-08-13T14:37:14Z",
     "category": "TDKK",
-    "year": 2002
+    "year": 2002,
+    "objects": "crowd,teen,recreation,sport,cheerleading,leotard,bleachers,gymnastics,door,sign,scoreboard,performance,ballet_dancer,entertainer,ballet,stairs"
   },
   {
     "title": "May 2001 Wizard Of Oz",
@@ -483,7 +546,8 @@ const VIDEOS = [
     "thumb": "thumbnails/kh1RqTkQT3M.jpg",
     "published_at": "2020-08-13T14:37:01Z",
     "category": "TDKK",
-    "year": 2001
+    "year": 2001,
+    "objects": "crowd,curtain,celebration,costume,sign,document,screenshot,painting,gown"
   },
   {
     "title": "Christmas Eve 2001 Mobergs",
@@ -492,7 +556,8 @@ const VIDEOS = [
     "thumb": "thumbnails/7zg2qq4mBo8.jpg",
     "published_at": "2020-08-13T01:37:02Z",
     "category": "Moberg Christmas",
-    "year": 2001
+    "year": 2001,
+    "objects": "frame,suit,necktie,sofa,eyeglasses,optical_equipment,celebration,christmas_tree,tree,christmas_decoration,sign,curtain,outdoor,sky,consumer_electronics,machine,television,camera,recreation,tool,pillow,teen,cloudy,land,grass,interior_room,living_room,jacket,blue_sky"
   },
   {
     "title": "June 2002 Kristen's 5Th Grade Graduation",
@@ -501,7 +566,8 @@ const VIDEOS = [
     "thumb": "thumbnails/a0D3xiqp1os.jpg",
     "published_at": "2020-08-13T14:33:30Z",
     "category": "TDKK",
-    "year": 2003
+    "year": 2003,
+    "objects": "crowd,curtain,teen,suit,balloon,chair,consumer_electronics,machine,recreation,camera,microphone,podium,brick,folding_chair,eyeglasses,optical_equipment,cord,flag,interior_room,auditorium,chair_other"
   },
   {
     "title": "Spring 2006 Rosie Pregnant Baby Victoria Visits Severino",
@@ -510,7 +576,8 @@ const VIDEOS = [
     "thumb": "thumbnails/lTeOo72NnVU.jpg",
     "published_at": "2020-08-13T14:30:54Z",
     "category": "Severino Family",
-    "year": 2006
+    "year": 2006,
+    "objects": "baby,curtain,tool,cabinet,door,machine,interior_room,pillow,bedding,housewares,appliance,stove,kitchen,kitchen_countertop,refrigerator,car_seat,consumer_electronics,television,oven,kitchen_oven,container,bottle,microwave,utensil,tableware,plate,frame,chair,armchair,fence,hat,headgear,beanie,suit,hospital,bed"
   },
   {
     "title": "2002 Kristen Soccer",
@@ -519,7 +586,8 @@ const VIDEOS = [
     "thumb": "thumbnails/Zpn7JWOES_E.jpg",
     "published_at": "2020-08-13T14:30:42Z",
     "category": "TDKK",
-    "year": 2002
+    "year": 2002,
+    "objects": "outdoor,land,grass,fence,recreation,sport,ballgames,soccer,wood_natural,branch,teen,sign,suit,foliage,automobile,machine,vehicle,car,sports_equipment,ball,brick,jacket,headgear,hat,baseball_hat"
   },
   {
     "title": "March 2002 Ted's 40Th Birthday",
@@ -528,7 +596,8 @@ const VIDEOS = [
     "thumb": "thumbnails/58uEr91pYiE.jpg",
     "published_at": "2020-08-13T14:28:50Z",
     "category": "Birthdays",
-    "year": 2002
+    "year": 2002,
+    "objects": "frame,cabinet,outdoor,consumer_electronics,machine,television,fence,stairs,sky,night_sky,curtain,pillow,tool,interior_room,light,balloon,suit,forest,vegetation,wood_natural,jacket,crowd,sofa,decorative_plant,living_room,chair,armchair,foliage,bedding,housewares,bed,bedroom,door,chandelier,recreation"
   },
   {
     "title": "April 2005 Kristen's Recital",
@@ -537,7 +606,8 @@ const VIDEOS = [
     "thumb": "thumbnails/gOfre9gRmFE.jpg",
     "published_at": "2020-08-13T14:28:34Z",
     "category": "TDKK",
-    "year": 2005
+    "year": 2005,
+    "objects": "crowd,teen,suit,microphone,chair,sign,necktie,chair_other,folding_chair,balloon"
   },
   {
     "title": "Winter 2005 Mattituck House Tour",
@@ -546,7 +616,8 @@ const VIDEOS = [
     "thumb": "thumbnails/lFkTIBC8fUg.jpg",
     "published_at": "2020-08-13T14:26:31Z",
     "category": "Severino Family",
-    "year": 2005
+    "year": 2005,
+    "objects": "cabinet,outdoor,frame,door,machine,raw_glass,land,grass,sky,blue_sky,curtain,consumer_electronics,television,wood_natural,light,path,roof,cloudy,frozen,liquid,snow,water,arch,interior_room,bathroom,washbasin,statue,bathroom_faucet,recreation,jigsaw,forest,vegetation,chandelier,tableware,utensil,drinking_glass,sofa,chair,armchair,lamp,appliance,refrigerator,painting,branch,shrub"
   },
   {
     "title": "2002 Grand Cayman",
@@ -555,7 +626,8 @@ const VIDEOS = [
     "thumb": "thumbnails/_Y87_nGqoIc.jpg",
     "published_at": "2020-08-13T14:24:26Z",
     "category": "Moberg Family",
-    "year": 2002
+    "year": 2002,
+    "objects": "outdoor,sky,blue_sky,liquid,water,swimsuit,cloudy,water_body,underwater,recreation,sport,watersport,ocean,swimming,coral_reef,scuba,seat,rocks,lake,headgear,helmet,daytime,sunbathing,crowd"
   },
   {
     "title": "March 2002 Kevin House Tour",
@@ -564,7 +636,8 @@ const VIDEOS = [
     "thumb": "thumbnails/uG8VDQ02C6c.jpg",
     "published_at": "2020-08-13T14:23:02Z",
     "category": "TDKK",
-    "year": 2002
+    "year": 2002,
+    "objects": "document,stairs,fence,book,door,screenshot,bookshelf,frame,crib"
   },
   {
     "title": "May 2001 Tony's 40Th Birthday",
@@ -573,7 +646,8 @@ const VIDEOS = [
     "thumb": "thumbnails/HLBQd0QluCU.jpg",
     "published_at": "2020-08-13T14:22:10Z",
     "category": "Birthdays",
-    "year": 2001
+    "year": 2001,
+    "objects": "cabinet,crowd,door,machine,container,luggage,utensil,footwear,shoes,sandal,appliance,refrigerator,suit,bag,backpack,seat,fence,stool,frame,umbrella,domicile,tent,outdoor,land,grass,wood_natural,shrub,consumer_electronics,television,food,baked_goods,cake,dessert,birthday_cake,light,candle,tableware,drinking_glass,curtain"
   },
   {
     "title": "July 2001 Colonial Williamsburg",
@@ -582,7 +656,8 @@ const VIDEOS = [
     "thumb": "thumbnails/u7lKi5Zx2tU.jpg",
     "published_at": "2020-08-13T14:21:47Z",
     "category": "TDKK",
-    "year": 2001
+    "year": 2001,
+    "objects": "lamp,light,curtain,door,tool,frame,interior_room,pillow,fence,bedding,housewares,decorative_plant,cabinet,chair,armchair,sofa,stairs,bathroom,washbasin,toilet_seat,bed,bedroom,living_room,music,musical_instrument,string_instrument,harp"
   },
   {
     "title": "August 2001 Kristen's Luau Birthday Part",
@@ -591,7 +666,8 @@ const VIDEOS = [
     "thumb": "thumbnails/-a5otCnFIrM.jpg",
     "published_at": "2020-08-13T14:19:43Z",
     "category": "Birthdays",
-    "year": 2001
+    "year": 2001,
+    "objects": "outdoor,land,grass,foliage,teen,swimsuit,liquid,pool,water,recreation,sport,swimming,watersport,fence,balloon,shrub,umbrella,utensil,crowd,gown,sky,blue_sky,container,basket_container,decorative_plant,celebration,costume"
   },
   {
     "title": "June 2000 Kevin And Kristen At School",
@@ -600,7 +676,8 @@ const VIDEOS = [
     "thumb": "thumbnails/xuof_875P6o.jpg",
     "published_at": "2020-08-13T02:51:50Z",
     "category": "TDKK",
-    "year": 2000
+    "year": 2000,
+    "objects": "teen,interior_room,classroom,crowd,painting,document,flag,cabinet,balloon,handwriting,desk,consumer_electronics,machine,television,computer,computer_monitor,bookshelf,chair,chair_other,book,polka_dots"
   },
   {
     "title": "St. Patrick's Day 2001",
@@ -609,7 +686,8 @@ const VIDEOS = [
     "thumb": "thumbnails/qmpl5gT8IOY.jpg",
     "published_at": "2020-08-13T02:26:37Z",
     "category": "Severino Holidays",
-    "year": 2001
+    "year": 2001,
+    "objects": "brick,headgear,hat,fedora,fireplace,cabinet,frame,fire,flame,curtain,door,suit,optical_equipment,eyeglasses,sign,bedding,housewares,baseball_hat,machine,consumer_electronics,television,hoodie,jeans,scarf,desk,hardhat,document,handwriting"
   },
   {
     "title": "August 2001 Kristen's Luau Birthday",
@@ -618,7 +696,8 @@ const VIDEOS = [
     "thumb": "thumbnails/Nw9AL10T8SA.jpg",
     "published_at": "2020-08-13T02:19:23Z",
     "category": "Birthdays",
-    "year": 2001
+    "year": 2001,
+    "objects": "outdoor,land,grass,foliage,teen,swimsuit,liquid,pool,water,recreation,sport,swimming,watersport,fence,balloon,shrub,umbrella,utensil,crowd,gown,sky,blue_sky,container,basket_container,decorative_plant,celebration,costume"
   },
   {
     "title": "2001 Kristen After School",
@@ -627,7 +706,8 @@ const VIDEOS = [
     "thumb": "thumbnails/nNv8hCxT17M.jpg",
     "published_at": "2020-08-13T02:18:01Z",
     "category": "TDKK",
-    "year": 2001
+    "year": 2001,
+    "objects": "teen,document,screenshot,container,bottle,recreation,jigsaw,puzzles"
   },
   {
     "title": "March 2001 Kevin And Ted's Birthday",
@@ -636,7 +716,8 @@ const VIDEOS = [
     "thumb": "thumbnails/q44geqN1Jbo.jpg",
     "published_at": "2020-08-13T02:17:59Z",
     "category": "Birthdays",
-    "year": 2001
+    "year": 2001,
+    "objects": "sofa,frame,pillow,tool,interior_room,living_room,consumer_electronics,machine,television,curtain,chair,armchair,jeans,fireplace,teen,light,lamp,stairs,raw_glass,hat,headgear,baseball_hat,suit,jacket,bedding,housewares,painting"
   },
   {
     "title": "June 2001 Kristen Baton",
@@ -645,7 +726,8 @@ const VIDEOS = [
     "thumb": "thumbnails/I03brTQdWJE.jpg",
     "published_at": "2020-08-13T02:17:34Z",
     "category": "TDKK",
-    "year": 2001
+    "year": 2001,
+    "objects": "teen,crowd,recreation,sport,cheerleading,bleachers,ballgames,basketball,stairs,fence,sign,celebration,costume,banner,music,speakers_music,tripod"
   },
   {
     "title": "Virginia July 2001 Hilby",
@@ -654,7 +736,8 @@ const VIDEOS = [
     "thumb": "thumbnails/-vCC7kSHSPs.jpg",
     "published_at": "2020-08-13T01:52:13Z",
     "category": "TDKK",
-    "year": 2001
+    "year": 2001,
+    "objects": "brick,crowd,sign,outdoor,land,road,street,banner,recreation,machine,vehicle,sky,blue_sky,performance,automobile,bicycle,sport,light,lamppost,shrub,music,speakers_music,cycling,teen,entertainer,parade,van,foliage,truck,acrobat,singer,frame,car,skating,skateboarding,sports_equipment,skateboard"
   },
   {
     "title": "2001 Epcot",
@@ -663,7 +746,8 @@ const VIDEOS = [
     "thumb": "thumbnails/x_fj5RCIIts.jpg",
     "published_at": "2020-08-13T01:50:46Z",
     "category": "Florida",
-    "year": 2001
+    "year": 2001,
+    "objects": "crowd,outdoor,sky,blue_sky,fence,roof,stairs,land,cloudy,gown,suit,grass,arch,teen,shrub,path,decorative_plant,umbrella,utensil,balcony,recreation,performance,concert,frame,foliage,music,speakers_music,celebration,costume,wood_natural,road,street,branch"
   },
   {
     "title": "Christmas Morning 1993 Severinos At Frog Pond",
@@ -672,7 +756,8 @@ const VIDEOS = [
     "thumb": "thumbnails/9GYDxwweMMw.jpg",
     "published_at": "2020-08-12T14:55:14Z",
     "category": "Christmas Morn Sev",
-    "year": 1993
+    "year": 1993,
+    "objects": "baby,sofa,celebration,pillow,tool,container,diaper,food,pizza,popcorn,christmas_tree,tree,christmas_decoration,gift,music,musical_instrument,string_instrument,guitar,decorative_plant,document,screenshot,outdoor,sky,night_sky,carton,cabinet"
   },
   {
     "title": "June 2001 Anthony's 5Th Birthday",
@@ -681,7 +766,8 @@ const VIDEOS = [
     "thumb": "thumbnails/ABEf2KioSBw.jpg",
     "published_at": "2020-08-13T01:29:06Z",
     "category": "Birthdays",
-    "year": 2001
+    "year": 2001,
+    "objects": "outdoor,land,grass,crowd,forest,vegetation,balloon,teen,foliage,container,wood_natural,fence,bench,bottle,shrub,decorative_plant,stool,celebration,costume,trash_can,chair,folding_chair,chair_other,utensil,tableware,door,hat,headgear,beanie,baby,food,fruit,apple,grape"
   },
   {
     "title": "August 2000 Montauk",
@@ -690,7 +776,8 @@ const VIDEOS = [
     "thumb": "thumbnails/dITcsZuK9Zk.jpg",
     "published_at": "2020-08-13T01:28:19Z",
     "category": "TDKK",
-    "year": 2001
+    "year": 2001,
+    "objects": "outdoor,sky,blue_sky,land,rocks,liquid,water,water_body,ocean,cloudy,building,tower,lighthouse,grass,hill,beach,shore,dome,roof,cityscape,animal,bird,penguin,night_sky,celestial_body,moon"
   },
   {
     "title": "July 2000 Grant's Birthday",
@@ -699,7 +786,8 @@ const VIDEOS = [
     "thumb": "thumbnails/wPPr13bOVkU.jpg",
     "published_at": "2020-08-13T01:24:22Z",
     "category": "Birthdays",
-    "year": 2000
+    "year": 2000,
+    "objects": "outdoor,grass,land,food,baked_goods,cake,dessert,birthday_cake,shrub,chair,curtain,tableware,utensil,plate,agriculture,garden,crowd,chair_other,wood_natural,headgear,helmet,foliage,recreation,sport,ball,sports_equipment,cabinet,door,cakestand,candle,light"
   },
   {
     "title": "Easter 2000 Severinos",
@@ -708,7 +796,8 @@ const VIDEOS = [
     "thumb": "thumbnails/YH1QNXyF63A.jpg",
     "published_at": "2020-08-13T01:21:48Z",
     "category": "Severino Holidays",
-    "year": 2000
+    "year": 2000,
+    "objects": "tableware,utensil,cabinet,suit,cup,container,bottle,headgear,hat,fedora,plate,frame,interior_room,restaurant,teen,outdoor,sky,night_sky,curtain,crowd,light,chandelier,drinking_glass,drink,liquid,wine,wine_bottle,necktie,cowboy_hat"
   },
   {
     "title": "Christmas Eve 1993 Fawcett House",
@@ -717,7 +806,8 @@ const VIDEOS = [
     "thumb": "thumbnails/AA9tX6Ufpr0.jpg",
     "published_at": "2020-08-12T14:50:02Z",
     "category": "Moberg Christmas",
-    "year": 1993
+    "year": 1993,
+    "objects": "celebration,christmas_tree,tree,christmas_decoration,lamp,light,crowd,sofa,food,dessert,baked_goods,cake,birthday_cake,document,screenshot"
   },
   {
     "title": "August 2000 Grandma Quinn's 88Th",
@@ -726,7 +816,8 @@ const VIDEOS = [
     "thumb": "thumbnails/c18QcR86JwU.jpg",
     "published_at": "2020-08-12T20:07:37Z",
     "category": "Birthdays",
-    "year": 2000
+    "year": 2000,
+    "objects": "utensil,tableware,plate,bowl,drinking_glass,food,baked_goods,cake,dessert,birthday_cake,bouquet,flower_arrangement,sign,candle,light,curtain,container,vase,cabinet,suit,interior_room,dining_room,door,cup,teen,frame,sofa"
   },
   {
     "title": "Halloween 2000",
@@ -735,7 +826,8 @@ const VIDEOS = [
     "thumb": "thumbnails/OaRc0A837vY.jpg",
     "published_at": "2020-08-12T20:02:56Z",
     "category": "Halloween",
-    "year": 2000
+    "year": 2000,
+    "objects": "frame,cabinet,door,sign,sofa,suit,curtain,flag,balloon,pillow,tool,chair,armchair,painting,headgear,hat,baseball_hat,utensil,tableware,bowl,document,handwriting"
   },
   {
     "title": "May 2000 Tony Sr And Dawn's Birthday",
@@ -744,7 +836,8 @@ const VIDEOS = [
     "thumb": "thumbnails/dApr6q2cfEU.jpg",
     "published_at": "2020-08-12T20:02:28Z",
     "category": "Birthdays",
-    "year": 2000
+    "year": 2000,
+    "objects": "frame,tableware,utensil,food,dessert,baked_goods,cake,birthday_cake,interior_room,restaurant,cup,plate,candle,light,sign,teen,recreation,camera,sofa"
   },
   {
     "title": "May 2000 Dawn's Birthday",
@@ -753,7 +846,8 @@ const VIDEOS = [
     "thumb": "thumbnails/RmClvyUtyW4.jpg",
     "published_at": "2020-08-12T19:55:18Z",
     "category": "Birthdays",
-    "year": 2000
+    "year": 2000,
+    "objects": "foliage,outdoor,utensil,shrub,land,grass,decorative_plant,tableware,cup,wood_natural,fence,umbrella,jeans,door,suit,cage,chair,armchair,stairs,bouquet,flower_arrangement,cabinet,footwear,shoes,sneaker,pillow,tool,vegetation,forest,domicile,house_single,patio,raw_glass,gown"
   },
   {
     "title": "2000 Kristen's Birthday",
@@ -762,7 +856,8 @@ const VIDEOS = [
     "thumb": "thumbnails/t6lsbAULVB4.jpg",
     "published_at": "2020-08-12T19:49:37Z",
     "category": "Birthdays",
-    "year": 2000
+    "year": 2000,
+    "objects": "cabinet,door,machine,consumer_electronics,television,frame,interior_room,light,chandelier,sofa,restaurant,living_room,container,luggage,purse,outdoor,night_sky,sky,celestial_body,moon,eyeglasses,optical_equipment"
   },
   {
     "title": "July 2000 Kevin's Baseball Championship",
@@ -771,7 +866,8 @@ const VIDEOS = [
     "thumb": "thumbnails/xOae8N0fzE0.jpg",
     "published_at": "2020-08-12T19:38:54Z",
     "category": "TDKK",
-    "year": 2000
+    "year": 2000,
+    "objects": "land,outdoor,grass,fence,recreation,sport,ballgames,baseball,sky,crowd,blue_sky,headgear,path,helmet,cloudy,teen,baseball_hat,hat,automobile,machine,vehicle,car,container,trash_can,hill,foliage,bleachers,arena,building,stadium,softball,suv"
   },
   {
     "title": "June 2000 Anthony's Birthday",
@@ -780,7 +876,8 @@ const VIDEOS = [
     "thumb": "thumbnails/17pxWkAIXA0.jpg",
     "published_at": "2020-08-12T19:37:14Z",
     "category": "Birthdays",
-    "year": 2000
+    "year": 2000,
+    "objects": "outdoor,land,grass,fence,crowd,balloon,wood_natural,teen,utensil,recreation,sport,ball,sports_equipment,ballgames,soccer,tableware,plate,interior_room,restaurant,foliage,bench,forest,vegetation,animal,horse,mammal,ungulates,roof,domicile,house_single,shrub,machine,automobile,vehicle,car,umbrella,jeans,food,night_sky,sky,baked_goods,cake,dessert,birthday_cake"
   },
   {
     "title": "1999 Luke Tour Of Fergus Falls",
@@ -789,7 +886,8 @@ const VIDEOS = [
     "thumb": "thumbnails/wM0gf9rzCpM.jpg",
     "published_at": "2020-08-12T19:35:08Z",
     "category": "Fawcett Family",
-    "year": 1999
+    "year": 1999,
+    "objects": "outdoor,document,screenshot,sky,cloudy,blue_sky,machine,land,sign,grass,interior_room,interior_shop,consumer_electronics,television,automobile,vehicle,raw_glass,illustrations,truck,road,semi_truck,street,road_other,teen,crowd,car,arch,path,brick"
   },
   {
     "title": "January 1999 Alex's Birthday",
@@ -798,7 +896,8 @@ const VIDEOS = [
     "thumb": "thumbnails/ZX-knCitRzs.jpg",
     "published_at": "2020-08-12T19:34:41Z",
     "category": "Birthdays",
-    "year": 1999
+    "year": 1999,
+    "objects": "utensil,tableware,bowl,frame,cabinet,plate,food,baked_goods,birthday_cake,cake,dessert,balloon,door,machine,interior_room,cup,consumer_electronics,television,computer,computer_monitor,appliance,refrigerator,kitchen,kitchen_countertop,dining_room,light,candle,drinking_glass,container,bottle,suit,microphone"
   },
   {
     "title": "July 2000 Kevin's Baseball Camp",
@@ -807,7 +906,8 @@ const VIDEOS = [
     "thumb": "thumbnails/DjDbyWqQkTc.jpg",
     "published_at": "2020-08-12T19:33:10Z",
     "category": "TDKK",
-    "year": 2000
+    "year": 2000,
+    "objects": "fence,crowd,outdoor,land,grass,sky,blue_sky,headgear,hat,baseball_hat,raw_glass,bench,animal,mammal,ungulates,horse,machine,vehicle,automobile,car,chair,folding_chair,recreation,sport,ballgames,baseball,helmet"
   },
   {
     "title": "July 1999 Grant's Birthday",
@@ -816,7 +916,8 @@ const VIDEOS = [
     "thumb": "thumbnails/p_HOGQjnZ3Y.jpg",
     "published_at": "2020-08-12T19:32:18Z",
     "category": "Birthdays",
-    "year": 1999
+    "year": 1999,
+    "objects": "land,outdoor,grass,rocks,wood_natural,footwear,shoes,sneaker,chair,folding_chair,path,recreation,sport,golf,swimsuit,sky,night_sky,container,carton"
   },
   {
     "title": "March 1999 Kevin And Ted's Birthday",
@@ -825,7 +926,8 @@ const VIDEOS = [
     "thumb": "thumbnails/oWP65gBoLuU.jpg",
     "published_at": "2020-08-12T19:31:52Z",
     "category": "Birthdays",
-    "year": 1999
+    "year": 1999,
+    "objects": "brick,sofa,light,fireplace,decorative_plant,suit,lamp,interior_room,machine,consumer_electronics,television,curtain,frame,necktie,food,baked_goods,cake,dessert,birthday_cake,candle,cabinet,polka_dots,container,luggage,purse,living_room,pillow,tool,crowd,restaurant"
   },
   {
     "title": "Easter 1999 Severinos",
@@ -834,7 +936,8 @@ const VIDEOS = [
     "thumb": "thumbnails/EzJvdV9PO_8.jpg",
     "published_at": "2020-08-12T19:31:19Z",
     "category": "Severino Holidays",
-    "year": 1999
+    "year": 1999,
+    "objects": "suit,wood_natural,land,outdoor,grass,frame,brick,interior_room,sofa,tool,pillow,cabinet,door,jeans,container,curtain,fireplace,living_room,tableware,utensil,drinking_glass,drink,liquid,wine,wine_bottle,plate,red_wine,bottle,restaurant,teen,hat,headgear,fedora,bench,branch,necktie,luggage,bed,suitcase,bedroom"
   },
   {
     "title": "June 1999 Father's Day",
@@ -843,7 +946,8 @@ const VIDEOS = [
     "thumb": "thumbnails/wweahc3FX1M.jpg",
     "published_at": "2020-08-12T19:31:01Z",
     "category": "Severino Holidays",
-    "year": 1999
+    "year": 1999,
+    "objects": "shrub,decorative_plant,raw_glass,sign,optical_equipment,sunglasses,chair,teen,interior_room,hospital,utensil,tableware,plate,food,vegetable,tomato,foliage,fence"
   },
   {
     "title": "Spring 1991 Luke & Lindsay Go To Orlando",
@@ -852,7 +956,8 @@ const VIDEOS = [
     "thumb": "thumbnails/89SLVdHQBEg.jpg",
     "published_at": "2020-08-12T13:51:10Z",
     "category": "Florida",
-    "year": 1991
+    "year": 1991,
+    "objects": "liquid,water,recreation,sport,watersport,swimming,pool,fence,water_body,lake,swimsuit,crowd,aquarium,ocean,dock,boat,machine,vehicle,watercraft,speedboat,rocks,raw_glass,foliage,animal,mammal,ungulates,hippopotamus,railroad,track_rail,outdoor,land,grass,road"
   },
   {
     "title": "October 1998 Sunny Playing",
@@ -861,7 +966,8 @@ const VIDEOS = [
     "thumb": "thumbnails/Es4l-JAPNo8.jpg",
     "published_at": "2020-08-12T19:29:40Z",
     "category": "TDKK",
-    "year": 1998
+    "year": 1998,
+    "objects": "outdoor,land,grass,shrub,foliage,frozen,liquid,snow,water,document,handwriting"
   },
   {
     "title": "Christmas Eve 1996 Moberg House Part",
@@ -870,7 +976,8 @@ const VIDEOS = [
     "thumb": "thumbnails/aIwPvJszWaA.jpg",
     "published_at": "2020-08-12T19:07:49Z",
     "category": "Moberg Christmas",
-    "year": 1996
+    "year": 1996,
+    "objects": "sofa,light,lamp,chair,armchair,crowd,interior_room,music,musical_instrument,string_instrument,guitar,living_room,decorative_plant,footwear,shoes,sneaker,restaurant,bouquet,flower_arrangement,suit"
   },
   {
     "title": "1996 Severinos At Sea World",
@@ -879,7 +986,8 @@ const VIDEOS = [
     "thumb": "thumbnails/u7rUcPklYbQ.jpg",
     "published_at": "2020-08-12T19:27:19Z",
     "category": "Florida",
-    "year": 1996
+    "year": 1996,
+    "objects": "animal,liquid,water,mammal,cetacean,dolphin,pool,crowd,recreation,sport,swimming,watersport,underwater,celebration,costume,wood_natural,foliage,bird,flamingo,rocks,palm_tree,tree,outdoor,blue_sky,sky,shrub,document,screenshot,fence,fish,shark,aquarium"
   },
   {
     "title": "June 1996 Steven's Nursery School Graduation",
@@ -888,7 +996,8 @@ const VIDEOS = [
     "thumb": "thumbnails/0JdK9a962EA.jpg",
     "published_at": "2020-08-12T19:25:44Z",
     "category": "Fawcett Family",
-    "year": 1996
+    "year": 1996,
+    "objects": "celebration,ceremony,graduation,frame,polka_dots,teen,gown"
   },
   {
     "title": "St. Patrick's Day 1997",
@@ -897,7 +1006,8 @@ const VIDEOS = [
     "thumb": "thumbnails/BQYxeaq3Ff4.jpg",
     "published_at": "2020-08-12T19:25:24Z",
     "category": "Severino Holidays",
-    "year": 1997
+    "year": 1997,
+    "objects": "brick,crowd,optical_equipment,eyeglasses,interior_room,restaurant,stairs,baseball_hat,hat,headgear,fireplace,suit,curtain,utensil,tableware,plate,jacket"
   },
   {
     "title": "August 1998 Grandpa's 65Th",
@@ -906,7 +1016,8 @@ const VIDEOS = [
     "thumb": "thumbnails/fC4cWztZoNA.jpg",
     "published_at": "2020-08-12T19:24:47Z",
     "category": "Birthdays",
-    "year": 1998
+    "year": 1998,
+    "objects": "liquid,water,pool,fence,swimsuit,brick,recreation,frozen,snow,sport,watersport,swimming,foliage,baby,chair,folding_chair,utensil,tableware,plate,machine,vehicle,automobile,car,shrub,skating,skateboarding,outdoor,night_sky,sky,celestial_body,moon"
   },
   {
     "title": "1996 Fawcett's First Day Of School",
@@ -915,7 +1026,8 @@ const VIDEOS = [
     "thumb": "thumbnails/PBGx_1_QVGw.jpg",
     "published_at": "2020-08-12T19:24:26Z",
     "category": "First Day of School",
-    "year": 1996
+    "year": 1996,
+    "objects": "land,outdoor,grass,fence,container,luggage,backpack,teen,road,path,foliage,street,machine,vehicle,automobile,wood_natural,car,sidewalk,road_other,purse,shrub,domicile,house_single,wheel,tire,truck,rim,raw_glass"
   },
   {
     "title": "April 1996 Woodview Drive Tour",
@@ -924,7 +1036,8 @@ const VIDEOS = [
     "thumb": "thumbnails/jwTj-DPoPTw.jpg",
     "published_at": "2020-08-12T19:23:22Z",
     "category": "TDKK",
-    "year": 1996
+    "year": 1996,
+    "objects": "curtain,land,outdoor,grass,shrub,door,frame,foliage,decorative_plant,lamp,light,fence,cabinet,wood_natural,sky,cloudy,road,road_other,path,sidewalk,street,domicile,house_single,raw_glass,sofa,pillow,tool,interior_room,living_room,painting"
   },
   {
     "title": "Easter 1997 Severinos",
@@ -933,7 +1046,8 @@ const VIDEOS = [
     "thumb": "thumbnails/IE7SwWCfgio.jpg",
     "published_at": "2020-08-12T19:23:04Z",
     "category": "Severino Holidays",
-    "year": 1997
+    "year": 1997,
+    "objects": "baby,interior_room,hospital,sofa,pillow,tool,frame,cabinet,suit,fence,raw_glass,toy,stuffed_animals,bedding,housewares"
   },
   {
     "title": "August 1997 Grant's Christening And Party",
@@ -942,7 +1056,8 @@ const VIDEOS = [
     "thumb": "thumbnails/mrmm0kk2wF8.jpg",
     "published_at": "2020-08-12T19:22:05Z",
     "category": "Moberg Family",
-    "year": 1997
+    "year": 1997,
+    "objects": "suit,jewelry,outdoor,foliage,tableware,utensil,baby,bedding,housewares,cup,land,grass,stairs,curtain,sofa,agriculture,garden,food,dessert,baked_goods,cake,birthday_cake,plate,cake_regular,fence,shrub"
   },
   {
     "title": "January 1997 Grandma Severino's 80Th Birthday",
@@ -951,7 +1066,8 @@ const VIDEOS = [
     "thumb": "thumbnails/FdC-autqo-E.jpg",
     "published_at": "2020-08-12T19:21:30Z",
     "category": "Birthdays",
-    "year": 1997
+    "year": 1997,
+    "objects": "suit,tableware,utensil,interior_room,restaurant,drinking_glass,bar,crowd,frame,necktie,door,sign,machine,consumer_electronics,television,raw_glass,container,bottle,plate,food,baked_goods,cake,dessert,birthday_cake,cup,light,candle"
   },
   {
     "title": "March 1997 Kevin's 7Th Birthday Party",
@@ -960,7 +1076,8 @@ const VIDEOS = [
     "thumb": "thumbnails/Xx0kbGqPePo.jpg",
     "published_at": "2020-08-12T19:21:07Z",
     "category": "Birthdays",
-    "year": 1997
+    "year": 1997,
+    "objects": "door,baby,cabinet,curtain,food,suit,frame,baked_goods,cake,dessert,birthday_cake,candle,light,utensil,tableware,plate,optical_equipment,eyeglasses,bookshelf,stairs,fence,container,bottle,raw_glass,hat,headgear,foliage,animal,mammal,canine,dalmatian,dog,high_chair"
   },
   {
     "title": "Severino Christmas Special",
@@ -969,7 +1086,8 @@ const VIDEOS = [
     "thumb": "thumbnails/bsIlygRbhfM.jpg",
     "published_at": "2020-12-19T05:38:28Z",
     "category": "Severino Christmas",
-    "year": 2020
+    "year": 2020,
+    "objects": ""
   },
   {
     "title": "New Years Eve 1996 Severinos",
@@ -978,7 +1096,8 @@ const VIDEOS = [
     "thumb": "thumbnails/W5Zfna6FmSY.jpg",
     "published_at": "2020-08-12T19:20:10Z",
     "category": "Severino Holidays",
-    "year": 1996
+    "year": 1996,
+    "objects": "consumer_electronics,machine,television,camera,recreation,illustrations,celebration,christmas_tree,tree,christmas_decoration,curtain,frame,raw_glass,door"
   },
   {
     "title": "March 1997 Kevin's 7Th Birthday",
@@ -987,7 +1106,8 @@ const VIDEOS = [
     "thumb": "thumbnails/iogdOkRLK2A.jpg",
     "published_at": "2020-08-12T19:18:50Z",
     "category": "Birthdays",
-    "year": 1997
+    "year": 1997,
+    "objects": "door,cabinet,suit,lamp,light,necktie,arch,outdoor,machine,consumer_electronics,television,container,crowd,teen,wood_natural,forest,vegetation,sky,blue_sky,shrub,land,grass,raw_glass,jacket,music,speakers_music,seat,hoodie,cardboard_box"
   },
   {
     "title": "October 1996 Severinos Pumpkin Picking",
@@ -996,7 +1116,8 @@ const VIDEOS = [
     "thumb": "thumbnails/0EKjEAeGJVU.jpg",
     "published_at": "2020-08-12T19:18:43Z",
     "category": "Severino Family",
-    "year": 1996
+    "year": 1996,
+    "objects": "outdoor,land,blue_sky,sky,jacket,grass,jeans,agriculture,farm,food,pumpkin,vegetable,sign,hill,fence,liquid,water,illustrations,document,screenshot,frozen,snow,water_body,lake"
   },
   {
     "title": "Norway 1995 Family Reunion",
@@ -1005,7 +1126,8 @@ const VIDEOS = [
     "thumb": "thumbnails/woEP_EWHilY.jpg",
     "published_at": "2020-08-12T19:13:35Z",
     "category": "Moberg Family",
-    "year": 1995
+    "year": 1995,
+    "objects": "crowd,suit,outdoor,curtain,liquid,water,tableware,utensil,plate,drinking_glass,land,hill,water_body,lake,sky,interior_room,restaurant,machine,cabinet,frame,seat,night_sky,consumer_electronics,computer,laptop,fire,flame,decorative_plant,container,bottle,bowl,vehicle,automobile,car,blue_sky,frozen,snow"
   },
   {
     "title": "Christmas Morning 1995 Fawcett House",
@@ -1014,7 +1136,8 @@ const VIDEOS = [
     "thumb": "thumbnails/c3RM_QDuzdk.jpg",
     "published_at": "2020-08-12T15:41:15Z",
     "category": "Christmas Morn Faw",
-    "year": 1995
+    "year": 1995,
+    "objects": "frame,curtain,seat,celebration,christmas_tree,tree,sofa,machine,vehicle,bicycle,christmas_decoration,baby,military_uniform,crowd,lamp,light"
   },
   {
     "title": "1996 Severinos At Mgm Studios",
@@ -1023,7 +1146,8 @@ const VIDEOS = [
     "thumb": "thumbnails/vLTdZC3-tUg.jpg",
     "published_at": "2020-08-12T19:11:25Z",
     "category": "Florida",
-    "year": 1996
+    "year": 1996,
+    "objects": "outdoor,machine,vehicle,land,fence,automobile,car,sky,blue_sky,grass,wheel,tire,palm_tree,tree,raw_glass,rim,shrub,road,street,light,lamppost,wood_natural,truck,cloudy,railroad,road_other,branch,cage,park,zoo,van,aircraft,airplane,monorail,stairs,roof,brick,domicile,house_single,track_rail,train,train_real,recreation,skating,skatepark,skateboarding,arch,path,sidewalk"
   },
   {
     "title": "August 1995 Nevinwood Pool",
@@ -1032,7 +1156,8 @@ const VIDEOS = [
     "thumb": "thumbnails/_OJHaV8QZJw.jpg",
     "published_at": "2020-08-12T19:09:29Z",
     "category": "Moberg Family",
-    "year": 1995
+    "year": 1995,
+    "objects": "liquid,pool,water,recreation,sport,fence,watersport,swimming,crowd,outdoor,sky,night_sky,decorative_plant,swimsuit,diving,ball,sports_equipment"
   },
   {
     "title": "Christmas Morning 2002",
@@ -1041,7 +1166,8 @@ const VIDEOS = [
     "thumb": "thumbnails/cjWrozZsRT4.jpg",
     "published_at": "2020-08-13T14:36:12Z",
     "category": "Christmas Morn Sev",
-    "year": 2002
+    "year": 2002,
+    "objects": "frame,sofa,pillow,tool,machine,consumer_electronics,interior_room,television,living_room,lamp,light,bed,teen,bedding,housewares,celebration,christmas_tree,tree,christmas_decoration,decorative_plant,sign,hospital,bouquet,flower_arrangement,door"
   },
   {
     "title": "October 1996 Anthony's Christening And Party",
@@ -1050,7 +1176,8 @@ const VIDEOS = [
     "thumb": "thumbnails/l_g5NZCOjwg.jpg",
     "published_at": "2020-08-12T19:06:55Z",
     "category": "Severino Family",
-    "year": 1996
+    "year": 1996,
+    "objects": "suit,crowd,door,balloon,interior_room,machine,clock,dial,timepiece,container,trash_can,restaurant,seat,arch,light,chandelier,bench,stained_glass,wood_natural,land,outdoor,path,sidewalk,automobile,vehicle,car,road,street,document,handwriting,chalkboard,cabinet,jeans,necktie,frame,baby"
   },
   {
     "title": "August 1996 Meath Block Party",
@@ -1059,7 +1186,8 @@ const VIDEOS = [
     "thumb": "thumbnails/Zdz1ftSO_uU.jpg",
     "published_at": "2020-08-12T19:06:11Z",
     "category": "Severino Family",
-    "year": 1996
+    "year": 1996,
+    "objects": "outdoor,machine,automobile,vehicle,land,car,grass,fence,shrub,road,street,sky,crowd,truck,path,brick,night_sky,wheel,tire,blue_sky,rocks,seat,teen,jeans,optical_equipment,eyeglasses,umbrella,utensil,interior_room,restaurant,sidewalk,celestial_body,moon,rim"
   },
   {
     "title": "Christmas 1991 Severino House",
@@ -1068,7 +1196,8 @@ const VIDEOS = [
     "thumb": "thumbnails/e0dNc2C5CkY.jpg",
     "published_at": "2020-08-12T13:50:50Z",
     "category": "Severino Christmas",
-    "year": 1991
+    "year": 1991,
+    "objects": "brick,cabinet,fireplace,fire,flame,suit,celebration,christmas_decoration,christmas_tree,tree"
   },
   {
     "title": "Christmas Morning 1994 Frog Pond",
@@ -1077,7 +1206,8 @@ const VIDEOS = [
     "thumb": "thumbnails/eB52p0tQkGI.jpg",
     "published_at": "2020-08-12T15:39:28Z",
     "category": "Christmas Morn Sev",
-    "year": 1994
+    "year": 1994,
+    "objects": "sofa,interior_room,living_room,pillow,tool,consumer_electronics,machine,television,curtain,celebration,christmas_tree,tree,christmas_decoration,gift,outdoor,sky,blue_sky,frame,door"
   },
   {
     "title": "March 1996 Kevin's 6Th Birthday Party",
@@ -1086,7 +1216,8 @@ const VIDEOS = [
     "thumb": "thumbnails/XCRqKsC9ztI.jpg",
     "published_at": "2020-08-12T18:58:02Z",
     "category": "Birthdays",
-    "year": 1996
+    "year": 1996,
+    "objects": "interior_room,classroom,cabinet,teen,fence,outdoor,land,park,playground,slide_toy,jacket,jeans,container,door,sign,balloon,consumer_electronics,machine,television,crate,stairs,luggage,purse,bouquet,flower_arrangement,crowd,painting,restaurant,chalkboard"
   },
   {
     "title": "1995 Steven's Concert",
@@ -1095,7 +1226,8 @@ const VIDEOS = [
     "thumb": "thumbnails/7SuP4QVjK-s.jpg",
     "published_at": "2020-08-12T18:56:44Z",
     "category": "Fawcett Family",
-    "year": 1995
+    "year": 1995,
+    "objects": "crowd,curtain,teen,sign,jacket,outdoor,sky,night_sky,suit"
   },
   {
     "title": "July 1995 Tuscarora",
@@ -1104,7 +1236,8 @@ const VIDEOS = [
     "thumb": "thumbnails/TVH1yd5U00U.jpg",
     "published_at": "2020-08-12T18:53:02Z",
     "category": "Moberg Family",
-    "year": 1995
+    "year": 1995,
+    "objects": "liquid,water,recreation,sport,outdoor,swimsuit,watersport,frozen,snow,swimming,water_body,lake,sky,land,hill,night_sky,wakeboarding,pool,balloon,sports_equipment,surfboard,underwater,winter_sport,snowboarding,cloudy"
   },
   {
     "title": "April 1996 Kevin's Baseball Parade",
@@ -1113,7 +1246,8 @@ const VIDEOS = [
     "thumb": "thumbnails/EyUTitlD414.jpg",
     "published_at": "2020-08-12T18:52:37Z",
     "category": "TDKK",
-    "year": 1996
+    "year": 1996,
+    "objects": "crowd,jacket,outdoor,land,road,street,recreation,parade,performance,sign,jeans,headgear,wood_natural,machine,vehicle,automobile,car,hat,baseball_hat,branch,container,luggage,backpack,teen,helmet,military_uniform,shrub"
   },
   {
     "title": "June 1995 Kevin's Nursery Graduation",
@@ -1122,7 +1256,8 @@ const VIDEOS = [
     "thumb": "thumbnails/c4HXYc_C0Sg.jpg",
     "published_at": "2020-08-12T18:51:24Z",
     "category": "TDKK",
-    "year": 1995
+    "year": 1995,
+    "objects": "crowd,flag,teen,frame,recreation,camera,arch,sign"
   },
   {
     "title": "Halloween 1995",
@@ -1131,7 +1266,8 @@ const VIDEOS = [
     "thumb": "thumbnails/3ZczwZLBv74.jpg",
     "published_at": "2020-08-12T18:48:38Z",
     "category": "Halloween",
-    "year": 1995
+    "year": 1995,
+    "objects": "door,jacket,tableware,utensil,plate,frame,foliage,sign,crowd,jeans,bowl,food,pizza,drinking_glass,decorative_plant,branch,outdoor,land,grass,sky,blue_sky,recreation,camera"
   },
   {
     "title": "1995 First Day Of School",
@@ -1140,7 +1276,8 @@ const VIDEOS = [
     "thumb": "thumbnails/0vesSz8ewdM.jpg",
     "published_at": "2020-08-12T18:47:55Z",
     "category": "First Day of School",
-    "year": 1995
+    "year": 1995,
+    "objects": "machine,outdoor,land,vehicle,automobile,grass,container,luggage,backpack,raw_glass,bus,car,road,street,teen,foliage,wheel,tire,rim,truck,path,purse,sign,crowd,sidewalk,fence,arch,seat,jacket"
   },
   {
     "title": "October 1998 Florida (Tommy &Tony Fam)",
@@ -1149,7 +1286,8 @@ const VIDEOS = [
     "thumb": "thumbnails/bVEa1dkdFfQ.jpg",
     "published_at": "2020-08-24T19:10:57Z",
     "category": "Florida",
-    "year": 1998
+    "year": 1998,
+    "objects": "outdoor,sky,blue_sky,teen,crowd,fence,machine,vehicle,stroller,land,seat,statue,wood_natural,building,castle,path,lamppost,light,interior_room,hospital,door,raw_glass,hat,headgear,sunhat,decorative_plant,foliage,animal,mammal,ungulates,zebra,grass"
   },
   {
     "title": "Spring 1991 Disney Character Breakfast Luke & Lindsay",
@@ -1158,7 +1296,18 @@ const VIDEOS = [
     "thumb": "thumbnails/eJt6fxexACk.jpg",
     "published_at": "2020-08-12T13:51:14Z",
     "category": "Florida",
-    "year": 1991
+    "year": 1991,
+    "objects": "crowd,interior_room,restaurant,fence,suit,curtain,seat,tableware,utensil,drinking_glass,frame,flag,door,plate,celebration,costume,recreation,camera,teen,polka_dots,optical_equipment,eyeglasses,consumer_electronics,machine,computer,laptop"
+  },
+  {
+    "title": "Spring 1991 Disney Character Breakfast Luke & Lindsay",
+    "video_id": "eJt6fxexACk",
+    "youtube_url": "https://www.youtube.com/watch?v=eJt6fxexACk",
+    "thumb": "thumbnails/eJt6fxexACk.jpg",
+    "published_at": "2020-08-12T13:51:14Z",
+    "category": "Florida",
+    "year": 1991,
+    "objects": "crowd,interior_room,restaurant,fence,suit,curtain,seat,tableware,utensil,drinking_glass,frame,flag,door,plate,celebration,costume,recreation,camera,teen,polka_dots,optical_equipment,eyeglasses,consumer_electronics,machine,computer,laptop"
   },
   {
     "title": "Spring 1991 Walt Disney World Luke & Lindsay",
@@ -1167,7 +1316,8 @@ const VIDEOS = [
     "thumb": "thumbnails/EKBSFsi29ag.jpg",
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Florida",
-    "year": 1991
+    "year": 1991,
+    "objects": "outdoor,sky,night_sky,fence,celebration,interior_room,arch,crowd,cloudy,blue_sky,jack_o_lantern,liquid,water,frozen,snow,raw_glass,costume,teen,tableware,utensil,plate,restaurant,statue,classroom"
   },
   {
     "title": "Christmas 1961",
@@ -1176,7 +1326,8 @@ const VIDEOS = [
     "thumb": "thumbnails/FfXR9UFEaoo.jpg",
     "published_at": "2020-12-23T15:22:48Z",
     "category": "60s Moberg Christmas",
-    "year": 1961
+    "year": 1961,
+    "objects": "curtain,outdoor,sky,night_sky,necktie,suit,drinking_glass,tableware,utensil,consumer_electronics,machine"
   },
   {
     "title": "March 1994 Kevin's 4Th Birthday",
@@ -1185,7 +1336,8 @@ const VIDEOS = [
     "thumb": "thumbnails/LNW3AFslv-4.jpg",
     "published_at": "2020-08-12T15:42:59Z",
     "category": "Birthdays",
-    "year": 1994
+    "year": 1994,
+    "objects": "crowd,balloon,raw_glass,food,baked_goods,cake,dessert,birthday_cake,utensil,tableware,plate,cup,candle,light,door,sofa"
   },
   {
     "title": "1993 Raking Leaves Frog Pond",
@@ -1194,7 +1346,8 @@ const VIDEOS = [
     "thumb": "thumbnails/a2LRrU5qKBA.jpg",
     "published_at": "2020-08-12T15:42:02Z",
     "category": "TDKK",
-    "year": 1993
+    "year": 1993,
+    "objects": "land,outdoor,grass,shrub,path,foliage,jacket,jeans,machine,automobile,vehicle,car,fence,branch,baby,road,door,headgear,hat,baseball_hat,wood_natural,sky,blue_sky,roof,domicile,house_single,animal,bird,poultry,street,sidewalk,decorative_plant,crowd,teen,hoodie,stairs,footwear,shoes,sneaker,wheel,tire"
   },
   {
     "title": "Christmas 1996 Severino House",
@@ -1203,7 +1356,8 @@ const VIDEOS = [
     "thumb": "thumbnails/GdbGKLJPF78.jpg",
     "published_at": "2020-08-12T19:05:10Z",
     "category": "Severino Christmas",
-    "year": 1996
+    "year": 1996,
+    "objects": "celebration,christmas_tree,tree,christmas_decoration,brick,lamp,light,gift,baby,frame,suit,necktie,cabinet,sofa,fireplace"
   },
   {
     "title": "Christmas 1960",
@@ -1212,7 +1366,8 @@ const VIDEOS = [
     "thumb": "thumbnails/GlrIWgfvASA.jpg",
     "published_at": "2020-12-23T04:15:19Z",
     "category": "60s Moberg Christmas",
-    "year": 1960
+    "year": 1960,
+    "objects": "curtain,outdoor,sky,night_sky,necktie,suit,drinking_glass,tableware,utensil,consumer_electronics,machine"
   },
   {
     "title": "Christmas 1989 Fawcett House",
@@ -1221,7 +1376,8 @@ const VIDEOS = [
     "thumb": "thumbnails/Gztgos96qrM.jpg",
     "published_at": "2020-08-12T13:43:27Z",
     "category": "Moberg Christmas",
-    "year": 1989
+    "year": 1989,
+    "objects": "crowd,frame,utensil,tableware,plate,interior_room,sofa,restaurant,chair,armchair,suit,door,nightclub,celebration,christmas_decoration,christmas_tree,tree"
   },
   {
     "title": "Christmas Eve 1995 Moberg House Fawcett Cam",
@@ -1230,7 +1386,8 @@ const VIDEOS = [
     "thumb": "thumbnails/hd9aTiKSpVA.jpg",
     "published_at": "2020-08-12T15:47:04Z",
     "category": "Moberg Christmas",
-    "year": 1995
+    "year": 1995,
+    "objects": "sofa,crowd,suit,pillow,tool,lamp,light,interior_room,chair,armchair,living_room,celebration,christmas_tree,tree,christmas_decoration,frame,decorative_plant,curtain,door,restaurant"
   },
   {
     "title": "March 1995 Disney Sea World Cypress Harbour",
@@ -1239,7 +1396,8 @@ const VIDEOS = [
     "thumb": "thumbnails/gsT5q7kQmj4.jpg",
     "published_at": "2020-08-12T16:02:47Z",
     "category": "Florida",
-    "year": 1995
+    "year": 1995,
+    "objects": "fence,outdoor,statue,crowd,sky,blue_sky,teen,land,container,luggage,backpack,celebration,shrub,illustrations,costume,brick,safety_vest,liquid,water,pool,recreation,sport,swimming,watersport,swimsuit,cloudy,animal,mammal,cetacean,dolphin,path,grass,roof,machine,vehicle,automobile,convertible,car,jeans,road,street,ceremony,wedding,groom,bride,suit,wedding_dress,door,painting"
   },
   {
     "title": "Moberg Christmas Special",
@@ -1248,7 +1406,8 @@ const VIDEOS = [
     "thumb": "thumbnails/IBdP1lqLsyM.jpg",
     "published_at": "2020-12-19T02:18:54Z",
     "category": "Moberg Christmas",
-    "year": 2020
+    "year": 2020,
+    "objects": "crowd,teen,celebration,costume,suit,jacket,door,sign,frame,cord"
   },
   {
     "title": "Christmas Program",
@@ -1257,7 +1416,8 @@ const VIDEOS = [
     "thumb": "thumbnails/ibL6xsViW3g.jpg",
     "published_at": "2020-08-12T15:38:53Z",
     "category": "Christmas Program",
-    "year": 1993
+    "year": 1993,
+    "objects": "crowd,suit,celebration,costume,teen,interior_room,nightclub,necktie,headgear,optical_equipment,eyeglasses"
   },
   {
     "title": "March 1994 Kristen And Kevin At Frog Pond",
@@ -1266,7 +1426,8 @@ const VIDEOS = [
     "thumb": "thumbnails/g0GvhtRhH1o.jpg",
     "published_at": "2020-08-12T15:34:16Z",
     "category": "TDKK",
-    "year": 1994
+    "year": 1994,
+    "objects": "crib,baby,bedding,housewares,pillow,tool,bed,interior_room,bedroom,fence,arch"
   },
   {
     "title": "June 1993 Luke's 10Th Birthday",
@@ -1275,7 +1436,8 @@ const VIDEOS = [
     "thumb": "thumbnails/GQhpVkmaDWU.jpg",
     "published_at": "2020-08-12T15:32:59Z",
     "category": "Birthdays",
-    "year": 1993
+    "year": 1993,
+    "objects": "outdoor,grass,land,teen,fence,recreation,sport,watersport,swimming,liquid,water,crowd,utensil,foliage,tableware,plate,pool,frozen,snow,swimsuit,park,playground,swing_playground,baby,chair,folding_chair,night_sky,sky,umbrella,shrub,food,baked_goods,cake,dessert,birthday_cake,container,bottle,cup,door"
   },
   {
     "title": "May 1993 Tony's 50Th Birthday",
@@ -1284,7 +1446,8 @@ const VIDEOS = [
     "thumb": "thumbnails/mIp5i81mars.jpg",
     "published_at": "2020-08-12T15:28:33Z",
     "category": "Birthdays",
-    "year": 1993
+    "year": 1993,
+    "objects": "outdoor,land,grass,fence,hammock,wood_natural,shrub,foliage,machine,vehicle,bicycle,brick,door,umbrella,utensil,polka_dots,stairs,chair,folding_chair,animal,reptile,alligator_crocodile,balloon,seat,crowd"
   },
   {
     "title": "1993 Leanne Thanksgiving At School",
@@ -1293,7 +1456,8 @@ const VIDEOS = [
     "thumb": "thumbnails/3TaUHqCvuHI.jpg",
     "published_at": "2020-08-12T15:24:04Z",
     "category": "Fawcett Family",
-    "year": 1993
+    "year": 1993,
+    "objects": "crowd,cabinet,interior_room,classroom,hospital,tableware,utensil,bowl,suit"
   },
   {
     "title": "1993 Kristen At Home",
@@ -1302,7 +1466,8 @@ const VIDEOS = [
     "thumb": "thumbnails/EQXIkqKUizs.jpg",
     "published_at": "2020-08-12T15:19:16Z",
     "category": "TDKK",
-    "year": 1993
+    "year": 1993,
+    "objects": "interior_room,bathroom,bath,baby,cabinet,curtain,painting,illustrations,bathroom_faucet,kitchen,kitchen_countertop,machine,appliance,stove,oven,microwave,kitchen_sink,kitchen_oven,lamp,light,door,crib,fence"
   },
   {
     "title": "Easter 1993 Severino House",
@@ -1311,7 +1476,8 @@ const VIDEOS = [
     "thumb": "thumbnails/D1HZ5h9mhV4.jpg",
     "published_at": "2020-08-12T15:13:55Z",
     "category": "Severino Holidays",
-    "year": 1993
+    "year": 1993,
+    "objects": "suit,cabinet,sofa,container,baby,trash_can,door,curtain,outdoor,sky,night_sky,bottle,frame"
   },
   {
     "title": "May 1993 Dawn's 30Th Birthday",
@@ -1320,7 +1486,8 @@ const VIDEOS = [
     "thumb": "thumbnails/kCuAr5uDB2U.jpg",
     "published_at": "2020-08-12T15:13:49Z",
     "category": "Birthdays",
-    "year": 1993
+    "year": 1993,
+    "objects": "balloon,door,frame,curtain,crowd,arch,suit"
   },
   {
     "title": "July 4Th 1993 Severinos At The Park",
@@ -1329,7 +1496,8 @@ const VIDEOS = [
     "thumb": "thumbnails/kdrhopWQzV8.jpg",
     "published_at": "2020-08-12T15:12:39Z",
     "category": "Severino Family",
-    "year": 1993
+    "year": 1993,
+    "objects": "outdoor,land,grass,wood_natural,machine,vehicle,liquid,water,water_body,lake,baby,utensil,tableware,cup,boat,watercraft,fence,canoe,rowboat,oar,pole,plate,interior_room,restaurant,bench,path,sidewalk,road,foliage,sky,blue_sky,forest,vegetation,chair,folding_chair,jeans,speedboat,recreation,lifejacket,sport,sports_equipment,bowl,crowd,teen,street,road_other,stroller,automobile,car,parking_lot"
   },
   {
     "title": "November 1993 Steven And Kevin Heckscher Park",
@@ -1338,7 +1506,8 @@ const VIDEOS = [
     "thumb": "thumbnails/tHzaI-efofk.jpg",
     "published_at": "2020-08-12T15:11:30Z",
     "category": "Moberg Family",
-    "year": 1993
+    "year": 1993,
+    "objects": "fence,outdoor,headgear,land,crowd,helmet,wood_natural,jacket,park,playground,slide_toy,rocks,animal,recreation,lifejacket,sport,sports_equipment,grass,safety_vest,bird,penguin,path,liquid,water,water_body,lake,raw_glass,sky,blue_sky,bench,hat,beanie,mammal,ungulates,horse,jeans"
   },
   {
     "title": "1993 Kristen And Kevin Spinning",
@@ -1347,7 +1516,8 @@ const VIDEOS = [
     "thumb": "thumbnails/G_i8T6pCdWc.jpg",
     "published_at": "2020-08-12T15:10:54Z",
     "category": "TDKK",
-    "year": 1993
+    "year": 1993,
+    "objects": "cabinet,fence,door,jeans,frame,celebration,christmas_tree,tree,christmas_decoration"
   },
   {
     "title": "1993 Church Program",
@@ -1356,7 +1526,8 @@ const VIDEOS = [
     "thumb": "thumbnails/Y7VITzksud4.jpg",
     "published_at": "2020-08-12T15:10:40Z",
     "category": "Christmas Program",
-    "year": 1993
+    "year": 1993,
+    "objects": "crowd,teen,celebration,costume,suit,jacket,door,sign,frame,cord"
   },
   {
     "title": "1993 Kristen And Kevin Throwing Toys",
@@ -1365,7 +1536,8 @@ const VIDEOS = [
     "thumb": "thumbnails/PMzszXMPcA4.jpg",
     "published_at": "2020-08-12T15:10:17Z",
     "category": "TDKK",
-    "year": 1993
+    "year": 1993,
+    "objects": "crib,bedding,housewares,interior_room,door,bedroom,bed,baby,outdoor,night_sky,sky,toy,stuffed_animals,bathroom,bath,cabinet"
   },
   {
     "title": "1993 Kristen And Kevin At Home",
@@ -1374,7 +1546,8 @@ const VIDEOS = [
     "thumb": "thumbnails/LTCjuwchFDE.jpg",
     "published_at": "2020-08-12T15:09:55Z",
     "category": "TDKK",
-    "year": 1993
+    "year": 1993,
+    "objects": "jacket,door,sofa,scarf,baby,frame"
   },
   {
     "title": "Halloween 1993 Severino House",
@@ -1383,7 +1556,8 @@ const VIDEOS = [
     "thumb": "thumbnails/z2fdkoirddk.jpg",
     "published_at": "2020-08-12T15:09:10Z",
     "category": "Halloween",
-    "year": 1993
+    "year": 1993,
+    "objects": "brick,baby,sofa,jacket,cabinet,door,pillow,tool,outdoor,jeans,tableware,utensil,plate,container,luggage,backpack,jewelry,celebration,costume,frame,footwear,shoes,sneaker"
   },
   {
     "title": "December 1989 Christmas Party",
@@ -1392,7 +1566,8 @@ const VIDEOS = [
     "thumb": "thumbnails/IC9d-d-YJws.jpg",
     "published_at": "2020-08-12T13:43:50Z",
     "category": "Moberg Christmas",
-    "year": 1989
+    "year": 1989,
+    "objects": "suit,interior_room,outdoor,sky,night_sky,frame,necktie,illustrations,baby,crowd,nightclub,celestial_body,moon,hat,headgear,fedora,music,speakers_music,cabinet,machine,appliance,stove,kitchen,refrigerator"
   },
   {
     "title": "Christmas Eve 2001 Grandpa Reading The Christmasstory",
@@ -1401,7 +1576,8 @@ const VIDEOS = [
     "thumb": "thumbnails/IIAD8c1m5FM.jpg",
     "published_at": "2020-08-13T01:08:13Z",
     "category": "Moberg Christmas",
-    "year": 2001
+    "year": 2001,
+    "objects": "frame,suit,necktie,eyeglasses,optical_equipment,teen,sofa,painting,celebration,christmas_decoration,christmas_tree,tree"
   },
   {
     "title": "April 1992 Tony's Birthday",
@@ -1410,7 +1586,8 @@ const VIDEOS = [
     "thumb": "thumbnails/TQ3GmW0CcTs.jpg",
     "published_at": "2020-08-12T14:51:34Z",
     "category": "Birthdays",
-    "year": 1992
+    "year": 1992,
+    "objects": "cabinet,sofa,outdoor,night_sky,sky,document,screenshot,bedding,housewares,balloon,consumer_electronics,machine,television,seat"
   },
   {
     "title": "Christmas Eve 1998 Woodview Drive",
@@ -1419,7 +1596,8 @@ const VIDEOS = [
     "thumb": "thumbnails/J_JbO5hM_GE.jpg",
     "published_at": "2020-08-12T19:29:27Z",
     "category": "Moberg Christmas",
-    "year": 1998
+    "year": 1998,
+    "objects": "celebration,christmas_tree,tree,christmas_decoration,curtain,interior_room,restaurant,dining_room,tableware,utensil,plate,stairs,machine,consumer_electronics,television,suit,sofa,light,chandelier,frame,painting,crowd,necktie"
   },
   {
     "title": "January 1992 Tommy And Alex Reading",
@@ -1428,7 +1606,8 @@ const VIDEOS = [
     "thumb": "thumbnails/J6MoWkpl0hk.jpg",
     "published_at": "2020-08-12T14:49:22Z",
     "category": "Severino Family",
-    "year": 1992
+    "year": 1992,
+    "objects": "pillow,tool,sofa,baby,bedding,housewares,document,book"
   },
   {
     "title": "March 1992 Snow Day At The Severinos",
@@ -1437,7 +1616,8 @@ const VIDEOS = [
     "thumb": "thumbnails/-pcQ9l-ZqSg.jpg",
     "published_at": "2020-08-12T14:47:34Z",
     "category": "Severino Family",
-    "year": 1992
+    "year": 1992,
+    "objects": "frozen,liquid,snow,water,branch,outdoor,blizzard,sky,storm,fence,automobile,machine,vehicle,car,raw_glass,wood_natural,cabinet"
   },
   {
     "title": "October 1992 Kristen's Christening Gifts",
@@ -1446,7 +1626,8 @@ const VIDEOS = [
     "thumb": "thumbnails/aoKogdDV44w.jpg",
     "published_at": "2020-08-12T14:47:13Z",
     "category": "TDKK",
-    "year": 1992
+    "year": 1992,
+    "objects": "tableware,utensil,baby,frame,cup,suit,plate,container,bottle,fence,crowd,necktie,teen"
   },
   {
     "title": "March 1992 The Pants Incident",
@@ -1455,7 +1636,8 @@ const VIDEOS = [
     "thumb": "thumbnails/4-qVtHlsMs4.jpg",
     "published_at": "2020-08-12T14:46:42Z",
     "category": "TDKK",
-    "year": 1992
+    "year": 1992,
+    "objects": "fence,decorative_plant,container,luggage,frame,painting,backpack,scarf,purse,foliage,door,music,musical_instrument,string_instrument,guitar,jeans,footwear,shoes,sneaker"
   },
   {
     "title": "March 1992 Ted's 30Th Birthday",
@@ -1464,7 +1646,8 @@ const VIDEOS = [
     "thumb": "thumbnails/yVuD_QyZok4.jpg",
     "published_at": "2020-08-12T14:41:12Z",
     "category": "Birthdays",
-    "year": 1992
+    "year": 1992,
+    "objects": "suit,balloon,cabinet,door,frame,crowd,consumer_electronics,machine,computer,laptop,podium,jeans,teen,painting,decorative_plant"
   },
   {
     "title": "January 1992 Lindsay's 7Th Birthday",
@@ -1473,7 +1656,8 @@ const VIDEOS = [
     "thumb": "thumbnails/dgVndiprLt4.jpg",
     "published_at": "2020-08-12T14:38:21Z",
     "category": "Birthdays",
-    "year": 1992
+    "year": 1992,
+    "objects": "sofa,crowd,brick,decorative_plant,frame,chair,armchair,interior_room,tableware,utensil,plate,door,cup,restaurant,painting,suit,container,bowl,drinking_glass,living_room,pillow,tool,teen,carton,bottle,dining_room,fence,necktie,jewelry,lamp,light,raw_glass,seat"
   },
   {
     "title": "March 1992 March Birthdays At Frog Pond",
@@ -1482,7 +1666,8 @@ const VIDEOS = [
     "thumb": "thumbnails/rLjcb8cAs3k.jpg",
     "published_at": "2020-08-12T14:36:12Z",
     "category": "Birthdays",
-    "year": 1992
+    "year": 1992,
+    "objects": "sofa,frame,balloon,utensil,suit,tableware,cabinet,pillow,tool,machine,crowd,door,plate,appliance,stove,interior_room,kitchen,kitchen_countertop,cookware,pot_cooking,oven,consumer_electronics,television,chair,armchair,jeans,cup"
   },
   {
     "title": "Thanksgiving 1992 Mobergs",
@@ -1491,7 +1676,8 @@ const VIDEOS = [
     "thumb": "thumbnails/CZRYoUgK8IM.jpg",
     "published_at": "2020-08-12T14:34:20Z",
     "category": "Moberg Holidays",
-    "year": 1992
+    "year": 1992,
+    "objects": "cabinet,interior_room,baby,frame,utensil,tableware,bowl,kitchen,kitchen_countertop,curtain,document,book,machine,consumer_electronics,television,painting,bedding,housewares,teen,bookshelf,appliance,oven,microwave,lamp,light,sofa,living_room,pillow,tool,decorative_plant,chair,armchair,jeans"
   },
   {
     "title": "April 1992 Tommy's 29Th Birthday",
@@ -1500,7 +1686,8 @@ const VIDEOS = [
     "thumb": "thumbnails/8i3VZAJBfkE.jpg",
     "published_at": "2020-08-12T14:32:36Z",
     "category": "Birthdays",
-    "year": 1992
+    "year": 1992,
+    "objects": "utensil,tableware,cup,curtain,frame,cabinet,suit,night_sky,outdoor,sky,balloon,bookshelf,light,lamp,door,jacket,music,musical_instrument,drum,headgear,helmet,fence,animal,mammal,cat,feline,adult_cat,container,bottle,bouquet,flower_arrangement"
   },
   {
     "title": "Memorial Day 1992 Frog Pond",
@@ -1509,7 +1696,8 @@ const VIDEOS = [
     "thumb": "thumbnails/AmlqDas2tIQ.jpg",
     "published_at": "2020-08-12T14:31:57Z",
     "category": "Severino Holidays",
-    "year": 1992
+    "year": 1992,
+    "objects": "outdoor,land,grass,foliage,fence,wood_natural,recreation,sport,ball,sports_equipment,machine,wheel,tire,park,playground,swing_playground,jeans,jacket,document,decorative_plant,chair,folding_chair,seat,container,luggage,backpack,hoodie,tool,pillow,handwriting,currency,money,cabinet,door,screenshot"
   },
   {
     "title": "Mother's Day 1992 Severino House",
@@ -1518,7 +1706,8 @@ const VIDEOS = [
     "thumb": "thumbnails/MNQ7ijCdidg.jpg",
     "published_at": "2020-08-12T14:31:12Z",
     "category": "Severino Holidays",
-    "year": 1992
+    "year": 1992,
+    "objects": "container,bottle,door,stairs,light,cabinet,polka_dots,curtain,brick,frame,jeans,sign,footwear,shoes,sneaker,lamp,chandelier,outdoor,sky,night_sky,consumer_electronics,machine,television,sofa,interior_room,kitchen,kitchen_countertop,kimono"
   },
   {
     "title": "October 1992 Kristen's Christening And Party",
@@ -1527,7 +1716,8 @@ const VIDEOS = [
     "thumb": "thumbnails/sbyrGg2hREc.jpg",
     "published_at": "2020-08-12T14:29:42Z",
     "category": "TDKK",
-    "year": 1992
+    "year": 1992,
+    "objects": "suit,baby,necktie,frame,interior_room,utensil,tableware,podium,painting,crowd,fence,cabinet,kitchen,kitchen_countertop,cup,machine,appliance,oven,microwave,plate,restaurant,bedding,housewares,music,speakers_music,stairs"
   },
   {
     "title": "October 1992 Leanne's 4Th Birthday",
@@ -1536,7 +1726,8 @@ const VIDEOS = [
     "thumb": "thumbnails/NliRaczv2R8.jpg",
     "published_at": "2020-08-12T14:28:14Z",
     "category": "Birthdays",
-    "year": 1992
+    "year": 1992,
+    "objects": "ball,recreation,sport,sports_equipment,fence,stairs,seat,escalator,outdoor,interior_room,interior_shop,sofa,pillow,tool,land,park,playground,slide_toy,crowd,tableware,utensil,cup"
   },
   {
     "title": "August 1992 Kristen Born And First Days Home",
@@ -1545,7 +1736,8 @@ const VIDEOS = [
     "thumb": "thumbnails/L5IyBeIHTTg.jpg",
     "published_at": "2020-08-12T14:26:08Z",
     "category": "TDKK",
-    "year": 1992
+    "year": 1992,
+    "objects": "baby,bedding,housewares,hospital,interior_room,cabinet,bouquet,flower_arrangement,decorative_plant,bed,tool,pillow,machine,container,vase,vehicle,automobile,car,door,consumer_electronics,computer,computer_monitor,raw_glass,stairs,teen,wheel,rim,tire,van,foliage,illustrations,document,handwriting,sofa"
   },
   {
     "title": "March 1992 Kevin & Cousin's Open Gifts",
@@ -1554,7 +1746,8 @@ const VIDEOS = [
     "thumb": "thumbnails/GqOgyGfs_A0.jpg",
     "published_at": "2020-08-12T14:23:11Z",
     "category": "Birthdays",
-    "year": 1992
+    "year": 1992,
+    "objects": "sofa,crowd,seat,optical_equipment,foliage,sunglasses,eyeglasses,pillow,tool,teen"
   },
   {
     "title": "January 1992 Grandma Severino's 75Th",
@@ -1563,7 +1756,8 @@ const VIDEOS = [
     "thumb": "thumbnails/n16pMGVP1dA.jpg",
     "published_at": "2020-08-12T14:18:42Z",
     "category": "Birthdays",
-    "year": 1992
+    "year": 1992,
+    "objects": "brick,curtain,balloon,jacket,crowd,tableware,utensil,cup,raw_glass,door,candle,light,fire,flame,food,polka_dots,optical_equipment,eyeglasses,recreation,sport,ball,sports_equipment"
   },
   {
     "title": "October 1991 Pumpkin Picking",
@@ -1572,7 +1766,8 @@ const VIDEOS = [
     "thumb": "thumbnails/85Qt4SP__nM.jpg",
     "published_at": "2020-08-12T13:51:18Z",
     "category": "Severino Family",
-    "year": 1991
+    "year": 1991,
+    "objects": "outdoor,machine,vehicle,automobile,land,car,sky,blue_sky,jeans,baby,jacket,cabinet,grass,limousine,cloudy,frame,appliance,stove,oven,interior_room,kitchen,kitchen_countertop,kitchen_oven,fence,suit,van,seat,road,street,path,sidewalk,road_other,truck,recreation,sport,ball,sports_equipment,food,pumpkin,vegetable,hill"
   },
   {
     "title": "Fall 1991 Nesheim, Norway",
@@ -1581,7 +1776,8 @@ const VIDEOS = [
     "thumb": "thumbnails/pOWJi6rBsq0.jpg",
     "published_at": "2020-08-12T13:51:18Z",
     "category": "Moberg Family",
-    "year": 1991
+    "year": 1991,
+    "objects": "light,frame,sofa,lamp,outdoor,land,grass,interior_room,cabinet,restaurant,living_room,suit,decorative_plant,roof,rocks,domicile,house_single,fence,shrub,brick,sky,cloudy,hill,liquid,water,water_body,lake,raw_glass,candle,pillow,tool,bouquet,flower_arrangement,container,vase,painting,machine,consumer_electronics,television,curtain,eyeglasses,optical_equipment"
   },
   {
     "title": "March 1995 Cypress Harbour",
@@ -1590,7 +1786,8 @@ const VIDEOS = [
     "thumb": "thumbnails/HtSybPMbSJs.jpg",
     "published_at": "2020-08-12T15:37:11Z",
     "category": "Florida",
-    "year": 1995
+    "year": 1995,
+    "objects": "liquid,water,recreation,sport,watersport,swimming,fence,pool,outdoor,water_body,lake,sky,swimsuit,cloudy,blue_sky,land,chair,folding_chair,machine,vehicle,boat,watercraft,grass,palm_tree,tree,crowd,lamppost,light,speedboat,dock,rocks,building,gazebo,kayak,shrub,statue,daytime,sunbathing,stairs,path"
   },
   {
     "title": "Easter 1992 Severinos",
@@ -1599,7 +1796,8 @@ const VIDEOS = [
     "thumb": "thumbnails/3hDdr1MYGvw.jpg",
     "published_at": "2020-08-12T13:51:14Z",
     "category": "Severino Holidays",
-    "year": 1992
+    "year": 1992,
+    "objects": "brick,suit,frame,jacket,sign,rocks,crowd,stairs,polka_dots,seat,sofa,eyeglasses,optical_equipment,door,container,luggage,backpack,bedding,housewares"
   },
   {
     "title": "Spring 1991 Walt Disney World Severinos",
@@ -1608,7 +1806,8 @@ const VIDEOS = [
     "thumb": "thumbnails/hunx2GNkTJk.jpg",
     "published_at": "2020-08-12T13:51:17Z",
     "category": "Florida",
-    "year": 1991
+    "year": 1991,
+    "objects": "outdoor,sky,blue_sky,crowd,cloudy,land,bedding,housewares,machine,vehicle,stroller,baby,interior_room,foliage,palm_tree,tree,flag,amusement_park,park,rollercoaster,container,luggage,backpack,stairs,jacket,umbrella,utensil,hospital,bed,bathroom,bath,teen,door,road,street,decorative_plant,headgear,hat,beanie,seat,pillow,tool,sofa"
   },
   {
     "title": "August 1992 Severinos At The Park",
@@ -1617,7 +1816,8 @@ const VIDEOS = [
     "thumb": "thumbnails/l5vkPJCyELk.jpg",
     "published_at": "2020-08-12T13:51:14Z",
     "category": "Severino Family",
-    "year": 1992
+    "year": 1992,
+    "objects": "outdoor,land,grass,wood_natural,machine,vehicle,automobile,foliage,fence,teen,car,crowd,truck,liquid,water,water_body,path,lake,park,playground,swing_playground,ocean,blue_sky,sky,shore,recreation,workout,wheel,tire,van,suv"
   },
   {
     "title": "Christmas 1992 Severinos",
@@ -1626,7 +1826,8 @@ const VIDEOS = [
     "thumb": "thumbnails/jbew8UNB1yI.jpg",
     "published_at": "2020-08-12T13:51:05Z",
     "category": "Severino Christmas",
-    "year": 1992
+    "year": 1992,
+    "objects": "brick,celebration,christmas_tree,tree,christmas_decoration,sofa,suit,cabinet,gift,interior_room,necktie,polka_dots,door,living_room,consumer_electronics,machine,television,pillow,tool,fireplace,chair,armchair,interior_shop"
   },
   {
     "title": "Christmas -1960s Part 2",
@@ -1635,7 +1836,18 @@ const VIDEOS = [
     "thumb": "thumbnails/jCt9T_ffQCI.jpg",
     "published_at": "2020-08-26T04:15:35Z",
     "category": "1960s Sev",
-    "year": 2020
+    "year": 2020,
+    "objects": "curtain,outdoor,sky,night_sky,necktie,suit,drinking_glass,tableware,utensil,consumer_electronics,machine"
+  },
+  {
+    "title": "Spring 1991 Walt Disney World Severinos",
+    "video_id": "hunx2GNkTJk",
+    "youtube_url": "https://www.youtube.com/watch?v=hunx2GNkTJk",
+    "thumb": "thumbnails/hunx2GNkTJk.jpg",
+    "published_at": "2020-08-12T13:51:17Z",
+    "category": "Florida",
+    "year": 1991,
+    "objects": "outdoor,sky,blue_sky,crowd,cloudy,land,bedding,housewares,machine,vehicle,stroller,baby,interior_room,foliage,palm_tree,tree,flag,amusement_park,park,rollercoaster,container,luggage,backpack,stairs,jacket,umbrella,utensil,hospital,bed,bathroom,bath,teen,door,road,street,decorative_plant,headgear,hat,beanie,seat,pillow,tool,sofa"
   },
   {
     "title": "Christmas Eve 1990 Moberg House",
@@ -1644,7 +1856,8 @@ const VIDEOS = [
     "thumb": "thumbnails/jpGfOD0JsN4.jpg",
     "published_at": "2020-08-12T13:43:39Z",
     "category": "Moberg Christmas",
-    "year": 1990
+    "year": 1990,
+    "objects": "celebration,christmas_tree,tree,sofa,christmas_decoration,crowd,cabinet,door,suit,interior_room,living_room,gift,pillow,tool,teen,lamp,light,brick,optical_equipment,eyeglasses"
   },
   {
     "title": "Spring 1990 Memorial Day Bbq",
@@ -1653,7 +1866,8 @@ const VIDEOS = [
     "thumb": "thumbnails/PW8gZ43WdYw.jpg",
     "published_at": "2020-08-12T13:51:09Z",
     "category": "Severino Holidays",
-    "year": 1990
+    "year": 1990,
+    "objects": "outdoor,grass,land,foliage,wood_natural,machine,vehicle,automobile,car,shrub,branch,chair,folding_chair,domicile,house_single,roof,sky,blue_sky,suit,consumer_electronics,television,bench,container,luggage,backpack,umbrella,utensil,crowd,music,musical_instrument,string_instrument,guitar,fence"
   },
   {
     "title": "Easter 1991 Severinos",
@@ -1662,7 +1876,18 @@ const VIDEOS = [
     "thumb": "thumbnails/RN1dC6YhRJM.jpg",
     "published_at": "2020-08-12T13:51:09Z",
     "category": "Severino Holidays",
-    "year": 1991
+    "year": 1991,
+    "objects": "light,lamp,cabinet,brick,curtain,interior_room,restaurant,frame,utensil,tableware,bookshelf,chandelier,sign,container,basket_container,bowl,cup"
+  },
+  {
+    "title": "Fall 1991 Nesheim, Norway",
+    "video_id": "pOWJi6rBsq0",
+    "youtube_url": "https://www.youtube.com/watch?v=pOWJi6rBsq0",
+    "thumb": "thumbnails/pOWJi6rBsq0.jpg",
+    "published_at": "2020-08-12T13:51:18Z",
+    "category": "Moberg Family",
+    "year": 1991,
+    "objects": "light,frame,sofa,lamp,outdoor,land,grass,interior_room,cabinet,restaurant,living_room,suit,decorative_plant,roof,rocks,domicile,house_single,fence,shrub,brick,sky,cloudy,hill,liquid,water,water_body,lake,raw_glass,candle,pillow,tool,bouquet,flower_arrangement,container,vase,painting,machine,consumer_electronics,television,curtain,eyeglasses,optical_equipment"
   },
   {
     "title": "April 1999 Cypress Harbour",
@@ -1671,7 +1896,8 @@ const VIDEOS = [
     "thumb": "thumbnails/LyaHk58pNR4.jpg",
     "published_at": "2020-08-12T19:30:01Z",
     "category": "Florida",
-    "year": 1999
+    "year": 1999,
+    "objects": "recreation,sport,swimming,watersport,liquid,water,pool,swimsuit,fence,chair,folding_chair,crowd,outdoor,daytime,sunbathing,bleachers,teen,sports_equipment,lifejacket,water_body,lake"
   },
   {
     "title": "March 1995 Disney Character Breakfast Fawcetts",
@@ -1680,7 +1906,8 @@ const VIDEOS = [
     "thumb": "thumbnails/NRVepzlJ4ec.jpg",
     "published_at": "2020-08-12T16:06:28Z",
     "category": "Florida",
-    "year": 1995
+    "year": 1995,
+    "objects": "interior_room,restaurant,utensil,tableware,crowd,drinking_glass,seat,frame,plate,cup,bowl,optical_equipment,eyeglasses,raw_glass,suit"
   },
   {
     "title": "Christmas Morning 1991 Fawcett House",
@@ -1689,7 +1916,8 @@ const VIDEOS = [
     "thumb": "thumbnails/jX1rJA9CRX0.jpg",
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Moberg Christmas",
-    "year": 1991
+    "year": 1991,
+    "objects": "sofa,door,celebration,christmas_tree,tree,raw_glass,outdoor,sky,blue_sky,bedding,housewares,bed,pillow,tool,interior_room,bedroom,recreation,performance,entertainer,singer,christmas_decoration,brick"
   },
   {
     "title": "March 1995 Fawcetts At Cypress",
@@ -1698,7 +1926,8 @@ const VIDEOS = [
     "thumb": "thumbnails/tGfZGyYGLHw.jpg",
     "published_at": "2020-08-12T16:06:06Z",
     "category": "Florida",
-    "year": 1995
+    "year": 1995,
+    "objects": "liquid,water,outdoor,water_body,lake,sky,blue_sky,frozen,snow,recreation,sport,pool,palm_tree,tree,fence,watersport,swimming,cloudy,roof,land,grass,sports_equipment,surfboard,machine,vehicle,sled,crowd,rocks"
   },
   {
     "title": "Christmas 1990 Severino House",
@@ -1707,7 +1936,28 @@ const VIDEOS = [
     "thumb": "thumbnails/kP0_Cq90NGk.jpg",
     "published_at": "2020-08-12T13:43:50Z",
     "category": "Severino Christmas",
-    "year": 1990
+    "year": 1990,
+    "objects": "tableware,utensil,plate,door,frame,jacket,tool,pillow,sofa"
+  },
+  {
+    "title": "Spring 1990 Memorial Day Bbq",
+    "video_id": "PW8gZ43WdYw",
+    "youtube_url": "https://www.youtube.com/watch?v=PW8gZ43WdYw",
+    "thumb": "thumbnails/PW8gZ43WdYw.jpg",
+    "published_at": "2020-08-12T13:51:09Z",
+    "category": "Severino Holidays",
+    "year": 1990,
+    "objects": "outdoor,grass,land,foliage,wood_natural,machine,vehicle,automobile,car,shrub,branch,chair,folding_chair,domicile,house_single,roof,sky,blue_sky,suit,consumer_electronics,television,bench,container,luggage,backpack,umbrella,utensil,crowd,music,musical_instrument,string_instrument,guitar,fence"
+  },
+  {
+    "title": "Easter 1991 Severinos",
+    "video_id": "RN1dC6YhRJM",
+    "youtube_url": "https://www.youtube.com/watch?v=RN1dC6YhRJM",
+    "thumb": "thumbnails/RN1dC6YhRJM.jpg",
+    "published_at": "2020-08-12T13:51:09Z",
+    "category": "Severino Holidays",
+    "year": 1991,
+    "objects": "light,lamp,cabinet,brick,curtain,interior_room,restaurant,frame,utensil,tableware,bookshelf,chandelier,sign,container,basket_container,bowl,cup"
   },
   {
     "title": "July 1991 Nevinwood Pool",
@@ -1716,7 +1966,8 @@ const VIDEOS = [
     "thumb": "thumbnails/R0R8cKxEH_M.jpg",
     "published_at": "2020-08-12T13:51:08Z",
     "category": "Moberg Family",
-    "year": 1991
+    "year": 1991,
+    "objects": "liquid,pool,water,fence,chair,folding_chair,swimsuit,recreation,sport,watersport,swimming,crowd,stairs,umbrella,utensil,decorative_plant,jacuzzi,animal,mammal,cetacean,dolphin,lamp,light,sofa,armchair,tool,pillow"
   },
   {
     "title": "Christmas 1965-1968",
@@ -1725,7 +1976,8 @@ const VIDEOS = [
     "thumb": "thumbnails/KUno35ra7fo.jpg",
     "published_at": "2020-08-12T13:43:51Z",
     "category": "60s Moberg Christmas",
-    "year": 1965
+    "year": 1965,
+    "objects": "recreation,curtain,interior_room,camera,baby,outdoor,sky,night_sky,bedding,housewares,pillow,tool,bed,frame,bedroom,lamp,light,cabinet,bar,container,bottle,suit"
   },
   {
     "title": "June 1991 Lindsay Kindergarten",
@@ -1734,7 +1986,8 @@ const VIDEOS = [
     "thumb": "thumbnails/PCQqs2HhQ-U.jpg",
     "published_at": "2020-08-12T13:51:06Z",
     "category": "Fawcett Family",
-    "year": 1991
+    "year": 1991,
+    "objects": "crowd,teen,frame,curtain,stairs,sign,banner,recreation,sport,ballgames,basketball"
   },
   {
     "title": "March 1991 Ted's 29Th Birthday",
@@ -1743,7 +1996,8 @@ const VIDEOS = [
     "thumb": "thumbnails/osEUKAcLFu8.jpg",
     "published_at": "2020-08-12T13:51:03Z",
     "category": "Birthdays",
-    "year": 1991
+    "year": 1991,
+    "objects": "baby,curtain,consumer_electronics,machine,television,pillow,tool,sofa,bedding,housewares,chair,folding_chair,music,musical_instrument,string_instrument,guitar,drum,interior_room,bedroom,bed,bookshelf,jeans"
   },
   {
     "title": "September 1991 Fawcett's First Day Of School",
@@ -1752,7 +2006,8 @@ const VIDEOS = [
     "thumb": "thumbnails/cjrElto1f8M.jpg",
     "published_at": "2020-08-12T13:51:02Z",
     "category": "First Day of School",
-    "year": 1991
+    "year": 1991,
+    "objects": "machine,frame,utensil,tableware,plate,land,outdoor,grass,automobile,vehicle,interior_room,clock,dial,timepiece,car,cabinet,pillow,tool,dining_room,suit,consumer_electronics,television,door,container,luggage,backpack,sign,sofa,living_room,chair,armchair,bedding,housewares,bed,bedroom,restaurant,van"
   },
   {
     "title": "Summer 1991 Petting Zoo Severino Gatherings",
@@ -1761,7 +2016,8 @@ const VIDEOS = [
     "thumb": "thumbnails/mmXJRwMZ2w4.jpg",
     "published_at": "2020-08-12T13:51:01Z",
     "category": "Severino Family",
-    "year": 1991
+    "year": 1991,
+    "objects": "fence,outdoor,land,grass,painting,foliage,wood_natural,sofa,machine,consumer_electronics,television,container,luggage,backpack,rocks,roof,animal,mammal,ungulates,cow,teen,park,playground,swing_playground,pillow,tool,chair,armchair,door,cabinet"
   },
   {
     "title": "March 1991 Kevin's Birthday Kevin & Cousins Open Gifts",
@@ -1770,7 +2026,8 @@ const VIDEOS = [
     "thumb": "thumbnails/CpNoyA4aE_g.jpg",
     "published_at": "2020-08-12T13:51:00Z",
     "category": "Birthdays",
-    "year": 1991
+    "year": 1991,
+    "objects": "sign,sofa,crowd"
   },
   {
     "title": "1992 Alex In The Snow",
@@ -1779,7 +2036,8 @@ const VIDEOS = [
     "thumb": "thumbnails/MYZEJIJpnMY.jpg",
     "published_at": "2020-08-12T13:50:59Z",
     "category": "Severino Family",
-    "year": 1992
+    "year": 1992,
+    "objects": "frozen,liquid,snow,water,machine,vehicle,automobile,car,jacket,wood_natural,outdoor,land,crowd,road,street,truck,cabinet,jeans,brick,animal,mammal,ungulates,horse,headgear,hat,beanie,baby,fence,recreation,sport,winter_sport,sledding,sled,branch,path,sidewalk,illustrations,door,interior_room,closet"
   },
   {
     "title": "1995 Kevin's Christmas Program",
@@ -1788,7 +2046,8 @@ const VIDEOS = [
     "thumb": "thumbnails/LZHOx2xQ_J4.jpg",
     "published_at": "2020-08-12T15:35:22Z",
     "category": "Christmas Program",
-    "year": 1995
+    "year": 1995,
+    "objects": "crowd,teen,curtain,flag,jacket,balloon"
   },
   {
     "title": "Christmas 1989",
@@ -1797,7 +2056,8 @@ const VIDEOS = [
     "thumb": "thumbnails/m1r2OgutEgM.jpg",
     "published_at": "2020-08-12T13:43:43Z",
     "category": "Severino Christmas",
-    "year": 1989
+    "year": 1989,
+    "objects": "suit,cabinet,decorative_plant,tableware,utensil,frame,outdoor,night_sky,sky,celestial_body,moon,optical_equipment,eyeglasses,cup,plate,door,machine,appliance,refrigerator"
   },
   {
     "title": "Summer 1991 Long Island Game Farm Luke & Lindsay",
@@ -1806,7 +2066,8 @@ const VIDEOS = [
     "thumb": "thumbnails/70Vbh1wf-mQ.jpg",
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Fawcett Family",
-    "year": 1991
+    "year": 1991,
+    "objects": "fence,animal,mammal,outdoor,land,ungulates,grass,horse,wood_natural,cow,roof,crowd,feline,tiger,teen,footwear,shoes,elephant,stairs,foliage,cage,park,zoo,jeans,balloon"
   },
   {
     "title": "March 1995 Walt Disney World Fawcetts",
@@ -1815,7 +2076,8 @@ const VIDEOS = [
     "thumb": "thumbnails/V0Wok1UbUP4.jpg",
     "published_at": "2020-08-12T16:07:31Z",
     "category": "Florida",
-    "year": 1995
+    "year": 1995,
+    "objects": "crowd,recreation,outdoor,sky,blue_sky,celebration,costume,performance,parade,cloudy,machine,vehicle,balloon,building,castle,wood_natural,umbrella,utensil,land,flag,arch,wheel,tire,automobile,car,rim,branch,foliage,stroller,amusement_park,park,carousel,camera,skating,skatepark,skateboarding,sport,cycling,bicycle,jeans,sign,street_sign,road,street"
   },
   {
     "title": "March 1991 Steven Birth & Christening",
@@ -1824,7 +2086,8 @@ const VIDEOS = [
     "thumb": "thumbnails/LyoCBJMob5s.jpg",
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Fawcett Family",
-    "year": 1991
+    "year": 1991,
+    "objects": "suit,interior_room,hospital,bedding,housewares,baby,bed,podium,tool,pillow,decorative_plant,microphone,machine,consumer_electronics,television,bedroom,cabinet,sofa,curtain,recreation,jigsaw,foliage,crowd,teen,frame,necktie,painting,optical_equipment,eyeglasses,jacket"
   },
   {
     "title": "Christmas Eve 1992 Moberg House",
@@ -1833,7 +2096,8 @@ const VIDEOS = [
     "thumb": "thumbnails/MXAr6ssQ3pA.jpg",
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Moberg Christmas",
-    "year": 1992
+    "year": 1992,
+    "objects": "curtain,crowd,baby,lamp,light,celebration,christmas_tree,tree,christmas_decoration,frame,sofa,painting,pillow,tool,bedding,housewares,suit,recreation,sport,ball,sports_equipment,toy,stuffed_animals,necktie,cabinet,decorative_plant,foliage"
   },
   {
     "title": "Halloween 1991 At The Severinos",
@@ -1842,7 +2106,8 @@ const VIDEOS = [
     "thumb": "thumbnails/Op22bVInUJo.jpg",
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Halloween",
-    "year": 1991
+    "year": 1991,
+    "objects": "headgear,hat,baseball_hat,performance,recreation,entertainer,singer,crowd,stairs,brick,sofa,toy,doll,polka_dots,baby,statue,beanie"
   },
   {
     "title": "Summer 1992 Adventureland",
@@ -1851,7 +2116,8 @@ const VIDEOS = [
     "thumb": "thumbnails/WdlgKPK0B8w.jpg",
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Moberg Family",
-    "year": 1992
+    "year": 1992,
+    "objects": "crowd,fence,machine,wheel,tire,vehicle,outdoor,recreation,sport,sports_equipment,rim,sky,blue_sky,boat,watercraft,kayak,automobile,truck,statue,seat,trampoline,shrub,oar,pole,lifejacket,foliage,domicile,tent,land,road,street,headgear,helmet"
   },
   {
     "title": "May 1991 Mother's Day",
@@ -1860,7 +2126,8 @@ const VIDEOS = [
     "thumb": "thumbnails/_VVIpgoUFqU.jpg",
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Severino Holidays",
-    "year": 1991
+    "year": 1991,
+    "objects": "fence,outdoor,grass,land,shrub,foliage,decorative_plant,chair,baby,rocks,folding_chair,domicile,house_single,wood_natural,roof,jacket,bench,container,basket_container"
   },
   {
     "title": "March 1991 Kevin's First Birthday Party",
@@ -1869,7 +2136,8 @@ const VIDEOS = [
     "thumb": "thumbnails/aMfl6vbTUog.jpg",
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Birthdays",
-    "year": 1991
+    "year": 1991,
+    "objects": "balloon,cabinet,machine,consumer_electronics,television,bottle,container,food,baked_goods,cake,dessert,birthday_cake"
   },
   {
     "title": "June 1991 Luke's 8Th Birthday",
@@ -1878,7 +2146,8 @@ const VIDEOS = [
     "thumb": "thumbnails/aeJx8Vo9EtE.jpg",
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Birthdays",
-    "year": 1991
+    "year": 1991,
+    "objects": "outdoor,grass,land,fence,foliage,swimsuit,crowd,liquid,water,pool,teen,utensil,shrub,path,machine,vehicle,automobile,car,night_sky,sky,recreation,sport,raw_glass,baby,door,animal,cetacean,mammal,dolphin,tableware,cup,bowl,plate,decorative_plant,umbrella,sidewalk,wood_natural,agriculture,garden"
   },
   {
     "title": "1992 Alex's Second Birthday",
@@ -1887,7 +2156,8 @@ const VIDEOS = [
     "thumb": "thumbnails/edDx7rlj4eg.jpg",
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Birthdays",
-    "year": 1992
+    "year": 1992,
+    "objects": "balloon,tableware,utensil,drinking_glass,bowl,plate,crowd,frame,interior_room,restaurant"
   },
   {
     "title": "December 1991 Severino Gatherings",
@@ -1896,7 +2166,8 @@ const VIDEOS = [
     "thumb": "thumbnails/gGRMOaTfD9M.jpg",
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Severino Family",
-    "year": 1991
+    "year": 1991,
+    "objects": "baby,interior_room,utensil,tableware,plate,fence,cabinet,sofa,pillow,tool,living_room,high_chair,cup,camera,stairs,footwear,shoes,boot,desk,machine,appliance,oven,kitchen_oven,kitchen,curtain,frame,brick,door"
   },
   {
     "title": "Christmas 2011",
@@ -1905,7 +2176,8 @@ const VIDEOS = [
     "thumb": "thumbnails/NED4rgKDhEI.jpg",
     "published_at": "2020-08-27T00:03:20Z",
     "category": "Severino Christmas",
-    "year": 2011
+    "year": 2011,
+    "objects": "cabinet,container,bottle,sofa,celebration,christmas_decoration,christmas_tree,tree,interior_room,kitchen,kitchen_countertop,utensil,tableware,pillow,tool,drinking_glass,kitchen_sink,plate,microphone,door"
   },
   {
     "title": "January 1991 Kevin At Home",
@@ -1914,7 +2186,8 @@ const VIDEOS = [
     "thumb": "thumbnails/oqNYDTqZQxA.jpg",
     "published_at": "2020-08-12T13:50:48Z",
     "category": "TDKK",
-    "year": 1991
+    "year": 1991,
+    "objects": "door,cabinet,interior_room,fence,sofa,living_room,jeans,bedroom,bedding,housewares"
   },
   {
     "title": "April 1992 Alex And The Cats",
@@ -1923,7 +2196,8 @@ const VIDEOS = [
     "thumb": "thumbnails/rEIxd5Ip4gQ.jpg",
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Severino Family",
-    "year": 1992
+    "year": 1992,
+    "objects": "raw_glass,door,fence,jacket,sign,animal,mammal,cat,feline,adult_cat"
   },
   {
     "title": "1990 Family At Frog Pond",
@@ -1932,7 +2206,8 @@ const VIDEOS = [
     "thumb": "thumbnails/sjsRVvRDhgA.jpg",
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Severino Family",
-    "year": 1990
+    "year": 1990,
+    "objects": "foliage,decorative_plant,sofa,baby,pillow,tool,chair,armchair,cabinet,door,interior_room,hospital,suit,teen,frame,container,cardboard_box,jacket,liquid,water,water_body,ocean"
   },
   {
     "title": "April 1991 Tommy's Birthday",
@@ -1941,7 +2216,8 @@ const VIDEOS = [
     "thumb": "thumbnails/tChW68LYH7g.jpg",
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Birthdays",
-    "year": 1991
+    "year": 1991,
+    "objects": "cabinet,baby,curtain,light,lamp,brick,frame,optical_equipment,eyeglasses,interior_room,restaurant,door,machine,appliance,oven,kitchen_oven,jeans"
   },
   {
     "title": "March 1990 Ted's Birthday",
@@ -1950,7 +2226,8 @@ const VIDEOS = [
     "thumb": "thumbnails/y-jK9B7RBPE.jpg",
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Birthdays",
-    "year": 1990
+    "year": 1990,
+    "objects": "pillow,tool,sofa,cabinet,baby,curtain,bedding,housewares,container,door,chair,armchair,utensil,tableware,cup,bottle,carton,interior_room,hospital,bed,frame"
   },
   {
     "title": "Spring 1989 Lindsay's Dance Recital",
@@ -1959,7 +2236,8 @@ const VIDEOS = [
     "thumb": "thumbnails/iV-lWq79s98.jpg",
     "published_at": "2020-08-12T13:43:57Z",
     "category": "Fawcett Family",
-    "year": 1989
+    "year": 1989,
+    "objects": "celebration,costume,teen,crowd,outdoor,machine,vehicle,sky,recreation,performance,ballet,automobile,car,blue_sky,interior_room,theater,ballet_dancer,entertainer,night_sky,optical_equipment,sunglasses,brick,foliage,eyeglasses,shrub,stroller,baby,wheel,tire,rim,suv,land,road,street"
   },
   {
     "title": "Margaretville, Ny",
@@ -1968,7 +2246,8 @@ const VIDEOS = [
     "thumb": "thumbnails/MlUZ2-_m3mQ.jpg",
     "published_at": "2020-08-12T13:43:54Z",
     "category": "Severino Family",
-    "year": 1980
+    "year": 1980,
+    "objects": "outdoor,land,sky,hill,cloudy,grass,machine,vehicle,wood_natural,fence,automobile,raw_glass,rocks,bicycle,teen,headgear,hat,baseball_hat,hoodie,blue_sky,branch,car,building,barn,stairs,brick,roof,truck,consumer_electronics,television,jeans,road,road_other,suv"
   },
   {
     "title": "Spring 1989 Luke's Baseball Game",
@@ -1977,7 +2256,8 @@ const VIDEOS = [
     "thumb": "thumbnails/RSoIXy8Ae2E.jpg",
     "published_at": "2020-08-12T13:43:53Z",
     "category": "Fawcett Family",
-    "year": 1989
+    "year": 1989,
+    "objects": "land,outdoor,grass,fence,recreation,sport,ballgames,baseball,automobile,machine,vehicle,headgear,car,helmet,hat,baseball_hat,sky,blue_sky,softball,teen,flag,football,animal,horse,mammal,ungulates,cricket_sport,path,van,truck,bus,parking_lot,bleachers,footwear,shoes,sneaker"
   },
   {
     "title": "Fall 1990 Kevin Learning To Walk",
@@ -1986,7 +2266,8 @@ const VIDEOS = [
     "thumb": "thumbnails/Yc-vx7ptsdU.jpg",
     "published_at": "2020-08-12T13:43:53Z",
     "category": "TDKK",
-    "year": 1990
+    "year": 1990,
+    "objects": "baby,bedding,housewares,interior_room,bed,hospital,pillow,tool,cabinet,decorative_plant,bedroom,foliage,toy,stuffed_animals,door,teen,sofa,crib,arch"
   },
   {
     "title": "Seattle 1988",
@@ -1995,7 +2276,8 @@ const VIDEOS = [
     "thumb": "thumbnails/Ef47Xeh0hNo.jpg",
     "published_at": "2020-08-12T13:43:52Z",
     "category": "Moberg Family",
-    "year": 1988
+    "year": 1988,
+    "objects": "outdoor,land,shrub,rocks,foliage,liquid,water,water_body,grass,fence,agriculture,garden,wood_natural,lake,hill,sky,cloudy,jacket,path,blue_sky,waterways,waterfall,ocean,machine,vehicle,automobile,car,brick,document,handwriting,vegetation,forest,branch,arch"
   },
   {
     "title": "August 1988 Sylvia And Ed Visit Portland",
@@ -2004,7 +2286,8 @@ const VIDEOS = [
     "thumb": "thumbnails/PRtNKIWw8ys.jpg",
     "published_at": "2020-08-12T13:43:52Z",
     "category": "Moberg Family",
-    "year": 1988
+    "year": 1988,
+    "objects": "baby,foliage,utensil,tableware,cup,shrub,sofa,plate,decorative_plant,pillow,tool,curtain,frame,chair,armchair,outdoor,land,grass,teen,folding_chair,brick,fence,door,interior_room,living_room,lamp,light"
   },
   {
     "title": "Christmas Eve 1989 Moberg House",
@@ -2013,7 +2296,8 @@ const VIDEOS = [
     "thumb": "thumbnails/NF5b8NP_GNI.jpg",
     "published_at": "2020-08-12T13:43:39Z",
     "category": "Moberg Christmas",
-    "year": 1989
+    "year": 1989,
+    "objects": "crowd,sofa,door,lamp,light,celebration,tree,christmas_tree,christmas_decoration,curtain,frame,cabinet,arch,seat,chair,armchair,interior_room,living_room,pillow,tool,music,musical_instrument,string_instrument,guitar,brick"
   },
   {
     "title": "Summer 1962 & Debbie's First Birthday",
@@ -2022,7 +2306,8 @@ const VIDEOS = [
     "thumb": "thumbnails/kNFgIrt9ZMI.jpg",
     "published_at": "2020-08-12T13:43:51Z",
     "category": "Birthdays",
-    "year": 1962
+    "year": 1962,
+    "objects": "liquid,underwater,water,animal,jellyfish,aquarium"
   },
   {
     "title": "Christmas Morning 1996 Severinos",
@@ -2031,7 +2316,8 @@ const VIDEOS = [
     "thumb": "thumbnails/o2WrwGoj_tU.jpg",
     "published_at": "2020-08-12T19:12:04Z",
     "category": "Severino Christmas",
-    "year": 1996
+    "year": 1996,
+    "objects": "celebration,christmas_tree,tree,christmas_decoration,cabinet,door,sofa,gift,container,carton,tableware,utensil,cup,tool,pillow,outdoor,night_sky,sky,bedding,housewares,baby,polka_dots,curtain"
   },
   {
     "title": "Thanksgiving 1990 Severino House",
@@ -2040,7 +2326,8 @@ const VIDEOS = [
     "thumb": "thumbnails/iygRJCfgcpE.jpg",
     "published_at": "2020-08-12T13:43:50Z",
     "category": "Severino Holidays",
-    "year": 1990
+    "year": 1990,
+    "objects": "baby,frame,interior_room,curtain,container,trash_can,fireplace,living_room,brick,door,cabinet,utensil,tableware,plate,bowl,sofa,light,lamp,music,musical_instrument,drum,dining_room,cookware,pot_cooking"
   },
   {
     "title": "Christmas 1988",
@@ -2049,7 +2336,8 @@ const VIDEOS = [
     "thumb": "thumbnails/obnZtVbN1vo.jpg",
     "published_at": "2020-08-12T13:43:47Z",
     "category": "Severino Christmas",
-    "year": 1988
+    "year": 1988,
+    "objects": "light,suit,cabinet,lamp,tableware,utensil,plate,necktie,interior_room,restaurant,machine,consumer_electronics,television,frame,container,bottle,drinking_glass,candle,night_sky,outdoor,sky,crowd,optical_equipment,eyeglasses"
   },
   {
     "title": "January 1987 Dawn And Ted Wedding Reception",
@@ -2058,7 +2346,18 @@ const VIDEOS = [
     "thumb": "thumbnails/S7MepT-YtRw.jpg",
     "published_at": "2020-08-12T13:43:49Z",
     "category": "TDKK",
-    "year": 1987
+    "year": 1987,
+    "objects": "suit,celebration,ceremony,wedding,bride,groom,gown,crowd,wedding_dress,tripod,music,speakers_music,curtain,food,baked_goods,cake,dessert,wedding_cake,fence,interior_room,restaurant"
+  },
+  {
+    "title": "Spring 1989 Lindsay's Dance Recital",
+    "video_id": "iV-lWq79s98",
+    "youtube_url": "https://www.youtube.com/watch?v=iV-lWq79s98",
+    "thumb": "thumbnails/iV-lWq79s98.jpg",
+    "published_at": "2020-08-12T13:43:57Z",
+    "category": "Fawcett Family",
+    "year": 1989,
+    "objects": "celebration,costume,teen,crowd,outdoor,machine,vehicle,sky,recreation,performance,ballet,automobile,car,blue_sky,interior_room,theater,ballet_dancer,entertainer,night_sky,optical_equipment,sunglasses,brick,foliage,eyeglasses,shrub,stroller,baby,wheel,tire,rim,suv,land,road,street"
   },
   {
     "title": "Christmas 1989 Severino House",
@@ -2067,7 +2366,18 @@ const VIDEOS = [
     "thumb": "thumbnails/PQuqHT83fLQ.jpg",
     "published_at": "2020-08-12T13:43:41Z",
     "category": "Severino Christmas",
-    "year": 1989
+    "year": 1989,
+    "objects": "cabinet,bottle,container,celebration,christmas_tree,tree,christmas_decoration,door,brick,night_sky,outdoor,sky,fire,flame,fireplace,frame,suit,necktie,curtain,utensil,tableware,drinking_glass"
+  },
+  {
+    "title": "Summer 1962 & Debbie's First Birthday",
+    "video_id": "kNFgIrt9ZMI",
+    "youtube_url": "https://www.youtube.com/watch?v=kNFgIrt9ZMI",
+    "thumb": "thumbnails/kNFgIrt9ZMI.jpg",
+    "published_at": "2020-08-12T13:43:51Z",
+    "category": "Birthdays",
+    "year": 1962,
+    "objects": "liquid,underwater,water,animal,jellyfish,aquarium"
   },
   {
     "title": "Christmas 1963",
@@ -2076,7 +2386,8 @@ const VIDEOS = [
     "thumb": "thumbnails/RQazH907vZw.jpg",
     "published_at": "2020-08-12T13:43:27Z",
     "category": "60s Moberg Christmas",
-    "year": 1963
+    "year": 1963,
+    "objects": "suit,curtain,interior_room,restaurant,necktie,painting,optical_equipment,eyeglasses"
   },
   {
     "title": "Christmas 1994 Severino House",
@@ -2085,7 +2396,8 @@ const VIDEOS = [
     "thumb": "thumbnails/SsR6IvGy-rk.jpg",
     "published_at": "2020-08-12T15:38:17Z",
     "category": "Severino Christmas",
-    "year": 1994
+    "year": 1994,
+    "objects": "celebration,christmas_tree,tree,brick,christmas_decoration,crowd,gift,suit,costume,pillow,tool,jacket,frame,sign,toy,stuffed_animals,outdoor,night_sky,sky"
   },
   {
     "title": "1988 Hans Ringdahl's 99Th Birthday",
@@ -2094,7 +2406,8 @@ const VIDEOS = [
     "thumb": "thumbnails/__bTBIULW8k.jpg",
     "published_at": "2020-08-12T13:43:46Z",
     "category": "Birthdays",
-    "year": 1988
+    "year": 1988,
+    "objects": "frame,suit,cabinet,decorative_plant,bouquet,flower_arrangement,pillow,tool,sofa,container,necktie,vase,bedding,housewares,bed,interior_room,bedroom,document,book,chair,armchair,food,dessert,baked_goods,cake,birthday_cake,cake_regular,painting,lamp,light,baby"
   },
   {
     "title": "Fall 1987",
@@ -2103,7 +2416,8 @@ const VIDEOS = [
     "thumb": "thumbnails/YZqLGUhrygg.jpg",
     "published_at": "2020-08-12T13:43:45Z",
     "category": "Severino Family",
-    "year": 1987
+    "year": 1987,
+    "objects": "curtain,machine,automobile,vehicle,car,interior_room,light,land,outdoor,grass,branch,door,bathroom,washbasin,chandelier,wheel,tire,rim,shrub,lamp,bedroom,pillow,tool"
   },
   {
     "title": "1989 Han's Ringdahl's 100Th Birthday",
@@ -2112,7 +2426,8 @@ const VIDEOS = [
     "thumb": "thumbnails/6fXLLwZPfOA.jpg",
     "published_at": "2020-08-12T13:43:43Z",
     "category": "Birthdays",
-    "year": 1989
+    "year": 1989,
+    "objects": "frame,utensil,tableware,plate,bouquet,flower_arrangement,document,handwriting,bowl,interior_room,curtain,suit,baby,raw_glass,restaurant,dining_room,decorative_plant,painting,necktie"
   },
   {
     "title": "Summer 1965 Catskill Game Farm",
@@ -2121,7 +2436,8 @@ const VIDEOS = [
     "thumb": "thumbnails/hOvP7OByYzE.jpg",
     "published_at": "2020-08-12T13:43:43Z",
     "category": "1960s Sev",
-    "year": 1965
+    "year": 1965,
+    "objects": "fence,outdoor,land,grass,wood_natural,cage,aquarium,liquid,water,underwater,sky,blue_sky,stairs"
   },
   {
     "title": "Christmas 1993 Fawcett's Opening Gifts",
@@ -2130,7 +2446,8 @@ const VIDEOS = [
     "thumb": "thumbnails/UhCuj0270tI.jpg",
     "published_at": "2020-08-12T15:00:23Z",
     "category": "Christmas Morn Faw",
-    "year": 1993
+    "year": 1993,
+    "objects": "celebration,christmas_tree,tree,christmas_decoration,document,screenshot"
   },
   {
     "title": "June 1988 Luke's Nursery School Graduation",
@@ -2139,7 +2456,8 @@ const VIDEOS = [
     "thumb": "thumbnails/zAjqWg2o5iA.jpg",
     "published_at": "2020-08-12T13:43:43Z",
     "category": "Fawcett Family",
-    "year": 1988
+    "year": 1988,
+    "objects": "celebration,ceremony,graduation,podium,door,gown,cabinet,seat,interior_room,hospital,painting,teen"
   },
   {
     "title": "October 1988 Leanne's Day Of Birth",
@@ -2148,7 +2466,8 @@ const VIDEOS = [
     "thumb": "thumbnails/BYgRgxmYjo8.jpg",
     "published_at": "2020-08-12T13:43:41Z",
     "category": "Fawcett Family",
-    "year": 1988
+    "year": 1988,
+    "objects": "interior_room,hospital,bedding,housewares,baby,bed,frame,raw_glass,machine,consumer_electronics,television,curtain,eyeglasses,optical_equipment,tool,pillow"
   },
   {
     "title": "Christmas 1987",
@@ -2157,7 +2476,8 @@ const VIDEOS = [
     "thumb": "thumbnails/UUO3NdkcwHw.jpg",
     "published_at": "2020-08-12T13:43:39Z",
     "category": "Severino Christmas",
-    "year": 1987
+    "year": 1987,
+    "objects": "celebration,christmas_tree,tree,christmas_decoration,frame,tableware,utensil,door,cup,sofa,raw_glass,interior_room,nightclub,seat,curtain,balloon,recreation,camera,container,bottle,drinking_glass,cabinet"
   },
   {
     "title": "Thanksgiving 1987",
@@ -2166,7 +2486,8 @@ const VIDEOS = [
     "thumb": "thumbnails/k-397Nz3ieg.jpg",
     "published_at": "2020-08-12T13:43:40Z",
     "category": "Severino Holidays",
-    "year": 1987
+    "year": 1987,
+    "objects": "brick,fireplace,sofa,utensil,tableware,plate,lab_coat,interior_room,hospital,bedding,housewares,cabinet,container,bottle,curtain,optical_equipment,eyeglasses,fire,flame,appliance,brick_oven,machine,oven,lamp,light,chair,armchair"
   },
   {
     "title": "Summer 1960",
@@ -2175,7 +2496,8 @@ const VIDEOS = [
     "thumb": "thumbnails/I5Ixp9j9ofo.jpg",
     "published_at": "2020-08-12T13:43:39Z",
     "category": "Moberg Classics",
-    "year": 1960
+    "year": 1960,
+    "objects": "outdoor,land,grass,crowd,fence,wood_natural,sky,blue_sky,machine,automobile,vehicle,car,door,suit,domicile,house_single,chair,folding_chair,optical_equipment,eyeglasses,tableware,utensil,drinking_glass,liquid,water,underwater,coral_reef,cloudy,foliage,animal,mammal,ungulates,horse,interior_room,bar"
   },
   {
     "title": "Christmas Eve 1991 Moberg House Part",
@@ -2184,7 +2506,8 @@ const VIDEOS = [
     "thumb": "thumbnails/Vv-G8MEDThg.jpg",
     "published_at": "2020-08-12T13:51:07Z",
     "category": "Moberg Christmas",
-    "year": 1991
+    "year": 1991,
+    "objects": "curtain,celebration,christmas_tree,tree,christmas_decoration,sofa,frame,baby,crowd,gift,lamp,light,pillow,tool,machine,consumer_electronics,suit,lab_coat,chair,armchair,high_chair"
   },
   {
     "title": "Christmas 1995 Severino House",
@@ -2193,7 +2516,8 @@ const VIDEOS = [
     "thumb": "thumbnails/wmZUuYudpb8.jpg",
     "published_at": "2020-08-12T14:52:11Z",
     "category": "Severino Christmas",
-    "year": 1995
+    "year": 1995,
+    "objects": "celebration,christmas_tree,tree,brick,christmas_decoration,crowd,gift,suit,costume,pillow,tool,jacket,frame,sign,toy,stuffed_animals,outdoor,night_sky,sky"
   },
   {
     "title": "Christmas 1991 Severino Party At Frog Pond",
@@ -2202,7 +2526,8 @@ const VIDEOS = [
     "thumb": "thumbnails/xOUiZ30Dm3E.jpg",
     "published_at": "2020-08-12T13:51:10Z",
     "category": "Severino Christmas",
-    "year": 1991
+    "year": 1991,
+    "objects": "celebration,christmas_tree,tree,polka_dots,christmas_decoration,container,bottle,door,document,handwriting,printed_page,foliage,branch,raw_glass,baby,sofa,chair,armchair,pillow,tool,curtain,interior_room,hospital,decorative_plant,cabinet,frame"
   },
   {
     "title": "January 1980s Grandma Severino's Birthday",
@@ -2211,7 +2536,8 @@ const VIDEOS = [
     "thumb": "thumbnails/mbpIObjZocg.jpg",
     "published_at": "2020-08-12T13:43:39Z",
     "category": "Birthdays",
-    "year": 1988
+    "year": 1988,
+    "objects": "container,bottle,utensil,tableware,plate,drinking_glass,curtain,brick,outdoor,sky,light,lamp,optical_equipment,eyeglasses,interior_room,bar,food,pizza,fireplace,fire,flame,machine,appliance,brick_oven,oven,night_sky,suit,blue_sky,land,hill,liquid,drink,wine,wine_bottle"
   },
   {
     "title": "April 1980s Tony's Surprise Party",
@@ -2220,7 +2546,8 @@ const VIDEOS = [
     "thumb": "thumbnails/8oz7Ls_yucg.jpg",
     "published_at": "2020-08-12T13:43:28Z",
     "category": "Birthdays",
-    "year": 1988
+    "year": 1988,
+    "objects": "balloon,cabinet,suit,door,interior_room,nightclub,machine,consumer_electronics,television,container,bottle,utensil,cookware,pot_cooking,teen,microphone,jeans,bookshelf"
   },
   {
     "title": "Summer 1964 & Debbie's Third Birthday",
@@ -2229,7 +2556,8 @@ const VIDEOS = [
     "thumb": "thumbnails/Balj3ujV_qk.jpg",
     "published_at": "2020-08-12T13:43:28Z",
     "category": "Birthdays",
-    "year": 1964
+    "year": 1964,
+    "objects": "frame,curtain,bookshelf,stool,utensil,tableware,plate,optical_equipment,eyeglasses,baby,bedding,housewares,pillow,tool,bed,interior_room,bedroom,chair,armchair,lamp,light,seat,cabinet"
   },
   {
     "title": "1990 Willow Valley",
@@ -2238,7 +2566,8 @@ const VIDEOS = [
     "thumb": "thumbnails/h9shF-_8OBk.jpg",
     "published_at": "2020-08-12T13:43:28Z",
     "category": "Moberg Family",
-    "year": 1990
+    "year": 1990,
+    "objects": "pillow,tool,interior_room,bedding,housewares,bed,bedroom,fence,frame,sofa,foliage,outdoor,blue_sky,sky,branch,land,decorative_plant,curtain,machine,vehicle,automobile,truck,road,street,chair,folding_chair,raw_glass,baby,semi_truck,grass,car,door,restaurant,stairs,food,baked_goods,cake,dessert,wedding_cake,palm_tree,tree,light,lamp,crowd"
   },
   {
     "title": "Spring 1988 Star Trek Adventure",
@@ -2247,7 +2576,8 @@ const VIDEOS = [
     "thumb": "thumbnails/yW9WvLJb_SE.jpg",
     "published_at": "2020-08-12T13:43:28Z",
     "category": "Florida",
-    "year": 1988
+    "year": 1988,
+    "objects": "machine,raw_glass,consumer_electronics,television,celebration,costume,animal,vehicle,aircraft,airplane,night_sky,outdoor,sky,statue,curtain,figurine,toy,reptile,dinosaur,jellyfish,fence"
   },
   {
     "title": "March 1989 Rose's 50Th Birthday",
@@ -2256,7 +2586,8 @@ const VIDEOS = [
     "thumb": "thumbnails/-vkZkVlY-ew.jpg",
     "published_at": "2020-08-12T13:43:27Z",
     "category": "Birthdays",
-    "year": 1989
+    "year": 1989,
+    "objects": "container,bottle,door,suit,tableware,utensil,balloon,necktie,plate,frame,drinking_glass,eyeglasses,optical_equipment,recreation,camera,machine,consumer_electronics,jewelry"
   },
   {
     "title": "June 1990 Kevin's Christening",
@@ -2265,7 +2596,8 @@ const VIDEOS = [
     "thumb": "thumbnails/573h6ajsAag.jpg",
     "published_at": "2020-08-12T13:43:27Z",
     "category": "TDKK",
-    "year": 1990
+    "year": 1990,
+    "objects": "fence,baby,foliage,utensil,tableware,cup,sofa,cabinet,frame,decorative_plant,outdoor,land,grass,pillow,tool,door,interior_room,bathroom,washbasin,sky,blue_sky,container,bottle,balloon,chair,folding_chair,teen"
   },
   {
     "title": "Summer 1963",
@@ -2274,7 +2606,8 @@ const VIDEOS = [
     "thumb": "thumbnails/7w2T3IzESzE.jpg",
     "published_at": "2020-08-12T13:43:27Z",
     "category": "Moberg Classics",
-    "year": 1963
+    "year": 1963,
+    "objects": "frozen,liquid,snow,water,fence,raw_glass,aquarium,outdoor,land,grass,road,street,crowd,machine,vehicle,boat,watercraft,canoe,rowboat"
   },
   {
     "title": "Christmas 1988",
@@ -2283,7 +2616,8 @@ const VIDEOS = [
     "thumb": "thumbnails/yVU_-SkHv8k.jpg",
     "published_at": "2020-08-12T13:43:28Z",
     "category": "Moberg Christmas",
-    "year": 1988
+    "year": 1988,
+    "objects": "crowd,curtain,interior_room,celebration,christmas_tree,tree,christmas_decoration,frame,dining_room,utensil,tableware,plate,restaurant,seat,balloon,recreation,camera,nightclub,bowl"
   },
   {
     "title": "Christmas 1975",
@@ -2292,7 +2626,8 @@ const VIDEOS = [
     "thumb": "thumbnails/zD9W_NI3Sd0.jpg",
     "published_at": "2020-12-23T14:03:52Z",
     "category": "60s Moberg Christmas",
-    "year": 1975
+    "year": 1975,
+    "objects": "curtain,outdoor,sky,night_sky,necktie,suit,drinking_glass,tableware,utensil,consumer_electronics,machine"
   },
   {
     "title": "1990 Fawcett's First Day Of School",
@@ -2301,7 +2636,8 @@ const VIDEOS = [
     "thumb": "thumbnails/lKYDxkGiS5E.jpg",
     "published_at": "2020-08-12T13:43:27Z",
     "category": "First Day of School",
-    "year": 1990
+    "year": 1990,
+    "objects": "land,outdoor,grass,machine,automobile,vehicle,car,cabinet,truck,interior_room,consumer_electronics,television,path,container,luggage,backpack,shrub,kitchen,kitchen_sink,curtain,door,utensil,tableware,plate,restaurant,fence,teen,road,seat,van"
   },
   {
     "title": "Fall 1987 Severinos At The Cabin",
@@ -2310,7 +2646,8 @@ const VIDEOS = [
     "thumb": "thumbnails/pLKKZpvf3i4.jpg",
     "published_at": "2020-08-12T13:43:27Z",
     "category": "Severino Family",
-    "year": 1987
+    "year": 1987,
+    "objects": "interior_room,restaurant,curtain,outdoor,land,hill,door,bedding,housewares,lamp,light,grass,sky,cloudy,blue_sky"
   },
   {
     "title": "Summer 1964 & Dawn's First Birthday",
@@ -2319,7 +2656,8 @@ const VIDEOS = [
     "thumb": "thumbnails/wVJbEkKzR7M.jpg",
     "published_at": "2020-08-12T13:43:27Z",
     "category": "Birthdays",
-    "year": 1964
+    "year": 1964,
+    "objects": "outdoor,land,grass,baby,sky,blue_sky,shrub,interior_room,hospital,liquid,underwater,water,stairs,brick,foliage,flower,rose,necktie,suit,bed,bedding,housewares,animal,jellyfish,crowd"
   }
 ];
 

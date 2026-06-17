@@ -2,7 +2,7 @@
 """Convert moberino_videos_cat.csv to data.js for the Moberino website."""
 import csv, json, os, re
 
-CSV_FILE = "moberino_videos_cat.csv"
+CSV_FILE = "moberino_videos_tagged.csv"
 
 CATEGORIES = [
     "Moberg Christmas",
@@ -54,6 +54,8 @@ with open(CSV_FILE, newline="", encoding="utf-8") as f:
         thumb = local_thumb if os.path.exists(local_thumb) \
             else f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
 
+        objects = (row.get("objects") or "").strip()
+
         videos.append({
             "title":        title,
             "video_id":     video_id,
@@ -62,6 +64,7 @@ with open(CSV_FILE, newline="", encoding="utf-8") as f:
             "published_at": row.get("published_at", ""),
             "category":     category,
             "year":         year,
+            "objects":      objects,
         })
 
 CAT_THUMBS = {

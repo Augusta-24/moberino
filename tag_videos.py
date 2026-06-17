@@ -13,12 +13,12 @@ Usage:
 Matches video files by YouTube title (filename without extension).
 Writes results to moberino_videos_tagged.csv (adds/updates 'objects' column).
 """
-import csv, os, re, subprocess, sys, tempfile, shutil
+import csv, difflib, os, re, subprocess, sys, tempfile, shutil
 
-CSV_IN   = "moberino_videos.csv"
+CSV_IN   = "moberino_videos_tagged.csv"
 CSV_OUT  = "moberino_videos_tagged.csv"
-VIDEO_DIR = "videos"              # folder containing your video files
-FRAMES    = 8                     # keyframes to sample per video
+VIDEO_DIR = "/Users/kevinseverino/Downloads/videos"
+FRAMES    = 25                    # keyframes to sample per video
 THRESHOLD = "0.18"                # minimum Vision confidence (0–1)
 EXTENSIONS = (".mp4", ".mov", ".avi", ".m4v", ".mkv", ".mpg", ".mpeg", ".wmv")
 
@@ -26,7 +26,8 @@ CLASSIFY_BIN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "vision_
 
 
 def normalize(s):
-    """Lowercase, collapse whitespace/underscores/hyphens for fuzzy matching."""
+    """Lowercase, strip apostrophes/punctuation, collapse whitespace for fuzzy matching."""
+    s = re.sub(r"['\"\.,!?]", '', s)
     return re.sub(r'[\s_\-]+', ' ', s).strip().lower()
 
 
@@ -45,7 +46,11 @@ def build_title_index():
 
 def find_video(title, index):
     """Return path to the video file matching this title, or None."""
-    return index.get(normalize(title))
+    key = normalize(title)
+    if key in index:
+        return index[key]
+    hits = difflib.get_close_matches(key, index.keys(), n=1, cutoff=0.55)
+    return index[hits[0]] if hits else None
 
 
 def video_duration(path):

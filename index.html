@@ -568,23 +568,23 @@ body.rec-open { overflow-y: auto; }
 }
 .vcard-body {
   position: absolute; bottom: 0; left: 0; right: 0;
-  padding: 6px 8px 9px;
+  padding: 4px 6px 6px;
   z-index: 3;
 }
 .vcard-title {
   font-family: 'Bebas Neue', cursive;
-  font-size: clamp(14px, 4.2vw, 20px);
-  line-height: 1.05;
+  font-size: clamp(11px, 3vw, 14px);
+  line-height: 1.1;
   letter-spacing: 1px;
   color: #ffffff;
   text-shadow: 0 1px 8px rgba(0,0,0,0.95), 0 0 2px rgba(0,0,0,0.8);
 }
 .vcard-year {
   font-family: 'Bebas Neue', cursive;
-  font-size: clamp(18px, 5.5vw, 26px);
+  font-size: clamp(9px, 2.2vw, 11px);
   line-height: 1;
   letter-spacing: 2px;
-  color: #ffffff;
+  color: rgba(255,255,255,0.65);
   text-shadow: 0 1px 8px rgba(0,0,0,0.95), 0 0 2px rgba(0,0,0,0.8);
 }
 
@@ -791,6 +791,13 @@ body.rec-open { overflow-y: auto; }
   font-size: 10px; color: var(--dim); letter-spacing: 2px;
 }
 .srch-body { padding: 0 14px; }
+.vcard-match {
+  font-family: 'VCR', monospace;
+  font-size: 8px; letter-spacing: 1.5px;
+  color: rgba(242,239,232,0.45);
+  padding: 2px 0 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .no-results {
   text-align: center; padding: 64px 16px;
   color: var(--dim); font-size: 11px; letter-spacing: 3px;
@@ -1167,11 +1174,35 @@ body.rec-open { overflow-y: auto; }
   z-index: 1;
 }
 .shelf-section { margin-bottom: 0; }
-.shelf-cat-lbl {
+.shelf-cat-sign {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 28px 0 8px;
+  padding: 10px 14px;
+  background: rgba(10,8,4,0.55);
+  border: 1px solid rgba(242,239,232,0.07);
+  border-left: 4px solid var(--sign-color, #555);
+  border-radius: 0 2px 2px 0;
+}
+.shelf-sign-name {
   font-family: 'Bebas Neue', cursive;
-  font-size: 16px; letter-spacing: 4px;
-  color: rgba(242,239,232,0.5);
-  padding: 22px 0 6px;
+  font-size: 20px; letter-spacing: 4px;
+  color: rgba(242,239,232,0.92);
+  flex: 1;
+}
+.shelf-sign-count {
+  font-family: 'VCR', monospace;
+  font-size: 9px; letter-spacing: 2px;
+  color: rgba(242,239,232,0.35);
+  white-space: nowrap;
+}
+.shelf-plank {
+  height: 14px;
+  background: linear-gradient(180deg, #2e1f0a 0%, #1c1205 60%, #0d0902 100%);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.7), 0 2px 4px rgba(0,0,0,0.5);
+  margin-bottom: 4px;
 }
 .shelf-row {
   display: flex;
@@ -1816,7 +1847,7 @@ button.cats-search-wrap {
   <div class="cats-header">
     <button class="cats-home-btn" onclick="nav('home')" aria-label="Home">
       <div class="cats-logo-wrap">
-        <img src="Title_without_tape.png" class="cats-logo-img" alt="MOBERINO">
+        <img src="Title.png" class="cats-logo-img" alt="MOBERINO">
       </div>
     </button>
   </div>
@@ -1966,6 +1997,23 @@ function search(q) {
   });
 }
 
+function matchReason(v, q) {
+  const terms = q.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  const titleH    = (v.title+' '+(v.year||'')).toLowerCase();
+  const categoryH = (v.category||'').toLowerCase();
+  const objectsH  = (v.objects||'').toLowerCase();
+
+  if(terms.every(t=>titleH.includes(t)))    return null; // obvious from card title
+  if(terms.every(t=>categoryH.includes(t))) return 'CATEGORY: '+v.category.toUpperCase();
+
+  // find which specific tags matched
+  const matchedTags = (v.objects||'').split(',')
+    .map(t=>t.trim()).filter(t=>terms.some(term=>t.includes(term)))
+    .map(t=>t.replace(/_/g,' ').toUpperCase());
+  if(matchedTags.length) return matchedTags.slice(0,3).join(' · ');
+  return null;
+}
+
 // ── FORMAT TITLE ──
 // Main_title is already clean — just strip the year (shown in the badge) to avoid duplication.
 function fmtTitle(raw, year) {
@@ -1976,7 +2024,7 @@ function fmtTitle(raw, year) {
 }
 
 // ── VIDEO CARD ──
-function vcard(v, playlist, idx) {
+function vcard(v, playlist, idx, matchHint) {
   const el = document.createElement('div');
   el.className = 'vcard';
   el.onclick = () => openLB(playlist, idx);
@@ -1994,7 +2042,8 @@ function vcard(v, playlist, idx) {
         <div class="vcard-title">${event}</div>
       </div>
     </div>
-    <div class="vcard-lbl">${v.year ? v.year + ' · ' : ''}${event}</div>`;
+    <div class="vcard-lbl">${v.year ? v.year + ' · ' : ''}${event}</div>
+    ${matchHint ? `<div class="vcard-match">▸ ${matchHint}</div>` : ''}`;
   return el;
 }
 
@@ -2125,7 +2174,7 @@ function openCat(cat) {
 }
 function playRandom() {
   const v = VIDEOS[Math.floor(Math.random() * VIDEOS.length)];
-  openLB([v], 0);
+  window.open(`https://www.youtube.com/watch?v=${v.video_id}`, '_blank');
 }
 document.getElementById('backBtn').onclick=()=>nav('cats');
 
@@ -2263,12 +2312,17 @@ function buildShelf() {
     const section = document.createElement('div');
     section.className = 'shelf-section';
 
-    const lbl = document.createElement('div');
-    lbl.className = 'shelf-cat-lbl';
-    lbl.textContent = cat.toUpperCase();
+    const sign = document.createElement('div');
+    sign.className = 'shelf-cat-sign';
+    const color = CC[cat] || '#333';
+    sign.style.setProperty('--sign-color', color);
+    sign.innerHTML = `<span class="shelf-sign-name">${cat.toUpperCase()}</span><span class="shelf-sign-count">${vids.length} TITLES</span>`;
 
     const row = document.createElement('div');
     row.className = 'shelf-row';
+
+    const plank = document.createElement('div');
+    plank.className = 'shelf-plank';
 
     vids.forEach((v, i) => {
       const sty  = VHS_STYLES[_hash(v.video_id) % VHS_STYLES.length];
@@ -2310,10 +2364,7 @@ function buildShelf() {
       row.appendChild(tape);
     });
 
-    const plank = document.createElement('div');
-    plank.className = 'shelf-plank';
-
-    section.appendChild(lbl);
+    section.appendChild(sign);
     section.appendChild(row);
     section.appendChild(plank);
     body.appendChild(section);
@@ -2618,7 +2669,7 @@ function doSearch(q) {
   meta.textContent=`${res.length} RESULT${res.length!==1?'S':''} FOR "${q.toUpperCase()}"`;
   grid.innerHTML='';
   noRes.style.display=res.length?'none':'block';
-  res.forEach((v,i,a)=>grid.appendChild(vcard(v,a,i)));
+  res.forEach((v,i,a)=>grid.appendChild(vcard(v,a,i,matchReason(v,q))));
 }
 
 // ── HOME SEARCH (inline dropdown) ──
@@ -2881,8 +2932,9 @@ function initShakeListener() {
 function triggerShakeTape() {
   const ov = document.getElementById('shake-overlay');
   if (!ov || ov.classList.contains('on')) return;
+  playRandom();
   ov.classList.add('on');
-  setTimeout(() => { ov.classList.remove('on'); playRandom(); }, 1400);
+  setTimeout(() => { ov.classList.remove('on'); }, 1400);
 }
 
 window.enableShake = function() {
