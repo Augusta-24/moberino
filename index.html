@@ -1515,8 +1515,8 @@ body.rec-open { overflow-y: auto; }
     -webkit-backdrop-filter: blur(14px);
     padding: 0px 12px 0px;
   }
-  .cats-header { height: 35px; }
-  .cats-logo-wrap { overflow: hidden; height: 100%; }
+  .cats-header { height: 46px; }
+  .cats-logo-wrap { height: 100%; }
   .cats-logo-img { display: block; height: 100%; width: auto; }
   .cats-logo-tape { display: none; }
   .nav-icon-btn { width: 34px; }
@@ -1864,7 +1864,7 @@ button.cats-search-wrap {
   font-family: 'VCR', monospace;
   font-size: 10px; letter-spacing: 2.5px;
   text-align: center;
-  padding: 14px 0;
+  padding: 20px 0;
   cursor: pointer;
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   opacity: 0; pointer-events: none;
@@ -3254,7 +3254,8 @@ heroCassette.addEventListener('animationend', function() {
     const show = window.scrollY > 80;
     if (show) {
       const hdr = document.querySelector('.page.active .cats-header');
-      if (hdr) bar.style.top = hdr.getBoundingClientRect().bottom + 'px';
+      const bottom = hdr ? hdr.getBoundingClientRect().bottom : 0;
+      bar.style.top = Math.max(0, bottom) + 'px';
     }
     bar.classList.toggle('visible', show);
   }
