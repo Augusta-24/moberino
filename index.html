@@ -1418,17 +1418,19 @@ body.rec-open { overflow-y: auto; }
 #spot-overlay.open { display: flex; }
 .spot-close {
   background: none; border: none;
-  color: rgba(242,239,232,1); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  padding: 4px; width: 36px; height: 36px;
-  align-self: flex-end;
-  margin-top: min(60px, 8vh);
-  margin-bottom: 6px;
+  color: rgba(242,239,232,0.65); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 8px 12px;
+  align-self: center;
+  margin-top: min(56px, 7vh);
+  margin-bottom: 8px;
+  font-family: 'VCR', monospace;
+  font-size: 11px; letter-spacing: 2px;
   -webkit-tap-highlight-color: transparent;
   transition: color 0.15s;
 }
 .spot-close:active { color: var(--white); }
-.spot-close svg { width: 18px; height: 18px; }
+.spot-close svg { width: 13px; height: 13px; flex-shrink: 0; }
 .spot-box {
   width: 100%; max-width: 580px;
   display: flex; align-items: center; gap: 10px;
@@ -1481,6 +1483,107 @@ body.rec-open { overflow-y: auto; }
 #homeGrid .vcard-tint  { opacity: 0.08; }
 /* No gradient needed without text */
 #spot-results .vcard-grad { display: none; }
+
+/* ── MOBILE/TABLET: STICKY SUB-PAGE HEADER ── */
+@media (max-width: 1023px) {
+  .cats-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(8,16,42,0.96);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  /* Map: no scroll, header sits naturally in flex column */
+  #pg-map .cats-header {
+    position: relative;
+    z-index: 10;
+    border-bottom: 1px solid rgba(242,239,232,0.10);
+  }
+}
+
+/* ── SPOTLIGHT: SLIDE UP ON MOBILE/TABLET ── */
+@media (max-width: 1023px) {
+  #spot-overlay {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    transform: translateY(100%);
+    transition: transform 0.34s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    pointer-events: none;
+  }
+  #spot-overlay.open {
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+}
+
+/* ── RECOMMENDATIONS DRAWER (mobile/tablet only) ── */
+#rec-drawer {
+  display: none; /* hidden on desktop */
+  position: fixed;
+  inset: 0;
+  z-index: 8200;
+  background: rgba(8,16,42,0.97);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  flex-direction: column;
+  overflow: hidden;
+}
+@media (max-width: 1023px) {
+  #rec-drawer {
+    display: flex;
+    transform: translateY(100%);
+    transition: transform 0.34s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    pointer-events: none;
+  }
+  #rec-drawer.open {
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+}
+.rec-drawer-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 16px 12px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(242,239,232,0.08);
+}
+.rec-drawer-title {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 22px; letter-spacing: 4px;
+  color: rgba(242,239,232,0.92);
+}
+.rec-drawer-close {
+  background: none; border: none;
+  font-family: 'VCR', monospace;
+  font-size: 11px; letter-spacing: 2px;
+  color: rgba(242,239,232,0.65);
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  -webkit-tap-highlight-color: transparent;
+  padding: 6px 4px;
+  transition: color 0.15s;
+}
+.rec-drawer-close:active { color: var(--white); }
+.rec-drawer-close svg { width: 13px; height: 13px; }
+.rec-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 12px 48px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── MAP POPUP: SCROLLABLE WHEN MANY VIDEOS ── */
+.maplibregl-popup-content {
+  max-height: 48vh !important;
+  overflow-y: auto !important;
+}
+
+/* ── BODY LOCKED WHILE ON MAP ── */
+body.on-map { overflow: hidden; touch-action: none; }
+#map-container { touch-action: auto; }
 
 /* ── SEARCH TRIGGER (sub-pages) ── */
 button.cats-search-wrap {
@@ -1696,7 +1799,7 @@ button.cats-search-wrap {
   color: rgba(242,239,232,0.85);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  z-index: 9000;
+  z-index: 10000;
   opacity: 0; pointer-events: none;
   transition: opacity 0.2s;
   -webkit-tap-highlight-color: transparent;
@@ -2030,8 +2133,9 @@ button.cats-search-wrap {
 
 <!-- ── SPOTLIGHT SEARCH OVERLAY ── -->
 <div id="spot-overlay">
-  <button class="spot-close" onclick="closeSpot()" aria-label="Close">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  <button class="spot-close" onclick="closeSpot()" aria-label="Close search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    CLOSE SEARCH
   </button>
   <div class="spot-box">
     <input id="spotQ" type="search" placeholder="SEARCH 258 MEMORIES..." autocomplete="off" spellcheck="false">
@@ -2551,14 +2655,14 @@ function initMap() {
         ).join('');
 
         const popupHTML = `
-          <div style="font-family:VCR,monospace;max-width:230px">
-            <div style="font-size:10px;letter-spacing:1.5px;margin-bottom:8px;opacity:0.5">${g.location.toUpperCase()}</div>
+          <div style="font-family:VCR,monospace;max-width:230px;overflow-y:auto;max-height:42vh">
+            <div style="font-size:10px;letter-spacing:1.5px;margin-bottom:8px;opacity:0.5;position:sticky;top:0;background:rgba(8,16,42,0.96);padding-bottom:6px">${g.location.toUpperCase()}</div>
             ${rows}
           </div>`;
 
         new maplibregl.Marker({ element: el })
           .setLngLat([g.lng, g.lat])
-          .setPopup(new maplibregl.Popup({ offset: 16, maxWidth: '260px' }).setHTML(popupHTML))
+          .setPopup(new maplibregl.Popup({ offset: 16, maxWidth: '270px' }).setHTML(popupHTML))
           .addTo(glMap);
       });
     });
@@ -2632,12 +2736,29 @@ function nav(p) {
   document.body.classList.toggle('on-home', onHome);
   document.body.classList.toggle('on-detail', onDetail);
   document.body.classList.toggle('on-timeline', onTL);
+  document.body.classList.toggle('on-map', onMap);
   if(onTL)    buildTimeline();
   if(onMap)   initMap();
   if(onShelf) { buildShelf(); drawShelfBg(); }
 }
 
+function openRecDrawer() {
+  const grid = document.getElementById('recDrawerGrid');
+  grid.innerHTML = '';
+  recommended(8).forEach((v, i, a) => grid.appendChild(vcard(v, a, i)));
+  document.getElementById('rec-drawer').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeRecDrawer() {
+  document.getElementById('rec-drawer').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
 function toggleRec() {
+  if (window.innerWidth <= 1023) {
+    openRecDrawer();
+    return;
+  }
   const m    = document.getElementById('memories');
   m.classList.toggle('open');
   const open = m.classList.contains('open');
@@ -2655,10 +2776,12 @@ function navToCats() {
 
   // Close home search drop if open
   if(typeof closeHomeDrop === 'function') closeHomeDrop();
-  // Close memories panel
+  // Close memories panel + rec-drawer
   document.getElementById('memories').classList.remove('open');
+  document.getElementById('rec-drawer').classList.remove('open');
   pgHome.classList.remove('rec-open');
   document.body.classList.remove('rec-open');
+  document.body.style.overflow = '';
   document.getElementById('recBtn').textContent = 'RECOMMENDED';
 
   // Collage stays visible (shared background — never hidden during cats)
@@ -2763,8 +2886,15 @@ function closeSpot() {
   document.getElementById('spot-overlay').classList.remove('open');
   document.body.style.overflow = '';
 }
+// Backdrop tap: on mobile just close keyboard; on desktop close overlay
 document.getElementById('spot-overlay').addEventListener('click', e => {
-  if(e.target === document.getElementById('spot-overlay')) closeSpot();
+  if(e.target === document.getElementById('spot-overlay')) {
+    if(window.innerWidth <= 1023) {
+      document.getElementById('spotQ').blur();
+    } else {
+      closeSpot();
+    }
+  }
 });
 document.getElementById('spotQ').addEventListener('input', e => {
   const q = e.target.value;
@@ -2816,6 +2946,18 @@ function doSearch(q) {
   const drop     = document.getElementById('home-drop');
   const dropMeta = document.getElementById('home-drop-meta');
   const dropGrid = document.getElementById('home-drop-grid');
+  const homeWrap = document.getElementById('homeSearchWrap');
+
+  // On mobile/tablet: tapping the search bar opens spotlight instead
+  homeWrap.addEventListener('touchstart', function(e) {
+    if (window.innerWidth <= 1023) {
+      e.preventDefault();
+      openSpot();
+    }
+  }, { passive: false });
+  homeQ.addEventListener('focus', function() {
+    if (window.innerWidth <= 1023) { homeQ.blur(); }
+  });
 
   function positionDrop() {
     const r = document.getElementById('homeSearchWrap').getBoundingClientRect();
@@ -2975,6 +3117,20 @@ heroCassette.addEventListener('animationend', function() {
     <div id="ss-year"></div>
   </div>
   <div id="ss-wake">TOUCH ANYWHERE TO WAKE</div>
+</div>
+
+<!-- ── RECOMMENDATIONS DRAWER (mobile/tablet) ── -->
+<div id="rec-drawer">
+  <div class="rec-drawer-hdr">
+    <div class="rec-drawer-title">RECOMMENDED</div>
+    <button class="rec-drawer-close" onclick="closeRecDrawer()" aria-label="Close recommendations">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      CLOSE
+    </button>
+  </div>
+  <div class="rec-drawer-body">
+    <div class="vgrid" id="recDrawerGrid"></div>
+  </div>
 </div>
 
 <!-- ── C: SHAKE OVERLAY ── -->
