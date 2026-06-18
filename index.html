@@ -219,17 +219,12 @@ body::after {
   box-shadow: 3px 6px 20px rgba(0,0,0,0.9), 0 1px 4px rgba(0,0,0,0.6);
   pointer-events: none;
   opacity: 0;
-  animation: dropIn var(--dur) ease-out forwards;
+  animation: dropIn var(--dur) cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
 }
 @keyframes dropIn {
-  0%   { opacity: 0;
-         transform: rotate(calc(var(--r) + var(--tilt))) scale(2.0) translate(var(--sx), -40px); }
-  7%   { opacity: 1; }
-  28%  { transform: rotate(calc(var(--r) - var(--tilt))) scale(1.55) translate(calc(var(--sx) * -0.55), -14px); }
-  58%  { transform: rotate(calc(var(--r) + calc(var(--tilt) * 0.35))) scale(1.18) translate(calc(var(--sx) * 0.28), 0px); }
-  82%  { transform: rotate(calc(var(--r) - calc(var(--tilt) * 0.15))) scale(1.05) translate(calc(var(--sx) * -0.1), 0px); }
-  100% { opacity: 1;
-         transform: rotate(var(--r)) scale(1) translate(0px, 0px); }
+  0%   { opacity: 0; transform: rotate(calc(var(--r) + var(--tilt))) scale(2.0) translate(var(--sx), -30px); }
+  9%   { opacity: 1; }
+  100% { opacity: 1; transform: rotate(var(--r)) scale(1) translate(0px, 0px); }
 }
 /* Heavy blue overlay — must be above falling photos (which reach z-index 50000+) */
 #collage::after {
@@ -2397,7 +2392,7 @@ function startLeafFall() {
     const x    = (Math.random() - 0.1) * W;
     const y    = (Math.random() - 0.05) * H;
     const rot  = randomTapeAngle();
-    const dur  = 3.2 + Math.random() * 2.0; // 3.2–5.2s — slow, floaty
+    const dur  = 1.8 + Math.random() * 1.2; // 1.8–3.0s — swift but smooth
     const z    = leafZ++;
     const sx   = (Math.random() < 0.5 ? -1 : 1) * (30 + Math.random() * 50); // ±30–80px sway
     const tilt = 6 + Math.random() * 9; // 6–15deg in-flight tilt wobble
