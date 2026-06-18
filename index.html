@@ -1862,13 +1862,12 @@ button.cats-search-wrap {
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
   z-index: 99000;
-  opacity: 0; pointer-events: none;
+  opacity: 1; pointer-events: auto;
   transition: opacity 0.2s;
   -webkit-tap-highlight-color: transparent;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
-#back-top.visible { opacity: 1; pointer-events: auto; }
 #back-top:active { transform: scale(0.9); }
 #back-top svg { width: 18px; height: 18px; }
 /* Hide back-top on home and map (non-scrolling pages) */
@@ -3259,11 +3258,7 @@ heroCassette.addEventListener('animationend', function() {
 
 <script>
 // ── BACK TO TOP ──
-(function() {
-  const btn = document.getElementById('back-top');
-  function checkScroll() { btn.classList.toggle('visible', window.scrollY > 60); }
-  window.addEventListener('scroll', checkScroll, { passive: true });
-})();
+// Always visible; hidden via CSS on home and map pages only.
 
 // ── A: SCREENSAVER ──
 (function() {
