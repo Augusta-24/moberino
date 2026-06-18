@@ -3351,7 +3351,7 @@ buildDecadeBar();
     c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:900000;';
     document.getElementById('collage').appendChild(c);
     const ctx = c.getContext('2d');
-    let W, H, raf;
+    let W, H, raf, burstTimer;
     function resize() { W = c.width = window.innerWidth; H = c.height = window.innerHeight; }
     resize();
     const ro = new ResizeObserver(resize);
@@ -3438,7 +3438,6 @@ buildDecadeBar();
       }));
 
       const bursts = [];
-      let burstTimer;
       function addBurst() {
         const pal = PALETTES[Math.floor(Math.random() * PALETTES.length)];
         const N = 70 + Math.floor(Math.random() * 30);
@@ -3462,7 +3461,10 @@ buildDecadeBar();
         });
         burstTimer = setTimeout(addBurst, 400 + Math.random() * 500);
       }
-      addBurst(); setTimeout(addBurst, 200); setTimeout(addBurst, 450);
+      addBurst();
+      const _s1 = setTimeout(addBurst, 200);
+      const _s2 = setTimeout(addBurst, 450);
+      const _clearSeeds = () => { clearTimeout(_s1); clearTimeout(_s2); };
 
       (function tick() {
         ctx.fillStyle = 'rgba(0,0,0,0.18)';
@@ -3511,6 +3513,7 @@ buildDecadeBar();
     particleStop = () => {
       cancelAnimationFrame(raf); ro.disconnect();
       clearTimeout(burstTimer);
+      if (typeof _clearSeeds === 'function') _clearSeeds();
       c.remove(); particleStop = null;
     };
   }
