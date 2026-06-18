@@ -1507,13 +1507,17 @@ body.rec-open { overflow-y: auto; }
 /* ── MOBILE/TABLET: STICKY SUB-PAGE HEADER ── */
 @media (max-width: 1023px) {
   .cats-header {
-    position: sticky;
-    top: 0;
+    position: fixed;
+    top: 0; left: 0; right: 0;
     z-index: 50;
     background: rgba(8,16,42,0.96);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     padding: 0px 6px 0px;
+  }
+  /* Push page content below the fixed header */
+  #pg-cats, #pg-detail, #pg-timeline, #pg-shelf {
+    padding-top: 46px;
   }
   .cats-header { height: 46px; }
   .cats-logo-wrap { width: auto; max-width: 58vw; }
@@ -3258,6 +3262,11 @@ heroCassette.addEventListener('animationend', function() {
     }
     bar.classList.toggle('visible', show);
   }
+  // Re-position on resize (orientation changes etc.)
+  window.addEventListener('resize', () => {
+    const hdr = document.querySelector('.page.active .cats-header');
+    if (hdr) bar.style.top = hdr.getBoundingClientRect().bottom + 'px';
+  });
   window.addEventListener('scroll', checkScroll, { passive: true });
 })();
 
