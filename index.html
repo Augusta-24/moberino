@@ -1585,6 +1585,31 @@ body.rec-open { overflow-y: auto; }
   overflow-y: auto !important;
 }
 
+/* ── SEASONAL THEME OVERLAYS ── */
+body.theme-july4   #collage::after { background: rgba(120,8,28,0.84); }
+body.theme-halloween #collage::after { background: rgba(74,30,0,0.88); }
+body.theme-xmas    #collage::after { background: rgba(0,52,18,0.88); }
+body.theme-july4.on-detail   #collage::after,
+body.theme-july4.on-timeline #collage::after { background: rgba(120,8,28,0.98); }
+body.theme-halloween.on-detail   #collage::after,
+body.theme-halloween.on-timeline #collage::after { background: rgba(74,30,0,0.98); }
+body.theme-xmas.on-detail   #collage::after,
+body.theme-xmas.on-timeline #collage::after { background: rgba(0,52,18,0.98); }
+
+/* Seasonal icon button in hero */
+#seasonBtn { position: relative; }
+#seasonBtn.active { color: var(--white); }
+#seasonBtn .season-glow {
+  position: absolute; inset: -4px;
+  border-radius: 50%;
+  animation: season-pulse 2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes season-pulse {
+  0%,100% { opacity: 0.15; transform: scale(0.9); }
+  50%      { opacity: 0.45; transform: scale(1.1); }
+}
+
 /* ── BODY LOCKED WHILE ON MAP ── */
 body.on-map { overflow: hidden; overscroll-behavior: none; }
 #map-container { touch-action: auto; overscroll-behavior: auto; }
@@ -1823,6 +1848,16 @@ body.on-home #back-top, body.on-map #back-top { display: none; }
   flex-direction: column; align-items: center; justify-content: center;
 }
 #shake-overlay.on { display: flex; }
+#shake-close {
+  position: absolute; top: max(20px, env(safe-area-inset-top, 0px) + 14px); right: 20px;
+  background: none; border: none; cursor: pointer;
+  color: rgba(242,239,232,0.55); padding: 8px;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s;
+}
+#shake-close:active { color: var(--white); }
+#shake-close svg { width: 22px; height: 22px; }
 #shake-tape-img { width: 120px; height: auto; animation: sh-wobble 0.2s ease-in-out infinite; }
 @keyframes sh-wobble {
   0%,100% { transform: rotate(-10deg) scale(1.04); }
@@ -1907,6 +1942,9 @@ body.on-home #back-top, body.on-map #back-top { display: none; }
         </button>
         <button class="hero-icon-btn" onclick="enableShake()" id="shakeBtn" aria-label="Random / shake to play">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="3.5"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="16.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="7.5" cy="16.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="16.5" cy="16.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+        </button>
+        <button class="hero-icon-btn" id="seasonBtn" onclick="toggleSeasonTheme()" aria-label="Seasonal theme" style="display:none">
+          <svg id="seasonIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
         </button>
         <button class="hero-icon-btn" onclick="nav('shelf')" aria-label="VHS Shelf">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -3172,6 +3210,9 @@ heroCassette.addEventListener('animationend', function() {
 </button>
 
 <div id="shake-overlay">
+  <button id="shake-close" onclick="closeShakeOverlay()" aria-label="Close">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
   <img id="shake-tape-img" src="Untitled_Artwork.png" alt="">
   <div id="shake-msg">LOADING MYSTERY TAPE...</div>
 </div>
@@ -3260,6 +3301,192 @@ function buildDecadeBar() {
 // Build on page load (data is ready); timeline will use it when navigated to
 buildDecadeBar();
 
+// ── SEASONAL THEME ──
+(function() {
+  const THEMES = {
+    july4: {
+      glowColor: 'rgba(220,60,60,0.5)',
+      icon: `<path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none" opacity="0.7"/>`,
+    },
+    halloween: {
+      glowColor: 'rgba(200,90,0,0.5)',
+      icon: `<path d="M12 3a4 4 0 0 1 4 4c0 1.5-.8 2.8-2 3.5V12h-4v-1.5C8.8 9.8 8 8.5 8 7a4 4 0 0 1 4-4z"/><path d="M8 12h8v2a4 4 0 0 1-8 0v-2z"/><line x1="10" y1="15" x2="10" y2="17"/><line x1="14" y1="15" x2="14" y2="17"/>`,
+    },
+    xmas: {
+      glowColor: 'rgba(60,180,80,0.5)',
+      icon: `<polygon points="12,2 15,9 22,9 16.5,13.5 18.5,21 12,16.5 5.5,21 7.5,13.5 2,9 9,9"/>`,
+    },
+  };
+
+  function getSeasonTheme() {
+    const now = new Date();
+    const m = now.getMonth() + 1;
+    const d = now.getDate();
+    if (m === 12) return 'xmas';
+    if (m === 10) return 'halloween';
+    if ((m === 6 && d >= 25) || m === 7 && d <= 4) return 'july4';
+    return null;
+  }
+
+  const currentSeason = getSeasonTheme();
+  const btn = document.getElementById('seasonBtn');
+  const icon = document.getElementById('seasonIcon');
+  if (currentSeason && btn) {
+    btn.style.display = '';
+    icon.innerHTML = THEMES[currentSeason].icon;
+    const glow = document.createElement('div');
+    glow.className = 'season-glow';
+    glow.style.background = THEMES[currentSeason].glowColor;
+    btn.appendChild(glow);
+  }
+
+  let seasonOn = false;
+  let particleStop = null;
+
+  function startParticles() {
+    if (particleStop) particleStop();
+    const c = document.createElement('canvas');
+    c.id = 'season-canvas';
+    c.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:500;';
+    document.body.appendChild(c);
+    const ctx = c.getContext('2d');
+    let W, H, raf;
+
+    function resize() { W = c.width = window.innerWidth; H = c.height = window.innerHeight; }
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(document.documentElement);
+
+    if (currentSeason === 'xmas') {
+      const flakes = Array.from({length: 90}, () => ({
+        x: Math.random() * innerWidth, y: Math.random() * innerHeight,
+        r: 1 + Math.random() * 2.2,
+        vx: (Math.random() - 0.5) * 0.35, vy: 0.45 + Math.random() * 1.1,
+        a: 0.3 + Math.random() * 0.5,
+      }));
+      function tick() {
+        ctx.clearRect(0, 0, W, H);
+        flakes.forEach(f => {
+          f.x += f.vx + Math.sin(Date.now() * 0.0005 + f.y * 0.02) * 0.18;
+          f.y += f.vy;
+          if (f.y > H + 8) { f.y = -8; f.x = Math.random() * W; }
+          ctx.beginPath();
+          ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255,255,255,${f.a})`;
+          ctx.fill();
+        });
+        raf = requestAnimationFrame(tick);
+      }
+      tick();
+    } else if (currentSeason === 'halloween') {
+      const pumpkins = Array.from({length: 18}, () => ({
+        x: Math.random() * innerWidth, y: -40 - Math.random() * innerHeight,
+        size: 14 + Math.random() * 18,
+        vx: (Math.random() - 0.5) * 0.6, vy: 0.5 + Math.random() * 0.9,
+        rot: Math.random() * Math.PI * 2, rotV: (Math.random() - 0.5) * 0.03,
+        a: 0.5 + Math.random() * 0.45,
+      }));
+      function drawPumpkin(x, y, s, rot, alpha) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rot);
+        ctx.globalAlpha = alpha;
+        // Body
+        ctx.beginPath();
+        ctx.ellipse(0, 2, s * 0.48, s * 0.38, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#e06a00';
+        ctx.fill();
+        // Ribs
+        for (let i = -1; i <= 1; i++) {
+          ctx.beginPath();
+          ctx.ellipse(i * s * 0.18, 2, s * 0.14, s * 0.36, 0, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(0,0,0,0.15)';
+          ctx.fill();
+        }
+        // Stem
+        ctx.fillStyle = '#4a2800';
+        ctx.fillRect(-s * 0.05, -s * 0.38, s * 0.1, s * 0.2);
+        // Face
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.beginPath(); ctx.arc(-s * 0.16, s * 0.02, s * 0.07, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(s * 0.16, s * 0.02, s * 0.07, 0, Math.PI * 2); ctx.fill();
+        // Mouth
+        ctx.beginPath();
+        ctx.moveTo(-s * 0.22, s * 0.16);
+        ctx.quadraticCurveTo(0, s * 0.28, s * 0.22, s * 0.16);
+        ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.restore();
+      }
+      function tick() {
+        ctx.clearRect(0, 0, W, H);
+        pumpkins.forEach(p => {
+          p.x += p.vx; p.y += p.vy; p.rot += p.rotV;
+          if (p.y > H + 60) { p.y = -60; p.x = Math.random() * W; }
+          drawPumpkin(p.x, p.y, p.size, p.rot, p.a);
+        });
+        raf = requestAnimationFrame(tick);
+      }
+      tick();
+    } else if (currentSeason === 'july4') {
+      const bursts = [];
+      function addBurst() {
+        const colors = ['#ff2233','#ffffff','#2255ff','#ff8833','#ffff55'];
+        bursts.push({
+          x: 0.1 * W + Math.random() * 0.8 * W,
+          y: 0.1 * H + Math.random() * 0.65 * H,
+          particles: Array.from({length: 32}, (_, i) => {
+            const a = (i / 32) * Math.PI * 2;
+            const spd = 1.5 + Math.random() * 2.5;
+            return { vx: Math.cos(a) * spd, vy: Math.sin(a) * spd, color: colors[Math.floor(Math.random() * colors.length)], life: 1 };
+          }),
+          life: 1,
+        });
+        setTimeout(addBurst, 600 + Math.random() * 1400);
+      }
+      addBurst();
+      function tick() {
+        ctx.clearRect(0, 0, W, H);
+        for (let bi = bursts.length - 1; bi >= 0; bi--) {
+          const b = bursts[bi];
+          b.life -= 0.018;
+          if (b.life <= 0) { bursts.splice(bi, 1); continue; }
+          b.particles.forEach(p => {
+            p.vx *= 0.97; p.vy *= 0.97; p.vy += 0.04;
+            p.life -= 0.022;
+            if (p.life <= 0) return;
+            ctx.beginPath();
+            ctx.arc(b.x + p.vx * (1 - b.life) * 55,
+                    b.y + p.vy * (1 - b.life) * 55,
+                    1.5, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = Math.max(0, p.life * 0.75);
+            ctx.fill();
+          });
+        }
+        ctx.globalAlpha = 1;
+        raf = requestAnimationFrame(tick);
+      }
+      tick();
+    }
+
+    particleStop = () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      c.remove();
+      particleStop = null;
+    };
+  }
+
+  window.toggleSeasonTheme = function() {
+    if (!currentSeason) return;
+    seasonOn = !seasonOn;
+    document.body.classList.toggle(`theme-${currentSeason}`, seasonOn);
+    btn.classList.toggle('active', seasonOn);
+    if (seasonOn) startParticles(); else if (particleStop) { particleStop(); }
+  };
+})();
+
 // ── C: SHAKE TO PLAY ──
 let shakeReady = false, shakeLast = 0;
 
@@ -3275,6 +3502,19 @@ function initShakeListener() {
     }
   }, { passive: true });
 }
+
+window.closeShakeOverlay = function() {
+  const ov = document.getElementById('shake-overlay');
+  ov.classList.remove('on');
+  ov.onclick = null;
+  // Remove any "TAP TO WATCH" hint added dynamically
+  Array.from(ov.children).forEach(el => {
+    if (el.id !== 'shake-close' && el.id !== 'shake-tape-img' && el.id !== 'shake-msg') el.remove();
+  });
+  document.getElementById('shake-tape-img').style.animation = 'sh-wobble 0.2s ease-in-out infinite';
+  document.getElementById('shake-msg').textContent = 'LOADING MYSTERY TAPE...';
+  nav('home');
+};
 
 function triggerShakeTape() {
   const ov  = document.getElementById('shake-overlay');
