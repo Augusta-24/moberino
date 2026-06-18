@@ -577,22 +577,22 @@ body.rec-open { overflow-y: auto; }
 }
 .vcard-body {
   position: absolute; bottom: 0; left: 0; right: 0;
-  padding: 4px 6px 6px;
+  padding: 2px 5px 4px;
   z-index: 3;
 }
 .vcard-title {
   font-family: 'Bebas Neue', cursive;
-  font-size: clamp(11px, 3vw, 14px);
-  line-height: 1.1;
-  letter-spacing: 1px;
+  font-size: clamp(7px, 1.8vw, 9px);
+  line-height: 1.05;
+  letter-spacing: 0.5px;
   color: #ffffff;
   text-shadow: 0 1px 8px rgba(0,0,0,0.95), 0 0 2px rgba(0,0,0,0.8);
 }
 .vcard-year {
   font-family: 'Bebas Neue', cursive;
-  font-size: clamp(9px, 2.2vw, 11px);
+  font-size: clamp(6px, 1.4vw, 7px);
   line-height: 1;
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
   color: rgba(255,255,255,0.65);
   text-shadow: 0 1px 8px rgba(0,0,0,0.95), 0 0 2px rgba(0,0,0,0.8);
 }
@@ -1514,10 +1514,8 @@ body.rec-open { overflow-y: auto; }
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     padding: 0px 12px 0px;
-    height: 38px;
   }
-  .cats-logo-wrap { height: 100%; }
-  .cats-logo-img { display: block; height: 100%; width: auto; }
+  .cats-logo-img { display: block; max-height: 26px; width: auto; }
   .nav-icon-btn { width: 34px; }
   .nav-icon-btn svg { width: 18px; height: 18px; }
   /* Map: no scroll, header sits naturally in flex column */
@@ -1856,14 +1854,14 @@ button.cats-search-wrap {
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 49;
-  background: rgba(8,16,42,0.92);
+  background: rgba(18,36,88,0.90);
   border: none;
   border-bottom: 1px solid rgba(242,239,232,0.10);
-  color: rgba(242,239,232,0.6);
+  color: rgba(242,239,232,0.65);
   font-family: 'VCR', monospace;
   font-size: 10px; letter-spacing: 2.5px;
   text-align: center;
-  padding: 6px 0;
+  padding: 14px 0;
   cursor: pointer;
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   opacity: 0; pointer-events: none;
@@ -1974,7 +1972,7 @@ body.on-home #back-top, body.on-map #back-top { display: none; }
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
         </button>
         <button class="hero-icon-btn" onclick="enableShake()" id="shakeBtn" aria-label="Random / shuffle">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="4" y1="4" x2="9" y2="9"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
         </button>
         <button class="hero-icon-btn" id="seasonBtn" onclick="toggleSeasonTheme()" aria-label="Seasonal theme" style="display:none">
           <svg id="seasonIcon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
