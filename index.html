@@ -1514,6 +1514,9 @@ body.rec-open { overflow-y: auto; }
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     padding: 0px 6px 0px;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
   }
   /* Push page content below the fixed header */
   #pg-cats, #pg-detail, #pg-timeline, #pg-shelf {
