@@ -3348,8 +3348,8 @@ buildDecadeBar();
     if (particleStop) particleStop();
     const c = document.createElement('canvas');
     c.id = 'season-canvas';
-    c.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;';
-    document.body.appendChild(c);
+    c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:900000;';
+    document.getElementById('collage').appendChild(c);
     const ctx = c.getContext('2d');
     let W, H, raf;
     function resize() { W = c.width = window.innerWidth; H = c.height = window.innerHeight; }
