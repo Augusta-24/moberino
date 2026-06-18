@@ -1422,7 +1422,7 @@ body.rec-open { overflow-y: auto; }
   display: flex; align-items: center; justify-content: center; gap: 8px;
   padding: 8px 12px;
   align-self: center;
-  margin-top: min(56px, 7vh);
+  margin-top: max(14px, env(safe-area-inset-top, 0px) + 10px);
   margin-bottom: 8px;
   font-family: 'VCR', monospace;
   font-size: 11px; letter-spacing: 2px;
@@ -1493,7 +1493,11 @@ body.rec-open { overflow-y: auto; }
     background: rgba(8,16,42,0.96);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
+    padding: 0px 12px 0px;
   }
+  .cats-logo-img { display: block; }
+  .nav-icon-btn { width: 34px; }
+  .nav-icon-btn svg { width: 18px; height: 18px; }
   /* Map: no scroll, header sits naturally in flex column */
   #pg-map .cats-header {
     position: relative;
@@ -1582,8 +1586,8 @@ body.rec-open { overflow-y: auto; }
 }
 
 /* ── BODY LOCKED WHILE ON MAP ── */
-body.on-map { overflow: hidden; touch-action: none; }
-#map-container { touch-action: auto; }
+body.on-map { overflow: hidden; overscroll-behavior: none; }
+#map-container { touch-action: auto; overscroll-behavior: auto; }
 
 /* ── SEARCH TRIGGER (sub-pages) ── */
 button.cats-search-wrap {
@@ -1791,7 +1795,8 @@ button.cats-search-wrap {
 /* ── C: SHAKE OVERLAY ── */
 #back-top {
   position: fixed;
-  bottom: 24px; right: 20px;
+  bottom: max(24px, calc(env(safe-area-inset-bottom, 0px) + 14px));
+  right: 20px;
   width: 40px; height: 40px;
   background: rgba(8,16,42,0.82);
   border: 1px solid rgba(242,239,232,0.22);
@@ -1799,7 +1804,7 @@ button.cats-search-wrap {
   color: rgba(242,239,232,0.85);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  z-index: 10000;
+  z-index: 99000;
   opacity: 0; pointer-events: none;
   transition: opacity 0.2s;
   -webkit-tap-highlight-color: transparent;
@@ -1809,6 +1814,8 @@ button.cats-search-wrap {
 #back-top.visible { opacity: 1; pointer-events: auto; }
 #back-top:active { transform: scale(0.9); }
 #back-top svg { width: 18px; height: 18px; }
+/* Hide back-top on home and map (non-scrolling pages) */
+body.on-home #back-top, body.on-map #back-top { display: none; }
 
 #shake-overlay {
   display: none; position: fixed; inset: 0; z-index: 96000;
@@ -2717,6 +2724,19 @@ fw.addEventListener('touchend',e=>{
 });
 
 
+// ── MAP SCROLL LOCK ──
+let _mapMoveLock = null;
+function _lockMapTouch() {
+  if (_mapMoveLock) return;
+  _mapMoveLock = e => { if (!e.target.closest('#map-container')) e.preventDefault(); };
+  document.addEventListener('touchmove', _mapMoveLock, { passive: false });
+}
+function _unlockMapTouch() {
+  if (!_mapMoveLock) return;
+  document.removeEventListener('touchmove', _mapMoveLock);
+  _mapMoveLock = null;
+}
+
 // ── NAV ──
 function nav(p) {
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
@@ -2737,6 +2757,7 @@ function nav(p) {
   document.body.classList.toggle('on-detail', onDetail);
   document.body.classList.toggle('on-timeline', onTL);
   document.body.classList.toggle('on-map', onMap);
+  if (onMap) _lockMapTouch(); else _unlockMapTouch();
   if(onTL)    buildTimeline();
   if(onMap)   initMap();
   if(onShelf) { buildShelf(); drawShelfBg(); }
@@ -3024,12 +3045,24 @@ function doSearch(q) {
 // ── BACK TO TOP ──
 (function() {
   const btn = document.getElementById('back-top');
-  window.addEventListener('scroll', () => {
-    btn.classList.toggle('visible', window.scrollY > 80);
-  }, { passive: true });
+  function checkScroll() {
+    btn.classList.toggle('visible', window.scrollY > 60);
+  }
+  window.addEventListener('scroll', checkScroll, { passive: true });
+  document.addEventListener('scroll', checkScroll, { passive: true });
 })();
 
 // ── INIT ──
+// Infer missing years from video titles (e.g. "Christmas 1991 ..." → 1991)
+const _yearOverrides = { 'Haugesund': 1958, "Sylvia's Graduation": 1957, "Ed's Graduation": 1957 };
+VIDEOS.forEach(v => {
+  if (!v.year) {
+    if (_yearOverrides[v.title]) { v.year = _yearOverrides[v.title]; return; }
+    const m = v.title.match(/\b(196\d|197\d|198\d|199\d|200\d|201\d|202\d)\b/);
+    if (m) v.year = parseInt(m[1], 10);
+  }
+});
+
 document.getElementById('hdr').style.display = 'none';
 document.body.classList.add('on-home');
 renderHome();
