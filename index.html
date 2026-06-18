@@ -3324,7 +3324,7 @@ buildDecadeBar();
     const d = now.getDate();
     if (m === 12) return 'xmas';
     if (m === 10) return 'halloween';
-    if ((m === 6 && d >= 25) || m === 7 && d <= 4) return 'july4';
+    if (m === 6 || (m === 7 && d <= 4)) return 'july4';
     return null;
   }
 
