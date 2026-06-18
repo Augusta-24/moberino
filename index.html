@@ -222,9 +222,14 @@ body::after {
   animation: dropIn var(--dur) ease-out forwards;
 }
 @keyframes dropIn {
-  0%   { opacity: 0; transform: rotate(var(--r)) scale(2.4) translateY(-18px); }
-  8%   { opacity: 1; }
-  100% { opacity: 1; transform: rotate(var(--r)) scale(1) translateY(0px); }
+  0%   { opacity: 0;
+         transform: rotate(calc(var(--r) + var(--tilt))) scale(2.0) translate(var(--sx), -40px); }
+  7%   { opacity: 1; }
+  28%  { transform: rotate(calc(var(--r) - var(--tilt))) scale(1.55) translate(calc(var(--sx) * -0.55), -14px); }
+  58%  { transform: rotate(calc(var(--r) + calc(var(--tilt) * 0.35))) scale(1.18) translate(calc(var(--sx) * 0.28), 0px); }
+  82%  { transform: rotate(calc(var(--r) - calc(var(--tilt) * 0.15))) scale(1.05) translate(calc(var(--sx) * -0.1), 0px); }
+  100% { opacity: 1;
+         transform: rotate(var(--r)) scale(1) translate(0px, 0px); }
 }
 /* Heavy blue overlay — must be above falling photos (which reach z-index 50000+) */
 #collage::after {
@@ -1155,6 +1160,26 @@ body.rec-open { overflow-y: auto; }
   min-height: 60dvh;
   position: relative;
 }
+#map-zoom-btns {
+  position: absolute;
+  bottom: 24px; right: 14px;
+  z-index: 10;
+  display: flex; flex-direction: column; gap: 4px;
+}
+#map-zoom-btns button {
+  width: 36px; height: 36px;
+  background: rgba(8,16,42,0.88);
+  border: 1px solid rgba(242,239,232,0.22);
+  border-radius: 6px;
+  color: var(--white);
+  font-size: 22px; line-height: 1;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+#map-zoom-btns button:active { background: rgba(30,50,100,0.95); }
 
 /* ══════════════════════════════════════
    VHS SHELF
@@ -2098,7 +2123,13 @@ body.on-home #back-top, body.on-map #back-top { display: none; }
     </div>
   </div>
   <div class="sub-page-title">MAP</div>
-  <div id="map-container"></div>
+  <div id="map-container">
+    <div id="map-zoom-btns">
+      <button id="map-zoom-in"  onclick="if(window._map)window._map.zoomIn()"  aria-label="Zoom in">+</button>
+      <button id="map-zoom-out" onclick="if(window._map)window._map.zoomOut()" aria-label="Zoom out">−</button>
+    </div>
+  </div>
+  <div style="height:max(20px,env(safe-area-inset-bottom,0px))"></div>
 </div>
 
 <!-- ── VHS SHELF ── -->
@@ -2366,10 +2397,12 @@ function startLeafFall() {
     const x    = (Math.random() - 0.1) * W;
     const y    = (Math.random() - 0.05) * H;
     const rot  = randomTapeAngle();
-    const dur  = 1.5 + Math.random() * 1.0; // 1.5–2.5s
+    const dur  = 3.2 + Math.random() * 2.0; // 3.2–5.2s — slow, floaty
     const z    = leafZ++;
+    const sx   = (Math.random() < 0.5 ? -1 : 1) * (30 + Math.random() * 50); // ±30–80px sway
+    const tilt = 6 + Math.random() * 9; // 6–15deg in-flight tilt wobble
 
-    leaf.style.cssText = `left:${x}px;top:${y}px;z-index:${z};--r:${rot}deg;--dur:${dur}s`;
+    leaf.style.cssText = `left:${x}px;top:${y}px;z-index:${z};--r:${rot}deg;--dur:${dur}s;--sx:${sx}px;--tilt:${tilt}deg`;
     c.appendChild(leaf);
     leaf.src = v.thumb; // set src after append so opacity:0 CSS is active before loading starts
 
@@ -2377,7 +2410,7 @@ function startLeafFall() {
     setTimeout(() => {
       leaf.classList.remove('falling-leaf');
       leaf.classList.add('pile-photo');
-      leaf.style.cssText = `left:${x}px;top:${y}px;z-index:${z};--r:${rot}deg`;
+      leaf.style.cssText = `left:${x}px;top:${y}px;z-index:${z};--r:${rot}deg;--sx:0px;--tilt:0deg`;
     }, dur * 1000 + 50);
 
     setTimeout(dropOne, 5000);
@@ -2675,7 +2708,7 @@ function initMap() {
   if(mapInited) return;
   mapInited = true;
   requestAnimationFrame(() => {
-    glMap = new maplibregl.Map({
+    window._map = glMap = new maplibregl.Map({
       container: 'map-container',
       style: 'https://tiles.openfreemap.org/styles/dark',
       center: [-73.3, 40.85],
@@ -3099,23 +3132,16 @@ function doSearch(q) {
   });
 })();
 
-// ── BACK TO TOP ──
-(function() {
-  const btn = document.getElementById('back-top');
-  function checkScroll() {
-    btn.classList.toggle('visible', window.scrollY > 60);
-  }
-  window.addEventListener('scroll', checkScroll, { passive: true });
-  document.addEventListener('scroll', checkScroll, { passive: true });
-})();
-
 // ── INIT ──
 // Infer missing years from video titles (e.g. "Christmas 1991 ..." → 1991)
-const _yearOverrides = { 'Haugesund': 1958, "Sylvia's Graduation": 1957, "Ed's Graduation": 1957 };
+const _yearOverrides = {
+  'Haugesund': 1958, "Sylvia's Graduation": 1957, "Ed's Graduation": 1957,
+  "Christmas -1960s Part 1": 1960, "Christmas -1960s Part 2": 1960,
+};
 VIDEOS.forEach(v => {
+  if (_yearOverrides[v.title]) { v.year = _yearOverrides[v.title]; return; }
   if (!v.year) {
-    if (_yearOverrides[v.title]) { v.year = _yearOverrides[v.title]; return; }
-    const m = v.title.match(/\b(196\d|197\d|198\d|199\d|200\d|201\d|202\d)\b/);
+    const m = v.title.match(/\b(196\d|197\d|198\d|199\d|200\d|201\d|202\d)(?!\d)/);
     if (m) v.year = parseInt(m[1], 10);
   }
 });
@@ -3237,6 +3263,13 @@ heroCassette.addEventListener('animationend', function() {
 </div>
 
 <script>
+// ── BACK TO TOP ──
+(function() {
+  const btn = document.getElementById('back-top');
+  function checkScroll() { btn.classList.toggle('visible', window.scrollY > 60); }
+  window.addEventListener('scroll', checkScroll, { passive: true });
+})();
+
 // ── A: SCREENSAVER ──
 (function() {
   let ssTimer, ssCycleTimer, ssOn = false;
