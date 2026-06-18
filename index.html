@@ -1506,21 +1506,27 @@ body.rec-open { overflow-y: auto; }
 
 /* ── MOBILE/TABLET: STICKY SUB-PAGE HEADER ── */
 @media (max-width: 1023px) {
+  /* Lock html/body — pages scroll themselves */
+  html, body { height: 100%; overflow: hidden; }
+
+  /* Scrollable pages each become their own scroll container */
+  #pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active {
+    height: 100dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    padding-top: 0;
+  }
+
+  /* Header sticky inside its own scroll container — never jitters */
   .cats-header {
-    position: fixed;
-    top: 0; left: 0; right: 0;
+    position: sticky;
+    top: 0;
     z-index: 50;
     background: rgba(8,16,42,0.96);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     padding: 0px 6px 0px;
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-    will-change: transform;
-  }
-  /* Push page content below the fixed header */
-  #pg-cats, #pg-detail, #pg-timeline, #pg-shelf {
-    padding-top: 46px;
   }
   .cats-header { height: 46px; }
   .cats-logo-wrap { width: auto; max-width: 58vw; }
@@ -1528,7 +1534,7 @@ body.rec-open { overflow-y: auto; }
   .cats-logo-tape { display: none; }
   .nav-icon-btn { width: 28px; }
   .nav-icon-btn svg { width: 18px; height: 18px; }
-  /* Map: no scroll, header sits naturally in flex column */
+  /* Map header stays relative inside map's flex column */
   #pg-map .cats-header {
     position: relative;
     z-index: 10;
@@ -3242,7 +3248,7 @@ heroCassette.addEventListener('animationend', function() {
 </div>
 
 <!-- ── C: SHAKE OVERLAY ── -->
-<button id="back-top" aria-label="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'})">BACK TO TOP</button>
+<button id="back-top" aria-label="Back to top">BACK TO TOP</button>
 
 <div id="shake-overlay">
   <button id="shake-close" onclick="closeShakeOverlay()" aria-label="Close">
@@ -3256,8 +3262,14 @@ heroCassette.addEventListener('animationend', function() {
 // ── BACK TO TOP ──
 (function() {
   const bar = document.getElementById('back-top');
-  function checkScroll() {
-    const show = window.scrollY > 80;
+
+  function getScrollTop() {
+    const active = document.querySelector('.page.active');
+    return (active && active.scrollTop > 0) ? active.scrollTop : window.scrollY;
+  }
+
+  function updateBar() {
+    const show = getScrollTop() > 80;
     if (show) {
       const hdr = document.querySelector('.page.active .cats-header');
       const bottom = hdr ? hdr.getBoundingClientRect().bottom : 0;
@@ -3265,12 +3277,23 @@ heroCassette.addEventListener('animationend', function() {
     }
     bar.classList.toggle('visible', show);
   }
-  // Re-position on resize (orientation changes etc.)
+
+  window.addEventListener('scroll', updateBar, { passive: true });
+  document.addEventListener('scroll', updateBar, { passive: true, capture: true });
+
+  bar.onclick = function() {
+    const active = document.querySelector('.page.active');
+    if (active && active.scrollTop > 0) {
+      active.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   window.addEventListener('resize', () => {
     const hdr = document.querySelector('.page.active .cats-header');
     if (hdr) bar.style.top = hdr.getBoundingClientRect().bottom + 'px';
   });
-  window.addEventListener('scroll', checkScroll, { passive: true });
 })();
 
 // ── A: SCREENSAVER ──
