@@ -1,38 +1,48 @@
 #!/usr/bin/env python3
 """
-Tag moberino_videos.csv with object/scene labels detected from video keyframes.
+Tag moberino videos with scene/object labels using LLaVA via Ollama.
 
 Requirements:
-  - FFmpeg installed (brew install ffmpeg)
-  - vision_classify binary compiled:
-      swiftc vision_classify.swift -o vision_classify
+  - ffmpeg installed (brew install ffmpeg)
+  - Ollama running with llava model:
+      ollama serve          (in one terminal)
+      ollama pull llava     (first time only)
 
 Usage:
   python3 tag_videos.py
 
-Matches video files by YouTube title (filename without extension).
-Writes results to moberino_videos_tagged.csv (adds/updates 'objects' column).
+Extracts frames every INTERVAL seconds, describes each with LLaVA,
+aggregates tags by frequency. Skips already-tagged rows.
+Writes results to moberino_videos_tagged.csv.
 """
-import csv, difflib, os, re, subprocess, sys, tempfile, shutil
+import base64, csv, difflib, json, os, re, shutil, subprocess, sys, tempfile
+import urllib.request
 
-CSV_IN   = "moberino_videos_tagged.csv"
-CSV_OUT  = "moberino_videos_tagged.csv"
+CSV_IN    = "moberino_videos_tagged.csv"
+CSV_OUT   = "moberino_videos_tagged.csv"
 VIDEO_DIR = "/Users/kevinseverino/Downloads/videos"
-FRAMES    = 25                    # keyframes to sample per video
-THRESHOLD = "0.18"                # minimum Vision confidence (0–1)
+INTERVAL  = 20        # seconds between frames
+OLLAMA    = "http://localhost:11434/api/generate"
+MODEL     = "llava"
 EXTENSIONS = (".mp4", ".mov", ".avi", ".m4v", ".mkv", ".mpg", ".mpeg", ".wmv")
 
-CLASSIFY_BIN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "vision_classify")
+PROMPT = (
+    "List what you see in this image as comma-separated tags. "
+    "Include people (baby, child, toddler, teenager, elderly), "
+    "activities (swimming, dancing, singing, opening_presents, blowing_candles, cooking, playing), "
+    "settings (beach, backyard, living_room, church, restaurant, school, hospital, park, pool), "
+    "occasions (birthday, christmas, halloween, thanksgiving, easter, wedding, graduation, easter), "
+    "and specific objects (birthday_cake, christmas_tree, balloon, fireplace, snow, turkey, pumpkin, easter_eggs). "
+    "Be specific not generic. Return only the comma-separated list, nothing else."
+)
 
 
 def normalize(s):
-    """Lowercase, strip apostrophes/punctuation, collapse whitespace for fuzzy matching."""
     s = re.sub(r"['\"\.,!?]", '', s)
     return re.sub(r'[\s_\-]+', ' ', s).strip().lower()
 
 
 def build_title_index():
-    """Scan VIDEO_DIR and return {normalized_title: filepath}."""
     index = {}
     try:
         for fname in os.listdir(VIDEO_DIR):
@@ -45,7 +55,6 @@ def build_title_index():
 
 
 def find_video(title, index):
-    """Return path to the video file matching this title, or None."""
     key = normalize(title)
     if key in index:
         return index[key]
@@ -53,81 +62,76 @@ def find_video(title, index):
     return index[hits[0]] if hits else None
 
 
-def video_duration(path):
-    """Return video duration in seconds via ffprobe."""
-    try:
-        r = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-             "-of", "default=noprint_wrappers=1:nokey=1", path],
-            capture_output=True, text=True, timeout=15
-        )
-        return float(r.stdout.strip())
-    except Exception:
-        return None
-
-
-def extract_frames(video_path, out_dir, n_frames):
-    """Extract n_frames evenly spaced frames from video into out_dir."""
-    duration = video_duration(video_path)
-    if duration and duration > 0:
-        interval = max(1, duration / (n_frames + 1))
-        vf = f"fps=1/{interval:.2f}"
-    else:
-        vf = f"fps=1/30"  # fallback: 1 frame every 30s
-
+def extract_frames(video_path, out_dir):
+    """Extract one frame every INTERVAL seconds."""
     subprocess.run(
         ["ffmpeg", "-i", video_path,
-         "-vf", vf,
-         "-frames:v", str(n_frames),
+         "-vf", f"fps=1/{INTERVAL}",
          "-q:v", "3",
          os.path.join(out_dir, "frame_%04d.jpg"),
          "-y", "-loglevel", "error"],
-        timeout=120
+        timeout=180
     )
 
 
 def classify_frame(image_path):
-    """Return list of label strings for one frame."""
+    """Ask LLaVA to describe the frame, return list of tags."""
+    with open(image_path, 'rb') as f:
+        img_b64 = base64.b64encode(f.read()).decode()
+
+    payload = json.dumps({
+        "model": MODEL,
+        "prompt": PROMPT,
+        "images": [img_b64],
+        "stream": False
+    }).encode()
+
+    req = urllib.request.Request(OLLAMA, data=payload,
+                                 headers={"Content-Type": "application/json"})
     try:
-        r = subprocess.run(
-            [CLASSIFY_BIN, os.path.abspath(image_path), THRESHOLD],
-            capture_output=True, text=True, timeout=15
-        )
-        raw = r.stdout.strip()
-        return [l.strip() for l in raw.split(",") if l.strip()] if raw else []
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            text = json.loads(resp.read()).get("response", "").strip()
+            tags = [t.strip().lower().replace(" ", "_") for t in text.split(",") if t.strip()]
+            return [t for t in tags if 2 < len(t) < 40]
     except Exception:
         return []
 
 
 def tag_video(video_path):
-    """Return sorted comma-separated object tags for a video."""
+    """Return comma-separated tags aggregated across all frames."""
     tmp = tempfile.mkdtemp()
     try:
-        extract_frames(video_path, tmp, FRAMES)
+        extract_frames(video_path, tmp)
         frames = sorted(f for f in os.listdir(tmp) if f.endswith(".jpg"))
-        label_counts = {}
+        counts = {}
         for fname in frames:
-            for label in classify_frame(os.path.join(tmp, fname)):
-                label_counts[label] = label_counts.get(label, 0) + 1
-        # Sort by frequency descending, keep labels seen in ≥1 frame
-        ranked = sorted(label_counts.keys(), key=lambda l: -label_counts[l])
+            for tag in classify_frame(os.path.join(tmp, fname)):
+                counts[tag] = counts.get(tag, 0) + 1
+        ranked = sorted(counts, key=lambda t: -counts[t])
         return ",".join(ranked)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
-
-if not os.path.exists(CLASSIFY_BIN):
-    print(f"ERROR: vision_classify binary not found at {CLASSIFY_BIN}")
-    print("Compile it first:  swiftc vision_classify.swift -o vision_classify")
-    sys.exit(1)
+# ── Startup checks ────────────────────────────────────────────────────────────
 
 if not shutil.which("ffmpeg"):
     print("ERROR: ffmpeg not found. Install with:  brew install ffmpeg")
     sys.exit(1)
 
-with open(CSV_IN, newline="", encoding="utf-8") as f:
+try:
+    with urllib.request.urlopen("http://localhost:11434/api/tags", timeout=5) as r:
+        models = [m["name"] for m in json.loads(r.read()).get("models", [])]
+    if not any(MODEL in m for m in models):
+        print(f"ERROR: '{MODEL}' model not found. Run:  ollama pull {MODEL}")
+        sys.exit(1)
+except Exception:
+    print("ERROR: Ollama not running. Start it with:  ollama serve")
+    sys.exit(1)
+
+# ── Load CSV ──────────────────────────────────────────────────────────────────
+
+with open(CSV_IN, newline="", encoding="utf-8-sig") as f:
     rows = list(csv.DictReader(f))
 
 fieldnames = list(rows[0].keys())
@@ -136,47 +140,44 @@ if "objects" not in fieldnames:
 
 title_index = build_title_index()
 print(f"Found {len(title_index)} video files in {VIDEO_DIR}/")
+print(f"Frame interval: every {INTERVAL}s  |  Model: {MODEL}\n")
 
-total = len(rows)
-skipped = 0
-not_found = 0
-print(f"Tagging {total} videos...\n")
+total = skipped = not_found = 0
 
 for i, row in enumerate(rows, 1):
-    title = row["title"]
-    label = title[:28]
+    title = row.get("title", "")
+    label = title[:30]
+    total += 1
 
-    # Skip if already tagged
     if row.get("objects", "").strip():
-        sys.stdout.write(f"\r[{i}/{total}] {label:<28}  (already tagged)")
+        sys.stdout.write(f"\r[{i}/{len(rows)}] {label:<30}  (skipped)")
         sys.stdout.flush()
         skipped += 1
         continue
 
     video_path = find_video(title, title_index)
     if not video_path:
-        sys.stdout.write(f"\r[{i}/{total}] {label:<28}  (no file match)")
+        sys.stdout.write(f"\r[{i}/{len(rows)}] {label:<30}  (no file match)")
         sys.stdout.flush()
         row["objects"] = ""
         not_found += 1
         continue
 
-    sys.stdout.write(f"\r[{i}/{total}] {label:<28}  processing...")
+    sys.stdout.write(f"\r[{i}/{len(rows)}] {label:<30}  tagging...          ")
     sys.stdout.flush()
 
     tags = tag_video(video_path)
     row["objects"] = tags
 
-    preview = tags[:55] + "..." if len(tags) > 55 else tags
-    sys.stdout.write(f"\r[{i}/{total}] {label:<28}  {preview:<58}")
+    preview = (tags[:55] + "...") if len(tags) > 55 else tags
+    sys.stdout.write(f"\r[{i}/{len(rows)}] {label:<30}  {preview}\n")
     sys.stdout.flush()
 
-print(f"\n\nDone. {skipped} skipped (already tagged), {not_found} unmatched. Writing {CSV_OUT}...")
+    # Save after each video so progress isn't lost if interrupted
+    with open(CSV_OUT, "w", newline="", encoding="utf-8-sig") as f:
+        w = csv.DictWriter(f, fieldnames=fieldnames)
+        w.writeheader()
+        w.writerows(rows)
 
-with open(CSV_OUT, "w", newline="", encoding="utf-8") as f:
-    w = csv.DictWriter(f, fieldnames=fieldnames)
-    w.writeheader()
-    w.writerows(rows)
-
+print(f"\nDone. {skipped} skipped  |  {not_found} unmatched  |  {total - skipped - not_found} tagged")
 print(f"Written to {CSV_OUT}")
-print("Review the 'objects' column, then replace moberino_videos.csv when satisfied.")
