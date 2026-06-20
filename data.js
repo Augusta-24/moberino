@@ -7,7 +7,7 @@ const VIDEOS = [
     "published_at": "2020-08-24T17:16:35Z",
     "category": "Birthdays",
     "year": 1997,
-    "objects": "outdoor,land,fence,grass,foliage,utensil,umbrella,park,playground,slide_toy,sky,blue_sky,high_chair,balloon,road,street,crowd,machine,vehicle,automobile,car,jeans,swing_playground,chair,folding_chair,food,baked_goods,cake,dessert,birthday_cake,tool,toilet_seat,door,interior_room,bathroom,tableware,plate,container,trash_can,stairs,hat,headgear,baseball_hat",
+    "objects": "baby,cake,birthday,child,backyard,elderly,happy_birthday,party,anniversary,1_year,balloon,picnic_table,porch,children,playing,playground,family,celebration,toddler,birthday_party,happy,antonio,1_year_old,card,happy_birthday_anthony,christmas,food_on_plates,outdoor_area,house,dog,person_working_on_a_ladder,construction_site,pool,swing,swing_set,sandbox,dining_table,candle,park,father,tent,plates_with_food,party_decorations,highchair,teenager,high_chair,sitting_in_a_highchair,boy,baseball_cap,baseball_bat,baseball_glove,baseball,baseball_uniform,sports_equipment,stairs,handrail,front_yard,house_number_5310,white_truck,blue_trash_can,screen_door,american_flag,baseball_game,dugout,bathtub,boy_with_brown_hair,boy_standing_in_the_snow,birthday_cake,opening_presents,gift_bag,snowman,snowball,snow_shovel,broom,mittens,scarf,gloves,warm_clothing,cold_weather,winter,snowball_fight,snowman_building,holiday,picnic",
     "location": "10 Meath Ave, Huntington, NY 11743",
     "lat": 40.830775,
     "lng": -73.428611
@@ -20,7 +20,7 @@ const VIDEOS = [
     "published_at": "2020-08-24T17:19:47Z",
     "category": "Birthdays",
     "year": 1997,
-    "objects": "sofa,baby,cabinet,pillow,tool,tableware,utensil,interior_room,restaurant,machine,consumer_electronics,television,crowd,food,baked_goods,birthday_cake,cake,dessert,light,candle,frame,plate",
+    "objects": "baby,playing,toys,bottle_of_drink",
     "location": "10 Meath Ave, Huntington, NY 11743",
     "lat": 40.830775,
     "lng": -73.428611
@@ -33,7 +33,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Birthdays",
     "year": 1992,
-    "objects": "balloon,tableware,utensil,drinking_glass,bowl,plate,crowd,frame,interior_room,restaurant",
+    "objects": "birthday_cake,child,baby,party,cake,celebration,elderly,balloons,dining_table,clown,opening_presents,candle,restaurant,balloon,party_hat,blowing_candles,birthday,alex's_birthday_party,inflatables,cupcakes,black,blurry,dark,person_(adult,person_(child,activities_(talking,occasions_(party,pink_tablecloth,people_(baby,children,decoration,boy,christmas_tree,fireplace,snow,turkey,pumpkin,easter_eggs,dance_floor,dress,clown_puppet,candy,red_and_yellow_striped_tie,puppet,tablecloth,wrapping_paper,toddler,living_room,wine_glasses,wall_decorations,red_carpet_on_floor,other_people_in_background,dancing,2nd_birthday,birthday_boy,child_eating_cake,birthday_celebration,family,cooking",
     "location": "10 Meath Ave, Huntington, NY 11743",
     "lat": 40.830775,
     "lng": -73.428611
@@ -46,7 +46,7 @@ const VIDEOS = [
     "published_at": "2020-08-24T17:16:09Z",
     "category": "Birthdays",
     "year": 1996,
-    "objects": "cabinet,frame,food,baked_goods,cake,dessert,birthday_cake,hat,headgear,baseball_hat,suit,games,chess,curtain,teen,raw_glass,candle,light,bookshelf,interior_room,kitchen",
+    "objects": "child,birthday_cake,happy_birthday,alexander,t_shirt,beard,dog,tile_floor,kitchen_stove,microwave,refrigerator,cabinet,baby,girl,living_room,kitchen,stove,countertop,swimming,dancing,singing,opening_presents,blowing_candles,cooking,playing,birthday,christmas_tree",
     "location": "10 Meath Ave, Huntington, NY 11743",
     "lat": 40.830775,
     "lng": -73.428611
@@ -59,7 +59,7 @@ const VIDEOS = [
     "published_at": "2020-08-24T17:18:08Z",
     "category": "Birthdays",
     "year": 1998,
-    "objects": "tableware,utensil,balloon,suit,frame,cup,cabinet,sofa,bowl,crowd,food,baked_goods,cake,dessert,birthday_cake,candle,light,music,musical_instrument,drum,headgear,hat,fedora,chopsticks,interior_room,restaurant,jacket,plate,baby,pillow,tool",
+    "objects": "child,birthday,alex,opening_presents,living_room,happy_birthday,happy_birthday_alex,oven_mitts,kitchen_countertop,but_without_more_context,party_hat,balloon,cake,celebration,baby,toddler,elderly,blowing_candles,playing,parent,bathroom",
     "location": "10 Meath Ave, Huntington, NY 11743",
     "lat": 40.830775,
     "lng": -73.428611
@@ -72,7 +72,7 @@ const VIDEOS = [
     "published_at": "2020-08-24T19:13:10Z",
     "category": "Birthdays",
     "year": 1997,
-    "objects": "cabinet,door,sofa,pillow,tool,bedding,housewares,interior_room,machine,frame,bed,bedroom,consumer_electronics,television,suit,container,bottle,sign,balloon,appliance,stove",
+    "objects": "sheila_and_tony,birthday,living_room,happy_birthday,elderly,child,toddler,birthday_cake,kitchen,text_message,teenager,boy,kitten,blowing_candles,shelf,television,card,refrigerator,opening_presents,playing",
     "location": "10 Meath Ave, Huntington, NY 11743",
     "lat": 40.830775,
     "lng": -73.428611
@@ -85,7 +85,7 @@ const VIDEOS = [
     "published_at": "2020-08-24T17:19:28Z",
     "category": "Birthdays",
     "year": 1998,
-    "objects": "curtain,tableware,utensil,plate,teen,frame,door,balloon,raw_glass,sofa,pillow,tool,footwear,shoes,high_heel,cup",
+    "objects": "cake,birthday_cake,child,celebration,birthday,candle,happy_birthday_anthony,party_hat,dining_table,family,elderly,party,male,person_(adult,room_setting_(living_room,specific_objects_(couch,baby,living_room,cake_with_candles,number_on_cake,hand_holding_lighter,person_cutting_cake,person_blowing_out_candles,plastic_toy_train,small_plastic_car,colorful_balloons,paper_napkins,birthday_party,forks,people_(adults,television_screen,wall_decoration,wine_glass,cookies",
     "location": "10 Meath Ave, Huntington, NY 11743",
     "lat": 40.830775,
     "lng": -73.428611
@@ -98,7 +98,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:50Z",
     "category": "Severino Christmas",
     "year": 1989,
-    "objects": "suit,interior_room,outdoor,sky,night_sky,frame,necktie,illustrations,baby,crowd,nightclub,celestial_body,moon,hat,headgear,fedora,music,speakers_music,cabinet,machine,appliance,stove,kitchen,refrigerator",
+    "objects": "kitchen,christmas_tree,santa_claus,age_indeterminate,attire_unclear,location_indeterminate,countertop,cooking,living_room,talking,facial_expression_neutral,facial_expression_serious,occasion_indeterminate,man_speaking,camera_distortion,suit,tie,mustache,hair,mouth,tongue,teeth,microwave,refrigerator,socializing,casual_attire,glasses,birthday_cake,halloween,snow,facebook,reflection,i'm_sorry,red_and_white_hat,chimney,photo_editing_software,elderly",
     "location": "10 Meath Ave, Huntington, NY 11743",
     "lat": 40.830775,
     "lng": -73.428611
@@ -111,7 +111,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:51:11Z",
     "category": "Christmas Program",
     "year": 1991,
-    "objects": "microphone,performance,recreation,entertainer,singer,podium,teen,polka_dots,jeans,decorative_plant,interior_room,door,military_uniform,music,speakers_music",
+    "objects": "church,microphone,stage,kid,family,pew,choir,robe,children,speaking_into_microphone,speaking,boy,podium,teenage_boy",
     "location": "10 Pinetree Rd, Huntington Station, NY 11746",
     "lat": 40.82726,
     "lng": -73.414029
@@ -124,7 +124,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:38:53Z",
     "category": "Christmas Program",
     "year": 1993,
-    "objects": "crowd,suit,celebration,costume,teen,interior_room,nightclub,necktie,headgear,optical_equipment,eyeglasses",
+    "objects": "children,child,church,singing,christmas,costumes,baby,toddler,teenager,birthday,school,opening_presents,play,easter,party,elderly,birthday_cake,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,living_room,group,posing,babies,children_playing,kids,students,classroom,girls,people(child,activities(singing,setting(church,occasion(easter,party_hats,party_dresses,santa_claus,setting_(indoor,activity_(caring,blowing_candles",
     "location": "10 Pinetree Rd, Huntington Station, NY 11746",
     "lat": 40.82726,
     "lng": -73.414029
@@ -137,7 +137,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:35:22Z",
     "category": "Christmas Program",
     "year": 1995,
-    "objects": "crowd,teen,curtain,flag,jacket,balloon",
+    "objects": "children,school,singing,birthday_cake,stage,christmas,event,church,kids,audience,celebration,cake,classroom,group,balloons,decorations,desks,carpeted,wallpaper,class_photo,podium,object\n\nsinging,choir,birthday,winter,group_photo,school_setting,christmas_theme,santa_hat,candy_cane,photo_booth,christmas_tree,candle,party,candy_canes,opening_presents,blowing_candles",
     "location": "10 Pinetree Rd, Huntington Station, NY 11746",
     "lat": 40.82726,
     "lng": -73.414029
@@ -150,7 +150,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:10:40Z",
     "category": "Christmas Program",
     "year": 1993,
-    "objects": "crowd,teen,celebration,costume,suit,jacket,door,sign,frame,cord",
+    "objects": "child,singing,church,children,toddler,stage,microphone,podium,pulpit,christmas_tree,candle,cross,television_screen,children's_choir,audience,interior,people_(child,activities_(singing,settings_(church,occasions_(christmas,elderly,christmas_party,celebration,kids,christmas",
     "location": "10 Pinetree Rd, Huntington Station, NY 11746",
     "lat": 40.82726,
     "lng": -73.414029
@@ -163,7 +163,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:25:44Z",
     "category": "Fawcett Family",
     "year": 1996,
-    "objects": "celebration,ceremony,graduation,frame,polka_dots,teen,gown",
+    "objects": "graduation,school,children,child,students,gown,cap,baby,cap_and_gown,caps_and_gowns,church,graduation_cap,student,toddler,graduation_caps,baby_girl,high_school_graduation,teenagers,aisle,certificate_of_achievement,american_flag,people_(2_elderly,setting_(inside_a_building,teenager,students_graduating,nurse's_hat,nurse,bed,robe,blurry_image,white_robes,choral_robe,choir_members,church_setting,celebratory_occasion,whiteboard,school_uniforms,teenage_girl,graduation_robe,graduation_ceremony,graduates,cheering_students,audience,school_auditorium",
     "location": "10 Pinetree Rd, Huntington Station, NY 11746",
     "lat": 40.82726,
     "lng": -73.414029
@@ -176,7 +176,7 @@ const VIDEOS = [
     "published_at": "2020-08-27T00:01:21Z",
     "category": "Severino Christmas",
     "year": 2010,
-    "objects": "door,interior_room,celebration,christmas_tree,tree,christmas_decoration,frame,fireplace,chair,armchair,cabinet,toy,gift,living_room,teen,stuffed_animals,sofa,suit,pillow,tool,decorative_plant,machine,appliance,stove,kitchen,kitchen_countertop,curtain,tableware,utensil,cup,restaurant,container,carton",
+    "objects": "child,baby,opening_presents,living_room,christmas,elderly,christmas_tree,toddler,blowing_candles,birthday_cake,snow,cake_with_candles,christmas_decorations,wall_decoration,playing,pet,inside,home_kitchen,people_standing,man_and_woman_talking,bottles_of_wine,cup_on_counter,festive_setting,cooking,december_26,birthday,halloween,thanksgiving,easter,singing,christmas_presents,people_crouching_down,red_christmas_sweater,holiday_decorations,elderly_woman,elderly_man,stockings,wreath,greeting_card,fireplace,candle,red_shirt,santa_hat,candy_cane,backyard,church,restaurant,school,hospital,park,pool,presents_on_table,decorations,furniture,birthday_hat,gift_wrapping,people_sitting_around_it,woman_holding_a_red_cup,child_next_to_him,dog_in_front_of_them,cat_on_the_table,books,cell_phone,bottle_of_wine,potted_plant,wall_clock,family_photo,wooden_floor,tie,occasion\n\nwoman,family",
     "location": "14 Luyster St, Huntington Station, NY 11746",
     "lat": 40.816448,
     "lng": -73.401162
@@ -189,7 +189,7 @@ const VIDEOS = [
     "published_at": "2020-08-27T00:03:20Z",
     "category": "Severino Christmas",
     "year": 2011,
-    "objects": "cabinet,container,bottle,sofa,celebration,christmas_decoration,christmas_tree,tree,interior_room,kitchen,kitchen_countertop,utensil,tableware,pillow,tool,drinking_glass,kitchen_sink,plate,microphone,door",
+    "objects": "stove,birthday,christmas,halloween,thanksgiving,easter,christmas_tree,opening_presents,tablecloth,fireplace,remote_controls,books,wall_decorations",
     "location": "14 Luyster St, Huntington Station, NY 11746",
     "lat": 40.816448,
     "lng": -73.401162
@@ -202,7 +202,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T16:08:21Z",
     "category": "Florida",
     "year": 1995,
-    "objects": "interior_room,restaurant,frame,crowd,tableware,utensil,sofa,drinking_glass,seat,plate,celebration,costume,light,lamp,curtain,painting,raw_glass,optical_equipment,eyeglasses,polka_dots,door",
+    "objects": "restaurant,baby,child,elderly,opening_presents,costume,dining_table,birthday,celebration,birthday_cake,boy,girl,cake,duck_mascot,restaurant_setting,candle,dancing,graduation,february_29,school,turkey,wedding,mickey_mouse_character,church,family,glass,cooking,blowing_candles,playing,toddler,easter,minnie_mouse,mickey_mouse,eating_breakfast,clown,animal_mascot,people_sitting_at_table,disney_mascot,dog,audience,people(children,setting(restaurant,activity(dining,duck_mask,dinner,people_(2_individuals,dinner_occasion,day,event,feast,grandmother,granny,happy,holiday,hotel,hour,night,party,presentation,princess,snowman,snowy,song,teddy_bear,toilet,toy,wedding_cake,wedding_dress,weekend,year,blue,indoor_dining_area,christmas_tree,balloon,fireplace,snow,pumpkin,easter_eggs,backyard,school_bus,picnic_table,school_bus_stop,red_and_white_sign,orange_juice,cell_phone,television,microwave,date_(february_29,minnie_mouse_costume,event_poster,party_hat,birthday_party,children,sitting_in_chairs,swimming,singing,living_room,hospital,park,pool,christmas,halloween,thanksgiving,balloons,crowd_of_people,february_29_1995,disney_world,february_29th,birthday_celebration",
     "location": "Walt Disney World, Orlando, FL",
     "lat": 28.523047,
     "lng": -81.463527
@@ -215,7 +215,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:51:14Z",
     "category": "Florida",
     "year": 1991,
-    "objects": "crowd,interior_room,restaurant,fence,suit,curtain,seat,tableware,utensil,drinking_glass,frame,flag,door,plate,celebration,costume,recreation,camera,teen,polka_dots,optical_equipment,eyeglasses,consumer_electronics,machine,computer,laptop",
+    "objects": "dining_table,restaurant,mickey_mouse_costume,banquet_hall,chairs_around_table,overhead_lighting_fixture,chandelier,ceiling_fan,decorative_molding_on_wall,paneled_wall,white_ceiling_tiles,restaurant_setting,minnie_mouse_character,family,dinner,mascot,spoons,costumes,elderly,dog,stuffed_animal,people_(child,setting_(restaurant,occasion_(none,activities_(none,family_dinner,event,girl,party,cake,forks,knives,dining_room,child's_hair_tie,mickey_mouse,minnie_mouse_outfit,party_tablecloth,birthday_cake,fork,knife,spoon,mickey_mouse_headband,man_holding_onto_child,minnie_mouse_costume,elderly_man,elevator,stairs",
     "location": "Walt Disney World, Orlando, FL",
     "lat": 28.523047,
     "lng": -81.463527
@@ -228,7 +228,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T16:06:28Z",
     "category": "Florida",
     "year": 1995,
-    "objects": "interior_room,restaurant,utensil,tableware,crowd,drinking_glass,seat,frame,plate,cup,bowl,optical_equipment,eyeglasses,raw_glass,suit",
+    "objects": "restaurant,child,boy,baby,car,children,elderly,toddler,teenager,family,duck_mascot,dog_mascot,stuffed_animal,easter,settings_(restaurant,occasions_(birthday,family_dinner,dining_table,breakfast,oranges,friends,morning,social,mouse,dinner,mickey_mouse_character,talking,elderly_man,glass_on_table,glasses,birthday,mascot,person_hugging_child,child_with_blonde_hair,car_seat_in_background,people_in_background,birthday_party,playing_with_a_toy,living_room,waving,character,plush_toy,hand_of_person,arm_of_person,party_hat,specific_objects,car_interior,christmas,halloween,thanksgiving,wedding,graduation,rain,hoodie,surprised_expression,arm_raised,girl,kid,backyard",
     "location": "Walt Disney World, Orlando, FL",
     "lat": 28.523047,
     "lng": -81.463527
@@ -241,7 +241,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T14:28:14Z",
     "category": "Birthdays",
     "year": 1992,
-    "objects": "ball,recreation,sport,sports_equipment,fence,stairs,seat,escalator,outdoor,interior_room,interior_shop,sofa,pillow,tool,land,park,playground,slide_toy,crowd,tableware,utensil,cup",
+    "objects": "child,baby,playground,toddler,slide,play,children,playing,pool,inflatable,balls,elderly,colorful_balls,playground_equipment,playground_ball_pit,colors,amusement_park,carnival,red_and_yellow_tent,clown,popcorn_machine,ball_pit,casino,gaming_machine,gym,activity_area,rides,roller_coaster,tunnel,foam_pit,children's_play_area,indoor_playground,gym_equipment,children_playing,adults_supervising,kid,girl,store,counter,sign,mirror,books,toy,bag,pants,skirt,shoe,tie,hair,scissors,brush,toothbrush,toothpaste,faucet,toilet,shelf,lights,phone,computer,mouse,keyboard,television,remote,speaker,headphones,earbuds,video_game_controller,scarf,coat,tie_dye_shirt,all_indoors,people(child,settings(school,occasions(birthday,birthday,cake,opening_presents,classroom",
     "location": "200 Robbins Ln, Jericho, NY 11753",
     "lat": 40.794867,
     "lng": -73.517836
@@ -254,7 +254,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T14:32:36Z",
     "category": "Birthdays",
     "year": 1992,
-    "objects": "utensil,tableware,cup,curtain,frame,cabinet,suit,night_sky,outdoor,sky,balloon,bookshelf,light,lamp,door,jacket,music,musical_instrument,drum,headgear,helmet,fence,animal,mammal,cat,feline,adult_cat,container,bottle,bouquet,flower_arrangement",
+    "objects": "baby,child,elderly,living_room,kitchen,candle,cooking,opening_presents,blowing_candles,tom's_30th_birthday,april_14,playground_equipment,restaurant,wheelchair,stove,refrigerator,microwave,frying_pan,people_(1,activities_(2,settings_(1,occasions_(0,birthday_cake,singing,party,celebrating,cake,balloon,lit_candles,dark_background,adult_male,young_man,hands,toddler,paper,family_room,glass_bottle",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -267,7 +267,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T20:07:37Z",
     "category": "Birthdays",
     "year": 2000,
-    "objects": "utensil,tableware,plate,bowl,drinking_glass,food,baked_goods,cake,dessert,birthday_cake,bouquet,flower_arrangement,sign,candle,light,curtain,container,vase,cabinet,suit,interior_room,dining_room,door,cup,teen,frame,sofa",
+    "objects": "birthday_cake,80th_candle,people_(elderly,settings_(indoors,occasions_(birthday,elderly_woman,girl,baby,cake,restaurant,elderly,living_room,opening_presents",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -280,7 +280,7 @@ const VIDEOS = [
     "published_at": "2020-08-24T17:23:51Z",
     "category": "Birthdays",
     "year": 1999,
-    "objects": "fence,foliage,sofa,cabinet,curtain,interior_room,wood_natural,decorative_plant,statue,pillow,tool,living_room,door,bedding,housewares,bedroom",
+    "objects": "elderly,child,cake,living_room,bearded,blue_shirt,earring,tattoos,blowing_out_candles,relaxing,porch,cooler,happy_birthday,sitting_on_bench,birthday_cake,candle,opening_presents,birthday,people(adult,activities(talking,setting(living_room,occasion(none,toddler,elderly_man,elderly_woman",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -293,7 +293,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:21:30Z",
     "category": "Birthdays",
     "year": null,
-    "objects": "suit,tableware,utensil,interior_room,restaurant,drinking_glass,bar,crowd,frame,necktie,door,sign,machine,consumer_electronics,television,raw_glass,container,bottle,plate,food,baked_goods,cake,dessert,birthday_cake,cup,light,candle",
+    "objects": "happy_birthday,elderly,restaurant,birthday_cake,birthday,grandmother,cake,glasses,80th,card,happy_birthday_grandma,grandma,granddaughter,birthday_celebration,happy_birthday_wish,grandma_80th,black_shirt,white_wine_glass,elderly_woman,elderly_man,living_room,suit,tie,older_man,socializing,party,taking_a_photo,dressed_in_casual_attire,icing,candle,message,flowers,tablecloth,knife,forks,opening_presents,party_decorations,balloon,rose,candle_holder,child,cake_cutting,dining_table",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -306,7 +306,7 @@ const VIDEOS = [
     "published_at": "2020-08-27T00:03:26Z",
     "category": "Birthdays",
     "year": 2012,
-    "objects": "cabinet,suit,interior_room,kitchen,kitchen_countertop,door,frame,utensil,tableware,curtain,plate,arch,sign,food,jacket,machine,hoodie,baked_goods,cake,dessert,birthday_cake,clock,dial,timepiece,appliance,stove,jeans,tool,wheelchair",
+    "objects": "child,elderly_man,home_setting,party_occasion",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -319,7 +319,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:39Z",
     "category": "Birthdays",
     "year": 1988,
-    "objects": "container,bottle,utensil,tableware,plate,drinking_glass,curtain,brick,outdoor,sky,light,lamp,optical_equipment,eyeglasses,interior_room,bar,food,pizza,fireplace,fire,flame,machine,appliance,brick_oven,oven,night_sky,suit,blue_sky,land,hill,liquid,drink,wine,wine_bottle",
+    "objects": "cake,elderly,party_hat,birthday_cake,celebration,dining_table,birthday_party,candle,elderly_man,party,birthday,beer_bottle,glasses,beard,curly_hair,forks,wine_glasses,wall_decorations,ceiling_light_fixture,flooring,curtains,knife,colorful_tablecloth,balloon,celebrating,fire,television,mission,birthday_candles",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -332,7 +332,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:28:33Z",
     "category": "Birthdays",
     "year": 1993,
-    "objects": "outdoor,land,grass,fence,hammock,wood_natural,shrub,foliage,machine,vehicle,bicycle,brick,door,umbrella,utensil,polka_dots,stairs,chair,folding_chair,animal,reptile,alligator_crocodile,balloon,seat,crowd",
+    "objects": "backyard,hammock,elderly,baby,house,child,family,pants,deck,tent,patio,lawn,elderly_woman,grill,boy,car,driveway,white_t_shirt,birthday,cake,candle,children,tie,shorts,handbag,party,people_(3,beach_setting,umbrella_with_fringe,patio_furniture,lawn_chair,lying,birthday_cake,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,clouds,outdoor_dining_table,swing,sitting_on_grass,outdoor_party,sports_equipment,ball,blanket,sunscreen,water_bottle,watching,opening_presents,unwrapping,handing_something_to_man,truck,reclining_chair,child_wearing_red_hat,green_grass_on_field,cooking,domestic_environment,reading,elderly_man_on_stage,microphone_in_hand,activities_(singing,setting_(stage,occasion_(concert,setting_(backyard,benches,toddler,girl,park",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -345,7 +345,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T14:18:42Z",
     "category": "Birthdays",
     "year": 1992,
-    "objects": "brick,curtain,balloon,jacket,crowd,tableware,utensil,cup,raw_glass,door,candle,light,fire,flame,food,polka_dots,optical_equipment,eyeglasses,recreation,sport,ball,sports_equipment",
+    "objects": "elderly,living_room,child,baby,party,kitchen,elderly_woman,family,birthday,cake,elderly_man,fireplace,candlelight,cake_with_candles,dining_table_and_chairs,january_19th,activities_(smiling,socializing,blue_cup,dimly_lit_room,closed_curtains,dark_hallway,january_19,backyard_setting,birthday_celebration,coat,tie,old_man,woman_(possibly,cooking,timestamp,mother,man_standing,woman_standing,hand_gesture,dining_table,child_playing,adult_sitting,child_holding_cup,cake_on_dining_table,kitchen_counter,dark,lit_corner,shadows,indistinct_shapes,toddler,church,blowing_candles,red_balloon,decoration,black_and_white_photo,balloons,cell_phone,group,casual_clothing,elderly_people,party_or_social_event,christmas,opening_presents,candle,people_(elderly,activities_(sitting,settings_(room,occasions_(none,including_a_couch,coffee_table,opening_present,newspaper,glasses,happy_birthday,birthday_cake,white_cup_on_table,children,birthday_party,casual_attire,laughing",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -358,7 +358,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:51:03Z",
     "category": "Birthdays",
     "year": 1991,
-    "objects": "baby,curtain,consumer_electronics,machine,television,pillow,tool,sofa,bedding,housewares,chair,folding_chair,music,musical_instrument,string_instrument,guitar,drum,interior_room,bedroom,bed,bookshelf,jeans",
+    "objects": "baby,child,living_room,elderly,toddler,birthday_cake,opening_presents,playing,birthday,teenager,sitting_in_highchair,occasion_(not_clear,sitting_in_a_high_chair,watching_the_woman,christmas_tree,cooking,hospital,keyboard,doorway,television,woman_holding_baby,near_doorway,family,elderly_woman,dancing,blowing_candles,family_home,red_cup,teddy_bears,walking_in_living_room",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -371,7 +371,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Birthdays",
     "year": 1991,
-    "objects": "cabinet,baby,curtain,light,lamp,brick,frame,optical_equipment,eyeglasses,interior_room,restaurant,door,machine,appliance,oven,kitchen_oven,jeans",
+    "objects": "baby,elderly,child,toddler,living_room,kitchen,birthday_cake,family,opening_presents,cooking,birthday,blowing_candles,balloon,party_hat,dining_table,cake,party,birthday_party,person_playing_with_a_toy,1999_timestamp_on_screen,refrigerator,food_on_shelves,dinner_table,people_(adults,dining_room,cake_cutting,pink_punch,tablecloth,candle,toddler_(female,christmas_tree,fireplace,snow_on_the_ground_outside,turkey_(roasting_in_oven,pumpkin,television,family_room,home_interior,t_shirt,singing,playing,thanksgiving,person_holding_baby,blurry",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -384,7 +384,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T14:51:34Z",
     "category": "Birthdays",
     "year": null,
-    "objects": "cabinet,sofa,outdoor,night_sky,sky,document,screenshot,bedding,housewares,balloon,consumer_electronics,machine,television,seat",
+    "objects": "child,baby,party_hat,balloon,kitchen,toddler,opening_presents,blowing_candles,family,birthday_cake,candy,including_an_oven,candles_(one_is_lit,party,glasses,video_screen,birthday,celebration,toy,cake,eggs,living_room,casual,elderly",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -397,7 +397,7 @@ const VIDEOS = [
     "published_at": "2020-08-24T17:22:51Z",
     "category": "Birthdays",
     "year": 1998,
-    "objects": "brick,curtain,suit,tableware,utensil,sofa,frame,necktie,chair,drinking_glass,interior_room,restaurant,hat,headgear,baseball_hat,cabinet,door,folding_chair,rocks,pillow,tool,armchair,container,bottle,seat,candle,light,balloon,sign",
+    "objects": "baby,living_room,birthday,child,happy_birthday,elderly,television,birthday_cake,ted_and_kevin,girl,sitting_on_couch,watching_tv,kitchen,microwave,counter,cabinet,fridge,stove,dishwasher,cupboard,st._patrick's_day,sweater,beard,glasses,mustache,long_beard,family,cake,opening_presents,woman_playing,cake_on_table,icing_on_donut,cookie,pointing,activity_(eating,setting_(home,occasion_(none,objects_(cake,teddy_bear,balloon,kevin",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -410,7 +410,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:27Z",
     "category": "Birthdays",
     "year": 1989,
-    "objects": "container,bottle,door,suit,tableware,utensil,balloon,necktie,plate,frame,drinking_glass,eyeglasses,optical_equipment,recreation,camera,machine,consumer_electronics,jewelry",
+    "objects": "elderly,birthday_cake,elderly_woman,dining_table,balloon,cake,party,living_room,celebration,christmas_tree,hallway,affectionate,intimate,embracing,birthday_balloon,number_50,restaurant,graduation,mustache,people_(elderly,settings_(living_room,occasions_(birthday,happy_birthday,confetti,black_and_white,office,computer_screen,old_woman,speaking,person1,person2,glass,friends,balloons,beer_bottle,people_sitting,teenager,party_hat,birthday,blowing_candles,not_visible,candle,wine_glass,birthday_boy,church,birthday_party,glasses,hair,tie,__vcr_logo,__room,__logo,__video",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -423,7 +423,7 @@ const VIDEOS = [
     "published_at": "2020-08-15T17:56:51Z",
     "category": "Birthdays",
     "year": 1999,
-    "objects": "outdoor,land,grass,fence,bench,shrub,door,teen,arch,wood_natural,flag,decorative_plant",
+    "objects": "child,dog,elderly,backyard,leaves,cloudy,dark,evening,playing,running,throwing,catching,balloon,flag,baseball,house",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -436,7 +436,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T18:48:38Z",
     "category": "Halloween",
     "year": 1995,
-    "objects": "door,jacket,tableware,utensil,plate,frame,foliage,sign,crowd,jeans,bowl,food,pizza,drinking_glass,decorative_plant,branch,outdoor,land,grass,sky,blue_sky,recreation,camera",
+    "objects": "child,birthday,costume_party,baby,toddler,elderly,activity___blowing_candles,setting___school,occasion___halloween,near_door,screen_door,front_porch,house_exterior,girl,house_interior",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -449,7 +449,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Halloween",
     "year": 1991,
-    "objects": "headgear,hat,baseball_hat,performance,recreation,entertainer,singer,crowd,stairs,brick,sofa,toy,doll,polka_dots,baby,statue,beanie",
+    "objects": "baby,child,toddler,elderly,living_room,opening_presents,blowing_candles,halloween,dancing,playing,clown,birthday,costume,backyard,christmas,clown_outfit,october_31st,dressed_in_ruffled_costume,activity(sitting,setting(living_room,occasion(october_31st_1999,teenager,doll,pumpkin,stuffed_animal,red_nose,white_face,large_shoes,long_sleeve_shirt,party,bird,mirror,birthday_cake,clown_costume,sitting_bench,blurry_image,christmas_tree,blowing_nose,red_wig,cooking,hallway,wallpaper,socks,hair,head,face,eyes,nose,mouth,teeth,ears,clothing,accessories,video_camera,tape,television_screen,speaker,microphone,cord,outlet,socket,phone_line,handheld_cell_phone,text_message,digital_display,date_and_time_stamp,keyboard",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -462,7 +462,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:09:10Z",
     "category": "Halloween",
     "year": 1993,
-    "objects": "brick,baby,sofa,jacket,cabinet,door,pillow,tool,outdoor,jeans,tableware,utensil,plate,container,luggage,backpack,jewelry,celebration,costume,frame,footwear,shoes,sneaker",
+    "objects": "baby,child,living_room,halloween,toddler,costume,elderly,children,birthday,opening_presents,fireplace,christmas_tree,school,costumes,candle,blowing_candles,family,television,bunny_ears,classroom,costume_party,party,candies,toys,singing,cake,person_(child,boy,green_leprechaun_costume,cartoon_leprechaun_costume,toy_shopping,candy_bag,santa_hat,superhero_cape,celebration,elf,red_shirt,holding,costume_(elf,room_(living_room,occasion_(halloween,animal_mask,thanksgiving,person_dressed_in_costume,snow_on_ground,people_gathered_around,birthday_cake,balloon,christmas,dog,sitting_on_a_bed,facing_camera,playing_video_game,woman's_hands,hospital,handshake,candy,teenager,playing,backyard,park",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -488,7 +488,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:50:50Z",
     "category": "Severino Christmas",
     "year": null,
-    "objects": "brick,cabinet,fireplace,fire,flame,suit,celebration,christmas_decoration,christmas_tree,tree",
+    "objects": "living_room,child,elderly,christmas_tree,baby,christmas,opening_presents,birthday,fireplace,birthday_cake,blowing_candles,toddler,playing,elderly_woman,cake,candle,kitchen,television,family,snow,santa_hat,cooking,dining_table,stockings,ornaments,easter_eggs,tie,wall_clock,balloon,microwave,present_opening,birthday_party,girl,cards,red_candle,kitchen_counter,kitchen_appliances,mantel_clock,christmas_ornaments,wall_decorations,floor_lamps,tile_floor,living_room_furniture,books,wall_art,vase,potted_plant,cell_phone,christmas_presents,holiday_gifts,gift,toy_car,people_(children,setting_(living_room,occasion_(christmas,turkey,pumpkin,suit,house,box,woman_holding_string,greeting_cards,christmas_wreath,pine_tree_outside_window,snow_on_ground_outside,plaid_blanket,teddy_bear_on_floor,santa_claus_figurine,string_of_lights,wrapping_paper_on_presents,christmas_pajamas,christmas_sweater,elf_costume,candy_canes,gingerbread_house,hot_cocoa_mug,snow_globe,sleigh,reindeer_figurines,tinsel_decorations,talking,holiday,i'm_sorry,feel_free_to_ask,birthday_hat,object\n\nperson,people_sitting_around_it,christmas_gifts_on_a_table,children,family_celebration,person_shopping,grandmother,woman_holding_box,party_hat,bottles_of_alcohol,boxes,phone,video_camera,picture_frame,curtain,decorations,dancing,countertop,singing,drinking,inside,evening,stocking,wreath,holiday_sweater,scarf,festive_decorations,indoor_playground,date",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -501,7 +501,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:05:10Z",
     "category": "Severino Christmas",
     "year": 1996,
-    "objects": "celebration,christmas_tree,tree,christmas_decoration,brick,lamp,light,gift,baby,frame,suit,necktie,cabinet,sofa,fireplace",
+    "objects": "living_room,christmas_tree,opening_presents,elderly,baby,christmas,child,celebration,decorations,birthday_cake,playing,fireplace,family,snow,cooking,toddler,cake,stockings,settings_(living_room,holiday,blowing_candles,birthday,sitting_in_rocking_chair,people_(elderly,occasions_(christmas,objects_(christmas_tree,candle,santa_claus,decoration,december_25_1996,piano,december_25th,christmas_decorations,party,ornaments,carols,holiday_spirit,elderly_woman,elderly_man,dog,house,holiday_decorations,blue",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -514,7 +514,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:51:05Z",
     "category": "Severino Christmas",
     "year": null,
-    "objects": "brick,celebration,christmas_tree,tree,christmas_decoration,sofa,suit,cabinet,gift,interior_room,necktie,polka_dots,door,living_room,consumer_electronics,machine,television,pillow,tool,fireplace,chair,armchair,interior_shop",
+    "objects": "christmas_tree,opening_presents,child,baby,living_room,christmas,elderly,toddler,birthday,christmas_presents,fireplace,family,birthday_cake,blowing_candles,snow,cake,television,balloon,turkey,wrapping_paper,candle,pumpkin,easter_eggs,dancing,playing,ornaments,stockings,elderly_woman,tie,people_(adult,dining_table,christmas_decorations,decorations,lights,christmas_cards,santa_hat,stocking,scarf,snowman,sleigh,friends,christmas_eve,teenager,present_opening,elderly_people,store,birthday_celebration,scissors,christmas_present,gift_bag,birthday_candles,people_(baby,plaid_shirt,handbag,settings_(indoor,occasions_(christmas,presents_under_the_tree,books,christmas_ornaments,card,gift,person_(woman,activity_(opening_presents,occasion_(christmas,object_(christmas_tree,1._baby,holiday,santa_claus_decoration,holiday_stockings,christmas_card,people_(children,settings_(living_room,family_room,children,elderly_man_in_a_suit,beard,glasses,microphone,podium,party_hat,talking_on_microphone",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -527,7 +527,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:50Z",
     "category": "Severino Christmas",
     "year": null,
-    "objects": "tableware,utensil,plate,door,frame,jacket,tool,pillow,sofa",
+    "objects": "living_room,baby,child,opening_presents,elderly,toddler,christmas_tree,blowing_candles,birthday,christmas,birthday_cake,playing,running,unwrapping_presents,lit_candle,fireplace,candle,television,wall_clock,christmas_wreath,setting___living_room,occasion___birthday,birthday_candles,cake,settings_(living_room",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -540,7 +540,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:43Z",
     "category": "Severino Christmas",
     "year": 1989,
-    "objects": "suit,cabinet,decorative_plant,tableware,utensil,frame,outdoor,night_sky,sky,celestial_body,moon,optical_equipment,eyeglasses,cup,plate,door,machine,appliance,refrigerator",
+    "objects": "living_room,kitchen,birthday_cake,balloon,blowing_candles,christmas_decorations,baby,child,elderly,countertop,cupcakes,teenager,dark_hallway,white_walls,birthday_candle,opening_presents,dining_table,wine_bottles,potted_plants,red_shirt,television_screen,family,socializing,elderly_woman,refrigerator,drinking,beer_can,informal_setting,party,such_as_cups,bowls,kitchen_appliances,cabinets,faucet,dish,cooking,television,screen,christmas_tree,fireplace,snow,turkey,pumpkin,easter_eggs,smoking,cake,candies,cookies_with_faces,red_and_white_tablecloth,mugs,candle,face,mouth,eye,hair,glasses,pants,beard,mustache,christmas,oven_mitts,casual,please_provide_it,toddler,playing,hospital,park,hand",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -553,7 +553,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:47Z",
     "category": "Severino Christmas",
     "year": 1988,
-    "objects": "light,suit,cabinet,lamp,tableware,utensil,plate,necktie,interior_room,restaurant,machine,consumer_electronics,television,frame,container,bottle,drinking_glass,candle,night_sky,outdoor,sky,crowd,optical_equipment,eyeglasses",
+    "objects": "elderly,birthday,christmas,living_room,birthday_presents,conversation,opening_presents,beard,preparing_food,cooking,family,friends,festive_decorations,holiday_spirit,smile,birthday_cake,christmas_tree,balloon,fireplace,candle,cake,child,dining_table,family_photo,holiday_decorations,talking_on_phone,elderly_people,table_with_presents,setting_is_indoors,singing,ronald_reagan,arnold_schwarzenegger",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -566,7 +566,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:41Z",
     "category": "Severino Christmas",
     "year": 1989,
-    "objects": "cabinet,bottle,container,celebration,christmas_tree,tree,christmas_decoration,door,brick,night_sky,outdoor,sky,fire,flame,fireplace,frame,suit,necktie,curtain,utensil,tableware,drinking_glass",
+    "objects": "elderly,christmas_tree,kitchen,dining_table,living_room,countertop,opening_presents,christmas_decoration,refrigerator,stove,microwave,preparing_food,baby,fireplace,fire,cabinet,lights,ornaments,tinsel,wreath,stockings,santa_hat,faucet,outdoor_setting,backyard,cooking,candle,holiday_decorations,such_as_people",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -579,7 +579,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:38:17Z",
     "category": "Severino Christmas",
     "year": null,
-    "objects": "celebration,christmas_tree,tree,brick,christmas_decoration,crowd,gift,suit,costume,pillow,tool,jacket,frame,sign,toy,stuffed_animals,outdoor,night_sky,sky",
+    "objects": "child,baby,christmas_tree,opening_presents,christmas,elderly,blowing_candles,birthday_cake,snow,birthday,living_room,balloon,fireplace,turkey,pumpkin,easter_eggs,toddler,wrapping_paper,christmas_decorations,television,school,people_(child,setting_(living_room,activity_(opening_presents,playing_with_gifts,candle,santa_claus,decorations,wreath,family,holiday_decorations,dining_table,people_(elderly,activities_(celebrating,indoor_living_space,christmas_lights,ornaments,girl,red_hat,teenager,church,santa_hat",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -592,7 +592,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:39Z",
     "category": "Severino Christmas",
     "year": 1987,
-    "objects": "celebration,christmas_tree,tree,christmas_decoration,frame,tableware,utensil,door,cup,sofa,raw_glass,interior_room,nightclub,seat,curtain,balloon,recreation,camera,container,bottle,drinking_glass,cabinet",
+    "objects": "elderly,living_room,baby,child,christmas_tree,toddler,teenager,blowing_candles,opening_presents,elderly_woman,elderly_man,microphone,object\n\nperson,picture_frame,candle,candlestick,knife,joyful_expression,red_lipstick,red_jacket,playing,backyard,easter,easter_eggs,plaid_shirt,birthday_cake,i'm_sorry,sofa,television_screen,reading_book,cooking,church,restaurant,school,hospital,park,pool,birthday,halloween,christmas,plant,curtain,countertop,faucet,mirror,fridge,wine_glass,teddy_bear,television,window_blinds,curtain_rod,shower_head,bathtub,toilet,toothbrush,sink_faucet,soap_dish,towel_rack,refrigerator_door_handle,oven_door_handle,cabinet_doors,drawer,bed,nightstand,dresser,mirror_on_the_wall,wine_bottle,vase,potted_plant,wreath,garland,tinsel,lights,stocking,turkey,pumpkin,carrot,cake_stand,icing_bag,spoon,oven_mitts,apron,broom,mop,trash_can,recycling_bin,clothes_hanging_on_a_rack,ironing_board,iron,window_pane,glass,fork,napkin,towel,backpack,suitcase,tie,belt,pants,jeans,sock,underwear,sweater,scarf,gloves,helmet,water_slide,diving_board,beach_ball,surfboard,body_of_water,lifeguard_stand,lifeguard_chair,beach_umbrella,sunbed,deck,stairs,railing,swing_set,playground_equipment,skateboard,bike,skis,snowboard,ski_lift,ski_resort,mountain_lodge,cabin,tent,hammock,campfire,grill,barbecue,picnic_table,umbrella_table,park_bench,monument,fountain,traffic_light,stop_sign,one_way_sign,construction_site,parking_lot,school_bus,fire_hydrant,fire_truck,police_car,ambulance,hospital_bed,iv_drip,syringe,crutches,wheelchair,walker,cane,glasses,contact_lens_case,toothbrush_holder,alarm_clock,calendar,postcard,wall_art,curtain_panel,shower_curtain,bath_mat,rug,floor_lamp,ceiling_light,track_lighting,spotlight,stage_light,flood_light,searchlight,headlamp,flashlight,lantern,christmas_lights,string_lights,fairy_lights,disco_ball,strobe_light,black_light,laser_light_show,fireworks,sparklers,confetti_cannon,party_popper,party_hat,kazoo,saxophone,drum_set,soundboard,guitar,bass,drums,keyboard,violin,cello,flute,trumpet,trombone,tuba,xylophone,maracas,tambourine,bells,chimes,rainstick,shaker,castanets,claves,timpani,triangle,snare_drum,bass_drum,cymbals,cowbell,sleigh_bells,sleigh,bell,bellboy,bell_ringer,bell_toller,santa_hat,buttons,blurry,video_screen,image_fragment,kitchen,low_resolution",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -605,7 +605,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T14:52:11Z",
     "category": "Severino Christmas",
     "year": 1995,
-    "objects": "celebration,christmas_tree,tree,brick,christmas_decoration,crowd,gift,suit,costume,pillow,tool,jacket,frame,sign,toy,stuffed_animals,outdoor,night_sky,sky",
+    "objects": "christmas_tree,christmas,opening_presents,child,baby,living_room,birthday_cake,family,stockings,birthday,snow,elderly,wrapped_presents,birthday_candles,birthday_card,red_hair_ribbon,child_wearing_a_santa_hat,christmas_sweater,socks_with_santa_faces,present_opening,settings_(living_room,wrapping_papers,birthdays,halloween,thanksgiving,easter,people_in_holiday_attire,presents_under_the_tree,fireplace_with_candles,date_stamp,balloon,fireplace,turkey,pumpkin,easter_eggs,house,holiday,elderly\n*_opening_presents,christmas_tree_ornaments",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -618,7 +618,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Severino Family",
     "year": 1991,
-    "objects": "baby,interior_room,utensil,tableware,plate,fence,cabinet,sofa,pillow,tool,living_room,high_chair,cup,camera,stairs,footwear,shoes,boot,desk,machine,appliance,oven,kitchen_oven,kitchen,curtain,frame,brick,door",
+    "objects": "baby,child,living_room,kitchen,birthday,toddler,playing,birthday_cake,play,toy,horse,house,family,hospital,elderly,opening_presents,cake,cooking,toy_train,toy_car,plastic_cup,fork,kitchen_counter,cabinet,dishes,playpen,family_room,family_watching_tv,child_on_floor,baby_standing_and_watching,window_in_background,backyard,pony,playroom,car,december_27,toys,mickey_mouse,dusty_room,stuffed_animals,teddy_bears,celebration,colorful,bride,groom,wedding,santa_hat,activity_(opening_presents,setting_(living_room,occasion_(birthday,refrigerator,microwave,elderly_man,old_room,baby_crib,settings_(indoor_setting,birthday_party,home_setting,teenage,christmas,halloween,thanksgiving,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,candle,staircase,pajamas",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -631,7 +631,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T14:47:34Z",
     "category": "Severino Family",
     "year": 1992,
-    "objects": "frozen,liquid,snow,water,branch,outdoor,blizzard,sky,storm,fence,automobile,machine,vehicle,car,raw_glass,wood_natural,cabinet",
+    "objects": "baby,child,snow_covered_trees,snow_covering_roofs,snow_on_ground,cars_parked_in_driveway,snow,driveway,house,star,christmas_decoration,light_bulb,holiday_decorations,elderly",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -644,7 +644,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:13:55Z",
     "category": "Severino Holidays",
     "year": 1993,
-    "objects": "suit,cabinet,sofa,container,baby,trash_can,door,curtain,outdoor,sky,night_sky,bottle,frame",
+    "objects": "baby,child,living_room,toddler,birthday_cake,television,present_unwrapping,young_boy,opening_fridge,date,april_16,birthday,easter,opening_presents,elderly,dining_table,potted_plant,vase,window_blinds,refrigerator,cupcake,candle,cell_phone,television_screen,keyboard,mouse,books,wall_decorations,curtains,blanket,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,easter_eggs",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -657,7 +657,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:50Z",
     "category": "Severino Holidays",
     "year": 1990,
-    "objects": "baby,frame,interior_room,curtain,container,trash_can,fireplace,living_room,brick,door,cabinet,utensil,tableware,plate,bowl,sofa,light,lamp,music,musical_instrument,drum,dining_room,cookware,pot_cooking",
+    "objects": "baby,living_room,birthday_cake,elderly,christmas_tree,toddler,child,turkey,playing,dinner_table,fireplace,living_room_setting,fireplace_in_background,setting_(living_room,occasion_(birthday,home_setting,snow,pumpkin,easter_eggs,candle_on_table,dogs,toys,television,birthday,opening_presents,image_of_a_person,blurry_video_screen,low_resolution,balloon,candle,cake,candle_blowing,1990s,white_shirt,black_jacket,glasses,posing,holiday_feast,family",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -670,7 +670,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T14:31:12Z",
     "category": "Severino Holidays",
     "year": 1992,
-    "objects": "container,bottle,door,stairs,light,cabinet,polka_dots,curtain,brick,frame,jeans,sign,footwear,shoes,sneaker,lamp,chandelier,outdoor,sky,night_sky,consumer_electronics,machine,television,sofa,interior_room,kitchen,kitchen_countertop,kimono",
+    "objects": "elderly,baby,kitchen,child,living_room,cooking,backyard,92nd_day,shoe,restaurant,sitting_at_table,watching_tv,t_shirt,human,elderly_woman,knife,grill,stove,counter,cabinets,house,toddler,family,walk,park",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -683,7 +683,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Birthdays",
     "year": 1991,
-    "objects": "balloon,cabinet,machine,consumer_electronics,television,bottle,container,food,baked_goods,cake,dessert,birthday_cake",
+    "objects": "kitchen,child,baby,living_room,elderly,birthday_cake,toddler,blowing_candles,party,opening_presents,birthday,celebration,elderly_man,playing,refrigerator,cake,party_hat,dining_table,microwave,evening,inside,balloon,cooking,pumpkin,family,stove,dishwasher,young_child,smoking,tinfoil,hospital,house,cupboard,counter,christmas_tree,snow,turkey,easter_eggs,tile_floor,blurry,specific_objects,pants,tie,hair,glasses,facial_hair,socks,cell_phone,orange,streamers,celebrating,holding,elderly_woman_in_kitchen,elderly_man_in_living_room,cabinets,birthday_party,countertop,cabinet,faucet,garbage_disposal,lighting,tile,wood,paint,decorations,balloons,striped_shirt,home_setting,food_on_table,christmas,easter,appliance_(refrigerator,setting_(kitchen",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -696,7 +696,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:51:00Z",
     "category": "Birthdays",
     "year": null,
-    "objects": "sign,sofa,crowd",
+    "objects": "child,baby,elderly,toddler,opening_presents,blowing_candles,birthday_cake,living_room,playing,birthday,cake,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,family,home_setting,birthday_celebration,teenager,candle,vase,setting_of_living_room,party_hat,dining_table,phone,playpen,toy,box,clothes",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -709,7 +709,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T14:23:11Z",
     "category": "Birthdays",
     "year": null,
-    "objects": "sofa,crowd,seat,optical_equipment,foliage,sunglasses,eyeglasses,pillow,tool,teen",
+    "objects": "child,baby,living_room,family,elderly,opening_presents,birthday,toddler,birthday_cake,celebration,elderly_woman,blowing_candles,christmas_tree,playing,teenager,party,cake,young_boy,elderly_man,children,kid,boys,girl,girls,kids,young_people,family_members,christmas,halloween,thanksgiving,television,watching_television,birthday_party,birthday_hat,dance_party,dining_table,restaurant,setting_in_a_restaurant,birthday_card,inside,dark,settings_(living_room,playing_with_box,opening_gifts,sitting_in_living_room,candle,text,date,time,observing,board_game,people(elderly,activities(none,settings(indoor,hospital_room,occasions(none,objects(none,child's_birthday_party,home_setting,balloon_in_background,cake_on_table,man_kneeling_down,objects_(books,teddy_bear,activity_(opening_presents,elderly_couple,playing_video_game,sitting_in_chair,boy,interacting,paper,writing,talking,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,people_(adults",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -722,7 +722,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:42:59Z",
     "category": "Birthdays",
     "year": 1994,
-    "objects": "crowd,balloon,raw_glass,food,baked_goods,cake,dessert,birthday_cake,utensil,tableware,plate,cup,candle,light,door,sofa",
+    "objects": "child,living_room,birthday,baby,birthday_cake,cake,elderly,opening_presents,toddler,party,candle,birthday_party,family,blowing_candles,balloon,children,christmas,boy,playing,teenager,christmas_tree,dining_table,decorations,fork,celebration,fireplace,snow,turkey,pumpkin,halloween,thanksgiving,easter,settings(living_room,cooking,kitchen,elderly_woman,school,knife,people(child,church,party_hat,cake_with_candles,birthday_candles,screen,phone,easter_eggs,singing,girl,graduation,tables,birthday_cakes,festive_setting,batman,tablecloth,napkin,candy,activities(playing,occasions(birthday,holiday,icing,television,furniture,1998_inscription,child_with_blue_balloon,man_opening_presents,living_room_setting,casual_clothing_on_people,cake_and_presents,people_(2,bookshelf,cake_stand,balloons,toys,wall_clock,television_monitor,playroom,child's_furniture,1994_year,christmas_celebration,text,date,confetti,activities(looking_down,occasions(none_visible,playground,forks,batman_theme,blue_icing,green_frosting,yellow_cake,cartoon_characters,super_hero_theme,colorful_decoration,celebratory_atmosphere,nothing_visible_in_image,without_a_clearer_image,mr._12_1991,nothing_in_image,birthdays,mr._12_1998,activity_(opening_presents,setting_(living_room,occasion_(birthday,activity_(swimming,setting_(pool,hair_clip,present_unwrapping,twins,video_camera,occasion(birthday,celebrating_birthday,listening,talking,flowers,m&m's,parents,children_in_costumes,presents_being_unwrapped,march_12,table_lamp,chandelier,cat,old_man,countertop,cupcakes,spoon,dancing,wedding,home_setting,mr._16591,lady,guests,adult_female,books,opening_present,reading",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -735,7 +735,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T14:36:12Z",
     "category": "Birthdays",
     "year": null,
-    "objects": "sofa,frame,balloon,utensil,suit,tableware,cabinet,pillow,tool,machine,crowd,door,plate,appliance,stove,interior_room,kitchen,kitchen_countertop,cookware,pot_cooking,oven,consumer_electronics,television,chair,armchair,jeans,cup",
+    "objects": "child,baby,living_room,elderly,toddler,opening_presents,birthday_cake,dining_table,birthday,candle,cake,party,birthday_party,blowing_candles,celebration,st_patricks_day,napkins,forks,knives,wine_glasses,centerpiece,decorations,green_and_white_theme,clover_decoration,kitchen_in_background,st_patrick's_day_party,green_tablecloth,plates_featuring_shamrocks,corridor,hallway,swimmimg,dancing,singing,cooking,playing,boy,sitting_on_couch,family_room,wall_clock,family,gift,christmas_tree,birthday_candle,dinner_plate,person_sitting,person_standing,vase,glass,fork,knife,spoon,cupcake,wallpaper,young_man,specific_objects,house,balloon,balloons,crib,teddy_bears,play,kitchen,people(adult,activities(blowing_bubble,setting(home,occasion(none",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -748,7 +748,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Birthdays",
     "year": null,
-    "objects": "pillow,tool,sofa,cabinet,baby,curtain,bedding,housewares,container,door,chair,armchair,utensil,tableware,cup,bottle,carton,interior_room,hospital,bed,frame",
+    "objects": "baby,living_room,opening_presents,sitting_on_couch,child,elderly,watching_tv,hospital,nothing_to_see_here,breastfeeding,elderly_man,christmas_trees,bearded,inside_living_room,opening_present,shoe_box,nike_logo,playing_video_game,infant,mother,mirror,family,domestic,evening,video_call,casual,coffee_mug,cell_phone,screen,kitchen,night,dishwasher,cupboards,countertop,cleaning_supplies,television,time_stamp,party,photo_booth,laughing,dining_table,drinks,bowls,cake,candle,wallpaper,poster",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -761,7 +761,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T14:41:12Z",
     "category": "Birthdays",
     "year": 1992,
-    "objects": "suit,balloon,cabinet,door,frame,crowd,consumer_electronics,machine,computer,laptop,podium,jeans,teen,painting,decorative_plant",
+    "objects": "elderly,living_room,birthday,child,opening_presents,baby,toddler,party,birthday_cake,kitchen,cake,balloon,blowing_candles,paper,candle,elderly_woman,birthday_party,teenager,refrigerator,writing,man_sitting,elderly_man,celebration,cooking,facing_each_other,people_standing_behind_him,settings_(living_room,smiling_at_camera,party_hat_on_baby_girl,people_standing_around,activities_(speaking,settings_(indoor_space,occasions_(celebration,conversation,singer,pencil,bearded,sitting_down,pen,blurry_background,television_screen,low_resolution,tying_tie,black_and_white,checkered,dancing,john_travolta,john_stamos,jon_bon_jovi,michael_bolton,party_hat_on_head,vase_with_flowers,party_hat,balloons,gift_bag,including_balloons,people(adults,activities(eating,setting(kitchen,occasion(celebration,short_dark_hair,patterned_skirt,gold_earrings,red_fingernails,30th_birthday_cake,mylar_balloons,birthday_candle,happy_birthday,confetti,mylar_party_favors,festive,joyful,friends_and_family,indoor_party,decorations,mylar_decorations,group_photo,dining_table,cell_phone,mother's_day,dinner_party,doorway,microwave,woman\ngrouplayouts,locations,kitchen_setting,cake_topper,teenage,christmas_tree,fireplace,snow,turkey,pumpkin,easter_eggs,astronaut,space_shuttle,scissors,family,gift,stove,person_standing,activity_unknown,setting_indoors",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -774,7 +774,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:51:10Z",
     "category": "Severino Christmas",
     "year": 1991,
-    "objects": "celebration,christmas_tree,tree,polka_dots,christmas_decoration,container,bottle,door,document,handwriting,printed_page,foliage,branch,raw_glass,baby,sofa,chair,armchair,pillow,tool,curtain,interior_room,hospital,decorative_plant,cabinet,frame",
+    "objects": "child,baby,christmas_tree,living_room,elderly,toddler,opening_presents,family,birthday,christmas,playing,dining_table,celebration,cake,blowing_candles,candle,birthday_cake,balloon,elderly_man,wreath,children,elderly_woman,dancing,christmas_decorations,refrigerator,countertop,hair,glasses,earring,monitor,pixelation,digital_video,candle_on_cake,wine_glass,house,furniture,fireplace,snow,inside,red_sweater,festive_decorations,girl,bookcase,halloween,thanksgiving,easter,bible,xanthus_adventures,kingdom_of_dreams,arms_that_were_never_used,tears_that_fell_from_eyes,scent_of_earth,smell_of_iron,breath_of_life,hum_of_the_cosmos,echoes_of_distant_voices,shadows_on_a_wall,words_written_in_ink,paper_with_writing,letter_from_a_friend,message_of_love,tears_of_goodbye,whispers_of_hope,silence_of_solitude,dance,teenager,christmas_presents,santa_claus_hat,stockings,presents_under_the_tree,singing,home_setting,santa_hat,ornaments,decorations,cans,kitchen,soda_can,glass,microwave_oven,cooking,1_woman,2_men,food_items,wall_decorations,flooring,lighting_fixtures,fork,tablecloth,restaurant",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -787,7 +787,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:53Z",
     "category": "TDKK",
     "year": null,
-    "objects": "baby,bedding,housewares,interior_room,bed,hospital,pillow,tool,cabinet,decorative_plant,bedroom,foliage,toy,stuffed_animals,door,teen,sofa,crib,arch",
+    "objects": "baby,child,toddler,living_room,elderly,kitchen,playing,opening_presents,birthday,cooking,family,hallway,television,teddy_bear,blowing_candles,crawling,staircase,dining_room,patio,backyard,mother,hospital,infant,easter,child_in_arms,setting_(living_room,occasion_(none,human,parent,film,cellphone,technology,monitor,screen,toy,doll,stuffed_animal,balloon,candle,party,event,celebration,gift,flower,plant,dog,cat,laptop,mouse,keyboard,game,console,car,bus,truck,airplane,train,bike,scooter,park,pool,beach,ocean,sea,lake,forest,dirt,snow,ice,sun,moon,clouds,house,apartment,condo,bedroom,bathroom,balcony,front_yard,city,town,village,doorway,specific_objects,sleeping,christmas,halloween,thanksgiving,wedding,graduation,crib,pajamas,mickey_mouse_character,minnie_mouse_doll,child_in_bed,mickey_mouse_shirt,being_held,teenager,person_holding_baby,play,school,sitting_in_high_chair,september_15th,baby_carriage,holding,joy,swing,black_and_white,highchair,couple,sofa,21st_century,12/40,baby_crib,dining_table,inside,child's_hand,adult_holding_child's_hand,christmas_tree,lights,ornaments,decorations,christmas_tree_topper",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -800,7 +800,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:27Z",
     "category": "TDKK",
     "year": 1990,
-    "objects": "fence,baby,foliage,utensil,tableware,cup,sofa,cabinet,frame,decorative_plant,outdoor,land,grass,pillow,tool,door,interior_room,bathroom,washbasin,sky,blue_sky,container,bottle,balloon,chair,folding_chair,teen",
+    "objects": "baby,elderly,child,backyard,living_room,toddler,kitchen,celebration,party,family,evening,casual_clothing,crying,interacting,household_items,clothing,pet,dog,drinking_from_bottle,teenager,cooking,counter,dishes,woman_(on_right,man_(on_left,both_in_motion_blur,hallway,talking,outdoor_setting,wooden_chair,birthday_party,garden,picnic,cake,candle,balloons,lawn_chairs,grill,frosted_in_white",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -813,7 +813,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:50:48Z",
     "category": "TDKK",
     "year": 1991,
-    "objects": "door,cabinet,interior_room,fence,sofa,living_room,jeans,bedroom,bedding,housewares",
+    "objects": "baby,living_room,child,toddler,playing,toys,television,opening_presents,hallway,reading,corridor,tile_floor,video_camera,car,tiled_floor,birthday_cake,running,elderly,teddy_bear,dolls,blowing_candles,child's_toys_(various,kitchen,doorstep,wooden_floor,stairs,screen_door,railing,porch,boy,video_game_controller,inside,1/28/91",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -826,7 +826,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T14:26:08Z",
     "category": "TDKK",
     "year": null,
-    "objects": "baby,bedding,housewares,hospital,interior_room,cabinet,bouquet,flower_arrangement,decorative_plant,bed,tool,pillow,machine,container,vase,vehicle,automobile,car,door,consumer_electronics,computer,computer_monitor,raw_glass,stairs,teen,wheel,rim,tire,van,foliage,illustrations,document,handwriting,sofa",
+    "objects": "baby,child,elderly,hospital,toddler,living_room,child's_room,teenager,house,sofa,playing,infant_in_her_arms,holding,hospital_setting,medical_staff,ultrasound_scan_monitor,kitten,cat_toy,kitten_food_bowl,kitten_bed,scratching_post,litter_box,litter_scoop,kitten_brush,groomer's_comb,kitten_treats,kitten_carrier,kitten_grooming_kit,flea_collar,flea_shampoo,organizing,nurse,patient,hospital_bed,hospital_room,flowers,wall_decorations,birthday_cake,christmas_tree,old,opening_presents,car,birthday,front_yard,dog,hair_dryer,sitting_on_couch,blanket,t_shirt,pants,socks,hair,tie,television,wall_decoration,ceiling_light,flooring",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -839,7 +839,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T14:29:42Z",
     "category": "TDKK",
     "year": null,
-    "objects": "suit,baby,necktie,frame,interior_room,utensil,tableware,podium,painting,crowd,fence,cabinet,kitchen,kitchen_countertop,cup,machine,appliance,oven,microwave,plate,restaurant,bedding,housewares,music,speakers_music,stairs",
+    "objects": "baby,church,child,birthday,cake,dining_table,wedding,suit,elderly,boy,party,living_room,woman_sitting,man_standing,teenager,drinks,drinking_can_from_hand,men,birthday_cake_on_table,cups_and_spoons_on_table,chairs_around_table,kitchen_in_background,refrigerator,countertop_with_items,light_fixture,tile_backsplash,wooden_flooring,reading,opening_presents,spoon,hospital,courtroom,family,podium,woman_holding_baby,yellow_cardigan,church_setting,people_in_pews,person_holding_a_child,minister,congregation,elderly_woman,baby_in_her_arms,baby's_christening_gown,church_interior,priest,congregants,toddler,christmas",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -852,7 +852,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T14:47:13Z",
     "category": "TDKK",
     "year": null,
-    "objects": "tableware,utensil,baby,frame,cup,suit,plate,container,bottle,fence,crowd,necktie,teen",
+    "objects": "baby,party,cake,elderly,dining_table,birthday_cake,family,child,event,opening_presents,cards,vase,decoration,mirror,blowing_candles,one_holding_a_camera,white_wall_in_background,food_and_drinks_on_table,wall_decorations,birthday_candles,christmas_tree,snow,fireplace,turkey,pumpkin,easter_eggs,activity_(opening_presents,setting_(living_room,kitchen,decorations,01/11/1982,mother,celebration,happy,joyful,evening,warm,comfortable,living_room,family_time,bonding,togetherness,love,cross",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -865,7 +865,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T14:46:42Z",
     "category": "TDKK",
     "year": null,
-    "objects": "fence,decorative_plant,container,luggage,frame,painting,backpack,scarf,purse,foliage,door,music,musical_instrument,string_instrument,guitar,jeans,footwear,shoes,sneaker",
+    "objects": "baby,child,horse,living_room,dining_table,toddler,wall_clock,plant,dog,potted_plant,playing,baby_monitor,sitting_in_a_room,woman_is_holding_the_baby,young,elderly,furniture,clown_on_horse,carousel_animal,wooden_fence_in_background,green_shirt_and_pants,red_balloon,toy,riding,carousel,digital,family,petting_zoo,ponies,pony_ride,birthday_party",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -878,7 +878,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:10:54Z",
     "category": "TDKK",
     "year": null,
-    "objects": "cabinet,fence,door,jeans,frame,celebration,christmas_tree,tree,christmas_decoration",
+    "objects": "baby,child,living_room,birthday,toddler,opening_presents,doorway,playing,christmas,crawling,young_boy,pajamas,tiled_floor,hallway,stairs,step,gate,screen,birthday_cake,december_20,setting___living_room,date___december_20,candle,december,20th,christmas_tree,stockings,children,dinner_time,celebration,teenager,elderly,halloween,thanksgiving,easter,wedding,dancing,child's_room,cooking,sleeping,tiled",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -891,7 +891,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:10:17Z",
     "category": "TDKK",
     "year": 1993,
-    "objects": "crib,bedding,housewares,interior_room,door,bedroom,bed,baby,outdoor,night_sky,sky,toy,stuffed_animals,bathroom,bath,cabinet",
+    "objects": "baby,toddler,child,playing,dancing,crib,teenager,elderly,swimming,singing,opening_presents,blowing_candles,cooking,living_room,church,restaurant,school,hospital,park,pool,dark,blurry,children,hallway,doorway,furniture",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -904,7 +904,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:09:55Z",
     "category": "TDKK",
     "year": 1993,
-    "objects": "jacket,door,sofa,scarf,baby,frame",
+    "objects": "baby,living_room,child,toddler,restaurant,boy,birthday_cake,inside_church_building,person(s,kitchen,baby_sitting_on_floor,counter,cabinet,party_hat,balloon,playing,indoor_living_room,dancing",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -917,7 +917,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:19:16Z",
     "category": "TDKK",
     "year": 1993,
-    "objects": "interior_room,bathroom,bath,baby,cabinet,curtain,painting,illustrations,bathroom_faucet,kitchen,kitchen_countertop,machine,appliance,stove,oven,microwave,kitchen_sink,kitchen_oven,lamp,light,door,crib,fence",
+    "objects": "baby,child,bathtub,bathroom,moon,opening_presents,toilet_paper,mother,living_room,playing,toddler,birthday,elderly,faucet,bath,toiletries,bath_tub,shower_curtain,opening_oven,cooking,october_29,please_let_me_know,_moon,_stage,_screen,_image,_tv,_monitor,_video,_music_video,dog,bear,clouds,stars,leaves,branches,house,windows,car,cookie_monster,puppet,crescent_moon,spaceship,planet,satellite,curtain,dancing",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -930,7 +930,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:42:02Z",
     "category": "TDKK",
     "year": 1993,
-    "objects": "land,outdoor,grass,shrub,path,foliage,jacket,jeans,machine,automobile,vehicle,car,fence,branch,baby,road,door,headgear,hat,baseball_hat,wood_natural,sky,blue_sky,roof,domicile,house_single,animal,bird,poultry,street,sidewalk,decorative_plant,crowd,teen,hoodie,stairs,footwear,shoes,sneaker,wheel,tire",
+    "objects": "baby,child,backyard,toddler,playing,elderly,park,living_room,driveway,house,lawn,play,fall_leaves,boy,leaves,car,pumpkin,birthday_cake,blowing_candles,cooking,laying,snow,setting_(backyard,activity_(playing,rake,fall,cleaning,sitting_on_step,kid,raking_leaves,brick_steps,porch,halloween,stairs,brick_wall,autumn_leaves,pogo_stick,people(baby,activities(dancing,settings(backyard,occasions(none,school,hospital,pool,easter,mother,raking,november_1993,teenager,opening_presents,church,i'm_sorry,birthday,driving,overcast,family,interaction,residential_area,casual_clothing,nov_11_1993,trash_bag,dog,time_stamp,gravel,tools,christmas_tree,balloon,turkey,easter_eggs,carpeted_floor",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -943,7 +943,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:34:16Z",
     "category": "TDKK",
     "year": null,
-    "objects": "crib,baby,bedding,housewares,pillow,tool,bed,interior_room,bedroom,fence,arch",
+    "objects": "baby,child,toddler,elderly,living_room,crib,birthday,playing,blowing_candles,opening_presents,birthday_cake,christmas,nursery,stuffed_animal,bedtime_routine,parent,christmas_tree,fireplace,snow,turkey,pumpkin,easter_eggs,hospital_bed,whiteboard,laying,play,bedroom,baby_bottle,teddy_bear,halloween,thanksgiving,easter,teenager,bed,blanket,wall_decoration,toy,child's_room,balloon,curtain,bear,candle,cooking,hospital,mr._1891,mr._18_1991",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -956,7 +956,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T18:52:37Z",
     "category": "TDKK",
     "year": null,
-    "objects": "crowd,jacket,outdoor,land,road,street,recreation,parade,performance,sign,jeans,headgear,wood_natural,machine,vehicle,automobile,car,hat,baseball_hat,branch,container,luggage,backpack,teen,helmet,military_uniform,shrub",
+    "objects": "people(adult,child,activities(running,setting(street,occasion(n/a,1996._in_the_foreground,buildings_in_the_distance,baby",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -969,7 +969,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:51:12Z",
     "category": "Christmas Morn Sev",
     "year": null,
-    "objects": "sofa,container,pillow,tool,celebration,carton,christmas_tree,tree,christmas_decoration,gift,door,cabinet,cardboard_box,document,book,machine,appliance,refrigerator,teen",
+    "objects": "baby,opening_presents,living_room,child,christmas_tree,playing,toddler,birthday_cake,christmas,elderly,blowing_candles,present_opening,balloon,christmas_presents,gift_wrapping,wrapping_paper,candle",
     "location": "3 Frog Pond Rd,\u00a0Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -982,7 +982,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T14:55:14Z",
     "category": "Christmas Morn Sev",
     "year": null,
-    "objects": "baby,sofa,celebration,pillow,tool,container,diaper,food,pizza,popcorn,christmas_tree,tree,christmas_decoration,gift,music,musical_instrument,string_instrument,guitar,decorative_plant,document,screenshot,outdoor,sky,night_sky,carton,cabinet",
+    "objects": "baby,living_room,child,opening_presents,christmas,toddler,birthday,christmas_tree,elderly,birthday_cake,playing,blowing_candles,balloon,fireplace,december_25,cake,teenager,dining_table,boy,snow,turkey,pumpkin,easter_eggs,christmas_presents,family,celebration,watching,halloween,thanksgiving,easter,activity_(opening_presents,setting_(living_room,occasion_(christmas,object_(gift,occasion\n\nboy,wrapping_paper,girl,red_shirt,pajamas,sitting_on_floor,opening_present,december_25th,birthday_party,child's_birthday_party,holiday,mother,elderly_woman,young_child,dancing,cooking,baby_doll,play,tablet",
     "location": "3 Frog Pond Rd,\u00a0Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -995,7 +995,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:39:28Z",
     "category": "Christmas Morn Sev",
     "year": 1994,
-    "objects": "sofa,interior_room,living_room,pillow,tool,consumer_electronics,machine,television,curtain,celebration,christmas_tree,tree,christmas_decoration,gift,outdoor,sky,blue_sky,frame,door",
+    "objects": "living_room,child,baby,opening_presents,christmas,christmas_tree,family,elderly,toddler,television,birthday,dog,birthday_cake,boy,playing,candle,blowing_candles,dining_table,stockings,december_25,christmas_presents,family_photo,present_opening,holiday_decorations,cake,turkey,fireplace,ornaments,girl,christmas_decorations,sofa,christmas_day,seated_on_floor,birthday_presents,christmas_tree_decorations,christmas_dinner,gift_bags,december_25th,birthday_party,hallway,camera_shot,stocking,dinner,balloon,snow,pumpkin,easter_eggs,plaid_blanket,remote,lights,tinsel,candy_cane,snowflakes,mantle,blanket,stuffed_animal,icing,cupcakes,icing_bag,cake_pan,spatula,frosting,sprinkles,cake_tongs,knife,cake_serving_spatula,napkins,fork,toys,decorations,people(child,settings(living_room,occasions(christmas,person(s,house,dancing,setting_(living_room,occasion_(christmas,people(adult,activities(playing,setting(living_room,occasion(christmas,socks,holiday,elderly_man,playing_with_toy",
     "location": "3 Frog Pond Rd,\u00a0Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -1008,7 +1008,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Birthdays",
     "year": 1991,
-    "objects": "outdoor,grass,land,fence,foliage,swimsuit,crowd,liquid,water,pool,teen,utensil,shrub,path,machine,vehicle,automobile,car,night_sky,sky,recreation,sport,raw_glass,baby,door,animal,cetacean,mammal,dolphin,tableware,cup,bowl,plate,decorative_plant,umbrella,sidewalk,wood_natural,agriculture,garden",
+    "objects": "child,pool,backyard,baby,elderly,playing,toddler,park,swimming,family,teenager,birthday,driveway,summer,shirtless,birthday_cake,picnic,lawn_chair,birthday_party,beach,children,car,lawn,easter,date_6/3,temperature_82\u00b0f,humidity_73%,camera_feed_id_600041019,location,time_stamp,number,slides,sun,fun,shorts,dining_table,pizza,hot_dogs,ketchup_bottle,paper_napkins,red_shirt,jeans,white_cup,forks,knives,bowls,party_tent,celebration,summer_clothes,sunscreen,sunlit,girl,kid,people_playing,people(teenager,activities(playing_frisbee,setting(backyard,occasion(playing,hedges,bushes,cars,path,house,shrubs,pavement,running,clothes,sandals,christmas,halloween,thanksgiving,wedding,graduation,party,people_(3_toddlers,1_teenager,settings_(park,occasions_(none,objects_(a_toy,garden,grill,flowers,plants,ducks_in_yard,flower_bed,people_(adults,activities_(watching_ducks,opening_presents,people_(child,activities_(swimming,settings_(backyard,occasions_(birthday,objects_(birthday_cake,outdoor_setting",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -1021,7 +1021,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:24:47Z",
     "category": "Birthdays",
     "year": 1998,
-    "objects": "liquid,water,pool,fence,swimsuit,brick,recreation,frozen,snow,sport,watersport,swimming,foliage,baby,chair,folding_chair,utensil,tableware,plate,machine,vehicle,automobile,car,shrub,skating,skateboarding,outdoor,night_sky,sky,celestial_body,moon",
+    "objects": "pool,child,baby,backyard,water_slide,elderly,swimming,body_of_water,brick_wall,adult_male,swimmers,jumping,lawn_chair,adult_female,jet_ski,family,house,child's_birthday,young_child\nactivity,swimming\nsetting,pool\nobject,swim_cap,people_in_pool,slide,ladder,water_sprinkler,person_on_ladder,building_in_background,grassy_area,dolphin,dining_table,people(elderly,setting(pool,toddler,dancing,playing,beach,birthday_cake,christmas_tree,balloon,fireplace,snow,turkey,pumpkin",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -1034,7 +1034,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:01:15Z",
     "category": "Moberg Christmas",
     "year": 1996,
-    "objects": "celebration,christmas_tree,tree,sofa,lamp,light,christmas_decoration,interior_room,chair,armchair,pillow,tool,living_room,cabinet,door,gift,decorative_plant,restaurant,crowd,container,carton,tableware,utensil,drinking_glass,frame,costume",
+    "objects": "living_room,elderly,christmas_tree,opening_presents,child,christmas,baby,birthday,blowing_candles,birthday_cake,family,christmas_decorations,party,toddler,lights,birthday_party,elderly_woman,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,playing,ornaments,easter,singing,elderly_people,elderly_man,television,teenager,cake,candle,christmas_lights,christmas_presents,occasions_(christmas,holiday_decorations,sitting_on_couch,dancing,cooking,setting_(living_room,occasion_(christmas,dining_table,holiday_celebration,opening_gifts,hospital,people_(elderly,settings_(living_room,living_room_setting,decorations,halloween,thanksgiving,wedding,graduation,boy,christmas_celebration,box,elderly_couple,birthday_celebration,december_24_1996_timestamp,sitting_in_chair,family_room,gifts_on_tree,festive_atmosphere,2_adults,occasion\n\nboy,opening_present,present_opening,swimming,people_(child,christmas_ornaments,blurry,indistinct,stockings,playing_games,wrapping_paper,christmas_occasion,cake_on_counter,wrapped_presents_on_table,lit_candles,stuffed_animals,red_shirt,bag_in_hand,handbag,santa_claus_figurine,presents_on_table,wall_decorations,christmas_wreath,person_opening_presents,people_(adult,objects_(birthday_cake,people_sitting_on_floor,presents_being_unwrapped,old_woman_in_red_coat,baby_in_stroller,red_sweater,church,restaurant,school,park,pool,specific_objects,holiday,gift,birthday_presents,teenage_girl,people_(family,activities_(celebrating,gift_on_table_nearby,toys,teacher,dollhouse,dolls,presents_under_a_tree,snowman,snowflakes,caroling,blowing_out_candles,decorative_items,gift_opening,presents_under_the_tree,man_opening_a_present,man_sitting,man_holding_a_present,wine_glass,playing_guitar,holiday_gathering,socks,wall_decoration",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -1047,7 +1047,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Moberg Christmas",
     "year": 1991,
-    "objects": "curtain,sofa,celebration,christmas_tree,tree,christmas_decoration,frame,crowd,light,lamp,painting,baby,outdoor,sky,blue_sky,necktie,suit",
+    "objects": "living_room,elderly,baby,child,christmas_tree,opening_presents,elderly_woman,playing,family,living_room_setting,toddler,birthday_occasion,man_holding_a_camera,family_room,xmas_decorations,young_child,elderly_man,birthday_cake,holiday_decorations,christmas_presents,teenager,birthday_party,child's_room,please_let_me_know,scissors,blowing_candles,christmas,christmas_tree_topper,ornaments,people_in_a_living_room,television,coffee_table",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -1060,7 +1060,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:35:48Z",
     "category": "Moberg Christmas",
     "year": 1995,
-    "objects": "frame,celebration,door,christmas_tree,tree,christmas_decoration,lamp,light,brick,crowd,interior_room,living_room,sofa,fireplace,gift,necktie,suit,container,carton,chair,armchair,machine,clock,dial,timepiece,cabinet",
+    "objects": "living_room,child,elderly,christmas_tree,opening_presents,christmas,birthday_cake,toddler,baby,cake,fireplace,snow,boy,family,girl,birthday,gift,christmas_decorations,candle,blowing_candles,balloon,party,wrapping,playing,dinner_party,flowers,suit,present_opening,2_adults,television,books,people(elderly,occasions(christmas,object\n\nboy,dancing,birthday_party,turkey,pumpkin,easter_eggs,december_24th,gifts_being_exchanged,elderly_woman_in_red_top,elderly_man_in_green_shirt,young_girl_in_pink_dress,baby_boy_in_blue_onesie,child_in_white_sweater,dog_sitting_on_floor,white_cat_on_couch_armrest,lit_fireplace,lit_birthday_candle,cup_of_coffee_on_table,family_room,man_looking_at_tv,living_room_setting,cards,church,stocking,ornament,people_(adult,activities_(celebration,settings_(indoor,occasions_(wedding,children,people_sitting,man_standing,elderly_man,celebration,toy,treat,christmas_pajamas,santa_hat,cooking,halloween,thanksgiving,easter,stockings,red_candle,activity___reading,setting___living_room,occasion___christmas,plaid_shirt,sweater,teenager,woman_holding_a_card,boy_standing_next_to_her,lady_in_red_shirt,child_standing_by_her,present_on_table",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -1073,7 +1073,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:07:49Z",
     "category": "Moberg Christmas",
     "year": 1996,
-    "objects": "sofa,light,lamp,chair,armchair,crowd,interior_room,music,musical_instrument,string_instrument,guitar,living_room,decorative_plant,footwear,shoes,sneaker,restaurant,bouquet,flower_arrangement,suit",
+    "objects": "living_room,christmas,elderly,opening_presents,child,living_room_setting,elderly_man,family,celebration,birthday,birthday_cake,christmas_tree,elderly_people,candle,occasion_(birthday,church,baby,television,child_sitting_on_couch,christmas_occasion,sitting_in_chair,holiday,sitting_in_a_wheelchair,opening_a_gift,books,elderly_woman,elderly_man_playing_organ,people_(elderly,activities_(playing_organ,activity_(swimming,setting_(pool,person_(elderly,snowman,people_(adult,settings_(living_room,toddlers,teenagers,halloween,thanksgiving,easter,wedding,graduation,christmas_decorations,adult_male,curtain,people(2,activities(,settings(1,occasions(,objects(,family_room,box,toddler,blowing_candles,blowing_candles_on_cake,people_(teenager,setting_(living_room,santa_claus_stuffed_animal,blurred_image",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -1086,7 +1086,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:27Z",
     "category": "Moberg Christmas",
     "year": 1989,
-    "objects": "crowd,frame,utensil,tableware,plate,interior_room,sofa,restaurant,chair,armchair,suit,door,nightclub,celebration,christmas_decoration,christmas_tree,tree",
+    "objects": "living_room,elderly,baby,child,dining_table,opening_presents,christmas_tree,birthday_cake,kitchen,blowing_candles,candle,lit_candle,cooking,family,christmas,family_dinner,wine_glass,red_dress,black_coat,white_pants,patterned_chair,sofa,boy,older_woman,television,holiday,fridge,snacks,playing,cake,toddler,singing,birthday,activity_(opening_presents,setting_(living_room,occasion_(birthday,sweater,blue_and_red_striped,decorations,ornaments,lights,festive,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,toys,people_sitting,cups_on_table,candles_lit,decorations_around_room,living_room_setting,holiday_celebration,elderly_woman,playing_with_children,stocking,celebration,people_(elderly,activities_(dancing,settings_(living_room,occasions_(christmas_eve,christmas_decorations",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -1099,7 +1099,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:47:04Z",
     "category": "Moberg Christmas",
     "year": 1995,
-    "objects": "sofa,crowd,suit,pillow,tool,lamp,light,interior_room,chair,armchair,living_room,celebration,christmas_tree,tree,christmas_decoration,frame,decorative_plant,curtain,door,restaurant",
+    "objects": "living_room,opening_presents,christmas,elderly,christmas_tree,child,family,birthday,baby,birthday_cake,cake,sofa,blowing_candles,santa_claus,party,dining_table,vase,toddler,people_(child,settings_(living_room,occasions_(christmas,christmas_presents,playing,candle,unwrapping_presents,night_time,table_with_presents,christmas_tree_in_corner,teddy_bear_on_shelf,fireplace,vase_on_mantle,clock_on_wall,picture_frame_on_table,christmas_decorations,lit_candles,wine_glass_on_table,gift,cell_phone,celebration,sitting_on_couch,blowing_out_candles,office_chair,holiday_decorations,teddy_bears,figurines,people(child,setting(living_room,occasion(christmas,holiday_gifts,home_environment,video_camera,books,box,wrapping_paper,decorations,people_sitting,people_standing,christmas_light,elderly_woman,elderly_couple,presents_on_lap,people_sitting_on_couch,woman_opening_present,television_in_background,books_in_front_of_people,holiday,present_on_table,potted_plant_behind_woman",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -1112,7 +1112,7 @@ const VIDEOS = [
     "published_at": "2020-12-19T02:18:54Z",
     "category": "Moberg Christmas",
     "year": 2020,
-    "objects": "crowd,teen,celebration,costume,suit,jacket,door,sign,frame,cord",
+    "objects": "church,singing,children,people(child,setting(church,christmas,congregation,stage,podium,microphone,audience,people_(children,praying,video_camera,screen,activity(singing,child,elderly,people_(child,activities_(singing,settings_(church,occasions_(christmas,church_setting,christmas_occasion,choir,singing_activity,activities(singing,occasion(holiday",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -1125,7 +1125,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:39Z",
     "category": "Moberg Christmas",
     "year": null,
-    "objects": "celebration,christmas_tree,tree,sofa,christmas_decoration,crowd,cabinet,door,suit,interior_room,living_room,gift,pillow,tool,teen,lamp,light,brick,optical_equipment,eyeglasses",
+    "objects": "living_room,elderly,baby,opening_presents,birthday,christmas_tree,christmas,child,family,toddler,blowing_candles,cake,birthday_cake,balloon,watching_tv,specifically_a_living_room,setting_(living_room,activity_(opening_presents,boy,girl,dancing,cooking,playing,swimming,singing,opening_gifts,blowing_out_candles,decorating,thanksgiving,candle,holiday,decorations,holiday_spirit,opening_present,elderly_couple,christmas_presents,television,gift,ornaments,holiday_decorations,football_game,field,athletes,helmets,uniforms,birthdays,dining_table,wrapping,elderly_man,elderly_woman,gift_exchange,small_dog_sitting_on_floor,child_playing_with_toy,fireplace_in_background,lit_candles_on_cake,fireplace,snow,turkey,pumpkin,easter_eggs,celebration",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -1138,7 +1138,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Moberg Christmas",
     "year": null,
-    "objects": "curtain,crowd,baby,lamp,light,celebration,christmas_tree,tree,christmas_decoration,frame,sofa,painting,pillow,tool,bedding,housewares,suit,recreation,sport,ball,sports_equipment,toy,stuffed_animals,necktie,cabinet,decorative_plant,foliage",
+    "objects": "living_room,baby,elderly,child,opening_presents,christmas_tree,christmas,toddler,family,birthday,blowing_candles,elderly_man,playing,birthday_cake,fireplace,elderly_woman,occasion_(christmas,dancing,children,decorations,santa_hat,teenager,dinner_table,santa_claus,play,baby_present,unwrapping_presents,sitting_on_the_floor,object\n\nman,people(elderly,activities(playing,settings(living_room,occasions(none,objects(none,young_man,curtains,video_camera,people_(baby,cooking,settings_(school,people_(adults,activities_(opening_gifts,setting_(inside_a_room,blurry_image,people_(elderly,settings_(living_room,occasions_(birthday,television_remote_control,watching_television,celebrating_christmas,presents_in_hand,birthday_party,cake,party,soccer_ball,activity(opening_presents,setting(living_room,occasion(birthday,object(present,balloon,snow,turkey,pumpkin,easter_eggs,holiday_wreath,children's_birthday_party,baby_shower,halloween,thanksgiving,easter,wrapped_presents,boy,girl,watching_tv,dog,teddy_bear,mirror,sitting_on_a_couch,gift_box,people_sitting_around_it,church,television,sitting_on_floor,christmas_eve_1982,setting_(living_room,elderly_couple,younger_man_and_woman,children_playing,people_sitting_on_couch,living_room_setting",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -1151,7 +1151,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:39Z",
     "category": "Moberg Christmas",
     "year": 1989,
-    "objects": "crowd,sofa,door,lamp,light,celebration,tree,christmas_tree,christmas_decoration,curtain,frame,cabinet,arch,seat,chair,armchair,interior_room,living_room,pillow,tool,music,musical_instrument,string_instrument,guitar,brick",
+    "objects": "living_room,baby,christmas_tree,elderly,opening_presents,child,christmas,blowing_candles,playing,birthday,fireplace,dining_table,toddler,holiday_decorations,halloween,snow,wall_decorations,celebration,dancing,singing,elderly_woman,family,television,cooking,wall_decoration,christmas_wreath,piano,dining_room,chandelier,cabinet,vases,tablecloth,elderly_couple,sitting_on_couch,wedding,elderly_man,gift,children,house,elderly_people,sitting_in_living_room,near_christmas_tree,holiday_decoration,older_woman,opening_gifts,noise,candlelight,people_(elderly,young_woman,holding,ornaments,lights,stockings,christmas_decorations,christmas_eve,party,party_hat,microwave,teenager,socializing,celebrating,bride_and_groom_standing,wine_glass,wedding_cake,food_items,wedding_attire,teenage,watching_tv",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -1164,7 +1164,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:51:07Z",
     "category": "Moberg Christmas",
     "year": 1991,
-    "objects": "curtain,celebration,christmas_tree,tree,christmas_decoration,sofa,frame,baby,crowd,gift,lamp,light,pillow,tool,machine,consumer_electronics,suit,lab_coat,chair,armchair,high_chair",
+    "objects": "living_room,elderly,baby,christmas_tree,child,christmas,opening_presents,family,elderly_woman,blowing_candles,toddler,birthday,playing,birthday_cake,teenager,dining_table,boy,backyard,cooking,setting_(living_room,celebration,dinner_table,dining_room,children,phone,adult_woman,night,curtain,baby_in_high_chair,graduation,piano,singing,elderly_people,elderly_man,1990s_haircut,television,sofa,people_(adult,christmas_presents,talking,crying,birthday_party,family_room,people_playing,small_child,festive_atmosphere,people_(elderly,occasion_(birthday,woman_holding_book,living_room_setting,december_24th_time_stamp,family_gathering_occasion,laptop,cake,stockings,wrapping_paper,lights,dancing,person_(child,activity_(opening_presents,occasion_(christmas,person_blowing_candles,holiday,gift,gift_wrapping,church",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -1177,7 +1177,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:28Z",
     "category": "Moberg Christmas",
     "year": 1988,
-    "objects": "crowd,curtain,interior_room,celebration,christmas_tree,tree,christmas_decoration,frame,dining_room,utensil,tableware,plate,restaurant,seat,balloon,recreation,camera,nightclub,bowl",
+    "objects": "living_room,elderly,christmas_tree,child,opening_presents,cake,brush,birthday,candle,church,dining_table,comb,toothbrush,mirror,hair_clippers,wine_glasses,blowing_candles,baby,toddler,night,formal_dining_room,tablecloth,chandelier,curtains,wall_decorations,painting,wall_clock,birthday_cake,balloon,easter_eggs,party_hat,soda,tie,t_shirt,jeans,pants,sweater,coat,dress,scarf,gloves,socks,hairbrush,toothpaste,bed,pillows,sheets,blanket,duvet,comforter,mattress,headboard,footboard,pillowcase,sheet,bathing_suit,towel,bath_mat,soap,shampoo,conditioner,hairdryer,styling_gel,scissors,razor,faucet,toilet,trash_can,refrigerator,microwave,toaster,kettle,knives,spoons,forks,bowls,vases,potted_plants,tvs,remotes,laptops,cell_phones,coffee_table,floor_lamps,wall_sconces,rug,tiles,paint,roller,bucket,trowel,shovel,lawn_mower,rake,broom,dustpan,vacuum_cleaner,car,truck,motorcycle,bicycle,skateboard,pool,beach,backyard,restaurant,school,hospital,park,fireplace,fire,family,lights,ornaments,christmas_lights,settings_(living_room,christmas_decorations,party,activities_(sitting,setting_(indoor_event_hall,christmas,wine_glass,fork,people_(baby,teenager,drinking,using_cell_phone,occasions_(dinner,objects_(plates_of_food",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -1190,7 +1190,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:09:29Z",
     "category": "Moberg Family",
     "year": 1995,
-    "objects": "liquid,pool,water,recreation,sport,fence,watersport,swimming,crowd,outdoor,sky,night_sky,decorative_plant,swimsuit,diving,ball,sports_equipment",
+    "objects": "pool,swimming,child,baby,backyard,beach_ball,water_slide,children,elderly,birthday_cake,slide,girl,night,swim,beach,outdoor_swimming_pool,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,ring_toss,children_playing,hot_tub,inflatable_rafts,people_(children,people_(teenager,activities_(swimming,settings_(pool,occasions_(birthday,family,person_next_to_person,person_holding_onto_rope,person_on_edge_of_pool,teenager,people_playing_in_water,blue_and_white_ball,people_in_pool,person_jumping,beach_balls,sports_balls,people_playing_in_the_pool,birthday_candles,blue_ball_in_water,dancing,singing,playful,people(child,activities(swimming,settings(pool,beach_umbrella,beach_towel,teen,summer,playing,boy,black_tarp,kids,swim_slide,ladder,diving_board",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -1203,7 +1203,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:51:08Z",
     "category": "Moberg Family",
     "year": 1991,
-    "objects": "liquid,pool,water,fence,chair,folding_chair,swimsuit,recreation,sport,watersport,swimming,crowd,stairs,umbrella,utensil,decorative_plant,jacuzzi,animal,mammal,cetacean,dolphin,lamp,light,sofa,armchair,tool,pillow",
+    "objects": "pool,swimming,backyard,baby,patio_furniture,patio_table_and_chairs,umbrella_in_the_background,person_sitting,table_and_chairs,pool_area,swimmer,elderly,living_room,swimsuit,swim,birthday,2_elderly_people",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -1216,7 +1216,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T14:34:20Z",
     "category": "Moberg Holidays",
     "year": null,
-    "objects": "cabinet,interior_room,baby,frame,utensil,tableware,bowl,kitchen,kitchen_countertop,curtain,document,book,machine,consumer_electronics,television,painting,bedding,housewares,teen,bookshelf,appliance,oven,microwave,lamp,light,sofa,living_room,pillow,tool,decorative_plant,chair,armchair,jeans",
+    "objects": "baby,child,living_room,elderly,cooking,refrigerator,toddler,birthday_cake,opening_presents,countertop,kitchen,dancing,playing,kitchen_counter,food_items,cabinets,wall_decoration,dining_table,flooring,hallway,faucet,cupboard,tile_countertop,father,baby_strapped_into_her,child_standing_next_to_her,holding,baby_in_arms,counter,bowls,spoons,cake,ice_cream,children,blow_out_candles,home_setting,table_with_books,microwave_in_background,table_with_food,kitchen_in_background,kitchen_appliances,paper,pen,cabinet,microwave,wall_clock,girl,girl_sitting_at_a_desk,pencil_in_hand,cake_on_a_table,birthday_celebration,writing,facing_towards_the_camera,nursery,crib,singing,blowing_candles,party,celebration",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -1229,7 +1229,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:43Z",
     "category": "1960s Sev",
     "year": 1965,
-    "objects": "fence,outdoor,land,grass,wood_natural,cage,aquarium,liquid,water,underwater,sky,blue_sky,stairs",
+    "objects": "child,baby,elderly,playing,backyard,children,toddler,dog,family,cage,giraffe,enclosure,train,bird,ground,car,pants,shorts,pond,duck,path,gate,dogs,including_people,babies,teenagers,playground,families,zebras,zoo,horse,people_(child,activities_(none_visible,settings_(none_visible,occasions_(none_visible,elephant,people(children,activities(playing,setting(backyard,occasion(none,dirt_ground,pen,wooden_fence,deer,kangaroo,setting_(backyard,occasion_(birthday,activity_(opening_presents,animal_(kangaroo,animal",
     "location": "400 Game Farm Rd, Catskill, NY 12414",
     "lat": 42.239162,
     "lng": -74.008202
@@ -1242,7 +1242,7 @@ const VIDEOS = [
     "published_at": "2020-08-26T04:18:56Z",
     "category": "1960s Sev",
     "year": 1960,
-    "objects": "fence,crowd,frozen,liquid,snow,water,wood_natural,animal,mammal,rhinoceros,bench,teen,door,ungulates",
+    "objects": "children,kangaroo,fenced_enclosure,dirt_ground,sheep_in_a_cage,deer,antlers,dirt,person_taking_a_photo,rhino,statue,puppets,fairy_tale,park,does_not_want_to_go_to_bed,game_farm,sign,elderly_woman,elderly_man,outdoor_setting,gorilla,ape,animals,zoo,cages,enclosure",
     "location": "400 Game Farm Rd, Catskill, NY 12414",
     "lat": 42.239162,
     "lng": -74.008202
@@ -1255,7 +1255,7 @@ const VIDEOS = [
     "published_at": "2020-08-26T04:15:53Z",
     "category": "1960s Sev",
     "year": 1960,
-    "objects": "fence,machine,vehicle,automobile,car,wood_natural,outdoor,land,road,street,wheel,tire,rim,suit,cage,brick,convertible,path,sidewalk,recreation,interior_room,hospital,baby",
+    "objects": "baby,child,elderly,toddler,people_walking_behind,outdoors_on_a_sunny_day,car,car_ride,teen,park,birthday_cake,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,teenager,playing,setting_(park,birthday,beach,blowing_candles,family,walk,pool",
     "location": "489 Chapman Blvd, Manorville, NY 11949",
     "lat": 40.848277,
     "lng": -72.788983
@@ -1281,7 +1281,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:37:14Z",
     "category": "Birthdays",
     "year": 2000,
-    "objects": "outdoor,land,grass,fence,crowd,balloon,wood_natural,teen,utensil,recreation,sport,ball,sports_equipment,ballgames,soccer,tableware,plate,interior_room,restaurant,foliage,bench,forest,vegetation,animal,horse,mammal,ungulates,roof,domicile,house_single,shrub,machine,automobile,vehicle,car,umbrella,jeans,food,night_sky,sky,baked_goods,cake,dessert,birthday_cake",
+    "objects": "child,backyard,children,birthday,park,party,baby,elderly,playing,outdoor_setting,celebration,toddler,picnic_table,cake,balloons,blowing_candles,happy_birthday_anthony,happy_birthday,batman_costume,family,teenager,potted_plant,balloon,birthday_cake,birthday_party,boy,batman,candle,girl,lawn,play,group,playful_activity,batman_suit,anthony,made_of_wood,people_standing_around,awning,costume,opening_presents,patio_table,railing,deck,green_grass,lawn_chair,ball,sunny,kids,table_on_deck,outdoor_furniture,wooden_fence,outdoor_umbrella,patio_deck,backyard_setting,building_in_background,blow_up_balloon,grass_lawn,inflatable_castle,people_(child,setting_(backyard,occasion_(birthday,outdoor_gathering,grass_field,baseball_game,sports_ball,soccer,statue,toy,figure,picnic,black_cape,halloween,white_house_in_background,pool,frisbee,elderly_woman,balcony,pizza,people_(3,birthday_candles,birthday_balloons,kitchen",
     "location": "6 Florence Dr Manorville NY 11949",
     "lat": 40.849721,
     "lng": -72.802086
@@ -1294,7 +1294,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T01:29:06Z",
     "category": "Birthdays",
     "year": 2001,
-    "objects": "outdoor,land,grass,crowd,forest,vegetation,balloon,teen,foliage,container,wood_natural,fence,bench,bottle,shrub,decorative_plant,stool,celebration,costume,trash_can,chair,folding_chair,chair_other,utensil,tableware,door,hat,headgear,beanie,baby,food,fruit,apple,grape",
+    "objects": "child,backyard,children,baby,toddler,elderly,park,birthday_cake,balloons,spiderman,party,teenager,picnic_table,lawn,house,celebration,family,clouds,gate,car,babies,toddlers,kids,teenagers,young_adults,elderly_people,opening_presents,candle,outdoor_setting,playing,costume,deck,superman_costume,birthday_party,wooden_bench,sunny_day,dining_table,lawn_chair,garage_sale,shorts,including_dishes,grill,person_(boy,activity_(playing,setting_(backyard,object_(birthday_cake,outhouse,shed,grassy_lawn,spiderman_character,birthday,spider_man,summer_day,people(child,superhero_cosplay,setting(outdoor_park,spiderman_in_yard,kids_playing_with_blue_mat,grass_field,forest_trees,person_on_horseback,spiderman_costume,spiderman_spider_man,teenage,superhero_costume,superhero,picnic,spider_man_costume,people_in_costumes,hot_dog,people_standing,small_group_of_children,kids_in_costumes,people_(child,activities_(playing,settings_(backyard,occasions_(none,objects_(clothes,spider_man_swing_ride,children_sitting_on_a_rope,swing_ride,gravel,forest,swing_set,decorations,red_shirt,white_shirt,girl,colorful_balloons,people_eating,plastic_cup,people(adult,activities(eating,setting(backyard,occasion(birthday,christmas_tree,balloon,patio_umbrella,pool,people(adults,activities(socializing,settings(residential,occasions(none,feel_free_to_ask,outdoor_gathering,wooden_deck_railing,purple_shirt,striped_tie,conversation,casual_attire,outdoor_furniture,screened_porch,school,people(2,activities(1,setting(1,occasion(0,talking,blowing_candles,teenage_girl,sitting_on_grass,opening_present,patio_table,pen,wooden_deck,campfire,people_gathering_around_it,during_daylight,cake,counter,fruit,little_girl,kitchen,fruit_bowl",
     "location": "6 Florence Dr Manorville NY 11949",
     "lat": 40.849721,
     "lng": -72.802086
@@ -1307,7 +1307,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T20:02:28Z",
     "category": "Birthdays",
     "year": 2000,
-    "objects": "frame,tableware,utensil,food,dessert,baked_goods,cake,birthday_cake,interior_room,restaurant,cup,plate,candle,light,sign,teen,recreation,camera,sofa",
+    "objects": "child,cake_with_candles,birthday_celebration,people_(adult,settings_(living_room,occasions_(none,objects_(camera",
     "location": "6 Florence Dr Manorville NY 11949",
     "lat": 40.849721,
     "lng": -72.802086
@@ -1320,7 +1320,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T14:22:10Z",
     "category": "Birthdays",
     "year": 2001,
-    "objects": "cabinet,crowd,door,machine,container,luggage,utensil,footwear,shoes,sandal,appliance,refrigerator,suit,bag,backpack,seat,fence,stool,frame,umbrella,domicile,tent,outdoor,land,grass,wood_natural,shrub,consumer_electronics,television,food,baked_goods,cake,dessert,birthday_cake,light,candle,tableware,drinking_glass,curtain",
+    "objects": "backyard,kitchen,refrigerator,park,social_gathering,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,living_room,family,children,restaurant,easter,talking,elderly,house,rihanna,smile,child,toddler,party,men,stove,countertop,tile_backsplash,man_holding_an_envelope,party_hat,cake_with_candles,birthday_celebration,birthday_party,40th_birthday,t_shirt,joke,teenagers,elderly_people,activities_like_swimming,dancing,singing,opening_presents,blowing_candles,cooking,playing,settings_like_a_beach,church,school,hospital,pool,occasions_such_as_birthday,christmas,halloween,thanksgiving,wedding,graduation,beer_cans,person1,person2,leaves,conversation,adult_man,lawn_chair,trash_can,patio,swing_set,playground_equipment,man_middle_aged,man_young_adult,outdoor_event,people_in_casual_clothing,potted_plant,deck,screen_door,kim_kardashian,kanye_west,rob_kardashian,blac_chyna,kylie_jenner,kris_jenner,corey_gamble,north_west,south_west,easton_west,saint_west,chicago_west,caitlyn_jenner,brody_jenner,london_west,penelope_disney,harvey_weinstein,quentin_tarantino,leonardo_dicaprio,benedict_cumberbatch,robert_pattinson,emilia_clarke,jake_gyllenhaal,zac_efron,selena_gomez,taylor_swift,nicki_minaj,adele,beyonce,justin_timberlake,jessica_biel,emma_watson,zooey_deschanel,lupita_nyong'o,chadwick_boseman,danai_gurira,vin_diesel,kate_mckinnon,ellen_degeneres,portia_de_rossi,joy_behar,whoopi_goldberg,george_takei,mark_zuckerberg,linda_evangelista,cara_delevingne,gisele_bundchen,priyanka_chopra,serena_williams,sophie_turner,mike_johnson,drake,kendrick_lamar,adult_female,woman_standing,elderly_couple,small_child,dining_table,wine_glass,vase",
     "location": "6 Florence Dr Manorville NY 11949",
     "lat": 40.849721,
     "lng": -72.802086
@@ -1333,7 +1333,7 @@ const VIDEOS = [
     "published_at": "2020-08-24T17:23:31Z",
     "category": "Birthdays",
     "year": 1999,
-    "objects": "outdoor,land,grass,wood_natural,fence,foliage,machine,teen,container,bottle,wheel,tire,headgear,hat,baseball_hat,forest,vegetation,raw_glass,utensil,tableware,cup,baby,shrub,recreation,workout,brick,toy,vehicle_toy,door,vehicle,automobile,car,van,chair,folding_chair,food,baked_goods,birthday_cake,cake,dessert,candle,light",
+    "objects": "birthday,family,baby,child,young_boy,birthday_cake_with_candles,picnic_table,deck,outdoor_setting,happy_birthday_sign,happy_birthday_anthony,porch,flowers,happy_birthday,antony,children,backyard,pool,boy,riding_toy,sunny_day,grill,patio,swing_set,basketball_hoop,trampoline,inflatable_pool,toddler,elderly,playing,people_standing,wood_deck,people_sitting_on_bench,wood_railing,outdoor_area,forested_background,opening_presents,blowout,cake,candle,celebration",
     "location": "6 Florence Dr Manorville NY 11949",
     "lat": 40.849721,
     "lng": -72.802086
@@ -1346,7 +1346,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:34:41Z",
     "category": "Birthdays",
     "year": 1999,
-    "objects": "utensil,tableware,bowl,frame,cabinet,plate,food,baked_goods,birthday_cake,cake,dessert,balloon,door,machine,interior_room,cup,consumer_electronics,television,computer,computer_monitor,appliance,refrigerator,kitchen,kitchen_countertop,dining_room,light,candle,drinking_glass,container,bottle,suit,microphone",
+    "objects": "child,cake,living_room,kitchen,birthday_cake,baby,toddler,elderly,opening_presents,birthday,happy_birthday,balloons,candle,happy_birthday_alex,people_sitting_on_chairs,child_playing_on_floor,teenager,playing,toy_train,stove,cooking,pool,party,celebration,children,dancing,people_(child,setting_(home,occasion_(birthday,blowing_candles,christmas,tablecloth,wine_glasses,inside,cabinets,countertop,cupboard,laughing,dining_table",
     "location": "6 Florence Dr Manorville NY 11949",
     "lat": 40.849721,
     "lng": -72.802086
@@ -1359,7 +1359,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T18:58:02Z",
     "category": "Birthdays",
     "year": 1996,
-    "objects": "interior_room,classroom,cabinet,teen,fence,outdoor,land,park,playground,slide_toy,jacket,jeans,container,door,sign,balloon,consumer_electronics,machine,television,crate,stairs,luggage,purse,bouquet,flower_arrangement,crowd,painting,restaurant,chalkboard",
+    "objects": "child,children,restaurant,birthday,birthday_cake,birthday_candle,balloons,candle,cross,play,boat,playground_equipment,peering_through_gun_barrel,using_a_blue_marker,school,feel_free_to_ask,counter,rabbit,kids_sitting_on_benches,restaurant_interior,school_uniforms,toddler,teenage_boy,people_(teenager,activities_(sitting,settings_(classroom,occasions_(none,objects_(books,pizza,mickey_mouse,minnie_mouse,flower",
     "location": "60 Walt Whitman Rd, Huntington Station, NY 11746",
     "lat": 40.827463,
     "lng": -73.411899
@@ -1372,7 +1372,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:32:59Z",
     "category": "Birthdays",
     "year": 1993,
-    "objects": "outdoor,grass,land,teen,fence,recreation,sport,watersport,swimming,liquid,water,crowd,utensil,foliage,tableware,plate,pool,frozen,snow,swimsuit,park,playground,swing_playground,baby,chair,folding_chair,night_sky,sky,umbrella,shrub,food,baked_goods,cake,dessert,birthday_cake,container,bottle,cup,door",
+    "objects": "child,pool,backyard,baby,swimming,toddler,playing,children,birthday_cake,family,elderly,birthday,setting(backyard,lawn,teenager,bathing_suit,goggles,christmas_trees,balloon,beach,school,christmas_tree,group,summer,specific_objects,glitchy_image,static,people(adults,activities(swimming,settings(backyard,occasions(birthday,party,people(adult,activities(dancing,occasion(birthday,outdoor_setting,kids,frisbee,sunny,adult_female,child_male,outdoor_activity,people(child,activities(playing,occasion(none,teenagers,sitting_around_a_table,drinking_from_bottles,pool_area,picnic_bench,dining_table,summer_gathering,picnic,cookout,bowls,picnic_table,lawn_chair,soda_bottle,hot_dog_bun,handbag,blurred_image,play,playground,swing_set,family_party,cake_mixing_station,talking,watching,people_(adult,activities_(cooking,settings_(kitchen,garbage",
     "location": "9 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832814,
     "lng": -73.395278
@@ -1385,7 +1385,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:13:49Z",
     "category": "Birthdays",
     "year": 1993,
-    "objects": "balloon,door,frame,curtain,crowd,arch,suit",
+    "objects": "party,baby,balloons,party_hat,confetti,celebration",
     "location": "9 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832814,
     "lng": -73.395278
@@ -1398,7 +1398,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T14:38:21Z",
     "category": "Birthdays",
     "year": 1992,
-    "objects": "sofa,crowd,brick,decorative_plant,frame,chair,armchair,interior_room,tableware,utensil,plate,door,cup,restaurant,painting,suit,container,bowl,drinking_glass,living_room,pillow,tool,teen,carton,bottle,dining_room,fence,necktie,jewelry,lamp,light,raw_glass,seat",
+    "objects": "child,living_room,children,baby,elderly,family,television,party,birthday_cake,birthday,cake,dining_table,toddler,opening_presents,fireplace,sofa,kitchen,sitting_on_floor,girl,spoon,playing,dance,family_room,indoor_room,bowls,party_favors,decorations,birthday_card,man_holding_a_gift_bag,girl_blowing_out_candles,people_gathering,celebration,interacting,group,teenager,orange_juice,breakfast,restaurant,microwave,ice_cream,fork,refrigerator,birthday_party,people(child,child)_activities(dancing,halloween,child_shirt,child_dress,child_pants,child_hair,child_shoes,child_face,child_body,child_limbs,toddler_pants,toddler_hair,toddler_shoes,baby_outfit,baby_shoes,baby_hair,baby_face,baby_body,baby_limbs,teenager_outfit,dog,stairs,house,car,church,girls,teen,library,both_are_older_adults,barbie_doll,chips,tablecloth,elderly_man,young_child,remote,bag,mother,television_screen,blowing_candles",
     "location": "9 Frog Pond Rd,\u00a0Huntington Station, NY 11746",
     "lat": 40.832814,
     "lng": -73.395278
@@ -1411,7 +1411,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:41:15Z",
     "category": "Christmas Morn Faw",
     "year": 1995,
-    "objects": "frame,curtain,seat,celebration,christmas_tree,tree,sofa,machine,vehicle,bicycle,christmas_decoration,baby,military_uniform,crowd,lamp,light",
+    "objects": "living_room,child,christmas,baby,opening_presents,dark_room,christmas_tree,birthday,fireplace,snow,dog,night,blurry,plant,dark,candle,halloween,thanksgiving,easter,wedding,graduation,easter_eggs,dark_living_room,dog_sitting_on_floor,toy,box,person_(child,boy_opening_presents,birthday_cake,balloon,turkey,pumpkin,toddler,elderly,blowing_candles,bicycle",
     "location": "9 Frog Pond Rd,\u00a0Huntington Station, NY 11746",
     "lat": 40.832814,
     "lng": -73.395278
@@ -1424,7 +1424,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:00:23Z",
     "category": "Christmas Morn Faw",
     "year": 1993,
-    "objects": "celebration,christmas_tree,tree,christmas_decoration,document,screenshot",
+    "objects": "christmas_tree,birthday_cake,snow,pumpkin,balloon,fireplace,turkey,birthday,christmas,easter_eggs,thanksgiving,halloween,easter,living_room,opening_presents,wedding,christmas_lights,kitten,baby,graduation,christmas_presents,woman_sitting,video_still,indistinct_people,occasion_unclear,29th_january,lights,ornaments,birthday_hat,candle,party,feel_free_to_ask,12.28_1993,family,dancing,people_(adult,activities_(standing,settings_(indoors,occasion_(none,presumably_adults,specific_objects,i'm_sorry,mouse,cat,backyard,child,car,toddler,teenager,elderly,phone,people_(elderly,blowing_out_candles,candle_holders,decorations,ceiling_lights,holiday,settings_(snowy_ground,soldier,january_10th",
     "location": "9 Frog Pond Rd,\u00a0Huntington Station, NY 11746",
     "lat": 40.832814,
     "lng": -73.395278
@@ -1437,7 +1437,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T14:50:02Z",
     "category": "Moberg Christmas",
     "year": null,
-    "objects": "celebration,christmas_tree,tree,christmas_decoration,lamp,light,crowd,sofa,food,dessert,baked_goods,cake,birthday_cake,document,screenshot",
+    "objects": "living_room,birthday_cake,christmas_tree,christmas,opening_presents,elderly,birthday,balloon,fireplace,snow,turkey,baby,pumpkin,easter_eggs,child,family_celebration,easter,december_24,lights,december_24_1998,festive_decorations,present_opening,party,halloween,thanksgiving,playing,family_portrait,family,celebration,prize,game_board,1993_date_stamp,opened_presents,december_26_1993,candle_on_tree,television_in_background,blowing_candles,singing,birthday_candle,elderly_man,graduation,specific_objects,candle,holiday",
     "location": "9 Frog Pond Rd,\u00a0Huntington Station, NY 11746",
     "lat": 40.832814,
     "lng": -73.395278
@@ -1450,7 +1450,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Moberg Christmas",
     "year": 1991,
-    "objects": "sofa,door,celebration,christmas_tree,tree,raw_glass,outdoor,sky,blue_sky,bedding,housewares,bed,pillow,tool,interior_room,bedroom,recreation,performance,entertainer,singer,christmas_decoration,brick",
+    "objects": "living_room,christmas_tree,baby,elderly,playing,opening_presents,christmas_presents,birthday,child,video_camera,presents_in_a_pile,stockings,presents_under_the_tree,cake,family,people_playing,paperwork,watching_television,lights,holiday_decorations,christmas",
     "location": "9 Frog Pond Rd,\u00a0Huntington Station, NY 11746",
     "lat": 40.832814,
     "lng": -73.395278
@@ -1463,7 +1463,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:23:22Z",
     "category": "TDKK",
     "year": 1996,
-    "objects": "curtain,land,outdoor,grass,shrub,door,frame,foliage,decorative_plant,lamp,light,fence,cabinet,wood_natural,sky,cloudy,road,road_other,path,sidewalk,street,domicile,house_single,raw_glass,sofa,pillow,tool,interior_room,living_room,painting",
+    "objects": "living_room,house,backyard,car,driveway,shrubs,wallpaper,mirror,curtain,staircase,dark,bush,lawn,kitchen,power_lines,telephone_pole,windows,mailbox,picnic_table,bathroom,vanity,cabinet,handle,tile,flooring,paint,furniture,baby,public_bathroom,carpeted,birthday,april_14,asphalt,cabinets,refrigerator,counter,stove,silver,vintage,hallway,doorway,couch_on_the_first_floor,rug_on_the_ground,lamp_on_a_table,corner,empty_room,light_switch,black_sky,dark_night,bedroom,bed,pillows,dresser,nightstand,dark_room,ironing_board,blurry,yellow_flowers,pink_flowers,hedge_trimmer,video_camera_screen,flagpole,chimney,street_light,street_sign,leaves,rain_gutter,downspout,electrical_wire,tree_branches,tree_trunk,outdoor_furniture,patio,porch,lawn_chair,grill,trash_can,swing_set,playground_equipment,swing,slide,seesaw,sandbox,garden_hose,water_spigot,street_lamp,garden,gazebo",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -1476,7 +1476,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T01:52:13Z",
     "category": "TDKK",
     "year": null,
-    "objects": "brick,crowd,sign,outdoor,land,road,street,banner,recreation,machine,vehicle,sky,blue_sky,performance,automobile,bicycle,sport,light,lamppost,shrub,music,speakers_music,cycling,teen,entertainer,parade,van,foliage,truck,acrobat,singer,frame,car,skating,skateboarding,sports_equipment,skateboard",
+    "objects": "microphone,people_watching,event,birthday,stage,child,sign,church,crowd_of_people,bicycle,baby,audience,school,brick_building,audience_watching,july_15,elderly,spectators,car,clear_sky,halloween,truck,man_on_stage,date_stamp,flag,tree_in_background,crowd_of_people_watching,celebration,skateboarding,birthday_cake,boy,tennis_balls,tie,plaid_pants,tennis_court,performance,pants,glove,frisbee,beach,backyard,living_room,restaurant,hospital,park,pool,textured_material,setting_(street,man_standing,city_street,person_running,stage_with_sign,christmas,thanksgiving,easter,image_on_screen,white_car,church_sign,person_standing,image_timestamp,magician,street_performer,magic_trick,outdoor_event,observing_the_scene,man_performing_on_stage,clear_daytime_sky,book_in_hand,crowd_watching,tree_beside_brick_building,car_parked_across_street,dance,date_stamp_\"jul_16_2009,performing,actor,applauding,virginia,short_hair,blue_shirt,khaki_shorts,walking_on_stage,school_building,american_flag,family,roadway,person_riding_a_bike,date_stamp_2001_july_15,people_on_sidewalk,car_in_street,graduation,july_16_2001,dancing,riding_bike,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,man_playing_bicycle_stunts,city,public_event,time_stamp,evening_time,date,adult_male,young_boy,person_on_bike,white_house,microphone_in_his_hand,man_riding_bicycle,running,performing_trick,audience_in_background,man_on_unicycle,crowd_of_spectators,street_scene,parade_float,helmet,person_dancing_in_street,cars_parked_along_street,stand",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -1489,7 +1489,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T02:18:01Z",
     "category": "TDKK",
     "year": 2001,
-    "objects": "teen,document,screenshot,container,bottle,recreation,jigsaw,puzzles",
+    "objects": "girl",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -1502,7 +1502,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T14:23:02Z",
     "category": "TDKK",
     "year": null,
-    "objects": "document,stairs,fence,book,door,screenshot,bookshelf,frame,crib",
+    "objects": "dog,birthday,birthday_cake,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,living_room,bookshelf,halloween,easter_eggs,police_car,driver's_side_door,passenger_seat,police_officer_in_uniform,radio_in_console,steering_wheel,speedometer,tachometer,rear_window,hallway,wooden_flooring,pet_dog,collar,2002._however,home_office,computer_desk,keyboard,mouse,books,printer,file_cabinet,ny_giants,yankees,dinosaur,stuffed_animal,award,trophy,vhs_player,date_stamp_2002,vcr_tape,vcr_machine,shelf,feel_free_to_provide_it,nothing_in_this_image,march_20,evening,kitchen_stove,pan,kettle,pot,wallpaper,cat,furniture,child,toddler,teenager,elderly,swimming,dancing,singing,opening_presents,blowing_candles,cooking,playing,beach,backyard,church,restaurant,school,hospital,park,pool,christmas,thanksgiving,easter,wedding,graduation",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -1515,7 +1515,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:18:50Z",
     "category": "Birthdays",
     "year": 1997,
-    "objects": "door,cabinet,suit,lamp,light,necktie,arch,outdoor,machine,consumer_electronics,television,container,crowd,teen,wood_natural,forest,vegetation,sky,blue_sky,shrub,land,grass,raw_glass,jacket,music,speakers_music,seat,hoodie,cardboard_box",
+    "objects": "living_room,child,suit,tie,elderly,elderly_man,birthday,boy,opening_presents,backyard,park,television,glasses,teenager,birthday_cake,snow,swing_set,christmas,easter,pool,school,audience,pointing,hand,baby,kids,christmas_tree,balloon,fireplace,turkey,pumpkin,easter_eggs,playground,playground_equipment,basketball_hoop,slide,toy,inflatable_castle,house,street_lamp,leaves,clear_sky,cloud,sun,shadow,water_fountain,fire_hydrant,parked_car,inflatable_dinosaur,outdoor_activity,inflatable_balloon,toy_car,halloween,thanksgiving,graduation,magician,mic,cat_in_background,man_performing_magic_trick,child_standing_near_man,celebration,cake,child_holding_a_present,black_and_white_cat,bowl_on_table,books_on_table,red_tie_on_man,suit_coat_on_man,microphone_on_stand,cell_phone_in_hand,white_paper_in_man's_hand,silver_spoon,blue_shirt_on_man,brown_pants_on_man,black_shoes_on_man,wooden_flooring,white_wall_tiles,light_switch_panel,beige_carpeting,books,box,keyboard,mouse,scissors,spoon,fork,knife,cell_phone,bed,car,traffic_light,street_sign,beach,church,restaurant,hospital,birthday_party,christmas_celebration,halloween_costume_party,thanksgiving_dinner,easter_egg_hunt,wedding_reception,graduation_ceremony,easter_egg_decorating,pants,coat,microphone,podium,floor_lamp,picture_frame,bookshelf,wall_clock,teddy_bear,elderly_man_in_suit,boy_standing_next_to_him,hair,holding,phone,dining_table,living_room_setting,dressed_in_formal_attire,black_suit,candle_holder,black_tie,wine_glass,candle,handbag,adult_(likely_parent,elderly_woman,toddler,elderly_couple,young_boy,activities_(presentation,occasion_(formal_event,objects_(awards_or_plaques,talking,blowing_candles,cooking,playing,presentation,stage,old_man,older_woman,young_child,their_activities",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -1528,7 +1528,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T02:19:23Z",
     "category": "Birthdays",
     "year": null,
-    "objects": "outdoor,land,grass,foliage,teen,swimsuit,liquid,pool,water,recreation,sport,swimming,watersport,fence,balloon,shrub,umbrella,utensil,crowd,gown,sky,blue_sky,container,basket_container,decorative_plant,celebration,costume",
+    "objects": "child,backyard,girl,pool,hula_hoop,birthday,swimming,birthday_cake,dancing,blowing_candles,children,dance,party,toddler,teenager,baby,summer,hula,elderly,playing,birthday_party,opening_presents,cake,balloons,costume,celebration,halloween,singing,cooking,august_25,beach,balloon,flowers,picnic_table,park,hula_dance,girls,dog,outdoor_pool,cell_phone,digital_camcorder,pavement,casual_clothing,christmas,thanksgiving,easter,graduation,wedding,swimsuit,towel,august_25th,christmas_tree,teenage,water_slides,august_25_2001,family_swimming,vacation,kids,summer_vacation,girls_in_pool,barbecue_grill,house,patio,plants,toy_gun,deck,swimwear,ponytails,hula_hoops,dance_costumes,instrument,video_camera,object\n\nperson,bush,path,basket,banner,people_(3,activities_(1,birthday_celebration,hula_hula_clothes,hawaiian_leis,person_(female,activity_(dancing,setting_(park,occasion_(none,hawaiian_dress,music_system,lawn_chairs,inflatable_balloon,music,lawn_chair,outdoor_furniture,birthday_balloons,phone,outdoor_setting,kids_dancing,grass_lawn,hawaiian_costume,gravel,green,performing,hula_hooping,grass_skirt,lei,stage,hawaiian_shirts,sunny_day,flower_leis,people(adults,activities(dancing,setting(park,occasion(celebration,people(child,settings(park,occasions(birthday,school,hula_dancing,women_in_hula_outfits,young_girls,grassy_field,casual_clothes,flowers_in_hand,lawn",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -1541,7 +1541,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:31:52Z",
     "category": "Birthdays",
     "year": 1999,
-    "objects": "brick,sofa,light,fireplace,decorative_plant,suit,lamp,interior_room,machine,consumer_electronics,television,curtain,frame,necktie,food,baked_goods,cake,dessert,birthday_cake,candle,cabinet,polka_dots,container,luggage,purse,living_room,pillow,tool,crowd,restaurant",
+    "objects": "elderly,living_room,kitchen,family,television,dancing,opening_a_present,home_environment,woman_kneeling_behind_him,baby_sitting_on_man's_lap,living_room_setting,family_gathering_occasion,social_gathering,sitting_on_couch,smoking,remote,coffee_table,adult_female,blowing_candles,fireplace",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -1554,7 +1554,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T02:17:59Z",
     "category": "Birthdays",
     "year": 2001,
-    "objects": "sofa,frame,pillow,tool,interior_room,living_room,consumer_electronics,machine,television,curtain,chair,armchair,jeans,fireplace,teen,light,lamp,stairs,raw_glass,hat,headgear,baseball_hat,suit,jacket,bedding,housewares,painting",
+    "objects": "living_room,party,television,family,birthday_celebration,birthday_party,kitchen,birthday_cake,knives,spoons,forks,staircase,handrail,balloon,sofa,framed_picture,floor_lamp,elderly_couple,man_and_child,presents_being_opened,fireplace,children,playing,opening_presents,phone,boy,elderly,sitting_on_couch,watching_tv,cake,baby,child,toddler,dining_table,cake_cutting",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -1567,7 +1567,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:55:18Z",
     "category": "Birthdays",
     "year": 2000,
-    "objects": "foliage,outdoor,utensil,shrub,land,grass,decorative_plant,tableware,cup,wood_natural,fence,umbrella,jeans,door,suit,cage,chair,armchair,stairs,bouquet,flower_arrangement,cabinet,footwear,shoes,sneaker,pillow,tool,vegetation,forest,domicile,house_single,patio,raw_glass,gown",
+    "objects": "backyard,elderly,dog,child,lawn_chair,elderly_woman,outdoor_setting,house,patio,cake,dining_table,lawn,patio_furniture,birthday_cake,park,kitchen,cage,dogs,wire_crate,man_standing,patio_table,party,next_to_pool,backyard_setting,casual_occasion,patio_table_and_chairs,sunny_day,white_plastic_chair,opening_presents,grill,flowers,barbecue_grill,outdoor_patio,pool,pet,cooler,outdoor_furniture,video_camera,sitting_on_patio_chair,wine_glass,patio_door_open,package,woman_standing,living_room,opening_door,pink_flowers,birthday,funeral,grave,cemetery,girl,elderly_man_using_phone,sitting_outside,both_men_talking_on_phones,shed,porch_swing,white_house,person_walking_in_rain,candle,cooking,family,kids,talking,blowing_candles",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -1580,7 +1580,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:49:37Z",
     "category": "Birthdays",
     "year": 2000,
-    "objects": "cabinet,door,machine,consumer_electronics,television,frame,interior_room,light,chandelier,sofa,restaurant,living_room,container,luggage,purse,outdoor,night_sky,sky,celestial_body,moon,eyeglasses,optical_equipment",
+    "objects": "living_room,child,baby,birthday_party,toddler,elderly,opening_presents,people_sitting_on_floor,settings_(living_room,birthday,seated,people(adult,setting(living_room,occasion(birthday,person_(teenager,setting_(living_room,activity_(looking_down,elderly_woman,elderly_man,party,kitchen,counter,dining_table,wine_glasses,candle,party_hat,teenager,playing,lighting_sparklers",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -1593,7 +1593,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:21:07Z",
     "category": "Birthdays",
     "year": null,
-    "objects": "door,baby,cabinet,curtain,food,suit,frame,baked_goods,cake,dessert,birthday_cake,candle,light,utensil,tableware,plate,optical_equipment,eyeglasses,bookshelf,stairs,fence,container,bottle,raw_glass,hat,headgear,foliage,animal,mammal,canine,dalmatian,dog,high_chair",
+    "objects": "baby,living_room,kitchen,refrigerator,teenager,adult_male,family,evening,casual,dining_table,people_seated,food_on_table,kitchen_in_background,serving_food,birthday,surprised_expression,stove,old_woman,wallpaper,looking,playing,inside,drinking_from_cup,playing_in_swing,toddler,elderly,child",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -1606,7 +1606,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T14:36:12Z",
     "category": "Christmas Morn Sev",
     "year": null,
-    "objects": "frame,sofa,pillow,tool,machine,consumer_electronics,interior_room,television,living_room,lamp,light,bed,teen,bedding,housewares,celebration,christmas_tree,tree,christmas_decoration,decorative_plant,sign,hospital,bouquet,flower_arrangement,door",
+    "objects": "merry_christmas,easter,birthday,christmas,halloween,thanksgiving,wedding,graduation,banner,cake,gift,bag",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -1619,7 +1619,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T01:37:02Z",
     "category": "Moberg Christmas",
     "year": null,
-    "objects": "frame,suit,necktie,sofa,eyeglasses,optical_equipment,celebration,christmas_tree,tree,christmas_decoration,sign,curtain,outdoor,sky,consumer_electronics,machine,television,camera,recreation,tool,pillow,teen,cloudy,land,grass,interior_room,living_room,jacket,blue_sky",
+    "objects": "living_room,child,elderly,christmas_tree,opening_presents,blowing_candles,christmas,family,baby,playing,merry_christmas,birthday_cake,fireplace,cozy_house,village,snowy_landscape,road_leading_to_home,snow_on_ground_and_roofs,holiday_lights,christmas_decorations,car_parked_outside_house,wreath_on_door,pine_cones,mistletoe,evergreen_trees,toddler,teenager,swims,dances,sings,cooking,birthday,halloween,thanksgiving,easter,boy,december_24,baby_girl,dinner_table,pen,sitting_at_table,blowing_out_candle,old_man,candle,dining_table,date_stamp_december_21",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -1632,7 +1632,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T01:08:13Z",
     "category": "Moberg Christmas",
     "year": 2001,
-    "objects": "frame,suit,necktie,eyeglasses,optical_equipment,teen,sofa,painting,celebration,christmas_decoration,christmas_tree,tree",
+    "objects": "elderly_man,birthday_cake,candle,boy,girl,books,potted_plant,red_candle,white_flower,christmas_tree,flowers,date",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -1645,7 +1645,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:29:27Z",
     "category": "Moberg Christmas",
     "year": 1998,
-    "objects": "celebration,christmas_tree,tree,christmas_decoration,curtain,interior_room,restaurant,dining_room,tableware,utensil,plate,stairs,machine,consumer_electronics,television,suit,sofa,light,chandelier,frame,painting,crowd,necktie",
+    "objects": "empty_room,glass_door,dining_table,wine_glasses,candle,red_tablecloth,white_walls,yellow_curtains,framed_picture_on_wall,wood_floor,christmas_decorations,snow_outside,elderly,walking_up_stairs,christmas_tree,living_room,occasion_(dinner_party,girl,baby_doll",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -1658,7 +1658,7 @@ const VIDEOS = [
     "published_at": "2020-08-26T23:59:30Z",
     "category": "Severino Christmas",
     "year": 2009,
-    "objects": "raw_glass,frame,celebration,christmas_tree,tree,christmas_decoration,light,lamp,door,sign,fence,suit,necktie",
+    "objects": "living_room,christmas_tree,child,opening_presents,family,toddler,baby,christmas,celebration,birthday,balloon,fireplace,birthday_cake,blowing_candles,house,holiday_decorations,christmas_lights,snow,turkey,pumpkin,celebrating,joy,holiday,dining_table,cake,gift,birthday_candle,blowing_out_a_candle,christmas_decorations,birthday_presents,lit_candles_on_tree,sitting_on_couch,blowing_out_candles,smiling_faces,tie,glasses,holiday_celebration,elderly_woman,elderly,birthday_celebration,girl,young,santa_hat,singing,green,but_without_clear_context,teenager,cooking,playing",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -1671,7 +1671,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:12:04Z",
     "category": "Severino Christmas",
     "year": 1996,
-    "objects": "celebration,christmas_tree,tree,christmas_decoration,cabinet,door,sofa,gift,container,carton,tableware,utensil,cup,tool,pillow,outdoor,night_sky,sky,bedding,housewares,baby,polka_dots,curtain",
+    "objects": "child,living_room,baby,opening_presents,christmas_tree,christmas,toddler,elderly,birthday,birthday_cake,playing,dog,family,balloon,teenager,blowing_candles,candle,december_25,fireplace,snow,elderly_woman,socks,present_opening,birthday_party,children,turkey,pumpkin,easter_eggs,teenage,carpets,carpeting,teenage_girl,holiday_decoration,halloween,20th_century,wrapping_paper,scissors,ribbon,tags,child\n_huge_dog,santa_hat,dancing,december_25th,holiday,decorations,christmas_decoration,little_girl,opening_gifts,birthday_presents,dining_table,bookshelf,teddy_bear,car,wall_clock,festive_decorations,playtime",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -1684,7 +1684,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T14:28:50Z",
     "category": "Birthdays",
     "year": 2002,
-    "objects": "frame,cabinet,outdoor,consumer_electronics,machine,television,fence,stairs,sky,night_sky,curtain,pillow,tool,interior_room,light,balloon,suit,forest,vegetation,wood_natural,jacket,crowd,sofa,decorative_plant,living_room,chair,armchair,foliage,bedding,housewares,bed,bedroom,door,chandelier,recreation",
+    "objects": "living_room,birthday,elderly,cake,party,celebration,blowing_candles,kitchen,child,girl,children,conversation,night,television,wine_glass,towel,gloves,boots,dining_table,refrigerator,microwave,baby,cooking,stairs,evening,family,picnic_table,elderly_woman,birthday_cake,sofa,countertop,tie,button_down_shirt,t_shirt,jeans,shorts,sneakers,dress_shoes,socks,belt,watch,bracelet,ring,necklace,purse,wallet,keys,glasses,coat,scarf,cell_phone,microphone,speaker,guitar,piano,violin,drum_set,musical_notes,sheet_music,scoreboard,light_switch,thermostat,electrical_outlet,surge_protector,extension_cord,fire_extinguisher,first_aid_kit,sunscreen,insect_repellent,beach_ball,sand_pail,shovel,bucket,surfboard,wetsuit,swim_goggles,flippers,snorkel,water_bottle,chaise_lounge,parasol,pool,pool_toys,diving_board,ladder,teenagers,balloons,christmas,halloween,candle,kitchen_counter,cabinets,opening_presents,playing,hospital,park,balloon,people(2,activities(,settings(,occasions(,hair,wind,teenager,computer,people(adult,activity(socializing,setting(living_room,occasion(gathering,barbecue_grill,campfire,house,casual_conversation,dog_standing_next_to_her,television_in_background,dining_room_table,wall_with_framed_picture,window_with_curtains,painting,glass_table,mirror,curtain,floor_lamp,ceiling_light,pendant_light,rug,phone,keyboard,mouse,potted_plant,vase,fork,knife,spoon,faucet,window_seat,blinds,shower_curtain,bathtub,toilet,toothbrush,toothpaste,bathroom_mirror,shower_head,shower_hose,soap_dispenser,tissue_box,toilet_paper,trash_can,recycle_bin,handbag,backpack,suitcase,grill,lawn_mower,snow_shovel,snow_blower,snowboard,skis,ski_poles,helmet,goggles,baby_figurines,writing_on_a_board,waving,birthday_celebration,teddy_bear,doll,pink_ribbon,curtains,thanksgiving,easter,wedding,socializing,outside_at_night,including_cabinets,countertops,boy,finger_pointing_upwards,2_men,beer_bottles,birthday_party,almonds,bananas,oranges,apples,broccoli,kids_table_setting,party_decorations,plates_of_food,cups_of_drinks,party_hat,family_members,people_dancing,card,smoking,dining_room,talking,wallpaper,tablecloth,people_eating,party_hats,paper_plates,pizza,wine_glasses,cards,decorations",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -1697,7 +1697,7 @@ const VIDEOS = [
     "published_at": "2020-08-27T00:03:33Z",
     "category": "Birthdays",
     "year": 2013,
-    "objects": "door,hat,headgear,baseball_hat,container,bottle,interior_room,restaurant,fence,machine,consumer_electronics,television,tableware,utensil,food,baked_goods,cake,dessert,birthday_cake,suit,drinking_glass,sign,candle,light,fire,flame,outdoor,night_sky,sky,arch,foliage,decorative_plant",
+    "objects": "birthday_cake,celebration,2_people,candle,blowing_candles,party_hat,family_man,young_child,living_room,birthday_celebration,birthday,child,dining_table,opening_presents,tablecloth,cell_phone,girl,seated_at_dining_table,opening_birthday_present,party,drink",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -1710,7 +1710,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T14:19:43Z",
     "category": "Birthdays",
     "year": null,
-    "objects": "outdoor,land,grass,foliage,teen,swimsuit,liquid,pool,water,recreation,sport,swimming,watersport,fence,balloon,shrub,umbrella,utensil,crowd,gown,sky,blue_sky,container,basket_container,decorative_plant,celebration,costume",
+    "objects": "pool,birthday,backyard,girl,child,hula_hoop,picnic_table,baby,swimming,summer,birthday_cake,park,outdoor_setting,costume,dancing,beach,children,girls,balloons,lawn_chair,party,birthday_party,dance,easter,patio,garden,celebration,green_trees,hula,hawaiian_dance,august_25_2001,swim,christmas,halloween,thanksgiving,graduation,teenager,swimsuit,teenagers,snacks,sunny_day,house,grill,skirt,undershirt,blowing_candles,lawn,flowers,hula_skirt,hula_dance,playing,activities_(dancing,teenage_girl,grass_field,clear_sky,tent,girls_in_pool,swim_goggles,swim_suit,wedding,people(teenager,setting(pool,activity(swimming,children_swimming_in_pool,people_(3,people(children,activities(swimming,settings(pool,occasions(none,inflatable_ball,child_in_swimming_pool,backyard_setting,talking,outdoor_party,decorations,swing,hawaiian,dance_team,cheerleaders,uniforms,school,dog,plants,hose,sprinkler,sun_umbrella,parasol,cooler,water_bottle,sports_ball,frisbee,skateboard,bicycle,surfboard,flag,mirror,teddy_bear,blanket,television,keyboard,guitar,saxophone,microphone,speaker,headphones,video_camera,phone,laptop,mouse,scissors,potted_plant,hose_reel,sprinkler_nozzle,lawn_chair_cushion,parasol_pole,umbrella_stand,table_leg,patio_heater,garden_hose_spigot,outdoor_light_fixture,mailbox,fence_post,tree_trunk,wheelbarrow,shovel,rake,garden_tool,water_fountain,pool_float,pool_ladder,pool_skimmer_net,street_sign,car,truck,clock_tower,bridge,tunnel,highway,traffic_light,pedestrian_crossing,store,mall,shopping_cart,suitcase,handbag,backpack,hair,eyes,ear,nose,mouth,teeth,lips,tongue,clothing,socks,watch,glasses,jewelry,coat,scarf,gloves,pants,sweater,tie,belt,shorts,trousers,dress,tank_top,blouse,t_shirt,hoodie,sweater_vest,cardigan,jeans,sneakers,boots,sandals,flip_flops,birthday_balloon,porch,front_door,entryway,red_balloon,string,social_gathering,family,kids,dog_sitting_on_the_lawn,front_yard,white_house,bush,balloon,party_hat,basket,coconuts,basket_of_flowers,wooden_fence_in_background,woman_dancing,2_people_(child,sunny_weather,hawaiian_shirt,outdoor_event,people_(child,settings_(backyard,occasions_(birthday,barbecue_grill,dining_table,deck,leisure_activity,people_enjoying_themselves,beach_chairs,towels,drinks,music,laughter,casual_attire,inflatable_pool,cake,i'm_sorry,hula_dancers,young_girls,summertime,grassy_area,hawaiian_costumes,floral_leis,settings_(park,cell_phone,person_standing,person_dancing,person_holding_hula_hoop,birthday_cake_on_table,birthday_candle,fire_hydrant,hula_dancing,girls_in_colorful_dresses,hawaiian_luau,hula_hup,hula_hut,grass_skirt,ukulele,hawaiian_music,young_girl,hula_hoops,dancing_activity,hawaiian_hula,date_stamp,opening_presents,girl_dancing_in_hula_skirt,trees_in_background",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -1723,7 +1723,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Moberg Family",
     "year": 1992,
-    "objects": "crowd,fence,machine,wheel,tire,vehicle,outdoor,recreation,sport,sports_equipment,rim,sky,blue_sky,boat,watercraft,kayak,automobile,truck,statue,seat,trampoline,shrub,oar,pole,lifejacket,foliage,domicile,tent,land,road,street,headgear,helmet",
+    "objects": "dinosaurs,boat,pool,kids,rides,amusement_park,cars,trucks,children,families,fun,small_vehicle,spectators,toy_car,track,train,wheels,truck,trailer,uniform,dolls,carnival,merry_go_round,birthday,dinosaur_toys,birthday_party,child,blowout_cake,people_(child,activities_(playing,settings_(deck,small_boat,dock",
     "location": "Adventureland, Farmingdale, NY",
     "lat": 40.752644,
     "lng": -73.41958
@@ -1736,7 +1736,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T18:51:24Z",
     "category": "TDKK",
     "year": 1995,
-    "objects": "crowd,flag,teen,frame,recreation,camera,arch,sign",
+    "objects": "children,graduation,flag,church,graduates,graduation_cap,robe,cassock,podium,taking_photos,birthday_cake,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,graduation_ceremony",
     "location": "Bethel",
     "lat": 60.794677,
     "lng": -161.761906
@@ -1749,7 +1749,7 @@ const VIDEOS = [
     "published_at": "2020-08-26T05:04:23Z",
     "category": "1960s Sev",
     "year": 1960,
-    "objects": "fence,crowd,outdoor,land,park,amusement_park,carousel,document,handwriting,arch,balcony,raw_glass",
+    "objects": "children,merry_go_round,children's_party,swing_ride",
     "location": "Cliffside Park, NJ 07010",
     "lat": 40.821489,
     "lng": -73.987639
@@ -1762,7 +1762,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:11:25Z",
     "category": "Florida",
     "year": 1996,
-    "objects": "outdoor,machine,vehicle,land,fence,automobile,car,sky,blue_sky,grass,wheel,tire,palm_tree,tree,raw_glass,rim,shrub,road,street,light,lamppost,wood_natural,truck,cloudy,railroad,road_other,branch,cage,park,zoo,van,aircraft,airplane,monorail,stairs,roof,brick,domicile,house_single,track_rail,train,train_real,recreation,skating,skatepark,skateboarding,arch,path,sidewalk",
+    "objects": "car,trailer,highway,sign,cars,rain,wet_street,windshield,side_view_mirror,dashboard,rainy_day,cage,screen,feel_free_to_ask,ufo,house,van,boat,deer_parking_lot,flatbed_truck,overpass,guardrail,guardrail_post,parked_cars,destruction,fire_truck,fireman,fire,debris,bus,people_(adult,setting_(bus_stop,occasion_(none,truck,birthday_cake,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,leaves",
     "location": "Walt Disney World, Orlando, FL",
     "lat": 28.523047,
     "lng": -81.463527
@@ -1775,7 +1775,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T01:50:46Z",
     "category": "Florida",
     "year": 2001,
-    "objects": "crowd,outdoor,sky,blue_sky,fence,roof,stairs,land,cloudy,gown,suit,grass,arch,teen,shrub,path,decorative_plant,umbrella,utensil,balcony,recreation,performance,concert,frame,foliage,music,speakers_music,celebration,costume,wood_natural,road,street,branch",
+    "objects": "audience,child,baby,toddler,teenager,easter,stage,park,birthday,event,dance,backyard,clouds,girl,sign,people_walking,city,christmas,halloween,thanksgiving,wedding,graduation,february_19,gymnastics,acrobatics,birthday_cake,christmas_tree,beach,living_room,church,restaurant,school,hospital,pool,february_19_2001,pine_tree,house_in_distance,pond,water_fountain,dock,boats,pier,palm_trees,flowers,railing,running,teenagers,women,dresses,dancers,dance_floor,singing,city_street,winter_clothing,elderly,parade,costumes,festival,carnival_booth,people_dressed_in_costumes,people_(elderly,activities_(walking,settings_(street,occasions_(none,objects_(signs,street_light,telephone_pole,car,traffic_light,stop_sign,lamp_post,flag_pole,watch,phone,computer_monitor,television,antenna,satellite_dish,garden,leaves,performers,public,entertainment,music,clowns,leotard,february_19th,outdoor_stadium_or_park,outdoor_event_venue,gymnast,circus,temple,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,woman_dancing_on_stage,red_carpet_on_floor,date_stamp,people_(child,activities_(dancing,settings_(stage,occasions_(celebration,specific_objects_(present,performer,spectators,performance,show,screen,gymnasts_performing_tricks,spectators_watching,date_of_february_19,pink,purple,birthday_candles,viking_ship_on_wall,february_19th_2001,february_18th",
     "location": "EPCOT, LAKE BUENA VISTA",
     "lat": 28.371406,
     "lng": -81.548959
@@ -1788,7 +1788,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:35:08Z",
     "category": "Fawcett Family",
     "year": 1999,
-    "objects": "outdoor,document,screenshot,sky,cloudy,blue_sky,machine,land,sign,grass,interior_room,interior_shop,consumer_electronics,television,automobile,vehicle,raw_glass,illustrations,truck,road,semi_truck,street,road_other,teen,crowd,car,arch,path,brick",
+    "objects": "car,store,surveillance_camera,time_stamp,house,timestamp,sign,night,timestamp_on_video,easter,traffic_light,date,time,grocery_store,gymnasium,basketball_hoop,blurry_image,indistinct_objects,inside,public_place,alone,september_19,adidas_jacket,security_officer,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,city_street,traffic_lights,vehicles,road_signs,gas_station_sign,overcast_sky,video_camera,television_screen,distance,birthday,christmas,halloween,thanksgiving,wedding,graduation,streetlight,street_corner,screen,pixelation,stop_sign,telephone_pole,blurry_video_still,date_'sep_19,highway,truck,drugstore,street_lights,blurred_image,date_stamp,teenager,their_age_ranges,items_for_sale,supermarket,shopping_carts,shelves,merchandise,products,shelves_with_products,price_tags,people_shopping,checkout_counter,electronic_devices,child,shopping_cart,mirror,reflection,cloudy_sky,school,settings_(living_room,occasions_(thanksgiving,specific_objects_(present,scoreboard,birthday_party,bleachers,clock_on_wall,occasions_in_image,red_car,boy,screen_display,blurry_picture,residential_area,street_lamp,driveway,lawn,shrubs,outdoor_lighting,porch,security_camera,surveillance_footage,digital_glitch,nor_any_settings,bedroom,wall_clock,bed,nightstand,dresser,desk,television,camera_screen",
     "location": "Fergus Falls, MN",
     "lat": 46.283015,
     "lng": -96.077558
@@ -1801,7 +1801,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T18:47:55Z",
     "category": "First Day of School",
     "year": 1995,
-    "objects": "machine,outdoor,land,vehicle,automobile,grass,container,luggage,backpack,raw_glass,bus,car,road,street,teen,foliage,wheel,tire,rim,truck,path,purse,sign,crowd,sidewalk,fence,arch,seat,jacket",
+    "objects": "school_bus,family,bushes,parking_lot,yellow,child,door_opening,yellow_bus,people_(elderly,activities_(pointing,photography,settings_(school_bus,occasions_(none",
     "location": "9 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832814,
     "lng": -73.395278
@@ -1814,7 +1814,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:51:02Z",
     "category": "First Day of School",
     "year": 1991,
-    "objects": "machine,frame,utensil,tableware,plate,land,outdoor,grass,automobile,vehicle,interior_room,clock,dial,timepiece,car,cabinet,pillow,tool,dining_room,suit,consumer_electronics,television,door,container,luggage,backpack,sign,sofa,living_room,chair,armchair,bedding,housewares,bed,bedroom,restaurant,van",
+    "objects": "living_room,child,backyard,tablecloth,wall_decoration,refrigerator,boy,birthday_party,house,balloon,kite,family,van,birthday,night,candle",
     "location": "9 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832814,
     "lng": -73.395278
@@ -1827,7 +1827,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:27Z",
     "category": "First Day of School",
     "year": 1990,
-    "objects": "land,outdoor,grass,machine,automobile,vehicle,car,cabinet,truck,interior_room,consumer_electronics,television,path,container,luggage,backpack,shrub,kitchen,kitchen_sink,curtain,door,utensil,tableware,plate,restaurant,fence,teen,road,seat,van",
+    "objects": "baby,child,kitchen,children,living_room,inside,shirtless,using_cell_phone,towel,dining_table,opening_presents,van,playing,driveway,boy,cars,girl,wave,school_bus,feel_free_to_ask",
     "location": "9 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832814,
     "lng": -73.395278
@@ -1840,7 +1840,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:24:26Z",
     "category": "First Day of School",
     "year": 1996,
-    "objects": "land,outdoor,grass,fence,container,luggage,backpack,teen,road,path,foliage,street,machine,vehicle,automobile,wood_natural,car,sidewalk,road_other,purse,shrub,domicile,house_single,wheel,tire,truck,rim,raw_glass",
+    "objects": "school,backpack,child,teenager,girl,boy,bus,child_playing,medal_around_boy's_neck,child_waving,t_shirt,teenage,conversation,reflection,kid,school_bus,schoolyard,playing,driveway,boy_holding_a_gun",
     "location": "9 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832814,
     "lng": -73.395278
@@ -1853,7 +1853,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T14:24:26Z",
     "category": "Moberg Family",
     "year": 2002,
-    "objects": "outdoor,sky,blue_sky,liquid,water,swimsuit,cloudy,water_body,underwater,recreation,sport,watersport,ocean,swimming,coral_reef,scuba,seat,rocks,lake,headgear,helmet,daytime,sunbathing,crowd",
+    "objects": "swimming,beach,boat,underwater,snorkel,snorkeling,ocean,fish,child,scuba_diving,pool,flippers,shark,backyard,coral_reef,swimming_goggles,elderly,vacation,person_swimming_with_fish,human,living_room,church,restaurant,school,hospital,park,swim_fins,scuba_diving_gear,underwater_photography,open_water,marine_life,scuba_diver,diving_board,diving,people_(adult,playing,swimming_in_pool,snorkeling_gear,elderly_man,swimming_suit,beach_sand,crowd_of_people,sunny_weather,people_(adults,water_activities,young_adult_male,young_adult_female,wet_suit,swimming_gear,men,tropical_location,fun,baby,toddler,birthday,teenagers,wedding,specific_objects,excitement,swim,sand,scuba_diving_mask,reef,coral,flipper,sea_creature",
     "location": "Grand Cayman",
     "lat": 19.329847,
     "lng": -81.171222
@@ -1866,7 +1866,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T14:28:34Z",
     "category": "TDKK",
     "year": null,
-    "objects": "crowd,teen,suit,microphone,chair,sign,necktie,chair_other,folding_chair,balloon",
+    "objects": "child,stage,dance_performance,dancing,microphone,audience,suit,dancers_on_stage,birthday_cake,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,girls,theater,baby,toddler,teenager,elderly,school,specific_objects,stage_performance,dance",
     "location": "Great Hollow Middle School, Nesconset, NY",
     "lat": 40.84468,
     "lng": -73.161191
@@ -1879,7 +1879,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:11:30Z",
     "category": "Moberg Family",
     "year": 1993,
-    "objects": "fence,outdoor,headgear,land,crowd,helmet,wood_natural,jacket,park,playground,slide_toy,rocks,animal,recreation,lifejacket,sport,sports_equipment,grass,safety_vest,bird,penguin,path,liquid,water,water_body,lake,raw_glass,sky,blue_sky,bench,hat,beanie,mammal,ungulates,horse,jeans",
+    "objects": "child,playground,park,baby,bird,bridge,slide,swing,playing,elderly,toddler,pond,birds,ducks,boat,pigeon,pigeons,children,pier,picnic,ground,birds_on_ground,pathway,river,wooden_bridge,geese,people_walking,handbag,fishing_pole,winter_clothing,birds_on_fence,pole,snow,baseball,field,coat,blue,red,playground_equipment,monochrome,sandbox,birthday,cake,dock,wood,time,place,kids,feeder,bird_feeder,boy,teenager,walking_on_bridge,watching_bird,picnic_table,overcast_sky,swing_set,climbing,sheep,house,clouds,animal",
     "location": "2 Prime Avenue, Huntington, NY 11743",
     "lat": 40.874827,
     "lng": -73.421763
@@ -1892,7 +1892,7 @@ const VIDEOS = [
     "published_at": "2020-08-24T17:25:59Z",
     "category": "Severino Family",
     "year": 1999,
-    "objects": "outdoor,fence,land,blue_sky,sky,teen,amusement_park,park,rollercoaster,cloudy,machine,foliage,interior_room,restaurant,atm,seat,road,street,vehicle,automobile,grass,truck,raw_glass,frozen,liquid,snow,water,parking_lot,roof,headgear,helmet,decorative_plant,utensil,tableware,cup,drinking_glass,container,luggage,backpack,sign,necktie,suit,recreation,footwear,shoes,sneaker,sport,sports_equipment,skateboard,skating,skateboarding",
+    "objects": "child,family,restaurant,hershey's_chocolate,sign,special_day,video_still,car,truck,train,tracks,rails,bridge,ferris_wheel,park,roller_coaster,driving,utility_vehicle,driver,passenger,girl,skate_park,children,merry_go_round,amusement_park,polka_dots,birthday_cake,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,motel,parking_lot,hershey's_chocolates,m&m's_characters,hershey's_sign,baby,cake,hershey's_character,beer_store,toddler,playing,slide,pool,playground,chain_link_fence,boy,shorts,toy_car",
     "location": "hershey Park, PA",
     "lat": 40.288386,
     "lng": -76.661936
@@ -1905,7 +1905,7 @@ const VIDEOS = [
     "published_at": "2020-08-26T04:19:26Z",
     "category": "1960s Sev",
     "year": 2020,
-    "objects": "curtain,teen,door,music,musical_instrument,string_instrument,guitar,celebration,tree,christmas_tree,sign,jacket",
+    "objects": "child,baby,elderly,opening_presents,birthday_cake,blowing_candles,playing,toddler,christmas_tree,living_room,birthday,kid,human,handbag,box,furniture,birthday_presents,boy,christmas,lights,present_wrapping,garland,candle,house,family,teen,lotion,teenager",
     "location": "Hicksville, NY",
     "lat": 40.76953,
     "lng": -73.529325
@@ -1918,7 +1918,7 @@ const VIDEOS = [
     "published_at": "2020-08-26T04:11:58Z",
     "category": "1960s Sev",
     "year": 1960,
-    "objects": "crowd,document,handwriting,door,jacket,machine,automobile,vehicle,car,roof",
+    "objects": "baby,child,house,car,people_(teenager,activities_(playing,settings_(park,occasions_(graduation,feel_free_to_ask,people_(child,activities_(swimming,settings_(pool,occasions_(swimming,field,players,football_game,cardboard_box,dancing,beach,toddler,teenager,elderly,black_and_white,old_photo,faded",
     "location": "Hicksville, NY",
     "lat": 40.76953,
     "lng": -73.529325
@@ -1931,7 +1931,7 @@ const VIDEOS = [
     "published_at": "2020-08-26T04:10:59Z",
     "category": "1960s Sev",
     "year": 1960,
-    "objects": "jacket,frozen,liquid,snow,water,outdoor,sky,night_sky,bench,rocks,fence,branch,snowman",
+    "objects": "child,baby,backyard,elderly,playing,toddler,park,snow,opening_presents,teenager,birthday,pool,snowman,birthday_cake,christmas_tree,living_room,stop_sign,activities_(playing,setting_(park,swinging,wooden_bench,sandbox,playground_equipment,fenced_area,swing,tire,sleeping,bed,toy_car,swing_set,house,blowing_candles,cooking,beach,church,restaurant,school,hospital,eyes,mouth,blurry_image,snowball_fight,winter,snowball,television,sticks,old_man,black_and_white_image,black,rectangular_screen,balloon,fireplace,turkey,pumpkin,easter_eggs,christmas",
     "location": "Hicksville, NY",
     "lat": 40.76953,
     "lng": -73.529325
@@ -1944,7 +1944,7 @@ const VIDEOS = [
     "published_at": "2020-08-26T04:16:18Z",
     "category": "1960s Sev",
     "year": 1960,
-    "objects": "outdoor,suit,sky,night_sky,land,grass,fence,shrub,tuxedo,jacket,roof,bowtie,crib",
+    "objects": "toddler,child,teenager,opening_presents,blowing_candles,christmas,halloween,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,birthday,baby,children,suits,ties,elderly,activities_(swimming,dancing,singing,cooking,playing,settings_(beach,backyard,living_room,church,restaurant,school,hospital,park,pool,occasions_(birthday,thanksgiving,easter,wedding,graduation,boy,suit,party,i'm_sorry,dog,birthday_cake,easter_eggs",
     "location": "Hicksville, NY",
     "lat": 40.76953,
     "lng": -73.529325
@@ -1957,7 +1957,7 @@ const VIDEOS = [
     "published_at": "2020-08-26T04:15:35Z",
     "category": "1960s Sev",
     "year": 2020,
-    "objects": "curtain,outdoor,sky,night_sky,necktie,suit,drinking_glass,tableware,utensil,consumer_electronics,machine",
+    "objects": "child,boy,living_room,opening_presents,opening_box,guitar,christmas_tree,decorations",
     "location": "Hicksville, NY",
     "lat": 40.76953,
     "lng": -73.529325
@@ -1970,7 +1970,7 @@ const VIDEOS = [
     "published_at": "2020-08-26T04:39:20Z",
     "category": "1960s Sev",
     "year": 1960,
-    "objects": "outdoor,fence,sky,foliage,machine,wheel,tire,rim,light,lamppost,door,cloudy,sunset_sunrise,blue_sky,land,path,food,herb,seasonings,dandelion",
+    "objects": "easter_eggs,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,house,birthday_cake,child,toddler,antique_train,old_photo,birthday,christmas,halloween,thanksgiving,easter,wedding,graduation,morris_county,nor_any_activities,flag,backyard,men,soldiers,ducklings,pool,family,park,sunset,frog,mobile_home,driveway,paved_road,green_trees,birds,pond,statue,abstract",
     "location": "Hicksville, NY",
     "lat": 40.76953,
     "lng": -73.529325
@@ -1983,7 +1983,7 @@ const VIDEOS = [
     "published_at": "2020-08-26T05:02:36Z",
     "category": "Birthdays",
     "year": 1960,
-    "objects": "curtain,illustrations,seat,teen,sign,bedding,housewares,baby,machine,consumer_electronics,television,balloon",
+    "objects": "child,birthday_cake,living_room,birthday,kids,blowout_candles,elderly,activities_(playing,settings_(indoor,feel_free_to_ask,boy,cake,people(teenager,activities(dancing,settings(pool,occasions(graduation,christmas,halloween,thanksgiving,easter",
     "location": "Hicksville, NY",
     "lat": 40.76953,
     "lng": -73.529325
@@ -1996,7 +1996,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:27Z",
     "category": "Moberg Classics",
     "year": 1963,
-    "objects": "frozen,liquid,snow,water,fence,raw_glass,aquarium,outdoor,land,grass,road,street,crowd,machine,vehicle,boat,watercraft,canoe,rowboat",
+    "objects": "child,baby,backyard,park,swimming,toddler,pool,birthday,dog,playing,family,elderly,house,lawn,birthday_cake,christmas_tree,wedding,christmas,thanksgiving,toys,wooden_fence,construction_project,kid,canoe,boat,boy",
     "location": "Huntington, NY",
     "lat": 40.868154,
     "lng": -73.425676
@@ -2009,7 +2009,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:54Z",
     "category": "Severino Family",
     "year": 1980,
-    "objects": "outdoor,land,sky,hill,cloudy,grass,machine,vehicle,wood_natural,fence,automobile,raw_glass,rocks,bicycle,teen,headgear,hat,baseball_hat,hoodie,blue_sky,branch,car,building,barn,stairs,brick,roof,truck,consumer_electronics,television,jeans,road,road_other,suv",
+    "objects": "car,cooking,clouds,grill,forest,house,birthday_cake,campfire,boy,park,log_cabin,cabin,mountains,living_room,field,bridge,meat,chicken_wings,smoke,day,shrubs,porch,front_porch,birdhouse,farm_house,barn,child,television,power_line,truck,camper,beach,backyard,church,restaurant,school,hospital,pool,cloudy_sky,video_screen,street_sign,windows,hills,stormy_sky,sign,blood,rear_view_mirror,screen,feel_free_to_ask,cash_machine",
     "location": "Margaretville, Ny",
     "lat": 42.148773,
     "lng": -74.648702
@@ -2022,7 +2022,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:51:10Z",
     "category": "Florida",
     "year": 1991,
-    "objects": "liquid,water,recreation,sport,watersport,swimming,pool,fence,water_body,lake,swimsuit,crowd,aquarium,ocean,dock,boat,machine,vehicle,watercraft,speedboat,rocks,raw_glass,foliage,animal,mammal,ungulates,hippopotamus,railroad,track_rail,outdoor,land,grass,road",
+    "objects": "child,pool,elderly,swimming,boat,toddler,teenager,life_vests,river,wooden_deck,pier,pond,small_yellow_boat,baby,beach,bathing_suit,public_restroom,rhino,giraffe,zebra,people_(1,baby_(1,elephant,red_stool,blurry_image,restaurant,goofy,character,costume,animal,dog,teddy_bear",
     "location": "Marriott's Cypress Harbour, Orlando, FL",
     "lat": 28.401497,
     "lng": -81.472099
@@ -2035,7 +2035,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T16:02:47Z",
     "category": "Florida",
     "year": 1995,
-    "objects": "fence,outdoor,statue,crowd,sky,blue_sky,teen,land,container,luggage,backpack,celebration,shrub,illustrations,costume,brick,safety_vest,liquid,water,pool,recreation,sport,swimming,watersport,swimsuit,cloudy,animal,mammal,cetacean,dolphin,path,grass,roof,machine,vehicle,automobile,convertible,car,jeans,road,street,ceremony,wedding,groom,bride,suit,wedding_dress,door,painting",
+    "objects": "child,baby,birthday_cake,boy,toddler,ninja_turtles,power_rangers,teenager,pool,fountain,beach,playground,amusement_park,playing,blowing_candles,phone,opening_presents,mickey_mouse,characters,tower,parking_meter,cartoon_character,mascot,toy_turtle,street_sign,turtle_costume,stairs,railing,flowers,police_car,donatello,raphael,michelangelo,leonardo,crowd_of_people_observing,party,street_performers,backyard,trains,traffic,vehicles,hotels,pond,lake,cars,parking_lot,park,relaxed_posture,bleachers,marble,swinging,march_1st,children,sunset,yellow_slide,sandbox,girl,elderly,cooking,baby_stroller,circus,stage,tent,sign,selfie,digital,little_girl,car_seat,steering_wheel,cow,family,livestock,truck,people_in_truck,farm,animals,clear_sky,bed,rug,bedside_table,dresser,wallpaper,picture_frame,curtains,light_fixture,nightstand,lampshade,computer_monitor,keyboard,mouse,television,throw_blanket,floor_lamp,tablecloth,dining_table,vase,potted_plant,flower,wall_clock,alarm_clock,mirror,living_room,red_couch,minnie_mouse,march_31,birthday_party,chimp,rat,bat,dog,screen,cartoons,animated,friends,team,group,text",
     "location": "Marriott's Cypress Harbour, Orlando, FL",
     "lat": 28.401497,
     "lng": -81.472099
@@ -2048,7 +2048,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:37:11Z",
     "category": "Florida",
     "year": 1995,
-    "objects": "liquid,water,recreation,sport,watersport,swimming,fence,pool,outdoor,water_body,lake,sky,swimsuit,cloudy,blue_sky,land,chair,folding_chair,machine,vehicle,boat,watercraft,grass,palm_tree,tree,crowd,lamppost,light,speedboat,dock,rocks,building,gazebo,kayak,shrub,statue,daytime,sunbathing,stairs,path",
+    "objects": "child,pool,dock,boat,baby,buildings,toddler,elderly,swimsuit,marina,lake,beach,swimming,family,pier,waterfront,river,leisure,walkway,people(2,activities(0,settings(1,occasions(0,objects(0,teenager,water_sports,teenage,water_skiing,kayak,jet_ski,body_of_water,raft,floating_rings,waterfall,summer,lifeguard_stand,lawn_chairs,palm_trees,clear_blue_sky,woman_swimming,child\n_partially_visible,teenagers,elderly_couple,children,people_(adults,people_swimming,people_(adult,activities_(swimming,settings_(pool,pond,clouds",
     "location": "Marriott's Cypress Harbour, Orlando, FL",
     "lat": 28.401497,
     "lng": -81.472099
@@ -2061,7 +2061,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:30:01Z",
     "category": "Florida",
     "year": 1999,
-    "objects": "recreation,sport,swimming,watersport,liquid,water,pool,swimsuit,fence,chair,folding_chair,crowd,outdoor,daytime,sunbathing,bleachers,teen,sports_equipment,lifejacket,water_body,lake",
+    "objects": "pool,child,baby,toddler,elderly,swimming,family,beach,leisure,playing,backyard,vacation,dock,pier,towel,surfboard,teenager,mother,water_activity,children,swimwear,sport,pool_area,outdoor_setting,adult_male,text,animals,swimsuit,blue_umbrella,snack,drink,sunny_day,sitting_on_bench,reading_newspaper,bleachers,spectators,seats,1.85,0.63,0.42,boat,palm_tree,pavilion,clouds,street_light,sand,sunbathing,beach_chair,bathing_suit,shorts,backpack,handbag,car,traffic_sign,bus,train,bike,scooter,helmet,water_bottle,snorkel,flippers,goggles,phone,laptop,mouse,keyboard,fridge,stove,spoon,fork,knife,sandwich,hot_dog,pizza,cake,ice_cream_cone,cookie,doughnut,egg,milk,juice,soda,glass,sunscreen,sandals,beach_ball,volleyball,frisbee,paddleball,water_ski,jet_ski,wakeboard,parasail,kite,skateboard,snowboard,body_of_water,boat_ramp,waterfront,harbor,river,lake,ocean,sea,park,boat_rental,tourism,1.81_timestamp,calm_water_body,mother_and_baby,family_time,kids,people(teenager,activities(swimming,settings(pool,son",
     "location": "Marriott's Cypress Harbour, Orlando, FL",
     "lat": 28.401497,
     "lng": -81.472099
@@ -2074,7 +2074,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T16:06:06Z",
     "category": "Florida",
     "year": 1995,
-    "objects": "liquid,water,outdoor,water_body,lake,sky,blue_sky,frozen,snow,recreation,sport,pool,palm_tree,tree,fence,watersport,swimming,cloudy,roof,land,grass,sports_equipment,surfboard,machine,vehicle,sled,crowd,rocks",
+    "objects": "boat,child,toddler,body_of_water,cloudy_sky,building_in_background,blue_boat,boy,kayak,boats_on_water,birthday_cake,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,waves,pool",
     "location": "Marriott's Cypress Harbour, Orlando, FL",
     "lat": 28.401497,
     "lng": -81.472099
@@ -2087,7 +2087,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:18:43Z",
     "category": "Severino Family",
     "year": null,
-    "objects": "outdoor,land,blue_sky,sky,jacket,grass,jeans,agriculture,farm,food,pumpkin,vegetable,sign,hill,fence,liquid,water,illustrations,document,screenshot,frozen,snow,water_body,lake",
+    "objects": "halloween,field,child,kids,running",
     "location": "Mattituck, NY",
     "lat": 41.011905,
     "lng": -72.550539
@@ -2100,7 +2100,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:51:18Z",
     "category": "Severino Family",
     "year": 1991,
-    "objects": "outdoor,machine,vehicle,automobile,land,car,sky,blue_sky,jeans,baby,jacket,cabinet,grass,limousine,cloudy,frame,appliance,stove,oven,interior_room,kitchen,kitchen_countertop,kitchen_oven,fence,suit,van,seat,road,street,path,sidewalk,road_other,truck,recreation,sport,ball,sports_equipment,food,pumpkin,vegetable,hill",
+    "objects": "baby,child,halloween,family,kitchen,house,car,pumpkin,teenager,field,dining_table,people_(2_adults,3_children,activities_(cooking,playing,doorway,cooking,stove,activity_(sitting,setting_(parking_lot,occasion_(none,living_room,toddler,elderly,inside,bus,child_seat,toy_car,seatbelt,birthday_cake,christmas_tree,balloon,fireplace,snow,turkey,easter_eggs,face,truck,pumpkin_field,pumpkins,farm,rain,street_light",
     "location": "Mattituck, NY",
     "lat": 41.011905,
     "lng": -72.550539
@@ -2113,7 +2113,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T14:26:31Z",
     "category": "Severino Family",
     "year": 2005,
-    "objects": "cabinet,outdoor,frame,door,machine,raw_glass,land,grass,sky,blue_sky,curtain,consumer_electronics,television,wood_natural,light,path,roof,cloudy,frozen,liquid,snow,water,arch,interior_room,bathroom,washbasin,statue,bathroom_faucet,recreation,jigsaw,forest,vegetation,chandelier,tableware,utensil,drinking_glass,sofa,chair,armchair,lamp,appliance,refrigerator,painting,branch,shrub",
+    "objects": "living_room,house,backyard,kitchen,porch,mirror,park,snow,fireplace,cabinet,vase,refrigerator,television,furniture,bed,birthday,christmas,halloween,thanksgiving,easter,white_fence,potted_plant,sofa,bookshelf,microwave,countertop,cabinets,car,bedroom,nightstand,christmas_tree,balloon,turkey,pumpkin,easter_eggs,wedding,graduation,lawn,lampshade,dining_table,church,restaurant,school,lounge_chair,wooden_deck,screened_window,front_door,outdoor_table,night,birdhouse,winter_trees,clear_blue_sky,snow_covered_ground,forest_in_background,wooden_chairs,covered_patio,yellow_walls,wooden_desk,curtains,blinds,cupboard,light_switch,electrical_outlet,faucet,kettle,stove,drawer,toaster,spoons,wine_glass,banana,apple,orange,cat,dog,truck,interior,furnishing,appliance,item,fixture,garage,van,appliances,hallway,dark_room,window_blinds,white_light,vertical_lines,closed_window,picture_frame,dresser,birthday_cake,tea_cup,small_cake,easter_cake,easter_bunny,empty_house,fall_colors,brown_leaves_on_trees,leaves,leaf_piles,street_light,kayak,carport,light_fixture,wall_clock,copper_pots,metal_pans,cooking_pots,kitchen_utensils,metal_containers,wall_decoration,entertainment_center,shelves,speaker,bookcase,hutch,vases,candle,coffee_table,coffee_cup_and_saucer,eggs_in_a_container,model_boat,tea_set,mugs,kitten,bathroom,counter,towel,toilet_paper,trash_can,tile,birds_feeders,forest,red_truck,pickup_truck,fences,autumn_leaves,pavement,siding,barbecue_grill,balcony,pixelated,glitch,screen,static,child,toddler,teenager,elderly,activities_(swimming,dancing,singing,opening_presents,blowing_candles,cooking,playing,settings_(beach,hospital,pool,occasions_(birthday",
     "location": "Mattituck, NY",
     "lat": 41.011905,
     "lng": -72.550539
@@ -2126,7 +2126,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T01:28:19Z",
     "category": "TDKK",
     "year": 2001,
-    "objects": "outdoor,sky,blue_sky,land,rocks,liquid,water,water_body,ocean,cloudy,building,tower,lighthouse,grass,hill,beach,shore,dome,roof,cityscape,animal,bird,penguin,night_sky,celestial_body,moon",
+    "objects": "ocean,lighthouse,waves,beach,boy,rocks,shore,camera_phone,display_screen,lighthouse_in_background,clock_tower,clock_tower_in_background,water_body,water_body_in_background,clear_sky,teenager,waving,horizon,cellphone,birthday_cake,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,rock,sand,timestamp,tv_screen,text,boat,cloud,skyline,telephone_pole,dogs_in_the_water,stones,pathway,girl,sign,hill,clouds,rocky,seaweed",
     "location": "Montauk, NY",
     "lat": 41.04197,
     "lng": -71.94147
@@ -2139,7 +2139,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T18:53:02Z",
     "category": "Moberg Family",
     "year": 1995,
-    "objects": "liquid,water,recreation,sport,outdoor,swimsuit,watersport,frozen,snow,swimming,water_body,lake,sky,land,hill,night_sky,wakeboarding,pool,balloon,sports_equipment,surfboard,underwater,winter_sport,snowboarding,cloudy",
+    "objects": "water_skiing,swimming,pool,easter,teenager,opening_presents,backyard,baby,child,boat,birthday,christmas,halloween,thanksgiving,wedding,graduation,easter_eggs,kids_in_pool,children_swimming,family_gathering_at_pool,kids_playing_in_water,children,children_in_pool,water_activity,toddler,elderly,family,boats,skiing,white,blurry,river,rope,bridge,forest,green_trees,night,artificial_light,house,water_skier,birthday_cake,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,dancing,singing,blowing_candles,cooking,playing,beach,living_room,church,restaurant,school,hospital,park,candle,cake,short_sleeved_shirt,dark_shorts",
     "location": "Mount Bethel, PA",
     "lat": 40.904819,
     "lng": -75.111565
@@ -2152,7 +2152,7 @@ const VIDEOS = [
     "published_at": "2020-12-23T03:37:59Z",
     "category": "Moberg Classics",
     "year": 1958,
-    "objects": "crowd,suit,outdoor,curtain,liquid,water,tableware,utensil,plate,drinking_glass,land,hill,water_body,lake,sky,interior_room,restaurant,machine,cabinet,frame,seat,night_sky,consumer_electronics,computer,laptop,fire,flame,decorative_plant,container,bottle,bowl,vehicle,automobile,car,blue_sky,frozen,snow",
+    "objects": "elderly,living_room,church,restaurant,buildings,houses,settings_(restaurant,wedding,dining_table,guests,dinner_table,wine_glass,wheelchair,hospital,birthday,village,dark,people_(adults,activities_(eating,occasion_(dinner,party,group,night,wine_glasses,candle,banquet_hall,covered_with_food,baby,people_(child,activities_(dancing,occasions_(birthday,child,toddler,teenager,blowing_candles,people(elderly,activities(speaking,settings(auditorium,occasions(none,objects(microphone,suit,elderly_man,stage_with_black_backdrop,microphone,old_man,inside_room,man_standing,man_sitting,woman_standing,woman_sitting,office_chair,curtains,dinner_party,television,wall_clock,opening_presents,cake,plate_of_food,boy,kitchen,beard,glasses,boats,ship,foggy_weather,houses_on_hill,docked_boats,cloudy_sky,flag_on_top_of_building,sign_with_writing,hillside,clouds,fog,rocky_terrain,houses_on_hillside,mountainous_landscape,beach,backyard,school,park,pool,city,rain,hill,house,mountains,hut,boat,water_body",
     "location": "nesheim, norway",
     "lat": 63.27317,
     "lng": 10.581493
@@ -2165,7 +2165,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:51:18Z",
     "category": "Moberg Family",
     "year": 1991,
-    "objects": "light,frame,sofa,lamp,outdoor,land,grass,interior_room,cabinet,restaurant,living_room,suit,decorative_plant,roof,rocks,domicile,house_single,fence,shrub,brick,sky,cloudy,hill,liquid,water,water_body,lake,raw_glass,candle,pillow,tool,bouquet,flower_arrangement,container,vase,painting,machine,consumer_electronics,television,curtain,eyeglasses,optical_equipment",
+    "objects": "living_room,elderly,television,family,birthday,dining_room,candle,cake,elderly_woman,birthday_cake,christmas_tree,balloon,party,kitchen,restaurant,dinner_table,wine_glasses,lamps,dining_table,vase,wine_glass,1980s,house,field,red_house,kiosk,car,date,fireplace,snow,turkey,pumpkin,easter_eggs,evening,people(elderly,setting(living_room,activity(sitting,drinks,clock_on_wall,cruise_ship,cityscape,people(3,activities(,settings(wooden_wallpaper,furniture,occasions(none_visible,objects(,silverware,room_with_chandelier,window_with_view_of_water,dining_table_with_chairs,books,elderly_man,home_setting,family_dinner,old_man,cake_stand,knife,fork,wedding,conversation,sitting_on_a_couch,home_environment,comfortable_setting,social_interaction,photo_capturing_moment,christmas,opening_presents,white_curtains,lit_lamp_next_to_couch,sitting_in_a_chair",
     "location": "nesheim, norway",
     "lat": 63.27317,
     "lng": 10.581493
@@ -2178,7 +2178,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:13:35Z",
     "category": "Moberg Family",
     "year": 1995,
-    "objects": "crowd,suit,outdoor,curtain,liquid,water,tableware,utensil,plate,drinking_glass,land,hill,water_body,lake,sky,interior_room,restaurant,machine,cabinet,frame,seat,night_sky,consumer_electronics,computer,laptop,fire,flame,decorative_plant,container,bottle,bowl,vehicle,automobile,car,blue_sky,frozen,snow",
+    "objects": "elderly,houses,living_room,christmas_tree,buildings,village,hill,boat,curtains,birthday_cake,restaurant,wheelchair,boats,house,people_(teenager,activities_(singing,settings_(living_room,such_as_a_birthday_cake,balloon,talking,wedding,people_(several_adults,wine_glasses,candle,whiteboard,wall_decorations,floor_lamp,ceiling_lights,event,banquet_hall,people_sitting,dinner_table,wine_glass,suit_and_tie,black_and_white,formal_event,dining_table,restaurant_setting,evening,candlelight,menu_on_table,black_and_white_photo,talking_to_other_man,conference_room,formal_gathering,cake_plate,bowls,utensils,forks,knives,spoons,serving_tray,people_(elderly,activities_(sitting,settings_(restaurant,occasions_(graduation,room_with_people_sitting,speaker_at_podium,microphone,stage_lighting,black_and_white_image,sitting_in_a_wheelchair,window_in_the_background,elderly_man_in_wheelchair,elderly_man,living_room_setting,old_man_in_wheelchair,white_paint_on_walls,dark_wood_floor,dinner,people(adults,activities(sitting,settings(indoor_restaurant,occasions(dinner,objects(table,family_room,balloons,fireplace,snow,turkey,pumpkin,easter_eggs,kitchen,child,sitting_at_dining_table,birthday_cake_on_table,cityscape,foggy_weather,hills,bushes,cloud,antenna,flag,logo,sign,pillar,gate,balcony,streetlight,foggy_town,dreary_sky,specific_objects,foggy_mountain,fog,mountains,rain,clouds,cloudy,cloudy_sky,body_of_water",
     "location": "nesheim, norway",
     "lat": 63.27317,
     "lng": 10.581493
@@ -2191,7 +2191,7 @@ const VIDEOS = [
     "published_at": "2020-08-24T19:09:31Z",
     "category": "Florida",
     "year": 1997,
-    "objects": "crowd,hat,headgear,baseball_hat,outdoor,fence,optical_equipment,sunglasses,sign,blue_sky,sky,land,road,street,wood_natural,foliage,rocks,suit,light,lamppost,palm_tree,tree,cloudy,brick,balloon,recreation,sport,sports_equipment,ball,illustrations,teen,liquid,water,pool,stairs",
+    "objects": "child,baby,toddler,elderly,park,playing,teenager,birthday_cake,opening_presents,blowing_candles,swimming,audience,event,disney_sign,clouds,sign,beach,television_screen,airplane,vacation,florida,trip,text_message,electronic_device,pool,costume_party,venue,time_stamp,castle,puppet,stage,actor,boy,red_hat,shorts,cap,baseball_cap,truck,car,bike,dog,store,people_watching,celebration,parade,stroller,bicycle,people_(adult,activities_(standing_still,occasions_(none,specific_objects_(none,rainforest_cafe,dinosaurs,children,man_and_woman,disney_world_&_disney_land,boat,disney_land_sign,palm_tree,carnival_ride,movie_theater,marquee,street_light,traffic_light,bridge,railing,parking_lot,walking_stick,handbag,sports_jersey,blue_shirt,white_pants,talking,looking,observing,sleeping,dancing,singing,cooking,watching,listening,reading,studying,shopping,driving,cycling,skating,jumping,running,walking_dog,feeding_cat,building_snowman,planting,birdwatching,sunbathing,patio,location,walt_disney_world,snowy_castle_on_the_left,sky_is_clear_and_blue,baby_stroller,airplane_tarmac,carousel,blue_tent,white_flag_with_characters,crowd_of_people,store_fronts,buildings,signs,i'm_sorry",
     "location": "Orlando, Fl",
     "lat": 28.542122,
     "lng": -81.379045
@@ -2204,7 +2204,7 @@ const VIDEOS = [
     "published_at": "2020-08-24T19:10:57Z",
     "category": "Florida",
     "year": 1998,
-    "objects": "outdoor,sky,blue_sky,teen,crowd,fence,machine,vehicle,stroller,land,seat,statue,wood_natural,building,castle,path,lamppost,light,interior_room,hospital,door,raw_glass,hat,headgear,sunhat,decorative_plant,foliage,animal,mammal,ungulates,zebra,grass",
+    "objects": "child,baby,birthday_cake,park,balloon,dog,pumpkin,stroller,christmas_tree,family,toddler,t_shirt,fireplace,snow,turkey,people_walking,elderly,easter,colorful,animal,backyard,birthday,feel_free_to_ask,shorts,store,october_31st,donut,fire_hydrant,car,house,waiting_for_something,disney_castle,cloudless,baby_stroller,person(s,wheelchair,easter_eggs,amusement_park,roller_coaster,rides,dancing,singing,decorative_lights,festive_scene,lit_up_display,snowman,santa_claus,opening_presents,phone_in_hand,playing,restaurant,christmas,halloween,thanksgiving,wedding,graduation,mascot,parade_float,carts,clown_suit,zebra,elderly_man,bird_watching,animals,cartoons,signs,photo_of_animals,large,painted_on_wall,father,tiger_statue,theme_park,boy,sheep,people_in_background,tv_screen,swim_pool,pond,concrete,street_light,sign,people_in_the_background",
     "location": "Orlando, FL",
     "lat": 28.542122,
     "lng": -81.379045
@@ -2217,7 +2217,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:52Z",
     "category": "Moberg Family",
     "year": 1988,
-    "objects": "baby,foliage,utensil,tableware,cup,shrub,sofa,plate,decorative_plant,pillow,tool,curtain,frame,chair,armchair,outdoor,land,grass,teen,folding_chair,brick,fence,door,interior_room,living_room,lamp,light",
+    "objects": "baby,elderly,child,living_room,elderly_woman,house,elderly_man,dining_table,playing,toddler,fork,lawn,backyard,porch,family,elderly_people,cake,boy,car,patio,bushes,old_lady,sitting_down,home_setting,home_living_room,birthday,christmas,sitting_at_table,eating_cake,food_and_drink,plates_and_cups,outdoor_setting,tea,coffee_cup,superman_shirt,setting___backyard,children,girl,dining_room,couple_sitting_at_a_table,people_(elderly,activities_(sitting,settings_(backyard,occasion_(none,social_event,street_scene,pathway,cup_in_hand,knife,cell_phone,tablecloth,relaxed_pose,football,play,carpeted_floor,television_screen,laying,holding,playing_with_toy,residential,old_woman,sitting_chair,handbag,bush,blue,garden,flowers,hedge,potted_plants,streetlight,posing,enjoying,spending_time_together,pants,glasses,kitchen,open_door,fireplace,sofa,casual",
     "location": "portland, oregon",
     "lat": 45.520247,
     "lng": -122.674194
@@ -2230,7 +2230,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:27:19Z",
     "category": "Florida",
     "year": null,
-    "objects": "animal,liquid,water,mammal,cetacean,dolphin,pool,crowd,recreation,sport,swimming,watersport,underwater,celebration,costume,wood_natural,foliage,bird,flamingo,rocks,palm_tree,tree,outdoor,blue_sky,sky,shrub,document,screenshot,fence,fish,shark,aquarium",
+    "objects": "february_19,dolphin,pool,swimming,elderly,palm_trees,clouds,birds,flamingos,plants,child,park,birthday_cake,family_outing,whale,baby,human,shark,kids,fish,tank,boat,date_stamp,feeding",
     "location": "Sea World Orlando",
     "lat": 28.414306,
     "lng": -81.46352
@@ -2243,7 +2243,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:52Z",
     "category": "Moberg Family",
     "year": 1988,
-    "objects": "outdoor,land,shrub,rocks,foliage,liquid,water,water_body,grass,fence,agriculture,garden,wood_natural,lake,hill,sky,cloudy,jacket,path,blue_sky,waterways,waterfall,ocean,machine,vehicle,automobile,car,brick,document,handwriting,vegetation,forest,branch,arch",
+    "objects": "garden,flowers,elderly,park,fountain,rocks,waterfall,creek,river,forest,shrubs,lawn,path,pond,gazebo,flowering_plants,greenhouse,walkway,elderly_people,garden_area,greenery",
     "location": "Seattle, WA",
     "lat": 47.603832,
     "lng": -122.330062
@@ -2256,7 +2256,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:29:40Z",
     "category": "TDKK",
     "year": 1998,
-    "objects": "outdoor,land,grass,shrub,foliage,frozen,liquid,snow,water,document,handwriting",
+    "objects": "dog,toy,living_room,dog_toy,hedges,backyard,lawn,animals,puppy,path,garden,near_bush",
     "location": "St James, Ny",
     "lat": 40.882703,
     "lng": -73.148079
@@ -2269,7 +2269,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:33:10Z",
     "category": "TDKK",
     "year": null,
-    "objects": "fence,crowd,outdoor,land,grass,sky,blue_sky,headgear,hat,baseball_hat,raw_glass,bench,animal,mammal,ungulates,horse,machine,vehicle,automobile,car,chair,folding_chair,recreation,sport,ballgames,baseball,helmet",
+    "objects": "school,spectators,field,sports_field,child,teenager,people_(1,activities_(0,settings_(2,occasions_(0,objects_(0,baseball_field,watching_game,children,people_(elderly,activities_(standing,settings_(park,occasions_(none,objects_(none,park,graduation,outdoor_event,daylight,people(boy,activities(celebrating,settings(park,occasions(graduation,blowing_candles,backyard,people_in_background,overcast,playing,people_(baby,activities_(swimming,settings_(backyard,occasions_(birthday,grass_field,chain_link_fence",
     "location": "St James, Ny",
     "lat": 40.882703,
     "lng": -73.148079
@@ -2282,7 +2282,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:38:54Z",
     "category": "TDKK",
     "year": 2000,
-    "objects": "land,outdoor,grass,fence,recreation,sport,ballgames,baseball,sky,crowd,blue_sky,headgear,path,helmet,cloudy,teen,baseball_hat,hat,automobile,machine,vehicle,car,container,trash_can,hill,foliage,bleachers,arena,building,stadium,softball,suv",
+    "objects": "baseball_field,spectators,field,players,uniforms,gloves,dugout,baseball_game,baseball,baseball_player,game,sports_equipment,baseball_diamond,bats,baseball_players,sports,bleachers,player,people_playing_baseball,green_grass,boy,dirt,toddler,ball,coach,chain_link_fence,scoreboard,spectators_watching_game,child,children,audience,spectator,teenager,sports_field,metal_chain_link_fence,team,home_plate,pitcher's_mound,onlookers,players_on_field,baby,diamond,bat,crowd_of_spectators,baseball_bat,grass_field,school_bus,parking_lot,uniform,baseball_gloves,car,baseball_glove,clear_sky,people(teenager,activities(sitting,settings(outdoor,occasions(,players_in_uniforms,dirt_mound,red_jersey,blue_jersey,white_ball,parked_cars,athletics,base_ball_field,chain_link,fenced_area,trash_can,batter's_box,people_watching_game,metal_fence,people_standing,fence_around_court,jersey_number_6,balls,helmets,green,brown,cars,scoreboard_in_background,grassy_outfield,glove,stadium,basketball_court,people_sitting_down,baseball_player_in_uniform,trees_behind_the_park,spectators_in_background,catcher,umpire,cars_parked_nearby,teenage_boy,conversation,team_uniforms,crowd_of_people_watching,people(child,activities(standing,talking,setting(baseball_field,occasion(game,specific_objects(uniforms,baseball_cap,baseball_uniform,baseball_mitt,boy_on_baseball_field,open_sky,players_standing_in_field,ball_flying_through_air,baseball_uniforms,stands,ballpark,pitcher,batter,stadium_lights,people_(baby,elderly,activities_(playing,settings_(park,occasions_(birthday,benches,red_sox_uniforms,person_playing_baseball,baseball_players_on_field,spectators_in_stands,park_setting,player_in_baseball_uniform,baseball_team",
     "location": "St James, Ny",
     "lat": 40.882703,
     "lng": -73.148079
@@ -2295,7 +2295,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T14:30:42Z",
     "category": "TDKK",
     "year": 2002,
-    "objects": "outdoor,land,grass,fence,recreation,sport,ballgames,soccer,wood_natural,branch,teen,sign,suit,foliage,automobile,machine,vehicle,car,sports_equipment,ball,brick,jacket,headgear,hat,baseball_hat",
+    "objects": "child,soccer_field,empty_field,soccer_player,uniform,sports_ball,school,park,game,white_lines_on_ground,green_trees,cloudy",
     "location": "St James, Ny",
     "lat": 40.882703,
     "lng": -73.148079
@@ -2308,7 +2308,7 @@ const VIDEOS = [
     "published_at": "2020-08-27T00:02:12Z",
     "category": "Severino Family",
     "year": 2010,
-    "objects": "suit,interior_room,decorative_plant,arch,foliage,podium,outdoor,night_sky,sky,building,cityscape,candlestick,fence,light,tableware,utensil,skyscraper,candle,stained_glass,statue,drinking_glass,chandelier,bar,container,bottle,restaurant,drink,liquid,wine,wine_bottle,spoon,crowd,celebration,tree,christmas_tree,christmas_decoration",
+    "objects": "church,priest,elderly,couple,skyscrapers,ceremony,altar,restaurant,night_view,cityscape,others_not_distinguishable,congregation,tie,card,religious,document,statue_of_jesus,reading,prayer_book,wedding,pope,christmas,talking,cross,december_18th,judge,gavel,people_(elderly,settings_(church,occasions_(easter,people_gathered_around_it,settings_or_occasions,child,specific_objects,nighttime_cityscape,skyscraper,neon_lights,urban_environment,darkened_streets,high_rise_buildings,lighted_streets,traffic,date_and_time_on_image,illuminated_lights,time_lapse,city_night_view,street_lights,car_on_road,skyline,people_walking,city_lights,cell_phone_taking_photo",
     "location": "Midtown Manhattan, New York, NY",
     "lat": 40.752471,
     "lng": -73.987634
@@ -2321,7 +2321,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T02:17:34Z",
     "category": "TDKK",
     "year": 2001,
-    "objects": "teen,crowd,recreation,sport,cheerleading,bleachers,ballgames,basketball,stairs,fence,sign,celebration,costume,banner,music,speakers_music,tripod",
+    "objects": "gymnasium,school,audience,bleachers,pom_poms,girl,spectators,dance_uniform,competition,cheerleader,school_spirit,cheerleader_uniforms,gymnastics,cheerleading,black,baby,dancing,dancer,team,graduation,stage,podium,cheering_section,cheerleader_team,girls,purple_uniforms,sports_team,basketball_court,date,video_camera,basketball_hoop,sports_balls,dance_team,baton,gym,leotard,ribbon,child,dancers,girl_dancing,audience_watching,gymnast,purple_outfit,cheering_squad,date_stamp_\"june_10_2001,night",
     "location": "Tackan Elementary School, Nesconset NY",
     "lat": 40.840475,
     "lng": -73.143134
@@ -2334,7 +2334,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T14:37:01Z",
     "category": "TDKK",
     "year": 2001,
-    "objects": "crowd,curtain,celebration,costume,sign,document,screenshot,painting,gown",
+    "objects": "birthday_cake",
     "location": "Tackan Elementary School, Nesconset NY",
     "lat": 40.840475,
     "lng": -73.143134
@@ -2347,7 +2347,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T14:37:14Z",
     "category": "TDKK",
     "year": 2002,
-    "objects": "crowd,teen,recreation,sport,cheerleading,leotard,bleachers,gymnastics,door,sign,scoreboard,performance,ballet_dancer,entertainer,ballet,stairs",
+    "objects": "bleachers,gymnasium,audience,cheerleaders,competition,pom_poms,cheerleading,gymnasts,girls,cheerleading_uniforms,gymnastics_team,school_gymnasium,benches,gym,gymnastics,girl,cheerleader,uniform,spectators,stage,school_event,cheerleader_uniforms,dance_routine,physical_exercise,athletic_wear,girls_uniforms,scoreboard,time_stamp,school",
     "location": "Tackan Elementary School, Nesconset NY",
     "lat": 40.840475,
     "lng": -73.143134
@@ -2360,7 +2360,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T14:33:30Z",
     "category": "TDKK",
     "year": null,
-    "objects": "crowd,curtain,teen,suit,balloon,chair,consumer_electronics,machine,recreation,camera,microphone,podium,brick,folding_chair,eyeglasses,optical_equipment,cord,flag,interior_room,auditorium,chair_other",
+    "objects": "school,child,gymnasium,girl,audience,bleachers,children,stage,elderly,event,church,basketball_court,birthday_party,balloons,scoreboard,indoor_gymnasium,timestamp_on_the_image,feel_free_to_ask,video_screen,inside,video_camera,teenager_in_black_shirt,person_taking_a_picture,audience_of_people,red_curtain,stage_lighting,microphone_on_a_stand,reading,baby,toddler,teenager,dancing,singing,opening_presents,blowing_candles,cooking,playing,graduation,party,people_(teenager,setting_(gym,occasion_(graduation,dance_floor,celebration,decorations,banner,teachers,students,benches,sports_equipment,sports_ball,ceiling_lights,spotlight,microphone,teenage_girl,school_gymnasium,gym_equipment,basketball_net,parents,clock_on_wall,whiteboard,stage_with_microphone,gym_floor,basketball_court_markings,school_year_sign,spectators,kids,young_adult,phones,digital_clock,cake,candle",
     "location": "Tackan Elementary School, Nesconset NY",
     "lat": 40.840475,
     "lng": -73.143134
@@ -2373,7 +2373,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T20:02:56Z",
     "category": "Halloween",
     "year": 2000,
-    "objects": "frame,cabinet,door,sign,sofa,suit,curtain,flag,balloon,pillow,tool,chair,armchair,painting,headgear,hat,baseball_hat,utensil,tableware,bowl,document,handwriting",
+    "objects": "balloon",
     "location": "Tackan Elementary School, Nesconset, NY",
     "lat": 40.840475,
     "lng": -73.143134
@@ -2386,7 +2386,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:28Z",
     "category": "Florida",
     "year": 1988,
-    "objects": "machine,raw_glass,consumer_electronics,television,celebration,costume,animal,vehicle,aircraft,airplane,night_sky,outdoor,sky,statue,curtain,figurine,toy,reptile,dinosaur,jellyfish,fence",
+    "objects": "spaceship,toy,birthday_cake,church,pool,hospital,graduation_cap,but_without_more_context,gym,treadmill,microscope,astronaut,person1,person2,person3,person4,screen,text,television_show_set,puppet,alien,green,scary,monster,robot,control_room,purple_lights,hologram,stage,mannequins,uniform,star_trek,captain,communicator,space_station,monkey,spock,starfleet_uniform,i'm_sorry,feel_free_to_ask,text_on_screen,computer_monitor",
     "location": "Universal Studios, Florida",
     "lat": 28.468768,
     "lng": -81.46695
@@ -2399,7 +2399,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T02:51:50Z",
     "category": "TDKK",
     "year": 2000,
-    "objects": "teen,interior_room,classroom,crowd,painting,document,flag,cabinet,balloon,handwriting,desk,consumer_electronics,machine,television,computer,computer_monitor,bookshelf,chair,chair_other,book,polka_dots",
+    "objects": "school,classroom,children,child,teacher,books,students,paper,chalkboard,reading,papers,bulletin_board,eraser,desks,whiteboard,marker,globe,pencils,pencil,blackboard,singing,drawing,board,poster,opening_presents,posters,chalk,bookshelf,scissors,girl,balloon,windows,light_fixtures,switches,outlets,power_strip,cords,wires,extension_cord,surge_protector,projector,map,glue,ruler,baby,toddler,classroom_setting,writing,desk,student_desks,school_supplies,art_project,stage,party,confetti,sign,birthday_cake,christmas_tree,fireplace,snow,turkey,pumpkin,easter_eggs,people_(adult,activity_(decorating,occasion\n\nkids,christmas,birthday,computers,monitors,keyboards,mice,headphones,speakers,screen,whiteboard_marker,binders,notebooks,backpacks,water_bottles,snacks,envelopes,pens,protractor,calculator,compass,clipboards,folders,textbooks,student_papers,graded_papers,whiteboard_eraser,computer_monitor,mouse,keyboard,markers,art_supplies,crafts,construction_supplies,educational_materials,teacher's_desk,teacher's_chair,teacher's_blackboard,smartboard,students'_desks,students'_chairs,student's_notebook,student's_pencil,student's_backpack,student's_bookbag,student's_water_bottle,holding,people_(child,activities_(playing,setting_(school,birthday_party,cake,candle,songbook,colorful_paper_decorations,children's_artwork,school_environment,pupils,bookbag,children's_art,student,kids,class,schoolbus,children's_books,children_singing,school_classroom_setting,classroom_windows,boy,project,song_lyrics,teenager,easel,art_exhibit,presentation,students_singing,posters_on_wall,bookshelf_with_books,painting_on_easel,potted_plant,front_of_classroom,audience,writing_on_blackboard,book_bag,school_room,desk_with_book,poster_on_wall",
     "location": "Virginia Beach, VA",
     "lat": 36.849658,
     "lng": -75.976075
@@ -2412,7 +2412,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Florida",
     "year": 1991,
-    "objects": "outdoor,sky,night_sky,fence,celebration,interior_room,arch,crowd,cloudy,blue_sky,jack_o_lantern,liquid,water,frozen,snow,raw_glass,costume,teen,tableware,utensil,plate,restaurant,statue,classroom",
+    "objects": "baby,child,blowing_candles,puppet_show,birthday,costume,christmas,puppets,birthday_cake,christmas_tree,television,bus,toddler,elderly,singing,dancing,opening_presents,puppet,stage,floating_lights,gargoyles,french_flag,flooded_candle,daring_ride,nighttime_fantasy,cake,halloween,candy,trick_or_treating,christmas_scene,buildings,lights,candle,figurines,kitten,cat,stuffed_animals,beach,backyard,living_room,church,restaurant,school,hospital,park,pool,vase,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,dog,mascot,inside,carousel,boy",
     "location": "Walt Disney World",
     "lat": 28.382407,
     "lng": -81.561708
@@ -2425,7 +2425,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:51:17Z",
     "category": "Florida",
     "year": 1991,
-    "objects": "outdoor,sky,blue_sky,crowd,cloudy,land,bedding,housewares,machine,vehicle,stroller,baby,interior_room,foliage,palm_tree,tree,flag,amusement_park,park,rollercoaster,container,luggage,backpack,stairs,jacket,umbrella,utensil,hospital,bed,bathroom,bath,teen,door,road,street,decorative_plant,headgear,hat,beanie,seat,pillow,tool,sofa",
+    "objects": "baby,child,toddler,elderly,living_room,park,family,bathtub,playing,stroller,highway,car,baby_stroller,people_(adult,occasion_(none,balloon,cars,activities_(dancing,opening_presents,pedestrians,teenager,vacation,bathroom,cell_phone,disneyland,birthday,cloud,antennae,power_line,road_sign,date,traffic_light,bus_stop,person_standing,building_in_background,palm_tree_in_distance,people(1,activities(0,settings(1,occasions(0,objects(0,smiling_at_the_camera,activity_(walking,setting_(street,specific_objects_(none,elderly_man,baby_carriage,street_sign,stop_sign,t_shirt,cityscape,palm_trees,parking_lot,people_walking,buildings_in_background,party_hat,trucks,specific_objects,ninja_turtle_plush_toy,crowd_of_people,tall_buildings,clouds,people_walking_on_street,cars_parked_at_curbside,people(child,activities(none_visible,settings(park,occasions(none_visible,people_(child,settings_(park,mickey_mouse_character,person_holding_a_camera,restaurant,walkway,family_photo,people_present,singing,settings_(living_room,occasions_(birthday,time_stamp,george_lucas,stormtrooper,star_wars,r2d2,c3po,darth_vader,imperial_march,han_solo,princess_leia,luke_skywalker,jedi,lightsaber,death_star,tie_interceptor,millennium_falcon,chewbacca,wookiees,camera_flash_reflection,birthday_cake,christmas_tree,fireplace,snow,turkey,pumpkin,easter_eggs,faucet,bath,sponge,blowing_candles,outdoor_lighting,casual_clothing,car_seat,inside_car,entranceway,arched_doorway,street_lamp,building_facade,doggy,donald_duck_character,people_in_costume,person_holding_a_baby,rooftop,thatched_roof,palm_leaves,bird_in_cage,bird_feeder,baseball_cap,short_hair,beard,swinging,playground,chimney,bird,street_scene,buildings,theme_park,white_cap,sports_event,football_game,stadium,activities_(standing_still,settings_(outdoor_park,objects_(bags,socks,christmas,halloween,thanksgiving,easter,bedspread,teddy_bear,television,bed,inside,waiting_room,airplane,truck,computer_chair,evening,escalator,babies,talking,security_camera",
     "location": "Walt Disney World",
     "lat": 28.382407,
     "lng": -81.561708
@@ -2438,7 +2438,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T16:07:31Z",
     "category": "Florida",
     "year": 1995,
-    "objects": "crowd,recreation,outdoor,sky,blue_sky,celebration,costume,performance,parade,cloudy,machine,vehicle,balloon,building,castle,wood_natural,umbrella,utensil,land,flag,arch,wheel,tire,automobile,car,rim,branch,foliage,stroller,amusement_park,park,carousel,camera,skating,skatepark,skateboarding,sport,cycling,bicycle,jeans,sign,street_sign,road,street",
+    "objects": "park,child,outdoor_setting,clown,costume,parade_float,spectators,park_setting,elderly,dancing,event,mickey_mouse,parade,birthday_cake,carousel,merry_go_round,theme_park,rides,roller_coaster,stalls,marketplace,fairy_tale_village,medieval_style_castle,fantasy_land,specific_objects,elderly_man,toddler,stroller,handbag,tie,shorts,kid,amusement_park,mickey_mouse_costume,crowd_in_background,performance,top_hat,cane,microphone,float_driver,circus_car,stage,people_(adults,activities_(riding_bicycle,settings_(park,clown_on_bicycle,crowd_of_spectators,public_event_occasion,tiger_costume,crowd_of_people_watching,baby,teenager,graduation,microphone_on_stand,guitar,drum_set,confetti,disney_castle,parade_sign,people_watching,crosswalk,cinderella's_castle,float,disney_land,mascot,celebration,inflatable_costume,crowd_of_people,blurry_figure_of_a_person,city_street,inflatable_yellow_objects,people_walking_around,spectators_watching,event_setting,minnie_mouse,disney_character,disney_land_parade_float,baby_sitting_on_floor",
     "location": "Walt Disney World",
     "lat": 28.382407,
     "lng": -81.561708
@@ -2451,7 +2451,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:49Z",
     "category": "TDKK",
     "year": 1987,
-    "objects": "suit,celebration,ceremony,wedding,bride,groom,gown,crowd,wedding_dress,tripod,music,speakers_music,curtain,food,baked_goods,cake,dessert,wedding_cake,fence,interior_room,restaurant",
+    "objects": "wedding,dancing,party,bride,band,couple,elderly,groom,celebration,stage,dance_floor,restaurant,dining_table,tie,microphone_stand,handbag,microphone,guests,couple_dancing,suit,playing,live_music,white_wall_in_background,party_hall,occasion\n\nmarried_couple,wedding_venue,other_people_on_stage,dark_background,living_room,dog,blurry,arm,people_(adults,activities_(dancing,settings_(inside,occasions_(none,objects_(none,socializing,stage_lights,microphones,music_stand,music,instruments,performance,camera_man,cameraman,people_(adult,dance,festive,venue,joy,happiness,cake,flowers,bridegroom,wedding_cake,banquet_hall,decoration,since_the_image_is_blurry,feel_free_to_ask,couple_in_wedding_attire,white_cake,fork_and_knife,elderly_man,party_setting,wedding_occasion,wedding_dress,wedding_veil,man_dancing,crowd_of_people,disco_lights,event,social_gathering,kneeling,seated,ring,jazz_band,people_dancing,friends_hugging,disco_ball,blurred_background,indistinct_decorations,wine_glasses,oranges,coat,hand_gesture,audience,speakers",
     "location": "Lake Grove, NY",
     "lat": 40.852876,
     "lng": -73.11511
@@ -2464,7 +2464,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:32:18Z",
     "category": "Birthdays",
     "year": 1999,
-    "objects": "land,outdoor,grass,rocks,wood_natural,footwear,shoes,sneaker,chair,folding_chair,path,recreation,sport,golf,swimsuit,sky,night_sky,container,carton",
+    "objects": "baby,child,backyard,playing,toddler,park,elderly,blowing_candles,children,playground_equipment,wooden_spoon,pool,plastic_cup,fishing,sitting_in_grass,opening_presents,lawn,birthday,lawn_chair,patio,grill,teenager,family,summer,girl,people(child,activities(playing,setting(backyard,occasion(birthday,teenage_girl,young_boy,dog,swimming,playing_with_presents",
     "location": "Westport, Ct",
     "lat": 41.141486,
     "lng": -73.357895
@@ -2477,7 +2477,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T01:24:22Z",
     "category": "Birthdays",
     "year": 2000,
-    "objects": "outdoor,grass,land,food,baked_goods,cake,dessert,birthday_cake,shrub,chair,curtain,tableware,utensil,plate,agriculture,garden,crowd,chair_other,wood_natural,headgear,helmet,foliage,recreation,sport,ball,sports_equipment,cabinet,door,cakestand,candle,light",
+    "objects": "baby,child,playing,backyard,toddler,elderly,family,blowing_candles,park,opening_presents,candle,cake,birthday_cake,picnic_table,birthday,celebration,lawn,flowers,dog,house,garden,lake,pond,boat,grill,young_boy,dining_table,field,image_quality,green_space,bird,swimming,frisbee,digging,exploring,setting_(outdoor,occasion_(none_apparent,mother,wooden_chair,porch_swing,family_time,picnic,vhs_tape,time_stamp,people_standing_on_grass,family_photo,outdoor_gathering,young_adult,talking_on_phone,birthday_party,blowing_balloon,plastic_chair,smoking,socializing,shrubs,boy,icing,gift,playground,fishing,1.8.2007,park_or_pond,plate_of_food,lawn_chair,deck,elderly_people,backyard_setting,casual_gathering,green,toy_car,plastic_bowling_pins,number_1870,person_standing,shorts,t_shirt,tennis_ball,racket,sports_equipment,playing_with_toy,dining_room,kitchen,living_room,setting___backyard,occasion___birthday,lifejacket,school,cupcakes,dinner,friend,party,presentation,presenter,television,number,candle_blowing,cake_cutting,children,cupcake",
     "location": "Westport, Ct",
     "lat": 41.141486,
     "lng": -73.357895
@@ -2490,7 +2490,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:20:47Z",
     "category": "Moberg Christmas",
     "year": 1998,
-    "objects": "baby,celebration,christmas_tree,tree,christmas_decoration,tool,pillow",
+    "objects": "baby,elderly,child,living_room,crawling,christmas_tree,opening_presents,toddler,playing,elderly_woman,birthday,candle,blowing_candles,christmas,stockings,hallway,carpeted_floor",
     "location": "Westport, CT",
     "lat": 41.141486,
     "lng": -73.357895
@@ -2503,7 +2503,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:22:05Z",
     "category": "Moberg Family",
     "year": 1997,
-    "objects": "suit,jewelry,outdoor,foliage,tableware,utensil,baby,bedding,housewares,cup,land,grass,stairs,curtain,sofa,agriculture,garden,food,dessert,baked_goods,cake,birthday_cake,plate,cake_regular,fence,shrub",
+    "objects": "baby,elderly,church,child,congregation,clergy,altar,elderly_woman,priest,religious_ceremony,candle,fishing,backyard,playing,restaurant,garden,park,people_(adults,specific_objects,church_altar,prayer,singing,podium,microphone,cross,christening,ceremony,clergymen,lawn_chair,patio_chair,lawn_furniture,bridge,water_around_the_boat,trees_in_the_background,salon_chair,sitting_on_chair,elderly_man,coffee_cup,dining_table,outdoor_setting,dog,birthday_cake,setting_is_restaurant,boat,river,group,picnic,lake,field,apple,outdoor_seating,activities_(socializing,children,family,boy,short_hair,shirtless,shorts",
     "location": "Westport, CT",
     "lat": 41.141486,
     "lng": -73.357895
@@ -2516,7 +2516,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T14:21:47Z",
     "category": "TDKK",
     "year": 2001,
-    "objects": "lamp,light,curtain,door,tool,frame,interior_room,pillow,fence,bedding,housewares,decorative_plant,cabinet,chair,armchair,sofa,stairs,bathroom,washbasin,toilet_seat,bed,bedroom,living_room,music,musical_instrument,string_instrument,harp",
+    "objects": "wallpaper,bedroom,bed,unmade_bed,nightstand,curtains,video_screen,timestamp_\"jul_13_2001,bathroom,antique_bed,small_room,fireplace,bookshelf,camera_viewfinder,curtain,image_on_screen,empty_room,chandelier,mirror,doorway,staircase,wooden_banister,interior_stairs,white_sheet,brown_blanket,light_fixture,dresser,remote,television,video_camera,date_stamp_in_corner,reading_\"jul_13_2001",
     "location": "Williamsburg, VA",
     "lat": 37.27125,
     "lng": -76.700035
@@ -2529,7 +2529,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:28Z",
     "category": "Moberg Family",
     "year": 1990,
-    "objects": "pillow,tool,interior_room,bedding,housewares,bed,bedroom,fence,frame,sofa,foliage,outdoor,blue_sky,sky,branch,land,decorative_plant,curtain,machine,vehicle,automobile,truck,road,street,chair,folding_chair,raw_glass,baby,semi_truck,grass,car,door,restaurant,stairs,food,baked_goods,cake,dessert,wedding_cake,palm_tree,tree,light,lamp,crowd",
+    "objects": "child,restaurant,bedroom,hallway,trucks,tables,potted_plant,living_room,lying_down,laying_down,woman_lying_on_bed,cell_phone_in_hand,dark_room,dark_curtains,corner,brown_door,lounge_area,people_standing_or_sitting,people_(child,ceiling_fans,windows_with_white_frames,dishes,utensils,people_(baby,activities_(sitting,settings_(restaurant,occasions_(none,objects_(none,elderly,bed,elevator,dog,baby,cars,parking_lot,white_house,gas_station,truck,traffic,buildings,vehicles,windows,tires,license_plate,traffic_light,mailbox,telephone_pole,house,pavement,curb,boy,ballroom,dining_tables,dining_table,dining_tablecloth,banquet_hall,chandelier,lighting_fixture,decoration,flower_arrangement,floral_centerpiece,event_setup,buffet_table,catering_services,drink,glassware,wine_glasses,service_staff,kid,balcony,railing,sitting_on_bench,lobby,modern_design,empty,light_fixture,floor_lamp,specific_objects,setting_is_\"patio",
     "location": "Willow Valley, PA",
     "lat": 39.992058,
     "lng": -76.29025
@@ -2542,7 +2542,7 @@ const VIDEOS = [
     "published_at": "2020-12-23T15:03:32Z",
     "category": "60s Moberg Christmas",
     "year": 1959,
-    "objects": "curtain,outdoor,sky,night_sky,necktie,suit,drinking_glass,tableware,utensil,consumer_electronics,machine",
+    "objects": "baby,child,opening_presents,elderly,living_room,christmas_tree,box_of_food,handbag,toddler,teenager,television,decorations,wreath,guitar",
     "location": "Oceanside, NY",
     "lat": 40.63359,
     "lng": -73.637653
@@ -2555,7 +2555,7 @@ const VIDEOS = [
     "published_at": "2020-12-23T15:46:54Z",
     "category": "60s Moberg Christmas",
     "year": 1962,
-    "objects": "curtain,teen,door,music,musical_instrument,string_instrument,guitar,celebration,tree,christmas_tree,sign,jacket",
+    "objects": "baby,child,opening_presents,birthday,living_room,christmas_tree,blowing_candles,playing,family,celebration,christmas,elderly,toddler,boy,birthday_party,cake,party_hat,screen,halloween,thanksgiving,easter,wedding,graduation,easter_eggs,swimming,dancing,lights,candle,teenager,cooking,birthday_cake,snow,_\"christmas_tree,party",
     "location": "Oceanside, NY",
     "lat": 40.63359,
     "lng": -73.637653
@@ -2568,7 +2568,7 @@ const VIDEOS = [
     "published_at": "2020-12-23T15:22:48Z",
     "category": "60s Moberg Christmas",
     "year": 1961,
-    "objects": "curtain,outdoor,sky,night_sky,necktie,suit,drinking_glass,tableware,utensil,consumer_electronics,machine",
+    "objects": "baby,birthday_cake,child,christmas_tree,living_room,such_as_color,resolution,blowing_candles,opening_presents,cake,home_setting,casual_attire,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,christmas,television,wreath,birthday",
     "location": "Oceanside, NY",
     "lat": 40.63359,
     "lng": -73.637653
@@ -2581,7 +2581,7 @@ const VIDEOS = [
     "published_at": "2020-12-23T04:15:19Z",
     "category": "60s Moberg Christmas",
     "year": 1960,
-    "objects": "curtain,outdoor,sky,night_sky,necktie,suit,drinking_glass,tableware,utensil,consumer_electronics,machine",
+    "objects": "boy,living_room,baby,child,playing,opening_presents,television,christmas_tree,toddler,elderly,singing,guitar,christmas",
     "location": "Oceanside, NY",
     "lat": 40.63359,
     "lng": -73.637653
@@ -2594,7 +2594,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:51Z",
     "category": "60s Moberg Christmas",
     "year": 1965,
-    "objects": "recreation,curtain,interior_room,camera,baby,outdoor,sky,night_sky,bedding,housewares,pillow,tool,bed,frame,bedroom,lamp,light,cabinet,bar,container,bottle,suit",
+    "objects": "child,living_room,baby,elderly,opening_presents,toddler,birthday,blowing_candles,playing,christmas_tree,bed,birthday_party,balloon,snow,television,christmas_trees,balloons,teenager,elderly_people,elderly_woman,family,children's_clothing,3_children,present_opening,hospital,elderly_man,children,christmas_presents,santa_claus_doll,baby_girl,birthday_cake,fireplace,turkey,pumpkin,easter_eggs,cat,backyard,elderly_man_playing_piano,baby_in_woman's_arms,living_room_setting,gift_giving_activity,smile,kid",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -2607,7 +2607,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:27Z",
     "category": "60s Moberg Christmas",
     "year": 1963,
-    "objects": "suit,curtain,interior_room,restaurant,necktie,painting,optical_equipment,eyeglasses",
+    "objects": "birthday,living_room,child,christmas_tree,toddler,elderly,birthday_cake,baby,opening_presents,candle,decorations,family,celebration,christmas,elderly_woman,elderly_couple,playing,party,balloon,people_(baby,dinner_table,silverware,wine_glasses,candleabra,flowers,wallpaper,curtains,drapes,rug,sofa,dining_room,kitchen,family_room,party_decorations,pinata,ornaments,cards,group,dinner,gift_bag,baby_doll,church,christmas_presents,kids,opening_gifts,holding,dancing,singing,blowing_candles,cooking,setting_up_a_stage,performing,celebrating,band,musician,microphone,horse,clown,performance,dining_table,cake,smiles,small_child,baby_in_arms,white_wall,lights,festive_atmosphere,elderly_man,present_opening,1970s",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -2620,7 +2620,7 @@ const VIDEOS = [
     "published_at": "2020-12-23T14:03:52Z",
     "category": "60s Moberg Christmas",
     "year": 1975,
-    "objects": "curtain,outdoor,sky,night_sky,necktie,suit,drinking_glass,tableware,utensil,consumer_electronics,machine",
+    "objects": "baby,child,christmas_tree,living_room,playing,birthday,birthday_cake,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,boy,opening_presents,television,wall_decoration,guitar,toddler,teenager,elderly",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -2633,7 +2633,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:46Z",
     "category": "Birthdays",
     "year": 1988,
-    "objects": "frame,suit,cabinet,decorative_plant,bouquet,flower_arrangement,pillow,tool,sofa,container,necktie,vase,bedding,housewares,bed,interior_room,bedroom,document,book,chair,armchair,food,dessert,baked_goods,cake,birthday_cake,cake_regular,painting,lamp,light,baby",
+    "objects": "elderly,living_room,elderly_man,desk,curtains,hospital,old_man,talking,books,rug,sofa,armchair,dresser,mirror,picture_frame,poster,painting,sculpture,figurine,reading,glasses,opening_presents,sitting_in_a_living_room,next_to_a_window,sitting_in_chair,laughing,birthday_card,greeting_card,television,birthday,office_chair,computer_monitor,keyboard,windows,wallpaper,shelf,elderly_woman,interior,old_woman,90th_birthday_cake,candle,number,card,vase,potted_plant,blinds,fork,knife,spoon,wine_glass,curtain,blind,lying,empty_room,bed,hospital_room",
     "location": "1250 67th St, Brooklyn, New York",
     "lat": 40.624946,
     "lng": -74.00425
@@ -2646,7 +2646,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:43Z",
     "category": "Birthdays",
     "year": 1989,
-    "objects": "frame,utensil,tableware,plate,bouquet,flower_arrangement,document,handwriting,bowl,interior_room,curtain,suit,baby,raw_glass,restaurant,dining_room,decorative_plant,painting,necktie",
+    "objects": "elderly,dining_table,cake,flag,words,frosting,living_room,old_man,senior_citizen,people_standing_around,cake_on_table,birthday_party,seated_at_table,engaged_in_conversation,drinking_wine,sitting_on_chair,black_tie,yellow_flowers,blue_tablecloth,dining_room_table,vases,potted_plants,framed_photo,wall_clock,white_candles,wine_glass,keyboard,mouse,food_on_table,dining_chair,other_people_present,flowers,vase,baby,birthday_cake,children,celebration,sitting_at_a_table",
     "location": "1250 67th St, Brooklyn, New York",
     "lat": 40.624946,
     "lng": -74.00425
@@ -2659,7 +2659,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:28Z",
     "category": "Birthdays",
     "year": 1988,
-    "objects": "balloon,cabinet,suit,door,interior_room,nightclub,machine,consumer_electronics,television,container,bottle,utensil,cookware,pot_cooking,teen,microphone,jeans,bookshelf",
+    "objects": "party,balloon,confetti,birthday,kitchen,party_hat,birthday_party,birthday_cake,balloons,cake,living_room,celebration,paper_decorations,ribbon,string_lights,disco_balls,colorful_balloons,purple_balloon,blue_balloon,pink_balloon,candle,birthday_balloons,man_standing,white_refrigerator,red_towel,stove,blender,coffee_maker,kettle,yellow_balloons,background_is_blurred,dancing,house,collar,laughing,celebrating,birthday_hat,surprised_expression,mustache,microwave,wall_decor,young_man,streamer",
     "location": "Huntington Station, NY",
     "lat": 40.847237,
     "lng": -73.403632
@@ -2672,7 +2672,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:28Z",
     "category": "Birthdays",
     "year": 1964,
-    "objects": "frame,curtain,bookshelf,stool,utensil,tableware,plate,optical_equipment,eyeglasses,baby,bedding,housewares,pillow,tool,bed,interior_room,bedroom,chair,armchair,lamp,light,seat,cabinet",
+    "objects": "baby,child,elderly,cake,toddler,blowing_candles,birthday,party,living_room,birthday_cake,fork,candle,dining_table,forks,knives,setting___living_room,occasion___birthday,haircut,blanket,pink,dress,hospital,celebration,opening_presents,christmas,halloween,thanksgiving,easter,wedding,graduation,park",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -2685,7 +2685,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:51Z",
     "category": "Birthdays",
     "year": 1962,
-    "objects": "liquid,underwater,water,animal,jellyfish,aquarium",
+    "objects": "baby,child,birthday_cake,elderly,playing,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,toddler,park,laying_down,opening_presents,living_room,birthday,cake",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -2698,7 +2698,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:27Z",
     "category": "Birthdays",
     "year": 1964,
-    "objects": "outdoor,land,grass,baby,sky,blue_sky,shrub,interior_room,hospital,liquid,underwater,water,stairs,brick,foliage,flower,rose,necktie,suit,bed,bedding,housewares,animal,jellyfish,crowd",
+    "objects": "baby",
     "location": "32 Nevinwood Pl, Huntington Station, NY 11746",
     "lat": 40.839895,
     "lng": -73.383509
@@ -2711,7 +2711,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:24:04Z",
     "category": "Fawcett Family",
     "year": 1993,
-    "objects": "crowd,cabinet,interior_room,classroom,hospital,tableware,utensil,bowl,suit",
+    "objects": "",
     "location": "499 Old Country Rd, Huntington Station, NY 11746",
     "lat": 40.816806,
     "lng": -73.381508
@@ -2724,7 +2724,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Fawcett Family",
     "year": 1991,
-    "objects": "fence,animal,mammal,outdoor,land,ungulates,grass,horse,wood_natural,cow,roof,crowd,feline,tiger,teen,footwear,shoes,elephant,stairs,foliage,cage,park,zoo,jeans,balloon",
+    "objects": "park,balloon",
     "location": "Long Island Game Farm",
     "lat": 40.848319,
     "lng": -72.788817
@@ -2737,7 +2737,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T18:56:44Z",
     "category": "Fawcett Family",
     "year": 1995,
-    "objects": "crowd,curtain,teen,sign,jacket,outdoor,sky,night_sky,suit",
+    "objects": "",
     "location": "499 Old Country Rd, Huntington Station, NY 11746",
     "lat": 40.816806,
     "lng": -73.381508
@@ -2750,7 +2750,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:41Z",
     "category": "Fawcett Family",
     "year": 1988,
-    "objects": "interior_room,hospital,bedding,housewares,baby,bed,frame,raw_glass,machine,consumer_electronics,television,curtain,eyeglasses,optical_equipment,tool,pillow",
+    "objects": "baby,television",
     "location": "Huntington, NY",
     "lat": 40.868154,
     "lng": -73.425676
@@ -2763,7 +2763,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:57Z",
     "category": "Fawcett Family",
     "year": 1989,
-    "objects": "celebration,costume,teen,crowd,outdoor,machine,vehicle,sky,recreation,performance,ballet,automobile,car,blue_sky,interior_room,theater,ballet_dancer,entertainer,night_sky,optical_equipment,sunglasses,brick,foliage,eyeglasses,shrub,stroller,baby,wheel,tire,rim,suv,land,road,street",
+    "objects": "baby",
     "location": "499 Old Country Rd, Huntington Station, NY 11746",
     "lat": 40.816806,
     "lng": -73.381508
@@ -2776,7 +2776,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Fawcett Family",
     "year": 1991,
-    "objects": "suit,interior_room,hospital,bedding,housewares,baby,bed,podium,tool,pillow,decorative_plant,microphone,machine,consumer_electronics,television,bedroom,cabinet,sofa,curtain,recreation,jigsaw,foliage,crowd,teen,frame,necktie,painting,optical_equipment,eyeglasses,jacket",
+    "objects": "baby,television",
     "location": "Huntington, NY",
     "lat": 40.868154,
     "lng": -73.425676
@@ -2789,7 +2789,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:51:06Z",
     "category": "Fawcett Family",
     "year": 1991,
-    "objects": "crowd,teen,frame,curtain,stairs,sign,banner,recreation,sport,ballgames,basketball",
+    "objects": "",
     "location": "499 Old Country Rd, Huntington Station, NY 11746",
     "lat": 40.816806,
     "lng": -73.381508
@@ -2802,7 +2802,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:53Z",
     "category": "Fawcett Family",
     "year": 1989,
-    "objects": "land,outdoor,grass,fence,recreation,sport,ballgames,baseball,automobile,machine,vehicle,headgear,car,helmet,hat,baseball_hat,sky,blue_sky,softball,teen,flag,football,animal,horse,mammal,ungulates,cricket_sport,path,van,truck,bus,parking_lot,bleachers,footwear,shoes,sneaker",
+    "objects": "",
     "location": "Elwood, NY",
     "lat": 40.846159,
     "lng": -73.341205
@@ -2815,7 +2815,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:43Z",
     "category": "Fawcett Family",
     "year": 1988,
-    "objects": "celebration,ceremony,graduation,podium,door,gown,cabinet,seat,interior_room,hospital,painting,teen",
+    "objects": "graduation",
     "location": "10 Pinetree Rd, Huntington Station, NY 11746",
     "lat": 40.82726,
     "lng": -73.414029
@@ -2867,7 +2867,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:39Z",
     "category": "Moberg Classics",
     "year": 1960,
-    "objects": "outdoor,land,grass,crowd,fence,wood_natural,sky,blue_sky,machine,automobile,vehicle,car,door,suit,domicile,house_single,chair,folding_chair,optical_equipment,eyeglasses,tableware,utensil,drinking_glass,liquid,water,underwater,coral_reef,cloudy,foliage,animal,mammal,ungulates,horse,interior_room,bar",
+    "objects": "",
     "location": "Oceanside, NY",
     "lat": 40.63359,
     "lng": -73.637653
@@ -2906,7 +2906,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T14:49:22Z",
     "category": "Severino Family",
     "year": 1992,
-    "objects": "pillow,tool,sofa,baby,bedding,housewares,document,book",
+    "objects": "baby",
     "location": "Huntington Station, NY",
     "lat": 40.847237,
     "lng": -73.403632
@@ -2919,7 +2919,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T15:12:39Z",
     "category": "Severino Family",
     "year": 1993,
-    "objects": "outdoor,land,grass,wood_natural,machine,vehicle,liquid,water,water_body,lake,baby,utensil,tableware,cup,boat,watercraft,fence,canoe,rowboat,oar,pole,plate,interior_room,restaurant,bench,path,sidewalk,road,foliage,sky,blue_sky,forest,vegetation,chair,folding_chair,jeans,speedboat,recreation,lifejacket,sport,sports_equipment,bowl,crowd,teen,street,road_other,stroller,automobile,car,parking_lot",
+    "objects": "baby,restaurant",
     "location": "2 Prime Avenue, Huntington, NY 11743",
     "lat": 40.874827,
     "lng": -73.421763
@@ -2932,7 +2932,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:06:55Z",
     "category": "Severino Family",
     "year": 1996,
-    "objects": "suit,crowd,door,balloon,interior_room,machine,clock,dial,timepiece,container,trash_can,restaurant,seat,arch,light,chandelier,bench,stained_glass,wood_natural,land,outdoor,path,sidewalk,automobile,vehicle,car,road,street,document,handwriting,chalkboard,cabinet,jeans,necktie,frame,baby",
+    "objects": "balloon,restaurant,baby",
     "location": "Huntington Station, NY",
     "lat": 40.847237,
     "lng": -73.403632
@@ -2945,7 +2945,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:51:14Z",
     "category": "Severino Family",
     "year": null,
-    "objects": "outdoor,land,grass,wood_natural,machine,vehicle,automobile,foliage,fence,teen,car,crowd,truck,liquid,water,water_body,path,lake,park,playground,swing_playground,ocean,blue_sky,sky,shore,recreation,workout,wheel,tire,van,suv",
+    "objects": "park,playground",
     "location": "2 Prime Avenue, Huntington, NY 11743",
     "lat": 40.874827,
     "lng": -73.421763
@@ -2958,7 +2958,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T14:30:54Z",
     "category": "Severino Family",
     "year": 2006,
-    "objects": "baby,curtain,tool,cabinet,door,machine,interior_room,pillow,bedding,housewares,appliance,stove,kitchen,kitchen_countertop,refrigerator,car_seat,consumer_electronics,television,oven,kitchen_oven,container,bottle,microwave,utensil,tableware,plate,frame,chair,armchair,fence,hat,headgear,beanie,suit,hospital,bed",
+    "objects": "baby,kitchen,television",
     "location": "10 Meath Ave, Huntington, NY 11743",
     "lat": 40.830775,
     "lng": -73.428611
@@ -2971,7 +2971,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:51:01Z",
     "category": "Severino Family",
     "year": 1991,
-    "objects": "fence,outdoor,land,grass,painting,foliage,wood_natural,sofa,machine,consumer_electronics,television,container,luggage,backpack,rocks,roof,animal,mammal,ungulates,cow,teen,park,playground,swing_playground,pillow,tool,chair,armchair,door,cabinet",
+    "objects": "television,park,playground",
     "location": "296 Wading River Rd, Manorville, NY 11949",
     "lat": 40.827046,
     "lng": -72.811253
@@ -2984,7 +2984,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:50:59Z",
     "category": "Severino Family",
     "year": 1992,
-    "objects": "frozen,liquid,snow,water,machine,vehicle,automobile,car,jacket,wood_natural,outdoor,land,crowd,road,street,truck,cabinet,jeans,brick,animal,mammal,ungulates,horse,headgear,hat,beanie,baby,fence,recreation,sport,winter_sport,sledding,sled,branch,path,sidewalk,illustrations,door,interior_room,closet",
+    "objects": "snow,baby",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -2997,7 +2997,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:27Z",
     "category": "Severino Family",
     "year": 1987,
-    "objects": "interior_room,restaurant,curtain,outdoor,land,hill,door,bedding,housewares,lamp,light,grass,sky,cloudy,blue_sky",
+    "objects": "restaurant",
     "location": "Margaretville, Ny",
     "lat": 42.148773,
     "lng": -74.648702
@@ -3010,7 +3010,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Severino Family",
     "year": 1992,
-    "objects": "raw_glass,door,fence,jacket,sign,animal,mammal,cat,feline,adult_cat",
+    "objects": "",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -3023,7 +3023,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Severino Family",
     "year": 1990,
-    "objects": "foliage,decorative_plant,sofa,baby,pillow,tool,chair,armchair,cabinet,door,interior_room,hospital,suit,teen,frame,container,cardboard_box,jacket,liquid,water,water_body,ocean",
+    "objects": "baby",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -3036,7 +3036,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:45Z",
     "category": "Severino Family",
     "year": 1987,
-    "objects": "curtain,machine,automobile,vehicle,car,interior_room,light,land,outdoor,grass,branch,door,bathroom,washbasin,chandelier,wheel,tire,rim,shrub,lamp,bedroom,pillow,tool",
+    "objects": "",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -3049,7 +3049,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:06:11Z",
     "category": "Severino Family",
     "year": 1996,
-    "objects": "outdoor,machine,automobile,vehicle,land,car,grass,fence,shrub,road,street,sky,crowd,truck,path,brick,night_sky,wheel,tire,blue_sky,rocks,seat,teen,jeans,optical_equipment,eyeglasses,umbrella,utensil,interior_room,restaurant,sidewalk,celestial_body,moon,rim",
+    "objects": "restaurant",
     "location": "Meath Ave, Huntington Station, NY",
     "lat": 40.830692,
     "lng": -73.428323
@@ -3062,7 +3062,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:50:48Z",
     "category": "Severino Holidays",
     "year": 1991,
-    "objects": "fence,outdoor,grass,land,shrub,foliage,decorative_plant,chair,baby,rocks,folding_chair,domicile,house_single,wood_natural,roof,jacket,bench,container,basket_container",
+    "objects": "baby",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -3075,7 +3075,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:51:14Z",
     "category": "Severino Holidays",
     "year": 1992,
-    "objects": "brick,suit,frame,jacket,sign,rocks,crowd,stairs,polka_dots,seat,sofa,eyeglasses,optical_equipment,door,container,luggage,backpack,bedding,housewares",
+    "objects": "",
     "location": "Huntington Station, NY",
     "lat": 40.847237,
     "lng": -73.403632
@@ -3088,7 +3088,7 @@ const VIDEOS = [
     "published_at": "2020-08-24T17:17:35Z",
     "category": "Severino Holidays",
     "year": 1998,
-    "objects": "suit,crowd,interior_room,wood_natural,restaurant,fence,door,outdoor,container,luggage,purse,sky,cloudy,blue_sky,frame,necktie,stairs,brick,arch,celebration,ceremony,wedding,groom,bride,wedding_dress,machine,vehicle,automobile,car,land,grass,shrub,path,classroom,hospital,lab_coat,cabinet,tableware,utensil,plate,drinking_glass",
+    "objects": "restaurant,wedding",
     "location": "Huntington Station, NY",
     "lat": 40.847237,
     "lng": -73.403632
@@ -3101,7 +3101,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T14:31:57Z",
     "category": "Severino Holidays",
     "year": 1992,
-    "objects": "outdoor,land,grass,foliage,fence,wood_natural,recreation,sport,ball,sports_equipment,machine,wheel,tire,park,playground,swing_playground,jeans,jacket,document,decorative_plant,chair,folding_chair,seat,container,luggage,backpack,hoodie,tool,pillow,handwriting,currency,money,cabinet,door,screenshot",
+    "objects": "park,playground",
     "location": "3 Frog Pond Rd, Huntington Station, NY 11746",
     "lat": 40.832321,
     "lng": -73.395003
@@ -3114,7 +3114,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:25:24Z",
     "category": "Severino Holidays",
     "year": 1997,
-    "objects": "brick,crowd,optical_equipment,eyeglasses,interior_room,restaurant,stairs,baseball_hat,hat,headgear,fireplace,suit,curtain,utensil,tableware,plate,jacket",
+    "objects": "restaurant,fireplace",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -3127,7 +3127,7 @@ const VIDEOS = [
     "published_at": "2020-08-26T23:59:13Z",
     "category": "Severino Holidays",
     "year": 2008,
-    "objects": "cabinet,door,machine,frame,jacket,clock,dial,timepiece,suit,utensil,tableware,appliance,teen,sign,optical_equipment,eyeglasses,bowl,light,chandelier,consumer_electronics,television,curtain,cup,drinking_glass,container,bottle,scarf,jeans,interior_room,kitchen,kitchen_countertop,stove",
+    "objects": "television,kitchen",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -3140,7 +3140,7 @@ const VIDEOS = [
     "published_at": "2020-08-24T19:12:16Z",
     "category": "Severino Holidays",
     "year": 1997,
-    "objects": "cabinet,frame,foliage,door,baseball_hat,hat,headgear,utensil,light,baby,jeans,pillow,tool,machine,consumer_electronics,television,brick,umbrella,suit,high_chair,food,baked_goods,cake,dessert,birthday_cake,candle,arch,tableware,plate,bowl,lamp",
+    "objects": "baby,television,cake,birthday_cake,candle",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -3153,7 +3153,7 @@ const VIDEOS = [
     "published_at": "2020-08-24T17:24:48Z",
     "category": "Severino Holidays",
     "year": 2000,
-    "objects": "frame,cabinet,door,sign,sofa,suit,curtain,flag,balloon,pillow,tool,chair,armchair,painting,headgear,hat,baseball_hat,utensil,tableware,bowl,document,handwriting",
+    "objects": "balloon",
     "location": "6 Florence Dr Manorville NY 11949",
     "lat": 40.849721,
     "lng": -72.802086
@@ -3166,7 +3166,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:31:19Z",
     "category": "Severino Holidays",
     "year": 1999,
-    "objects": "suit,wood_natural,land,outdoor,grass,frame,brick,interior_room,sofa,tool,pillow,cabinet,door,jeans,container,curtain,fireplace,living_room,tableware,utensil,drinking_glass,drink,liquid,wine,wine_bottle,plate,red_wine,bottle,restaurant,teen,hat,headgear,fedora,bench,branch,necktie,luggage,bed,suitcase,bedroom",
+    "objects": "fireplace,restaurant",
     "location": "6 Florence Dr Manorville NY 11949",
     "lat": 40.849721,
     "lng": -72.802086
@@ -3179,7 +3179,7 @@ const VIDEOS = [
     "published_at": "2020-08-24T17:24:11Z",
     "category": "Severino Holidays",
     "year": 1998,
-    "objects": "interior_room,crowd,frame,suit,light,chandelier,machine,door,bottle,container,utensil,tableware,restaurant,consumer_electronics,television,sofa,living_room,sign,bar,cabinet,appliance,stove,drinking_glass,fireplace,brick,curtain,eyeglasses,optical_equipment,plate,jacket,necktie",
+    "objects": "restaurant,television,fireplace",
     "location": "6 Florence Dr Manorville NY 11949",
     "lat": 40.849721,
     "lng": -72.802086
@@ -3192,7 +3192,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:23:04Z",
     "category": "Severino Holidays",
     "year": 1997,
-    "objects": "baby,interior_room,hospital,sofa,pillow,tool,frame,cabinet,suit,fence,raw_glass,toy,stuffed_animals,bedding,housewares",
+    "objects": "baby",
     "location": "10 Meath Ave, Huntington, NY 11743",
     "lat": 40.830775,
     "lng": -73.428611
@@ -3205,7 +3205,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:43:40Z",
     "category": "Severino Holidays",
     "year": 1987,
-    "objects": "brick,fireplace,sofa,utensil,tableware,plate,lab_coat,interior_room,hospital,bedding,housewares,cabinet,container,bottle,curtain,optical_equipment,eyeglasses,fire,flame,appliance,brick_oven,machine,oven,lamp,light,chair,armchair",
+    "objects": "fireplace",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -3218,7 +3218,7 @@ const VIDEOS = [
     "published_at": "2020-08-24T19:10:41Z",
     "category": "Severino Holidays",
     "year": 1997,
-    "objects": "fence,shrub,foliage,utensil,umbrella,machine,vehicle,automobile,car,wheel,tire,rim,jeans,crowd,raw_glass,patio,optical_equipment,sunglasses,roof,outdoor,land,grass",
+    "objects": "",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -3231,7 +3231,7 @@ const VIDEOS = [
     "published_at": "2020-08-24T17:17:28Z",
     "category": "Severino Holidays",
     "year": 1996,
-    "objects": "baby,utensil,tableware,bowl,door,sign,high_chair,headgear,tiara,cabinet,frame,machine,consumer_electronics,computer,curtain,cup",
+    "objects": "baby",
     "location": "10 Meath Ave, Huntington, NY 11743",
     "lat": 40.830775,
     "lng": -73.428611
@@ -3244,7 +3244,7 @@ const VIDEOS = [
     "published_at": "2020-08-24T17:18:38Z",
     "category": "Severino Holidays",
     "year": null,
-    "objects": "suit,outdoor,land,grass,machine,door,sky,blue_sky,shrub,automobile,vehicle,foliage,necktie,cabinet,curtain,car,fence,crowd,wood_natural,appliance,oven,microwave,consumer_electronics,television,bouquet,flower_arrangement,wheel,tire,rim,roof,domicile,house_single,headgear,hat,baseball_hat,branch,bench,arch,van,jacket,decorative_plant,celebration,ceremony,wedding,groom,brick",
+    "objects": "television,wedding",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -3257,7 +3257,7 @@ const VIDEOS = [
     "published_at": "2020-08-24T17:18:24Z",
     "category": "Severino Holidays",
     "year": 1998,
-    "objects": "door,frame,stairs,cabinet,suit,document,bookshelf,music,musical_instrument,string_instrument,guitar,container,bottle,tool,toilet_seat,raw_glass,sofa,interior_room,restaurant,crowd",
+    "objects": "restaurant",
     "location": "6 Florence Dr Manorville NY 11949",
     "lat": 40.849721,
     "lng": -72.802086
@@ -3270,7 +3270,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:51:09Z",
     "category": "Severino Holidays",
     "year": 1990,
-    "objects": "outdoor,grass,land,foliage,wood_natural,machine,vehicle,automobile,car,shrub,branch,chair,folding_chair,domicile,house_single,roof,sky,blue_sky,suit,consumer_electronics,television,bench,container,luggage,backpack,umbrella,utensil,crowd,music,musical_instrument,string_instrument,guitar,fence",
+    "objects": "television",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -3283,7 +3283,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T02:26:37Z",
     "category": "Severino Holidays",
     "year": null,
-    "objects": "brick,headgear,hat,fedora,fireplace,cabinet,frame,fire,flame,curtain,door,suit,optical_equipment,eyeglasses,sign,bedding,housewares,baseball_hat,machine,consumer_electronics,television,hoodie,jeans,scarf,desk,hardhat,document,handwriting",
+    "objects": "fireplace,television",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -3296,7 +3296,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T13:51:09Z",
     "category": "Severino Holidays",
     "year": 1991,
-    "objects": "light,lamp,cabinet,brick,curtain,interior_room,restaurant,frame,utensil,tableware,bookshelf,chandelier,sign,container,basket_container,bowl,cup",
+    "objects": "restaurant",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -3309,7 +3309,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:20:10Z",
     "category": "Severino Holidays",
     "year": null,
-    "objects": "consumer_electronics,machine,television,camera,recreation,illustrations,celebration,christmas_tree,tree,christmas_decoration,curtain,frame,raw_glass,door",
+    "objects": "television,christmas_tree",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -3322,7 +3322,7 @@ const VIDEOS = [
     "published_at": "2020-08-12T19:31:01Z",
     "category": "Severino Holidays",
     "year": 1999,
-    "objects": "shrub,decorative_plant,raw_glass,sign,optical_equipment,sunglasses,chair,teen,interior_room,hospital,utensil,tableware,plate,food,vegetable,tomato,foliage,fence",
+    "objects": "",
     "location": "Nesconset, NY",
     "lat": 40.845094,
     "lng": -73.152312
@@ -3335,7 +3335,7 @@ const VIDEOS = [
     "published_at": "2020-08-24T17:16:23Z",
     "category": "Severino Holidays",
     "year": 1996,
-    "objects": "curtain,frame,cabinet,suit,machine,door,document,lamp,light,frozen,liquid,snow,water,wood_natural,fence,appliance,refrigerator,clock,dial,timepiece,desk,consumer_electronics,computer,computer_monitor,raw_glass,interior_room,restaurant,utensil,tableware,cup,bouquet,flower_arrangement",
+    "objects": "snow,restaurant",
     "location": "226 W 22nd St, Huntington, NY 11743",
     "lat": 40.832173,
     "lng": -73.428677
@@ -3348,7 +3348,7 @@ const VIDEOS = [
     "published_at": "2020-08-13T01:21:48Z",
     "category": "Severino Holidays",
     "year": 2000,
-    "objects": "tableware,utensil,cabinet,suit,cup,container,bottle,headgear,hat,fedora,plate,frame,interior_room,restaurant,teen,outdoor,sky,night_sky,curtain,crowd,light,chandelier,drinking_glass,drink,liquid,wine,wine_bottle,necktie,cowboy_hat",
+    "objects": "restaurant",
     "location": "6 Florence Dr Manorville NY 11949",
     "lat": 40.849721,
     "lng": -72.802086
