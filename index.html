@@ -39,55 +39,22 @@ body.on-home {
   padding-bottom: 0;
 }
 
-/* ── NOISE + SCANLINES ── */
-body::before {
-  content: '';
-  position: fixed; inset: 0; z-index: 9500;
-  pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-  background-size: 160px 160px;
-  opacity: 0.035;
-  mix-blend-mode: screen;
-}
-body::after {
-  content: '';
-  position: fixed; inset: 0; z-index: 9400;
-  pointer-events: none;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
-}
-body.on-lobby::before, body.on-lobby::after,
-body.on-char::before, body.on-char::after,
-body.on-whack::before, body.on-whack::after,
-body.on-flappy::before, body.on-flappy::after,
-body.on-match::before, body.on-match::after,
-body.on-space::before, body.on-space::after { display: none; }
-
-/* Hide all VHS overlays on arcade pages */
-body.on-lobby #vhs-bands, body.on-char #vhs-bands, body.on-whack #vhs-bands,
-body.on-flappy #vhs-bands, body.on-match #vhs-bands,
-body.on-space #vhs-bands { display: none; }
 
 body.on-lobby #bg, body.on-char #bg, body.on-whack #bg,
 body.on-flappy #bg, body.on-match #bg,
 body.on-space #bg { display: none; }
 
-/* Arcade: repurpose body::after as neon edge glow */
-body.on-lobby::after, body.on-char::after, body.on-whack::after, body.on-flappy::after, body.on-match::after, body.on-space::after {
-  display: block; z-index: 0;
-  background:
-    radial-gradient(ellipse at 0% 0%,     rgba(255,0,238,0.32) 0%, transparent 44%),
-    radial-gradient(ellipse at 100% 0%,   rgba(0,229,255,0.32) 0%, transparent 44%),
-    radial-gradient(ellipse at 100% 100%, rgba(255,230,26,0.26) 0%, transparent 44%),
-    radial-gradient(ellipse at 0% 100%,   rgba(0,102,255,0.26) 0%, transparent 44%);
-}
 
-/* Neon arcade floor — subtle diamond grid */
-#pg-lobby, #pg-charselect, #pg-whack, #pg-match, #pg-flappy, #pg-space {
+/* Neon arcade floor — diamond grid on body so it fills every pixel */
+body.on-lobby, body.on-char, body.on-whack, body.on-flappy, body.on-match, body.on-space {
   background-color: #050212;
   background-image:
-    repeating-linear-gradient(45deg,  rgba(255,0,238,0.04) 0px, rgba(255,0,238,0.04) 1px, transparent 1px, transparent 44px),
-    repeating-linear-gradient(-45deg, rgba(0,229,255,0.04) 0px, rgba(0,229,255,0.04) 1px, transparent 1px, transparent 44px);
-  background-size: 88px 88px;
+    repeating-linear-gradient(45deg,  rgba(255,0,238,0.05) 0px, rgba(255,0,238,0.05) 1px, transparent 1px, transparent 22px),
+    repeating-linear-gradient(-45deg, rgba(0,229,255,0.05) 0px, rgba(0,229,255,0.05) 1px, transparent 1px, transparent 22px);
+  background-size: 44px 44px;
+}
+#pg-lobby, #pg-charselect, #pg-whack, #pg-match, #pg-flappy, #pg-space {
+  background: transparent;
 }
 
 /* ── Neon glow utilities ── */
@@ -117,22 +84,62 @@ body.on-lobby::after, body.on-char::after, body.on-whack::after, body.on-flappy:
 .neon-flicker    { animation: neon-flicker 6s step-end infinite; }
 .neon-pulse      { animation: neon-pulse 2.4s ease-in-out infinite; }
 
-/* ── Fixed HUD (mute + credits) on active game pages ── */
-#arcade-hud-fixed {
-  display: none; position: fixed; top: 52px; right: 12px; z-index: 900;
-  align-items: center; gap: 8px; pointer-events: auto;
-}
-body.on-whack #arcade-hud-fixed, body.on-flappy #arcade-hud-fixed,
-body.on-match #arcade-hud-fixed, body.on-space #arcade-hud-fixed { display: flex; }
-#ahf-credits {
-  font-family: 'VCR', monospace; font-size: 9px; letter-spacing: 2px;
-  color: #ffe61a; text-shadow: 0 0 8px #ffe61a, 0 0 16px #ffe61a88;
-  animation: neon-pulse 2.4s ease-in-out infinite;
-}
-#mute-btn-fixed {
+/* ── Arcade header mute/LB buttons ── */
+.arcade-mute-btn {
   font-family: 'VCR', monospace; font-size: 9px; letter-spacing: 1px;
-  background: rgba(5,2,18,0.7); border: 1px solid rgba(242,239,232,0.2);
+  background: none; border: 1px solid rgba(242,239,232,0.2);
   border-radius: 3px; padding: 3px 7px; color: rgba(242,239,232,0.6); cursor: pointer;
+}
+.arcade-lb-btn {
+  font-family: 'VCR', monospace; font-size: 9px; letter-spacing: 1px;
+  background: rgba(255,230,26,0.1); border: 1px solid rgba(255,230,26,0.3);
+  border-radius: 3px; padding: 3px 8px; color: #ffe61a; cursor: pointer;
+  text-shadow: 0 0 8px #ffe61a66;
+}
+.arcade-exit-btn {
+  font-family: 'VCR', monospace; font-size: 9px; letter-spacing: 2px;
+  background: rgba(255,0,204,0.1); border: 1px solid rgba(255,0,204,0.35);
+  border-radius: 4px; padding: 5px 10px; color: #ff00cc; cursor: pointer;
+  text-shadow: 0 0 8px #ff00cc66; white-space: nowrap;
+}
+/* ── Arcade page header: 2× size ── */
+body.on-lobby .cats-header, body.on-char .cats-header,
+body.on-whack .cats-header, body.on-flappy .cats-header,
+body.on-match .cats-header, body.on-space .cats-header {
+  height: 88px !important;
+  padding: 10px 20px !important;
+}
+body.on-lobby .arcade-exit-btn, body.on-char .arcade-exit-btn,
+body.on-whack .arcade-exit-btn, body.on-flappy .arcade-exit-btn,
+body.on-match .arcade-exit-btn, body.on-space .arcade-exit-btn {
+  font-size: 13px !important; letter-spacing: 2px !important;
+  padding: 8px 12px !important; border-radius: 5px !important;
+}
+body.on-lobby .arcade-lb-btn, body.on-char .arcade-lb-btn,
+body.on-whack .arcade-lb-btn, body.on-flappy .arcade-lb-btn,
+body.on-match .arcade-lb-btn, body.on-space .arcade-lb-btn {
+  font-size: 16px !important; padding: 6px 10px !important; border-radius: 4px !important;
+}
+body.on-lobby .arcade-mute-btn, body.on-char .arcade-mute-btn,
+body.on-whack .arcade-mute-btn, body.on-flappy .arcade-mute-btn,
+body.on-match .arcade-mute-btn, body.on-space .arcade-mute-btn {
+  font-size: 12px !important; letter-spacing: 1px !important;
+  padding: 6px 10px !important; border-radius: 4px !important;
+}
+body.on-whack .nav-icon-btn, body.on-flappy .nav-icon-btn,
+body.on-match .nav-icon-btn, body.on-space .nav-icon-btn {
+  font-size: 12px !important; padding: 6px 10px !important;
+  letter-spacing: 2px !important; width: auto !important;
+}
+/* All arcade header buttons: uniform height */
+body.on-lobby .cats-header button, body.on-char .cats-header button,
+body.on-whack .cats-header button, body.on-flappy .cats-header button,
+body.on-match .cats-header button, body.on-space .cats-header button {
+  height: 40px !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 /* ── Arcade floating elements (all arcade pages) ── */
@@ -140,26 +147,24 @@ body.on-match #arcade-hud-fixed, body.on-space #arcade-hud-fixed { display: flex
   display: none;
   position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
 }
-body.on-lobby #arcade-float, body.on-whack #arcade-float,
-body.on-flappy #arcade-float, body.on-match #arcade-float,
-body.on-char #arcade-float, body.on-space #arcade-float { display: block; }
+body.on-lobby #arcade-float, body.on-char #arcade-float { display: block; }
 .af-coin {
   position: absolute;
   animation: coin-float linear infinite;
-  opacity: 0.18;
-  filter: drop-shadow(0 0 5px #ffe61a88);
+  opacity: 0.14;
+  filter: drop-shadow(0 0 6px #ffe61a44);
 }
 .af-ticket {
   position: absolute;
   animation: ticket-drift linear infinite;
-  opacity: 0.14;
-  filter: drop-shadow(0 0 5px #ff00cc88);
+  opacity: 0.11;
+  filter: drop-shadow(0 0 6px #ff00cc44);
 }
 .af-pizza {
   position: absolute;
   animation: coin-float linear infinite;
-  opacity: 0.16;
-  filter: drop-shadow(0 0 5px #ff660088);
+  opacity: 0.12;
+  filter: drop-shadow(0 0 6px #ff660044);
 }
 
 /* ── FLOATING VHS ICONS ── */
@@ -215,12 +220,13 @@ body.on-char #arcade-float, body.on-space #arcade-float { display: block; }
 }
 .hdr-play svg { width: 10px; height: 10px; fill: rgba(242,239,232,1); }
 
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.15}}
+
 /* ── VHS TRACKING BANDS (whole site) ── */
 #vhs-bands {
   position: fixed; inset: 0; z-index: 9200;
   pointer-events: none; overflow: hidden;
 }
-/* Slow-rolling faint horizontal bands */
 #vhs-bands::before {
   content: '';
   position: absolute; inset: -100%;
@@ -238,7 +244,6 @@ body.on-char #arcade-float, body.on-space #arcade-float { display: block; }
   background-size: 100% 140px;
   animation: rollBands 14s linear infinite;
 }
-/* Single darker sync-pulse band scrolling top→bottom */
 #vhs-bands::after {
   content: '';
   position: absolute; left: 0; right: 0;
@@ -255,7 +260,19 @@ body.on-char #arcade-float, body.on-space #arcade-float { display: block; }
   from { transform: translateY(0); }
   to   { transform: translateY(calc(100vh + 5px)); }
 }
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0.15}}
+body.on-lobby #vhs-bands, body.on-char #vhs-bands, body.on-whack #vhs-bands,
+body.on-flappy #vhs-bands, body.on-match #vhs-bands,
+body.on-space #vhs-bands { display: none !important; }
+
+/* ── SCANLINES ── */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 9400;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
+}
+body.on-lobby::after, body.on-char::after, body.on-whack::after,
+body.on-flappy::after, body.on-match::after, body.on-space::after { display: none; }
 
 /* ── TAB BAR — hidden, nav via search-row icons ── */
 #tabs { display: none !important; }
@@ -2033,7 +2050,7 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 
 /* ── Character Select Screen ── */
 #pg-charselect {
-  background: #050212;
+  background: transparent;
   align-items: flex-start; justify-content: center;
   min-height: 100vh; overflow-y: auto;
 }
@@ -2049,21 +2066,17 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
   text-align: center;
   animation: neon-pulse 2s ease-in-out infinite;
 }
-#char-select-subtitle {
-  font-family: 'VCR', monospace; font-size: 11px;
-  letter-spacing: 4px; color: rgba(242,239,232,0.4);
-  animation: gcblink 1.4s step-end infinite;
-}
+#char-select-subtitle { display: none; }
 #char-select-grid {
   display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 10px; width: 100%;
+  gap: 8px; width: 100%;
 }
 .cs-char-btn {
   background: rgba(8,6,15,0.8);
   border: 2px solid rgba(242,239,232,0.12);
-  border-radius: 12px; padding: 12px 8px;
+  border-radius: 12px; padding: 6px 4px 8px;
   cursor: pointer; transition: all 0.12s;
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
   -webkit-tap-highlight-color: transparent;
 }
 .cs-char-btn:active, .cs-char-btn.selected {
@@ -2072,7 +2085,7 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 .cs-char-btn.selected {
   border-width: 2.5px;
 }
-.cs-char-face { font-size: 60px; line-height: 1; width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; }
+.cs-char-face { font-size: 72px; line-height: 1; width: 88px; height: 88px; display: flex; align-items: center; justify-content: center; }
 .cs-char-name {
   font-family: 'VCR', monospace; font-size: 9px;
   letter-spacing: 2px; color: rgba(242,239,232,0.6);
@@ -2224,8 +2237,6 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
   display: flex; align-items: center; justify-content: center;
   width: 100%; height: 100%;
   font-size: 52px;
-  text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff;
-  filter: drop-shadow(-2px 0 0 #fff) drop-shadow(2px 0 0 #fff) drop-shadow(0 -2px 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(-1px -1px 0 #fff) drop-shadow(1px -1px 0 #fff) drop-shadow(-1px 1px 0 #fff) drop-shadow(1px 1px 0 #fff);
 }
 
 /* ── Whack-a-Mole ── */
@@ -2278,9 +2289,14 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
   user-select: none;
 }
 .whack-hole.up .whack-char { bottom: 4%; }
-.whack-hole.hit .whack-char { bottom: 4%; filter: brightness(1.4); }
+.whack-hole.hit .whack-char { bottom: 4%; }
 .whack-hole.wrong-hit .whack-char { bottom: 4%; }
 .whack-hole.wrong-hit { border-color: rgba(255,60,60,0.9); box-shadow: 0 0 24px rgba(255,0,0,0.55); }
+.whack-hole.teasing {
+  box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 22px rgba(255,220,30,0.6), 0 0 6px rgba(255,180,0,0.35);
+  border-color: rgba(255,200,30,0.55);
+  transition: box-shadow 0.08s, border-color 0.08s;
+}
 .whack-char-placeholder {
   width: 100%; height: 100%; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
@@ -2488,7 +2504,7 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 <!-- ── HOME ── -->
 <div id="pg-home" class="page active">
   <div class="home-hero">
-    <div class="hero-logo-wrap" id="hero-logo-tap">
+    <div class="hero-logo-wrap">
       <img src="Title_without_tape.png" class="hero-logo-text" alt="MOBERINO">
     </div>
     <div class="hero-lower">
@@ -3356,29 +3372,6 @@ function _unlockMapTouch() {
   _mapMoveLock = null;
 }
 
-// ── SECRET ARCADE ENTRY: tap logo 7 times ──
-(function() {
-  let taps = 0, tapTimer;
-  document.addEventListener('DOMContentLoaded', function() {
-    const el = document.getElementById('hero-logo-tap');
-    if (!el) return;
-    el.addEventListener('click', function() {
-      taps++;
-      clearTimeout(tapTimer);
-      if (taps >= 7) {
-        taps = 0;
-        // Flash the logo briefly
-        el.style.filter = 'brightness(2)';
-        setTimeout(() => { el.style.filter = ''; }, 180);
-        setTimeout(() => nav('lobby'), 220);
-      } else {
-        // Reset if no tap within 1.8s
-        tapTimer = setTimeout(() => { taps = 0; }, 1800);
-      }
-    });
-  });
-})();
-
 // ── NAV ──
 function nav(p) {
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
@@ -3418,6 +3411,12 @@ function nav(p) {
   if(onTL)    buildTimeline();
   if(onMap)   initMap();
   if(onShelf) { buildShelf(); drawShelfBg(); }
+  // Arcade music: start/stop BEFORE any early returns
+  const isArcade = onLobby || onCharSelect || onWhack || onFlappy || onMatch || onSpace;
+  if (isArcade && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
+  if (!isArcade) ArcadeMusic.stop();
+  if (onLobby || onCharSelect) ArcadeMusic.unduck();
+
   if(onLobby) {
     // Show char select on every fresh page load (session flag, not localStorage)
     if (!window._arcadeSessionStarted) {
@@ -3434,10 +3433,6 @@ function nav(p) {
   if(onMatch) initMatch();
   if(onSpace) initSpace();
   if(!onSpace && typeof spacePause === 'function') spacePause();
-  // Arcade music: start when entering any arcade page, stop on leaving
-  const isArcade = onLobby || onCharSelect || onWhack || onFlappy || onMatch || onSpace;
-  if (isArcade && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
-  if (!isArcade) ArcadeMusic.stop();
 }
 
 function openRecDrawer() {
@@ -3653,9 +3648,6 @@ function doSearch(q) {
       openSpot();
     }
   }, { passive: false });
-  homeQ.addEventListener('focus', function() {
-    if (window.innerWidth <= 1023) { homeQ.blur(); }
-  });
 
   function positionDrop() {
     const r = document.getElementById('homeSearchWrap').getBoundingClientRect();
@@ -3677,6 +3669,7 @@ function doSearch(q) {
   function runSearch() {
     const q = homeQ.value.trim();
     if (!q) return;
+    if (q.toLowerCase() === 'arcade') { homeQ.value = ''; homeQ.blur(); nav('lobby'); return; }
     homeQ.blur();
     const hits = search(q).slice(0, 20);
     dropMeta.textContent = hits.length ? `${hits.length} RESULT${hits.length !== 1 ? 'S' : ''}` : 'NO RESULTS';
@@ -3753,64 +3746,6 @@ heroCassette.addEventListener('animationend', function() {
   this.style.cssText = 'animation:none;transform:translateY(0) rotate(78deg);opacity:1';
 }, { once: true });
 
-// ── VHS STATIC BURST ──────────────────────────────────────────────────────────
-(function() {
-  function vhsStaticBurst() {
-    const SCALE = 3;
-    const c = document.createElement('canvas');
-    c.width  = Math.ceil(window.innerWidth  / SCALE);
-    c.height = Math.ceil(window.innerHeight / SCALE);
-    c.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:9600;pointer-events:none;image-rendering:pixelated;';
-    document.body.appendChild(c);
-
-    const ctx = c.getContext('2d');
-    const W = c.width, H = c.height;
-    const DUR = 360;
-    const start = performance.now();
-
-    function tick(now) {
-      const t = Math.min((now - start) / DUR, 1);
-      if (t >= 1) { c.remove(); return; }
-
-      // Envelope: fast in, slow fade out
-      const env = t < 0.15 ? t / 0.15 : 1 - (t - 0.15) / 0.85;
-
-      // Static noise
-      const img = ctx.createImageData(W, H);
-      const d   = img.data;
-      for (let i = 0; i < d.length; i += 4) {
-        const v = (Math.random() * 230) | 0;
-        d[i] = d[i+1] = d[i+2] = v;
-        d[i+3] = (env * 190) | 0;
-      }
-      ctx.putImageData(img, 0, 0);
-
-      // Horizontal glitch bands
-      const bands = 3 + (Math.random() * 5 | 0);
-      for (let b = 0; b < bands; b++) {
-        const y  = (Math.random() * H) | 0;
-        const bh = 1 + (Math.random() * 2 | 0);
-        ctx.globalAlpha = env * (0.4 + Math.random() * 0.6);
-        ctx.fillStyle = Math.random() > 0.7 ? '#8ff' : '#fff';
-        ctx.fillRect(0, y, W, bh);
-      }
-      ctx.globalAlpha = 1;
-
-      requestAnimationFrame(tick);
-    }
-
-    requestAnimationFrame(tick);
-  }
-
-  // Random interval between 5–20 seconds
-  function scheduleNext() {
-    setTimeout(function() {
-      if (!document.body.matches('.on-lobby,.on-whack,.on-flappy,.on-match,.on-space')) vhsStaticBurst();
-      scheduleNext();
-    }, 5000 + Math.random() * 15000);
-  }
-  scheduleNext();
-})();
 </script>
 
 <!-- ── A: SCREENSAVER ── -->
@@ -3855,22 +3790,15 @@ heroCassette.addEventListener('animationend', function() {
 <!-- ── GAME LOBBY ── -->
 <div id="pg-lobby" class="page">
   <div class="cats-header">
-    <button class="cats-home-btn" onclick="nav('home')" aria-label="Home">
-      <div class="cats-logo-wrap">
-        <img src="Title.png" class="cats-logo-img" alt="MOBERINO" style="height:36px;width:auto">
-      </div>
-    </button>
-    <div style="display:flex;align-items:center;gap:10px">
-      <button onclick="openLeaderboard()" style="font-family:'VCR',monospace;font-size:9px;letter-spacing:2px;background:rgba(255,230,26,0.1);border:1px solid rgba(255,230,26,0.3);border-radius:4px;padding:4px 10px;color:#ffe61a;cursor:pointer;text-shadow:0 0 8px #ffe61a88">🏆 SCORES</button>
-      <button id="mute-btn" onclick="toggleArcadeMute()" style="font-family:'VCR',monospace;font-size:9px;letter-spacing:1px;background:none;border:1px solid rgba(242,239,232,0.2);border-radius:3px;padding:3px 7px;color:rgba(242,239,232,0.6);cursor:pointer">♪ ON</button>
-      <button class="nav-icon-btn" onclick="openSpot()" aria-label="Search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-      </button>
+    <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('home')">✕ EXIT ARCADE</button>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
+      <button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
     </div>
   </div>
   <div class="lobby-wrap">
     <div style="text-align:center;padding:4px 0 0">
-      <img src="Title.png" alt="MOBERINO" style="height:56px;display:block;margin:0 auto;filter:drop-shadow(0 0 18px rgba(255,255,255,0.18))">
+      <img src="arcade_title.PNG" alt="MOBERINO ARCADE" style="width:90%;max-width:600px;height:auto;display:block;margin:0 auto;filter:drop-shadow(0 0 12px rgba(255,0,204,0.5)) drop-shadow(0 0 28px rgba(255,0,204,0.2))">
       <div style="font-family:'VCR',monospace;font-size:9px;letter-spacing:3px;color:rgba(242,239,232,0.45);margin-top:7px">ARCADE — INSERT COIN TO PLAY</div>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;padding:0 14px 6px">
@@ -3880,7 +3808,7 @@ heroCassette.addEventListener('animationend', function() {
     </div>
     <div id="game-carousel">
       <div class="carousel-item" id="ci-whack">
-        <div class="game-card" style="border-color:#ff993344">
+        <div class="game-card" style="border-color:#ff993344;cursor:pointer" onclick="SFX.menuSelect();nav('whack')">
           <div class="game-card-art" style="background:linear-gradient(160deg,#0d1a00 0%,#1a3300 50%,#0a1000 100%)">
             <svg viewBox="0 0 200 240" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0">
               <rect x="0" y="150" width="200" height="90" fill="#1a2200"/>
@@ -3912,51 +3840,82 @@ heroCassette.addEventListener('animationend', function() {
             <div class="game-card-badge" style="background:#ff993322;color:#ff9933;border:1px solid #ff993355">ARCADE</div>
             <div class="game-card-marquee" style="color:#ff9933;text-shadow:0 0 20px #ff993388">WHACK-A-MOBE</div>
             <div class="game-card-desc">BOP THE MOBES BEFORE THEY HIDE!</div>
-            <button onclick="SFX.menuSelect();nav('whack')" style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#ff933322;border:1.5px solid #ff9933;border-radius:5px;padding:10px 24px;color:#ff9933;cursor:pointer;width:100%;text-shadow:0 0 8px #ff993366">▶ PLAY</button>
+            <div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#ff933322;border:1.5px solid #ff9933;border-radius:5px;padding:10px 24px;color:#ff9933;width:100%;text-shadow:0 0 8px #ff993366;text-align:center">▶ PLAY</div>
           </div>
         </div>
       </div>
       <div class="carousel-item" id="ci-flappy">
-        <div class="game-card" style="border-color:#00e5ff44">
-          <div class="game-card-art" style="background:linear-gradient(160deg,#000d1a 0%,#001a33 40%,#0a0020 100%)">
-            <svg viewBox="0 0 200 240" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0">
-              <circle cx="20" cy="25" r="1.5" fill="white" opacity="0.7"/>
-              <circle cx="60" cy="15" r="1" fill="white" opacity="0.5"/>
-              <circle cx="100" cy="30" r="2" fill="white" opacity="0.8"/>
-              <circle cx="150" cy="10" r="1.5" fill="white" opacity="0.6"/>
-              <circle cx="180" cy="40" r="1" fill="white" opacity="0.4"/>
-              <circle cx="40" cy="60" r="1" fill="white" opacity="0.5"/>
-              <circle cx="130" cy="55" r="1.5" fill="white" opacity="0.6"/>
-              <circle cx="170" cy="80" r="1" fill="white" opacity="0.4"/>
-              <rect x="-2" y="0" width="30" height="110" fill="#0d1a0d"/>
-              <rect x="-4" y="108" width="36" height="20" rx="3" fill="#1a2e1a"/>
-              <line x1="-4" y1="126" x2="34" y2="126" stroke="#33ff66" stroke-width="2.5"/>
-              <rect x="172" y="150" width="30" height="90" fill="#0d1a0d"/>
-              <rect x="170" y="148" width="36" height="20" rx="3" fill="#1a2e1a"/>
-              <line x1="170" y1="148" x2="208" y2="148" stroke="#33ff66" stroke-width="2.5"/>
-              <circle cx="155" cy="35" r="22" fill="#fffce0" opacity="0.12"/>
-              <circle cx="162" cy="30" r="18" fill="#000d1a"/>
-              <ellipse cx="80" cy="130" rx="16" ry="12" fill="#00e5ff" opacity="0.9"/>
-              <polygon points="96,125 108,130 96,135" fill="#00e5ff" opacity="0.7"/>
-              <circle cx="88" cy="127" r="3" fill="white"/>
-              <circle cx="89" cy="127" r="1.5" fill="#001a33"/>
-              <line x1="20" y1="130" x2="60" y2="130" stroke="#00e5ff" stroke-width="1.5" opacity="0.4"/>
-              <line x1="25" y1="135" x2="55" y2="135" stroke="#00e5ff" stroke-width="1" opacity="0.25"/>
-              <rect x="0" y="195" width="200" height="45" fill="#0a0a1a"/>
-              <line x1="0" y1="195" x2="200" y2="195" stroke="#00e5ff" stroke-width="1.5" opacity="0.5"/>
-              <line x1="0" y1="198" x2="200" y2="198" stroke="#00e5ff" stroke-width="0.5" opacity="0.2"/>
+        <div class="game-card" style="border-color:#00e5ff44;cursor:pointer" onclick="SFX.menuSelect();nav('flappy')">
+          <div class="game-card-art" style="background:linear-gradient(180deg,#000810 0%,#001020 55%,#080800 100%)">
+            <svg viewBox="0 0 200 280" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0">
+              <!-- Stars -->
+              <circle cx="22" cy="14" r="1" fill="white" opacity="0.6"/>
+              <circle cx="90" cy="8" r="1.4" fill="white" opacity="0.7"/>
+              <circle cx="155" cy="20" r="1" fill="white" opacity="0.5"/>
+              <circle cx="178" cy="50" r="0.8" fill="white" opacity="0.4"/>
+              <circle cx="42" cy="55" r="0.8" fill="white" opacity="0.4"/>
+              <circle cx="135" cy="45" r="1" fill="white" opacity="0.5"/>
+
+              <!-- PIPE PAIR 1 (left side) -->
+              <!-- Top pipe shaft -->
+              <rect x="18" y="0" width="34" height="90" fill="#0a160a"/>
+              <!-- Top pipe cap -->
+              <rect x="12" y="82" width="46" height="20" rx="3" fill="#122012"/>
+              <line x1="12" y1="100" x2="58" y2="100" stroke="#33ff66" stroke-width="2.5"/>
+              <!-- Bottom pipe cap -->
+              <rect x="12" y="160" width="46" height="20" rx="3" fill="#122012"/>
+              <line x1="12" y1="162" x2="58" y2="162" stroke="#33ff66" stroke-width="2.5"/>
+              <!-- Bottom pipe shaft -->
+              <rect x="18" y="178" width="34" height="102" fill="#0a160a"/>
+              <!-- Ring 1 — centered in gap between caps -->
+              <circle cx="35" cy="131" r="22" fill="none" stroke="#00e5ff" stroke-width="3.5"/>
+              <circle cx="35" cy="131" r="22" fill="none" stroke="#00e5ff" stroke-width="8" opacity="0.12"/>
+              <!-- Ring 1 inner dot -->
+              <circle cx="35" cy="131" r="4" fill="#00e5ff" opacity="0.5"/>
+
+              <!-- PIPE PAIR 2 (right side, offset vertically) -->
+              <!-- Top pipe shaft -->
+              <rect x="148" y="0" width="34" height="115" fill="#0a160a"/>
+              <!-- Top pipe cap -->
+              <rect x="142" y="107" width="46" height="20" rx="3" fill="#122012"/>
+              <line x1="142" y1="125" x2="188" y2="125" stroke="#33ff66" stroke-width="2.5"/>
+              <!-- Bottom pipe cap -->
+              <rect x="142" y="188" width="46" height="20" rx="3" fill="#122012"/>
+              <line x1="142" y1="190" x2="188" y2="190" stroke="#33ff66" stroke-width="2.5"/>
+              <!-- Bottom pipe shaft -->
+              <rect x="148" y="206" width="34" height="74" fill="#0a160a"/>
+              <!-- Ring 2 — centered in gap -->
+              <circle cx="165" cy="157" r="22" fill="none" stroke="#00e5ff" stroke-width="3.5"/>
+              <circle cx="165" cy="157" r="22" fill="none" stroke="#00e5ff" stroke-width="8" opacity="0.12"/>
+              <!-- Ring 2 inner dot -->
+              <circle cx="165" cy="157" r="4" fill="#00e5ff" opacity="0.5"/>
+
+              <!-- Neon pipe glow edges (subtle) -->
+              <rect x="12" y="99" width="46" height="2" fill="#33ff66" opacity="0.3"/>
+              <rect x="12" y="162" width="46" height="2" fill="#33ff66" opacity="0.3"/>
+              <rect x="142" y="124" width="46" height="2" fill="#33ff66" opacity="0.3"/>
+              <rect x="142" y="190" width="46" height="2" fill="#33ff66" opacity="0.3"/>
+
+              <!-- GROUND ZONE -->
+              <rect x="0" y="230" width="200" height="50" fill="#080800"/>
+              <line x1="0" y1="230" x2="200" y2="230" stroke="#00e5ff" stroke-width="1.5" opacity="0.55"/>
+              <!-- Ground grid -->
+              <line x1="0" y1="252" x2="200" y2="252" stroke="#00e5ff" stroke-width="0.5" opacity="0.12"/>
+              <line x1="50" y1="230" x2="50" y2="280" stroke="#00e5ff" stroke-width="0.5" opacity="0.08"/>
+              <line x1="100" y1="230" x2="100" y2="280" stroke="#00e5ff" stroke-width="0.5" opacity="0.08"/>
+              <line x1="150" y1="230" x2="150" y2="280" stroke="#00e5ff" stroke-width="0.5" opacity="0.08"/>
             </svg>
           </div>
           <div class="game-card-info">
             <div class="game-card-badge" style="background:#00e5ff22;color:#00e5ff;border:1px solid #00e5ff55">ADVENTURE</div>
             <div class="game-card-marquee" style="color:#00e5ff;text-shadow:0 0 20px #00e5ff88">FLAPPY RUN</div>
             <div class="game-card-desc">FLY THROUGH PIPES · DASH ON GROUND</div>
-            <button onclick="SFX.menuSelect();nav('flappy')" style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#00e5ff22;border:1.5px solid #00e5ff;border-radius:5px;padding:10px 24px;color:#00e5ff;cursor:pointer;width:100%;text-shadow:0 0 8px #00e5ff66">▶ PLAY</button>
+            <div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#00e5ff22;border:1.5px solid #00e5ff;border-radius:5px;padding:10px 24px;color:#00e5ff;width:100%;text-shadow:0 0 8px #00e5ff66;text-align:center">▶ PLAY</div>
           </div>
         </div>
       </div>
       <div class="carousel-item" id="ci-match">
-        <div class="game-card" style="border-color:#ffe61a44">
+        <div class="game-card" style="border-color:#ffe61a44;cursor:pointer" onclick="SFX.menuSelect();nav('match')">
           <div class="game-card-art" style="background:linear-gradient(160deg,#0d0022 0%,#1a0044 50%,#000011 100%)">
             <svg viewBox="0 0 200 240" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0">
               <g opacity="0.5">
@@ -3983,12 +3942,12 @@ heroCassette.addEventListener('animationend', function() {
             <div class="game-card-badge" style="background:#ffe61a22;color:#ffe61a;border:1px solid #ffe61a55">MEMORY</div>
             <div class="game-card-marquee" style="color:#ffe61a;text-shadow:0 0 20px #ffe61a88">MEMORY MATCH</div>
             <div class="game-card-desc">FLIP CARDS · FIND THE PAIRS</div>
-            <button onclick="SFX.menuSelect();nav('match')" style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#ffe61a22;border:1.5px solid #ffe61a;border-radius:5px;padding:10px 24px;color:#ffe61a;cursor:pointer;width:100%;text-shadow:0 0 8px #ffe61a66">▶ PLAY</button>
+            <div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#ffe61a22;border:1.5px solid #ffe61a;border-radius:5px;padding:10px 24px;color:#ffe61a;width:100%;text-shadow:0 0 8px #ffe61a66;text-align:center">▶ PLAY</div>
           </div>
         </div>
       </div>
       <div class="carousel-item" id="ci-space">
-        <div class="game-card" style="border-color:#33ff6644">
+        <div class="game-card" style="border-color:#33ff6644;cursor:pointer" onclick="SFX.menuSelect();nav('space')">
           <div class="game-card-art" style="background:linear-gradient(160deg,#000008 0%,#00050f 50%,#020010 100%)">
             <svg viewBox="0 0 200 240" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0">
               <circle cx="15" cy="20" r="1" fill="white" opacity="0.8"/>
@@ -4020,7 +3979,7 @@ heroCassette.addEventListener('animationend', function() {
             <div class="game-card-badge" style="background:#33ff6622;color:#33ff66;border:1px solid #33ff6655">SHOOTER</div>
             <div class="game-card-marquee" style="color:#33ff66;text-shadow:0 0 20px #33ff6688">SPACE MOBE</div>
             <div class="game-card-desc">BLAST ASTEROIDS · RESCUE HEROES</div>
-            <button onclick="SFX.menuSelect();nav('space')" style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#33ff6622;border:1.5px solid #33ff66;border-radius:5px;padding:10px 24px;color:#33ff66;cursor:pointer;width:100%;text-shadow:0 0 8px #33ff6666">▶ PLAY</button>
+            <div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#33ff6622;border:1.5px solid #33ff66;border-radius:5px;padding:10px 24px;color:#33ff66;width:100%;text-shadow:0 0 8px #33ff6666;text-align:center">▶ PLAY</div>
           </div>
         </div>
       </div>
@@ -4031,13 +3990,11 @@ heroCassette.addEventListener('animationend', function() {
 <!-- ── WHACK-A-MOBE ── -->
 <div id="pg-whack" class="page">
   <div class="cats-header">
-    <button class="cats-home-btn" onclick="nav('lobby')" aria-label="Back">
-      <div class="cats-logo-wrap">
-        <img src="Title.png" class="cats-logo-img" alt="MOBERINO" style="height:36px;width:auto">
-      </div>
-    </button>
-    <div style="display:flex;align-items:center">
-      <button class="nav-icon-btn" onclick="nav('lobby')" aria-label="Games" style="font-family:'VCR',monospace;font-size:9px;letter-spacing:2px;width:auto;padding:5px 12px;color:rgba(242,239,232,0.95);border:1px solid rgba(242,239,232,0.35);border-radius:4px;background:rgba(242,239,232,0.08)">◀ ARCADE MENU</button>
+    <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('home')">✕ EXIT ARCADE</button>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
+      <button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
+      <button class="nav-icon-btn" onclick="SFX.menuSelect();nav('lobby')" style="font-family:'VCR',monospace;font-size:9px;letter-spacing:2px;width:auto;padding:5px 10px;color:rgba(242,239,232,0.85);border:1px solid rgba(242,239,232,0.25);border-radius:4px;background:rgba(242,239,232,0.06)">◀ MENU</button>
     </div>
   </div>
   <div class="whack-wrap" id="whack-wrap">
@@ -4048,13 +4005,11 @@ heroCassette.addEventListener('animationend', function() {
 <!-- ── FLAPPY RUN ── -->
 <div id="pg-flappy" class="page">
   <div class="cats-header">
-    <button class="cats-home-btn" onclick="nav('lobby')" aria-label="Back">
-      <div class="cats-logo-wrap">
-        <img src="Title.png" class="cats-logo-img" alt="MOBERINO" style="height:36px;width:auto">
-      </div>
-    </button>
-    <div style="display:flex;align-items:center">
-      <button class="nav-icon-btn" onclick="nav('lobby')" aria-label="Games" style="font-family:'VCR',monospace;font-size:9px;letter-spacing:2px;width:auto;padding:5px 12px;color:rgba(242,239,232,0.95);border:1px solid rgba(242,239,232,0.35);border-radius:4px;background:rgba(242,239,232,0.08)">◀ ARCADE MENU</button>
+    <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('home')">✕ EXIT ARCADE</button>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
+      <button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
+      <button class="nav-icon-btn" onclick="SFX.menuSelect();nav('lobby')" style="font-family:'VCR',monospace;font-size:9px;letter-spacing:2px;width:auto;padding:5px 10px;color:rgba(242,239,232,0.85);border:1px solid rgba(242,239,232,0.25);border-radius:4px;background:rgba(242,239,232,0.06)">◀ MENU</button>
     </div>
   </div>
   <canvas id="flappy-canvas"></canvas>
@@ -4068,13 +4023,11 @@ heroCassette.addEventListener('animationend', function() {
 <!-- ── MEMORY MATCH ── -->
 <div id="pg-match" class="page">
   <div class="cats-header">
-    <button class="cats-home-btn" onclick="nav('lobby')" aria-label="Back">
-      <div class="cats-logo-wrap">
-        <img src="Title.png" class="cats-logo-img" alt="MOBERINO" style="height:36px;width:auto">
-      </div>
-    </button>
-    <div style="display:flex;align-items:center">
-      <button class="nav-icon-btn" onclick="nav('lobby')" aria-label="Games" style="font-family:'VCR',monospace;font-size:9px;letter-spacing:2px;width:auto;padding:5px 12px;color:rgba(242,239,232,0.95);border:1px solid rgba(242,239,232,0.35);border-radius:4px;background:rgba(242,239,232,0.08)">◀ ARCADE MENU</button>
+    <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('home')">✕ EXIT ARCADE</button>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
+      <button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
+      <button class="nav-icon-btn" onclick="SFX.menuSelect();nav('lobby')" style="font-family:'VCR',monospace;font-size:9px;letter-spacing:2px;width:auto;padding:5px 10px;color:rgba(242,239,232,0.85);border:1px solid rgba(242,239,232,0.25);border-radius:4px;background:rgba(242,239,232,0.06)">◀ MENU</button>
     </div>
   </div>
   <div id="match-wrap" class="match-wrap">
@@ -4085,13 +4038,11 @@ heroCassette.addEventListener('animationend', function() {
 <!-- ── SPACE MOBE ── -->
 <div id="pg-space" class="page">
   <div class="cats-header">
-    <button class="cats-home-btn" onclick="nav('lobby')" aria-label="Back">
-      <div class="cats-logo-wrap">
-        <img src="Title.png" class="cats-logo-img" alt="MOBERINO" style="height:36px;width:auto">
-      </div>
-    </button>
-    <div style="display:flex;align-items:center">
-      <button class="nav-icon-btn" onclick="nav('lobby')" aria-label="Games" style="font-family:'VCR',monospace;font-size:9px;letter-spacing:2px;width:auto;padding:5px 12px;color:rgba(242,239,232,0.95);border:1px solid rgba(242,239,232,0.35);border-radius:4px;background:rgba(242,239,232,0.08)">◀ ARCADE MENU</button>
+    <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('home')">✕ EXIT ARCADE</button>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
+      <button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
+      <button class="nav-icon-btn" onclick="SFX.menuSelect();nav('lobby')" style="font-family:'VCR',monospace;font-size:9px;letter-spacing:2px;width:auto;padding:5px 10px;color:rgba(242,239,232,0.85);border:1px solid rgba(242,239,232,0.25);border-radius:4px;background:rgba(242,239,232,0.06)">◀ MENU</button>
     </div>
   </div>
   <canvas id="space-canvas"></canvas>
@@ -4108,11 +4059,6 @@ heroCassette.addEventListener('animationend', function() {
 <!-- ── ARCADE: floating ambient elements (coins, tickets, pizza) ── -->
 <div id="arcade-float"></div>
 
-<!-- ── ARCADE GAME PAGES: persistent mute + credits HUD ── -->
-<div id="arcade-hud-fixed">
-  <button onclick="openLeaderboard()" id="ahf-lb-btn" style="font-family:'VCR',monospace;font-size:9px;letter-spacing:1px;background:rgba(255,230,26,0.1);border:1px solid rgba(255,230,26,0.3);border-radius:3px;padding:3px 8px;color:#ffe61a;cursor:pointer">🏆</button>
-  <button id="mute-btn-fixed" onclick="toggleArcadeMute()">♪ ON</button>
-</div>
 
 <!-- ── LEADERBOARD OVERLAY ── -->
 <div id="lb-overlay" style="display:none;position:fixed;inset:0;z-index:9800;align-items:flex-start;justify-content:center;overflow-y:auto;background:rgba(5,2,18,0.92);backdrop-filter:blur(10px);padding:20px 16px 40px">
@@ -4543,35 +4489,51 @@ window.enableShake = function() {
 };
 
 // ══════════════════════════════════════
+//  SHARED AUDIO CONTEXT
+// ══════════════════════════════════════
+let _sharedAudioCtx = null;
+function getAudioCtx() {
+  if (!_sharedAudioCtx) {
+    _sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // iOS Safari unlock: play a silent buffer immediately to unblock the context
+    try {
+      const buf = _sharedAudioCtx.createBuffer(1, 1, 22050);
+      const src = _sharedAudioCtx.createBufferSource();
+      src.buffer = buf; src.connect(_sharedAudioCtx.destination); src.start(0);
+    } catch(e) {}
+  }
+  if (_sharedAudioCtx.state === 'suspended') _sharedAudioCtx.resume();
+  return _sharedAudioCtx;
+}
+
+// ══════════════════════════════════════
 //  SFX — Web Audio chiptune sounds
 // ══════════════════════════════════════
 const SFX = (() => {
-  let ctx = null;
-  function ac() {
-    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
-    if (ctx.state === 'suspended') ctx.resume();
-    return ctx;
-  }
   function tone(freq, type, start, dur, vol, endFreq) {
-    const c = ac(), o = c.createOscillator(), g = c.createGain();
+    const c = getAudioCtx(), o = c.createOscillator(), g = c.createGain();
+    const t0 = c.currentTime + Math.max(start, 0.05);
     o.connect(g); g.connect(c.destination);
-    o.type = type; o.frequency.setValueAtTime(freq, c.currentTime + start);
-    if (endFreq) o.frequency.exponentialRampToValueAtTime(endFreq, c.currentTime + start + dur);
-    g.gain.setValueAtTime(vol, c.currentTime + start);
-    g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + start + dur);
-    o.start(c.currentTime + start); o.stop(c.currentTime + start + dur + 0.01);
+    o.type = type; o.frequency.setValueAtTime(freq, t0);
+    if (endFreq) o.frequency.exponentialRampToValueAtTime(endFreq, t0 + dur);
+    g.gain.setValueAtTime(vol, t0);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    o.start(t0); o.stop(t0 + dur + 0.01);
   }
   return {
-    hit()      { tone(440,'square',0,0.08,0.18); tone(660,'square',0.07,0.06,0.14); },
-    miss()     { tone(220,'sawtooth',0,0.12,0.15,100); },
-    match()    { tone(523,'square',0,0.09,0.15); tone(659,'square',0.08,0.09,0.15); tone(784,'square',0.16,0.14,0.18); },
-    mismatch() { tone(300,'sawtooth',0,0.07,0.14); tone(220,'sawtooth',0.06,0.12,0.16,140); },
-    win()      { [523,659,784,1047].forEach((f,i)=>tone(f,'square',i*0.09,0.12,0.16)); },
-    over()     { tone(330,'sawtooth',0,0.14,0.15,200); tone(200,'sawtooth',0.12,0.22,0.18,80); },
-    flap()     { tone(380,'square',0,0.05,0.10,480); },
-    score()       { tone(784,'square',0,0.06,0.14); tone(1047,'square',0.05,0.08,0.16); },
-    menuSelect()  { tone(660,'square',0,0.04,0.12); tone(880,'square',0.03,0.05,0.10); },
-    whack()       { tone(180,'square',0,0.06,0.22,80); tone(120,'sawtooth',0.04,0.08,0.18,60); },
+    hit()      { tone(440,'square',0,0.08,0.08); tone(660,'square',0.07,0.06,0.06); },
+    miss()     { tone(220,'sawtooth',0,0.12,0.07,100); },
+    match()    { tone(523,'square',0,0.09,0.07); tone(659,'square',0.08,0.09,0.07); tone(784,'square',0.16,0.14,0.08); },
+    mismatch() { tone(300,'sawtooth',0,0.07,0.06); tone(220,'sawtooth',0.06,0.12,0.07,140); },
+    win()      { [523,659,784,1047].forEach((f,i)=>tone(f,'square',i*0.09,0.12,0.07)); },
+    over()     { tone(330,'sawtooth',0,0.14,0.07,200); tone(200,'sawtooth',0.12,0.22,0.08,80); },
+    flap()     { tone(380,'square',0,0.05,0.05,480); },
+    score()       { tone(784,'square',0,0.06,0.06); tone(1047,'square',0.05,0.08,0.07); },
+    menuSelect()  { tone(660,'square',0,0.04,0.05); tone(880,'square',0.03,0.05,0.05); },
+    charPick(i)   { const f = 300 + i * 40; tone(f,'square',0,0.03,0.05); tone(f*1.5,'square',0.025,0.04,0.04); },
+    whack()       { tone(180,'square',0,0.06,0.10,80); tone(120,'sawtooth',0.04,0.08,0.08,60); },
+    imposter()    { tone(220,'sawtooth',0,0.16,0.10,100); tone(160,'sawtooth',0.13,0.18,0.11,80); tone(110,'sawtooth',0.28,0.28,0.10,60); },
+    clown()       { [500,400,320,200].forEach((f,i)=>tone(f,'sawtooth',i*0.11,0.09,0.09)); },
   };
 })();
 
@@ -4630,88 +4592,56 @@ function ticketConfetti() {
 //  ARCADE MUSIC
 // ══════════════════════════════════════
 const ArcadeMusic = (() => {
-  let actx = null, playing = false, muted = false, nodes = [];
-  const BPM = 148, B = 60 / BPM;
+  let muted = false, fadeTimer = null;
+  const FULL_VOL = 0.35, DUCK_VOL = 0.06;
 
-  const NOTES = { C3:130.81,E3:164.81,G3:196.00,A3:220.00,B3:246.94,
-    C4:261.63,D4:293.66,E4:329.63,F4:349.23,G4:392.00,A4:440.00,B4:493.88,
-    C5:523.25,D5:587.33,E5:659.25,G5:783.99,A5:880.00 };
+  const audio = new Audio('arcademusic.mp3');
+  audio.loop = true;
+  audio.volume = FULL_VOL;
 
-  const MEL = [
-    ['E5',0.5],['C5',0.5],['G4',0.5],['E4',0.5],
-    ['C5',0.5],['E5',0.5],['G5',1.0],[null,0.5],
-    ['D5',0.5],['B4',0.5],['G4',0.5],['D4',0.5],
-    ['B4',0.5],['D5',0.5],['G5',1.0],[null,0.5],
-    ['E5',0.5],['D5',0.5],['C5',0.5],['B4',0.5],
-    ['A4',0.5],['G4',0.5],['E4',1.0],[null,0.5],
-    ['C5',0.5],['E5',0.5],['G5',0.5],['E5',0.5],
-    ['C5',1.0],[null,0.5],[null,1.0],
-  ];
-  const BASS = [
-    ['C3',1],['G3',1],['C3',1],['E3',1],
-    ['A3',1],['E3',1],['D4',1],['G3',1],
-  ];
-
-  function ac() {
-    if (!actx) actx = new (window.AudioContext||window.webkitAudioContext)();
-    if (actx.state === 'suspended') actx.resume();
-    return actx;
-  }
-
-  function schedulePart(part, type, vol) {
-    const ctx = ac();
-    const now = ctx.currentTime;
-    const totalBeats = part.reduce((s,[,b]) => s+b, 0);
-
-    function scheduleLoop(offset) {
-      let ti = offset;
-      part.forEach(([note, beats]) => {
-        if (note && NOTES[note]) {
-          const o = ctx.createOscillator();
-          const g = ctx.createGain();
-          o.connect(g); g.connect(ctx.destination);
-          o.type = type;
-          o.frequency.value = NOTES[note];
-          g.gain.setValueAtTime(0, ti);
-          g.gain.linearRampToValueAtTime(vol, ti + 0.01);
-          g.gain.setValueAtTime(vol, ti + beats*B - 0.03);
-          g.gain.linearRampToValueAtTime(0, ti + beats*B);
-          o.start(ti); o.stop(ti + beats*B + 0.01);
-          nodes.push(o);
-        }
-        ti += beats * B;
-      });
-      return ti;
-    }
-
-    let start = now + 0.05;
-    for (let i = 0; i < 32; i++) start = scheduleLoop(start);
-  }
-
-  function stop() {
-    nodes.forEach(n => { try { n.stop(); } catch(e) {} });
-    nodes = [];
-    playing = false;
+  function fadeTo(target, ms) {
+    clearInterval(fadeTimer);
+    const steps = Math.ceil(ms / 20);
+    let step = 0;
+    fadeTimer = setInterval(() => {
+      step++;
+      audio.volume = Math.min(1, Math.max(0,
+        audio.volume + (target - audio.volume) * (step / (steps - step + 1))
+      ));
+      if (step >= steps || Math.abs(audio.volume - target) < 0.005) {
+        audio.volume = target;
+        clearInterval(fadeTimer);
+      }
+    }, 20);
   }
 
   return {
     start() {
-      if (playing || muted) return;
-      stop();
-      schedulePart(MEL,  'triangle', 0.035);
-      schedulePart(BASS, 'square',   0.020);
-      playing = true;
+      if (muted) return;
+      audio.play().catch(() => {});
     },
-    stop() { stop(); },
+    stop() { audio.pause(); audio.currentTime = 0; },
+    duck()   { fadeTo(DUCK_VOL, 400); },
+    unduck() { fadeTo(FULL_VOL, 600); },
     toggleMute() {
       muted = !muted;
-      if (muted) stop(); else this.start();
+      if (muted) { audio.pause(); } else { audio.volume = FULL_VOL; audio.play().catch(() => {}); }
       return muted;
     },
-    get muted() { return muted; },
-    get playing() { return playing; },
+    get muted()   { return muted; },
+    get playing() { return !audio.paused; },
   };
 })();
+
+// Resume/start music on any user tap while on arcade pages
+document.addEventListener('click', function() {
+  const onArcade = document.body.matches('.on-lobby,.on-whack,.on-flappy,.on-match,.on-space,.on-char');
+  if (onArcade && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
+}, { passive: true });
+document.addEventListener('touchstart', function() {
+  const onArcade = document.body.matches('.on-lobby,.on-whack,.on-flappy,.on-match,.on-space,.on-char');
+  if (onArcade && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
+}, { passive: true });
 
 // ══════════════════════════════════════
 //  LOCAL LEADERBOARD
@@ -4773,18 +4703,33 @@ window.promptLeaderboard = function(game, score, extra, neonColor, onDone) {
   setTimeout(() => { const inp = document.getElementById('lb-name-input'); if(inp) inp.focus(); }, 100);
 };
 
-// ── Carousel ──────────────────────────────────────────────────────────────────
+// ── Carousel (infinite loop, JS-driven) ───────────────────────────────────────
+let _carouselIdx = 0;
+
 window.scrollCarousel = function(dir) {
-  const c = document.getElementById('game-carousel');
-  if (!c) return;
-  c.scrollBy({ left: dir * c.offsetWidth * 0.75, behavior: 'smooth' });
+  const carousel = document.getElementById('game-carousel');
+  if (!carousel) return;
+  const items = carousel.querySelectorAll('.carousel-item');
+  const n = items.length;
+  _carouselIdx = (_carouselIdx + dir + n) % n; // wraps 0→n-1 and n-1→0
+  _scrollToCarouselIdx(carousel, items, _carouselIdx);
 };
+
+function _scrollToCarouselIdx(carousel, items, idx) {
+  const item = items[idx];
+  if (!item) return;
+  item.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+  items.forEach((el, i) => el.classList.toggle('active-card', i === idx));
+  updateCarouselDots(idx, items.length);
+}
 
 function initCarousel() {
   const carousel = document.getElementById('game-carousel');
   if (!carousel) return;
   const items = carousel.querySelectorAll('.carousel-item');
+  if (!items.length) return;
 
+  // Sync _carouselIdx from scroll position (handles touch/swipe)
   function updateActive() {
     const carouselWidth = carousel.offsetWidth;
     let closest = 0, minDist = Infinity;
@@ -4793,15 +4738,17 @@ function initCarousel() {
       const dist = Math.abs(itemCenter - carouselWidth / 2);
       if (dist < minDist) { minDist = dist; closest = i; }
     });
-    items.forEach((item, i) => item.classList.toggle('active-card', i === closest));
-    updateCarouselDots(closest, items.length);
+    if (closest !== _carouselIdx) {
+      _carouselIdx = closest;
+      items.forEach((el, i) => el.classList.toggle('active-card', i === closest));
+      updateCarouselDots(closest, items.length);
+    }
   }
 
   carousel.addEventListener('scroll', updateActive, { passive: true });
-  // Set first card active initially
-  if (items.length) items[0].classList.add('active-card');
+  _carouselIdx = 0;
+  items[0].classList.add('active-card');
   updateCarouselDots(0, items.length);
-  // Re-check after layout settles
   requestAnimationFrame(updateActive);
 }
 
@@ -4852,12 +4799,8 @@ function renderLbTabs(activeGame) {
 window.toggleArcadeMute = function() {
   const muted = ArcadeMusic.toggleMute();
   const label = muted ? '♪ OFF' : '♪ ON';
-  ['mute-btn','mute-btn-fixed'].forEach(id => {
-    const btn = document.getElementById(id);
-    if (btn) btn.textContent = label;
-  });
+  document.querySelectorAll('.arcade-mute-btn').forEach(btn => { btn.textContent = label; });
 };
-
 // ══════════════════════════════════════
 //  GAME CHARACTERS  (replace nulls with real image paths later)
 // ══════════════════════════════════════
@@ -4915,7 +4858,6 @@ function openCharSelect(returnTo) {
       style="${i===sel?`border-color:${c.color};box-shadow:0 0 16px ${c.color}66`:''}"
     >
       <div class="cs-char-face">${charFace(c,'normal')}</div>
-      <div class="cs-char-name">${c.name}</div>
     </button>`).join('');
   updateCharPreview(sel);
   // Show page
@@ -4935,6 +4877,7 @@ function selectCharInGrid(i) {
     b.style.borderColor = idx === i ? c.color : '';
     b.style.boxShadow = idx === i ? `0 0 16px ${c.color}66` : '';
   });
+  SFX.charPick(i);
   updateCharPreview(i);
 }
 
@@ -4955,10 +4898,16 @@ window.confirmCharSelect = function() {
 // ══════════════════════════════════════
 (function() {
   const HOLES = 12;
+  const HEART_IDX = -2; // sentinel for heart holes
   let state = 'idle'; // idle | instructions | playing | over
   let score = 0, hits = 0, strikes = 0, wave = 1, waveHits = 0;
   let timerInterval;
-  let activeChar = getGlobalChar(), wrongChars = [];
+  let difficulty = 'hard'; // 'easy' | 'hard'
+  let activeChar = getGlobalChar(); // user's char — to AVOID
+  let moleChar = -1;               // random other char — to WHACK
+  let selfActive = false;          // true once user's char starts appearing
+  let nextHeartWave = 8;           // earliest wave hearts can spawn
+  let waveAnnouncing = false;      // true while wave banner is on screen
   let holeTimers = [], holeStates = [], holeCharIdx = [];
 
   function charHTML(ci, expr) {
@@ -4975,48 +4924,98 @@ window.confirmCharSelect = function() {
     return [0,1,2].map(i => `<span style="opacity:${i<strikes?0.2:1}">${i<strikes?'💀':'❤️'}</span>`).join('');
   }
 
+  function pickMole() {
+    const others = GAME_CHARS.map((_,i)=>i).filter(i=>i!==activeChar);
+    return others[Math.floor(Math.random()*others.length)];
+  }
+
+  function showStatus(msg) {
+    const el = document.getElementById('whack-status');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.opacity = '1';
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.style.opacity = '0'; }, 1800);
+  }
+
+  function startSlotMachine() {
+    const face = document.getElementById('whack-slot-face');
+    const box  = document.getElementById('whack-slot-box');
+    const nameEl = document.getElementById('whack-slot-name');
+    const readyBtn = document.getElementById('whack-ready-btn');
+    if (!face) return;
+    const others = GAME_CHARS.map((_,i)=>i).filter(i=>i!==activeChar);
+    let idx = 0, delay = 80, spins = 0, totalSpins = 24;
+    function tick() {
+      idx = (idx + 1) % others.length;
+      face.innerHTML = charHTML(others[idx], 'normal');
+      spins++;
+      if (spins < totalSpins * 0.55) {
+        setTimeout(tick, delay);
+      } else if (spins < totalSpins) {
+        delay = 80 + (spins - totalSpins * 0.55) * 55;
+        setTimeout(tick, delay);
+      } else {
+        face.innerHTML = charHTML(moleChar, 'normal');
+        const gc = GAME_CHARS[moleChar];
+        if (box) { box.style.borderColor = gc.color; box.style.boxShadow = `0 0 24px ${gc.color}88`; }
+        if (nameEl) { nameEl.textContent = gc.name; nameEl.style.color = gc.color; nameEl.style.textShadow = `0 0 12px ${gc.color}`; nameEl.style.opacity = '1'; }
+        if (readyBtn) { readyBtn.style.opacity = '1'; readyBtn.style.pointerEvents = 'auto'; }
+        SFX.win();
+      }
+    }
+    setTimeout(tick, 120);
+  }
+
   function render() {
     const wrap = document.getElementById('whack-wrap');
     if (!wrap) return;
 
-    if (state === 'idle') {
-      const gc = GAME_CHARS[activeChar];
-      wrap.innerHTML = `
-        <div class="arcade-cabinet" style="--nc:#ff00cc">
-          <div class="arcade-cab-rail"></div>
-          <div class="arcade-cab-marquee">WHACK-A-MOBE</div>
-          <div class="arcade-cab-screen" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px">
-            <div style="font-size:11px;letter-spacing:3px;color:rgba(242,239,232,0.5);font-family:'VCR',monospace">YOUR MOLE</div>
-            <div style="width:80px;height:80px;border-radius:12px;background:${gc.color}33;display:flex;align-items:center;justify-content:center;border:2px solid ${gc.color}88;box-shadow:0 0 18px ${gc.color}44">
-              <div style="width:64px;height:64px">${charFace(gc,'normal')}</div>
-            </div>
-            <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:4px;color:${gc.color};text-shadow:0 0 10px ${gc.color}88">${gc.name}</div>
-            <div style="font-size:10px;letter-spacing:2px;color:rgba(242,239,232,0.35);font-family:'VCR',monospace">CHANGE CHARACTER IN ARCADE MENU</div>
-          </div>
-          <div class="arcade-cab-foot">
-            <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.18);padding:14px 40px;font-size:16px;letter-spacing:4px" onclick="whackPlay()">▶ START</button>
-          </div>
-        </div>`;
-      return;
-    }
-
-    if (state === 'instructions') {
+    if (state === 'idle' || state === 'instructions') {
       const gc = GAME_CHARS[activeChar];
       wrap.innerHTML = `
         <div class="arcade-cabinet" style="--nc:#ff00cc">
           <div class="arcade-cab-rail"></div>
           <div class="arcade-cab-marquee" style="font-size:26px;letter-spacing:7px">GET READY!</div>
-          <div class="arcade-cab-screen" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px">
-            <div style="font-size:16px;letter-spacing:4px;color:rgba(242,239,232,0.85);font-family:'VCR',monospace">WHACK YOUR MOLE</div>
-            <div style="width:88px;height:88px;border-radius:12px;background:${gc.color}33;display:flex;align-items:center;justify-content:center;font-size:64px;border:2px solid ${gc.color}88;box-shadow:0 0 20px ${gc.color}55">${charFace(gc,'normal')}</div>
-            <div style="font-size:16px;letter-spacing:3px;color:#ff4444;font-family:'VCR',monospace;text-shadow:0 0 8px #ff444488">DON'T MISS IT!</div>
-            <div style="font-size:15px;letter-spacing:2px;color:rgba(255,180,0,0.9);font-family:'VCR',monospace">WATCH OUT FOR INVADERS</div>
-            <div style="font-size:13px;letter-spacing:2px;color:rgba(242,239,232,0.5);font-family:'VCR',monospace">SURVIVE AS MANY WAVES AS YOU CAN</div>
+          <div class="arcade-cab-screen" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px 16px">
+            <div style="display:flex;align-items:center;justify-content:center;gap:20px;width:100%">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px">
+                <div style="font-size:10px;letter-spacing:2px;color:rgba(242,239,232,0.45);font-family:'VCR',monospace">YOU</div>
+                <div style="width:80px;height:80px;border-radius:10px;background:${gc.color}22;display:flex;align-items:center;justify-content:center;border:2px solid ${gc.color}88;box-shadow:0 0 16px ${gc.color}44">
+                  <div style="width:64px;height:64px;display:flex;align-items:center;justify-content:center">${charFace(gc,'normal')}</div>
+                </div>
+                <div style="min-height:14px"></div>
+              </div>
+              <div style="font-family:'Bebas Neue',cursive;font-size:26px;color:rgba(242,239,232,0.4);padding-top:20px">VS</div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px">
+                <div style="font-size:10px;letter-spacing:2px;color:#ff4444;font-family:'VCR',monospace">WHACK THIS</div>
+                <div id="whack-slot-box" style="width:80px;height:80px;border-radius:10px;background:rgba(255,68,68,0.08);display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,68,68,0.5);box-shadow:0 0 12px rgba(255,68,68,0.2);transition:border-color 0.3s,box-shadow 0.3s">
+                  <div id="whack-slot-face" style="width:64px;height:64px;display:flex;align-items:center;justify-content:center"></div>
+                </div>
+                <div id="whack-slot-name" style="font-family:'VCR',monospace;font-size:10px;letter-spacing:2px;opacity:0;transition:opacity 0.4s;min-height:14px;text-align:center"></div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;width:100%">
+              <div style="line-height:1.4">
+                <div style="font-size:15px;letter-spacing:3px;color:#ff4444;font-family:'VCR',monospace;text-shadow:0 0 10px #ff444488">MISS YOUR MOLE?</div>
+                <div style="font-size:15px;letter-spacing:3px;color:rgba(242,239,232,0.95);font-family:'VCR',monospace">LOSE A LIFE</div>
+              </div>
+              <div style="line-height:1.4">
+                <div style="font-size:15px;letter-spacing:3px;color:#ff4444;font-family:'VCR',monospace;text-shadow:0 0 10px #ff444488">DON'T WHACK YOURSELF</div>
+                <div style="font-size:15px;letter-spacing:3px;color:rgba(242,239,232,0.95);font-family:'VCR',monospace">LOSE A LIFE</div>
+              </div>
+              <div style="font-size:12px;letter-spacing:2px;color:rgba(255,220,30,0.9);font-family:'VCR',monospace;text-shadow:0 0 8px rgba(255,220,30,0.5)">3 LIVES. HOW MANY WAVES CAN YOU SURVIVE?</div>
+            </div>
           </div>
-          <div class="arcade-cab-foot">
-            <button class="whack-btn" onclick="whackBegin()" style="border-color:#ff00cc;background:rgba(255,0,204,0.20);padding:16px 48px;font-size:18px;letter-spacing:5px;text-shadow:0 0 10px #ff00cc88;box-shadow:0 0 16px rgba(255,0,204,0.3)">READY!</button>
+          <div class="arcade-cab-foot" style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">
+            <div style="display:flex;gap:10px;width:100%">
+              <button onclick="difficulty='easy';document.getElementById('diff-easy').style.boxShadow='0 0 14px #33ff6688';document.getElementById('diff-easy').style.borderColor='#33ff66';document.getElementById('diff-hard').style.boxShadow='none';document.getElementById('diff-hard').style.borderColor='rgba(242,239,232,0.2)'" id="diff-easy" class="whack-btn" style="flex:1;border-color:rgba(242,239,232,0.2);font-size:13px;letter-spacing:3px;padding:10px 4px">🟢 EASY</button>
+              <button onclick="difficulty='hard';document.getElementById('diff-hard').style.boxShadow='0 0 14px #ff444488';document.getElementById('diff-hard').style.borderColor='#ff4444';document.getElementById('diff-easy').style.boxShadow='none';document.getElementById('diff-easy').style.borderColor='rgba(242,239,232,0.2)'" id="diff-hard" class="whack-btn" style="flex:1;border-color:#ff4444;box-shadow:0 0 14px #ff444488;font-size:13px;letter-spacing:3px;padding:10px 4px">🔴 HARD</button>
+            </div>
+            <button id="whack-ready-btn" class="whack-btn" onclick="whackBegin()" style="width:100%;border-color:#ff00cc;background:rgba(255,0,204,0.20);padding:14px 48px;font-size:18px;letter-spacing:5px;text-shadow:0 0 10px #ff00cc88;box-shadow:0 0 16px rgba(255,0,204,0.3);opacity:0.35;pointer-events:none">READY!</button>
           </div>
         </div>`;
+      startSlotMachine();
       return;
     }
 
@@ -5034,7 +5033,8 @@ window.confirmCharSelect = function() {
                <div class="whack-char" id="wc-${i}"></div>
              </div>`
           ).join('')
-        }</div>`;
+        }</div>
+        <div id="whack-status" style="font-family:'VCR',monospace;font-size:18px;letter-spacing:2px;color:#ff4444;text-align:center;min-height:24px;margin-top:8px;opacity:0;transition:opacity 0.4s;text-shadow:0 0 10px #ff444488"></div>`;
       holeStates = Array(HOLES).fill('empty');
       holeCharIdx = Array(HOLES).fill(-1);
       scheduleAll();
@@ -5063,16 +5063,17 @@ window.confirmCharSelect = function() {
 
   function getPopDelay() {
     const waveBoost = (wave - 1) * 60;
-    return Math.max(160, 980 - waveBoost - waveHits * 8) + Math.random() * 80;
+    const base = Math.max(160, 980 - waveBoost - waveHits * 8) + Math.random() * 80;
+    return difficulty === 'easy' ? base * 1.35 : base;
   }
   function getUpTime() {
     const waveBoost = (wave - 1) * 80;
-    return Math.max(420, 2240 - waveBoost - waveHits * 20) + Math.random() * 120;
+    const base = (Math.max(420, 2240 - waveBoost - waveHits * 20) + Math.random() * 120) * 0.7;
+    return difficulty === 'easy' ? base * 1.5 : base;
   }
 
-  // Survival: one mole at a time — pick a random hole for the next one
   function scheduleSurvivalNext() {
-    if (state !== 'playing') return;
+    if (state !== 'playing' || waveAnnouncing) return;
     const open = Array.from({length:HOLES}, (_,i) => i).filter(i => holeStates[i] === 'empty');
     if (!open.length) return;
     const i = open[Math.floor(Math.random() * open.length)];
@@ -5083,22 +5084,56 @@ window.confirmCharSelect = function() {
     holeTimers.forEach(clearTimeout); holeTimers = [];
     scheduleSurvivalNext();
   }
-  function scheduleHole(i) { holeTimers[i] = setTimeout(() => popUp(i), getPopDelay()); }
+
+  function scheduleHeart() {
+    if (state !== 'playing' || wave < nextHeartWave) return;
+    nextHeartWave = wave + 5; // block next heart for 5 waves
+    const delay = 1800 + Math.random() * 2400;
+    setTimeout(() => {
+      if (state !== 'playing') return;
+      const open = Array.from({length:HOLES}, (_,i) => i).filter(i => holeStates[i] === 'empty');
+      if (!open.length) return;
+      const hi = open[Math.floor(Math.random() * open.length)];
+      holeStates[hi] = 'up'; holeCharIdx[hi] = HEART_IDX;
+      const hole = document.getElementById(`wh-${hi}`), charEl = document.getElementById(`wc-${hi}`);
+      if (!hole || !charEl) return;
+      charEl.innerHTML = `<div style="font-size:44px;line-height:1;display:flex;align-items:center;justify-content:center;width:100%;height:100%">❤️</div>`;
+      hole.classList.add('up');
+      holeTimers[hi] = setTimeout(() => popDown(hi, false), getUpTime() / 3);
+    }, delay);
+  }
 
   function popUp(i) {
-    if (state !== 'playing' || holeStates[i] !== 'empty') {
-      scheduleSurvivalNext();
+    if (state !== 'playing' || waveAnnouncing || holeStates[i] !== 'empty') {
+      if (!waveAnnouncing) scheduleSurvivalNext();
       return;
     }
-    let picked = activeChar;
-    if (wrongChars.length && Math.random() > 0.72)
-      picked = wrongChars[Math.floor(Math.random() * wrongChars.length)];
+
+    let picked = moleChar;
+    if (selfActive && Math.random() > 0.72) picked = activeChar;
+
+    // Tease glow: 80% real hole, 20% decoy
+    const useDecoy = Math.random() < 0.20;
+    let teaseIdx = i;
+    if (useDecoy) {
+      const decoys = Array.from({length:HOLES},(_,j)=>j).filter(j=>j!==i&&holeStates[j]==='empty');
+      if (decoys.length) teaseIdx = decoys[Math.floor(Math.random()*decoys.length)];
+    }
+    const teaseEl = document.getElementById(`wh-${teaseIdx}`);
+    if (teaseEl) {
+      teaseEl.classList.add('teasing');
+      setTimeout(()=>teaseEl.classList.remove('teasing'), 180);
+    }
+
     holeStates[i] = 'up'; holeCharIdx[i] = picked;
-    const hole = document.getElementById(`wh-${i}`), charEl = document.getElementById(`wc-${i}`);
-    if (!hole || !charEl) return;
-    charEl.innerHTML = charHTML(picked, 'normal');
-    hole.classList.add('up');
-    holeTimers[i] = setTimeout(() => popDown(i, false), getUpTime());
+    setTimeout(() => {
+      if (state !== 'playing') return;
+      const hole = document.getElementById(`wh-${i}`), charEl = document.getElementById(`wc-${i}`);
+      if (!hole || !charEl) return;
+      charEl.innerHTML = charHTML(picked, 'normal');
+      hole.classList.add('up');
+      holeTimers[i] = setTimeout(() => popDown(i, false), getUpTime());
+    }, 200);
   }
 
   function popDown(i, wasHit) {
@@ -5108,84 +5143,115 @@ window.confirmCharSelect = function() {
     if (!hole) return;
     hole.classList.remove('up', 'hit', 'wrong-hit');
 
-    if (!wasHit && prev === activeChar) {
-      // Good mole escaped
+    if (!wasHit && prev === moleChar) {
+      // Missed the mole — lose a life
       const charEl = document.getElementById(`wc-${i}`);
-      if (charEl) charEl.innerHTML = charHTML(activeChar, 'happy');
+      if (charEl) charEl.innerHTML = charHTML(moleChar, 'happy');
       hole.classList.add('up');
       SFX.miss();
       strikes++;
+      showStatus('💔 MISSED MOLE');
       const lv = document.getElementById('whack-lives');
       if (lv) lv.innerHTML = livesHTML();
       setTimeout(() => {
         hole.classList.remove('up');
         if (strikes < 3) scheduleSurvivalNext();
       }, 380);
-      if (strikes >= 3) setTimeout(() => { holeTimers.forEach(clearTimeout); SFX.over(); state = 'over'; render(); }, 500);
+      if (strikes >= 3) setTimeout(() => { holeTimers.forEach(clearTimeout); SFX.over(); setTimeout(() => { state = 'over'; render(); }, 3000); }, 500);
       return;
     }
 
     scheduleSurvivalNext();
   }
 
-  function addWrongChar() {
-    const used = new Set([activeChar,...wrongChars]);
-    const avail = GAME_CHARS.map((_,i)=>i).filter(i=>!used.has(i));
-    if (!avail.length) return;
-    wrongChars.push(avail[Math.floor(Math.random()*avail.length)]);
-    const warn=document.createElement('div');
-    warn.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;pointer-events:none';
-    const gc = GAME_CHARS[wrongChars[wrongChars.length-1]];
-    warn.innerHTML=`<div style="background:rgba(140,0,0,0.94);color:#fff;font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;padding:14px 24px;border-radius:8px;display:flex;flex-direction:column;align-items:center;gap:6px"><div>⚠️ NEW MOLE INCOMING!</div><div style="font-size:14px;letter-spacing:2px;color:#ffaaaa">DO NOT HIT ${gc.name}!</div></div>`;
+  function addSelf() {
+    if (selfActive) return;
+    selfActive = true;
+    const warn = document.createElement('div');
+    warn.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;pointer-events:none';
+    const gc = GAME_CHARS[activeChar];
+    warn.innerHTML = `<div style="background:rgba(120,0,0,0.96);color:#fff;font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:4px;padding:18px 28px;border-radius:8px;display:flex;flex-direction:column;align-items:center;gap:10px;border:2px solid rgba(255,60,60,0.6);box-shadow:0 0 30px rgba(255,0,0,0.5)"><div style="color:#ff4444;text-shadow:0 0 12px #ff444488">⚠ DON'T WHACK YOURSELF!</div><div style="width:56px;height:56px">${charFace(gc,'normal')}</div></div>`;
     document.body.appendChild(warn);
-    setTimeout(()=>warn.remove(),1300);
+    SFX.imposter();
+    setTimeout(() => warn.remove(), 1500);
   }
 
   window.whackHit = function(i) {
-    if (state!=='playing'||holeStates[i]!=='up') return;
-    const isGood = holeCharIdx[i]===activeChar;
+    if (state !== 'playing' || holeStates[i] !== 'up') return;
     const ci = holeCharIdx[i];
-    holeStates[i]='hit';
+    holeStates[i] = 'hit';
     clearTimeout(holeTimers[i]);
-    const hole=document.getElementById(`wh-${i}`), charEl=document.getElementById(`wc-${i}`);
-    if (!hole||!charEl) return;
-    if (isGood) {
-      charEl.innerHTML=charHTML(activeChar,'sad');
+    const hole = document.getElementById(`wh-${i}`), charEl = document.getElementById(`wc-${i}`);
+    if (!hole || !charEl) return;
+
+    if (ci === HEART_IDX) {
+      charEl.innerHTML = `<div style="font-size:44px;display:flex;align-items:center;justify-content:center;width:100%;height:100%">💖</div>`;
       hole.classList.add('hit');
-      const pop=document.createElement('div');
-      pop.className='whack-score-pop'; pop.textContent='+10';
-      pop.style.cssText=`left:${20+Math.random()*60}%;top:${20+Math.random()*40}%`;
-      hole.appendChild(pop); setTimeout(()=>pop.remove(),700);
+      if (strikes > 0) {
+        strikes--;
+        const lv = document.getElementById('whack-lives');
+        if (lv) lv.innerHTML = livesHTML();
+        const pop = document.createElement('div');
+        pop.className = 'whack-score-pop'; pop.textContent = '+LIFE';
+        pop.style.cssText = `left:${20+Math.random()*60}%;top:${20+Math.random()*40}%`;
+        hole.appendChild(pop); setTimeout(() => pop.remove(), 700);
+        SFX.win();
+      }
+      setTimeout(() => popDown(i, true), 350);
+      return;
+    }
+
+    if (ci === moleChar) {
+      charEl.innerHTML = charHTML(moleChar, 'sad');
+      hole.classList.add('hit');
+      const pop = document.createElement('div');
+      pop.className = 'whack-score-pop'; pop.textContent = '+10';
+      pop.style.cssText = `left:${20+Math.random()*60}%;top:${20+Math.random()*40}%`;
+      hole.appendChild(pop); setTimeout(() => pop.remove(), 700);
       SFX.whack(); SFX.hit();
-      score+=10; hits++;
-      const sv=document.getElementById('whack-score-val');
-      if(sv) sv.textContent=score;
+      score += 10; hits++;
+      const sv = document.getElementById('whack-score-val');
+      if (sv) sv.textContent = score;
       waveHits++;
-      if (waveHits >= 8) {
+      const easy = difficulty === 'easy';
+      const threshold = wave === 1 ? 3 : (easy ? 6 : 8);
+      if (waveHits >= threshold) {
         waveHits = 0; wave++;
         announceWave(wave);
-        if (wave === 3 && wrongChars.length === 0) setTimeout(addWrongChar, 900);
-        if (wave === 5 && wrongChars.length === 1) setTimeout(addWrongChar, 900);
-        if (wave === 7 && wrongChars.length === 2) setTimeout(addWrongChar, 900);
+        if (wave === (easy ? 3 : 2)) setTimeout(scheduleSurvivalNext, 500);
+        if (wave === (easy ? 6 : 4)) setTimeout(scheduleSurvivalNext, 600);
+        const w1 = easy ? 5 : 3;
+        if (wave === w1 && !selfActive) setTimeout(addSelf, 900);
+        if (wave >= nextHeartWave) setTimeout(scheduleHeart, 1200);
       }
-      setTimeout(()=>popDown(i,true),350);
+      setTimeout(() => popDown(i, true), 350);
     } else {
-      charEl.innerHTML=charHTML(ci,'happy');
+      // Hit self — lose a life
+      const isFinalLife = strikes >= 2;
+      charEl.innerHTML = charHTML(ci, isFinalLife ? 'sad' : 'happy');
       hole.classList.add('wrong-hit');
-      SFX.miss();
+      SFX.clown();
       strikes++;
-      const lv=document.getElementById('whack-lives');
-      if(lv) lv.innerHTML=livesHTML();
-      setTimeout(()=>popDown(i,true),420);
-      if(strikes>=3) setTimeout(()=>{ holeTimers.forEach(clearTimeout); SFX.over(); state='over'; render(); },550);
+      showStatus('💔 YOU WHACKED YOURSELF');
+      const lv = document.getElementById('whack-lives');
+      if (lv) lv.innerHTML = livesHTML();
+      if (strikes >= 3) {
+        holeTimers.forEach(clearTimeout);
+        SFX.over();
+        setTimeout(() => { state = 'over'; render(); }, 3000);
+      } else {
+        setTimeout(() => popDown(i, true), 420);
+      }
     }
   };
 
   function announceWave(w) {
+    waveAnnouncing = true;
+    holeTimers.forEach(clearTimeout);
     const ann = document.createElement('div');
     ann.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none';
     const colors = ['#ff00cc','#00e5ff','#ffe61a','#ff4444','#33ff66'];
-    const nc = colors[(w-1) % colors.length];
+    const nc = colors[(w-2) % colors.length];
     ann.innerHTML = `
       <div style="text-align:center;animation:wave-announce 1.6s ease-out forwards">
         <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:5px;color:${nc};margin-bottom:4px">INCOMING</div>
@@ -5193,29 +5259,43 @@ window.confirmCharSelect = function() {
       </div>`;
     document.body.appendChild(ann);
     SFX.win();
-    setTimeout(() => ann.remove(), 1600);
+    setTimeout(() => {
+      ann.remove();
+      waveAnnouncing = false;
+      scheduleSurvivalNext();
+    }, 1600);
   }
 
-  window.whackBack = function(){ state='idle'; render(); };
+  window.whackBack = function() { state = 'idle'; render(); ArcadeMusic.unduck(); };
 
   window.whackPlay = function() {
     holeTimers.forEach(clearTimeout); clearInterval(timerInterval);
     activeChar = getGlobalChar();
-    score = 0; hits = 0; strikes = 0; wave = 1; waveHits = 0; wrongChars = [];
+    moleChar = pickMole();
+    score = 0; hits = 0; strikes = 0; wave = 1; waveHits = 0;
+    selfActive = false; nextHeartWave = 8; waveAnnouncing = false;
     holeStates = Array(HOLES).fill('empty');
     holeCharIdx = Array(HOLES).fill(-1);
     holeTimers   = Array(HOLES).fill(null);
     state = 'instructions'; render();
+    if (!ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
+    else ArcadeMusic.unduck();
   };
 
   window.whackBegin = function() {
+    ArcadeMusic.stop();
     state = 'playing'; render(); scheduleAll();
   };
 
   window.initWhack = function() {
     holeTimers.forEach(clearTimeout); clearInterval(timerInterval);
     activeChar = getGlobalChar();
-    state='idle'; score=0; hits=0; strikes=0; wave=1; waveHits=0; wrongChars=[];
+    moleChar = pickMole();
+    state = 'instructions'; score = 0; hits = 0; strikes = 0; wave = 1; waveHits = 0;
+    selfActive = false; nextHeartWave = 8;
+    holeStates = Array(HOLES).fill('empty');
+    holeCharIdx = Array(HOLES).fill(-1);
+    holeTimers   = Array(HOLES).fill(null);
     render();
   };
 })();
@@ -5885,6 +5965,7 @@ window.confirmCharSelect = function() {
   }
 
   function showOverlay(mode) {
+    if (mode === 'select' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
     const ov = document.getElementById('flappy-overlay');
     if (!ov) return;
     const best = localStorage.getItem('flappy-best') || 0;
@@ -5927,6 +6008,7 @@ window.confirmCharSelect = function() {
   };
 
   window.flappyStart = function() {
+    ArcadeMusic.stop();
     activeChar = getGlobalChar();
     const ov = document.getElementById('flappy-overlay');
     if (ov) ov.classList.add('hidden');
@@ -6163,6 +6245,7 @@ window.confirmCharSelect = function() {
         clearInterval(previewInt);
         cards.forEach(c => { c.flipped = false; });
         locked = false;
+        ArcadeMusic.stop();
         state = 'playing'; render();
         if (matchMode === 'timed') {
           timerInt = setInterval(() => {
@@ -6175,7 +6258,8 @@ window.confirmCharSelect = function() {
             }
             if (matchTimer >= timeLimit) {
               clearInterval(timerInt);
-              state = 'over'; render();
+              SFX.over();
+              setTimeout(() => { state = 'over'; render(); }, 3000);
             }
           }, 1000);
         }
@@ -6739,6 +6823,7 @@ window.confirmCharSelect = function() {
     SFX.flap();
   };
   window.spaceStart=function(){
+    ArcadeMusic.stop();
     activeChar=getGlobalChar();
     const ov=document.getElementById('space-overlay');
     if(ov)ov.classList.add('hidden');
