@@ -104,40 +104,35 @@ body.on-lobby, body.on-char, body.on-whack, body.on-flappy, body.on-match, body.
   border-radius: 4px; padding: 5px 10px; color: #ff00cc; cursor: pointer;
   text-shadow: 0 0 8px #ff00cc66; white-space: nowrap;
 }
-/* ── Arcade page header: 2× size ── */
+/* ── Arcade page header: compact ── */
 body.on-lobby .cats-header, body.on-char .cats-header,
 body.on-whack .cats-header, body.on-flappy .cats-header,
 body.on-match .cats-header, body.on-space .cats-header {
-  height: 88px !important;
-  padding: 10px 20px !important;
+  height: 56px !important;
+  padding: 8px 16px !important;
 }
 body.on-lobby .arcade-exit-btn, body.on-char .arcade-exit-btn,
 body.on-whack .arcade-exit-btn, body.on-flappy .arcade-exit-btn,
 body.on-match .arcade-exit-btn, body.on-space .arcade-exit-btn {
-  font-size: 13px !important; letter-spacing: 2px !important;
-  padding: 8px 12px !important; border-radius: 5px !important;
+  font-size: 12px !important; letter-spacing: 1.5px !important;
+  padding: 6px 10px !important; border-radius: 5px !important;
 }
 body.on-lobby .arcade-lb-btn, body.on-char .arcade-lb-btn,
 body.on-whack .arcade-lb-btn, body.on-flappy .arcade-lb-btn,
 body.on-match .arcade-lb-btn, body.on-space .arcade-lb-btn {
-  font-size: 16px !important; padding: 6px 10px !important; border-radius: 4px !important;
+  font-size: 14px !important; padding: 5px 9px !important; border-radius: 4px !important;
 }
 body.on-lobby .arcade-mute-btn, body.on-char .arcade-mute-btn,
 body.on-whack .arcade-mute-btn, body.on-flappy .arcade-mute-btn,
 body.on-match .arcade-mute-btn, body.on-space .arcade-mute-btn {
-  font-size: 12px !important; letter-spacing: 1px !important;
-  padding: 6px 10px !important; border-radius: 4px !important;
-}
-body.on-whack .nav-icon-btn, body.on-flappy .nav-icon-btn,
-body.on-match .nav-icon-btn, body.on-space .nav-icon-btn {
-  font-size: 12px !important; padding: 6px 10px !important;
-  letter-spacing: 2px !important; width: auto !important;
+  font-size: 11px !important; letter-spacing: 1px !important;
+  padding: 5px 9px !important; border-radius: 4px !important;
 }
 /* All arcade header buttons: uniform height */
 body.on-lobby .cats-header button, body.on-char .cats-header button,
 body.on-whack .cats-header button, body.on-flappy .cats-header button,
 body.on-match .cats-header button, body.on-space .cats-header button {
-  height: 40px !important;
+  height: 32px !important;
   box-sizing: border-box !important;
   display: inline-flex !important;
   align-items: center !important;
@@ -2047,7 +2042,7 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 /* ══════════════════════════════════════
    GAMES
 ══════════════════════════════════════ */
-#pg-lobby { min-height: 100dvh; position: relative; z-index: 1; }
+#pg-lobby { height: 100dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; z-index: 1; }
 .lobby-wrap { padding: 10px 0 48px; display: flex; flex-direction: column; gap: 12px; position: relative; }
 
 /* ── Character Select Screen ── */
@@ -2293,7 +2288,7 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 #whack-timer-val.urgent { color: #ff4444; animation: whack-blink 0.5s infinite; }
 @keyframes whack-blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
 .whack-grid {
-  --hole-sz: min(26vw, calc((100dvh - 310px) / 4), 100px);
+  --hole-sz: min(26vw, calc((100dvh - 278px) / 4), 100px);
   display: grid;
   grid-template-columns: repeat(3, var(--hole-sz));
   grid-template-rows: repeat(4, var(--hole-sz));
@@ -2425,7 +2420,7 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 #pg-space.active { display: flex; }
 #space-canvas { flex: 1; width: 100%; display: block; touch-action: none; }
 #space-overlay {
-  position: fixed; left: 0; right: 0; bottom: 0; top: 88px;
+  position: fixed; left: 0; right: 0; bottom: 0; top: 56px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 16px; z-index: 10;
   background: rgba(5, 2, 16, 0.88);
@@ -3473,6 +3468,7 @@ function nav(p) {
   if (isArcade && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
   if (!isArcade) ArcadeMusic.stop();
   if (onLobby || onCharSelect) ArcadeMusic.unduck();
+  if (onWhack || onFlappy || onMatch || onSpace) ArcadeMusic.duck();
 
   if(onLobby) {
     // Show char select on every fresh page load (session flag, not localStorage)
@@ -3635,6 +3631,7 @@ function openSpot() {
   // home page into a weird position while bringing the focused input into view.
   document.body.style.overflow = 'hidden';
   ov.classList.add('open');
+  if (window.visualViewport) ov.style.height = window.visualViewport.height + 'px';
   ov.scrollTop = 0;
   void ov.offsetHeight; // force layout to commit the overlay before focus() runs
   document.getElementById('spotQ').value = '';
@@ -3647,7 +3644,19 @@ function openSpot() {
 function closeSpot() {
   document.getElementById('spotQ').blur();
   document.getElementById('spot-overlay').classList.remove('open');
+  document.getElementById('spot-overlay').style.height = '';
   document.body.style.overflow = '';
+}
+// Keyboard opening shrinks the *visual* viewport but position:fixed;inset:0 is sized to
+// the *layout* viewport, which doesn't shrink — that mismatch is what pushes the search
+// box/keyboard combo off-screen. Lock the overlay's actual height to the visual viewport.
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    const ov = document.getElementById('spot-overlay');
+    if (ov && ov.classList.contains('open')) {
+      ov.style.height = window.visualViewport.height + 'px';
+    }
+  });
 }
 // Backdrop tap: on mobile just close keyboard; on desktop close overlay
 document.getElementById('spot-overlay').addEventListener('click', e => {
@@ -4094,11 +4103,10 @@ heroCassette.addEventListener('animationend', function() {
 <!-- ── WHACK-A-MOBE ── -->
 <div id="pg-whack" class="page">
   <div class="cats-header">
-    <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('home')">✕ EXIT ARCADE</button>
+    <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE MENU</button>
     <div style="display:flex;align-items:center;gap:8px">
       <button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
       <button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
-      <button class="nav-icon-btn" onclick="SFX.menuSelect();nav('lobby')" style="font-family:'VCR',monospace;font-size:9px;letter-spacing:2px;width:auto;padding:5px 10px;color:rgba(242,239,232,0.85);border:1px solid rgba(242,239,232,0.25);border-radius:4px;background:rgba(242,239,232,0.06)">◀ MENU</button>
     </div>
   </div>
   <div class="whack-wrap" id="whack-wrap">
@@ -4109,11 +4117,10 @@ heroCassette.addEventListener('animationend', function() {
 <!-- ── FLAPPY RUN ── -->
 <div id="pg-flappy" class="page">
   <div class="cats-header">
-    <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('home')">✕ EXIT ARCADE</button>
+    <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE MENU</button>
     <div style="display:flex;align-items:center;gap:8px">
       <button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
       <button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
-      <button class="nav-icon-btn" onclick="SFX.menuSelect();nav('lobby')" style="font-family:'VCR',monospace;font-size:9px;letter-spacing:2px;width:auto;padding:5px 10px;color:rgba(242,239,232,0.85);border:1px solid rgba(242,239,232,0.25);border-radius:4px;background:rgba(242,239,232,0.06)">◀ MENU</button>
     </div>
   </div>
   <canvas id="flappy-canvas"></canvas>
@@ -4127,11 +4134,10 @@ heroCassette.addEventListener('animationend', function() {
 <!-- ── MEMORY MATCH ── -->
 <div id="pg-match" class="page">
   <div class="cats-header">
-    <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('home')">✕ EXIT ARCADE</button>
+    <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE MENU</button>
     <div style="display:flex;align-items:center;gap:8px">
       <button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
       <button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
-      <button class="nav-icon-btn" onclick="SFX.menuSelect();nav('lobby')" style="font-family:'VCR',monospace;font-size:9px;letter-spacing:2px;width:auto;padding:5px 10px;color:rgba(242,239,232,0.85);border:1px solid rgba(242,239,232,0.25);border-radius:4px;background:rgba(242,239,232,0.06)">◀ MENU</button>
     </div>
   </div>
   <div id="match-wrap" class="match-wrap">
@@ -4142,11 +4148,10 @@ heroCassette.addEventListener('animationend', function() {
 <!-- ── SPACE MOBE ── -->
 <div id="pg-space" class="page">
   <div class="cats-header">
-    <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('home')">✕ EXIT ARCADE</button>
+    <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE MENU</button>
     <div style="display:flex;align-items:center;gap:8px">
       <button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
       <button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
-      <button class="nav-icon-btn" onclick="SFX.menuSelect();nav('lobby')" style="font-family:'VCR',monospace;font-size:9px;letter-spacing:2px;width:auto;padding:5px 10px;color:rgba(242,239,232,0.85);border:1px solid rgba(242,239,232,0.25);border-radius:4px;background:rgba(242,239,232,0.06)">◀ MENU</button>
     </div>
   </div>
   <canvas id="space-canvas"></canvas>
@@ -4704,44 +4709,50 @@ function ticketConfetti() {
 //  ARCADE MUSIC
 // ══════════════════════════════════════
 const ArcadeMusic = (() => {
-  let muted = false, fadeTimer = null;
-  const FULL_VOL = 0.04, DUCK_VOL = 0.02;
+  let muted = false;
+  const FULL_VOL = 0.04, DUCK_VOL = 0.01;
 
-  const audio = new Audio('arcademusic.mp3');
-  audio.loop = true;
-  audio.volume = FULL_VOL;
+  // Two separate elements, each with its own fixed volume set once — ducking just
+  // switches which one is playing, instead of animating .volume on a shared instance
+  // (which is fragile to get right and has had cross-browser/mobile issues here before).
+  const menuTrack = new Audio('arcademusic.mp3');
+  menuTrack.loop = true;
+  menuTrack.volume = FULL_VOL;
 
-  function fadeTo(target, ms) {
-    clearInterval(fadeTimer);
-    const steps = Math.ceil(ms / 20);
-    let step = 0;
-    fadeTimer = setInterval(() => {
-      step++;
-      audio.volume = Math.min(1, Math.max(0,
-        audio.volume + (target - audio.volume) * (step / (steps - step + 1))
-      ));
-      if (step >= steps || Math.abs(audio.volume - target) < 0.005) {
-        audio.volume = target;
-        clearInterval(fadeTimer);
-      }
-    }, 20);
+  const gameTrack = new Audio('arcademusic.mp3');
+  gameTrack.loop = true;
+  gameTrack.volume = DUCK_VOL;
+
+  let active = menuTrack;
+
+  function switchTo(track) {
+    if (active === track) return;
+    const prev = active;
+    active = track;
+    if (muted) return;
+    try { track.currentTime = prev.currentTime; } catch (e) {}
+    track.play().catch(() => {});
+    prev.pause();
   }
 
   return {
     start() {
       if (muted) return;
-      audio.play().catch(() => {});
+      active.play().catch(() => {});
     },
-    stop() { audio.pause(); audio.currentTime = 0; },
-    duck()   { fadeTo(DUCK_VOL, 400); },
-    unduck() { fadeTo(FULL_VOL, 600); },
+    stop() {
+      menuTrack.pause(); gameTrack.pause();
+      menuTrack.currentTime = 0; gameTrack.currentTime = 0;
+    },
+    duck()   { switchTo(gameTrack); },
+    unduck() { switchTo(menuTrack); },
     toggleMute() {
       muted = !muted;
-      if (muted) { audio.pause(); } else { audio.volume = FULL_VOL; audio.play().catch(() => {}); }
+      if (muted) { active.pause(); } else { active.play().catch(() => {}); }
       return muted;
     },
     get muted()   { return muted; },
-    get playing() { return !audio.paused; },
+    get playing() { return !active.paused; },
   };
 })();
 
@@ -5257,8 +5268,8 @@ window.confirmCharSelect = function() {
           <div style="text-align:center"><div style="font-family:'VCR',monospace;font-size:8px;letter-spacing:2px;opacity:0.5">WAVE</div><div style="font-family:'Bebas Neue',cursive;font-size:32px;line-height:1;color:#ffe61a;text-shadow:0 0 10px #ffe61a88">${wave}</div></div>
           ${hudRight}
         </div>
-        <div style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;max-width:420px;margin:6px auto;padding:6px 10px;background:linear-gradient(90deg, ${youGc.color}1c, transparent 48%, transparent 52%, #ff44441c);border:1px solid rgba(242,239,232,0.12);border-radius:8px">
-          <div style="width:60px;height:60px;border-radius:9px;overflow:hidden;border:2.5px solid ${youGc.color};background:${youGc.color}22;box-shadow:0 0 16px ${youGc.color}66;flex-shrink:0">${charFace(youGc,'normal')}</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;max-width:420px;margin:6px auto;padding:6px 10px;background:linear-gradient(90deg, #33ff661c, transparent 48%, transparent 52%, #ff44441c);border:1px solid rgba(242,239,232,0.12);border-radius:8px">
+          <div style="width:60px;height:60px;border-radius:9px;overflow:hidden;border:2.5px solid #33ff66;background:#33ff6622;box-shadow:0 0 16px #33ff6666;flex-shrink:0">${charFace(youGc,'normal')}</div>
           <div style="flex:1;text-align:left;font-family:'Bebas Neue',cursive;font-size:19px;letter-spacing:2px;color:#ff4444;text-shadow:0 0 10px #ff444488;line-height:1.05">DON'T<br>WHACK</div>
           <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;color:#ffe61a;text-shadow:0 0 14px #ffe61a,0 0 28px #ffe61a66;flex-shrink:0;padding:0 2px">VS</div>
           <div style="flex:1;text-align:right;font-family:'Bebas Neue',cursive;font-size:19px;letter-spacing:2px;color:#33ff66;text-shadow:0 0 10px #33ff6688;line-height:1.05">WHACK</div>

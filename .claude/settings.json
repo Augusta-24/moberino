@@ -26,7 +26,8 @@
       "Bash(curl -sk \"https://www.moberino.com/\" -o /tmp/live2.html -w \"HTTP %{http_code}, size %{size_download}\\\\n\")",
       "Bash(grep -n \"setTimeout\\(\\(\\) => { state = 'over'; render\\(\\); }, 3000\\)\" index.html)",
       "Bash(curl -sk \"https://www.moberino.com/\")",
-      "Bash(curl -sk \"https://www.moberino.com/\" -o /tmp/live3.html -w \"HTTP %{http_code}, size %{size_download}\\\\n\")"
+      "Bash(curl -sk \"https://www.moberino.com/\" -o /tmp/live3.html -w \"HTTP %{http_code}, size %{size_download}\\\\n\")",
+      "Bash(grep -n \"youGc.color}22;box-shadow:0 0 16px \\\\${youGc.color}66\" index.html)"
     ]
   }
 }
