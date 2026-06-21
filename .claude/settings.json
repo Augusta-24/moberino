@@ -23,7 +23,8 @@
       "Bash(curl -sI \"https://augusta-24.github.io/moberino/\")",
       "Bash(curl -s \"https://www.moberino.com/\" -o /tmp/live.html)",
       "Bash(curl -sI \"https://www.moberino.com/\")",
-      "Bash(curl -sk \"https://www.moberino.com/\" -o /tmp/live2.html -w \"HTTP %{http_code}, size %{size_download}\\\\n\")"
+      "Bash(curl -sk \"https://www.moberino.com/\" -o /tmp/live2.html -w \"HTTP %{http_code}, size %{size_download}\\\\n\")",
+      "Bash(grep -n \"setTimeout\\(\\(\\) => { state = 'over'; render\\(\\); }, 3000\\)\" index.html)"
     ]
   }
 }

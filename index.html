@@ -5229,18 +5229,18 @@ window.confirmCharSelect = function() {
           <div style="text-align:center"><div style="font-family:'VCR',monospace;font-size:8px;letter-spacing:2px;opacity:0.5">WAVE</div><div style="font-family:'Bebas Neue',cursive;font-size:32px;line-height:1;color:#ffe61a;text-shadow:0 0 10px #ffe61a88">${wave}</div></div>
           ${hudRight}
         </div>
-        <div style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;max-width:420px;margin:10px auto 12px;padding:10px 16px;background:linear-gradient(90deg, ${youGc.color}1c, transparent 48%, transparent 52%, #ff44441c);border:1px solid rgba(242,239,232,0.12);border-radius:8px">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1">
-            <div style="width:52px;height:52px;border-radius:8px;overflow:hidden;border:2px solid ${youGc.color};background:${youGc.color}22;box-shadow:0 0 14px ${youGc.color}66">${charFace(youGc,'normal')}</div>
-            <div style="font-family:'Bebas Neue',cursive;font-size:14px;letter-spacing:2px;color:${youGc.color};text-shadow:0 0 8px ${youGc.color}88;line-height:1">${youGc.name}</div>
-            <div style="font-family:'VCR',monospace;font-size:8px;letter-spacing:2px;opacity:0.45">YOU</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;max-width:420px;margin:10px auto 12px;padding:10px 14px;background:linear-gradient(90deg, ${youGc.color}1c, transparent 48%, transparent 52%, #ff44441c);border:1px solid rgba(242,239,232,0.12);border-radius:8px">
+          <div style="width:64px;height:64px;border-radius:9px;overflow:hidden;border:2.5px solid ${youGc.color};background:${youGc.color}22;box-shadow:0 0 16px ${youGc.color}66;flex-shrink:0">${charFace(youGc,'normal')}</div>
+          <div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;flex:1;min-width:0">
+            <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:1.5px;color:#ff4444;text-shadow:0 0 8px #ff444488;white-space:nowrap">⚠ DON'T WHACK</div>
+            <div style="font-family:'Bebas Neue',cursive;font-size:15px;letter-spacing:2px;color:${youGc.color};line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${youGc.name}</div>
           </div>
-          <div style="font-family:'Bebas Neue',cursive;font-size:26px;letter-spacing:3px;color:#ffe61a;text-shadow:0 0 14px #ffe61a,0 0 28px #ffe61a66;flex-shrink:0">VS</div>
-          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1">
-            <div style="width:52px;height:52px;border-radius:8px;overflow:hidden;border:2px solid #ff4444;background:#ff444422;box-shadow:0 0 14px #ff444466;transform:scaleX(-1)">${charFace(moleGc,'normal')}</div>
-            <div style="font-family:'Bebas Neue',cursive;font-size:14px;letter-spacing:2px;color:#ff4444;text-shadow:0 0 8px #ff444488;line-height:1">${moleGc.name}</div>
-            <div style="font-family:'VCR',monospace;font-size:8px;letter-spacing:2px;color:#ff4444;opacity:0.7">WHACK</div>
+          <div style="font-family:'Bebas Neue',cursive;font-size:24px;letter-spacing:3px;color:#ffe61a;text-shadow:0 0 14px #ffe61a,0 0 28px #ffe61a66;flex-shrink:0;padding:0 2px">VS</div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:1;min-width:0">
+            <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:1.5px;color:#33ff66;text-shadow:0 0 8px #33ff6688;white-space:nowrap">WHACK ▶</div>
+            <div style="font-family:'Bebas Neue',cursive;font-size:15px;letter-spacing:2px;color:#ff4444;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${moleGc.name}</div>
           </div>
+          <div style="width:64px;height:64px;border-radius:9px;overflow:hidden;border:2.5px solid #ff4444;background:#ff444422;box-shadow:0 0 16px #ff444466;transform:scaleX(-1);flex-shrink:0">${charFace(moleGc,'normal')}</div>
         </div>
         <div class="whack-grid" id="whack-grid">${
           Array.from({length:HOLES},(_,i)=>
@@ -5343,8 +5343,8 @@ window.confirmCharSelect = function() {
     let picked = moleChar;
     if (selfActive && Math.random() > 0.72) picked = activeChar;
 
-    // Tease glow: 80% real hole, 20% decoy
-    const useDecoy = Math.random() < 0.20;
+    // Tease glow: 30% real hole, 70% decoy — still want them to fall for it
+    const useDecoy = Math.random() < 0.70;
     let teaseIdx = i;
     if (useDecoy) {
       const decoys = Array.from({length:HOLES},(_,j)=>j).filter(j=>j!==i&&holeStates[j]==='empty');
@@ -5388,7 +5388,7 @@ window.confirmCharSelect = function() {
         hole.classList.remove('up');
         if (strikes < 3) scheduleSurvivalNext();
       }, 380);
-      if (strikes >= 3) setTimeout(() => { holeTimers.forEach(clearTimeout); SFX.over(); setTimeout(() => { state = 'over'; render(); }, 3000); }, 500);
+      if (strikes >= 3) setTimeout(() => { holeTimers.forEach(clearTimeout); SFX.over(); setTimeout(() => { state = 'over'; render(); }, 600); }, 500);
       return;
     }
 
@@ -5467,7 +5467,7 @@ window.confirmCharSelect = function() {
       if (strikes >= 3) {
         holeTimers.forEach(clearTimeout);
         SFX.over();
-        setTimeout(() => { state = 'over'; render(); }, 3000);
+        setTimeout(() => { state = 'over'; render(); }, 600);
       } else {
         setTimeout(() => popDown(i, true), 420);
       }
