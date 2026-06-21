@@ -1554,9 +1554,21 @@ body.rec-open { overflow-y: auto; }
   flex-direction: column;
   align-items: center;
   padding: 0 16px;
+  /* Reserve space for the now-fixed .spot-top-bar so content starts below it */
+  padding-top: calc(env(safe-area-inset-top, 0px) + 100px);
   overscroll-behavior: contain;
 }
 #spot-overlay.open { display: flex; }
+/* Pinned via position:fixed (not normal flow) so the keyboard's native "scroll input
+   into view" can't drag this off-screen on the first focus — it's already anchored
+   to a fixed screen position, immune to any scroll/viewport-shift behavior. */
+.spot-top-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 5;
+  display: flex; flex-direction: column; align-items: center;
+  background: rgba(8,16,42,0.92);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  padding: 0 16px;
+}
 .spot-close {
   background: none; border: none;
   color: rgba(242,239,232,0.65); cursor: pointer;
@@ -1578,6 +1590,7 @@ body.rec-open { overflow-y: auto; }
   background: rgba(180,190,220,0.12);
   border: 1px solid rgba(242,239,232,0.30);
   padding: 13px 16px;
+  margin-bottom: 12px;
   flex-shrink: 0;
 }
 .spot-box input {
@@ -2318,6 +2331,13 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 }
 .whack-hole.up    { box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 14px rgba(255,0,204,0.22); }
 .whack-hole.hit   { box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 20px rgba(255,230,26,0.55); }
+/* Correct-mole hit: no yellow glow — it was bleeding through behind the sad face */
+.whack-hole.hit-success { box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e; }
+@keyframes crack-in {
+  0%   { opacity: 0; transform: scale(0.7); }
+  40%  { opacity: 0.9; transform: scale(1.05); }
+  100% { opacity: 0.6; transform: scale(1); }
+}
 .whack-char {
   position: absolute; bottom: -100%; left: 50%;
   transform: translateX(-50%);
@@ -2329,6 +2349,27 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 .whack-hole.up .whack-char { bottom: 4%; }
 .whack-hole.hit .whack-char { bottom: 4%; }
 .whack-hole.wrong-hit .whack-char { bottom: 4%; }
+.whack-tint {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 4;
+}
+.whack-tint.show { opacity: 1; }
+.whack-miss-x {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Bebas Neue', cursive;
+  font-size: 42px; color: #ff4444;
+  text-shadow: 0 0 14px #ff4444, 0 0 4px #000;
+  pointer-events: none;
+  opacity: 0; transform: scale(0.6);
+  transition: opacity 0.15s, transform 0.15s;
+  z-index: 6;
+}
+.whack-miss-x.show { opacity: 1; transform: scale(1); }
 .whack-hole.wrong-hit { border-color: rgba(255,60,60,0.9); box-shadow: 0 0 24px rgba(255,0,0,0.55); }
 .whack-hole.teasing {
   box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 22px rgba(255,220,30,0.6), 0 0 6px rgba(255,180,0,0.35);
@@ -2826,12 +2867,14 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 
 <!-- ── SPOTLIGHT SEARCH OVERLAY ── -->
 <div id="spot-overlay">
-  <button class="spot-close" onclick="closeSpot()" aria-label="Close search">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    CLOSE SEARCH
-  </button>
-  <div class="spot-box">
-    <input id="spotQ" type="search" placeholder="SEARCH 258 MEMORIES..." autocomplete="off" spellcheck="false">
+  <div class="spot-top-bar">
+    <button class="spot-close" onclick="closeSpot()" aria-label="Close search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      CLOSE SEARCH
+    </button>
+    <div class="spot-box">
+      <input id="spotQ" type="search" placeholder="SEARCH 258 MEMORIES..." autocomplete="off" spellcheck="false">
+    </div>
   </div>
   <div id="spot-meta"></div>
   <div id="spot-results"></div>
@@ -5136,6 +5179,13 @@ window.confirmCharSelect = function() {
 (function() {
   const HOLES = 12;
   const HEART_IDX = -2; // sentinel for heart holes
+  // Cracked-glass overlay shown on top of the sad face for a successful whack
+  const CRACK_SVG = `<svg viewBox="0 0 100 100" style="position:absolute;inset:0;pointer-events:none;animation:crack-in 0.3s ease-out forwards">
+    <g stroke="#fff" stroke-width="1.6" opacity="0.6" fill="none" stroke-linecap="round">
+      <path d="M50,48 L20,15 M50,48 L80,10 M50,48 L92,45 M50,48 L85,88 M50,48 L45,94 M50,48 L8,72 M50,48 L10,28"/>
+      <path d="M50,48 L30,30 M50,48 L66,24 M50,48 L70,66 M50,48 L34,68" stroke-width="1" opacity="0.4"/>
+    </g>
+  </svg>`;
   let state = 'idle'; // idle | instructions | playing | over
   let score = 0, hits = 0, strikes = 0, wave = 1, waveHits = 0;
   let timerInterval;
@@ -5291,9 +5341,9 @@ window.confirmCharSelect = function() {
           </div>
           <div style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding-top:4px;border-top:1px solid rgba(242,239,232,0.1)">
             <div style="width:46px;height:46px;border-radius:8px;overflow:hidden;border:2px solid #33ff66;background:#33ff6622;box-shadow:0 0 12px #33ff6666;flex-shrink:0">${charFace(youGc,'normal')}</div>
-            <div style="flex:1;text-align:left;font-family:'Bebas Neue',cursive;font-size:15px;letter-spacing:1.5px;color:#ff4444;text-shadow:0 0 8px #ff444488;line-height:1;white-space:nowrap">DON'T WHACK</div>
+            <div style="flex:1;text-align:left;font-family:'Bebas Neue',cursive;font-size:15px;letter-spacing:1.5px;color:#33ff66;text-shadow:0 0 8px #33ff6688;line-height:1;white-space:nowrap">DON'T WHACK</div>
             <div style="font-family:'Bebas Neue',cursive;font-size:17px;letter-spacing:2px;color:#ffe61a;text-shadow:0 0 10px #ffe61a;flex-shrink:0;padding:0 2px">VS</div>
-            <div style="flex:1;text-align:right;font-family:'Bebas Neue',cursive;font-size:15px;letter-spacing:1.5px;color:#33ff66;text-shadow:0 0 8px #33ff6688;line-height:1;white-space:nowrap">WHACK</div>
+            <div style="flex:1;text-align:right;font-family:'Bebas Neue',cursive;font-size:15px;letter-spacing:1.5px;color:#ff4444;text-shadow:0 0 8px #ff444488;line-height:1;white-space:nowrap">WHACK</div>
             <div style="width:46px;height:46px;border-radius:8px;overflow:hidden;border:2px solid #ff4444;background:#ff444422;box-shadow:0 0 12px #ff444466;transform:scaleX(-1);flex-shrink:0">${charFace(moleGc,'normal')}</div>
           </div>
         </div>
@@ -5301,6 +5351,8 @@ window.confirmCharSelect = function() {
           Array.from({length:HOLES},(_,i)=>
             `<div class="whack-hole" id="wh-${i}" onclick="whackHit(${i})">
                <div class="whack-char" id="wc-${i}"></div>
+               <div class="whack-tint" id="wt-${i}"></div>
+               <div class="whack-miss-x" id="wx-${i}">✕</div>
              </div>`
           ).join('')
         }</div>
@@ -5338,17 +5390,17 @@ window.confirmCharSelect = function() {
       const waveBoost = wave * 60;
       return Math.max(160, 980 - waveBoost - waveHits * 8) + Math.random() * 80;
     }
-    // HARD = steeper ramp, lower floor — gets fast much sooner
-    const waveBoost = wave * 110;
-    return Math.max(110, 900 - waveBoost - waveHits * 14) + Math.random() * 60;
+    // HARD = same starting pace as before, but ramps up more gradually wave-to-wave
+    const waveBoost = (wave - 1) * 55;
+    return Math.max(110, 790 - waveBoost - waveHits * 14) + Math.random() * 60;
   }
   function getUpTime() {
     if (difficulty === 'easy') {
       const waveBoost = wave * 80;
       return (Math.max(420, 2240 - waveBoost - waveHits * 20) + Math.random() * 120) * 0.7;
     }
-    const waveBoost = wave * 150;
-    return (Math.max(320, 1900 - waveBoost - waveHits * 28) + Math.random() * 100) * 0.62;
+    const waveBoost = (wave - 1) * 75;
+    return (Math.max(320, 1750 - waveBoost - waveHits * 28) + Math.random() * 100) * 0.62;
   }
   // How many moles can be up/scheduled at once — this is what makes "overlapping moles" real
   function concurrencyForWave(w) {
@@ -5419,8 +5471,52 @@ window.confirmCharSelect = function() {
       if (!hole || !charEl) return;
       charEl.innerHTML = charHTML(picked, 'normal');
       hole.classList.add('up');
+      setTint(i, picked);
       holeTimers[i] = setTimeout(() => popDown(i, false), getUpTime());
     }, 200);
+  }
+
+  // Subtle color cue: red = mole (whack it), green = your own character (don't)
+  function setTint(i, ci) {
+    const tint = document.getElementById(`wt-${i}`);
+    if (!tint) return;
+    if (ci === moleChar) {
+      tint.style.background = 'radial-gradient(circle, rgba(255,40,40,0.4) 0%, transparent 72%)';
+      tint.classList.add('show');
+    } else if (ci === activeChar) {
+      tint.style.background = 'radial-gradient(circle, rgba(40,255,120,0.4) 0%, transparent 72%)';
+      tint.classList.add('show');
+    } else {
+      tint.classList.remove('show');
+    }
+  }
+  function clearTint(i) {
+    const tint = document.getElementById(`wt-${i}`);
+    if (tint) tint.classList.remove('show');
+  }
+  function showMissX(i) {
+    const x = document.getElementById(`wx-${i}`);
+    if (x) x.classList.add('show');
+  }
+  function hideMissX(i) {
+    const x = document.getElementById(`wx-${i}`);
+    if (x) x.classList.remove('show');
+  }
+
+  // Faded heart flash behind the board whenever a life is lost — easy to miss otherwise
+  function flashBrokenHeart() {
+    const wrap = document.getElementById('whack-wrap');
+    if (!wrap) return;
+    wrap.style.position = 'relative';
+    const el = document.createElement('div');
+    el.style.cssText = 'position:absolute;inset:0;z-index:-1;display:flex;align-items:center;justify-content:center;pointer-events:none;font-size:min(40vw,220px);opacity:0;transition:opacity 0.25s ease-out';
+    el.textContent = '💔';
+    wrap.insertBefore(el, wrap.firstChild);
+    requestAnimationFrame(() => { el.style.opacity = '0.22'; });
+    setTimeout(() => {
+      el.style.opacity = '0';
+      setTimeout(() => el.remove(), 300);
+    }, 700);
   }
 
   function popDown(i, wasHit) {
@@ -5428,26 +5524,32 @@ window.confirmCharSelect = function() {
     holeStates[i] = 'empty'; holeCharIdx[i] = -1;
     const hole = document.getElementById(`wh-${i}`);
     if (!hole) return;
-    hole.classList.remove('up', 'hit', 'wrong-hit');
+    hole.classList.remove('up', 'hit', 'hit-success', 'wrong-hit');
 
     if (!wasHit && prev === moleChar) {
-      // Missed the mole — lose a life
+      // Missed the mole — lose a life. Hold the miss visible for a full second
+      // so it actually registers, instead of flickering past unnoticed.
       const charEl = document.getElementById(`wc-${i}`);
       if (charEl) charEl.innerHTML = charHTML(moleChar, 'happy');
       hole.classList.add('up');
+      showMissX(i);
       SFX.miss();
       strikes++;
+      flashBrokenHeart();
       showStatus('💔 MISSED MOLE');
       const lv = document.getElementById('whack-lives');
       if (lv) lv.innerHTML = livesHTML();
       setTimeout(() => {
         hole.classList.remove('up');
+        clearTint(i);
+        hideMissX(i);
         if (strikes < 3) scheduleSurvivalNext();
-      }, 380);
-      if (strikes >= 3) setTimeout(() => { holeTimers.forEach(clearTimeout); SFX.over(); freezeForGameOver(); }, 500);
+      }, 1000);
+      if (strikes >= 3) setTimeout(() => { holeTimers.forEach(clearTimeout); SFX.over(); freezeForGameOver(); }, 1050);
       return;
     }
 
+    clearTint(i);
     scheduleSurvivalNext();
   }
 
@@ -5473,7 +5575,8 @@ window.confirmCharSelect = function() {
 
     if (ci === HEART_IDX) {
       charEl.innerHTML = `<div style="font-size:44px;display:flex;align-items:center;justify-content:center;width:100%;height:100%">💖</div>`;
-      hole.classList.add('hit');
+      hole.classList.add('hit'); // genuine good outcome — keep the glow
+      clearTint(i);
       if (strikes > 0) {
         strikes--;
         const lv = document.getElementById('whack-lives');
@@ -5489,8 +5592,11 @@ window.confirmCharSelect = function() {
     }
 
     if (ci === moleChar) {
-      charEl.innerHTML = charHTML(moleChar, 'sad');
-      hole.classList.add('hit');
+      // hit-success (not 'hit') deliberately skips the yellow glow — that glow was
+      // bleeding through behind the sad face and reading like a weird character aura.
+      charEl.innerHTML = charHTML(moleChar, 'sad') + CRACK_SVG;
+      hole.classList.add('hit-success');
+      clearTint(i);
       const pop = document.createElement('div');
       pop.className = 'whack-score-pop'; pop.textContent = '+10';
       pop.style.cssText = `left:${20+Math.random()*60}%;top:${20+Math.random()*40}%`;
@@ -5511,12 +5617,14 @@ window.confirmCharSelect = function() {
       }
       setTimeout(() => popDown(i, true), 350);
     } else {
-      // Hit self — lose a life
+      // Hit self — lose a life. Hold the sad/happy face for a full second so it
+      // actually registers, same as the missed-mole case.
       const isFinalLife = strikes >= 2;
       charEl.innerHTML = charHTML(ci, isFinalLife ? 'sad' : 'happy');
       hole.classList.add('wrong-hit');
       SFX.clown();
       strikes++;
+      flashBrokenHeart();
       showStatus('💔 YOU WHACKED YOURSELF');
       const lv = document.getElementById('whack-lives');
       if (lv) lv.innerHTML = livesHTML();
@@ -5525,7 +5633,7 @@ window.confirmCharSelect = function() {
         SFX.over();
         freezeForGameOver();
       } else {
-        setTimeout(() => popDown(i, true), 420);
+        setTimeout(() => { clearTint(i); popDown(i, true); }, 1000);
       }
     }
   };
