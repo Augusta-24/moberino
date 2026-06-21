@@ -3630,7 +3630,9 @@ function openSpot() {
   document.getElementById('spotQ').value = '';
   document.getElementById('spot-results').innerHTML = '';
   document.getElementById('spot-meta').textContent = '';
-  setTimeout(() => document.getElementById('spotQ').focus(), 80);
+  // Mobile only auto-opens the keyboard if focus() runs synchronously in the tap
+  // handler that opened this — a setTimeout-deferred focus (even a short one) is too late.
+  document.getElementById('spotQ').focus();
   document.body.style.overflow = 'hidden';
 }
 function closeSpot() {
