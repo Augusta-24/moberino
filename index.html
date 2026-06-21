@@ -4712,47 +4712,30 @@ const ArcadeMusic = (() => {
   let muted = false;
   const FULL_VOL = 0.04, DUCK_VOL = 0.01;
 
-  // Two separate elements, each with its own fixed volume set once — ducking just
-  // switches which one is playing, instead of animating .volume on a shared instance
-  // (which is fragile to get right and has had cross-browser/mobile issues here before).
-  const menuTrack = new Audio('arcademusic.mp3');
-  menuTrack.loop = true;
-  menuTrack.volume = FULL_VOL;
-
-  const gameTrack = new Audio('arcademusic.mp3');
-  gameTrack.loop = true;
-  gameTrack.volume = DUCK_VOL;
-
-  let active = menuTrack;
-
-  function switchTo(track) {
-    if (active === track) return;
-    const prev = active;
-    active = track;
-    if (muted) return;
-    try { track.currentTime = prev.currentTime; } catch (e) {}
-    track.play().catch(() => {});
-    prev.pause();
-  }
+  // Single element, instant (non-animated) volume changes. Two concurrent <audio>
+  // elements was tried and reverted — iOS Safari has a long history of only giving
+  // "audio focus" to the most recently/directly gesture-unlocked element, so a second
+  // element can stay silent even when .play() resolves without error. One element,
+  // direct volume writes, is the version most likely to behave consistently everywhere.
+  const audio = new Audio('arcademusic.mp3');
+  audio.loop = true;
+  audio.volume = FULL_VOL;
 
   return {
     start() {
       if (muted) return;
-      active.play().catch(() => {});
+      audio.play().catch(() => {});
     },
-    stop() {
-      menuTrack.pause(); gameTrack.pause();
-      menuTrack.currentTime = 0; gameTrack.currentTime = 0;
-    },
-    duck()   { switchTo(gameTrack); },
-    unduck() { switchTo(menuTrack); },
+    stop() { audio.pause(); audio.currentTime = 0; },
+    duck()   { if (!muted) audio.volume = DUCK_VOL; },
+    unduck() { if (!muted) audio.volume = FULL_VOL; },
     toggleMute() {
       muted = !muted;
-      if (muted) { active.pause(); } else { active.play().catch(() => {}); }
+      if (muted) { audio.pause(); } else { audio.volume = FULL_VOL; audio.play().catch(() => {}); }
       return muted;
     },
     get muted()   { return muted; },
-    get playing() { return !active.paused; },
+    get playing() { return !audio.paused; },
   };
 })();
 
