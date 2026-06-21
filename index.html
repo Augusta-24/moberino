@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <title>MOBERINO</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Russo+One&family=Permanent+Marker&display=swap" rel="stylesheet">
@@ -2349,6 +2349,18 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 .whack-hole.up .whack-char { bottom: 4%; }
 .whack-hole.hit .whack-char { bottom: 4%; }
 .whack-hole.wrong-hit .whack-char { bottom: 4%; }
+@keyframes miss-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+.whack-hole.missed {
+  animation: miss-shake 0.35s ease-in-out;
+  box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 22px rgba(255,40,40,0.65) !important;
+  border-color: rgba(255,60,60,0.9) !important;
+}
 .whack-tint {
   position: absolute; inset: 0;
   border-radius: 50%;
@@ -2358,18 +2370,6 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
   z-index: 4;
 }
 .whack-tint.show { opacity: 1; }
-.whack-miss-x {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Bebas Neue', cursive;
-  font-size: 42px; color: #ff4444;
-  text-shadow: 0 0 14px #ff4444, 0 0 4px #000;
-  pointer-events: none;
-  opacity: 0; transform: scale(0.6);
-  transition: opacity 0.15s, transform 0.15s;
-  z-index: 6;
-}
-.whack-miss-x.show { opacity: 1; transform: scale(1); }
 .whack-hole.wrong-hit { border-color: rgba(255,60,60,0.9); box-shadow: 0 0 24px rgba(255,0,0,0.55); }
 .whack-hole.teasing {
   box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 22px rgba(255,220,30,0.6), 0 0 6px rgba(255,180,0,0.35);
@@ -3669,38 +3669,55 @@ function navHome() {
 }
 
 // ── SPOTLIGHT SEARCH ──
+// Keyboard opening shrinks the *visual* viewport, and on iOS can also pan it (offsetTop
+// becomes non-zero) — position:fixed alone doesn't reliably track either of those during
+// the keyboard's open animation. Explicitly pin the overlay + top bar to the live visual
+// viewport geometry via JS, instead of trusting CSS fixed-positioning to keep up.
+function syncSpotToViewport() {
+  const ov = document.getElementById('spot-overlay');
+  if (!ov || !ov.classList.contains('open')) return;
+  const vv = window.visualViewport;
+  if (!vv) return;
+  ov.style.height = vv.height + 'px';
+  const bar = document.querySelector('.spot-top-bar');
+  if (bar) bar.style.top = vv.offsetTop + 'px';
+}
+
 function openSpot() {
   const ov = document.getElementById('spot-overlay');
   // Lock body scroll BEFORE focusing — otherwise iOS can scroll the underlying
   // home page into a weird position while bringing the focused input into view.
   document.body.style.overflow = 'hidden';
   ov.classList.add('open');
-  if (window.visualViewport) ov.style.height = window.visualViewport.height + 'px';
   ov.scrollTop = 0;
   void ov.offsetHeight; // force layout to commit the overlay before focus() runs
+  syncSpotToViewport();
   document.getElementById('spotQ').value = '';
   document.getElementById('spot-results').innerHTML = '';
   document.getElementById('spot-meta').textContent = '';
   // Mobile only auto-opens the keyboard if focus() runs synchronously in the tap
   // handler that opened this — a setTimeout-deferred focus (even a short one) is too late.
   document.getElementById('spotQ').focus();
+  // Re-sync repeatedly through the keyboard's open animation (not just once on 'resize')
+  // since iOS can fire viewport changes in several small steps rather than one clean jump.
+  let _syncTries = 0;
+  const _syncInterval = setInterval(() => {
+    syncSpotToViewport();
+    if (++_syncTries > 15) clearInterval(_syncInterval);
+  }, 50);
 }
 function closeSpot() {
   document.getElementById('spotQ').blur();
-  document.getElementById('spot-overlay').classList.remove('open');
-  document.getElementById('spot-overlay').style.height = '';
+  const ov = document.getElementById('spot-overlay');
+  ov.classList.remove('open');
+  ov.style.height = '';
+  const bar = document.querySelector('.spot-top-bar');
+  if (bar) bar.style.top = '';
   document.body.style.overflow = '';
 }
-// Keyboard opening shrinks the *visual* viewport but position:fixed;inset:0 is sized to
-// the *layout* viewport, which doesn't shrink — that mismatch is what pushes the search
-// box/keyboard combo off-screen. Lock the overlay's actual height to the visual viewport.
 if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', () => {
-    const ov = document.getElementById('spot-overlay');
-    if (ov && ov.classList.contains('open')) {
-      ov.style.height = window.visualViewport.height + 'px';
-    }
-  });
+  window.visualViewport.addEventListener('resize', syncSpotToViewport);
+  window.visualViewport.addEventListener('scroll', syncSpotToViewport);
 }
 // Backdrop tap: on mobile just close keyboard; on desktop close overlay
 document.getElementById('spot-overlay').addEventListener('click', e => {
@@ -5352,7 +5369,6 @@ window.confirmCharSelect = function() {
             `<div class="whack-hole" id="wh-${i}" onclick="whackHit(${i})">
                <div class="whack-char" id="wc-${i}"></div>
                <div class="whack-tint" id="wt-${i}"></div>
-               <div class="whack-miss-x" id="wx-${i}">✕</div>
              </div>`
           ).join('')
         }</div>
@@ -5494,29 +5510,33 @@ window.confirmCharSelect = function() {
     const tint = document.getElementById(`wt-${i}`);
     if (tint) tint.classList.remove('show');
   }
-  function showMissX(i) {
-    const x = document.getElementById(`wx-${i}`);
-    if (x) x.classList.add('show');
-  }
-  function hideMissX(i) {
-    const x = document.getElementById(`wx-${i}`);
-    if (x) x.classList.remove('show');
-  }
 
   // Faded heart flash behind the board whenever a life is lost — easy to miss otherwise
   function flashBrokenHeart() {
-    const wrap = document.getElementById('whack-wrap');
-    if (!wrap) return;
-    wrap.style.position = 'relative';
+    // Fixed overlay above everything (not "behind the board" — that put it behind the
+    // opaque hole tiles where it was nearly invisible). Click-through, so it never
+    // blocks the next tap, but it's now actually visible.
     const el = document.createElement('div');
-    el.style.cssText = 'position:absolute;inset:0;z-index:-1;display:flex;align-items:center;justify-content:center;pointer-events:none;font-size:min(40vw,220px);opacity:0;transition:opacity 0.25s ease-out';
+    el.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;pointer-events:none;font-size:min(35vw,180px);opacity:0;transition:opacity 0.18s ease-out';
     el.textContent = '💔';
-    wrap.insertBefore(el, wrap.firstChild);
-    requestAnimationFrame(() => { el.style.opacity = '0.22'; });
+    document.body.appendChild(el);
+    requestAnimationFrame(() => { el.style.opacity = '0.38'; });
     setTimeout(() => {
       el.style.opacity = '0';
-      setTimeout(() => el.remove(), 300);
-    }, 700);
+      setTimeout(() => el.remove(), 250);
+    }, 650);
+  }
+
+  // Same floating-text pattern as the score pop, just red and centered — used for misses.
+  // Note: score-pop's keyframe animates `transform`, which would stomp any inline
+  // transform used for centering — so center via left/right + text-align instead.
+  function popText(holeEl, text) {
+    const pop = document.createElement('div');
+    pop.className = 'whack-score-pop';
+    pop.textContent = text;
+    pop.style.cssText = 'left:0;right:0;top:36%;text-align:center;font-size:14px;color:#ff4444;letter-spacing:1.5px;text-shadow:0 0 8px #ff444488;z-index:7';
+    holeEl.appendChild(pop);
+    setTimeout(() => pop.remove(), 700);
   }
 
   function popDown(i, wasHit) {
@@ -5531,8 +5551,8 @@ window.confirmCharSelect = function() {
       // so it actually registers, instead of flickering past unnoticed.
       const charEl = document.getElementById(`wc-${i}`);
       if (charEl) charEl.innerHTML = charHTML(moleChar, 'happy');
-      hole.classList.add('up');
-      showMissX(i);
+      hole.classList.add('up', 'missed');
+      popText(hole, 'MISSED!');
       SFX.miss();
       strikes++;
       flashBrokenHeart();
@@ -5540,9 +5560,8 @@ window.confirmCharSelect = function() {
       const lv = document.getElementById('whack-lives');
       if (lv) lv.innerHTML = livesHTML();
       setTimeout(() => {
-        hole.classList.remove('up');
+        hole.classList.remove('up', 'missed');
         clearTint(i);
-        hideMissX(i);
         if (strikes < 3) scheduleSurvivalNext();
       }, 1000);
       if (strikes >= 3) setTimeout(() => { holeTimers.forEach(clearTimeout); SFX.over(); freezeForGameOver(); }, 1050);
@@ -5641,12 +5660,26 @@ window.confirmCharSelect = function() {
   function announceWave(w) {
     waveAnnouncing = true;
     holeTimers.forEach(clearTimeout);
+    // Clearing the timers above only cancels the scheduled pop-down — any hole that was
+    // already visibly 'up' would otherwise stay frozen on screen (clickable, but with no
+    // way to resolve itself) for the whole banner, which is both a stuck-state bug and
+    // an unfair miss waiting to happen while attention is on the banner. Force-clear them
+    // with no penalty instead.
+    for (let i = 0; i < HOLES; i++) {
+      if (holeStates[i] === 'up') {
+        holeStates[i] = 'empty'; holeCharIdx[i] = -1;
+        const hole = document.getElementById(`wh-${i}`), charEl = document.getElementById(`wc-${i}`);
+        if (hole) hole.classList.remove('up', 'hit', 'hit-success', 'wrong-hit', 'teasing', 'missed');
+        if (charEl) charEl.innerHTML = '';
+        clearTint(i);
+      }
+    }
     const ann = document.createElement('div');
     ann.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none';
     const colors = ['#ff00cc','#00e5ff','#ffe61a','#ff4444','#33ff66'];
     const nc = colors[(w-2) % colors.length];
     ann.innerHTML = `
-      <div style="text-align:center;animation:wave-announce 1.6s ease-out forwards">
+      <div style="text-align:center;animation:wave-announce 1.9s ease-out forwards">
         <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:5px;color:${nc};margin-bottom:4px">INCOMING</div>
         <div style="font-family:'Bebas Neue',cursive;font-size:72px;letter-spacing:10px;color:${nc};text-shadow:0 0 20px ${nc},0 0 40px ${nc}66;line-height:1">WAVE ${w}</div>
       </div>`;
@@ -5657,7 +5690,7 @@ window.confirmCharSelect = function() {
       waveAnnouncing = false;
       const n = concurrencyForWave(w);
       for (let k = 0; k < n; k++) scheduleSurvivalNext();
-    }, 1600);
+    }, 1900);
   }
 
   window.whackBack = function() { state = 'idle'; render(); ArcadeMusic.unduck(); };
