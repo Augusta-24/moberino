@@ -4709,33 +4709,69 @@ function ticketConfetti() {
 //  ARCADE MUSIC
 // ══════════════════════════════════════
 const ArcadeMusic = (() => {
-  let muted = false;
+  let muted = false, started = false;
   const FULL_VOL = 0.04, DUCK_VOL = 0.01;
+  let targetVol = FULL_VOL;
+  let gainNode = null, sourceNode = null, audioBuffer = null, loadStarted = false;
 
-  // Single element, instant (non-animated) volume changes. Two concurrent <audio>
-  // elements was tried and reverted — iOS Safari has a long history of only giving
-  // "audio focus" to the most recently/directly gesture-unlocked element, so a second
-  // element can stay silent even when .play() resolves without error. One element,
-  // direct volume writes, is the version most likely to behave consistently everywhere.
-  const audio = new Audio('arcademusic.mp3');
-  audio.loop = true;
-  audio.volume = FULL_VOL;
+  // Web Audio API, not a plain <audio> element — a looping <audio>/<video> element can
+  // get silently promoted by iOS to a real background media session (lock-screen "Now
+  // Playing" card, continues after leaving Safari). Once that happens, the ACTUAL volume
+  // is driven by the phone's hardware volume slider, not audio.volume — which is exactly
+  // why ducking did nothing and it played painfully loud on mobile only. Web Audio output
+  // is never promoted that way: no lock-screen card, no background continuation, and the
+  // GainNode directly attenuates the signal regardless of hardware volume position.
+  function loadBuffer() {
+    if (loadStarted) return;
+    loadStarted = true;
+    const ctx = getAudioCtx();
+    gainNode = ctx.createGain();
+    gainNode.gain.value = muted ? 0 : targetVol;
+    gainNode.connect(ctx.destination);
+    fetch('arcademusic.mp3')
+      .then(r => r.arrayBuffer())
+      .then(data => ctx.decodeAudioData(data))
+      .then(buf => { audioBuffer = buf; if (started) playSource(); })
+      .catch(() => {});
+  }
+
+  function playSource() {
+    if (!audioBuffer || sourceNode) return;
+    const ctx = getAudioCtx();
+    sourceNode = ctx.createBufferSource();
+    sourceNode.buffer = audioBuffer;
+    sourceNode.loop = true;
+    sourceNode.connect(gainNode);
+    sourceNode.start(0);
+  }
+
+  function stopSource() {
+    if (sourceNode) { try { sourceNode.stop(); } catch (e) {} sourceNode.disconnect(); sourceNode = null; }
+  }
+
+  function startPlayback() {
+    started = true;
+    loadBuffer();
+    playSource();
+  }
 
   return {
     start() {
       if (muted) return;
-      audio.play().catch(() => {});
+      startPlayback();
     },
-    stop() { audio.pause(); audio.currentTime = 0; },
-    duck()   { if (!muted) audio.volume = DUCK_VOL; },
-    unduck() { if (!muted) audio.volume = FULL_VOL; },
+    stop() { started = false; stopSource(); },
+    duck()   { targetVol = DUCK_VOL; if (gainNode && !muted) gainNode.gain.value = DUCK_VOL; },
+    unduck() { targetVol = FULL_VOL; if (gainNode && !muted) gainNode.gain.value = FULL_VOL; },
     toggleMute() {
       muted = !muted;
-      if (muted) { audio.pause(); } else { audio.volume = FULL_VOL; audio.play().catch(() => {}); }
+      if (gainNode) gainNode.gain.value = muted ? 0 : targetVol;
+      if (muted) { stopSource(); started = false; }
+      else { startPlayback(); }
       return muted;
     },
     get muted()   { return muted; },
-    get playing() { return !audio.paused; },
+    get playing() { return !!sourceNode; },
   };
 })();
 
