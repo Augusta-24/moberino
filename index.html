@@ -1639,17 +1639,22 @@ body.rec-open { overflow-y: auto; }
 #spot-results .vcard-grad { display: none; }
 
 /* ── MOBILE/TABLET: STICKY SUB-PAGE HEADER ── */
-@media (max-width: 1023px) {
+/* Scroll-locking must key off touch capability, not screen width — an iPad in
+   landscape (or a large iPad Pro even in portrait) easily exceeds 1023px and would
+   fall outside a width-only rule, leaving html/body free to rubber-band/bounce on
+   touch-drag even with no real extra content. (pointer:coarse) catches any
+   touch-primary device regardless of screen size. */
+@media (pointer: coarse) {
   /* Lock html/body — pages scroll themselves */
   html, body { height: 100%; overflow: hidden; }
 
   /* Scrollable pages each become their own scroll container */
-  #pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active, #pg-charselect.active {
+  #pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active, #pg-charselect.active,
+  #pg-lobby.active, #pg-whack.active {
     height: 100dvh;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
-    padding-top: 0;
   }
 
   /* Header sticky inside its own scroll container — never jitters */
@@ -1660,20 +1665,26 @@ body.rec-open { overflow-y: auto; }
     background: rgba(8,16,42,0.96);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    padding: 0px 6px 0px;
   }
-  .cats-header { height: 46px; }
-  .cats-logo-wrap { width: auto; max-width: 58vw; }
-  .cats-logo-img { display: block; height: 40px; width: auto; }
-  .cats-logo-tape { display: none; }
-  .nav-icon-btn { width: 28px; }
-  .nav-icon-btn svg { width: 18px; height: 18px; }
   /* Map header stays relative inside map's flex column */
   #pg-map .cats-header {
     position: relative;
     z-index: 10;
     border-bottom: 1px solid rgba(242,239,232,0.10);
   }
+}
+@media (max-width: 1023px) {
+  /* Purely cosmetic sizing for narrow screens — width-based is correct here,
+     this should also kick in for a narrow desktop window, touch or not. */
+  #pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active, #pg-charselect.active {
+    padding-top: 0;
+  }
+  .cats-header { height: 46px; padding: 0px 6px 0px; }
+  .cats-logo-wrap { width: auto; max-width: 58vw; }
+  .cats-logo-img { display: block; height: 40px; width: auto; }
+  .cats-logo-tape { display: none; }
+  .nav-icon-btn { width: 28px; }
+  .nav-icon-btn svg { width: 18px; height: 18px; }
 }
 
 /* ── SPOTLIGHT: SLIDE UP ON MOBILE/TABLET ── */
@@ -2491,20 +2502,6 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
   80%  { opacity:1; transform:scale(1) translateY(0); }
   100% { opacity:0; transform:scale(0.95) translateY(-10px); }
 }
-#space-controls {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 8px 16px max(16px, env(safe-area-inset-bottom, 0px));
-  background: rgba(0,0,0,0.35); gap: 10px; z-index: 5; position: relative;
-}
-.space-ctrl-btn {
-  font-family: 'VCR', monospace; font-size: 14px; letter-spacing: 2px;
-  background: rgba(242,239,232,0.08); border: 1px solid rgba(242,239,232,0.22);
-  border-radius: 8px; padding: 12px 22px; color: #fff; cursor: pointer;
-  -webkit-tap-highlight-color: transparent; user-select: none;
-  transition: background 0.1s;
-}
-.space-ctrl-btn:active { background: rgba(242,239,232,0.22); }
-
 /* ── MATCH GAME ── */
 #pg-match { height: 100dvh; overflow: hidden; position: relative; z-index: 1; display: none; flex-direction: column; }
 #pg-match.active { display: flex; }
@@ -2561,14 +2558,6 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 @keyframes matchPop {
   0%,100% { transform: rotateY(180deg) scale(1); }
   50%      { transform: rotateY(180deg) scale(1.13); }
-}
-
-@media (max-width: 1023px) {
-  #pg-lobby.active, #pg-whack.active {
-    height: 100dvh; overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
-  }
 }
 </style>
 </head>
@@ -4033,7 +4022,10 @@ heroCassette.addEventListener('animationend', function() {
           </div>
         </div>
       </div>
-      <div class="carousel-item" id="ci-flappy">
+      <!-- Flappy temporarily pulled from the carousel for this test round — not deleted,
+           just disabled. Restore by changing this div's class back to "carousel-item"
+           and removing the inline display:none. -->
+      <div class="carousel-item-disabled" id="ci-flappy" style="display:none">
         <div class="game-card" style="border-color:#00e5ff44;cursor:pointer" onclick="SFX.menuSelect();nav('flappy')">
           <div class="game-card-art" style="background:linear-gradient(180deg,#000810 0%,#001020 55%,#080800 100%)">
             <svg viewBox="0 0 200 280" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0">
@@ -4233,11 +4225,6 @@ heroCassette.addEventListener('animationend', function() {
   <canvas id="space-canvas"></canvas>
   <div id="space-overlay" class="hidden">
     <!-- filled by JS -->
-  </div>
-  <div id="space-controls">
-    <button class="space-ctrl-btn" id="sc-left" ontouchstart="spaceHold('left',true)" ontouchend="spaceHold('left',false)" onmousedown="spaceHold('left',true)" onmouseup="spaceHold('left',false)" onmouseleave="spaceHold('left',false)">◀</button>
-    <div style="font-family:'VCR',monospace;font-size:8px;letter-spacing:2px;color:rgba(242,239,232,0.35);text-align:center;line-height:1.4">AUTO<br>FIRE</div>
-    <button class="space-ctrl-btn" id="sc-right" ontouchstart="spaceHold('right',true)" ontouchend="spaceHold('right',false)" onmousedown="spaceHold('right',true)" onmouseup="spaceHold('right',false)" onmouseleave="spaceHold('right',false)">▶</button>
   </div>
 </div>
 
@@ -4721,6 +4708,9 @@ const SFX = (() => {
     win()      { [523,659,784,1047].forEach((f,i)=>tone(f,'square',i*0.09,0.14,0.07)); },
     over()     { tone(330,'sawtooth',0,0.17,0.07,200); tone(200,'sawtooth',0.12,0.26,0.08,80); },
     flap()     { tone(380,'square',0,0.06,0.05,480); },
+    // Space Mobe's blaster — softer waveform, lower pitch, quieter than flap() (which
+    // is shared with Flappy and was too loud/blocky reused here at the auto-fire rate)
+    blaster()  { tone(260,'triangle',0,0.07,0.035,180); },
     score()       { tone(784,'square',0,0.07,0.06); tone(1047,'square',0.05,0.10,0.07); },
     menuSelect()  { tone(660,'square',0,0.05,0.05); tone(880,'square',0.03,0.06,0.05); },
     charPick(i)   { const f = 300 + i * 40; tone(f,'square',0,0.04,0.05); tone(f*1.5,'square',0.025,0.05,0.04); },
@@ -5229,7 +5219,6 @@ window.confirmCharSelect = function() {
   let moleChar = -1;               // random other char — to WHACK
   let selfActive = false;          // true once user's char starts appearing
   let nextHeartWave = 8;           // earliest wave hearts can spawn
-  let waveAnnouncing = false;      // true while wave banner is on screen
   let holeTimers = [], holeStates = [], holeCharIdx = [];
   let awaitingGameOverTap = false; // true once dead — frozen board, waiting for player to tap through
 
@@ -5369,9 +5358,9 @@ window.confirmCharSelect = function() {
       const youGc = GAME_CHARS[activeChar], moleGc = GAME_CHARS[moleChar];
       wrap.innerHTML = `
         <div class="whack-hud" style="flex-direction:column;justify-content:flex-start;gap:6px;padding:8px 14px">
-          <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;width:100%">
             <div><div class="whack-stat-label">SCORE</div><div class="whack-stat-val" id="whack-score-val">${score}</div></div>
-            <div style="text-align:center"><div style="font-family:'VCR',monospace;font-size:8px;letter-spacing:2px;opacity:0.5">WAVE</div><div style="font-family:'Bebas Neue',cursive;font-size:32px;line-height:1;color:#ffe61a;text-shadow:0 0 10px #ffe61a88">${wave}</div></div>
+            <div style="text-align:center"><div style="font-family:'VCR',monospace;font-size:8px;letter-spacing:2px;opacity:0.5">WAVE</div><div id="whack-wave-val" style="font-family:'Bebas Neue',cursive;font-size:32px;line-height:1;color:#ffe61a;text-shadow:0 0 10px #ffe61a88">${wave}</div></div>
             ${hudRight}
           </div>
           <div style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding-top:4px;border-top:1px solid rgba(242,239,232,0.1)">
@@ -5406,7 +5395,7 @@ window.confirmCharSelect = function() {
       wrap.innerHTML = `
         <div class="whack-msg">GAME OVER</div>
         <div class="whack-stat-val" style="font-size:72px">${score}</div>
-        <div class="whack-sub">${hits} HITS · WAVE ${wave}</div>
+        <div class="whack-sub">WAVE ${wave}</div>
         <div class="whack-sub">${isNew?'🏆 NEW BEST!':`BEST: ${best}`}</div>
         <div style="width:100%;max-width:360px">${LB.html('whack','#ff00cc')}</div>
         <button class="whack-btn" onclick="whackPlay()">PLAY AGAIN</button>
@@ -5446,7 +5435,7 @@ window.confirmCharSelect = function() {
   }
 
   function scheduleSurvivalNext() {
-    if (state !== 'playing' || waveAnnouncing) return;
+    if (state !== 'playing') return;
     const open = Array.from({length:HOLES}, (_,i) => i).filter(i => holeStates[i] === 'empty');
     if (!open.length) return;
     const i = open[Math.floor(Math.random() * open.length)];
@@ -5477,8 +5466,8 @@ window.confirmCharSelect = function() {
   }
 
   function popUp(i) {
-    if (state !== 'playing' || waveAnnouncing || holeStates[i] !== 'empty') {
-      if (!waveAnnouncing) scheduleSurvivalNext();
+    if (state !== 'playing' || holeStates[i] !== 'empty') {
+      scheduleSurvivalNext();
       return;
     }
 
@@ -5594,15 +5583,10 @@ window.confirmCharSelect = function() {
   }
 
   function addSelf() {
+    // Used to show a big screen-covering warning here — removed, the VS bar already
+    // communicates "don't whack" clearly enough on its own by now.
     if (selfActive) return;
     selfActive = true;
-    const warn = document.createElement('div');
-    warn.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;pointer-events:none';
-    const gc = GAME_CHARS[activeChar];
-    warn.innerHTML = `<div style="background:rgba(120,0,0,0.96);color:#fff;font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:4px;padding:18px 28px;border-radius:8px;display:flex;flex-direction:column;align-items:center;gap:10px;border:2px solid rgba(255,60,60,0.6);box-shadow:0 0 30px rgba(255,0,0,0.5)"><div style="color:#ff4444;text-shadow:0 0 12px #ff444488">⚠ DON'T WHACK YOURSELF!</div><div style="width:56px;height:56px">${charFace(gc,'normal')}</div></div>`;
-    document.body.appendChild(warn);
-    SFX.imposter();
-    setTimeout(() => warn.remove(), 1500);
   }
 
   window.whackHit = function(i) {
@@ -5642,7 +5626,7 @@ window.confirmCharSelect = function() {
       pop.style.cssText = `left:${20+Math.random()*60}%;top:${20+Math.random()*40}%`;
       hole.appendChild(pop); setTimeout(() => pop.remove(), 700);
       SFX.whack(); SFX.hit();
-      score += 10; hits++;
+      score++; hits++; // score is just a count of moles whacked now, 1 per hit
       const sv = document.getElementById('whack-score-val');
       if (sv) sv.textContent = score;
       waveHits++;
@@ -5676,40 +5660,16 @@ window.confirmCharSelect = function() {
     }
   };
 
+  // Waves are useful as a difficulty ramp internally, but the big screen-covering
+  // banner was just an annoying interruption — and worse, clearing timers to avoid a
+  // stuck mole meant wiping moles the player was still actively trying to whack. So:
+  // no banner, no clearing, no pause. In-flight moles resolve exactly as they would
+  // have anyway; only the displayed wave number changes, instantly and quietly.
   function announceWave(w) {
-    waveAnnouncing = true;
-    holeTimers.forEach(clearTimeout);
-    // Clearing the timers above only cancels the scheduled pop-down — any hole that was
-    // already visibly 'up' would otherwise stay frozen on screen (clickable, but with no
-    // way to resolve itself) for the whole banner, which is both a stuck-state bug and
-    // an unfair miss waiting to happen while attention is on the banner. Force-clear them
-    // with no penalty instead.
-    for (let i = 0; i < HOLES; i++) {
-      if (holeStates[i] === 'up') {
-        holeStates[i] = 'empty'; holeCharIdx[i] = -1;
-        const hole = document.getElementById(`wh-${i}`), charEl = document.getElementById(`wc-${i}`);
-        if (hole) hole.classList.remove('up', 'hit', 'hit-success', 'wrong-hit', 'teasing', 'missed');
-        if (charEl) charEl.innerHTML = '';
-        clearTint(i); hideMissX(i);
-      }
-    }
-    const ann = document.createElement('div');
-    ann.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none';
-    const colors = ['#ff00cc','#00e5ff','#ffe61a','#ff4444','#33ff66'];
-    const nc = colors[(w-2) % colors.length];
-    ann.innerHTML = `
-      <div style="text-align:center;animation:wave-announce 1.9s ease-out forwards">
-        <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:5px;color:${nc};margin-bottom:4px">INCOMING</div>
-        <div style="font-family:'Bebas Neue',cursive;font-size:72px;letter-spacing:10px;color:${nc};text-shadow:0 0 20px ${nc},0 0 40px ${nc}66;line-height:1">WAVE ${w}</div>
-      </div>`;
-    document.body.appendChild(ann);
-    SFX.win();
-    setTimeout(() => {
-      ann.remove();
-      waveAnnouncing = false;
-      const n = concurrencyForWave(w);
-      for (let k = 0; k < n; k++) scheduleSurvivalNext();
-    }, 1900);
+    const el = document.getElementById('whack-wave-val');
+    if (el) el.textContent = w;
+    const n = concurrencyForWave(w);
+    for (let k = 0; k < n; k++) scheduleSurvivalNext();
   }
 
   window.whackBack = function() { state = 'idle'; render(); ArcadeMusic.unduck(); };
@@ -5719,7 +5679,7 @@ window.confirmCharSelect = function() {
     activeChar = getGlobalChar();
     moleChar = pickMole();
     score = 0; hits = 0; strikes = 0; wave = 1; waveHits = 0;
-    selfActive = false; nextHeartWave = 8; waveAnnouncing = false;
+    selfActive = false; nextHeartWave = 8;
     holeStates = Array(HOLES).fill('empty');
     holeCharIdx = Array(HOLES).fill(-1);
     holeTimers   = Array(HOLES).fill(null);
@@ -6500,11 +6460,19 @@ window.confirmCharSelect = function() {
 //  MEMORY MATCH
 // ══════════════════════════════════════
 (function() {
-  let PAIRS = 9; // dynamic in free play
+  let PAIRS = 9; // dynamic, set per-mode in makeCards()
   let cards = [], flipped = [], locked = false;
   let moves = 0, matched = 0, state = 'idle', matchScore = 0, combo = 0, matchTimer = 0, timerInt, previewInt, timeLimit = 60;
-  let matchMode = 'timed'; // 'timed' or 'free'
-  let freePlayCharCount = 8; // 5–12, how many distinct characters appear in free play
+  let matchMode = 'hard'; // 'free' | 'hard' | 'challenge' | 'impossible'
+  let freePlayCharCount = 8; // 4–20, how many distinct characters appear in free play
+  // Hard = the old "timed" mode. Challenge/Impossible add a target-moves benchmark to
+  // beat (not a hard fail — you can always finish, it's just a "did you beat it?" badge)
+  // plus a generous time limit so move-efficiency, not the clock, is the real challenge.
+  const MODE_CONFIG = {
+    hard:       { pairs: 12, time: 60,  targetMoves: null },
+    challenge:  { pairs: 15, time: 100, targetMoves: 24 },
+    impossible: { pairs: 20, time: 150, targetMoves: 32 },
+  };
 
   function shuffle(arr) {
     for (let i = arr.length-1; i > 0; i--) {
@@ -6522,14 +6490,11 @@ window.confirmCharSelect = function() {
   }
 
   function makeCards() {
-    let pairIndices;
-    if (matchMode === 'free') {
-      PAIRS = freePlayCharCount; // one pair per unique character
-      pairIndices = shuffle([...Array(GAME_CHARS.length).keys()]).slice(0, PAIRS);
-    } else {
-      PAIRS = 9;
-      pairIndices = [...Array(PAIRS).keys()];
-    }
+    // Every mode now picks a random subset of characters (free play already did this —
+    // the old hard/"timed" mode always used the same fixed first-N characters, every
+    // single game; randomizing it too is strictly more replayable, no downside).
+    PAIRS = matchMode === 'free' ? freePlayCharCount : MODE_CONFIG[matchMode].pairs;
+    const pairIndices = shuffle([...Array(GAME_CHARS.length).keys()]).slice(0, PAIRS);
     return shuffle([...pairIndices, ...pairIndices]).map((ci, id) => ({ id, ci, matched: false, flipped: false }));
   }
 
@@ -6806,6 +6771,17 @@ window.confirmCharSelect = function() {
   let currentCfg = null;
   let powerups = []; // {type:'speed'|'gun'|'bomb', x, y, vy, r}
   let buffSpeedUntil = 0, buffGunUntil = 0;
+  let shakeMag = 0; // screen shake on big hits — decays each frame
+  function triggerShake(amount) { shakeMag = Math.max(shakeMag, amount); }
+  // Rescued hero escort — temporary wingman, cap 1 (rescuing again refreshes/replaces it).
+  // null when inactive. state: 'active' while escorting, 'leaving' during its fly-off.
+  let escort = null;
+  const ESCORT_DURATION_MS = 10000;
+  // Boss waves — every 5 waves, a scaled-up enemy that hovers near the top (never
+  // crosses the danger line) and alternates between a telegraphed laser and a
+  // machine-gun burst. Never reuses a character that's already been a rescued hero.
+  let boss = null;
+  const rescuedChars = new Set();
 
   function addFloatText(text, x, y, color, size) {
     floatTexts.push({text, x, y, color, a: 1, vy: -1.5, size: size || 20});
@@ -6814,6 +6790,7 @@ window.confirmCharSelect = function() {
   const P_SPEED = 5, B_SPEED = 9, O_SPEED_BASE = 2.0; // +10% over original 1.8
   const AUTO_FIRE_MS = 240;
   const FACE_R = 22, ASTEROID_R_MIN = 14, ASTEROID_R_MAX = 30;
+  const BOSS_R = FACE_R * 2.5, BOSS_HP = 19;
 
   function rand(a,b){ return a + Math.random()*(b-a); }
 
@@ -6849,9 +6826,27 @@ window.confirmCharSelect = function() {
       obstacles.push({ type:'asteroid', x:rand(r,W-r), y:-r-10, vx:rand(-0.4,0.4)*cfg.speed, vy:cfg.speed*(0.8+Math.random()*0.4), r, verts, rot:0, rotSpeed:rand(-0.02,0.02), hp:1 });
     } else {
       const ci = Math.floor(Math.random() * GAME_CHARS.length);
-      const isTrapped = Math.random() < Math.max(0.05, 0.15 - wave * 0.015); // fewer heroes
-      obstacles.push({ type:'face', x:rand(FACE_R,W-FACE_R), y:-FACE_R-10, vx:rand(-0.6,0.6)*cfg.speed, vy:cfg.speed*(0.7+Math.random()*0.5), r:FACE_R, ci, hp:1, isTrapped, ringHp: isTrapped ? 2 : 0 });
+      const isTrapped = Math.random() < Math.max(0.03, 0.10 - wave * 0.012); // heroes even rarer now
+      // Enemies take 3 hits to clear; trapped heroes still resolve via the ring, hp unused for them
+      obstacles.push({ type:'face', x:rand(FACE_R,W-FACE_R), y:-FACE_R-10, vx:rand(-0.6,0.6)*cfg.speed, vy:cfg.speed*(0.7+Math.random()*0.5), r:FACE_R, ci, hp: isTrapped ? 1 : 3, isTrapped, ringHp: isTrapped ? 2 : 0 });
     }
+  }
+
+  function spawnBoss() {
+    if (boss) return;
+    const candidates = GAME_CHARS.map((_, i) => i).filter(i => i !== activeChar && !rescuedChars.has(i));
+    const pool = candidates.length ? candidates : GAME_CHARS.map((_, i) => i).filter(i => i !== activeChar);
+    const ci = pool[Math.floor(Math.random() * pool.length)];
+    boss = {
+      ci, x: W / 2, y: 90, vx: (Math.random() < 0.5 ? -1 : 1) * 1.1,
+      r: BOSS_R, hp: BOSS_HP, maxHp: BOSS_HP,
+      attackType: Math.random() < 0.5 ? 'laser' : 'machinegun',
+      nextAttack: Date.now() + 1800,
+      laserPhase: null, laserChargeStart: 0, laserX: 0,
+      hitFlash: 0,
+    };
+    addFloatText('BOSS INCOMING', W / 2, 140, '#ff4444', 24);
+    SFX.over();
   }
 
   const POWERUP_R = 18;
@@ -6904,7 +6899,8 @@ window.confirmCharSelect = function() {
     player = { x:W/2, y:H-70, r:18 };
     bullets=[]; obstacles=[]; score=0; health=100; wave=1; waveKills=0;
     enemyBullets=[]; lastEnemyFire=0; floatTexts=[]; lineFlashA=0;
-    powerups=[]; buffSpeedUntil=0; buffGunUntil=0;
+    powerups=[]; buffSpeedUntil=0; buffGunUntil=0; escort=null; shakeMag=0;
+    boss=null; rescuedChars.clear();
     dangerY = player.y - player.r * 1.2 - 2;
     highScore = parseInt(localStorage.getItem('space-best')||'0');
     leftHeld=false; rightHeld=false; lastAutoFire=0;
@@ -6936,6 +6932,7 @@ window.confirmCharSelect = function() {
     if (wave >= 2 && Math.random() < 0.65) {
       setTimeout(() => { if (state === 'playing') spawnPowerup(); }, 2500 + Math.random() * 4000);
     }
+    if (wave % 5 === 0) setTimeout(() => { if (state === 'playing') spawnBoss(); }, 1200);
   }
 
   function announceWave(w) {
@@ -6955,11 +6952,13 @@ window.confirmCharSelect = function() {
     health = Math.max(0, health - amount);
     addFloatText(`-${amount}`, player.x, player.y - 40, '#ff4444', 20);
     miniExplosion(player.x, player.y, '#ff4444');
+    triggerShake(amount * 0.5);
     if (health <= 0) {
       state = 'over';
       clearTimeout(spawnTimer);
       cancelAnimationFrame(raf);
       SFX.over();
+      triggerShake(18);
       bigExplosion(player.x, player.y, GAME_CHARS[activeChar].color);
       if (score > highScore) { highScore = score; localStorage.setItem('space-best', score); }
       // Freeze on the death frame for 3s before showing the game-over overlay
@@ -7106,6 +7105,11 @@ window.confirmCharSelect = function() {
     if (now < buffGunUntil) {
       ctx.fillStyle = '#ffe61a';
       ctx.fillText(`⚡ RAPID FIRE ${Math.ceil((buffGunUntil - now) / 1000)}s`, W - 10, buffY);
+      buffY += 18;
+    }
+    if (escort && escort.state === 'active') {
+      ctx.fillStyle = '#33ff66';
+      ctx.fillText(`🤝 ESCORT ${Math.max(0, Math.ceil((escort.expiresAt - now) / 1000))}s`, W - 10, buffY);
     }
 
     ctx.textBaseline = 'alphabetic';
@@ -7114,6 +7118,14 @@ window.confirmCharSelect = function() {
   function loop(ts) {
     if (state!=='playing') return;
     raf=requestAnimationFrame(loop);
+
+    ctx.save();
+    if (shakeMag > 0.4) {
+      ctx.translate((Math.random()-0.5)*shakeMag, (Math.random()-0.5)*shakeMag);
+      shakeMag *= 0.85;
+    } else {
+      shakeMag = 0;
+    }
 
     ctx.fillStyle='#030110'; ctx.fillRect(0,0,W,H);
 
@@ -7128,23 +7140,91 @@ window.confirmCharSelect = function() {
     const curFireMs = _now < buffGunUntil ? AUTO_FIRE_MS * 0.4 : AUTO_FIRE_MS;
     if(ts-lastAutoFire>curFireMs){
       bullets.push({x:player.x,y:player.y-player.r*1.2,vy:-B_SPEED});
-      lastAutoFire=ts; SFX.flap();
+      lastAutoFire=ts; SFX.blaster();
     }
 
     const curSpeed = _now < buffSpeedUntil ? P_SPEED * 1.6 : P_SPEED;
     if(leftHeld)  player.x=Math.max(player.r,     player.x-curSpeed);
     if(rightHeld) player.x=Math.min(W-player.r,   player.x+curSpeed);
 
+    // Hero escort: follows the player and auto-fires while active, then flies off
+    // with a "thanks" instead of just vanishing once its time is up.
+    if (escort) {
+      if (escort.state === 'active') {
+        escort.x = player.x - 40;
+        escort.y = player.y + 4;
+        if (Date.now() > escort.expiresAt) {
+          escort.state = 'leaving';
+          addFloatText('THANKS!', escort.x, escort.y - 20, '#33ff66', 16);
+        } else if (ts - escort.lastFire > AUTO_FIRE_MS * 1.6) {
+          bullets.push({x:escort.x, y:escort.y-14, vy:-B_SPEED});
+          escort.lastFire = ts;
+        }
+      } else {
+        escort.y -= 3.5;
+        escort.opacity -= 0.018;
+        if (escort.opacity <= 0 || escort.y < -60) escort = null;
+      }
+    }
+
+    // Boss: hovers near the top (never crosses the danger line), alternates a
+    // telegraphed laser (dodge sideways during the charge-up) and a machine-gun burst.
+    if (boss) {
+      boss.x += boss.vx;
+      if (boss.x < boss.r + 20 || boss.x > W - boss.r - 20) boss.vx *= -1;
+      boss.hitFlash = Math.max(0, boss.hitFlash - 0.05);
+
+      if (Date.now() > boss.nextAttack && !boss.laserPhase) {
+        if (boss.attackType === 'laser') {
+          boss.laserPhase = 'charging';
+          boss.laserChargeStart = Date.now();
+          boss.laserX = boss.x;
+        } else {
+          for (let k = 0; k < 4; k++) {
+            const dx = player.x - boss.x, dy = player.y - boss.y;
+            const ang = Math.atan2(dy, dx) + (k - 1.5) * 0.12;
+            const bulletSpeed = 4 + wave * 0.15;
+            enemyBullets.push({ x: boss.x, y: boss.y + boss.r*0.6, vx: Math.cos(ang)*bulletSpeed, vy: Math.sin(ang)*bulletSpeed, r: 5 });
+          }
+          SFX.tone && SFX.tone(300,'square',0,0.04,0.08,200);
+          boss.nextAttack = Date.now() + 2200;
+        }
+      }
+      if (boss.laserPhase === 'charging' && Date.now() - boss.laserChargeStart > 700) {
+        boss.laserPhase = 'firing';
+        boss.laserFireStart = Date.now();
+        boss.laserHasHit = false;
+      } else if (boss.laserPhase === 'firing') {
+        if (!boss.laserHasHit && Math.abs(player.x - boss.laserX) < player.r + 14) {
+          takeDamage(20);
+          boss.laserHasHit = true;
+        }
+        if (Date.now() - boss.laserFireStart > 220) {
+          boss.laserPhase = null;
+          boss.nextAttack = Date.now() + 2400;
+        }
+      }
+    }
+
     bullets=bullets.filter(b=>b.y>-10);
     bullets.forEach(b=>b.y+=b.vy);
 
-    // Power-ups: drift down, draw, collect on touch (no damage if missed — just drift off)
+    // Power-ups: drift down, draw, collect on touch OR by shooting them — everything
+    // else on screen is shootable, so players try that first; both now work.
     powerups = powerups.filter(p => p.y < H + 40);
     for (const p of powerups) {
       p.y += p.vy;
       drawPowerup(p);
-      if (Math.hypot(p.x - player.x, p.y - player.y) < p.r + player.r * 0.9) {
+      let gotIt = Math.hypot(p.x - player.x, p.y - player.y) < p.r + player.r * 0.9;
+      if (!gotIt) {
+        for (const b of bullets) {
+          if (b.vy === 999) continue;
+          if (Math.hypot(b.x - p.x, b.y - p.y) < p.r + 6) { b.vy = 999; gotIt = true; break; }
+        }
+      }
+      if (gotIt) {
         applyPowerup(p.type);
+        miniExplosion(p.x, p.y, '#ffe61a');
         p._collected = true;
       }
     }
@@ -7197,6 +7277,32 @@ window.confirmCharSelect = function() {
       ctx.fillStyle='#ffe61a';
     }
 
+    // Bullet vs boss
+    if (boss) {
+      for (const b of bullets) {
+        if (b.vy === 999) continue;
+        if (Math.hypot(b.x - boss.x, b.y - boss.y) < boss.r + 3) {
+          b.vy = 999;
+          boss.hp--; boss.hitFlash = 1;
+          miniExplosion(b.x, b.y, '#ff8888');
+          if (boss.hp <= 0) {
+            const hpGain = Math.round(health * 0.5);
+            health = Math.min(100, health + hpGain);
+            score += 500 + wave * 20;
+            triggerShake(14);
+            bigExplosion(boss.x, boss.y, GAME_CHARS[boss.ci].color);
+            addFloatText('BOSS DOWN! +500', boss.x, boss.y, '#ffe61a', 22);
+            if (hpGain > 0) addFloatText(`+${hpGain} HP`, boss.x, boss.y - 30, '#33ff66', 16);
+            SFX.win();
+            boss = null;
+            break;
+          } else {
+            SFX.hit();
+          }
+        }
+      }
+    }
+
     for(const b of bullets){
       for(const o of obstacles){
         if(o.alive===false) continue;
@@ -7208,7 +7314,8 @@ window.confirmCharSelect = function() {
               // Hit the rescue ring
               o.ringHp--;
               if(o.ringHp <= 0){
-                // Ring destroyed — rescued!
+                // Ring destroyed — rescued! Becomes a temporary escort (cap 1 — rescuing
+                // again just replaces/refreshes it with the newest hero, no stacking).
                 score += 150; waveKills++;
                 o.alive=false;
                 SFX.win();
@@ -7217,6 +7324,8 @@ window.confirmCharSelect = function() {
                 addFloatText('+150 RESCUED!', o.x, o.y, '#00e5ff', 22);
                 const hpGain = Math.min(30, 100 - health);
                 if(hpGain > 0){ health = Math.min(100, health + 30); addFloatText(`+${hpGain} HP`, o.x, o.y - 30, '#33ff66', 18); }
+                escort = { ci: o.ci, state: 'active', expiresAt: Date.now() + ESCORT_DURATION_MS, x: player.x - 40, y: player.y, lastFire: 0, opacity: 1 };
+                rescuedChars.add(o.ci);
               } else {
                 addFloatText('RING HIT!', o.x, o.y, '#00e5ff', 18);
                 SFX.score();
@@ -7232,14 +7341,21 @@ window.confirmCharSelect = function() {
               takeDamage(30);
               if(state==='over') return;
             } else {
-              // Normal enemy face — destroy
-              const pts = 25+(wave*5);
-              score+=pts; SFX.score();
-              miniExplosion(o.x,o.y,GAME_CHARS[o.ci].color);
-              faceFlash(o.ci,'sad',o.x,o.y);
-              addFloatText('+'+pts, o.x, o.y, GAME_CHARS[o.ci].color, 18);
-              waveKills++;
-              o.alive=false;
+              // Normal enemy face — takes 3 hits to clear
+              o.hp--;
+              if (o.hp > 0) {
+                SFX.hit();
+                miniExplosion(o.x, o.y, 'rgba(255,255,255,0.7)'); // hurt flicker, not destroyed yet
+                addFloatText('HIT!', o.x, o.y - 14, '#ffffff', 14);
+              } else {
+                const pts = 25+(wave*5);
+                score+=pts; SFX.score();
+                miniExplosion(o.x,o.y,GAME_CHARS[o.ci].color);
+                faceFlash(o.ci,'sad',o.x,o.y);
+                addFloatText('+'+pts, o.x, o.y, GAME_CHARS[o.ci].color, 18);
+                waveKills++;
+                o.alive=false;
+              }
             }
           } else {
             // Asteroid
@@ -7288,7 +7404,7 @@ window.confirmCharSelect = function() {
     }
 
     // Enemy fire (wave 1+, tracked toward player) — faster rate, more shots per volley at higher waves
-    if(Date.now() - lastEnemyFire > Math.max(220, 1500 - wave * 120)){
+    if(Date.now() - lastEnemyFire > Math.max(170, 1250 - wave * 120)){
       const shooters = obstacles.filter(o => o.type==='face' && !o.isTrapped && o.y > 0);
       if(shooters.length > 0){
         const numShots = Math.min(shooters.length, 1 + Math.floor(wave / 4));
@@ -7351,8 +7467,76 @@ window.confirmCharSelect = function() {
     ctx.setLineDash([]);
     ctx.restore();
 
+    if (boss) drawBoss();
     drawPlayer();
+    if (escort) drawEscort();
+    ctx.restore(); // undo shake before HUD — text should stay stable/readable
     drawHUD();
+  }
+
+  function drawBoss() {
+    // Laser telegraph (charging) and beam (firing)
+    if (boss.laserPhase === 'charging') {
+      const t = (Date.now() - boss.laserChargeStart) / 700;
+      ctx.save();
+      ctx.globalAlpha = 0.25 + 0.35 * Math.abs(Math.sin(t * Math.PI * 6));
+      ctx.fillStyle = '#ff4444';
+      ctx.fillRect(boss.laserX - 3, boss.y, 6, H - boss.y);
+      ctx.restore();
+    } else if (boss.laserPhase === 'firing') {
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,80,80,0.85)';
+      ctx.fillRect(boss.laserX - 9, boss.y, 18, H - boss.y);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(boss.laserX - 3, boss.y, 6, H - boss.y);
+      ctx.restore();
+    }
+
+    const gc = GAME_CHARS[boss.ci];
+    ctx.save();
+    ctx.translate(boss.x, boss.y);
+    ctx.beginPath(); ctx.arc(0, 0, boss.r + 6, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,40,40,0.3)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(0, 0, boss.r, 0, Math.PI*2);
+    ctx.fillStyle = '#cc1a1a'; ctx.fill();
+    ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 4; ctx.stroke();
+    if (gc.img) {
+      const img = _getImg(gc.img);
+      if (img.complete && img.naturalWidth) ctx.drawImage(img, -boss.r*0.8, -boss.r*0.8, boss.r*1.6, boss.r*1.6);
+    } else {
+      ctx.font = `${boss.r}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(gc.emoji, 0, 0);
+    }
+    if (boss.hitFlash > 0) {
+      ctx.globalAlpha = boss.hitFlash;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(0, 0, boss.r, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+
+    // Health bar above the boss
+    const barW = boss.r * 2.2, barX = boss.x - barW/2, barY = boss.y - boss.r - 18;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(barX, barY, barW, 8);
+    ctx.fillStyle = '#ff4444'; ctx.fillRect(barX, barY, barW * (boss.hp / boss.maxHp), 8);
+  }
+
+  function drawEscort() {
+    const gc = GAME_CHARS[escort.ci];
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, escort.opacity);
+    ctx.translate(escort.x, escort.y);
+    ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI*2);
+    ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI*2);
+    ctx.fillStyle = gc.color; ctx.fill();
+    if (gc.img) {
+      const img = _getImg(gc.img);
+      if (img.complete && img.naturalWidth) ctx.drawImage(img, -12, -12, 24, 24);
+    } else {
+      ctx.font = '16px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(gc.emoji, 0, 0);
+    }
+    ctx.restore();
   }
 
   function miniExplosion(x, y, color) {
@@ -7382,6 +7566,7 @@ window.confirmCharSelect = function() {
   }
 
   function bigExplosion(x, y, color) {
+    triggerShake(7);
     const parts = Array.from({length: 32}, () => ({
       x, y, c: Math.random() < 0.35 ? '#ffe61a' : color,
       vx: (Math.random() - 0.5) * 18,
@@ -7516,7 +7701,6 @@ window.confirmCharSelect = function() {
     ov.classList.remove('hidden');
   }
 
-  window.spaceHold=function(dir,on){if(dir==='left')leftHeld=on;else rightHeld=on;};
   // Desktop arrow key support
   document.addEventListener('keydown', e => {
     if (!document.getElementById('pg-space')?.classList.contains('active')) return;
@@ -7530,7 +7714,7 @@ window.confirmCharSelect = function() {
   window.spaceShoot=function(){
     if(state!=='playing')return;
     bullets.push({x:player.x,y:player.y-player.r*1.2,vy:-B_SPEED});
-    SFX.flap();
+    SFX.blaster();
   };
   window.spaceStart=function(){
     ArcadeMusic.stop();
