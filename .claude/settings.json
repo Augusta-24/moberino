@@ -17,7 +17,13 @@
       "Bash(python3 clean_tags.py)",
       "Bash(node --input-type=module)",
       "Bash(awk '/<div id=\"pg-lobby\"/{p=1} p{print NR\": \"$0} /<\\\\/div>$/{if\\(p && /pg-lobby/\\) exit}' index.html)",
-      "Bash(grep -n \"cats-header\\\\|^[0-9]*: <div id=\\\\\"pg-lobby\\\\\"\\\\|</div>$\")"
+      "Bash(grep -n \"cats-header\\\\|^[0-9]*: <div id=\\\\\"pg-lobby\\\\\"\\\\|</div>$\")",
+      "Bash(curl -s -o /tmp/live.html -w \"HTTP %{http_code}\\\\n\" \"https://augusta-24.github.io/moberino/\")",
+      "Read(//tmp/**)",
+      "Bash(curl -sI \"https://augusta-24.github.io/moberino/\")",
+      "Bash(curl -s \"https://www.moberino.com/\" -o /tmp/live.html)",
+      "Bash(curl -sI \"https://www.moberino.com/\")",
+      "Bash(curl -sk \"https://www.moberino.com/\" -o /tmp/live2.html -w \"HTTP %{http_code}, size %{size_download}\\\\n\")"
     ]
   }
 }

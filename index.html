@@ -3626,16 +3626,21 @@ function navHome() {
 // ── SPOTLIGHT SEARCH ──
 function openSpot() {
   const ov = document.getElementById('spot-overlay');
+  // Lock body scroll BEFORE focusing — otherwise iOS can scroll the underlying
+  // home page into a weird position while bringing the focused input into view.
+  document.body.style.overflow = 'hidden';
   ov.classList.add('open');
+  ov.scrollTop = 0;
+  void ov.offsetHeight; // force layout to commit the overlay before focus() runs
   document.getElementById('spotQ').value = '';
   document.getElementById('spot-results').innerHTML = '';
   document.getElementById('spot-meta').textContent = '';
   // Mobile only auto-opens the keyboard if focus() runs synchronously in the tap
   // handler that opened this — a setTimeout-deferred focus (even a short one) is too late.
   document.getElementById('spotQ').focus();
-  document.body.style.overflow = 'hidden';
 }
 function closeSpot() {
+  document.getElementById('spotQ').blur();
   document.getElementById('spot-overlay').classList.remove('open');
   document.body.style.overflow = '';
 }
