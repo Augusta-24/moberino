@@ -2054,7 +2054,8 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 #pg-charselect {
   background: transparent;
   align-items: flex-start; justify-content: center;
-  min-height: 100vh; overflow-y: auto;
+  height: 100dvh; overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 #char-select-screen {
   width: 100%; max-width: 480px; padding: 32px 16px 48px; margin: auto;
@@ -2277,8 +2278,8 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 }
 
 /* ── Whack-a-Mole ── */
-#pg-whack { min-height: 100dvh; position: relative; z-index: 1; }
-.whack-wrap { padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+#pg-whack { height: 100dvh; overflow: hidden; position: relative; z-index: 1; display: flex; flex-direction: column; }
+.whack-wrap { padding: 8px 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; flex: 1; min-height: 0; overflow-y: auto; }
 .whack-hud {
   display: flex; justify-content: space-between; align-items: center;
   width: 100%; max-width: 420px;
@@ -2292,8 +2293,12 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 #whack-timer-val.urgent { color: #ff4444; animation: whack-blink 0.5s infinite; }
 @keyframes whack-blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
 .whack-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 8px; width: 100%; max-width: 380px;
+  --hole-sz: min(26vw, calc((100dvh - 310px) / 4), 100px);
+  display: grid;
+  grid-template-columns: repeat(3, var(--hole-sz));
+  grid-template-rows: repeat(4, var(--hole-sz));
+  gap: 8px;
+  margin: 0 auto;
 }
 .whack-hole {
   aspect-ratio: 1;
@@ -5110,6 +5115,7 @@ window.confirmCharSelect = function() {
   let nextHeartWave = 8;           // earliest wave hearts can spawn
   let waveAnnouncing = false;      // true while wave banner is on screen
   let holeTimers = [], holeStates = [], holeCharIdx = [];
+  let awaitingGameOverTap = false; // true once dead — frozen board, waiting for player to tap through
 
   function charHTML(ci, expr) {
     const c = GAME_CHARS[ci];
@@ -5167,6 +5173,28 @@ window.confirmCharSelect = function() {
     }
     setTimeout(tick, 120);
   }
+
+  // Freeze the board exactly as it is at the moment of death — no re-render, no reset —
+  // and wait for the player to tap before showing the results screen.
+  function freezeForGameOver() {
+    awaitingGameOverTap = true;
+    const wrap = document.getElementById('whack-wrap');
+    if (!wrap) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'whack-gameover-tap';
+    overlay.style.cssText = 'position:absolute;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;cursor:pointer;background:rgba(5,2,18,0.45)';
+    overlay.innerHTML = `<div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:4px;color:#fff;text-shadow:0 0 14px #000,0 0 4px #000;animation:gcblink 1.1s infinite">TAP TO CONTINUE</div>`;
+    overlay.onclick = window.whackContinue;
+    wrap.style.position = 'relative';
+    wrap.appendChild(overlay);
+  }
+
+  window.whackContinue = function() {
+    if (!awaitingGameOverTap) return;
+    awaitingGameOverTap = false;
+    state = 'over';
+    render();
+  };
 
   function render() {
     const wrap = document.getElementById('whack-wrap');
@@ -5229,18 +5257,12 @@ window.confirmCharSelect = function() {
           <div style="text-align:center"><div style="font-family:'VCR',monospace;font-size:8px;letter-spacing:2px;opacity:0.5">WAVE</div><div style="font-family:'Bebas Neue',cursive;font-size:32px;line-height:1;color:#ffe61a;text-shadow:0 0 10px #ffe61a88">${wave}</div></div>
           ${hudRight}
         </div>
-        <div style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;max-width:420px;margin:10px auto 12px;padding:10px 14px;background:linear-gradient(90deg, ${youGc.color}1c, transparent 48%, transparent 52%, #ff44441c);border:1px solid rgba(242,239,232,0.12);border-radius:8px">
-          <div style="width:64px;height:64px;border-radius:9px;overflow:hidden;border:2.5px solid ${youGc.color};background:${youGc.color}22;box-shadow:0 0 16px ${youGc.color}66;flex-shrink:0">${charFace(youGc,'normal')}</div>
-          <div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;flex:1;min-width:0">
-            <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:1.5px;color:#ff4444;text-shadow:0 0 8px #ff444488;white-space:nowrap">⚠ DON'T WHACK</div>
-            <div style="font-family:'Bebas Neue',cursive;font-size:15px;letter-spacing:2px;color:${youGc.color};line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${youGc.name}</div>
-          </div>
-          <div style="font-family:'Bebas Neue',cursive;font-size:24px;letter-spacing:3px;color:#ffe61a;text-shadow:0 0 14px #ffe61a,0 0 28px #ffe61a66;flex-shrink:0;padding:0 2px">VS</div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:1;min-width:0">
-            <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:1.5px;color:#33ff66;text-shadow:0 0 8px #33ff6688;white-space:nowrap">WHACK ▶</div>
-            <div style="font-family:'Bebas Neue',cursive;font-size:15px;letter-spacing:2px;color:#ff4444;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${moleGc.name}</div>
-          </div>
-          <div style="width:64px;height:64px;border-radius:9px;overflow:hidden;border:2.5px solid #ff4444;background:#ff444422;box-shadow:0 0 16px #ff444466;transform:scaleX(-1);flex-shrink:0">${charFace(moleGc,'normal')}</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;max-width:420px;margin:6px auto;padding:6px 10px;background:linear-gradient(90deg, ${youGc.color}1c, transparent 48%, transparent 52%, #ff44441c);border:1px solid rgba(242,239,232,0.12);border-radius:8px">
+          <div style="width:60px;height:60px;border-radius:9px;overflow:hidden;border:2.5px solid ${youGc.color};background:${youGc.color}22;box-shadow:0 0 16px ${youGc.color}66;flex-shrink:0">${charFace(youGc,'normal')}</div>
+          <div style="flex:1;text-align:left;font-family:'Bebas Neue',cursive;font-size:19px;letter-spacing:2px;color:#ff4444;text-shadow:0 0 10px #ff444488;line-height:1.05">DON'T<br>WHACK</div>
+          <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;color:#ffe61a;text-shadow:0 0 14px #ffe61a,0 0 28px #ffe61a66;flex-shrink:0;padding:0 2px">VS</div>
+          <div style="flex:1;text-align:right;font-family:'Bebas Neue',cursive;font-size:19px;letter-spacing:2px;color:#33ff66;text-shadow:0 0 10px #33ff6688;line-height:1.05">WHACK</div>
+          <div style="width:60px;height:60px;border-radius:9px;overflow:hidden;border:2.5px solid #ff4444;background:#ff444422;box-shadow:0 0 16px #ff444466;transform:scaleX(-1);flex-shrink:0">${charFace(moleGc,'normal')}</div>
         </div>
         <div class="whack-grid" id="whack-grid">${
           Array.from({length:HOLES},(_,i)=>
@@ -5343,8 +5365,9 @@ window.confirmCharSelect = function() {
     let picked = moleChar;
     if (selfActive && Math.random() > 0.72) picked = activeChar;
 
-    // Tease glow: 30% real hole, 70% decoy — still want them to fall for it
-    const useDecoy = Math.random() < 0.70;
+    // Tease glow: starts ~58% decoy, ramps to ~88% by late waves — harder to read over time
+    const decoyRate = Math.min(0.88, 0.55 + wave * 0.025);
+    const useDecoy = Math.random() < decoyRate;
     let teaseIdx = i;
     if (useDecoy) {
       const decoys = Array.from({length:HOLES},(_,j)=>j).filter(j=>j!==i&&holeStates[j]==='empty');
@@ -5388,7 +5411,7 @@ window.confirmCharSelect = function() {
         hole.classList.remove('up');
         if (strikes < 3) scheduleSurvivalNext();
       }, 380);
-      if (strikes >= 3) setTimeout(() => { holeTimers.forEach(clearTimeout); SFX.over(); setTimeout(() => { state = 'over'; render(); }, 600); }, 500);
+      if (strikes >= 3) setTimeout(() => { holeTimers.forEach(clearTimeout); SFX.over(); freezeForGameOver(); }, 500);
       return;
     }
 
@@ -5467,7 +5490,7 @@ window.confirmCharSelect = function() {
       if (strikes >= 3) {
         holeTimers.forEach(clearTimeout);
         SFX.over();
-        setTimeout(() => { state = 'over'; render(); }, 600);
+        freezeForGameOver();
       } else {
         setTimeout(() => popDown(i, true), 420);
       }
