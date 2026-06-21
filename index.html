@@ -2273,7 +2273,8 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 }
 
 /* ── Whack-a-Mole ── */
-#pg-whack { height: 100dvh; overflow: hidden; position: relative; z-index: 1; display: flex; flex-direction: column; }
+#pg-whack { height: 100dvh; overflow: hidden; position: relative; z-index: 1; display: none; flex-direction: column; }
+#pg-whack.active { display: flex; }
 .whack-wrap { padding: 8px 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; flex: 1; min-height: 0; overflow-y: auto; }
 .whack-hud {
   display: flex; justify-content: space-between; align-items: center;
@@ -2288,7 +2289,7 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 #whack-timer-val.urgent { color: #ff4444; animation: whack-blink 0.5s infinite; }
 @keyframes whack-blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
 .whack-grid {
-  --hole-sz: min(26vw, calc((100dvh - 278px) / 4), 100px);
+  --hole-sz: min(26vw, calc((100dvh - 235px) / 4), 100px);
   display: grid;
   grid-template-columns: repeat(3, var(--hole-sz));
   grid-template-rows: repeat(4, var(--hole-sz));
@@ -5282,17 +5283,19 @@ window.confirmCharSelect = function() {
       const hudRight = `<div style="text-align:right;font-size:24px;line-height:1;letter-spacing:3px" id="whack-lives">${livesHTML()}</div>`;
       const youGc = GAME_CHARS[activeChar], moleGc = GAME_CHARS[moleChar];
       wrap.innerHTML = `
-        <div class="whack-hud">
-          <div><div class="whack-stat-label">SCORE</div><div class="whack-stat-val" id="whack-score-val">${score}</div></div>
-          <div style="text-align:center"><div style="font-family:'VCR',monospace;font-size:8px;letter-spacing:2px;opacity:0.5">WAVE</div><div style="font-family:'Bebas Neue',cursive;font-size:32px;line-height:1;color:#ffe61a;text-shadow:0 0 10px #ffe61a88">${wave}</div></div>
-          ${hudRight}
-        </div>
-        <div style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;max-width:420px;margin:6px auto;padding:6px 10px;background:linear-gradient(90deg, #33ff661c, transparent 48%, transparent 52%, #ff44441c);border:1px solid rgba(242,239,232,0.12);border-radius:8px">
-          <div style="width:60px;height:60px;border-radius:9px;overflow:hidden;border:2.5px solid #33ff66;background:#33ff6622;box-shadow:0 0 16px #33ff6666;flex-shrink:0">${charFace(youGc,'normal')}</div>
-          <div style="flex:1;text-align:left;font-family:'Bebas Neue',cursive;font-size:19px;letter-spacing:2px;color:#ff4444;text-shadow:0 0 10px #ff444488;line-height:1.05">DON'T<br>WHACK</div>
-          <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;color:#ffe61a;text-shadow:0 0 14px #ffe61a,0 0 28px #ffe61a66;flex-shrink:0;padding:0 2px">VS</div>
-          <div style="flex:1;text-align:right;font-family:'Bebas Neue',cursive;font-size:19px;letter-spacing:2px;color:#33ff66;text-shadow:0 0 10px #33ff6688;line-height:1.05">WHACK</div>
-          <div style="width:60px;height:60px;border-radius:9px;overflow:hidden;border:2.5px solid #ff4444;background:#ff444422;box-shadow:0 0 16px #ff444466;transform:scaleX(-1);flex-shrink:0">${charFace(moleGc,'normal')}</div>
+        <div class="whack-hud" style="flex-direction:column;justify-content:flex-start;gap:6px;padding:8px 14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+            <div><div class="whack-stat-label">SCORE</div><div class="whack-stat-val" id="whack-score-val">${score}</div></div>
+            <div style="text-align:center"><div style="font-family:'VCR',monospace;font-size:8px;letter-spacing:2px;opacity:0.5">WAVE</div><div style="font-family:'Bebas Neue',cursive;font-size:32px;line-height:1;color:#ffe61a;text-shadow:0 0 10px #ffe61a88">${wave}</div></div>
+            ${hudRight}
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding-top:4px;border-top:1px solid rgba(242,239,232,0.1)">
+            <div style="width:46px;height:46px;border-radius:8px;overflow:hidden;border:2px solid #33ff66;background:#33ff6622;box-shadow:0 0 12px #33ff6666;flex-shrink:0">${charFace(youGc,'normal')}</div>
+            <div style="flex:1;text-align:left;font-family:'Bebas Neue',cursive;font-size:15px;letter-spacing:1.5px;color:#ff4444;text-shadow:0 0 8px #ff444488;line-height:1;white-space:nowrap">DON'T WHACK</div>
+            <div style="font-family:'Bebas Neue',cursive;font-size:17px;letter-spacing:2px;color:#ffe61a;text-shadow:0 0 10px #ffe61a;flex-shrink:0;padding:0 2px">VS</div>
+            <div style="flex:1;text-align:right;font-family:'Bebas Neue',cursive;font-size:15px;letter-spacing:1.5px;color:#33ff66;text-shadow:0 0 8px #33ff6688;line-height:1;white-space:nowrap">WHACK</div>
+            <div style="width:46px;height:46px;border-radius:8px;overflow:hidden;border:2px solid #ff4444;background:#ff444422;box-shadow:0 0 12px #ff444466;transform:scaleX(-1);flex-shrink:0">${charFace(moleGc,'normal')}</div>
+          </div>
         </div>
         <div class="whack-grid" id="whack-grid">${
           Array.from({length:HOLES},(_,i)=>
