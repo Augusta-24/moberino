@@ -14,7 +14,10 @@
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\([m['name'] for m in d.get\\('models',[]\\)]\\)\")",
       "Bash(sort -t: -k2 -n)",
       "Bash(awk 'NR>=6040 && NR<=6600 && /lives/' /Users/kevinseverino/Documents/moberino/index.html)",
-      "Bash(python3 clean_tags.py)"
+      "Bash(python3 clean_tags.py)",
+      "Bash(node --input-type=module)",
+      "Bash(awk '/<div id=\"pg-lobby\"/{p=1} p{print NR\": \"$0} /<\\\\/div>$/{if\\(p && /pg-lobby/\\) exit}' index.html)",
+      "Bash(grep -n \"cats-header\\\\|^[0-9]*: <div id=\\\\\"pg-lobby\\\\\"\\\\|</div>$\")"
     ]
   }
 }

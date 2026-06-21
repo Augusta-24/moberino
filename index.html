@@ -2420,13 +2420,20 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 #pg-space.active { display: flex; }
 #space-canvas { flex: 1; width: 100%; display: block; touch-action: none; }
 #space-overlay {
-  position: absolute; left: 0; right: 0; bottom: 0; top: 56px;
+  position: fixed; left: 0; right: 0; bottom: 0; top: 88px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 16px; z-index: 10;
   background: rgba(5, 2, 16, 0.88);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
 }
 #space-overlay.hidden { display: none; }
+@keyframes wave-announce {
+  0%   { opacity:0; transform:scale(0.7) translateY(20px); }
+  20%  { opacity:1; transform:scale(1.08) translateY(-4px); }
+  40%  { transform:scale(1) translateY(0); }
+  80%  { opacity:1; transform:scale(1) translateY(0); }
+  100% { opacity:0; transform:scale(0.95) translateY(-10px); }
+}
 #space-controls {
   display: flex; justify-content: space-between; align-items: center;
   padding: 8px 16px max(16px, env(safe-area-inset-bottom, 0px));
@@ -2442,7 +2449,8 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 .space-ctrl-btn:active { background: rgba(242,239,232,0.22); }
 
 /* ── MATCH GAME ── */
-#pg-match { height: 100dvh; overflow: hidden; position: relative; z-index: 1; display: flex; flex-direction: column; }
+#pg-match { height: 100dvh; overflow: hidden; position: relative; z-index: 1; display: none; flex-direction: column; }
+#pg-match.active { display: flex; }
 .match-wrap { padding: 8px 12px; flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; overflow-y: auto; }
 .match-msg { font-family: 'Bebas Neue', cursive; font-size: 34px; letter-spacing: 6px; text-align: center; }
 .match-sub { font-size: 11px; letter-spacing: 2px; color: rgba(242,239,232,0.55); text-align: center; }
@@ -3477,6 +3485,12 @@ function nav(p) {
   if(onMatch) initMatch();
   if(onSpace) initSpace();
   if(!onSpace && typeof spacePause === 'function') spacePause();
+  // Defensive cleanup: if anything async re-added 'active' to a page that
+  // isn't the current target, strip it. Class-only (no inline styles) so it
+  // can't override CSS the way a stuck inline display would.
+  document.querySelectorAll('.page.active').forEach(el=>{
+    if (el.id !== `pg-${p}`) el.classList.remove('active');
+  });
 }
 
 function openRecDrawer() {
@@ -3635,6 +3649,11 @@ document.getElementById('spot-overlay').addEventListener('click', e => {
 });
 document.getElementById('spotQ').addEventListener('input', e => {
   const q = e.target.value;
+  if (q.trim().toLowerCase() === 'arcade') {
+    closeSpot();
+    nav('lobby');
+    return;
+  }
   const meta = document.getElementById('spot-meta');
   const results = document.getElementById('spot-results');
   if(!q.trim()) { results.innerHTML = ''; meta.textContent = ''; return; }
@@ -3661,6 +3680,7 @@ document.getElementById('srchClear').onclick=()=>{
 };
 
 function doSearch(q) {
+  if (q.trim().toLowerCase() === 'arcade') { nav('lobby'); return; }
   const meta=document.getElementById('srchMeta');
   const grid=document.getElementById('srchGrid');
   const noRes=document.getElementById('noRes');
@@ -4118,7 +4138,7 @@ heroCassette.addEventListener('animationend', function() {
     </div>
   </div>
   <canvas id="space-canvas"></canvas>
-  <div id="space-overlay">
+  <div id="space-overlay" class="hidden">
     <!-- filled by JS -->
   </div>
   <div id="space-controls">
@@ -4809,6 +4829,7 @@ function initCarousel() {
   if (!N) return;
 
   let logIdx = 0;
+  let scrollEndTimer = null;
 
   function scrollToIdx(idx, behavior) {
     const item = items[idx];
@@ -4821,17 +4842,41 @@ function initCarousel() {
     items.forEach((el, i) => el.classList.toggle('active-card', i === idx));
   }
 
+  function closestIdx() {
+    const center = carousel.scrollLeft + carousel.offsetWidth / 2;
+    let best = 0, bestDist = Infinity;
+    items.forEach((el, i) => {
+      const dist = Math.abs((el.offsetLeft + el.offsetWidth / 2) - center);
+      if (dist < bestDist) { bestDist = dist; best = i; }
+    });
+    return best;
+  }
+
+  // Swipe/touch scroll doesn't call scrollCarousel(), so track scroll settling directly
+  carousel.addEventListener('scroll', () => {
+    clearTimeout(scrollEndTimer);
+    scrollEndTimer = setTimeout(() => {
+      const idx = closestIdx();
+      if (idx !== logIdx) {
+        logIdx = idx;
+        _carouselIdx = logIdx;
+        syncActive(logIdx);
+        updateCarouselDots(logIdx, N);
+      }
+    }, 100);
+  }, { passive: true });
+
   requestAnimationFrame(() => requestAnimationFrame(() => {
     scrollToIdx(0, 'instant');
     syncActive(0);
     updateCarouselDots(0, N);
   }));
 
+  // Wraparound: left from first card jumps to last, right from last jumps to first
   window.scrollCarousel = function(dir) {
     const prev = logIdx;
     logIdx = (logIdx + dir + N) % N;
     _carouselIdx = logIdx;
-    // Wrap-around edges: instant cut (no cross-screen scroll)
     const isWrap = (prev === 0 && dir === -1) || (prev === N - 1 && dir === 1);
     scrollToIdx(logIdx, isWrap ? 'instant' : 'smooth');
     syncActive(logIdx);
@@ -5006,12 +5051,13 @@ function _onCharListScroll() {
 
 function openCharSelect(returnTo) {
   window._charSelectReturn = returnTo || 'lobby';
-  _renderCharList();
-  updateCharPreview(getGlobalChar());
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('pg-charselect')?.classList.add('active');
   document.body.className = document.body.className
     .replace(/\bon-\S+/g, '').trim() + ' on-char';
+  updateCharPreview(getGlobalChar());
+  // rAF: page must be laid out (display:flex/active) before scrollTop sticks reliably
+  requestAnimationFrame(() => _renderCharList());
 }
 
 function selectCharInGrid(i) {
@@ -5163,7 +5209,19 @@ window.confirmCharSelect = function() {
 
     if (state === 'playing') {
       const hudRight = `<div style="text-align:right;font-size:24px;line-height:1;letter-spacing:3px" id="whack-lives">${livesHTML()}</div>`;
+      const youGc = GAME_CHARS[activeChar], moleGc = GAME_CHARS[moleChar];
       wrap.innerHTML = `
+        <div style="display:flex;justify-content:center;align-items:center;gap:16px;margin-bottom:8px;font-family:'VCR',monospace;font-size:10px;letter-spacing:2px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="opacity:0.5">YOU</span>
+            <div style="width:30px;height:30px;border-radius:7px;overflow:hidden;border:1.5px solid ${youGc.color}88;background:${youGc.color}22">${charFace(youGc,'normal')}</div>
+          </div>
+          <div style="color:rgba(242,239,232,0.25)">VS</div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="width:30px;height:30px;border-radius:7px;overflow:hidden;border:1.5px solid #ff444488;background:#ff444422">${charFace(moleGc,'normal')}</div>
+            <span style="color:#ff4444">WHACK</span>
+          </div>
+        </div>
         <div class="whack-hud">
           <div><div class="whack-stat-label">SCORE</div><div class="whack-stat-val" id="whack-score-val">${score}</div></div>
           <div style="text-align:center"><div style="font-family:'VCR',monospace;font-size:8px;letter-spacing:2px;opacity:0.5">WAVE</div><div style="font-family:'Bebas Neue',cursive;font-size:32px;line-height:1;color:#ffe61a;text-shadow:0 0 10px #ffe61a88">${wave}</div></div>
@@ -5204,14 +5262,30 @@ window.confirmCharSelect = function() {
   }
 
   function getPopDelay() {
-    const waveBoost = (wave - 1) * 60;
-    const base = Math.max(160, 980 - waveBoost - waveHits * 8) + Math.random() * 80;
-    return difficulty === 'easy' ? base * 1.35 : base;
+    // "wave" not "wave-1" — game starts at what used to be wave 2's pace, no slow warm-up
+    if (difficulty === 'easy') {
+      // EASY = old HARD baseline
+      const waveBoost = wave * 60;
+      return Math.max(160, 980 - waveBoost - waveHits * 8) + Math.random() * 80;
+    }
+    // HARD = steeper ramp, lower floor — gets fast much sooner
+    const waveBoost = wave * 110;
+    return Math.max(110, 900 - waveBoost - waveHits * 14) + Math.random() * 60;
   }
   function getUpTime() {
-    const waveBoost = (wave - 1) * 80;
-    const base = (Math.max(420, 2240 - waveBoost - waveHits * 20) + Math.random() * 120) * 0.7;
-    return difficulty === 'easy' ? base * 1.5 : base;
+    if (difficulty === 'easy') {
+      const waveBoost = wave * 80;
+      return (Math.max(420, 2240 - waveBoost - waveHits * 20) + Math.random() * 120) * 0.7;
+    }
+    const waveBoost = wave * 150;
+    return (Math.max(320, 1900 - waveBoost - waveHits * 28) + Math.random() * 100) * 0.62;
+  }
+  // How many moles can be up/scheduled at once — this is what makes "overlapping moles" real
+  function concurrencyForWave(w) {
+    if (difficulty === 'easy') return w >= 7 ? 2 : 1;
+    if (w >= 6) return 3;
+    if (w >= 3) return 2;
+    return 1;
   }
 
   function scheduleSurvivalNext() {
@@ -5356,13 +5430,11 @@ window.confirmCharSelect = function() {
       if (sv) sv.textContent = score;
       waveHits++;
       const easy = difficulty === 'easy';
-      const threshold = wave === 1 ? 3 : (easy ? 6 : 8);
+      const threshold = wave === 1 ? 3 : (easy ? 8 : 5);
       if (waveHits >= threshold) {
         waveHits = 0; wave++;
         announceWave(wave);
-        if (wave === (easy ? 3 : 2)) setTimeout(scheduleSurvivalNext, 500);
-        if (wave === (easy ? 6 : 4)) setTimeout(scheduleSurvivalNext, 600);
-        const w1 = easy ? 5 : 3;
+        const w1 = easy ? 3 : 2;
         if (wave === w1 && !selfActive) setTimeout(addSelf, 900);
         if (wave >= nextHeartWave) setTimeout(scheduleHeart, 1200);
       }
@@ -5404,7 +5476,8 @@ window.confirmCharSelect = function() {
     setTimeout(() => {
       ann.remove();
       waveAnnouncing = false;
-      scheduleSurvivalNext();
+      const n = concurrencyForWave(w);
+      for (let k = 0; k < n; k++) scheduleSurvivalNext();
     }, 1600);
   }
 
@@ -6494,18 +6567,20 @@ window.confirmCharSelect = function() {
   'use strict';
 
   let canvas, ctx, W, H, raf, state = 'idle';
-  let player, bullets, obstacles, stars, score, health, wave, waveKills, killsNeeded, highScore;
+  let player, bullets, obstacles, stars, score, health, wave, waveKills, highScore, spawnsRemaining;
   let leftHeld = false, rightHeld = false, lastAutoFire = 0, activeChar = getGlobalChar();
   let enemyBullets = [], lastEnemyFire = 0;
   let dangerY = 0, lineFlashA = 0;
   let floatTexts = []; // {text, x, y, color, a, vy, size}
   let currentCfg = null;
+  let powerups = []; // {type:'speed'|'gun'|'bomb', x, y, vy, r}
+  let buffSpeedUntil = 0, buffGunUntil = 0;
 
   function addFloatText(text, x, y, color, size) {
-    floatTexts.push({text, x, y, color, a: 1, vy: -1.5, size: size || 16});
+    floatTexts.push({text, x, y, color, a: 1, vy: -1.5, size: size || 20});
   }
 
-  const P_SPEED = 5, B_SPEED = 9, O_SPEED_BASE = 1.8;
+  const P_SPEED = 5, B_SPEED = 9, O_SPEED_BASE = 2.0; // +10% over original 1.8
   const AUTO_FIRE_MS = 240;
   const FACE_R = 22, ASTEROID_R_MIN = 14, ASTEROID_R_MAX = 30;
 
@@ -6520,11 +6595,13 @@ window.confirmCharSelect = function() {
   }
 
   function waveConfig(w) {
+    // Gentle ramp through the early waves (no more wall around wave 5), steep long-tail escalation
+    // after wave ~10 so the game keeps getting harder indefinitely and never plateaus into "winnable forever."
     return {
-      kills: 8 + w * 4,
-      speed: O_SPEED_BASE + w * 0.25,
-      spawnMs: Math.max(380, 1700 - w * 150),
-      asteroidRatio: Math.max(0.2, 0.6 - w * 0.05),
+      poolSize: 12 + w * 4,
+      speed: O_SPEED_BASE + Math.min(w, 12) * 0.18 + Math.max(0, w - 12) * 0.35,
+      spawnMs: Math.max(320, 1750 - w * 90 - Math.max(0, w - 8) * 60),
+      asteroidRatio: Math.max(0.18, 0.65 - w * 0.03),
     };
   }
 
@@ -6541,32 +6618,79 @@ window.confirmCharSelect = function() {
       obstacles.push({ type:'asteroid', x:rand(r,W-r), y:-r-10, vx:rand(-0.4,0.4)*cfg.speed, vy:cfg.speed*(0.8+Math.random()*0.4), r, verts, rot:0, rotSpeed:rand(-0.02,0.02), hp:1 });
     } else {
       const ci = Math.floor(Math.random() * GAME_CHARS.length);
-      const isTrapped = Math.random() < Math.max(0.05, 0.25 - wave * 0.02);
+      const isTrapped = Math.random() < Math.max(0.05, 0.15 - wave * 0.015); // fewer heroes
       obstacles.push({ type:'face', x:rand(FACE_R,W-FACE_R), y:-FACE_R-10, vx:rand(-0.6,0.6)*cfg.speed, vy:cfg.speed*(0.7+Math.random()*0.5), r:FACE_R, ci, hp:1, isTrapped, ringHp: isTrapped ? 2 : 0 });
     }
   }
 
+  const POWERUP_R = 18;
+  function spawnPowerup() {
+    const types = ['speed', 'gun', 'bomb'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    powerups.push({ type, x: rand(POWERUP_R, W - POWERUP_R), y: -POWERUP_R - 10, vy: 1.3, r: POWERUP_R, bob: Math.random() * Math.PI * 2 });
+  }
+
+  function drawPowerup(p) {
+    ctx.save(); ctx.translate(p.x, p.y);
+    const pulse = 0.85 + Math.sin(Date.now() * 0.006 + p.bob) * 0.15;
+    ctx.beginPath(); ctx.arc(0, 0, p.r * pulse + 6, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,230,26,0.18)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = '#1a1530'; ctx.fill();
+    ctx.strokeStyle = '#ffe61a'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.font = `${p.r * 1.3}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(p.type === 'speed' ? '🍕' : p.type === 'gun' ? '⚡' : '💣', 0, 1);
+    ctx.restore();
+  }
+
+  function applyPowerup(type) {
+    if (type === 'speed') {
+      buffSpeedUntil = Date.now() + 10000;
+      addFloatText('SPEED BOOST!', player.x, player.y - 50, '#ffe61a', 20);
+      SFX.win();
+    } else if (type === 'gun') {
+      buffGunUntil = Date.now() + 8000;
+      addFloatText('MACHINE GUN!', player.x, player.y - 50, '#ffe61a', 20);
+      SFX.win();
+    } else if (type === 'bomb') {
+      let cleared = 0;
+      obstacles.forEach(o => {
+        if (o.isTrapped) return; // spare heroes — bomb only hits hostiles
+        bigExplosion(o.x, o.y, o.type === 'asteroid' ? '#7a6a90' : GAME_CHARS[o.ci].color);
+        score += o.type === 'asteroid' ? (10 + wave * 2) : (25 + wave * 5);
+        waveKills++; cleared++;
+        o.alive = false;
+      });
+      obstacles = obstacles.filter(o => o.alive !== false);
+      addFloatText(`BOMB! +${cleared}`, player.x, player.y - 50, '#ff8800', 22);
+      SFX.over();
+    }
+  }
+
   function reset() {
-    W = canvas.width  = canvas.offsetWidth;
-    H = canvas.height = canvas.offsetHeight;
+    W = canvas.width  = canvas.offsetWidth  || window.innerWidth;
+    H = canvas.height = canvas.offsetHeight || (window.innerHeight - 150);
     player = { x:W/2, y:H-70, r:18 };
     bullets=[]; obstacles=[]; score=0; health=100; wave=1; waveKills=0;
     enemyBullets=[]; lastEnemyFire=0; floatTexts=[]; lineFlashA=0;
+    powerups=[]; buffSpeedUntil=0; buffGunUntil=0;
     dangerY = player.y - player.r * 1.2 - 2;
     highScore = parseInt(localStorage.getItem('space-best')||'0');
     leftHeld=false; rightHeld=false; lastAutoFire=0;
     mkStars();
     currentCfg = waveConfig(wave);
-    killsNeeded = currentCfg.kills;
     startWaveSpawn(currentCfg);
   }
 
   let spawnTimer = null;
   function startWaveSpawn(cfg) {
     clearTimeout(spawnTimer);
+    spawnsRemaining = cfg.poolSize;
     function doSpawn() {
       if (state !== 'playing') return;
+      if (spawnsRemaining <= 0) return; // pool exhausted — let the board clear naturally, no forced wipe
       spawnObstacle(cfg);
+      spawnsRemaining--;
       spawnTimer = setTimeout(doSpawn, cfg.spawnMs * 0.8 * (0.7 + Math.random()*0.6));
     }
     spawnTimer = setTimeout(doSpawn, 1500);
@@ -6575,9 +6699,12 @@ window.confirmCharSelect = function() {
   function nextWave() {
     wave++; waveKills=0;
     currentCfg = waveConfig(wave);
-    killsNeeded = currentCfg.kills;
     announceWave(wave);
     startWaveSpawn(currentCfg);
+    // ~65% chance of a power-up appearing sometime mid-wave, from wave 2 on
+    if (wave >= 2 && Math.random() < 0.65) {
+      setTimeout(() => { if (state === 'playing') spawnPowerup(); }, 2500 + Math.random() * 4000);
+    }
   }
 
   function announceWave(w) {
@@ -6595,25 +6722,26 @@ window.confirmCharSelect = function() {
 
   function takeDamage(amount) {
     health = Math.max(0, health - amount);
-    addFloatText(`-${amount}`, player.x, player.y - 40, '#ff4444', 16);
+    addFloatText(`-${amount}`, player.x, player.y - 40, '#ff4444', 20);
     miniExplosion(player.x, player.y, '#ff4444');
     if (health <= 0) {
       state = 'over';
       clearTimeout(spawnTimer);
       cancelAnimationFrame(raf);
       SFX.over();
+      bigExplosion(player.x, player.y, GAME_CHARS[activeChar].color);
       if (score > highScore) { highScore = score; localStorage.setItem('space-best', score); }
-      showSpaceOverlay('over');
+      // Freeze on the death frame for 3s before showing the game-over overlay
+      setTimeout(() => showSpaceOverlay('over'), 3000);
     }
   }
 
   function drawPlayer() {
     const p = player, gc = GAME_CHARS[activeChar];
     ctx.save(); ctx.translate(p.x, p.y);
-    ctx.shadowColor='#00e5ff'; ctx.shadowBlur=18;
-    ctx.beginPath(); ctx.moveTo(-8,12); ctx.lineTo(0,26); ctx.lineTo(8,12); ctx.closePath();
-    ctx.fillStyle='rgba(0,229,255,0.6)'; ctx.fill();
-    ctx.shadowBlur=0;
+    // thruster glow — no shadowBlur for perf; use a larger semi-transparent fill instead
+    ctx.beginPath(); ctx.moveTo(-10,10); ctx.lineTo(0,28); ctx.lineTo(10,10); ctx.closePath();
+    ctx.fillStyle='rgba(0,229,255,0.5)'; ctx.fill();
     ctx.beginPath();
     ctx.moveTo(0,-p.r*1.1);
     ctx.lineTo(p.r*0.75, p.r*0.5);
@@ -6663,32 +6791,28 @@ window.confirmCharSelect = function() {
         ctx.fillText(gc.emoji,0,2);
       }
       if (!o.isTrapped) {
-        // enemy: red ring
+        // enemy: red ring — thick double-stroke, no shadowBlur for perf
+        ctx.beginPath(); ctx.arc(0,0,o.r+10,0,Math.PI*2);
+        ctx.strokeStyle='rgba(255,30,30,0.35)'; ctx.lineWidth=6; ctx.stroke();
         ctx.beginPath(); ctx.arc(0,0,o.r+9,0,Math.PI*2);
-        ctx.strokeStyle='#ff4444'; ctx.lineWidth=2.5;
-        ctx.shadowColor='#ff4444'; ctx.shadowBlur=10;
-        ctx.stroke(); ctx.shadowBlur=0;
+        ctx.strokeStyle='#ff4444'; ctx.lineWidth=2.5; ctx.stroke();
       }
       if (o.isTrapped && o.ringHp > 0) {
         const t = Date.now() * 0.003;
         ctx.save();
         ctx.rotate(t);
-        ctx.strokeStyle = '#00e5ff';
-        ctx.lineWidth = 3;
-        ctx.shadowColor = '#00e5ff';
-        ctx.shadowBlur = 12;
-        ctx.beginPath();
-        ctx.arc(0, 0, o.r + 10, 0, Math.PI * 2);
-        ctx.stroke();
+        // cyan ring — thick outer halo instead of shadowBlur
+        ctx.beginPath(); ctx.arc(0, 0, o.r + 11, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(0,229,255,0.25)'; ctx.lineWidth = 7; ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, o.r + 10, 0, Math.PI * 2);
+        ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 2.5; ctx.stroke();
         for (let d = 0; d < 4; d++) {
           const a = (d / 4) * Math.PI * 2 + t;
           ctx.fillStyle = '#fff';
-          ctx.shadowBlur = 0;
           ctx.beginPath();
           ctx.arc(Math.cos(a) * (o.r + 10), Math.sin(a) * (o.r + 10), 3, 0, Math.PI * 2);
           ctx.fill();
         }
-        ctx.shadowBlur = 0;
         ctx.restore();
       }
     }
@@ -6698,37 +6822,37 @@ window.confirmCharSelect = function() {
   function drawHUD() {
     // Score (top left)
     ctx.fillStyle = 'rgba(242,239,232,0.92)';
-    ctx.font = `bold 18px 'Bebas Neue', cursive`;
+    ctx.font = `bold 23px 'Bebas Neue', cursive`;
     ctx.textAlign = 'left'; ctx.textBaseline = 'top';
     ctx.fillText(`SCORE ${score}`, 10, 6);
 
-    // Wave (top center)
+    // Wave (top center) — shows obstacles left this wave (spawned-but-unresolved + still to spawn)
     ctx.textAlign = 'center';
-    ctx.fillText(`WAVE ${wave}  ·  ${waveKills}/${killsNeeded}`, W/2, 6);
+    const leftThisWave = obstacles.length + spawnsRemaining;
+    ctx.fillText(`WAVE ${wave}  ·  ${leftThisWave} LEFT`, W/2, 6);
 
     // Health bar (bottom, full width)
-    const barY = H - 24;
+    const barY = H - 28;
     const barW = W - 24;
     const barX = 12;
-    const barH = 12;
+    const barH = 14;
 
     // HP label — bigger and clearer
     const hp = Math.max(0, health) / 100;
     ctx.fillStyle = hp > 0.4 ? 'rgba(242,239,232,0.85)' : '#ff6666';
-    ctx.font = `bold 13px 'Bebas Neue', cursive`;
+    ctx.font = `bold 17px 'Bebas Neue', cursive`;
     ctx.textAlign = 'left';
-    ctx.fillText(`HP  ${Math.ceil(health)}%`, barX, barY - 6);
+    ctx.fillText(`HP  ${Math.ceil(health)}%`, barX, barY - 7);
 
     // Background track
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     ctx.fillRect(barX, barY, barW, barH);
 
-    // Health fill
-    ctx.shadowColor = hp > 0.4 ? '#33ff66' : '#ff4444';
-    ctx.shadowBlur = 8;
+    // Health fill — no shadowBlur; use a brighter overlay strip for effect
     ctx.fillStyle = hp > 0.6 ? '#33ff66' : hp > 0.3 ? '#ffe61a' : '#ff4444';
     ctx.fillRect(barX, barY, barW * hp, barH);
-    ctx.shadowBlur = 0;
+    ctx.fillStyle = hp > 0.6 ? 'rgba(51,255,102,0.3)' : hp > 0.3 ? 'rgba(255,230,26,0.3)' : 'rgba(255,68,68,0.3)';
+    ctx.fillRect(barX, barY, barW * hp, barH * 0.4);
 
     // Section dividers (10 segments = 10 HP each)
     ctx.strokeStyle = 'rgba(0,0,0,0.55)';
@@ -6736,6 +6860,21 @@ window.confirmCharSelect = function() {
     for (let i = 1; i < 10; i++) {
       const sx = barX + barW * (i / 10);
       ctx.beginPath(); ctx.moveTo(sx, barY); ctx.lineTo(sx, barY + barH); ctx.stroke();
+    }
+
+    // Active buff indicators (top right, under WAVE line)
+    ctx.font = `bold 13px 'Bebas Neue', cursive`;
+    ctx.textAlign = 'right';
+    let buffY = 32;
+    const now = Date.now();
+    if (now < buffSpeedUntil) {
+      ctx.fillStyle = '#ffe61a';
+      ctx.fillText(`🍕 SPEED ${Math.ceil((buffSpeedUntil - now) / 1000)}s`, W - 10, buffY);
+      buffY += 18;
+    }
+    if (now < buffGunUntil) {
+      ctx.fillStyle = '#ffe61a';
+      ctx.fillText(`⚡ RAPID FIRE ${Math.ceil((buffGunUntil - now) / 1000)}s`, W - 10, buffY);
     }
 
     ctx.textBaseline = 'alphabetic';
@@ -6754,16 +6893,31 @@ window.confirmCharSelect = function() {
       ctx.fillStyle=`rgba(255,255,255,${s.a})`; ctx.fill();
     }
 
-    if(ts-lastAutoFire>AUTO_FIRE_MS){
+    const _now = Date.now();
+    const curFireMs = _now < buffGunUntil ? AUTO_FIRE_MS * 0.4 : AUTO_FIRE_MS;
+    if(ts-lastAutoFire>curFireMs){
       bullets.push({x:player.x,y:player.y-player.r*1.2,vy:-B_SPEED});
       lastAutoFire=ts; SFX.flap();
     }
 
-    if(leftHeld)  player.x=Math.max(player.r,     player.x-P_SPEED);
-    if(rightHeld) player.x=Math.min(W-player.r,   player.x+P_SPEED);
+    const curSpeed = _now < buffSpeedUntil ? P_SPEED * 1.6 : P_SPEED;
+    if(leftHeld)  player.x=Math.max(player.r,     player.x-curSpeed);
+    if(rightHeld) player.x=Math.min(W-player.r,   player.x+curSpeed);
 
     bullets=bullets.filter(b=>b.y>-10);
     bullets.forEach(b=>b.y+=b.vy);
+
+    // Power-ups: drift down, draw, collect on touch (no damage if missed — just drift off)
+    powerups = powerups.filter(p => p.y < H + 40);
+    for (const p of powerups) {
+      p.y += p.vy;
+      drawPowerup(p);
+      if (Math.hypot(p.x - player.x, p.y - player.y) < p.r + player.r * 0.9) {
+        applyPowerup(p.type);
+        p._collected = true;
+      }
+    }
+    powerups = powerups.filter(p => !p._collected);
 
     obstacles=obstacles.filter(o=>o.y<H+60&&o.x>-60&&o.x<W+60);
     for(const o of obstacles){
@@ -6783,7 +6937,6 @@ window.confirmCharSelect = function() {
           bigExplosion(o.x, dangerY, '#aa8855');
           SFX.whack && SFX.whack(); // thud sound
           waveKills++;
-          if(waveKills>=killsNeeded){ clearTimeout(spawnTimer); obstacles=[]; nextWave(); return; }
         } else if(!o.isTrapped){
           // enemy crosses line — big damage
           takeDamage(30);
@@ -6791,14 +6944,12 @@ window.confirmCharSelect = function() {
           faceFlash(o.ci, 'sad', o.x, dangerY - 30);
           SFX.miss();
           waveKills++;
-          if(waveKills>=killsNeeded){ clearTimeout(spawnTimer); obstacles=[]; nextWave(); return; }
         } else {
           // trapped hero crosses line — LOST, no damage
-          addFloatText('LOST!', o.x, o.y, '#ff4444', 22);
+          addFloatText('LOST!', o.x, o.y, '#ff4444', 26);
           faceFlash(o.ci, 'sad', o.x, o.y - 20);
           SFX.miss();
           waveKills++;
-          if(waveKills>=killsNeeded){ clearTimeout(spawnTimer); obstacles=[]; nextWave(); return; }
         }
         if(state==='over') return;
       }
@@ -6807,12 +6958,12 @@ window.confirmCharSelect = function() {
 
     obstacles.forEach(drawObstacle);
 
+    // Draw all bullets in one batch (no per-bullet ctx.save/restore or shadowBlur)
+    ctx.fillStyle='#ffe61a';
     for(const b of bullets){
-      ctx.save();
-      ctx.shadowColor='#ffe61a'; ctx.shadowBlur=10;
-      ctx.fillStyle='#ffe61a';
       ctx.fillRect(b.x-2,b.y-12,4,14);
-      ctx.restore();
+      ctx.fillStyle='rgba(255,230,26,0.35)'; ctx.fillRect(b.x-4,b.y-14,8,18); // cheap glow
+      ctx.fillStyle='#ffe61a';
     }
 
     for(const b of bullets){
@@ -6832,12 +6983,11 @@ window.confirmCharSelect = function() {
                 SFX.win();
                 miniExplosion(o.x,o.y,'#00e5ff');
                 faceFlash(o.ci,'happy',o.x,o.y);
-                addFloatText('+150 RESCUED!', o.x, o.y, '#00e5ff', 18);
+                addFloatText('+150 RESCUED!', o.x, o.y, '#00e5ff', 22);
                 const hpGain = Math.min(30, 100 - health);
-                if(hpGain > 0){ health = Math.min(100, health + 30); addFloatText(`+${hpGain} HP`, o.x, o.y - 30, '#33ff66', 14); }
-                if(waveKills>=killsNeeded){ clearTimeout(spawnTimer); obstacles=[]; nextWave(); }
+                if(hpGain > 0){ health = Math.min(100, health + 30); addFloatText(`+${hpGain} HP`, o.x, o.y - 30, '#33ff66', 18); }
               } else {
-                addFloatText('RING HIT!', o.x, o.y, '#00e5ff', 14);
+                addFloatText('RING HIT!', o.x, o.y, '#00e5ff', 18);
                 SFX.score();
                 b.vy=999; // bullet spent but obstacle survives
               }
@@ -6845,7 +6995,7 @@ window.confirmCharSelect = function() {
               // Ring already destroyed but player shot the face — penalty!
               SFX.miss();
               o.alive=false;
-              addFloatText('OOPS!', o.x, o.y, '#ff4444', 20);
+              addFloatText('OOPS!', o.x, o.y, '#ff4444', 24);
               miniExplosion(o.x, o.y, '#ff4444');
               faceFlash(o.ci,'sad',o.x,o.y);
               takeDamage(30);
@@ -6856,10 +7006,9 @@ window.confirmCharSelect = function() {
               score+=pts; SFX.score();
               miniExplosion(o.x,o.y,GAME_CHARS[o.ci].color);
               faceFlash(o.ci,'sad',o.x,o.y);
-              addFloatText('+'+pts, o.x, o.y, GAME_CHARS[o.ci].color, 14);
+              addFloatText('+'+pts, o.x, o.y, GAME_CHARS[o.ci].color, 18);
               waveKills++;
               o.alive=false;
-              if(waveKills>=killsNeeded){ clearTimeout(spawnTimer); obstacles=[]; nextWave(); }
             }
           } else {
             // Asteroid
@@ -6884,7 +7033,6 @@ window.confirmCharSelect = function() {
             }
             waveKills++;
             o.alive=false;
-            if(waveKills>=killsNeeded){ clearTimeout(spawnTimer); obstacles=[]; nextWave(); }
           }
           break;
         }
@@ -6902,28 +7050,36 @@ window.confirmCharSelect = function() {
     }
     obstacles=obstacles.filter(o=>o.alive!==false);
 
-    // Enemy fire (wave 1+, tracked toward player)
-    if(Date.now() - lastEnemyFire > Math.max(400, 1800 - wave * 80)){
+    // Wave ends naturally once the spawn pool is exhausted and the board has actually cleared —
+    // no forced wipe, so the last few obstacles fly off / get resolved normally first.
+    if (spawnsRemaining <= 0 && obstacles.length === 0 && state === 'playing') {
+      nextWave();
+    }
+
+    // Enemy fire (wave 1+, tracked toward player) — faster rate, more shots per volley at higher waves
+    if(Date.now() - lastEnemyFire > Math.max(220, 1500 - wave * 120)){
       const shooters = obstacles.filter(o => o.type==='face' && !o.isTrapped && o.y > 0);
       if(shooters.length > 0){
-        const shooter = shooters[Math.floor(Math.random() * shooters.length)];
-        const dx = player.x - shooter.x;
-        const dy = player.y - shooter.y;
-        const dist = Math.sqrt(dx*dx+dy*dy) || 1;
-        const bulletSpeed = 3 + wave * 0.4;
-        enemyBullets.push({ x: shooter.x, y: shooter.y + shooter.r, vx: (dx/dist)*bulletSpeed, vy: (dy/dist)*bulletSpeed, r: 4 });
+        const numShots = Math.min(shooters.length, 1 + Math.floor(wave / 4));
+        const chosen = shooters.map(s => [Math.random(), s]).sort((a,b) => a[0]-b[0]).slice(0, numShots).map(p => p[1]);
+        chosen.forEach(shooter => {
+          const dx = player.x - shooter.x;
+          const dy = player.y - shooter.y;
+          const dist = Math.sqrt(dx*dx+dy*dy) || 1;
+          const bulletSpeed = 3.2 + wave * 0.45;
+          enemyBullets.push({ x: shooter.x, y: shooter.y + shooter.r, vx: (dx/dist)*bulletSpeed, vy: (dy/dist)*bulletSpeed, r: 4 });
+        });
         lastEnemyFire = Date.now();
-        SFX.tone && SFX.tone(400, 'square', 0, 0.03, 0.08, 300);
+        SFX.tone && SFX.tone(420, 'square', 0, 0.03, 0.08, 280);
       }
     }
     enemyBullets.forEach(b => {
       b.x += b.vx; b.y += b.vy;
-      ctx.save();
+      // halo + core without shadowBlur — red, more visible
+      ctx.beginPath(); ctx.arc(b.x, b.y, (b.r||4)+3, 0, Math.PI*2);
+      ctx.fillStyle='rgba(255,68,68,0.28)'; ctx.fill();
       ctx.beginPath(); ctx.arc(b.x, b.y, b.r || 4, 0, Math.PI*2);
-      ctx.fillStyle='#ff00cc';
-      ctx.shadowColor='#ff00cc'; ctx.shadowBlur=8;
-      ctx.fill(); ctx.shadowBlur=0;
-      ctx.restore();
+      ctx.fillStyle='#ff4444'; ctx.fill();
       const dx=b.x-player.x, dy=b.y-player.y;
       if(Math.sqrt(dx*dx+dy*dy) < (b.r||4) + player.r*0.8){
         b._hit=true; SFX.miss();
@@ -6942,22 +7098,26 @@ window.confirmCharSelect = function() {
       ctx.font = `bold ${t.size}px 'Bebas Neue', cursive`;
       ctx.textAlign = 'center';
       ctx.fillStyle = t.color;
-      ctx.shadowColor = t.color; ctx.shadowBlur = 8;
       ctx.fillText(t.text, t.x, t.y);
       ctx.restore();
     });
 
-    // Danger line
+    // Danger line — no shadowBlur; use a wider semi-transparent halo line instead
     if (lineFlashA > 0) lineFlashA = Math.max(0, lineFlashA - 0.04);
     ctx.save();
     ctx.setLineDash([6, 5]);
     ctx.lineDashOffset = -(Date.now() / 90) % 11;
+    // halo
+    ctx.beginPath(); ctx.moveTo(0, dangerY); ctx.lineTo(W, dangerY);
+    ctx.strokeStyle = `rgba(51,255,100,${(0.28 + lineFlashA * 0.62) * 0.35})`;
+    ctx.lineWidth = 6 + lineFlashA * 4;
+    ctx.stroke();
+    // core line
     ctx.beginPath(); ctx.moveTo(0, dangerY); ctx.lineTo(W, dangerY);
     ctx.strokeStyle = `rgba(51,255,100,${0.28 + lineFlashA * 0.62})`;
     ctx.lineWidth = 1.5 + lineFlashA;
-    ctx.shadowColor = '#33ff66'; ctx.shadowBlur = 4 + lineFlashA * 16;
     ctx.stroke();
-    ctx.setLineDash([]); ctx.shadowBlur = 0;
+    ctx.setLineDash([]);
     ctx.restore();
 
     drawPlayer();
@@ -7040,7 +7200,7 @@ window.confirmCharSelect = function() {
   }
 
   function showSpaceOverlay(mode) {
-    if (mode === 'select' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
+    try { if (mode === 'select' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start(); } catch(e){}
     const ov=document.getElementById('space-overlay');
     if(!ov) return;
     if(mode==='select'){
@@ -7055,47 +7215,47 @@ window.confirmCharSelect = function() {
                 <div class="char-tilt" style="width:54px;height:54px">${charFace(gc,'normal')}</div>
               </div>
               <div style="text-align:left">
-                <div style="font-size:9px;letter-spacing:2px;color:rgba(242,239,232,0.45);font-family:'VCR',monospace">YOUR PILOT</div>
-                <div style="font-family:'Bebas Neue',cursive;font-size:26px;letter-spacing:4px;color:${gc.color};text-shadow:0 0 10px ${gc.color}88;line-height:1.1">${gc.name}</div>
-                <div style="font-size:9px;letter-spacing:1px;color:rgba(242,239,232,0.3);font-family:'VCR',monospace;margin-top:2px">CHANGE IN ARCADE MENU</div>
+                <div style="font-size:12px;letter-spacing:2px;color:rgba(242,239,232,0.5);font-family:'VCR',monospace">YOUR PILOT</div>
+                <div style="font-family:'Bebas Neue',cursive;font-size:30px;letter-spacing:4px;color:${gc.color};text-shadow:0 0 10px ${gc.color}88;line-height:1.1">${gc.name}</div>
+                <div style="font-size:11px;letter-spacing:1px;color:rgba(242,239,232,0.35);font-family:'VCR',monospace;margin-top:3px">CHANGE IN ARCADE MENU</div>
               </div>
             </div>
             <div style="width:100%;height:1px;background:rgba(242,239,232,0.1)"></div>
-            <div style="width:100%;display:flex;flex-direction:column;gap:11px;font-family:'VCR',monospace">
+            <div style="width:100%;display:flex;flex-direction:column;gap:14px;font-family:'VCR',monospace">
               <div style="display:flex;align-items:center;gap:12px">
-                <svg width="30" height="30" viewBox="0 0 30 30" style="flex-shrink:0">
+                <svg width="34" height="34" viewBox="0 0 30 30" style="flex-shrink:0">
                   <polygon points="15,3 22,8 27,15 22,24 14,27 7,22 3,14 9,5" fill="#4a3f5c" stroke="#7a6a90" stroke-width="1.5"/>
                 </svg>
-                <div style="font-size:12px;letter-spacing:1px;line-height:1.5">
+                <div style="font-size:15px;letter-spacing:1px;line-height:1.6">
                   <span style="color:rgba(242,239,232,0.85)">ASTEROID</span><br>
-                  <span style="color:#ff6666;font-size:10px">CROSSES LINE = DAMAGE · SHOOT TO DESTROY</span>
+                  <span style="color:#ff6666;font-size:13px">CROSSES LINE = DAMAGE · SHOOT TO DESTROY</span>
                 </div>
               </div>
               <div style="display:flex;align-items:center;gap:12px">
-                <svg width="30" height="30" viewBox="0 0 30 30" style="flex-shrink:0">
+                <svg width="34" height="34" viewBox="0 0 30 30" style="flex-shrink:0">
                   <circle cx="15" cy="15" r="11" fill="#cc44ff"/>
                   <circle cx="15" cy="15" r="13.5" fill="none" stroke="#ff4444" stroke-width="2.5"/>
                 </svg>
-                <div style="font-size:12px;letter-spacing:1px;line-height:1.5">
+                <div style="font-size:15px;letter-spacing:1px;line-height:1.6">
                   <span style="color:#ff4444">RED RING</span><span style="color:rgba(242,239,232,0.85)"> = ENEMY FACE</span><br>
-                  <span style="color:#ff6666;font-size:10px">SHOOTS AT YOU · CROSSES LINE = BIG DAMAGE</span>
+                  <span style="color:#ff6666;font-size:13px">SHOOTS AT YOU · CROSSES LINE = BIG DAMAGE</span>
                 </div>
               </div>
               <div style="display:flex;align-items:center;gap:12px">
-                <svg width="30" height="30" viewBox="0 0 30 30" style="flex-shrink:0">
+                <svg width="34" height="34" viewBox="0 0 30 30" style="flex-shrink:0">
                   <circle cx="15" cy="15" r="11" fill="#33d4e0"/>
                   <circle cx="15" cy="15" r="13.5" fill="none" stroke="#00e5ff" stroke-width="2.5" stroke-dasharray="4,3"/>
                 </svg>
-                <div style="font-size:12px;letter-spacing:1px;line-height:1.5">
+                <div style="font-size:15px;letter-spacing:1px;line-height:1.6">
                   <span style="color:#00e5ff">CYAN RING</span><span style="color:rgba(242,239,232,0.85)"> = TRAPPED HERO</span><br>
-                  <span style="color:#33ff66;font-size:10px">SHOOT THE RING TO RESCUE = +HP</span>
+                  <span style="color:#33ff66;font-size:13px">SHOOT THE RING TO RESCUE = +HP</span>
                 </div>
               </div>
             </div>
           </div>
           <div class="arcade-cab-foot" style="flex-direction:column;align-items:center;gap:8px">
             <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.18);font-size:16px;letter-spacing:4px;padding:14px 40px" onclick="spaceStart()">LAUNCH!</button>
-            <div style="font-family:'VCR',monospace;font-size:9px;letter-spacing:2px;color:rgba(242,239,232,0.4)">◀▶ BUTTONS TO MOVE · AUTO-FIRES</div>
+            <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.45)">◀▶ BUTTONS TO MOVE · AUTO-FIRES</div>
           </div>
         </div>`;
     } else if(mode==='over'){
@@ -7147,26 +7307,21 @@ window.confirmCharSelect = function() {
     const ov=document.getElementById('space-overlay');
     if(ov)ov.classList.add('hidden');
     reset(); state='playing'; raf=requestAnimationFrame(loop);
-    // Brief tutorial toast
-    const tut = document.createElement('div');
-    tut.style.cssText='position:fixed;top:20%;left:50%;transform:translateX(-50%);z-index:9999;pointer-events:none;text-align:center;transition:opacity 0.6s';
-    tut.innerHTML=`<div style="background:rgba(0,20,40,0.88);border:1px solid #00e5ff44;border-radius:10px;padding:14px 22px;font-family:\'Bebas Neue\',cursive;letter-spacing:3px">
-      <div style="font-size:16px;color:#00e5ff;text-shadow:0 0 10px #00e5ff">🔵 RING = RESCUE THEM</div>
-      <div style="font-size:13px;color:rgba(242,239,232,0.7);margin-top:4px">SHOOT THE RING, NOT THE FACE!</div>
-      <div style="font-size:13px;color:#ff4444;margin-top:4px">NO RING = DESTROY THEM</div>
-    </div>`;
-    document.body.appendChild(tut);
-    setTimeout(()=>{ tut.style.opacity='0'; setTimeout(()=>tut.remove(),600); }, 2500);
   };
-  window.spacePause=function(){clearTimeout(spawnTimer);cancelAnimationFrame(raf);state='idle';};
+  window.spacePause=function(){
+    clearTimeout(spawnTimer);cancelAnimationFrame(raf);state='idle';
+    const _ov=document.getElementById('space-overlay');
+    if(_ov) _ov.classList.add('hidden');
+  };
   window.initSpace=function(){
     activeChar=getGlobalChar();
     canvas=document.getElementById('space-canvas');
     if(!canvas)return;
+    // Always unhide the overlay when entering the space page
+    const _ov=document.getElementById('space-overlay');
+    if(_ov) _ov.classList.remove('hidden');
     ctx=canvas.getContext('2d');
-    W=canvas.width=canvas.offsetWidth;
-    H=canvas.height=canvas.offsetHeight;
-    mkStars(); state='idle';
+    state='idle';
     if(!canvas._spaceTouchReady){
       canvas._spaceTouchReady=true;
       function getTouchX(e){
@@ -7182,7 +7337,18 @@ window.confirmCharSelect = function() {
         if(state==='playing') player.x=Math.max(player.r,Math.min(W-player.r,getTouchX(e)));
       },{passive:false});
     }
-    showSpaceOverlay('select');
+    // rAF ensures the page has painted before we measure canvas dimensions
+    requestAnimationFrame(function(){
+      try {
+        W=canvas.width=canvas.offsetWidth||window.innerWidth;
+        H=canvas.height=canvas.offsetHeight||(window.innerHeight-88-64);
+        mkStars();
+        showSpaceOverlay('select');
+      } catch(err) {
+        const ov=document.getElementById('space-overlay');
+        if(ov) { ov.classList.remove('hidden'); ov.innerHTML='<div style="color:#ff4444;font-family:monospace;font-size:11px;padding:20px;white-space:pre-wrap;word-break:break-all">SPACE MOBE ERROR:\n'+err.message+'\n\n'+err.stack+'</div>'; }
+      }
+    });
   };
 })();
 
