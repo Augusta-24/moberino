@@ -1636,7 +1636,7 @@ body.rec-open { overflow-y: auto; }
   html, body { height: 100%; overflow: hidden; }
 
   /* Scrollable pages each become their own scroll container */
-  #pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active {
+  #pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active, #pg-charselect.active {
     height: 100dvh;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -4599,6 +4599,12 @@ function getAudioCtx() {
   if (_sharedAudioCtx.state === 'suspended') _sharedAudioCtx.resume();
   return _sharedAudioCtx;
 }
+// iOS Safari requires AudioContext creation/resume to happen synchronously inside a real
+// touch/click handler — a setTimeout-deferred SFX call (like the char-select scroll debounce)
+// is too late if this is the very first audio interaction. Unlock eagerly on first touch/click.
+function _unlockSfx() { getAudioCtx(); }
+document.addEventListener('touchstart', _unlockSfx, { passive: true, once: true });
+document.addEventListener('click', _unlockSfx, { passive: true, once: true });
 
 // ══════════════════════════════════════
 //  SFX — Web Audio chiptune sounds
@@ -5211,21 +5217,23 @@ window.confirmCharSelect = function() {
       const hudRight = `<div style="text-align:right;font-size:24px;line-height:1;letter-spacing:3px" id="whack-lives">${livesHTML()}</div>`;
       const youGc = GAME_CHARS[activeChar], moleGc = GAME_CHARS[moleChar];
       wrap.innerHTML = `
-        <div style="display:flex;justify-content:center;align-items:center;gap:16px;margin-bottom:8px;font-family:'VCR',monospace;font-size:10px;letter-spacing:2px">
-          <div style="display:flex;align-items:center;gap:6px">
-            <span style="opacity:0.5">YOU</span>
-            <div style="width:30px;height:30px;border-radius:7px;overflow:hidden;border:1.5px solid ${youGc.color}88;background:${youGc.color}22">${charFace(youGc,'normal')}</div>
-          </div>
-          <div style="color:rgba(242,239,232,0.25)">VS</div>
-          <div style="display:flex;align-items:center;gap:6px">
-            <div style="width:30px;height:30px;border-radius:7px;overflow:hidden;border:1.5px solid #ff444488;background:#ff444422">${charFace(moleGc,'normal')}</div>
-            <span style="color:#ff4444">WHACK</span>
-          </div>
-        </div>
         <div class="whack-hud">
           <div><div class="whack-stat-label">SCORE</div><div class="whack-stat-val" id="whack-score-val">${score}</div></div>
           <div style="text-align:center"><div style="font-family:'VCR',monospace;font-size:8px;letter-spacing:2px;opacity:0.5">WAVE</div><div style="font-family:'Bebas Neue',cursive;font-size:32px;line-height:1;color:#ffe61a;text-shadow:0 0 10px #ffe61a88">${wave}</div></div>
           ${hudRight}
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;max-width:420px;margin:10px auto 12px;padding:10px 16px;background:linear-gradient(90deg, ${youGc.color}1c, transparent 48%, transparent 52%, #ff44441c);border:1px solid rgba(242,239,232,0.12);border-radius:8px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1">
+            <div style="width:52px;height:52px;border-radius:8px;overflow:hidden;border:2px solid ${youGc.color};background:${youGc.color}22;box-shadow:0 0 14px ${youGc.color}66">${charFace(youGc,'normal')}</div>
+            <div style="font-family:'Bebas Neue',cursive;font-size:14px;letter-spacing:2px;color:${youGc.color};text-shadow:0 0 8px ${youGc.color}88;line-height:1">${youGc.name}</div>
+            <div style="font-family:'VCR',monospace;font-size:8px;letter-spacing:2px;opacity:0.45">YOU</div>
+          </div>
+          <div style="font-family:'Bebas Neue',cursive;font-size:26px;letter-spacing:3px;color:#ffe61a;text-shadow:0 0 14px #ffe61a,0 0 28px #ffe61a66;flex-shrink:0">VS</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1">
+            <div style="width:52px;height:52px;border-radius:8px;overflow:hidden;border:2px solid #ff4444;background:#ff444422;box-shadow:0 0 14px #ff444466;transform:scaleX(-1)">${charFace(moleGc,'normal')}</div>
+            <div style="font-family:'Bebas Neue',cursive;font-size:14px;letter-spacing:2px;color:#ff4444;text-shadow:0 0 8px #ff444488;line-height:1">${moleGc.name}</div>
+            <div style="font-family:'VCR',monospace;font-size:8px;letter-spacing:2px;color:#ff4444;opacity:0.7">WHACK</div>
+          </div>
         </div>
         <div class="whack-grid" id="whack-grid">${
           Array.from({length:HOLES},(_,i)=>
