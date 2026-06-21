@@ -30,7 +30,10 @@
       "Bash(grep -n \"youGc.color}22;box-shadow:0 0 16px \\\\${youGc.color}66\" index.html)",
       "Bash(grep -n \"html, body { height: 100%; overflow: hidden\" index.html)",
       "Bash(grep -n \"score += 10\\\\|score+=10\\\\|\\\\${hits} HITS\" index.html)",
-      "Bash(awk '/function loop\\\\\\(ts\\\\\\) \\\\{/{print NR\": \"$0; f=1; c=0} f{for\\(i=1;i<=length\\($0\\);i++\\){ch=substr\\($0,i,1\\); if\\(ch==\"{\"\\)c++; if\\(ch==\"}\"\\)c--}; if\\(c==0 && NR>start+1\\){print NR\": \"$0; exit}} f && !start{start=NR}' index.html)"
+      "Bash(awk '/function loop\\\\\\(ts\\\\\\) \\\\{/{print NR\": \"$0; f=1; c=0} f{for\\(i=1;i<=length\\($0\\);i++\\){ch=substr\\($0,i,1\\); if\\(ch==\"{\"\\)c++; if\\(ch==\"}\"\\)c--}; if\\(c==0 && NR>start+1\\){print NR\": \"$0; exit}} f && !start{start=NR}' index.html)",
+      "Bash(awk '/const GAME_CHARS = \\\\[/,/^\\\\];/' index.html)",
+      "Bash(grep -n \"#pg-whack\\\\b\\\\|#pg-whack[. ,{]\" index.html)",
+      "Bash(grep -n \"^#pg-match\\\\b\\\\|^#pg-match[. ,{]\\\\|^#pg-space\\\\b\\\\|^#pg-space[. ,{]\" index.html)"
     ]
   }
 }

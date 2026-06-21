@@ -38,6 +38,13 @@ body.on-home {
   padding-bottom: 0 !important;
   padding-bottom: 0;
 }
+/* Arcade pages are full-screen takeovers too — same reasoning as on-home. Without
+   this, body's reserved bottom-nav padding silently adds extra height past 100dvh,
+   which used to be masked by the (pointer:coarse)-only scroll lock and is now exposed
+   as a stray strip of body background on any pointer type. */
+body.on-lobby, body.on-char, body.on-whack, body.on-flappy, body.on-match, body.on-space {
+  padding-bottom: 0;
+}
 
 
 body.on-lobby #bg, body.on-char #bg, body.on-whack #bg,
@@ -1638,40 +1645,39 @@ body.rec-open { overflow-y: auto; }
 /* No gradient needed without text */
 #spot-results .vcard-grad { display: none; }
 
-/* ── MOBILE/TABLET: STICKY SUB-PAGE HEADER ── */
-/* Scroll-locking must key off touch capability, not screen width — an iPad in
-   landscape (or a large iPad Pro even in portrait) easily exceeds 1023px and would
-   fall outside a width-only rule, leaving html/body free to rubber-band/bounce on
-   touch-drag even with no real extra content. (pointer:coarse) catches any
-   touch-primary device regardless of screen size. */
-@media (pointer: coarse) {
-  /* Lock html/body — pages scroll themselves */
-  html, body { height: 100%; overflow: hidden; }
+/* ── STICKY SUB-PAGE HEADER + SCROLL LOCK (all pointer types) ── */
+/* This used to be gated to (pointer:coarse) on the theory that only touch devices
+   needed it — but desktop browsers get no such protection by default, so any page
+   that's even a pixel taller than the viewport (e.g. body's own reserved bottom
+   padding, see body.on-* below) becomes scrollable on desktop, revealing a stray
+   strip of whatever's behind the page underneath the game UI. Applying this
+   unconditionally costs nothing on desktop (touch-only properties are no-ops there)
+   and removes that whole class of "desktop-only" layout bugs. */
+html, body { height: 100%; overflow: hidden; }
 
-  /* Scrollable pages each become their own scroll container */
-  #pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active, #pg-charselect.active,
-  #pg-lobby.active, #pg-whack.active {
-    height: 100dvh;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
-  }
+/* Scrollable pages each become their own scroll container */
+#pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active, #pg-charselect.active,
+#pg-lobby.active, #pg-whack.active {
+  height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
 
-  /* Header sticky inside its own scroll container — never jitters */
-  .cats-header {
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    background: rgba(8,16,42,0.96);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-  }
-  /* Map header stays relative inside map's flex column */
-  #pg-map .cats-header {
-    position: relative;
-    z-index: 10;
-    border-bottom: 1px solid rgba(242,239,232,0.10);
-  }
+/* Header sticky inside its own scroll container — never jitters */
+.cats-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(8,16,42,0.96);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+/* Map header stays relative inside map's flex column */
+#pg-map .cats-header {
+  position: relative;
+  z-index: 10;
+  border-bottom: 1px solid rgba(242,239,232,0.10);
 }
 @media (max-width: 1023px) {
   /* Purely cosmetic sizing for narrow screens — width-based is correct here,
@@ -2484,11 +2490,18 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 .flappy-hint { font-size: 10px; letter-spacing: 2px; color: rgba(242,239,232,0.45); }
 
 /* ── Space Mobe ── */
-#pg-space { position: relative; z-index: 1; height: 100dvh; display: none; flex-direction: column; }
+#pg-space { position: relative; z-index: 1; height: 100dvh; overflow: hidden; display: none; flex-direction: column; }
 #pg-space.active { display: flex; }
-#space-canvas { flex: 1; width: 100%; display: block; touch-action: none; }
+/* Capped at the same phone-ish width as Whack/Match, centered via auto margins (not
+   align-items on the parent, which would also shrink the full-width header bar).
+   Without this, a wide desktop window stretches the canvas full-bleed, and since
+   player speed is a fixed pixel value per frame, the ship has to "travel" much
+   further to cross a wider canvas — movement feels sluggish even though the speed
+   constant never changed. */
+#space-canvas { flex: 1; width: 100%; max-width: 460px; margin: 0 auto; display: block; touch-action: none; }
 #space-overlay {
   position: fixed; left: 0; right: 0; bottom: 0; top: 56px;
+  max-width: 460px; margin: 0 auto;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 16px; z-index: 10;
   background: rgba(5, 2, 16, 0.88);
@@ -2524,7 +2537,7 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 .match-card {
   width: 100%; height: 100%; position: relative;
   transform-style: preserve-3d;
-  transition: transform 0.36s cubic-bezier(0.4,0,0.2,1);
+  transition: transform 0.18s cubic-bezier(0.4,0,0.2,1);
 }
 .match-card.flipped { transform: rotateY(180deg); }
 .match-card-front, .match-card-back {
@@ -4798,10 +4811,16 @@ const ArcadeMusic = (() => {
     gainNode.gain.value = muted ? 0 : targetVol;
     gainNode.connect(ctx.destination);
     fetch('arcademusic.mp3')
-      .then(r => r.arrayBuffer())
+      .then(r => { if (!r.ok) throw new Error('fetch failed: ' + r.status); return r.arrayBuffer(); })
       .then(data => ctx.decodeAudioData(data))
       .then(buf => { audioBuffer = buf; if (started) playSource(); })
-      .catch(() => {});
+      .catch(e => {
+        // Previously a silent no-op that also left loadStarted permanently true — meaning
+        // a single failed attempt (transient network blip, etc.) bricked music for the
+        // rest of the session with zero visibility into why. Now it logs and allows retry.
+        console.warn('[ArcadeMusic] failed to load arcademusic.mp3:', e);
+        loadStarted = false;
+      });
   }
 
   function playSource() {
@@ -4863,11 +4882,11 @@ const LB = (() => {
   function save(data) { localStorage.setItem(KEY, JSON.stringify(data)); }
 
   return {
-    add(game, name, score, extra) {
+    add(game, name, score, extra, ascending) {
       const data = load();
       if (!data[game]) data[game] = [];
       data[game].push({ name: name.trim().slice(0,12).toUpperCase(), score, extra, date: new Date().toLocaleDateString() });
-      data[game].sort((a,b) => b.score - a.score);
+      data[game].sort((a,b) => ascending ? a.score - b.score : b.score - a.score);
       data[game] = data[game].slice(0, 10);
       save(data);
     },
@@ -5041,7 +5060,19 @@ function renderLbTabs(activeGame) {
     >${g.label}</button>`
   ).join('');
   const g = games.find(x=>x.key===activeGame);
-  content.innerHTML = LB.html(activeGame, g.nc);
+  // Match has no single "score" that means the same thing across modes — Hard has no
+  // leaderboard at all (it's the casual default), Challenge ranks by fastest time,
+  // Impossible ranks by fewest moves. Two stacked mini-boards instead of one generic one.
+  if (activeGame === 'match') {
+    content.innerHTML = `
+      <div style="font-size:13px;letter-spacing:2px;color:#ff9933;margin-bottom:4px">🔥 CHALLENGE · FASTEST TIME</div>
+      ${LB.html('match-challenge', '#ff9933')}
+      <div style="font-size:13px;letter-spacing:2px;color:#ff4444;margin:16px 0 4px">💀 IMPOSSIBLE · FEWEST MOVES</div>
+      ${LB.html('match-impossible', '#ff4444')}
+    `;
+  } else {
+    content.innerHTML = LB.html(activeGame, g.nc);
+  }
   content.style.cssText = 'line-height:1.8';
 }
 
@@ -5414,23 +5445,25 @@ window.confirmCharSelect = function() {
       const waveBoost = wave * 60;
       return Math.max(160, 980 - waveBoost - waveHits * 8) + Math.random() * 80;
     }
-    // HARD = same starting pace as before, but ramps up more gradually wave-to-wave
-    const waveBoost = (wave - 1) * 55;
-    return Math.max(110, 790 - waveBoost - waveHits * 14) + Math.random() * 60;
+    // HARD = same starting pace as before, ramping up gradually wave-to-wave (and
+    // again gradually within a wave as waveHits climbs — slowed further per feedback
+    // that it was still getting hard in a hurry)
+    const waveBoost = (wave - 1) * 30;
+    return Math.max(110, 790 - waveBoost - waveHits * 8) + Math.random() * 60;
   }
   function getUpTime() {
     if (difficulty === 'easy') {
       const waveBoost = wave * 80;
       return (Math.max(420, 2240 - waveBoost - waveHits * 20) + Math.random() * 120) * 0.7;
     }
-    const waveBoost = (wave - 1) * 75;
-    return (Math.max(320, 1750 - waveBoost - waveHits * 28) + Math.random() * 100) * 0.62;
+    const waveBoost = (wave - 1) * 40;
+    return (Math.max(320, 1750 - waveBoost - waveHits * 16) + Math.random() * 100) * 0.62;
   }
   // How many moles can be up/scheduled at once — this is what makes "overlapping moles" real
   function concurrencyForWave(w) {
     if (difficulty === 'easy') return w >= 7 ? 2 : 1;
-    if (w >= 6) return 3;
-    if (w >= 3) return 2;
+    if (w >= 10) return 3;
+    if (w >= 5) return 2;
     return 1;
   }
 
@@ -5475,7 +5508,7 @@ window.confirmCharSelect = function() {
     if (selfActive && Math.random() > 0.72) picked = activeChar;
 
     // Tease glow: starts ~58% decoy, ramps to ~88% by late waves — harder to read over time
-    const decoyRate = Math.min(0.88, 0.55 + wave * 0.025);
+    const decoyRate = Math.min(0.88, 0.55 + wave * 0.014);
     const useDecoy = Math.random() < decoyRate;
     let teaseIdx = i;
     if (useDecoy) {
@@ -6463,6 +6496,8 @@ window.confirmCharSelect = function() {
   let PAIRS = 9; // dynamic, set per-mode in makeCards()
   let cards = [], flipped = [], locked = false;
   let moves = 0, matched = 0, state = 'idle', matchScore = 0, combo = 0, matchTimer = 0, timerInt, previewInt, timeLimit = 60;
+  let matchOutOfMoves = false;
+  const IMPOSSIBLE_MOVE_CUTOFF = 36;
   let matchMode = 'hard'; // 'free' | 'hard' | 'challenge' | 'impossible'
   let freePlayCharCount = 8; // 4–20, how many distinct characters appear in free play
   // Hard = the old "timed" mode. Challenge/Impossible add a target-moves benchmark to
@@ -6483,10 +6518,12 @@ window.confirmCharSelect = function() {
   }
 
   function gridLayout(pairs) {
-    const cards = pairs * 2;
-    if (pairs >= 8 && cards % 4 === 0) return { cols: 4, rows: cards / 4 };
-    if (cards % 3 === 0) return { cols: 3, rows: cards / 3 };
-    return { cols: 2, rows: cards / 2 };
+    // Pick cols near sqrt(cardCount) so bigger pair counts (15, 20) get a roomier,
+    // more square grid instead of staying narrow-and-tall. CSS grid handles a
+    // not-quite-full last row fine, so no need for exact divisibility.
+    const n = pairs * 2;
+    const cols = Math.max(2, Math.min(7, Math.round(Math.sqrt(n))));
+    return { cols, rows: Math.ceil(n / cols) };
   }
 
   function makeCards() {
@@ -6516,8 +6553,10 @@ window.confirmCharSelect = function() {
             ${best ? `<div class="match-sub" style="color:#ffe61a;margin-bottom:4px">🏆 BEST SCORE: ${best}</div>` : ''}
           </div>
           <div class="arcade-cab-foot" style="display:flex;flex-direction:column;gap:8px;align-items:stretch">
-            <button class="whack-btn match-mode-btn" style="border-color:#ffe61a;background:rgba(255,230,26,0.14)" onclick="matchPlay('timed')">⏱ TIMED (60 SEC)</button>
             <button class="whack-btn match-mode-btn" style="border-color:rgba(255,230,26,0.4);background:rgba(255,230,26,0.06)" onclick="matchGoFreeSetup()">∞ FREE PLAY</button>
+            <button class="whack-btn match-mode-btn" style="border-color:#ffe61a;background:rgba(255,230,26,0.14)" onclick="matchPlay('hard')">⏱ HARD · 12 PAIRS · 60s</button>
+            <button class="whack-btn match-mode-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.1)" onclick="matchPlay('challenge')">🔥 CHALLENGE · 15 PAIRS</button>
+            <button class="whack-btn match-mode-btn" style="border-color:#ff4444;background:rgba(255,68,68,0.1)" onclick="matchPlay('impossible')">💀 IMPOSSIBLE · 20 PAIRS</button>
           </div>
         </div>`;
       return;
@@ -6538,7 +6577,7 @@ window.confirmCharSelect = function() {
               <span id="match-char-ct" style="font-family:'Bebas Neue',cursive;font-size:56px;letter-spacing:4px;color:#ffe61a;line-height:1;text-shadow:0 0 18px #ffe61a88">${freePlayCharCount}</span>
               <button onclick="matchAdjChar(1)" style="${btnStyle}">+</button>
             </div>
-            <div class="match-sub" style="opacity:0.4">5 – 12</div>
+            <div class="match-sub" style="opacity:0.4">4 – 20</div>
           </div>
           <div class="arcade-cab-foot" style="display:flex;flex-direction:column;gap:8px;align-items:stretch">
             <button class="whack-btn match-mode-btn" style="border-color:#ffe61a;background:rgba(255,230,26,0.14)" onclick="matchPlay('free')">▶ START</button>
@@ -6554,7 +6593,7 @@ window.confirmCharSelect = function() {
       const _gStyle = `--card:min(calc((min(100vw,460px) - ${_ghp}px) / ${_gl.cols}),calc((100dvh - 196px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card))`;
       wrap.innerHTML = `
         <div class="match-hud" style="padding:8px 16px">
-          <div style="font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:5px;color:#ffe61a;text-shadow:0 0 14px #ffe61a88" id="match-preview-cd">MEMORIZE! 4...</div>
+          <div style="font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:5px;color:#ffe61a;text-shadow:0 0 14px #ffe61a88" id="match-preview-cd">MEMORIZE!  3</div>
         </div>
         <div class="match-grid" style="${_gStyle}">${
           cards.map((c,i) => {
@@ -6579,6 +6618,7 @@ window.confirmCharSelect = function() {
           <div><div class="whack-stat-label">SCORE</div><div class="whack-stat-val" id="ms" style="font-size:24px">${matchScore}</div></div>
           <div style="text-align:center"><div class="whack-stat-label">TIME</div><div class="whack-stat-val" id="mt" style="font-size:38px;line-height:1">${matchMode === 'free' ? '∞' : Math.max(0, timeLimit - matchTimer) + 's'}</div></div>
           <div style="text-align:right"><div class="whack-stat-label">PAIRS</div><div class="whack-stat-val" id="match-pairs" style="font-size:24px">${matched}/${PAIRS}</div></div>
+          <div style="text-align:right"><div class="whack-stat-label">MOVES</div><div class="whack-stat-val" id="match-moves" style="font-size:24px">${moves}${matchMode==='impossible'?'/'+IMPOSSIBLE_MOVE_CUTOFF:''}</div></div>
         </div>
         <div class="match-grid" style="${_gStyle}">${
           cards.map((c,i) => {
@@ -6607,19 +6647,62 @@ window.confirmCharSelect = function() {
             <button onclick="matchGoIdle()" style="font-family:'VCR',monospace;font-size:10px;letter-spacing:2px;background:none;border:none;color:rgba(242,239,232,0.3);cursor:pointer">◀ ARCADE</button>
           </div>`;
       } else {
-        const best = parseInt(localStorage.getItem('match-best-score')||'0');
-        const isNew = matchScore > best;
-        if (isNew) localStorage.setItem('match-best-score', matchScore);
-        const extraStr = `${fmtTime(matchTimer)} · ${moves} MOVES`;
+        const modeLabel = matchMode.toUpperCase();
+        const headline = didWin ? 'CLEARED!' : (matchOutOfMoves ? 'OUT OF MOVES!' : "TIME'S UP!");
+        const target = MODE_CONFIG[matchMode].targetMoves;
+        const targetLine = target ? (
+          didWin
+            ? (moves <= target
+                ? `<div style="color:#33ff66;margin-top:8px">✅ BEAT THE TARGET (${target} MOVES)!</div>`
+                : `<div style="color:rgba(242,239,232,0.5);margin-top:8px">TARGET: ${target} MOVES — try again to beat it</div>`)
+            : `<div style="color:rgba(242,239,232,0.5);margin-top:8px">TARGET: ${target} MOVES</div>`
+        ) : '';
+
+        // Hard has no leaderboard — it's the casual default, just a personal best.
+        // Challenge ranks by fastest time, Impossible by fewest moves (least is best
+        // for both), each with its own save-score UI keyed to that metric.
+        let bestLine = '', saveUI = '';
+        if (matchMode === 'hard') {
+          const best = parseInt(localStorage.getItem('match-best-score')||'0');
+          const isNew = matchScore > best;
+          if (isNew) localStorage.setItem('match-best-score', matchScore);
+          bestLine = isNew ? '🏆 NEW BEST!' : 'BEST: '+best;
+          saveUI = '';
+        } else if (matchMode === 'challenge') {
+          const bestKey = 'match-best-time-challenge';
+          const best = parseInt(localStorage.getItem(bestKey)||'0');
+          const isNew = didWin && (best === 0 || matchTimer < best);
+          if (isNew) localStorage.setItem(bestKey, matchTimer);
+          bestLine = isNew ? '🏆 NEW BEST TIME!' : (best ? 'BEST: '+fmtTime(best) : '');
+          if (didWin) {
+            const extraStr = `${fmtTime(matchTimer)} · ${moves} MOVES`;
+            saveUI = `
+              <input id="lb-name-input-m" maxlength="12" autocomplete="off" spellcheck="false" placeholder="YOUR NAME" style="width:220px;background:#0e0b22;border:1.5px solid #ffe61a;border-radius:4px;padding:10px 12px;font-family:'VCR',monospace;font-size:16px;letter-spacing:4px;color:#fff;text-align:center;text-transform:uppercase;outline:none">
+              <button onclick="(function(){const n=document.getElementById('lb-name-input-m');if(n&&n.value.trim())LB.add('match-challenge',n.value.trim(),${matchTimer},'${extraStr}',true);})()" style="font-family:'VCR',monospace;font-size:13px;letter-spacing:3px;background:#ffe61a22;border:2px solid #ffe61a;border-radius:6px;padding:14px 40px;color:#ffe61a;cursor:pointer">SAVE TIME</button>`;
+          }
+        } else if (matchMode === 'impossible') {
+          const bestKey = 'match-best-moves-impossible';
+          const best = parseInt(localStorage.getItem(bestKey)||'0');
+          const isNew = didWin && (best === 0 || moves < best);
+          if (isNew) localStorage.setItem(bestKey, moves);
+          bestLine = isNew ? '🏆 NEW BEST!' : (best ? 'BEST: '+best+' MOVES' : '');
+          if (didWin) {
+            const extraStr = `${fmtTime(matchTimer)} · ${moves} MOVES`;
+            saveUI = `
+              <input id="lb-name-input-m" maxlength="12" autocomplete="off" spellcheck="false" placeholder="YOUR NAME" style="width:220px;background:#0e0b22;border:1.5px solid #ffe61a;border-radius:4px;padding:10px 12px;font-family:'VCR',monospace;font-size:16px;letter-spacing:4px;color:#fff;text-align:center;text-transform:uppercase;outline:none">
+              <button onclick="(function(){const n=document.getElementById('lb-name-input-m');if(n&&n.value.trim())LB.add('match-impossible',n.value.trim(),${moves},'${extraStr}',true);})()" style="font-family:'VCR',monospace;font-size:13px;letter-spacing:3px;background:#ffe61a22;border:2px solid #ffe61a;border-radius:6px;padding:14px 40px;color:#ffe61a;cursor:pointer">SAVE MOVES</button>`;
+          }
+        }
+
         wrap.innerHTML = `
           <div id="match-recap" style="position:fixed;inset:0;z-index:9700;background:rgba(5,2,18,0.96);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:32px">
-            <div style="font-family:'Bebas Neue',cursive;font-size:80px;letter-spacing:10px;color:#ffe61a;text-shadow:0 0 30px #ffe61a88;line-height:1">${didWin ? 'CLEARED!' : "TIME'S UP!"}</div>
+            <div style="font-family:'Bebas Neue',cursive;font-size:80px;letter-spacing:10px;color:#ffe61a;text-shadow:0 0 30px #ffe61a88;line-height:1">${headline}</div>
             <div style="font-family:'VCR',monospace;font-size:16px;letter-spacing:3px;color:rgba(242,239,232,0.85);text-align:center;line-height:2.2">
-              SCORE &nbsp;&nbsp;${matchScore}<br>PAIRS &nbsp;&nbsp;${matched}/${PAIRS}<br>MOVES &nbsp;&nbsp;${moves}<br>TIME &nbsp;&nbsp;&nbsp;${fmtTime(matchTimer)}<br>${isNew?'🏆 NEW BEST!':'BEST: '+best}
+              ${modeLabel}<br>SCORE &nbsp;&nbsp;${matchScore}<br>PAIRS &nbsp;&nbsp;${matched}/${PAIRS}<br>MOVES &nbsp;&nbsp;${moves}<br>TIME &nbsp;&nbsp;&nbsp;${fmtTime(matchTimer)}<br>${bestLine}
+              ${targetLine}
             </div>
-            <input id="lb-name-input-m" maxlength="12" autocomplete="off" spellcheck="false" placeholder="YOUR NAME" style="width:220px;background:#0e0b22;border:1.5px solid #ffe61a;border-radius:4px;padding:10px 12px;font-family:'VCR',monospace;font-size:16px;letter-spacing:4px;color:#fff;text-align:center;text-transform:uppercase;outline:none">
-            <button onclick="(function(){const n=document.getElementById('lb-name-input-m');if(n&&n.value.trim())LB.add('match',n.value.trim(),${matchScore},'${extraStr}');})()" style="font-family:'VCR',monospace;font-size:13px;letter-spacing:3px;background:#ffe61a22;border:2px solid #ffe61a;border-radius:6px;padding:14px 40px;color:#ffe61a;cursor:pointer">SAVE SCORE</button>
-            <button onclick="matchPlay('timed')" style="font-family:'VCR',monospace;font-size:13px;letter-spacing:3px;background:none;border:1px solid rgba(242,239,232,0.3);border-radius:6px;padding:12px 40px;color:rgba(242,239,232,0.7);cursor:pointer">PLAY AGAIN</button>
+            ${saveUI}
+            <button onclick="matchPlay('${matchMode}')" style="font-family:'VCR',monospace;font-size:13px;letter-spacing:3px;background:none;border:1px solid rgba(242,239,232,0.3);border-radius:6px;padding:12px 40px;color:rgba(242,239,232,0.7);cursor:pointer">PLAY AGAIN</button>
             <button onclick="matchGoIdle()" style="font-family:'VCR',monospace;font-size:10px;letter-spacing:2px;background:none;border:none;color:rgba(242,239,232,0.3);cursor:pointer">◀ ARCADE</button>
           </div>`;
       }
@@ -6637,7 +6720,7 @@ window.confirmCharSelect = function() {
 
     moves++;
     const mv = document.getElementById('match-moves');
-    if (mv) mv.textContent = moves;
+    if (mv) mv.textContent = moves + (matchMode==='impossible' ? '/'+IMPOSSIBLE_MOVE_CUTOFF : '');
     locked = true;
 
     const [a, b] = flipped;
@@ -6646,6 +6729,7 @@ window.confirmCharSelect = function() {
     setTimeout(() => {
       if (isMatch) {
         SFX.match();
+        matchFlash();
         combo++;
         matchScore += 100 + (combo > 1 ? (combo - 1) * 60 : 0);
         const sv = document.getElementById('ms'); if (sv) sv.textContent = matchScore;
@@ -6664,26 +6748,26 @@ window.confirmCharSelect = function() {
         flipped = []; locked = false;
         if (matched === PAIRS) {
           clearInterval(timerInt); clearInterval(previewInt);
-          if (matchMode === 'timed') {
+          if (matchMode !== 'free') {
             const timeBonus = Math.max(0, (timeLimit - matchTimer) * 5);
             matchScore += timeBonus;
           }
           setTimeout(() => { SFX.win(); ticketConfetti(); state='over'; render(); }, 700);
+        } else {
+          checkMoveCutoff();
         }
       } else {
         combo = 0;
         SFX.mismatch();
-        // Miss — show sad, then flip back
+        // Miss — flash sad briefly, then flip back quickly. No separate "revert to
+        // normal while still face-up" step: the card's about to flip away regardless,
+        // so just reset the back face to normal at the same moment it flips down.
         [a, b].forEach(idx => {
           const el = document.getElementById(`mc-${idx}`);
           if (el) {
             el.classList.add('miss-flash');
             const back = el.querySelector('.match-card-back');
-            if (back) {
-              const gc2 = GAME_CHARS[cards[idx].ci];
-              back.innerHTML = charFace(gc2, 'sad');
-              setTimeout(() => { back.innerHTML = charFace(gc2, 'normal'); }, 1080);
-            }
+            if (back) back.innerHTML = charFace(GAME_CHARS[cards[idx].ci], 'sad');
           }
         });
         setTimeout(() => {
@@ -6691,17 +6775,40 @@ window.confirmCharSelect = function() {
             cards[idx].flipped = false;
             const el = document.getElementById(`mc-${idx}`);
             if (el) el.classList.remove('flipped','miss-flash');
+            const back = el && el.querySelector('.match-card-back');
+            if (back) back.innerHTML = charFace(GAME_CHARS[cards[idx].ci], 'normal');
           });
           flipped = []; locked = false;
-        }, 1320);
+          checkMoveCutoff();
+        }, 480);
       }
-    }, 480);
+    }, 260);
   };
 
+  // Impossible mode's hard fail-state: run out of moves before clearing the board.
+  function checkMoveCutoff() {
+    if (matchMode !== 'impossible' || moves < IMPOSSIBLE_MOVE_CUTOFF || matched === PAIRS) return false;
+    clearInterval(timerInt); clearInterval(previewInt);
+    matchOutOfMoves = true;
+    locked = true;
+    SFX.over();
+    setTimeout(() => { state = 'over'; render(); }, 600);
+    return true;
+  }
+
+  function matchFlash() {
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;inset:0;z-index:9000;background:#33ff66;opacity:0.32;pointer-events:none;transition:opacity 0.3s ease-out';
+    document.body.appendChild(el);
+    requestAnimationFrame(() => { el.style.opacity = '0'; });
+    setTimeout(() => el.remove(), 350);
+  }
+
   window.matchPlay = function(mode) {
-    matchMode = mode || 'timed';
+    matchMode = mode || 'hard';
     window._matchMode = matchMode;
-    cards = makeCards(); flipped=[]; locked=false; moves=0; matched=0;
+    if (matchMode !== 'free') timeLimit = MODE_CONFIG[matchMode].time;
+    cards = makeCards(); flipped=[]; locked=false; moves=0; matched=0; matchOutOfMoves=false;
     matchScore=0; combo=0; matchTimer=0;
     clearInterval(timerInt); clearInterval(previewInt);
     ArcadeMusic.stop();
@@ -6711,10 +6818,10 @@ window.confirmCharSelect = function() {
       return;
     }
 
-    // Timed: show memorize preview
+    // Hard/Challenge/Impossible all share the same memorize-preview + countdown flow
     locked = true;
     state = 'preview'; render();
-    let countdown = 4;
+    let countdown = 3;
     previewInt = setInterval(() => {
       countdown--;
       const cd = document.getElementById('match-preview-cd');
@@ -6743,7 +6850,7 @@ window.confirmCharSelect = function() {
   };
 
   window.matchAdjChar = function(delta) {
-    freePlayCharCount = Math.min(Math.max(5, freePlayCharCount + delta), Math.min(12, GAME_CHARS.length));
+    freePlayCharCount = Math.min(Math.max(4, freePlayCharCount + delta), Math.min(20, GAME_CHARS.length));
     const el = document.getElementById('match-char-ct');
     if (el) el.textContent = freePlayCharCount;
   };
@@ -6788,7 +6895,7 @@ window.confirmCharSelect = function() {
   }
 
   const P_SPEED = 5, B_SPEED = 9, O_SPEED_BASE = 2.0; // +10% over original 1.8
-  const AUTO_FIRE_MS = 240;
+  const AUTO_FIRE_MS = 200;
   const FACE_R = 22, ASTEROID_R_MIN = 14, ASTEROID_R_MAX = 30;
   const BOSS_R = FACE_R * 2.5, BOSS_HP = 19;
 
@@ -6813,6 +6920,14 @@ window.confirmCharSelect = function() {
     };
   }
 
+  function enemyFireAt(shooter, speedMult) {
+    const dx = player.x - shooter.x;
+    const dy = player.y - shooter.y;
+    const dist = Math.sqrt(dx*dx+dy*dy) || 1;
+    const bulletSpeed = (3.2 + wave * 0.45) * (speedMult || 1);
+    enemyBullets.push({ x: shooter.x, y: shooter.y + shooter.r, vx: (dx/dist)*bulletSpeed, vy: (dy/dist)*bulletSpeed, r: 4 });
+  }
+
   function spawnObstacle(cfg) {
     const isAsteroid = Math.random() < cfg.asteroidRatio;
     if (isAsteroid) {
@@ -6827,8 +6942,11 @@ window.confirmCharSelect = function() {
     } else {
       const ci = Math.floor(Math.random() * GAME_CHARS.length);
       const isTrapped = Math.random() < Math.max(0.03, 0.10 - wave * 0.012); // heroes even rarer now
-      // Enemies take 3 hits to clear; trapped heroes still resolve via the ring, hp unused for them
-      obstacles.push({ type:'face', x:rand(FACE_R,W-FACE_R), y:-FACE_R-10, vx:rand(-0.6,0.6)*cfg.speed, vy:cfg.speed*(0.7+Math.random()*0.5), r:FACE_R, ci, hp: isTrapped ? 1 : 3, isTrapped, ringHp: isTrapped ? 2 : 0 });
+      // Enemies take 3 hits to clear; trapped heroes still resolve via the ring, hp unused for them.
+      // Non-hero enemies descend slower and pause partway down for a burst of fire before
+      // continuing — a middle ground between "charges the line" and "just hovers and shoots":
+      // keeps some advance pressure but spaces out how much is closing in on the player at once.
+      obstacles.push({ type:'face', x:rand(FACE_R,W-FACE_R), y:-FACE_R-10, vx:rand(-0.6,0.6)*cfg.speed, vy:cfg.speed*(0.7+Math.random()*0.5)*(isTrapped?1:0.6), r:FACE_R, ci, hp: isTrapped ? 1 : 3, isTrapped, ringHp: isTrapped ? 2 : 0, pausedBurstDone: isTrapped, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0 });
     }
   }
 
@@ -7061,8 +7179,9 @@ window.confirmCharSelect = function() {
     const leftThisWave = obstacles.length + spawnsRemaining;
     ctx.fillText(`WAVE ${wave}  ·  ${leftThisWave} LEFT`, W/2, 6);
 
-    // Health bar (bottom, full width)
-    const barY = H - 28;
+    // Health bar — moved up to the top, under the score/wave row. Keeps the bottom
+    // of the screen clear for a thumb to drag/swipe on mobile without covering the HUD.
+    const barY = 56;
     const barW = W - 24;
     const barX = 12;
     const barH = 14;
@@ -7072,7 +7191,7 @@ window.confirmCharSelect = function() {
     ctx.fillStyle = hp > 0.4 ? 'rgba(242,239,232,0.85)' : '#ff6666';
     ctx.font = `bold 17px 'Bebas Neue', cursive`;
     ctx.textAlign = 'left';
-    ctx.fillText(`HP  ${Math.ceil(health)}%`, barX, barY - 7);
+    ctx.fillText(`HP  ${Math.ceil(health)}%`, barX, barY - 19);
 
     // Background track
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
@@ -7092,10 +7211,10 @@ window.confirmCharSelect = function() {
       ctx.beginPath(); ctx.moveTo(sx, barY); ctx.lineTo(sx, barY + barH); ctx.stroke();
     }
 
-    // Active buff indicators (top right, under WAVE line)
+    // Active buff indicators (top right, under the health bar now)
     ctx.font = `bold 13px 'Bebas Neue', cursive`;
     ctx.textAlign = 'right';
-    let buffY = 32;
+    let buffY = barY + barH + 16;
     const now = Date.now();
     if (now < buffSpeedUntil) {
       ctx.fillStyle = '#ffe61a';
@@ -7232,10 +7351,31 @@ window.confirmCharSelect = function() {
 
     obstacles=obstacles.filter(o=>o.y<H+60&&o.x>-60&&o.x<W+60);
     for(const o of obstacles){
-      o.x+=o.vx; o.y+=o.vy;
-      if(o.type==='asteroid') o.rot+=o.rotSpeed;
+      o.x+=o.vx;
       if(o.x<o.r&&o.vx<0) o.vx*=-1;
       if(o.x>W-o.r&&o.vx>0) o.vx*=-1;
+
+      // Non-hero enemies pause once, partway down, for a quick burst of fire before
+      // resuming their descent — see the note in spawnObstacle() for why.
+      if (o.type === 'face' && !o.isTrapped && !o.pausedBurstDone) {
+        if (!o.paused && o.y > H * 0.4) {
+          o.paused = true; o.pauseUntil = Date.now() + 1000; o.burstShotsLeft = 3; o.lastBurstShot = 0;
+        }
+        if (o.paused) {
+          if (Date.now() > o.pauseUntil) {
+            o.paused = false; o.pausedBurstDone = true;
+          } else {
+            if (o.burstShotsLeft > 0 && Date.now() - o.lastBurstShot > 220) {
+              enemyFireAt(o, 1.15);
+              o.burstShotsLeft--; o.lastBurstShot = Date.now();
+            }
+            continue; // hold position while paused
+          }
+        }
+      }
+
+      o.y+=o.vy;
+      if(o.type==='asteroid') o.rot+=o.rotSpeed;
     }
     // Danger line crossing
     for(const o of obstacles){
@@ -7409,13 +7549,7 @@ window.confirmCharSelect = function() {
       if(shooters.length > 0){
         const numShots = Math.min(shooters.length, 1 + Math.floor(wave / 4));
         const chosen = shooters.map(s => [Math.random(), s]).sort((a,b) => a[0]-b[0]).slice(0, numShots).map(p => p[1]);
-        chosen.forEach(shooter => {
-          const dx = player.x - shooter.x;
-          const dy = player.y - shooter.y;
-          const dist = Math.sqrt(dx*dx+dy*dy) || 1;
-          const bulletSpeed = 3.2 + wave * 0.45;
-          enemyBullets.push({ x: shooter.x, y: shooter.y + shooter.r, vx: (dx/dist)*bulletSpeed, vy: (dy/dist)*bulletSpeed, r: 4 });
-        });
+        chosen.forEach(shooter => enemyFireAt(shooter, 1));
         lastEnemyFire = Date.now();
         SFX.tone && SFX.tone(420, 'square', 0, 0.03, 0.08, 280);
       }
