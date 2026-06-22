@@ -33,7 +33,21 @@
       "Bash(awk '/function loop\\\\\\(ts\\\\\\) \\\\{/{print NR\": \"$0; f=1; c=0} f{for\\(i=1;i<=length\\($0\\);i++\\){ch=substr\\($0,i,1\\); if\\(ch==\"{\"\\)c++; if\\(ch==\"}\"\\)c--}; if\\(c==0 && NR>start+1\\){print NR\": \"$0; exit}} f && !start{start=NR}' index.html)",
       "Bash(awk '/const GAME_CHARS = \\\\[/,/^\\\\];/' index.html)",
       "Bash(grep -n \"#pg-whack\\\\b\\\\|#pg-whack[. ,{]\" index.html)",
-      "Bash(grep -n \"^#pg-match\\\\b\\\\|^#pg-match[. ,{]\\\\|^#pg-space\\\\b\\\\|^#pg-space[. ,{]\" index.html)"
+      "Bash(grep -n \"^#pg-match\\\\b\\\\|^#pg-match[. ,{]\\\\|^#pg-space\\\\b\\\\|^#pg-space[. ,{]\" index.html)",
+      "Bash(dig +short moberino.com A)",
+      "Bash(dig +short moberino.com NS)",
+      "Bash(dig +short www.moberino.com CNAME)",
+      "Bash(dig +short www.moberino.com A)",
+      "Bash(dig +short moberino.com CNAME)",
+      "Bash(dig www.moberino.com CNAME +noall +answer)",
+      "Bash(dig +short moberino.com CAA)",
+      "Bash(dig +short www.moberino.com CAA)",
+      "Bash(dig +short moberino.com TXT)",
+      "Bash(dig +short www.moberino.com TXT)",
+      "Bash(curl -v --max-time 10 https://moberino.com)",
+      "Bash(curl -sIL --max-time 10 http://moberino.com)",
+      "Bash(curl -v --max-time 10 https://www.moberino.com)",
+      "WebFetch(domain:dreamlo.com)"
     ]
   }
 }
