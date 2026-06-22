@@ -3660,6 +3660,14 @@ function navToCats() {
   const DUR    = 480;
   const EASE   = 'cubic-bezier(0.42,0,0.18,1)';
 
+  // Defensive: force a clean scroll/viewport state before measuring or animating
+  // anything below. A prior keyboard interaction (e.g. spotlight search) can leave the
+  // page panned/scrolled even after closing — this transition's own bRect measurement
+  // and fixed-position math assume a settled (0,0) viewport, so don't trust that's
+  // already true no matter what happened just before this was called.
+  window.scrollTo(0, 0);
+  if (window.lockViewportHeight) window.lockViewportHeight();
+
   // Close home search drop if open
   if(typeof closeHomeDrop === 'function') closeHomeDrop();
   // Close memories panel + rec-drawer
@@ -3808,12 +3816,17 @@ function closeSpot() {
   const bar = document.querySelector('.spot-top-bar');
   if (bar) bar.style.top = '';
   document.body.style.overflow = '';
-  // The keyboard closing (from the blur above) resizes the visual viewport on its own
-  // animation timeline, separate from this function returning — re-run these once
-  // immediately and again after the keyboard's close animation has had time to finish,
-  // so #pg-home and the back-to-top bar (whose position depends on a getBoundingClientRect
-  // measurement) aren't left sized/positioned against a mid-transition viewport.
+  // The keyboard closing (from the blur above) resizes/pans the visual viewport on its
+  // own animation timeline, separate from this function returning. iOS Safari can pan
+  // the page to keep a focused input visible above the keyboard even with body scroll
+  // "locked" via overflow:hidden (that only blocks CSS-driven scrolling, not the
+  // keyboard's own viewport pan) — and that pan doesn't reliably self-correct once the
+  // keyboard closes. Force scroll back to (0,0) and re-run these once immediately and
+  // again after the keyboard's close animation has had time to finish, so #pg-home, the
+  // back-to-top bar, and any subsequent page-slide transition (which reads body's
+  // current rect) aren't left working against a residual pan/offset.
   const _resync = () => {
+    window.scrollTo(0, 0);
     if (window.lockViewportHeight) window.lockViewportHeight();
     if (window._updateBackTopBar) window._updateBackTopBar();
   };
