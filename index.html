@@ -1870,7 +1870,7 @@ button.cats-search-wrap {
    RESPONSIVE
 ══════════════════════════════════════ */
 @media (max-height: 500px) and (orientation: landscape) {
-  #pg-home { justify-content: center; overflow-y: auto; height: 100svh; }
+  #pg-home { justify-content: center; overflow-y: auto; height: var(--app-vh, 100svh); }
   .home-hero {
     transform: translateY(0);
     flex-direction: row;
@@ -3805,13 +3805,16 @@ function closeSpot() {
   if (bar) bar.style.top = '';
   document.body.style.overflow = '';
   // The keyboard closing (from the blur above) resizes the visual viewport on its own
-  // animation timeline, separate from this function returning — re-lock once
+  // animation timeline, separate from this function returning — re-run these once
   // immediately and again after the keyboard's close animation has had time to finish,
-  // so #pg-home isn't left sized against a mid-transition viewport height.
-  if (window.lockViewportHeight) {
-    window.lockViewportHeight();
-    setTimeout(window.lockViewportHeight, 350);
-  }
+  // so #pg-home and the back-to-top bar (whose position depends on a getBoundingClientRect
+  // measurement) aren't left sized/positioned against a mid-transition viewport.
+  const _resync = () => {
+    if (window.lockViewportHeight) window.lockViewportHeight();
+    if (window._updateBackTopBar) window._updateBackTopBar();
+  };
+  _resync();
+  setTimeout(_resync, 350);
 }
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', syncSpotToViewport);
@@ -4397,9 +4400,16 @@ heroCassette.addEventListener('animationend', function() {
     }
     bar.classList.toggle('visible', show);
   }
+  // Exposed so closeSpot() can force a fresh recalculation once the keyboard-close
+  // viewport transition has actually settled, instead of waiting for the next scroll
+  // event (which may not come if the user isn't actively scrolling right then).
+  window._updateBackTopBar = updateBar;
 
   window.addEventListener('scroll', updateBar, { passive: true });
   document.addEventListener('scroll', updateBar, { passive: true, capture: true });
+  // Covers the general case (not just spotlight closing) — any keyboard open/close or
+  // address-bar show/hide resizes the visual viewport without necessarily firing scroll.
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', updateBar);
 
   bar.onclick = function() {
     const active = document.querySelector('.page.active');
