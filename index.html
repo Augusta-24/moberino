@@ -5504,10 +5504,7 @@ window.confirmCharSelect = function() {
             </div>
             <div style="width:100%;display:flex;flex-direction:column;gap:5px;text-align:left;border-top:1px solid rgba(242,239,232,0.1);padding-top:8px">
               <div style="font-size:9px;letter-spacing:2px;color:rgba(242,239,232,0.4);font-family:'VCR',monospace;text-align:center;margin-bottom:1px">WAVES ROTATE THROUGH THREE MODES</div>
-              <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:1px;line-height:1.3">
-                <span style="color:#ff00cc">WHACK</span> — tap the right one before it escapes
-                <div style="font-size:9px;color:rgba(255,68,68,0.85);margin-top:1px">miss it or whack yourself = wave over</div>
-              </div>
+              <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:1px;line-height:1.3"><span style="color:#ff00cc">WHACK</span> — tap the right one before it escapes</div>
               <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:1px;line-height:1.3"><span style="color:#ffe61a">CLEAR</span> — clear the board before time runs out</div>
               <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:1px;line-height:1.3"><span style="color:#00e5ff">FIND</span> — memorize the spots, then tap them blind</div>
             </div>
@@ -5532,9 +5529,9 @@ window.confirmCharSelect = function() {
           <div id="whack-wave-mode" style="text-align:center;width:100%;font-family:'Bebas Neue',cursive;font-size:24px;letter-spacing:2px;color:#ffe61a;text-shadow:0 0 10px #ffe61a88">WAVE ${wave}: ${roundTypeLabel()}</div>
           <div style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding-top:4px;border-top:1px solid rgba(242,239,232,0.1)">
             <div style="width:46px;height:46px;border-radius:8px;overflow:hidden;border:2px solid #33ff66;background:#33ff6622;box-shadow:0 0 12px #33ff6666;flex-shrink:0">${charFace(youGc,'normal')}</div>
-            <div id="whack-vs-dont" style="flex:1;text-align:left;font-family:'Bebas Neue',cursive;font-size:15px;letter-spacing:1.5px;color:#33ff66;text-shadow:0 0 8px #33ff6688;line-height:1;white-space:nowrap">${vs.dont}</div>
+            <div id="whack-vs-dont" style="flex:1;text-align:left;font-family:'Bebas Neue',cursive;font-size:13px;letter-spacing:1.5px;color:#33ff66;text-shadow:0 0 8px #33ff6688;line-height:1.2">DON'T<br>${vs.verb}</div>
             <div style="font-family:'Bebas Neue',cursive;font-size:17px;letter-spacing:2px;color:#ffe61a;text-shadow:0 0 10px #ffe61a;flex-shrink:0;padding:0 2px">VS</div>
-            <div id="whack-vs-do" style="flex:1;text-align:right;font-family:'Bebas Neue',cursive;font-size:15px;letter-spacing:1.5px;color:#ff4444;text-shadow:0 0 8px #ff444488;line-height:1;white-space:nowrap">${vs.verb}</div>
+            <div id="whack-vs-do" style="flex:1;text-align:right;font-family:'Bebas Neue',cursive;font-size:13px;letter-spacing:1.5px;color:#ff4444;text-shadow:0 0 8px #ff444488;line-height:1.2">&nbsp;<br>${vs.verb}</div>
             <div style="width:46px;height:46px;border-radius:8px;overflow:hidden;border:2px solid #ff4444;background:#ff444422;box-shadow:0 0 12px #ff444466;transform:scaleX(-1);flex-shrink:0">${charFace(moleGc,'normal')}</div>
           </div>
         </div>
@@ -5885,23 +5882,25 @@ window.confirmCharSelect = function() {
   // Big checkmark + sound, fades in then out — confirmation that a whole wave (not
   // just one hit) is cleared. Distinct from successFlash(), which is the smaller green
   // flash for individual correct hits within a Clear/Memory round.
-  function showWaveClearCheckmark() {
+  function showWaveClearCheckmark(clearedWave) {
     SFX.win();
     const el = document.createElement('div');
-    el.style.cssText = 'position:fixed;inset:0;z-index:9600;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity 0.3s ease-in-out';
-    el.innerHTML = `<div style="font-size:min(45vw,220px);color:#33ff66;text-shadow:0 0 40px #33ff66,0 0 80px #33ff6688;line-height:1">✓</div>`;
+    el.style.cssText = 'position:fixed;inset:0;z-index:9600;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity 0.3s ease-in-out';
+    el.innerHTML = `
+      <div style="font-size:min(40vw,180px);color:#33ff66;text-shadow:0 0 40px #33ff66,0 0 80px #33ff6688;line-height:1">✓</div>
+      <div style="font-family:'Bebas Neue',cursive;font-size:30px;letter-spacing:4px;color:#33ff66;text-shadow:0 0 16px #33ff66;margin-top:10px">WAVE ${clearedWave} CLEARED</div>
+    `;
     document.body.appendChild(el);
     requestAnimationFrame(() => { el.style.opacity = '1'; });
     setTimeout(() => {
       el.style.opacity = '0';
       setTimeout(() => el.remove(), 350);
-    }, 700);
+    }, 900);
   }
 
   function clearWaveTransition() {
     waveTransitioning = true; // blocks scheduleSurvivalNext() for the whole pause,
                                // including from any stale "just hit" timer firing late
-    showWaveClearCheckmark();
     holeTimers.forEach(clearTimeout);
     // Sweeps everything except a hole still in 'hit' state (the just-landed hit that
     // triggered this transition — let its own 350ms popDown finish resolving naturally
@@ -5916,26 +5915,35 @@ window.confirmCharSelect = function() {
       if (charEl) charEl.innerHTML = '';
       clearTint(h); hideMissX(h);
     }
-    // Top bar shows "WAVE {n} CLEARED" for the whole pause, then catches up to the new
-    // wave's "WAVE {n}: VERB" + VS-bar labels right as play resumes.
+
+    // Phase 1: "WAVE {n-1} CLEARED" + checkmark — the wave number belongs here, not
+    // in the next wave's intro.
+    const clearedWave = wave - 1;
     const wm = document.getElementById('whack-wave-mode');
-    if (wm) wm.textContent = `WAVE ${wave - 1} CLEARED`;
+    if (wm) wm.textContent = `WAVE ${clearedWave} CLEARED`;
+    showWaveClearCheckmark(clearedWave);
     currentRoundType = pickRoundType(wave);
-    showWaveStartOverlay(wave);
+
     setTimeout(() => {
       if (state !== 'playing') return;
-      waveTransitioning = false;
+      // Phase 2: next wave's mode intro — big bold mode phrase, no wave number.
       const wm2 = document.getElementById('whack-wave-mode');
       if (wm2) wm2.textContent = `WAVE ${wave}: ${roundTypeLabel()}`;
       const vs = vsLabels();
       const dontEl = document.getElementById('whack-vs-dont'), doEl = document.getElementById('whack-vs-do');
-      if (dontEl) dontEl.textContent = vs.dont;
-      if (doEl) doEl.textContent = vs.verb;
-      if (currentRoundType === 'clear') { startClearRound(); return; }
-      if (currentRoundType === 'memory') { startMemoryRound(); return; }
-      const n = concurrencyForWave(wave);
-      for (let k = 0; k < n; k++) scheduleSurvivalNext();
-    }, 2200);
+      if (dontEl) dontEl.innerHTML = `DON'T<br>${vs.verb}`;
+      if (doEl) doEl.innerHTML = `&nbsp;<br>${vs.verb}`;
+      showWaveStartOverlay();
+
+      setTimeout(() => {
+        if (state !== 'playing') return;
+        waveTransitioning = false;
+        if (currentRoundType === 'clear') { startClearRound(); return; }
+        if (currentRoundType === 'memory') { startMemoryRound(); return; }
+        const n = concurrencyForWave(wave);
+        for (let k = 0; k < n; k++) scheduleSurvivalNext();
+      }, 1900);
+    }, 1300);
   }
 
   // Clear round: several holes fill at once (mixed good/bad, no decoy trickery — the
@@ -6157,10 +6165,20 @@ window.confirmCharSelect = function() {
     return ROUND_CYCLE[(w - 1) % ROUND_CYCLE.length];
   }
 
+  // Short verb — used by the persistent HUD line ("WAVE N: WHACK"), which has limited
+  // space and updates every wave.
   function roundTypeLabel() {
     if (currentRoundType === 'clear') return 'CLEAR';
     if (currentRoundType === 'memory') return 'FIND';
     return 'WHACK';
+  }
+
+  // Full phrase — used for the big, transient next-wave intro overlay, where there's
+  // room to spell it out and it reads more clearly than a bare verb.
+  function roundTypePhrase() {
+    if (currentRoundType === 'clear') return 'CLEAR THE BOARD';
+    if (currentRoundType === 'memory') return 'FIND THE MOLES';
+    return 'WHACK THE MOLE';
   }
 
   function vsLabels() {
@@ -6169,7 +6187,10 @@ window.confirmCharSelect = function() {
     return { dont: "DON'T WHACK", verb: 'WHACK' };
   }
 
-  function showWaveStartOverlay(w) {
+  // Next-wave intro — deliberately has no wave number on it now (that lives in the
+  // "WAVE X CLEARED" moment that precedes it instead). The mode phrase is the whole
+  // point of this screen, so it's the big bold text.
+  function showWaveStartOverlay() {
     const ann = document.createElement('div');
     ann.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none';
     const nc = '#ff00cc';
@@ -6179,8 +6200,7 @@ window.confirmCharSelect = function() {
       ? `BEFORE THE TIME RUNS OUT<br><span style="font-size:22px;color:#ffe61a">${CLEAR_ROUND_SECONDS} SECONDS</span>`
       : '';
     ann.innerHTML = `<div style="text-align:center;animation:wave-announce 2.2s ease-out forwards">
-      <div style="font-family:'Bebas Neue',cursive;font-size:72px;letter-spacing:8px;color:${nc};text-shadow:0 0 20px ${nc},0 0 40px ${nc}66;line-height:1">WAVE ${w}</div>
-      <div style="font-family:'VCR',monospace;font-size:16px;letter-spacing:4px;color:rgba(242,239,232,0.9);margin-top:8px">${roundTypeLabel()}</div>
+      <div style="font-family:'Bebas Neue',cursive;font-size:50px;letter-spacing:4px;color:${nc};text-shadow:0 0 20px ${nc},0 0 40px ${nc}66;line-height:1.2">${roundTypePhrase()}</div>
       ${subLine ? `<div style="font-family:'VCR',monospace;font-size:13px;letter-spacing:2px;color:rgba(242,239,232,0.7);margin-top:10px;line-height:1.8">${subLine}</div>` : ''}
     </div>`;
     document.body.appendChild(ann);
@@ -6191,7 +6211,7 @@ window.confirmCharSelect = function() {
     ArcadeMusic.stop();
     state = 'playing'; render();
     waveTransitioning = true;
-    showWaveStartOverlay(wave);
+    showWaveStartOverlay();
     setTimeout(() => {
       if (state !== 'playing') return;
       waveTransitioning = false;
