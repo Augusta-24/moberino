@@ -2319,13 +2319,17 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 #whack-timer-val.urgent { color: #ff4444; animation: whack-blink 0.5s infinite; }
 @keyframes whack-blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
 .whack-grid {
-  /* Bumped the reserved-space estimate up (was 235px) — the HUD's actual rendered
+  /* --cols/--rows are overridden inline from GRID_COLS/GRID_ROWS in the Whack IIFE —
+     that's the single place to change to resize the board, this CSS adapts automatically.
+     Bumped the reserved-space estimate up (was 235px) — the HUD's actual rendered
      height grew with the VS-bar row, and the grid was overflowing .whack-wrap's
      overflow-y:auto, producing a visible internal scrollbar. */
-  --hole-sz: min(26vw, calc((100dvh - 280px) / 4), 100px);
+  --cols: 3;
+  --rows: 4;
+  --hole-sz: min(calc(78vw / var(--cols)), calc((100dvh - 280px) / var(--rows)), 100px);
   display: grid;
-  grid-template-columns: repeat(3, var(--hole-sz));
-  grid-template-rows: repeat(4, var(--hole-sz));
+  grid-template-columns: repeat(var(--cols), var(--hole-sz));
+  grid-template-rows: repeat(var(--rows), var(--hole-sz));
   gap: 8px;
   margin: 0 auto;
 }
@@ -2493,6 +2497,16 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
   60%  { opacity:1; transform: scale(1.0); }
   100% { opacity:0; transform: scale(0.9); }
 }
+
+/* Memory Mobe card-art: gentle drifting/rotating motion so the illustration reads as
+   alive rather than a frozen grid. transform-box/transform-origin keep each card
+   rotating around its own center regardless of its position in the SVG. */
+@keyframes card-drift {
+  0%   { transform: translateY(0) rotate(var(--r0, 0deg)); }
+  50%  { transform: translateY(-4px) rotate(var(--r1, 0deg)); }
+  100% { transform: translateY(0) rotate(var(--r0, 0deg)); }
+}
+.card-drift { transform-box: fill-box; transform-origin: center; animation: card-drift 3.4s ease-in-out infinite; }
 
 /* ── Flappy Head ── */
 #pg-flappy { position: relative; z-index: 1; height: 100dvh; display: none; flex-direction: column; }
@@ -4146,29 +4160,56 @@ heroCassette.addEventListener('animationend', function() {
         <div class="game-card" style="border-color:#ffe61a44;cursor:pointer" onclick="SFX.menuSelect();nav('match')">
           <div class="game-card-art" style="background:linear-gradient(160deg,#0d0022 0%,#1a0044 50%,#000011 100%)">
             <svg viewBox="0 0 200 240" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0">
-              <g opacity="0.5">
-                <rect x="20" y="30" width="44" height="58" rx="6" fill="#2a1a55" stroke="#ffe61a" stroke-width="1.5"/>
-                <rect x="78" y="30" width="44" height="58" rx="6" fill="#2a1a55" stroke="#ffe61a" stroke-width="1.5"/>
-                <rect x="136" y="30" width="44" height="58" rx="6" fill="#2a1a55" stroke="#ffe61a" stroke-width="1.5"/>
-                <rect x="20" y="100" width="44" height="58" rx="6" fill="#2a1a55" stroke="#ffe61a55" stroke-width="1"/>
-                <rect x="136" y="100" width="44" height="58" rx="6" fill="#2a1a55" stroke="#ffe61a55" stroke-width="1"/>
+              <g opacity="0.65">
+                <rect x="13" y="9" width="20" height="5" rx="2.5" fill="#ff2db8"/>
+                <circle cx="172" cy="20" r="7" fill="#ffe61a"/>
+                <path d="M150,42 L162,54 L172,44 L183,56" stroke="#00e5ff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M6,128 L18,141 L6,152 L18,166" stroke="#00e5ff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <line x1="6" y1="48" x2="17" y2="40" stroke="#ffe61a" stroke-width="3" stroke-linecap="round"/>
+                <path d="M128,150 L140,162 L150,152 L161,164" stroke="#ffe61a" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="188" cy="148" r="5" fill="#3355ff"/>
+                <circle cx="13" cy="222" r="6" fill="#ff2db8"/>
+                <circle cx="68" cy="224" r="6" fill="none" stroke="#00e5ff" stroke-width="2.5"/>
+                <polygon points="186,80 194,94 178,94" fill="#ff2db8"/>
+                <path d="M0,200 Q10,190 20,200" stroke="#3355ff" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <circle cx="150" cy="10" r="3.5" fill="#00e5ff"/>
+                <circle cx="160" cy="14" r="2" fill="#ff2db8"/>
+                <line x1="190" y1="190" x2="198" y2="198" stroke="#ffe61a" stroke-width="3" stroke-linecap="round"/>
+                <line x1="198" y1="190" x2="190" y2="198" stroke="#ffe61a" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="96" cy="9" r="4" fill="none" stroke="#ffe61a" stroke-width="2"/>
+                <path d="M185,170 L193,180 L185,189" stroke="#ff2db8" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <polygon points="4,90 12,98 4,106" fill="#00e5ff"/>
+                <path d="M105,228 Q113,220 121,228 Q129,220 137,228" stroke="#3355ff" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+                <circle cx="130" cy="14" r="2.5" fill="#3355ff"/>
+                <circle cx="6" cy="180" r="3" fill="#ffe61a"/>
+                <line x1="170" y1="200" x2="180" y2="200" stroke="#00e5ff" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="96" cy="232" r="3.5" fill="none" stroke="#ff2db8" stroke-width="2"/>
               </g>
-              <rect x="78" y="100" width="44" height="58" rx="6" fill="#3a2a77" stroke="#ffe61a" stroke-width="2"/>
-              <text x="100" y="140" text-anchor="middle" font-size="30">😊</text>
-              <rect x="20" y="172" width="44" height="58" rx="6" fill="#3a2a77" stroke="#ffe61a" stroke-width="2" opacity="0.8"/>
-              <text x="42" y="212" text-anchor="middle" font-size="28" opacity="0.8">😊</text>
-              <ellipse cx="60" cy="170" rx="35" ry="8" fill="#ffe61a" opacity="0.08"/>
-              <ellipse cx="100" cy="128" rx="28" ry="6" fill="#ffe61a" opacity="0.12"/>
+              <g class="card-drift" style="--r0:-7deg;--r1:-3deg;animation-delay:0s">
+                <ellipse cx="42" cy="91" rx="26" ry="6" fill="#ffe61a" opacity="0.12"/>
+                <rect x="20" y="30" width="44" height="58" rx="6" fill="#3a2a77" stroke="#ffe61a" stroke-width="2"/>
+                <path d="M31,59 L38,68 L53,48" stroke="#ffe61a" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </g>
+              <g opacity="0.5">
+                <g class="card-drift" style="--r0:4deg;--r1:8deg;animation-delay:0.4s"><rect x="78" y="30" width="44" height="58" rx="6" fill="#2a1a55" stroke="#ffe61a" stroke-width="1.5"/><text x="100" y="68" text-anchor="middle" font-size="22" fill="#ffe61a" opacity="0.6">?</text></g>
+                <g class="card-drift" style="--r0:-5deg;--r1:-1deg;animation-delay:0.8s"><rect x="136" y="30" width="44" height="58" rx="6" fill="#2a1a55" stroke="#ffe61a" stroke-width="1.5"/><text x="158" y="68" text-anchor="middle" font-size="22" fill="#ffe61a" opacity="0.6">?</text></g>
+                <g class="card-drift" style="--r0:6deg;--r1:2deg;animation-delay:1.2s"><rect x="20" y="100" width="44" height="58" rx="6" fill="#2a1a55" stroke="#ffe61a55" stroke-width="1"/><text x="42" y="138" text-anchor="middle" font-size="22" fill="#ffe61a" opacity="0.6">?</text></g>
+                <g class="card-drift" style="--r0:-4deg;--r1:-8deg;animation-delay:0.6s"><rect x="136" y="100" width="44" height="58" rx="6" fill="#2a1a55" stroke="#ffe61a55" stroke-width="1"/><text x="158" y="138" text-anchor="middle" font-size="22" fill="#ffe61a" opacity="0.6">?</text></g>
+              </g>
+              <g class="card-drift" style="--r0:0deg;--r1:3deg;animation-delay:0.2s">
+                <ellipse cx="100" cy="161" rx="26" ry="6" fill="#ffe61a" opacity="0.12"/>
+                <rect x="78" y="100" width="44" height="58" rx="6" fill="#3a2a77" stroke="#ffe61a" stroke-width="2"/>
+                <path d="M89,129 L96,138 L111,118" stroke="#ffe61a" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </g>
               <text x="148" y="120" font-size="18" fill="#ffe61a" opacity="0.8">✦</text>
               <text x="138" y="100" font-size="12" fill="#ffe61a" opacity="0.5">✦</text>
               <text x="160" y="105" font-size="10" fill="#ffe61a" opacity="0.4">✦</text>
-              <text x="42" y="68" text-anchor="middle" font-size="22" fill="#ffe61a" opacity="0.3">?</text>
-              <text x="158" y="68" text-anchor="middle" font-size="22" fill="#ffe61a" opacity="0.3">?</text>
+              <text x="60" y="98" font-size="14" fill="#ff2db8" opacity="0.7">✦</text>
             </svg>
           </div>
           <div class="game-card-info">
             <div class="game-card-badge" style="background:#ffe61a22;color:#ffe61a;border:1px solid #ffe61a55">MEMORY</div>
-            <div class="game-card-marquee" style="color:#ffe61a;text-shadow:0 0 20px #ffe61a88">MEMORY MATCH</div>
+            <div class="game-card-marquee" style="color:#ffe61a;text-shadow:0 0 20px #ffe61a88">MEMORY MOBE</div>
             <div class="game-card-desc">FLIP CARDS · FIND THE PAIRS</div>
             <div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#ffe61a22;border:1.5px solid #ffe61a;border-radius:5px;padding:10px 24px;color:#ffe61a;width:100%;text-shadow:0 0 8px #ffe61a66;text-align:center">▶ PLAY</div>
           </div>
@@ -4246,7 +4287,7 @@ heroCassette.addEventListener('animationend', function() {
   </div>
 </div>
 
-<!-- ── MEMORY MATCH ── -->
+<!-- ── MEMORY MOBE ── -->
 <div id="pg-match" class="page">
   <div class="cats-header">
     <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE MENU</button>
@@ -4771,6 +4812,27 @@ const SFX = (() => {
     selfWhack()   { tone(280,'triangle',0,0.22,0.09,200); tone(190,'triangle',0.16,0.32,0.08,140); },
     // Missed the mole — a fast whoosh (the swing) then a soft sad tone (it got away)
     moleEscaped() { tone(1000,'sine',0,0.07,0.05,150); tone(240,'triangle',0.09,0.26,0.07,170); },
+    // Classic race-start "shotgun" bang for timed modes — a noise burst (not a clean
+    // oscillator tone, which would read as a laser/zap) through a lowpass filter for a
+    // duller "boom" character, with a fast exponential decay.
+    raceStart() {
+      const c = getAudioCtx();
+      const dur = 0.28;
+      const bufferSize = Math.floor(c.sampleRate * dur);
+      const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
+      const noise = c.createBufferSource();
+      noise.buffer = buffer;
+      const filter = c.createBiquadFilter();
+      filter.type = 'lowpass'; filter.frequency.value = 1800;
+      const gain = c.createGain();
+      const t0 = c.currentTime + 0.02;
+      gain.gain.setValueAtTime(0.35, t0);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+      noise.connect(filter); filter.connect(gain); gain.connect(c.destination);
+      noise.start(t0); noise.stop(t0 + dur + 0.02);
+    },
   };
 })();
 
@@ -5154,7 +5216,7 @@ function renderLbTabs(activeGame) {
   const games = [
     { key:'whack',  label:'WHACK',  nc:'#ff00cc' },
     { key:'flappy', label:'FLAPPY', nc:'#00e5ff' },
-    { key:'match',  label:'MATCH',  nc:'#ffe61a' },
+    { key:'match',  label:'MEMORY', nc:'#ffe61a' },
     { key:'space',  label:'SPACE',  nc:'#33ff66' },
   ];
   const tabs = document.getElementById('lb-tabs');
@@ -5351,7 +5413,17 @@ window.confirmCharSelect = function() {
 //  WHACK-A-MOBE
 // ══════════════════════════════════════
 (function() {
-  const HOLES = 12;
+  // Board size now follows difficulty — Medium plays on the original 12-hole (3x4)
+  // board, Hard on 16 (4x4). applyDifficultyGridSize() (called from whackBegin(),
+  // once difficulty is finalized) is the only place these get reassigned; the CSS
+  // grid (.whack-grid) reads them back via inline --cols/--rows custom properties
+  // set in render(), and getNeighbors() below uses them for Clear round adjacency.
+  let GRID_COLS = 4, GRID_ROWS = 4, HOLES = GRID_COLS * GRID_ROWS;
+  function applyDifficultyGridSize() {
+    GRID_COLS = difficulty === 'easy' ? 3 : 4;
+    GRID_ROWS = 4;
+    HOLES = GRID_COLS * GRID_ROWS;
+  }
   // Cracked-glass overlay shown on top of the sad face for a successful whack
   const CRACK_SVG = `<svg viewBox="0 0 100 100" style="position:absolute;inset:0;pointer-events:none;animation:crack-in 0.3s ease-out forwards">
     <g stroke="#fff" stroke-width="1.6" opacity="0.6" fill="none" stroke-linecap="round">
@@ -5378,7 +5450,9 @@ window.confirmCharSelect = function() {
   // the timer runs out. Picked once per wave (not recomputed) so the label/HUD stay
   // consistent with what's actually running.
   let currentRoundType = 'whack';
-  const CLEAR_ROUND_SECONDS = 8;
+  function getClearRoundSeconds() {
+    return difficulty === 'easy' ? 12 : 8;
+  }
   let clearRoundTargets = 0, clearRoundHit = 0, clearRoundTimeLeft = 0, clearRoundInterval = null;
   // From the 2nd Clear round on, pieces hop to a touching/diagonal empty hole on a
   // timer instead of staying put — clearRoundPieces tracks each one's current hole so
@@ -5452,11 +5526,14 @@ window.confirmCharSelect = function() {
     clearInterval(clearRoundInterval); // in case a Clear round's countdown is still running
     clearInterval(clearRoundMoveInterval);
     removeClearTimerOverlay();
+    removeSideBar();
     memoryPhase = null; // in case a Memory round is mid-recall
     flashBrokenHeart();
     showStatus(reason);
     SFX.over();
-    freezeForGameOver();
+    // Tap-to-continue waits for the heart to have its moment on screen rather than
+    // stacking on top of it immediately.
+    setTimeout(freezeForGameOver, BROKEN_HEART_HOLD_MS);
   }
 
   function freezeForGameOver() {
@@ -5515,7 +5592,7 @@ window.confirmCharSelect = function() {
           </div>
           <div class="arcade-cab-foot" style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">
             <div style="display:flex;gap:10px;width:100%">
-              <button onclick="difficulty='easy';document.getElementById('diff-easy').style.boxShadow='0 0 14px #33ff6688';document.getElementById('diff-easy').style.borderColor='#33ff66';document.getElementById('diff-hard').style.boxShadow='none';document.getElementById('diff-hard').style.borderColor='rgba(242,239,232,0.2)'" id="diff-easy" class="whack-btn" style="flex:1;border-color:rgba(242,239,232,0.2);font-size:13px;letter-spacing:3px;padding:10px 4px">🟢 EASY</button>
+              <button onclick="difficulty='easy';document.getElementById('diff-easy').style.boxShadow='0 0 14px #33ff6688';document.getElementById('diff-easy').style.borderColor='#33ff66';document.getElementById('diff-hard').style.boxShadow='none';document.getElementById('diff-hard').style.borderColor='rgba(242,239,232,0.2)'" id="diff-easy" class="whack-btn" style="flex:1;border-color:rgba(242,239,232,0.2);font-size:13px;letter-spacing:3px;padding:10px 4px">🟢 MEDIUM</button>
               <button onclick="difficulty='hard';document.getElementById('diff-hard').style.boxShadow='0 0 14px #ff444488';document.getElementById('diff-hard').style.borderColor='#ff4444';document.getElementById('diff-easy').style.boxShadow='none';document.getElementById('diff-easy').style.borderColor='rgba(242,239,232,0.2)'" id="diff-hard" class="whack-btn" style="flex:1;border-color:#ff4444;box-shadow:0 0 14px #ff444488;font-size:13px;letter-spacing:3px;padding:10px 4px">🔴 HARD</button>
             </div>
             <button id="whack-ready-btn" class="whack-btn" onclick="whackBegin()" style="width:100%;border-color:#ff00cc;background:rgba(255,0,204,0.20);padding:14px 48px;font-size:18px;letter-spacing:5px;text-shadow:0 0 10px #ff00cc88;box-shadow:0 0 16px rgba(255,0,204,0.3);opacity:0.35;pointer-events:none">READY!</button>
@@ -5539,7 +5616,7 @@ window.confirmCharSelect = function() {
             <div style="width:46px;height:46px;border-radius:8px;overflow:hidden;border:2px solid #ff4444;background:#ff444422;box-shadow:0 0 12px #ff444466;transform:scaleX(-1);flex-shrink:0">${charFace(moleGc,'normal')}</div>
           </div>
         </div>
-        <div class="whack-grid" id="whack-grid">${
+        <div class="whack-grid" id="whack-grid" style="--cols:${GRID_COLS};--rows:${GRID_ROWS}">${
           Array.from({length:HOLES},(_,i)=>
             `<div class="whack-hole" id="wh-${i}" onclick="whackHit(${i})">
                <div class="whack-char" id="wc-${i}"></div>
@@ -5727,6 +5804,7 @@ window.confirmCharSelect = function() {
   }
 
   // Faded heart flash behind the board whenever a life is lost — easy to miss otherwise
+  const BROKEN_HEART_HOLD_MS = 2600; // 4x the original 650ms — gives it room to register before the tap prompt shows up
   function flashBrokenHeart() {
     // Fixed overlay above everything (not "behind the board" — that put it behind the
     // opaque hole tiles where it was nearly invisible). Click-through, so it never
@@ -5739,7 +5817,7 @@ window.confirmCharSelect = function() {
     setTimeout(() => {
       el.style.opacity = '0';
       setTimeout(() => el.remove(), 250);
-    }, 650);
+    }, BROKEN_HEART_HOLD_MS);
   }
 
   // Green confirm-flash for Clear/Memory correct hits — same idea as Match's
@@ -5839,6 +5917,7 @@ window.confirmCharSelect = function() {
           clearInterval(clearRoundInterval);
           clearInterval(clearRoundMoveInterval);
           removeClearTimerOverlay();
+          removeSideBar();
           wave++;
           clearWaveTransition();
         }
@@ -5957,13 +6036,13 @@ window.confirmCharSelect = function() {
   // 8-directional neighbors on the 3-col x 4-row board — used to give Clear-round
   // pieces somewhere valid to hop to.
   function getNeighbors(i) {
-    const row = Math.floor(i / 3), col = i % 3;
+    const row = Math.floor(i / GRID_COLS), col = i % GRID_COLS;
     const out = [];
     for (let dr = -1; dr <= 1; dr++) {
       for (let dc = -1; dc <= 1; dc++) {
         if (dr === 0 && dc === 0) continue;
         const r = row + dr, c = col + dc;
-        if (r >= 0 && r < 4 && c >= 0 && c < 3) out.push(r * 3 + c);
+        if (r >= 0 && r < GRID_ROWS && c >= 0 && c < GRID_COLS) out.push(r * GRID_COLS + c);
       }
     }
     return out;
@@ -5971,7 +6050,7 @@ window.confirmCharSelect = function() {
 
   function startClearRound() {
     clearRoundAppearances++;
-    const goodCount = 5, badCount = 2;
+    const goodCount = difficulty === 'easy' ? 4 : 5, badCount = difficulty === 'easy' ? 1 : 2;
     const open = Array.from({length: HOLES}, (_, i) => i);
     for (let i = open.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -5988,30 +6067,36 @@ window.confirmCharSelect = function() {
       if (hole && charEl) {
         charEl.innerHTML = charHTML(ci, 'normal');
         hole.classList.add('up');
-        // No tint here on purpose — showing the red/green color-cue on all 7 pieces at
-        // once gave away which were safe to hit before you even looked at the faces,
-        // making the round trivial. Recognize them by face, same as a normal wave.
+        setTint(hi, ci);
       }
     });
-    clearRoundTimeLeft = CLEAR_ROUND_SECONDS;
+    const clearRoundSeconds = getClearRoundSeconds();
+    clearRoundTimeLeft = clearRoundSeconds;
     showClearTimerOverlay();
     updateClearTimerDisplay();
+    showSideBar();
+    updateSideBar(100, 1);
+    SFX.raceStart();
     clearInterval(clearRoundInterval);
     clearRoundInterval = setInterval(() => {
       clearRoundTimeLeft--;
       updateClearTimerDisplay();
+      updateSideBar((clearRoundTimeLeft / clearRoundSeconds) * 100, 1);
       if (clearRoundTimeLeft <= 0) {
         clearInterval(clearRoundInterval);
         failWave('⏰ TIME UP!');
       }
     }, 1000);
 
-    // Pieces stay put on the very first Clear round so the mechanic itself isn't
-    // sprung on the player along with everything else — from the 2nd appearance on,
-    // they hop to a touching/diagonal empty hole, faster each time after that.
+    // Pieces stay put on the first couple Clear rounds so the mechanic itself isn't
+    // sprung on the player along with everything else — easy gets an extra calm
+    // appearance and a gentler, slower-floor ramp once they do start moving.
     clearInterval(clearRoundMoveInterval);
-    if (clearRoundAppearances > 1) {
-      const moveMs = Math.max(700, 2000 - (clearRoundAppearances - 2) * 200);
+    const moveGrace = difficulty === 'easy' ? 2 : 1;
+    if (clearRoundAppearances > moveGrace) {
+      const moveMs = difficulty === 'easy'
+        ? Math.max(1000, 2400 - (clearRoundAppearances - moveGrace - 1) * 150)
+        : Math.max(700, 2000 - (clearRoundAppearances - moveGrace - 1) * 200);
       clearRoundMoveInterval = setInterval(moveClearRoundPieces, moveMs);
     }
   }
@@ -6041,6 +6126,7 @@ window.confirmCharSelect = function() {
       occupied.add(dest);
       holeStates[dest] = 'up'; holeCharIdx[dest] = piece.ci;
       if (newHoleEl) newHoleEl.classList.add('up');
+      setTint(dest, piece.ci);
 
       // Slide instead of teleport: place the character in its new hole, but offset
       // by exactly the distance back to the old hole, then animate that offset to
@@ -6089,18 +6175,77 @@ window.confirmCharSelect = function() {
     txt.style.color = clearRoundTimeLeft <= 3 ? '#ff4444' : '#ffe61a';
   }
 
+  // Vertical countdown bar to the right of the board — fixed-positioned against the
+  // grid's own measured rect (same trick as the HUD overlay above) so it tracks the
+  // board regardless of layout. The fill is bottom-anchored so it drains from the top
+  // down rather than shrinking from the bottom up. Shared by Clear (ticks once a
+  // second, so the CSS transition smooths between ticks) and Memory (driven every
+  // frame via rAF, so no CSS transition is needed there).
+  let sideBarEl = null;
+  function showSideBar() {
+    removeSideBar();
+    const grid = document.getElementById('whack-grid');
+    if (!grid) return;
+    const rect = grid.getBoundingClientRect();
+    sideBarEl = document.createElement('div');
+    sideBarEl.style.cssText = `position:fixed;top:${rect.top}px;left:${rect.right + 10}px;width:12px;height:${rect.height}px;z-index:9400;pointer-events:none;background:rgba(0,0,0,0.35);border:1px solid rgba(255,230,26,0.25);border-radius:6px;overflow:hidden`;
+    sideBarEl.innerHTML = `<div id="whack-sidebar-fill" style="position:absolute;bottom:0;left:0;width:100%;height:100%;background:rgba(255,230,26,0.5);box-shadow:0 0 8px rgba(255,230,26,0.35);transition:background 0.3s"></div>`;
+    document.body.appendChild(sideBarEl);
+  }
+  function removeSideBar() {
+    if (sideBarEl) { sideBarEl.remove(); sideBarEl = null; }
+  }
+  function updateSideBar(pct, smoothSeconds) {
+    const fill = document.getElementById('whack-sidebar-fill');
+    if (!fill) return;
+    fill.style.transition = smoothSeconds ? `height ${smoothSeconds}s linear,background 0.3s` : 'background 0.3s';
+    fill.style.height = Math.max(0, pct) + '%';
+    fill.style.background = pct <= 30 ? 'rgba(255,68,68,0.55)' : 'rgba(255,230,26,0.5)';
+  }
+
+  // Shared by startMemoryRound() and the next-wave intro overlay, so the announced
+  // memorize time and the actual one always match — appearanceCount is "which Memory
+  // round is this" (1st, 2nd, ...), not memoryAppearances directly, since the overlay
+  // needs to predict the upcoming round's value before it's actually started.
+  // Hard's two difficulty levers (time to memorize, and how much there is to
+  // memorize) alternate one step at a time instead of both ramping every appearance —
+  // each new appearance either trims 0.5s off the clock OR adds one more target, never
+  // both, so "harder" always reads as one clear change rather than a compound jump.
+  // Time stays in clean 0.5s increments throughout (4.0, 3.5, 3.0, ... down to a 1.5s floor).
+  function memoryHardStep(appearanceCount) {
+    return Math.max(0, appearanceCount - 3); // same 3-appearance grace period as before
+  }
+  function getMemorizeMs(appearanceCount) {
+    if (difficulty === 'easy') {
+      const tier = Math.max(0, appearanceCount - 5); // longer grace period before scaling kicks in
+      return Math.max(2200, 3200 - tier * 100); // more time throughout, slower decay
+    }
+    const step = memoryHardStep(appearanceCount);
+    const timeSteps = Math.ceil(step / 2); // time moves on odd steps
+    return Math.max(1.5, 4 - timeSteps * 0.5) * 1000;
+  }
+  function getMemoryGoodCount(appearanceCount) {
+    if (difficulty === 'easy') {
+      const tier = Math.max(0, appearanceCount - 5);
+      return Math.min(6, 3 + Math.floor(tier / 3)); // starts with fewer targets, grows slower
+    }
+    const step = memoryHardStep(appearanceCount);
+    const patternSteps = Math.floor(step / 2); // pattern moves on even steps
+    return Math.min(8, 5 + patternSteps);
+  }
+
+  const MEMORY_INTRO_MS = 900; // "MEMORIZE" flash plays solo, board still blank, before anything is revealed
   function startMemoryRound() {
     memoryAppearances++;
-    // Same difficulty for the first 3 appearances, then scales up gradually: more
+    // Same difficulty for the first few appearances, then scales up gradually: more
     // targets, less time to memorize, and — a few appearances in — your own character
     // shows up among the targets purely as visual noise. It's never a target itself
     // (recall logic only ever checks memoryTargets), but it's one more face to filter
     // out while memorizing, which is real extra load even though the actual pattern
     // of correct spots hasn't changed.
-    const tier = Math.max(0, memoryAppearances - 3);
-    const goodCount = Math.min(8, 5 + Math.floor(tier / 2));
-    const memorizeMs = Math.max(1400, 2400 - tier * 150);
-    const showDistraction = memoryAppearances > 4;
+    const goodCount = getMemoryGoodCount(memoryAppearances);
+    const memorizeMs = getMemorizeMs(memoryAppearances);
+    const showDistraction = memoryAppearances > (difficulty === 'easy' ? 6 : 4);
 
     const open = Array.from({length: HOLES}, (_, i) => i);
     for (let i = open.length - 1; i > 0; i--) {
@@ -6110,31 +6255,46 @@ window.confirmCharSelect = function() {
     memoryTargets = open.slice(0, goodCount);
     const distractionHoles = showDistraction ? open.slice(goodCount, goodCount + 2) : [];
     memoryHit = 0;
-    memoryPhase = 'showing';
-    memoryTargets.forEach(hi => {
-      const hole = document.getElementById(`wh-${hi}`), charEl = document.getElementById(`wc-${hi}`);
-      if (hole && charEl) { charEl.innerHTML = charHTML(moleChar, 'normal'); hole.classList.add('up'); }
-    });
-    distractionHoles.forEach(hi => {
-      const hole = document.getElementById(`wh-${hi}`), charEl = document.getElementById(`wc-${hi}`);
-      if (hole && charEl) { charEl.innerHTML = charHTML(activeChar, 'normal'); hole.classList.add('up'); }
-    });
+    // 'intro': board stays blank while "MEMORIZE" flashes solo, so the message never
+    // overlaps the reveal. Only once that beat passes does 'showing' actually put the
+    // targets on the board and start the real memorize countdown.
+    memoryPhase = 'intro';
+    const wm = document.getElementById('whack-wave-mode');
+    if (wm) wm.textContent = 'MEMORIZE';
+    showMemorizeFlash(MEMORY_INTRO_MS);
+
     setTimeout(() => {
-      if (state !== 'playing') return;
-      // Every hole becomes a face-down card — not just the targets — so the board
-      // reads as "N cards, flip to find the ones you memorized" rather than some holes
-      // being mysteriously blank and others not.
-      for (let h = 0; h < HOLES; h++) {
-        const hole = document.getElementById(`wh-${h}`), charEl = document.getElementById(`wc-${h}`);
-        if (!hole || !charEl) continue;
-        hole.classList.add('up');
-        charEl.innerHTML = `<div class="whack-card-flip" id="wflip-${h}">
-          <div class="whack-card-back">?</div>
-          <div class="whack-card-face" id="wface-${h}"></div>
-        </div>`;
-      }
-      memoryPhase = 'recall';
-    }, memorizeMs);
+      if (state !== 'playing' || memoryPhase !== 'intro') return;
+      memoryPhase = 'showing';
+      memoryTargets.forEach(hi => {
+        const hole = document.getElementById(`wh-${hi}`), charEl = document.getElementById(`wc-${hi}`);
+        if (hole && charEl) { charEl.innerHTML = charHTML(moleChar, 'normal'); hole.classList.add('up'); }
+      });
+      distractionHoles.forEach(hi => {
+        const hole = document.getElementById(`wh-${hi}`), charEl = document.getElementById(`wc-${hi}`);
+        if (hole && charEl) { charEl.innerHTML = charHTML(activeChar, 'normal'); hole.classList.add('up'); }
+      });
+      driveMemorizeSideBar(memorizeMs);
+
+      setTimeout(() => {
+        if (state !== 'playing') return;
+        // Every hole becomes a face-down card — not just the targets — so the board
+        // reads as "N cards, flip to find the ones you memorized" rather than some holes
+        // being mysteriously blank and others not.
+        for (let h = 0; h < HOLES; h++) {
+          const hole = document.getElementById(`wh-${h}`), charEl = document.getElementById(`wc-${h}`);
+          if (!hole || !charEl) continue;
+          hole.classList.add('up');
+          charEl.innerHTML = `<div class="whack-card-flip" id="wflip-${h}">
+            <div class="whack-card-back">?</div>
+            <div class="whack-card-face" id="wface-${h}"></div>
+          </div>`;
+        }
+        memoryPhase = 'recall';
+        const wm2 = document.getElementById('whack-wave-mode');
+        if (wm2) wm2.textContent = `WAVE ${wave}: ${roundTypeLabel()}`;
+      }, memorizeMs);
+    }, MEMORY_INTRO_MS);
   }
 
   // Routed here from whackHit() while memoryPhase === 'recall' — every hole is a
@@ -6175,7 +6335,7 @@ window.confirmCharSelect = function() {
     moleChar = pickMole();
     wave = 1; waveHits = 0;
     selfActive = false; selfIntroWave = 0; waveTransitioning = false;
-    currentRoundType = 'whack'; clearInterval(clearRoundInterval); clearInterval(clearRoundMoveInterval); memoryPhase = null; removeClearTimerOverlay(); memoryAppearances = 0; clearRoundAppearances = 0;
+    currentRoundType = 'whack'; clearInterval(clearRoundInterval); clearInterval(clearRoundMoveInterval); memoryPhase = null; removeClearTimerOverlay(); removeSideBar(); memoryAppearances = 0; clearRoundAppearances = 0;
     holeStates = Array(HOLES).fill('empty');
     holeCharIdx = Array(HOLES).fill(-1);
     holeGrace = Array(HOLES).fill(false);
@@ -6221,10 +6381,12 @@ window.confirmCharSelect = function() {
     const ann = document.createElement('div');
     ann.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none';
     const nc = '#ff00cc';
-    // Clear rounds get an extra line warning about the clock up front — the other
-    // round types don't have a ticking-out failure mode, so they don't need it.
+    // Clear and Memory rounds each get an extra line up front naming the time limit
+    // they're about to be working against — Whack has no such limit, so it gets none.
     const subLine = currentRoundType === 'clear'
-      ? `BEFORE THE TIME RUNS OUT<br><span style="font-size:22px;color:#ffe61a">${CLEAR_ROUND_SECONDS} SECONDS</span>`
+      ? `<span style="font-size:22px;color:#ffe61a">${getClearRoundSeconds()} SECONDS</span>`
+      : currentRoundType === 'memory'
+      ? `<span style="font-size:22px;color:#ffe61a">${(getMemorizeMs(memoryAppearances + 1) / 1000).toFixed(1)} SECONDS</span>`
       : '';
     ann.innerHTML = `<div style="text-align:center;animation:wave-announce 2.2s ease-out forwards">
       <div style="font-family:'Bebas Neue',cursive;font-size:50px;letter-spacing:4px;color:${nc};text-shadow:0 0 20px ${nc},0 0 40px ${nc}66;line-height:1.2">${roundTypePhrase()}</div>
@@ -6234,8 +6396,39 @@ window.confirmCharSelect = function() {
     setTimeout(() => ann.remove(), 2200);
   }
 
+  // Big "MEMORIZE" screen flash — text only. This runs during the 'intro' phase,
+  // before the board reveals anything, so it never overlaps the actual memorize
+  // window (that's driveMemorizeSideBar(), started only once targets are shown).
+  function showMemorizeFlash(durationMs) {
+    const ann = document.createElement('div');
+    ann.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;pointer-events:none';
+    const nc = '#00e5ff';
+    ann.innerHTML = `<div style="font-family:'Bebas Neue',cursive;font-size:clamp(60px,18vw,110px);letter-spacing:4px;color:${nc};text-shadow:0 0 30px ${nc},0 0 60px ${nc}88;line-height:1.2;animation:wave-announce ${(durationMs / 1000).toFixed(2)}s ease-out forwards">MEMORIZE</div>`;
+    document.body.appendChild(ann);
+    setTimeout(() => ann.remove(), durationMs);
+  }
+
+  // Drives the vertical side bar over the actual memorize window — started only once
+  // targets are revealed, every frame rather than once a second (memorizeMs is too
+  // short for per-second ticks to read as a smooth drain).
+  function driveMemorizeSideBar(memorizeMs) {
+    showSideBar();
+    const start = Date.now();
+    const tick = () => {
+      // Round moved on (recall phase, or reset/fail) before the bar naturally hit
+      // zero — remove it rather than abandoning it mid-drain on screen.
+      if (memoryPhase !== 'showing') { removeSideBar(); return; }
+      const pct = Math.max(0, 1 - (Date.now() - start) / memorizeMs) * 100;
+      updateSideBar(pct);
+      if (pct > 0) requestAnimationFrame(tick);
+      else removeSideBar();
+    };
+    requestAnimationFrame(tick);
+  }
+
   window.whackBegin = function() {
     ArcadeMusic.stop();
+    applyDifficultyGridSize();
     state = 'playing'; render();
     waveTransitioning = true;
     showWaveStartOverlay();
@@ -6252,7 +6445,7 @@ window.confirmCharSelect = function() {
     moleChar = pickMole();
     state = 'instructions'; wave = 1; waveHits = 0;
     selfActive = false; selfIntroWave = 0; waveTransitioning = false;
-    currentRoundType = 'whack'; clearInterval(clearRoundInterval); clearInterval(clearRoundMoveInterval); memoryPhase = null; removeClearTimerOverlay(); memoryAppearances = 0; clearRoundAppearances = 0;
+    currentRoundType = 'whack'; clearInterval(clearRoundInterval); clearInterval(clearRoundMoveInterval); memoryPhase = null; removeClearTimerOverlay(); removeSideBar(); memoryAppearances = 0; clearRoundAppearances = 0;
     holeStates = Array(HOLES).fill('empty');
     holeCharIdx = Array(HOLES).fill(-1);
     holeGrace = Array(HOLES).fill(false);
@@ -7012,7 +7205,7 @@ window.confirmCharSelect = function() {
 })();
 
 // ══════════════════════════════════════
-//  MEMORY MATCH
+//  MEMORY MOBE
 // ══════════════════════════════════════
 (function() {
   let PAIRS = 9; // dynamic, set per-mode in makeCards()
@@ -7070,8 +7263,16 @@ window.confirmCharSelect = function() {
       wrap.innerHTML = `
         <div class="arcade-cabinet" style="--nc:#ffe61a">
           <div class="arcade-cab-rail"></div>
-          <div class="arcade-cab-marquee">MEMORY MATCH</div>
+          <div class="arcade-cab-marquee">MEMORY MOBE</div>
           <div class="arcade-cab-screen" style="text-align:center;padding:12px 16px">
+            <svg viewBox="0 0 280 80" width="100%" height="70" style="display:block;margin:0 auto 8px">
+              <g class="card-drift" style="--r0:-4deg;--r1:1deg;animation-delay:0s"><rect x="8" y="6" width="50" height="66" rx="6" fill="#2a1a55" stroke="#ffe61a" stroke-width="1.5" opacity="0.6"/><text x="33" y="46" text-anchor="middle" font-size="22" fill="#ffe61a" opacity="0.5" font-family="'Bebas Neue',cursive">?</text></g>
+              <g class="card-drift" style="--r0:0deg;--r1:3deg;animation-delay:0.4s"><rect x="66" y="6" width="50" height="66" rx="6" fill="#3a2a77" stroke="#ffe61a" stroke-width="2"/><path d="M75,38 L82,47 L97,27" stroke="#ffe61a" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
+              <g class="card-drift" style="--r0:3deg;--r1:-2deg;animation-delay:0.8s"><rect x="124" y="6" width="50" height="66" rx="6" fill="#2a1a55" stroke="#ffe61a" stroke-width="1.5" opacity="0.6"/><text x="149" y="46" text-anchor="middle" font-size="22" fill="#ffe61a" opacity="0.5" font-family="'Bebas Neue',cursive">?</text></g>
+              <g class="card-drift" style="--r0:0deg;--r1:-3deg;animation-delay:1.2s" opacity="0.85"><rect x="182" y="6" width="50" height="66" rx="6" fill="#3a2a77" stroke="#ffe61a" stroke-width="2"/><path d="M191,38 L198,47 L213,27" stroke="#ffe61a" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
+              <text x="248" y="24" font-size="14" fill="#ffe61a" opacity="0.7">✦</text>
+              <text x="258" y="40" font-size="10" fill="#ffe61a" opacity="0.4">✦</text>
+            </svg>
             <div class="match-sub" style="font-size:16px;letter-spacing:2px;margin-bottom:6px">FLIP CARDS TO FIND PAIRS</div>
             ${best ? `<div class="match-sub" style="color:#ffe61a;margin-bottom:2px">🏆 BEST SCORE: ${best}</div>` : ''}
           </div>
@@ -7287,6 +7488,7 @@ window.confirmCharSelect = function() {
         flipped = []; locked = false;
         if (matched === PAIRS) {
           clearInterval(timerInt); clearInterval(previewInt);
+          removeMatchSideBar();
           if (matchMode !== 'free') {
             const timeBonus = Math.max(0, (timeLimit - matchTimer) * 5);
             matchScore += timeBonus;
@@ -7354,6 +7556,7 @@ window.confirmCharSelect = function() {
     const ov = document.getElementById('match-cutoff-modal');
     if (ov) ov.remove();
     matchOutOfMoves = true;
+    removeMatchSideBar();
     state = 'over'; render();
   };
 
@@ -7394,9 +7597,49 @@ window.confirmCharSelect = function() {
     }
   };
 
+  // Vertical countdown bar to the right of the board for the timed modes (Hard,
+  // Challenge) — same fixed-position-against-the-grid trick used in Whack, but kept
+  // soft/translucent rather than solid so the dark background reads through it.
+  let matchSideBarEl = null;
+  function showMatchSideBar() {
+    removeMatchSideBar();
+    const grid = document.querySelector('.match-grid');
+    if (!grid) return;
+    const rect = grid.getBoundingClientRect();
+    matchSideBarEl = document.createElement('div');
+    matchSideBarEl.style.cssText = `position:fixed;top:${rect.top}px;left:${rect.right + 10}px;width:12px;height:${rect.height}px;z-index:9400;pointer-events:none;background:rgba(0,0,0,0.35);border:1px solid rgba(255,230,26,0.25);border-radius:6px;overflow:hidden`;
+    matchSideBarEl.innerHTML = `<div id="match-sidebar-fill" style="position:absolute;bottom:0;left:0;width:100%;height:100%;background:rgba(255,230,26,0.5);box-shadow:0 0 8px rgba(255,230,26,0.35);transition:height 1s linear,background 0.3s"></div>`;
+    document.body.appendChild(matchSideBarEl);
+  }
+  function removeMatchSideBar() {
+    if (matchSideBarEl) { matchSideBarEl.remove(); matchSideBarEl = null; }
+  }
+  function updateMatchSideBar(pct) {
+    const fill = document.getElementById('match-sidebar-fill');
+    if (!fill) return;
+    fill.style.height = Math.max(0, pct) + '%';
+    fill.style.background = pct <= 25 ? 'rgba(255,68,68,0.55)' : 'rgba(255,230,26,0.5)';
+  }
+
+  // Big screen flash, same style as Whack's wave-start overlay — tells the player up
+  // front that in these modes, time is the score and moves are free.
+  const BEAT_THE_CLOCK_MS = 2200;
+  function showBeatTheClockOverlay() {
+    const ann = document.createElement('div');
+    ann.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none';
+    const nc = '#ffe61a';
+    ann.innerHTML = `<div style="text-align:center;animation:wave-announce ${(BEAT_THE_CLOCK_MS / 1000).toFixed(2)}s ease-out forwards">
+      <div style="font-family:'Bebas Neue',cursive;font-size:clamp(50px,16vw,100px);letter-spacing:4px;color:${nc};text-shadow:0 0 20px ${nc},0 0 40px ${nc}66;line-height:1.2">BEAT THE CLOCK</div>
+      <div style="font-family:'VCR',monospace;font-size:22px;letter-spacing:3px;color:#fff;margin-top:12px;line-height:1.8;text-shadow:0 0 8px rgba(0,0,0,0.8)">UNLIMITED MOVES</div>
+    </div>`;
+    document.body.appendChild(ann);
+    setTimeout(() => ann.remove(), BEAT_THE_CLOCK_MS);
+  }
+
   window.matchPlay = function(mode) {
     matchMode = mode || 'hard';
     window._matchMode = matchMode;
+    removeMatchSideBar();
     if (matchMode !== 'free') timeLimit = MODE_CONFIG[matchMode].time;
     cards = makeCards(); flipped=[]; locked=false; moves=0; matched=0; matchOutOfMoves=false; matchCutoffWaived=false;
     matchScore=0; combo=0; matchTimer=0;
@@ -7422,24 +7665,39 @@ window.confirmCharSelect = function() {
         cards.forEach(c => { c.flipped = false; });
         locked = false;
         state = 'playing'; render();
-        timerInt = setInterval(() => {
-          matchTimer++;
-          // Impossible has no time limit anymore — keep matchTimer running (still shown
-          // in the save extra text/leaderboard) but skip the countdown display and the
-          // timeout-ends-the-run check entirely.
-          if (matchMode === 'impossible') return;
-          const el = document.getElementById('mt');
-          if (el) {
-            const remaining = timeLimit - matchTimer;
-            el.textContent = remaining + 's';
-            if (remaining <= 10) el.style.color = '#ff4444';
-          }
-          if (matchTimer >= timeLimit) {
-            clearInterval(timerInt);
-            SFX.over();
-            setTimeout(() => { state = 'over'; render(); }, 3000);
-          }
-        }, 1000);
+        const startTimer = () => {
+          SFX.raceStart();
+          timerInt = setInterval(() => {
+            matchTimer++;
+            // Impossible has no time limit anymore — keep matchTimer running (still shown
+            // in the save extra text/leaderboard) but skip the countdown display and the
+            // timeout-ends-the-run check entirely.
+            if (matchMode === 'impossible') return;
+            const el = document.getElementById('mt');
+            if (el) {
+              const remaining = timeLimit - matchTimer;
+              el.textContent = remaining + 's';
+              if (remaining <= 10) el.style.color = '#ff4444';
+            }
+            updateMatchSideBar((Math.max(0, timeLimit - matchTimer) / timeLimit) * 100);
+            if (matchTimer >= timeLimit) {
+              clearInterval(timerInt);
+              removeMatchSideBar();
+              SFX.over();
+              setTimeout(() => { state = 'over'; render(); }, 3000);
+            }
+          }, 1000);
+        };
+        if (matchMode === 'hard' || matchMode === 'challenge') {
+          showBeatTheClockOverlay();
+          showMatchSideBar();
+          updateMatchSideBar(100);
+          // Timer (and its "go" sound) waits until the overlay is actually gone, so the
+          // clock isn't silently burning time while the player is still reading it.
+          setTimeout(startTimer, BEAT_THE_CLOCK_MS);
+        } else {
+          startTimer();
+        }
       }
     }, 1000);
   };
@@ -7454,6 +7712,7 @@ window.confirmCharSelect = function() {
   window.matchGoIdle      = function() { state = 'idle'; render(); };
 
   window.initMatch = function() {
+    removeMatchSideBar();
     state='idle'; cards=[]; flipped=[]; locked=false; render();
   };
 })();
@@ -7471,8 +7730,8 @@ window.confirmCharSelect = function() {
   let dangerY = 0, lineFlashA = 0;
   let floatTexts = []; // {text, x, y, color, a, vy, size}
   let currentCfg = null;
-  let powerups = []; // {type:'speed'|'gun'|'bomb', x, y, vy, r}
-  let buffSpeedUntil = 0, buffGunUntil = 0;
+  let powerups = []; // {type:'speed'|'gun'|'bomb'|'shield'|'hp', x, y, vy, r}
+  let buffSpeedUntil = 0, buffGunUntil = 0, buffShieldUntil = 0;
   let shakeMag = 0; // screen shake on big hits — decays each frame
   function triggerShake(amount) { shakeMag = Math.max(shakeMag, amount); }
   // Rescued hero escort — temporary wingman, cap 1 (rescuing again refreshes/replaces it).
@@ -7487,12 +7746,76 @@ window.confirmCharSelect = function() {
   let boss = null;
   let bossDeployTimer = 0;
   const rescuedChars = new Set();
+  // Small retro pixel-sprite system instead of emoji for boss faces. Each sprite is
+  // its LEFT HALF only (mirrored when drawn) — keeps every creature symmetric by
+  // construction. '.' = transparent, other letters look up a color in that
+  // creature's own palette.
   const BOSS_CREATURES = [
-    { name: 'VOID WRAITH',  emoji: '👻' },
-    { name: 'STAR OGRE',    emoji: '👹' },
-    { name: 'SKY DRAGON',   emoji: '🐉' },
-    { name: 'REX PRIME',    emoji: '🦖' },
-    { name: 'GRAY VISITOR', emoji: '👽' },
+    { name: 'VOID WRAITH', palette: { A:'#8855ff', K:'#1a0a33' }, sprite: [
+      ".......",
+      "...AAA.",
+      "..AAAAA",
+      ".AAAAAA",
+      "AAAKAAA",
+      "AAAKAAA",
+      "AAAAAAA",
+      "AAAAAAA",
+      "AAAAAAA",
+      "AA.AA.A",
+      "A..A..A",
+    ]},
+    { name: 'STAR OGRE', palette: { A:'#5a8c3a', K:'#0a1a05', B:'#345420', W:'#fff8e0' }, sprite: [
+      ".AAAAA.",
+      "AAAAAAA",
+      "AAAAAAA",
+      "AAAKAAA",
+      "AAAKAAA",
+      "AAABAAA",
+      "AAAAAAA",
+      "AAWAAAA",
+      "AAAAAAA",
+      ".AAAAA.",
+      "..AAA..",
+    ]},
+    { name: 'SKY DRAGON', palette: { A:'#dd4422', K:'#2a0a00', B:'#a82a10' }, sprite: [
+      "....A..",
+      "...AAA.",
+      "..AAAAA",
+      ".AAAAAA",
+      "AAAKAAA",
+      "AAAAAAA",
+      "AABBBAA",
+      "AAAAAAA",
+      ".AAAAA.",
+      "..AAA..",
+      "...A...",
+    ]},
+    { name: 'REX PRIME', palette: { A:'#4a9c4a', K:'#0a2a0a', W:'#fff8e0' }, sprite: [
+      ".AAAAA.",
+      "AAAAAAA",
+      "AAAAAAA",
+      "AAAKAAA",
+      "AAAAAAA",
+      "AAAAAAA",
+      "AWAWAWA",
+      "AAAAAAA",
+      ".AAAAA.",
+      "..AAA..",
+      "...A...",
+    ]},
+    { name: 'GRAY VISITOR', palette: { A:'#9aa8a0', K:'#0a0a0a' }, sprite: [
+      "...AAA.",
+      "..AAAAA",
+      ".AAAAAA",
+      "AAAAAAA",
+      "AAKKKAA",
+      "AAKKKAA",
+      "AAAAAAA",
+      "AAAAAAA",
+      ".AAAAA.",
+      "..AAA..",
+      "...A...",
+    ]},
   ];
 
   function addFloatText(text, x, y, color, size) {
@@ -7546,7 +7869,7 @@ window.confirmCharSelect = function() {
       obstacles.push({ type:'asteroid', x:rand(r,W-r), y:-r-10, vx:rand(-0.4,0.4)*cfg.speed, vy:cfg.speed*(0.8+Math.random()*0.4), r, verts, rot:0, rotSpeed:rand(-0.02,0.02), hp:1 });
     } else {
       const ci = Math.floor(Math.random() * GAME_CHARS.length);
-      const isTrapped = Math.random() < Math.max(0.03, 0.10 - wave * 0.012); // heroes even rarer now
+      const isTrapped = Math.random() < Math.max(0.05, 0.13 - wave * 0.012); // a tad more frequent than before
       // Enemies take 3 hits to clear; trapped heroes still resolve via the ring, hp unused for them.
       // Non-hero enemies descend slower and pause partway down for a burst of fire before
       // continuing — a middle ground between "charges the line" and "just hovers and shoots":
@@ -7573,12 +7896,75 @@ window.confirmCharSelect = function() {
 
   const POWERUP_R = 18;
   function spawnPowerup() {
-    const types = ['speed', 'gun', 'bomb'];
+    const types = ['speed', 'gun', 'bomb', 'shield'];
     const type = types[Math.floor(Math.random() * types.length)];
     powerups.push({ type, x: rand(POWERUP_R, W - POWERUP_R), y: -POWERUP_R - 10, vy: 1.3, r: POWERUP_R, bob: Math.random() * Math.PI * 2 });
   }
 
+  // Small green orb HP pickup with a plus sign — a smooth circle rather than a jagged
+  // asteroid shape, so it's never visually confused with an actual (hostile) asteroid
+  // at a glance. Same falling rate as before: 2x a regular asteroid's speed.
+  function spawnHpPowerup() {
+    const r = rand(ASTEROID_R_MIN, ASTEROID_R_MAX) * 0.85;
+    const fallSpeed = (currentCfg ? currentCfg.speed : O_SPEED_BASE) * 2;
+    powerups.push({ type:'hp', x: rand(r, W-r), y: -r-10, vy: fallSpeed, r, bob: Math.random() * Math.PI * 2 });
+  }
+
+  let hpPowerupTimer = null;
+  function scheduleHpPowerup() {
+    clearTimeout(hpPowerupTimer);
+    hpPowerupTimer = setTimeout(() => {
+      if (state !== 'playing') return;
+      if (!boss) spawnHpPowerup();
+      scheduleHpPowerup();
+    }, 2800 + Math.random() * 2800);
+  }
+
   function drawPowerup(p) {
+    if (p.type === 'hp') {
+      ctx.save(); ctx.translate(p.x, p.y);
+      const pulse = 0.85 + Math.sin(Date.now() * 0.006 + p.bob) * 0.15;
+      ctx.beginPath(); ctx.arc(0, 0, p.r * pulse + 6, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(51,255,102,0.18)'; ctx.fill();
+      ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = '#1a5c2e'; ctx.fill();
+      ctx.strokeStyle = '#33ff66'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.strokeStyle = '#eafff0'; ctx.lineWidth = Math.max(3, p.r * 0.22); ctx.lineCap = 'round';
+      const armLen = p.r * 0.45;
+      ctx.beginPath(); ctx.moveTo(-armLen, 0); ctx.lineTo(armLen, 0); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, -armLen); ctx.lineTo(0, armLen); ctx.stroke();
+      ctx.restore();
+      return;
+    }
+    if (p.type === 'shield') {
+      ctx.save(); ctx.translate(p.x, p.y);
+      const pulse = 0.85 + Math.sin(Date.now() * 0.006 + p.bob) * 0.15;
+      ctx.beginPath(); ctx.arc(0, 0, p.r * pulse + 6, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0,229,255,0.18)'; ctx.fill();
+      ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = '#1a1530'; ctx.fill();
+      ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 2; ctx.stroke();
+      // Bold hexagon badge instead of a soft shield silhouette — reads clearly as
+      // "protection" at small sizes without needing to be a literal shield outline.
+      const hr = p.r * 0.62;
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = -Math.PI / 2 + i * Math.PI / 3;
+        const x = Math.cos(a) * hr, y = Math.sin(a) * hr;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = '#00e5ff'; ctx.fill();
+      ctx.strokeStyle = '#eafffd'; ctx.lineWidth = 2; ctx.stroke();
+      // Small inner bolt accent so it doesn't read as a blank badge
+      ctx.fillStyle = '#1a1530';
+      ctx.beginPath();
+      ctx.moveTo(-hr*0.12, -hr*0.55); ctx.lineTo(hr*0.32, -hr*0.05); ctx.lineTo(0, -hr*0.05);
+      ctx.lineTo(hr*0.12, hr*0.55); ctx.lineTo(-hr*0.32, hr*0.05); ctx.lineTo(0, hr*0.05);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+      return;
+    }
     ctx.save(); ctx.translate(p.x, p.y);
     const pulse = 0.85 + Math.sin(Date.now() * 0.006 + p.bob) * 0.15;
     ctx.beginPath(); ctx.arc(0, 0, p.r * pulse + 6, 0, Math.PI * 2);
@@ -7612,6 +7998,15 @@ window.confirmCharSelect = function() {
       obstacles = obstacles.filter(o => o.alive !== false);
       addFloatText(`BOMB! +${cleared}`, player.x, player.y - 50, '#ff8800', 22);
       SFX.over();
+    } else if (type === 'hp') {
+      const gain = 2 + Math.floor(Math.random() * 2); // 2 or 3
+      health = Math.min(100, health + gain);
+      addFloatText(`+${gain} HP`, player.x, player.y - 50, '#33ff66', 20);
+      SFX.win();
+    } else if (type === 'shield') {
+      buffShieldUntil = Date.now() + 8000;
+      addFloatText('SHIELD UP!', player.x, player.y - 50, '#00e5ff', 20);
+      SFX.win();
     }
   }
 
@@ -7621,7 +8016,7 @@ window.confirmCharSelect = function() {
     player = { x:W/2, y:H-70, r:18 };
     bullets=[]; obstacles=[]; score=0; health=100; wave=1; waveKills=0;
     enemyBullets=[]; lastEnemyFire=0; floatTexts=[]; lineFlashA=0;
-    powerups=[]; buffSpeedUntil=0; buffGunUntil=0; escort=null; shakeMag=0;
+    powerups=[]; buffSpeedUntil=0; buffGunUntil=0; buffShieldUntil=0; escort=null; shakeMag=0;
     boss=null; rescuedChars.clear();
     dangerY = player.y - player.r * 1.2 - 2;
     highScore = parseInt(localStorage.getItem('space-best')||'0');
@@ -7629,6 +8024,7 @@ window.confirmCharSelect = function() {
     mkStars();
     currentCfg = waveConfig(wave);
     startWaveSpawn(currentCfg);
+    scheduleHpPowerup();
   }
 
   let spawnTimer = null;
@@ -7654,9 +8050,9 @@ window.confirmCharSelect = function() {
     currentCfg = waveConfig(wave);
     announceWave(wave);
     startWaveSpawn(currentCfg);
-    // ~65% chance of a power-up appearing sometime mid-wave, from wave 2 on
-    if (wave >= 2 && Math.random() < 0.65) {
-      setTimeout(() => { if (state === 'playing') spawnPowerup(); }, 2500 + Math.random() * 4000);
+    // ~80% chance of a power-up appearing sometime mid-wave, from wave 2 on
+    if (wave >= 2 && Math.random() < 0.8) {
+      setTimeout(() => { if (state === 'playing') spawnPowerup(); }, 2000 + Math.random() * 3200);
     }
     if (wave >= 3 && (wave - 3) % 3 === 0) setTimeout(() => { if (state === 'playing') spawnBoss(); }, 1200);
   }
@@ -7675,26 +8071,45 @@ window.confirmCharSelect = function() {
   }
 
   function takeDamage(amount) {
+    if (Date.now() < buffShieldUntil) {
+      addFloatText('BLOCKED!', player.x, player.y - 40, '#00e5ff', 18);
+      miniExplosion(player.x, player.y, '#00e5ff');
+      return; // shield fully absorbs the hit — no health loss
+    }
     health = Math.max(0, health - amount);
     addFloatText(`-${amount}`, player.x, player.y - 40, '#ff4444', 20);
     miniExplosion(player.x, player.y, '#ff4444');
     triggerShake(amount * 0.5);
     if (health <= 0) {
-      state = 'over';
+      // 'dying' (not 'over' yet) — loop() keeps redrawing a frozen frame (background,
+      // stars, frozen obstacles/player) for this window instead of stopping outright.
+      // Cancelling the loop immediately here used to leave the death explosion's own
+      // particle frames smeared on a canvas nothing was clearing anymore.
+      state = 'dying';
       clearTimeout(spawnTimer);
-      cancelAnimationFrame(raf);
       SFX.over();
       triggerShake(18);
       bigExplosion(player.x, player.y, GAME_CHARS[activeChar].color);
       if (score > highScore) { highScore = score; localStorage.setItem('space-best', score); }
       // Freeze on the death frame for 3s before showing the game-over overlay
-      setTimeout(() => showSpaceOverlay('over'), 3000);
+      setTimeout(() => {
+        state = 'over';
+        cancelAnimationFrame(raf);
+        showSpaceOverlay('over');
+      }, 3000);
     }
   }
 
   function drawPlayer() {
     const p = player, gc = GAME_CHARS[activeChar];
     ctx.save(); ctx.translate(p.x, p.y);
+    if (Date.now() < buffShieldUntil) {
+      const pulse = 0.85 + Math.sin(Date.now() * 0.008) * 0.15;
+      ctx.beginPath(); ctx.arc(0, 0, p.r * 1.7 * pulse, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(0,229,255,0.7)'; ctx.lineWidth = 3; ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, p.r * 1.7 * pulse, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0,229,255,0.12)'; ctx.fill();
+    }
     // thruster glow — no shadowBlur for perf; use a larger semi-transparent fill instead
     ctx.beginPath(); ctx.moveTo(-10,10); ctx.lineTo(0,28); ctx.lineTo(10,10); ctx.closePath();
     ctx.fillStyle='rgba(0,229,255,0.5)'; ctx.fill();
@@ -7735,10 +8150,6 @@ window.confirmCharSelect = function() {
       ctx.beginPath(); ctx.moveTo(-o.r*0.3,-o.r*0.5); ctx.lineTo(o.r*0.2,o.r*0.3); ctx.stroke();
     } else {
       const gc=GAME_CHARS[o.ci];
-      ctx.beginPath(); ctx.arc(0,0,o.r+2.5,0,Math.PI*2);
-      ctx.fillStyle='#fff'; ctx.fill();
-      ctx.beginPath(); ctx.arc(0,0,o.r,0,Math.PI*2);
-      ctx.fillStyle=gc.color; ctx.fill();
       if(gc.img){
         const img=_getImg(gc.img);
         if(img.complete&&img.naturalWidth) ctx.drawImage(img,-o.r,-o.r,o.r*2,o.r*2);
@@ -7790,8 +8201,8 @@ window.confirmCharSelect = function() {
     // Health bar — moved up to the top, under the score/wave row. Keeps the bottom
     // of the screen clear for a thumb to drag/swipe on mobile without covering the HUD.
     const barY = 56;
-    const barW = W - 24;
-    const barX = 12;
+    const barW = W; // spans the full screen edge-to-edge, not inset
+    const barX = 0;
     const barH = 14;
 
     // HP label — bigger and clearer
@@ -7799,7 +8210,7 @@ window.confirmCharSelect = function() {
     ctx.fillStyle = hp > 0.4 ? 'rgba(242,239,232,0.85)' : '#ff6666';
     ctx.font = `bold 17px 'Bebas Neue', cursive`;
     ctx.textAlign = 'left';
-    ctx.fillText(`HP  ${Math.ceil(health)}%`, barX, barY - 19);
+    ctx.fillText(`HP  ${Math.ceil(health)}%`, 12, barY - 19);
 
     // Background track
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
@@ -7819,30 +8230,61 @@ window.confirmCharSelect = function() {
       ctx.beginPath(); ctx.moveTo(sx, barY); ctx.lineTo(sx, barY + barH); ctx.stroke();
     }
 
-    // Active buff indicators (top right, under the health bar now)
-    ctx.font = `bold 13px 'Bebas Neue', cursive`;
+    // Active buff indicators (top right, under the health bar now). Right-aligned at
+    // W-10, so a long string only ever grows further left — drawBuffLine() shrinks the
+    // font until it fits within the canvas width instead of risking it running off
+    // the left edge on a narrow screen.
+    function drawBuffLine(text, y, color, baseSize) {
+      let size = baseSize;
+      ctx.font = `bold ${size}px 'Bebas Neue', cursive`;
+      while (ctx.measureText(text).width > W - 20 && size > 9) {
+        size--;
+        ctx.font = `bold ${size}px 'Bebas Neue', cursive`;
+      }
+      ctx.fillStyle = color;
+      ctx.fillText(text, W - 10, y);
+    }
     ctx.textAlign = 'right';
     let buffY = barY + barH + 16;
     const now = Date.now();
     if (now < buffSpeedUntil) {
-      ctx.fillStyle = '#ffe61a';
-      ctx.fillText(`🍕 SPEED ${Math.ceil((buffSpeedUntil - now) / 1000)}s`, W - 10, buffY);
+      drawBuffLine(`🍕 SPEED ${Math.ceil((buffSpeedUntil - now) / 1000)}s`, buffY, '#ffe61a', 13);
       buffY += 18;
     }
     if (now < buffGunUntil) {
-      ctx.fillStyle = '#ffe61a';
-      ctx.fillText(`⚡ RAPID FIRE ${Math.ceil((buffGunUntil - now) / 1000)}s`, W - 10, buffY);
+      drawBuffLine(`⚡ RAPID FIRE ${Math.ceil((buffGunUntil - now) / 1000)}s`, buffY, '#ffe61a', 13);
+      buffY += 18;
+    }
+    if (now < buffShieldUntil) {
+      drawBuffLine(`🛡️ SHIELD ${Math.ceil((buffShieldUntil - now) / 1000)}s`, buffY, '#00e5ff', 13);
       buffY += 18;
     }
     if (escort && escort.state === 'active') {
-      ctx.fillStyle = '#33ff66';
-      ctx.fillText(`🤝 ESCORT ${Math.max(0, Math.ceil((escort.expiresAt - now) / 1000))}s`, W - 10, buffY);
+      // 2 sizes larger than the other buff lines
+      drawBuffLine(`🤝 ESCORT ${Math.max(0, Math.ceil((escort.expiresAt - now) / 1000))}s`, buffY, '#33ff66', 19);
     }
 
     ctx.textBaseline = 'alphabetic';
   }
 
   function loop(ts) {
+    if (state === 'dying') {
+      // Frozen frame: redraw background/stars/entities as-is (no movement, spawning,
+      // or input) so the death explosion still animates against a properly-cleared
+      // canvas instead of smearing on a static one.
+      raf = requestAnimationFrame(loop);
+      ctx.fillStyle = '#030110'; ctx.fillRect(0, 0, W, H);
+      for (const s of stars) {
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${s.a})`; ctx.fill();
+      }
+      obstacles.forEach(drawObstacle);
+      if (boss) drawBoss();
+      if (escort) drawEscort();
+      drawPlayer();
+      drawHUD();
+      return;
+    }
     if (state!=='playing') return;
     raf=requestAnimationFrame(loop);
 
@@ -7916,7 +8358,10 @@ window.confirmCharSelect = function() {
       boss.hitFlash = Math.max(0, boss.hitFlash - 0.05);
 
       if (Date.now() > bossDeployTimer) {
-        obstacles.push({ type:'face', x:rand(FACE_R, W-FACE_R), y:-FACE_R-10, vx:rand(-0.6,0.6)*currentCfg.speed, vy:currentCfg.speed*0.55, r:FACE_R, ci: Math.floor(Math.random()*GAME_CHARS.length), hp:3, isTrapped:false, ringHp:0, pausedBurstDone:false, paused:false, pauseUntil:0, burstShotsLeft:0, lastBurstShot:0 });
+        // Spawns from right behind the boss, not a random spot at the top — reads as
+        // the boss actually deploying it rather than an unrelated arrival.
+        const side = Math.random() < 0.5 ? -1 : 1;
+        obstacles.push({ type:'face', x: Math.max(FACE_R, Math.min(W-FACE_R, boss.x + side*boss.r*0.7)), y: boss.y + boss.r*0.5, vx:rand(-0.6,0.6)*currentCfg.speed, vy:currentCfg.speed*0.55, r:FACE_R, ci: Math.floor(Math.random()*GAME_CHARS.length), hp:3, isTrapped:false, ringHp:0, pausedBurstDone:false, paused:false, pauseUntil:0, burstShotsLeft:0, lastBurstShot:0 });
         bossDeployTimer = Date.now() + 4000 + Math.random()*1500;
       }
 
@@ -7955,22 +8400,18 @@ window.confirmCharSelect = function() {
     bullets=bullets.filter(b=>b.y>-10);
     bullets.forEach(b=>b.y+=b.vy);
 
-    // Power-ups: drift down, draw, collect on touch OR by shooting them — everything
-    // else on screen is shootable, so players try that first; both now work.
+    // Power-ups: drift down, draw, collect by touch only — bullets pass straight
+    // through them. SHOOT is for hostiles, CATCH is for pickups; letting bullets
+    // also collect them blurred that distinction.
     powerups = powerups.filter(p => p.y < H + 40);
     for (const p of powerups) {
       p.y += p.vy;
+      if (p.rotSpeed) p.rot += p.rotSpeed;
       drawPowerup(p);
-      let gotIt = Math.hypot(p.x - player.x, p.y - player.y) < p.r + player.r * 0.9;
-      if (!gotIt) {
-        for (const b of bullets) {
-          if (b.vy === 999) continue;
-          if (Math.hypot(b.x - p.x, b.y - p.y) < p.r + 6) { b.vy = 999; gotIt = true; break; }
-        }
-      }
+      const gotIt = Math.hypot(p.x - player.x, p.y - player.y) < p.r + player.r * 0.9;
       if (gotIt) {
         applyPowerup(p.type);
-        miniExplosion(p.x, p.y, '#ffe61a');
+        miniExplosion(p.x, p.y, p.type === 'hp' ? '#33ff66' : '#ffe61a');
         p._collected = true;
       }
     }
@@ -7992,7 +8433,7 @@ window.confirmCharSelect = function() {
           if (Date.now() > o.pauseUntil) {
             o.paused = false; o.pausedBurstDone = true;
           } else {
-            if (o.burstShotsLeft > 0 && Date.now() - o.lastBurstShot > 220) {
+            if (o.burstShotsLeft > 0 && Date.now() - o.lastBurstShot > 320) {
               enemyFireAt(o, 1.15);
               o.burstShotsLeft--; o.lastBurstShot = Date.now();
             }
@@ -8186,6 +8627,16 @@ window.confirmCharSelect = function() {
     }
     enemyBullets.forEach(b => {
       b.x += b.vx; b.y += b.vy;
+      // Short fading streak trailing behind the direction of travel, then the
+      // halo + core on top — gives it a bit more presence than a bare dot.
+      const bSpeed = Math.hypot(b.vx, b.vy) || 1;
+      const tailLen = (b.r||4) * 3;
+      const tx = b.x - (b.vx/bSpeed)*tailLen, ty = b.y - (b.vy/bSpeed)*tailLen;
+      const tailGrad = ctx.createLinearGradient(b.x, b.y, tx, ty);
+      tailGrad.addColorStop(0, 'rgba(255,68,68,0.5)');
+      tailGrad.addColorStop(1, 'rgba(255,68,68,0)');
+      ctx.strokeStyle = tailGrad; ctx.lineWidth = (b.r||4)*1.2; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(tx, ty); ctx.stroke();
       // halo + core without shadowBlur — red, more visible
       ctx.beginPath(); ctx.arc(b.x, b.y, (b.r||4)+3, 0, Math.PI*2);
       ctx.fillStyle='rgba(255,68,68,0.28)'; ctx.fill();
@@ -8238,6 +8689,29 @@ window.confirmCharSelect = function() {
     drawHUD();
   }
 
+  // Renders a half-grid sprite mirrored into a full symmetric sprite, centered at
+  // (cx, cy) and scaled to fit within `size`. The +0.6 padding on each block avoids
+  // thin seam lines between adjacent pixels that canvas anti-aliasing can otherwise
+  // leave when rects are placed edge-to-edge.
+  function drawPixelSprite(rows, palette, cx, cy, size) {
+    const halfCols = rows[0].length;
+    const totalCols = halfCols * 2;
+    const totalRows = rows.length;
+    const px = size / totalCols;
+    const startX = cx - size / 2, startY = cy - (totalRows * px) / 2;
+    for (let r = 0; r < totalRows; r++) {
+      const rowStr = rows[r];
+      for (let c = 0; c < halfCols; c++) {
+        const ch = rowStr[c];
+        if (ch === '.' || !palette[ch]) continue;
+        ctx.fillStyle = palette[ch];
+        ctx.fillRect(startX + c * px, startY + r * px, px + 0.6, px + 0.6);
+        const mirroredCol = totalCols - 1 - c;
+        ctx.fillRect(startX + mirroredCol * px, startY + r * px, px + 0.6, px + 0.6);
+      }
+    }
+  }
+
   function drawBoss() {
     // Laser telegraph (charging) and beam (firing)
     if (boss.laserPhase === 'charging') {
@@ -8258,13 +8732,13 @@ window.confirmCharSelect = function() {
 
     ctx.save();
     ctx.translate(boss.x, boss.y);
-    ctx.beginPath(); ctx.arc(0, 0, boss.r + 6, 0, Math.PI*2);
-    ctx.fillStyle = 'rgba(255,40,40,0.3)'; ctx.fill();
-    ctx.beginPath(); ctx.arc(0, 0, boss.r, 0, Math.PI*2);
-    ctx.fillStyle = '#cc1a1a'; ctx.fill();
-    ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 4; ctx.stroke();
-    ctx.font = `${boss.r * 1.3}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(boss.creature.emoji, 0, 0);
+    // Same red-ring language as a regular enemy (no solid disc behind it — it's
+    // directly shootable, the same as everything else, so it shouldn't look shielded).
+    ctx.beginPath(); ctx.arc(0, 0, boss.r + 10, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(255,30,30,0.35)'; ctx.lineWidth = 7; ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 0, boss.r + 9, 0, Math.PI*2);
+    ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 3; ctx.stroke();
+    drawPixelSprite(boss.creature.sprite, boss.creature.palette, 0, 0, boss.r * 1.7);
     if (boss.hitFlash > 0) {
       ctx.globalAlpha = boss.hitFlash;
       ctx.fillStyle = '#fff';
@@ -8286,6 +8760,14 @@ window.confirmCharSelect = function() {
     ctx.save();
     ctx.globalAlpha = Math.max(0, escort.opacity);
     ctx.translate(escort.x, escort.y);
+    // Green dashed ring — same "this is friendly, not a threat" color language as the
+    // cyan rescue ring elsewhere, so it never reads as something to shoot, especially
+    // while it's flying in toward the player during 'entering'.
+    ctx.beginPath(); ctx.arc(0, 0, 21, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(51,255,102,0.4)'; ctx.lineWidth = 4; ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 0, 19, 0, Math.PI*2);
+    ctx.strokeStyle = '#33ff66'; ctx.lineWidth = 2; ctx.setLineDash([4,3]); ctx.stroke();
+    ctx.setLineDash([]);
     ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI*2);
     ctx.fillStyle = '#fff'; ctx.fill();
     ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI*2);
@@ -8296,6 +8778,11 @@ window.confirmCharSelect = function() {
     } else {
       ctx.font = '16px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(gc.emoji, 0, 0);
+    }
+    if (escort.state === 'entering') {
+      ctx.font = `bold 11px 'Bebas Neue', cursive`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#33ff66';
+      ctx.fillText('ALLY', 0, -28);
     }
     ctx.restore();
   }
@@ -8399,40 +8886,43 @@ window.confirmCharSelect = function() {
             </div>
             <div style="width:100%;height:1px;background:rgba(242,239,232,0.1)"></div>
             <div style="width:100%;display:flex;flex-direction:column;gap:14px;font-family:'VCR',monospace">
-              <div style="display:flex;align-items:center;gap:12px">
-                <svg width="34" height="34" viewBox="0 0 30 30" style="flex-shrink:0">
-                  <polygon points="15,3 22,8 27,15 22,24 14,27 7,22 3,14 9,5" fill="#4a3f5c" stroke="#7a6a90" stroke-width="1.5"/>
-                </svg>
-                <div style="font-size:15px;letter-spacing:1px;line-height:1.6">
-                  <span style="color:rgba(242,239,232,0.85)">ASTEROID</span><br>
-                  <span style="color:#ff6666;font-size:13px">CROSSES LINE = DAMAGE · SHOOT TO DESTROY</span>
+              <div style="display:flex;align-items:center;gap:14px">
+                <div style="font-size:14px;letter-spacing:2px;color:rgba(242,239,232,0.85);width:78px;flex-shrink:0">SHOOT</div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <svg width="30" height="30" viewBox="0 0 30 30" style="flex-shrink:0">
+                    <polygon points="15,3 22,8 27,15 22,24 14,27 7,22 3,14 9,5" fill="#4a3f5c" stroke="#7a6a90" stroke-width="1.5"/>
+                  </svg>
+                  <svg width="30" height="30" viewBox="0 0 30 30" style="flex-shrink:0">
+                    <circle cx="15" cy="15" r="11" fill="#cc44ff"/>
+                    <circle cx="15" cy="15" r="13.5" fill="none" stroke="#ff4444" stroke-width="2.5"/>
+                  </svg>
+                  <svg width="30" height="30" viewBox="0 0 30 30" style="flex-shrink:0">
+                    <circle cx="15" cy="15" r="11" fill="#33d4e0"/>
+                    <circle cx="15" cy="15" r="13.5" fill="none" stroke="#00e5ff" stroke-width="2.5" stroke-dasharray="4,3"/>
+                  </svg>
                 </div>
               </div>
-              <div style="display:flex;align-items:center;gap:12px">
-                <svg width="34" height="34" viewBox="0 0 30 30" style="flex-shrink:0">
-                  <circle cx="15" cy="15" r="11" fill="#cc44ff"/>
-                  <circle cx="15" cy="15" r="13.5" fill="none" stroke="#ff4444" stroke-width="2.5"/>
-                </svg>
-                <div style="font-size:15px;letter-spacing:1px;line-height:1.6">
-                  <span style="color:#ff4444">RED RING</span><span style="color:rgba(242,239,232,0.85)"> = ENEMY FACE</span><br>
-                  <span style="color:#ff6666;font-size:13px">SHOOTS AT YOU · CROSSES LINE = BIG DAMAGE</span>
-                </div>
-              </div>
-              <div style="display:flex;align-items:center;gap:12px">
-                <svg width="34" height="34" viewBox="0 0 30 30" style="flex-shrink:0">
-                  <circle cx="15" cy="15" r="11" fill="#33d4e0"/>
-                  <circle cx="15" cy="15" r="13.5" fill="none" stroke="#00e5ff" stroke-width="2.5" stroke-dasharray="4,3"/>
-                </svg>
-                <div style="font-size:15px;letter-spacing:1px;line-height:1.6">
-                  <span style="color:#00e5ff">CYAN RING</span><span style="color:rgba(242,239,232,0.85)"> = TRAPPED HERO</span><br>
-                  <span style="color:#33ff66;font-size:13px">SHOOT THE RING TO RESCUE = +HP</span>
+              <div style="display:flex;align-items:center;gap:14px">
+                <div style="font-size:14px;letter-spacing:2px;color:rgba(242,239,232,0.85);width:78px;flex-shrink:0">CATCH</div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <svg width="30" height="30" viewBox="0 0 30 30" style="flex-shrink:0">
+                    <circle cx="15" cy="15" r="12" fill="#1a5c2e" stroke="#33ff66" stroke-width="1.5"/>
+                    <line x1="15" y1="9" x2="15" y2="21" stroke="#eafff0" stroke-width="3" stroke-linecap="round"/>
+                    <line x1="9" y1="15" x2="21" y2="15" stroke="#eafff0" stroke-width="3" stroke-linecap="round"/>
+                  </svg>
+                  <svg width="30" height="30" viewBox="0 0 30 30" style="flex-shrink:0">
+                    <polygon points="15,6 22.79,10.5 22.79,19.5 15,24 7.21,19.5 7.21,10.5" fill="#00e5ff" stroke="#eafffd" stroke-width="2"/>
+                    <polygon points="13.92,10.05 17.88,14.55 15,14.55 16.08,19.95 12.12,15.45 15,15.45" fill="#1a1530"/>
+                  </svg>
+                  <div style="font-size:22px;width:30px;text-align:center;flex-shrink:0">🍕</div>
+                  <div style="font-size:22px;width:30px;text-align:center;flex-shrink:0">⚡</div>
+                  <div style="font-size:22px;width:30px;text-align:center;flex-shrink:0">💣</div>
                 </div>
               </div>
             </div>
           </div>
           <div class="arcade-cab-foot" style="flex-direction:column;align-items:center;gap:8px">
             <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.18);font-size:16px;letter-spacing:4px;padding:14px 40px" onclick="spaceStart()">LAUNCH!</button>
-            <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.45)">◀▶ BUTTONS TO MOVE · AUTO-FIRES</div>
           </div>
         </div>`;
     } else if(mode==='over'){
@@ -8485,7 +8975,7 @@ window.confirmCharSelect = function() {
     reset(); state='playing'; raf=requestAnimationFrame(loop);
   };
   window.spacePause=function(){
-    clearTimeout(spawnTimer);cancelAnimationFrame(raf);state='idle';
+    clearTimeout(spawnTimer);clearTimeout(hpPowerupTimer);cancelAnimationFrame(raf);state='idle';
     const _ov=document.getElementById('space-overlay');
     if(_ov) _ov.classList.add('hidden');
   };
