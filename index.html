@@ -5628,7 +5628,11 @@ window.confirmCharSelect = function() {
   }
 
   function scheduleSurvivalNext() {
-    if (state !== 'playing' || waveTransitioning) return;
+    // currentRoundType check is the real belt-and-suspenders guard here — a stray
+    // timer from the normal whack pop-up/pop-down cycle has no business spawning a
+    // mole (or causing a miss) during a Clear or Memory round, no matter how it
+    // managed to survive a wave transition.
+    if (state !== 'playing' || waveTransitioning || currentRoundType !== 'whack') return;
     const open = Array.from({length:HOLES}, (_,i) => i).filter(i => holeStates[i] === 'empty');
     if (!open.length) return;
     const i = open[Math.floor(Math.random() * open.length)];
@@ -5642,7 +5646,8 @@ window.confirmCharSelect = function() {
 
 
   function popUp(i) {
-    if (state !== 'playing' || holeStates[i] !== 'empty') {
+    if (state !== 'playing' || currentRoundType !== 'whack') return; // stray call from a round that's since moved on
+    if (holeStates[i] !== 'empty') {
       scheduleSurvivalNext();
       return;
     }
@@ -5758,7 +5763,14 @@ window.confirmCharSelect = function() {
     // with the player's actual reaction speed. Under zero-tolerance, that kind of
     // un-felt timing slop now ends the whole run, so it needs covering. holeStates[i]
     // stays 'up' through this window, so a click lands exactly like a normal hit.
-    if (!wasHit && prev === moleChar && !holeGrace[i]) {
+    // The currentRoundType checks below are the real fix for a stray timer surviving
+    // a wave transition (e.g. a "post-hit cleanup" call scheduled near the end of a
+    // whack/clear wave, firing 350ms later after the round has already moved on to
+    // Clear or Memory) — cleanup of this hole's state/CSS always happens regardless,
+    // but the *consequences* (grace window, miss-fail, rescheduling a new mole) only
+    // apply if we're still actually in a whack round. Without this, a stray timer
+    // could trigger a "missed mole" instant-fail during an unrelated round.
+    if (!wasHit && prev === moleChar && !holeGrace[i] && currentRoundType === 'whack') {
       holeGrace[i] = true;
       holeTimers[i] = setTimeout(() => popDown(i, false), 150);
       return;
@@ -5769,7 +5781,7 @@ window.confirmCharSelect = function() {
     if (!hole) return;
     hole.classList.remove('up', 'hit', 'hit-success', 'wrong-hit');
 
-    if (!wasHit && prev === moleChar) {
+    if (!wasHit && prev === moleChar && currentRoundType === 'whack') {
       // Missed the mole — instant fail under zero-tolerance (no life budget anymore).
       // X marker only, no face — showing the character here read as ambiguous/confusing
       // (looked like it might still be "there").
@@ -5870,9 +5882,26 @@ window.confirmCharSelect = function() {
   // any pause specifically because waves used to flow continuously into one another;
   // now that each wave is its own discrete clear-it-or-fail unit, a clean visible break
   // is the whole point.
+  // Big checkmark + sound, fades in then out — confirmation that a whole wave (not
+  // just one hit) is cleared. Distinct from successFlash(), which is the smaller green
+  // flash for individual correct hits within a Clear/Memory round.
+  function showWaveClearCheckmark() {
+    SFX.win();
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;inset:0;z-index:9600;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity 0.3s ease-in-out';
+    el.innerHTML = `<div style="font-size:min(45vw,220px);color:#33ff66;text-shadow:0 0 40px #33ff66,0 0 80px #33ff6688;line-height:1">✓</div>`;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => { el.style.opacity = '1'; });
+    setTimeout(() => {
+      el.style.opacity = '0';
+      setTimeout(() => el.remove(), 350);
+    }, 700);
+  }
+
   function clearWaveTransition() {
     waveTransitioning = true; // blocks scheduleSurvivalNext() for the whole pause,
                                // including from any stale "just hit" timer firing late
+    showWaveClearCheckmark();
     holeTimers.forEach(clearTimeout);
     // Sweeps everything except a hole still in 'hit' state (the just-landed hit that
     // triggered this transition — let its own 350ms popDown finish resolving naturally
@@ -6000,14 +6029,18 @@ window.confirmCharSelect = function() {
     });
   }
 
-  // Full-screen-positioned (so it's never clipped by .whack-wrap) but visually tucked
-  // into a top corner and click-through — "shouldn't impact sight or clicking" on the
-  // actual board, just needs to always be reachable/visible regardless of layout.
+  // Measures the actual HUD bar (wave/mode line + VS row) and covers it exactly,
+  // opaque, for the duration of the round — replaces both with just the countdown
+  // rather than floating a separate badge over the gameplay area.
   let clearTimerOverlayEl = null;
   function showClearTimerOverlay() {
     removeClearTimerOverlay();
+    const hud = document.querySelector('.whack-hud');
+    if (!hud) return;
+    const rect = hud.getBoundingClientRect();
     clearTimerOverlayEl = document.createElement('div');
-    clearTimerOverlayEl.style.cssText = 'position:fixed;top:14px;right:14px;z-index:9400;pointer-events:none;font-family:\'Bebas Neue\',cursive;font-size:30px;color:#ffe61a;text-shadow:0 0 14px #ffe61a;background:rgba(5,2,18,0.55);padding:4px 16px;border-radius:10px;border:1.5px solid rgba(255,230,26,0.5)';
+    clearTimerOverlayEl.style.cssText = `position:fixed;top:${rect.top}px;left:${rect.left}px;width:${rect.width}px;height:${rect.height}px;z-index:9400;pointer-events:none;display:flex;align-items:center;justify-content:center;background:#150a28;border-radius:6px;border:1px solid rgba(255,230,26,0.3)`;
+    clearTimerOverlayEl.innerHTML = `<div id="whack-clear-overlay-txt" style="font-family:'Bebas Neue',cursive;font-size:30px;letter-spacing:4px;color:#ffe61a;text-shadow:0 0 14px #ffe61a"></div>`;
     document.body.appendChild(clearTimerOverlayEl);
   }
   function removeClearTimerOverlay() {
@@ -6015,9 +6048,10 @@ window.confirmCharSelect = function() {
   }
 
   function updateClearTimerDisplay() {
-    if (!clearTimerOverlayEl) return;
-    clearTimerOverlayEl.textContent = `⏰ ${clearRoundTimeLeft}s`;
-    clearTimerOverlayEl.style.color = clearRoundTimeLeft <= 3 ? '#ff4444' : '#ffe61a';
+    const txt = document.getElementById('whack-clear-overlay-txt');
+    if (!txt) return;
+    txt.textContent = `⏰ CLEAR! ${clearRoundTimeLeft}s`;
+    txt.style.color = clearRoundTimeLeft <= 3 ? '#ff4444' : '#ffe61a';
   }
 
   function startMemoryRound() {
@@ -6938,7 +6972,8 @@ window.confirmCharSelect = function() {
   let cards = [], flipped = [], locked = false;
   let moves = 0, matched = 0, state = 'idle', matchScore = 0, combo = 0, matchTimer = 0, timerInt, previewInt, timeLimit = 60;
   let matchOutOfMoves = false;
-  const IMPOSSIBLE_MOVE_CUTOFF = 42;
+  let matchCutoffWaived = false; // true once "FINISH ANYWAY" is chosen — stops re-prompting
+  const IMPOSSIBLE_MOVE_CUTOFF = 45;
   let matchMode = 'hard'; // 'free' | 'hard' | 'challenge' | 'impossible'
   let freePlayCharCount = 8; // 4–20, how many distinct characters appear in free play
   // Hard = the old "timed" mode. Challenge/Impossible add a target-moves benchmark to
@@ -6947,7 +6982,7 @@ window.confirmCharSelect = function() {
   const MODE_CONFIG = {
     hard:       { pairs: 12, time: 60, targetMoves: null },
     challenge:  { pairs: 15, time: 90, targetMoves: null },
-    impossible: { pairs: 21, time: 150, targetMoves: 32 }, // time unused now — see matchPlay()/render()
+    impossible: { pairs: 21, time: 150, targetMoves: null }, // time unused — see matchPlay()/render(). No target benchmark either now that the 45-move cutoff + give-up/finish-anyway prompt replaces it.
   };
 
   function shuffle(arr) {
@@ -6989,23 +7024,24 @@ window.confirmCharSelect = function() {
         <div class="arcade-cabinet" style="--nc:#ffe61a">
           <div class="arcade-cab-rail"></div>
           <div class="arcade-cab-marquee">MEMORY MATCH</div>
-          <div class="arcade-cab-screen" style="text-align:center">
-            <div class="match-sub" style="margin-bottom:12px">FLIP CARDS TO FIND PAIRS</div>
-            ${best ? `<div class="match-sub" style="color:#ffe61a;margin-bottom:4px">🏆 BEST SCORE: ${best}</div>` : ''}
+          <div class="arcade-cab-screen" style="text-align:center;padding:12px 16px">
+            <div class="match-sub" style="font-size:16px;letter-spacing:2px;margin-bottom:6px">FLIP CARDS TO FIND PAIRS</div>
+            ${best ? `<div class="match-sub" style="color:#ffe61a;margin-bottom:2px">🏆 BEST SCORE: ${best}</div>` : ''}
           </div>
           <div class="arcade-cab-foot" style="display:flex;flex-direction:column;gap:8px;align-items:stretch">
-            <button class="whack-btn match-mode-btn" style="border-color:rgba(255,230,26,0.4);background:rgba(255,230,26,0.06);padding:10px 16px" onclick="matchGoFreeSetup()">
-              <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;line-height:1.1">🔁 FREE PLAY</div>
+            <button class="whack-btn match-mode-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.14);padding:10px 16px;text-align:left" onclick="matchGoFreeSetup()">
+              <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;line-height:1.1">😎 FREE PLAY</div>
+              <div style="font-family:'VCR',monospace;font-size:13px;letter-spacing:2px;opacity:0.8;margin-top:4px">4-20 PAIRS · NO TIME LIMIT</div>
             </button>
-            <button class="whack-btn match-mode-btn" style="border-color:#ffe61a;background:rgba(255,230,26,0.14);padding:10px 16px" onclick="matchPlay('hard')">
+            <button class="whack-btn match-mode-btn" style="border-color:#ffe61a;background:rgba(255,230,26,0.14);padding:10px 16px;text-align:left" onclick="matchPlay('hard')">
               <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;line-height:1.1">⏱ HARD</div>
               <div style="font-family:'VCR',monospace;font-size:13px;letter-spacing:2px;opacity:0.8;margin-top:4px">12 PAIRS · 60 SECONDS</div>
             </button>
-            <button class="whack-btn match-mode-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.1);padding:10px 16px" onclick="matchPlay('challenge')">
+            <button class="whack-btn match-mode-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.1);padding:10px 16px;text-align:left" onclick="matchPlay('challenge')">
               <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;line-height:1.1">⏰ CHALLENGE</div>
               <div style="font-family:'VCR',monospace;font-size:13px;letter-spacing:2px;opacity:0.8;margin-top:4px">15 PAIRS · 90 SECONDS</div>
             </button>
-            <button class="whack-btn match-mode-btn" style="border-color:#ff4444;background:rgba(255,68,68,0.1);padding:10px 16px" onclick="matchPlay('impossible')">
+            <button class="whack-btn match-mode-btn" style="border-color:#ff4444;background:rgba(255,68,68,0.1);padding:10px 16px;text-align:left" onclick="matchPlay('impossible')">
               <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;line-height:1.1">💀 IMPOSSIBLE</div>
               <div style="font-family:'VCR',monospace;font-size:13px;letter-spacing:2px;opacity:0.8;margin-top:4px">21 PAIRS · NO TIME LIMIT</div>
             </button>
@@ -7152,7 +7188,7 @@ window.confirmCharSelect = function() {
 
         wrap.innerHTML = `
           <div id="match-recap" style="position:fixed;inset:0;z-index:9700;background:rgba(5,2,18,0.96);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:32px">
-            <div style="font-family:'Bebas Neue',cursive;font-size:80px;letter-spacing:10px;color:#ffe61a;text-shadow:0 0 30px #ffe61a88;line-height:1">${headline}</div>
+            <div style="font-family:'Bebas Neue',cursive;font-size:80px;letter-spacing:10px;color:#ffe61a;text-shadow:0 0 30px #ffe61a88;line-height:1;text-align:center">${headline}</div>
             <div style="font-family:'VCR',monospace;font-size:16px;letter-spacing:3px;color:rgba(242,239,232,0.85);text-align:center;line-height:2.2">
               ${modeLabel}<br>SCORE &nbsp;&nbsp;${matchScore}<br>PAIRS &nbsp;&nbsp;${matched}/${PAIRS}<br>MOVES &nbsp;&nbsp;${moves}<br>TIME &nbsp;&nbsp;&nbsp;${fmtTime(matchTimer)}<br>${bestLine}
               ${targetLine}
@@ -7243,14 +7279,43 @@ window.confirmCharSelect = function() {
 
   // Impossible mode's hard fail-state: run out of moves before clearing the board.
   function checkMoveCutoff() {
-    if (matchMode !== 'impossible' || moves < IMPOSSIBLE_MOVE_CUTOFF || matched === PAIRS) return false;
+    if (matchMode !== 'impossible' || moves < IMPOSSIBLE_MOVE_CUTOFF || matched === PAIRS || matchCutoffWaived) return false;
     clearInterval(timerInt); clearInterval(previewInt);
-    matchOutOfMoves = true;
     locked = true;
     SFX.over();
-    setTimeout(() => { state = 'over'; render(); }, 600);
+    setTimeout(showCutoffPrompt, 400);
     return true;
   }
+
+  function showCutoffPrompt() {
+    const ov = document.createElement('div');
+    ov.id = 'match-cutoff-modal';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9700;display:flex;align-items:center;justify-content:center;background:rgba(5,2,18,0.88);backdrop-filter:blur(8px)';
+    ov.innerHTML = `
+      <div style="background:#080515;border:2px solid #ff4444;border-radius:12px;padding:28px 24px;max-width:300px;width:90vw;text-align:center;box-shadow:0 0 30px rgba(255,68,68,0.4)">
+        <div style="font-family:'Bebas Neue',cursive;font-size:44px;letter-spacing:4px;color:#ff4444;text-shadow:0 0 20px #ff4444;line-height:1;margin-bottom:14px">FAILED</div>
+        <div style="font-family:'VCR',monospace;font-size:12px;letter-spacing:2px;color:rgba(242,239,232,0.7);margin-bottom:20px">YOU'VE USED ${IMPOSSIBLE_MOVE_CUTOFF} MOVES</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button onclick="matchGiveUp()" style="font-family:'VCR',monospace;font-size:13px;letter-spacing:2px;background:rgba(255,68,68,0.14);border:2px solid #ff4444;border-radius:6px;padding:12px;color:#ff4444;cursor:pointer">GIVE UP?</button>
+          <button onclick="matchFinishAnyway()" style="font-family:'VCR',monospace;font-size:13px;letter-spacing:2px;background:none;border:1.5px solid rgba(242,239,232,0.3);border-radius:6px;padding:12px;color:rgba(242,239,232,0.8);cursor:pointer">FINISH ANYWAY</button>
+        </div>
+      </div>`;
+    document.body.appendChild(ov);
+  }
+
+  window.matchGiveUp = function() {
+    const ov = document.getElementById('match-cutoff-modal');
+    if (ov) ov.remove();
+    matchOutOfMoves = true;
+    state = 'over'; render();
+  };
+
+  window.matchFinishAnyway = function() {
+    const ov = document.getElementById('match-cutoff-modal');
+    if (ov) ov.remove();
+    matchCutoffWaived = true;
+    locked = false;
+  };
 
   function matchFlash() {
     const el = document.createElement('div');
@@ -7286,7 +7351,7 @@ window.confirmCharSelect = function() {
     matchMode = mode || 'hard';
     window._matchMode = matchMode;
     if (matchMode !== 'free') timeLimit = MODE_CONFIG[matchMode].time;
-    cards = makeCards(); flipped=[]; locked=false; moves=0; matched=0; matchOutOfMoves=false;
+    cards = makeCards(); flipped=[]; locked=false; moves=0; matched=0; matchOutOfMoves=false; matchCutoffWaived=false;
     matchScore=0; combo=0; matchTimer=0;
     clearInterval(timerInt); clearInterval(previewInt);
     ArcadeMusic.stop();
