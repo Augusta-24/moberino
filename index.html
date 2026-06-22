@@ -7907,10 +7907,10 @@ window.confirmCharSelect = function() {
   function rand(a,b){ return a + Math.random()*(b-a); }
 
   function mkStars() {
-    stars = Array.from({length:80}, () => ({
+    stars = Array.from({length:45}, () => ({
       x: rand(0,W), y: rand(0,H),
-      r: rand(0.5,2), speed: rand(0.5,2.5),
-      a: rand(0.15,0.7),
+      r: rand(0.5,2), speed: rand(0.15,0.65),
+      a: rand(0.135,0.63),
     }));
   }
 
@@ -7959,7 +7959,7 @@ window.confirmCharSelect = function() {
     if (boss) return;
     const creature = BOSS_CREATURES[Math.floor(Math.random() * BOSS_CREATURES.length)];
     boss = {
-      creature, x: W / 2, y: 90, vx: (Math.random() < 0.5 ? -1 : 1) * 1.1,
+      creature, x: W / 2, y: 160, vx: (Math.random() < 0.5 ? -1 : 1) * 1.1,
       r: BOSS_R, hp: BOSS_HP, maxHp: BOSS_HP,
       attackType: Math.random() < 0.5 ? 'laser' : 'machinegun',
       nextAttack: Date.now() + 1800,
@@ -7972,19 +7972,34 @@ window.confirmCharSelect = function() {
   }
 
   const POWERUP_R = 18;
+  // Both pickups scale off the same base (2x a regular asteroid's speed) — power-ups
+  // fall 20% faster than HP. They're the bigger reward (speed/gun/bomb/shield vs. a
+  // flat HP top-up), so catching one should take a little more urgency/skill, not less.
+  function hpFallSpeed() { return (currentCfg ? currentCfg.speed : O_SPEED_BASE) * 2; }
+  function powerupFallSpeed() { return hpFallSpeed() * 1.7; }
+
   function spawnPowerup() {
     const types = ['speed', 'gun', 'bomb', 'shield'];
     const type = types[Math.floor(Math.random() * types.length)];
-    powerups.push({ type, x: rand(POWERUP_R, W - POWERUP_R), y: -POWERUP_R - 10, vy: 1.3, r: POWERUP_R, bob: Math.random() * Math.PI * 2 });
+    powerups.push({ type, x: rand(POWERUP_R, W - POWERUP_R), y: -POWERUP_R - 10, vy: powerupFallSpeed(), r: POWERUP_R, bob: Math.random() * Math.PI * 2 });
+  }
+
+  let powerupTimer = null;
+  function schedulePowerup() {
+    clearTimeout(powerupTimer);
+    powerupTimer = setTimeout(() => {
+      if (state !== 'playing') return;
+      if (!boss) spawnPowerup();
+      schedulePowerup();
+    }, 4000 + Math.random() * 3800);
   }
 
   // Small green orb HP pickup with a plus sign — a smooth circle rather than a jagged
   // asteroid shape, so it's never visually confused with an actual (hostile) asteroid
-  // at a glance. Same falling rate as before: 2x a regular asteroid's speed.
+  // at a glance.
   function spawnHpPowerup() {
     const r = rand(ASTEROID_R_MIN, ASTEROID_R_MAX) * 0.85;
-    const fallSpeed = (currentCfg ? currentCfg.speed : O_SPEED_BASE) * 2;
-    powerups.push({ type:'hp', x: rand(r, W-r), y: -r-10, vy: fallSpeed, r, bob: Math.random() * Math.PI * 2 });
+    powerups.push({ type:'hp', x: rand(r, W-r), y: -r-10, vy: hpFallSpeed(), r, bob: Math.random() * Math.PI * 2 });
   }
 
   let hpPowerupTimer = null;
@@ -8102,6 +8117,7 @@ window.confirmCharSelect = function() {
     currentCfg = waveConfig(wave);
     startWaveSpawn(currentCfg);
     scheduleHpPowerup();
+    schedulePowerup();
   }
 
   let spawnTimer = null;
@@ -8127,10 +8143,6 @@ window.confirmCharSelect = function() {
     currentCfg = waveConfig(wave);
     announceWave(wave);
     startWaveSpawn(currentCfg);
-    // ~80% chance of a power-up appearing sometime mid-wave, from wave 2 on
-    if (wave >= 2 && Math.random() < 0.8) {
-      setTimeout(() => { if (state === 'playing') spawnPowerup(); }, 2000 + Math.random() * 3200);
-    }
     if (wave >= 3 && (wave - 3) % 3 === 0) setTimeout(() => { if (state === 'playing') spawnBoss(); }, 1200);
   }
 
@@ -8221,7 +8233,7 @@ window.confirmCharSelect = function() {
       ctx.beginPath();
       o.verts.forEach(([x,y],i)=>i===0?ctx.moveTo(x,y):ctx.lineTo(x,y));
       ctx.closePath();
-      ctx.fillStyle='#4a3f5c'; ctx.fill();
+      ctx.fillStyle='#5c526c'; ctx.fill();
       ctx.strokeStyle='#7a6a90'; ctx.lineWidth=1.5; ctx.stroke();
       ctx.strokeStyle='rgba(120,100,140,0.4)'; ctx.lineWidth=0.8;
       ctx.beginPath(); ctx.moveTo(-o.r*0.3,-o.r*0.5); ctx.lineTo(o.r*0.2,o.r*0.3); ctx.stroke();
@@ -8314,7 +8326,10 @@ window.confirmCharSelect = function() {
     function drawBuffLine(text, y, color, baseSize) {
       let size = baseSize;
       ctx.font = `bold ${size}px 'Bebas Neue', cursive`;
-      while (ctx.measureText(text).width > W - 20 && size > 9) {
+      // Extra margin beyond the raw fit check — emoji glyphs (especially ones with a
+      // variation selector) can render wider than measureText() reports on some
+      // platforms, so don't cut it exactly at the limit.
+      while (ctx.measureText(text).width > W - 28 && size > 9) {
         size--;
         ctx.font = `bold ${size}px 'Bebas Neue', cursive`;
       }
@@ -8333,7 +8348,7 @@ window.confirmCharSelect = function() {
       buffY += 18;
     }
     if (now < buffShieldUntil) {
-      drawBuffLine(`🛡️ SHIELD ${Math.ceil((buffShieldUntil - now) / 1000)}s`, buffY, '#00e5ff', 13);
+      drawBuffLine(`SHIELD ${Math.ceil((buffShieldUntil - now) / 1000)}s`, buffY, '#00e5ff', 13);
       buffY += 18;
     }
     if (escort && escort.state === 'active') {
@@ -8393,22 +8408,14 @@ window.confirmCharSelect = function() {
     if(leftHeld)  player.x=Math.max(player.r,     player.x-curSpeed);
     if(rightHeld) player.x=Math.min(W-player.r,   player.x+curSpeed);
 
-    // Hero escort: flies down from the rescue spot, follows the player and auto-fires
-    // while active, then flies off with a "thanks" instead of just vanishing once its
-    // time is up. The departure is deliberately slow — it was easy to miss before.
+    // Hero escort: appears at the player's side, follows and auto-fires while active,
+    // then flies off with a "thanks" instead of just vanishing once its time is up.
+    // The departure is deliberately slow — it was easy to miss before. (Used to fly in
+    // from the rescue spot first, but with everything else already converging on the
+    // player, that extra moving piece just added to the clutter — appearing instantly
+    // reads cleaner.)
     if (escort) {
-      if (escort.state === 'entering') {
-        const targetX = player.x - 40, targetY = player.y;
-        const dx = targetX - escort.x, dy = targetY - escort.y;
-        const dist = Math.hypot(dx, dy);
-        if (dist < 8) {
-          escort.state = 'active';
-          escort.expiresAt = Date.now() + ESCORT_DURATION_MS;
-        } else {
-          escort.x += (dx / dist) * 7;
-          escort.y += (dy / dist) * 7;
-        }
-      } else if (escort.state === 'active') {
+      if (escort.state === 'active') {
         escort.x = player.x - 40;
         escort.y = player.y + 4;
         if (Date.now() > escort.expiresAt) {
@@ -8485,7 +8492,12 @@ window.confirmCharSelect = function() {
       p.y += p.vy;
       if (p.rotSpeed) p.rot += p.rotSpeed;
       drawPowerup(p);
-      const gotIt = Math.hypot(p.x - player.x, p.y - player.y) < p.r + player.r * 0.9;
+      let gotIt = Math.hypot(p.x - player.x, p.y - player.y) < p.r + player.r * 0.9;
+      // An active escort can also catch pickups itself, not just the player ship —
+      // it's right there next to you, no reason it should be unable to grab one.
+      if (!gotIt && escort && escort.state === 'active') {
+        gotIt = Math.hypot(p.x - escort.x, p.y - escort.y) < p.r + 16 * 0.9;
+      }
       if (gotIt) {
         applyPowerup(p.type);
         miniExplosion(p.x, p.y, p.type === 'hp' ? '#33ff66' : '#ffe61a');
@@ -8609,10 +8621,7 @@ window.confirmCharSelect = function() {
                 addFloatText('+150 RESCUED!', o.x, o.y, '#00e5ff', 22);
                 const hpGain = Math.min(30, 100 - health);
                 if(hpGain > 0){ health = Math.min(100, health + 30); addFloatText(`+${hpGain} HP`, o.x, o.y - 30, '#33ff66', 18); }
-                // Starts at the rescue spot and flies down to the player instead of
-                // teleporting straight to their side — the 'entering' state in the main
-                // loop handles the actual flight, expiresAt only starts once it arrives.
-                escort = { ci: o.ci, state: 'entering', x: o.x, y: o.y, lastFire: 0, opacity: 1 };
+                escort = { ci: o.ci, state: 'active', expiresAt: Date.now() + ESCORT_DURATION_MS, x: player.x - 40, y: player.y, lastFire: 0, opacity: 1 };
                 rescuedChars.add(o.ci);
               } else {
                 addFloatText('RING HIT!', o.x, o.y, '#00e5ff', 18);
@@ -8704,21 +8713,24 @@ window.confirmCharSelect = function() {
     }
     enemyBullets.forEach(b => {
       b.x += b.vx; b.y += b.vy;
-      // Short fading streak trailing behind the direction of travel, then the
-      // halo + core on top — gives it a bit more presence than a bare dot.
+      // Longer, thinner streak — reads as a directional bullet rather than a round
+      // drifting rock. Halo + core kept small so it doesn't puff back out into
+      // looking like an asteroid.
       const bSpeed = Math.hypot(b.vx, b.vy) || 1;
-      const tailLen = (b.r||4) * 3;
+      const tailLen = (b.r||4) * 6;
       const tx = b.x - (b.vx/bSpeed)*tailLen, ty = b.y - (b.vy/bSpeed)*tailLen;
       const tailGrad = ctx.createLinearGradient(b.x, b.y, tx, ty);
-      tailGrad.addColorStop(0, 'rgba(255,68,68,0.5)');
+      tailGrad.addColorStop(0, 'rgba(255,90,90,0.8)');
       tailGrad.addColorStop(1, 'rgba(255,68,68,0)');
-      ctx.strokeStyle = tailGrad; ctx.lineWidth = (b.r||4)*1.2; ctx.lineCap = 'round';
+      ctx.strokeStyle = tailGrad; ctx.lineWidth = (b.r||4)*0.8; ctx.lineCap = 'round';
       ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(tx, ty); ctx.stroke();
       // halo + core without shadowBlur — red, more visible
-      ctx.beginPath(); ctx.arc(b.x, b.y, (b.r||4)+3, 0, Math.PI*2);
-      ctx.fillStyle='rgba(255,68,68,0.28)'; ctx.fill();
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r || 4, 0, Math.PI*2);
-      ctx.fillStyle='#ff4444'; ctx.fill();
+      ctx.beginPath(); ctx.arc(b.x, b.y, (b.r||4)+2.5, 0, Math.PI*2);
+      ctx.fillStyle='rgba(255,80,80,0.4)'; ctx.fill();
+      ctx.beginPath(); ctx.arc(b.x, b.y, (b.r||4)*0.85, 0, Math.PI*2);
+      ctx.fillStyle='#ff6666'; ctx.fill();
+      ctx.beginPath(); ctx.arc(b.x, b.y, (b.r||4)*0.25, 0, Math.PI*2);
+      ctx.fillStyle='rgba(255,255,255,0.43)'; ctx.fill();
       const dx=b.x-player.x, dy=b.y-player.y;
       if(Math.sqrt(dx*dx+dy*dy) < (b.r||4) + player.r*0.8){
         b._hit=true; SFX.miss();
@@ -8809,12 +8821,8 @@ window.confirmCharSelect = function() {
 
     ctx.save();
     ctx.translate(boss.x, boss.y);
-    // Same red-ring language as a regular enemy (no solid disc behind it — it's
-    // directly shootable, the same as everything else, so it shouldn't look shielded).
-    ctx.beginPath(); ctx.arc(0, 0, boss.r + 10, 0, Math.PI*2);
-    ctx.strokeStyle = 'rgba(255,30,30,0.35)'; ctx.lineWidth = 7; ctx.stroke();
-    ctx.beginPath(); ctx.arc(0, 0, boss.r + 9, 0, Math.PI*2);
-    ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 3; ctx.stroke();
+    // No red ring here — unlike a small enemy face, the boss is already unmistakably
+    // a threat (its size, name label, and health bar), so the ring was redundant.
     drawPixelSprite(boss.creature.sprite, boss.creature.palette, 0, 0, boss.r * 1.7);
     if (boss.hitFlash > 0) {
       ctx.globalAlpha = boss.hitFlash;
@@ -8838,8 +8846,7 @@ window.confirmCharSelect = function() {
     ctx.globalAlpha = Math.max(0, escort.opacity);
     ctx.translate(escort.x, escort.y);
     // Green dashed ring — same "this is friendly, not a threat" color language as the
-    // cyan rescue ring elsewhere, so it never reads as something to shoot, especially
-    // while it's flying in toward the player during 'entering'.
+    // cyan rescue ring elsewhere, so it never reads as something to shoot.
     ctx.beginPath(); ctx.arc(0, 0, 21, 0, Math.PI*2);
     ctx.strokeStyle = 'rgba(51,255,102,0.4)'; ctx.lineWidth = 4; ctx.stroke();
     ctx.beginPath(); ctx.arc(0, 0, 19, 0, Math.PI*2);
@@ -8855,11 +8862,6 @@ window.confirmCharSelect = function() {
     } else {
       ctx.font = '16px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(gc.emoji, 0, 0);
-    }
-    if (escort.state === 'entering') {
-      ctx.font = `bold 11px 'Bebas Neue', cursive`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#33ff66';
-      ctx.fillText('ALLY', 0, -28);
     }
     ctx.restore();
   }
@@ -8967,7 +8969,7 @@ window.confirmCharSelect = function() {
                 <div style="font-size:14px;letter-spacing:2px;color:rgba(242,239,232,0.85);width:78px;flex-shrink:0">SHOOT</div>
                 <div style="display:flex;align-items:center;gap:10px">
                   <svg width="30" height="30" viewBox="0 0 30 30" style="flex-shrink:0">
-                    <polygon points="15,3 22,8 27,15 22,24 14,27 7,22 3,14 9,5" fill="#4a3f5c" stroke="#7a6a90" stroke-width="1.5"/>
+                    <polygon points="15,3 22,8 27,15 22,24 14,27 7,22 3,14 9,5" fill="#5c526c" stroke="#7a6a90" stroke-width="1.5"/>
                   </svg>
                   <svg width="30" height="30" viewBox="0 0 30 30" style="flex-shrink:0">
                     <circle cx="15" cy="15" r="11" fill="#cc44ff"/>
@@ -9052,7 +9054,7 @@ window.confirmCharSelect = function() {
     reset(); state='playing'; raf=requestAnimationFrame(loop);
   };
   window.spacePause=function(){
-    clearTimeout(spawnTimer);clearTimeout(hpPowerupTimer);cancelAnimationFrame(raf);state='idle';
+    clearTimeout(spawnTimer);clearTimeout(hpPowerupTimer);clearTimeout(powerupTimer);cancelAnimationFrame(raf);state='idle';
     const _ov=document.getElementById('space-overlay');
     if(_ov) _ov.classList.add('hidden');
   };
