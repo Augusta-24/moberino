@@ -5744,7 +5744,7 @@ window.confirmCharSelect = function() {
     const el = document.createElement('div');
     el.style.cssText = 'position:fixed;inset:0;z-index:9500;background:#33ff66;opacity:0;pointer-events:none;transition:opacity 0.15s ease-out';
     document.body.appendChild(el);
-    requestAnimationFrame(() => { el.style.opacity = '0.3'; });
+    requestAnimationFrame(() => { el.style.opacity = '0.14'; });
     setTimeout(() => {
       el.style.opacity = '0';
       setTimeout(() => el.remove(), 250);
