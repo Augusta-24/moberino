@@ -304,10 +304,12 @@ body.on-flappy::after, body.on-match::after, body.on-space::after { display: non
 /* ══════════════════════════════════════
    HOME
 ══════════════════════════════════════ */
-/* Home page locks to viewport — no dead scroll below content */
+/* Home page locks to viewport — no dead scroll below content. Height prefers the
+   JS-locked --app-vh (set in <head>, before first paint) over the browser's own
+   svh recalculation, which is what was causing the hero to jump on mobile. */
 #pg-home {
-  height: 100svh;
-  max-height: 100svh;
+  height: var(--app-vh, 100svh);
+  max-height: var(--app-vh, 100svh);
   overflow: hidden;
   flex-direction: column;
   justify-content: center;
@@ -358,7 +360,7 @@ body.on-flappy::after, body.on-match::after, body.on-space::after { display: non
 #collage::after {
   content: '';
   position: absolute; inset: 0;
-  background: rgba(8,16,42,0.88);
+  background: rgba(8,16,42,0.93);
   pointer-events: none;
   z-index: 999999;
 }
@@ -2621,6 +2623,29 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
   50%      { transform: rotateY(180deg) scale(1.13); }
 }
 </style>
+<script>
+// Locks #pg-home's height to a JS-measured pixel value instead of letting the browser
+// recompute 100svh on every paint. Mobile browsers (especially iOS Safari) recalculate
+// svh/dvh around address-bar show/hide, the on-screen keyboard opening/closing, and
+// bfcache restores — which was making the home hero briefly render at the top of the
+// screen before snapping into its centered position, most noticeably right after
+// closing the spotlight search (its input's keyboard closing resizes the visual
+// viewport just as the home page reappears underneath). Exposed on window so
+// closeSpot() can force a fresh re-lock at exactly that moment. Runs before first
+// paint (head, not body) and again on resize/orientation/visualViewport-resize/
+// pageshow to stay correct.
+(function() {
+  function lockViewportHeight() {
+    document.documentElement.style.setProperty('--app-vh', window.innerHeight + 'px');
+  }
+  window.lockViewportHeight = lockViewportHeight;
+  lockViewportHeight();
+  window.addEventListener('resize', lockViewportHeight);
+  window.addEventListener('orientationchange', lockViewportHeight);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', lockViewportHeight);
+  window.addEventListener('pageshow', lockViewportHeight);
+})();
+</script>
 </head>
 <body>
 
@@ -3779,6 +3804,14 @@ function closeSpot() {
   const bar = document.querySelector('.spot-top-bar');
   if (bar) bar.style.top = '';
   document.body.style.overflow = '';
+  // The keyboard closing (from the blur above) resizes the visual viewport on its own
+  // animation timeline, separate from this function returning — re-lock once
+  // immediately and again after the keyboard's close animation has had time to finish,
+  // so #pg-home isn't left sized against a mid-transition viewport height.
+  if (window.lockViewportHeight) {
+    window.lockViewportHeight();
+    setTimeout(window.lockViewportHeight, 350);
+  }
 }
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', syncSpotToViewport);
