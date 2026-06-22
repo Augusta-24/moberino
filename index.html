@@ -5307,7 +5307,6 @@ window.confirmCharSelect = function() {
 // ══════════════════════════════════════
 (function() {
   const HOLES = 12;
-  const HEART_IDX = -2; // sentinel for heart holes
   // Cracked-glass overlay shown on top of the sad face for a successful whack
   const CRACK_SVG = `<svg viewBox="0 0 100 100" style="position:absolute;inset:0;pointer-events:none;animation:crack-in 0.3s ease-out forwards">
     <g stroke="#fff" stroke-width="1.6" opacity="0.6" fill="none" stroke-linecap="round">
@@ -5316,13 +5315,13 @@ window.confirmCharSelect = function() {
     </g>
   </svg>`;
   let state = 'idle'; // idle | instructions | playing | over
-  let score = 0, hits = 0, strikes = 0, wave = 1, waveHits = 0;
+  let wave = 1, waveHits = 0;
   let timerInterval;
   let difficulty = 'hard'; // 'easy' | 'hard'
   let activeChar = getGlobalChar(); // user's char — to AVOID
   let moleChar = -1;               // random other char — to WHACK
   let selfActive = false;          // true once user's char starts appearing
-  let nextHeartWave = 8;           // earliest wave hearts can spawn
+  let selfIntroWave = 0;           // wave selfActive turned on — self-hit rate ramps from here
   let holeTimers = [], holeStates = [], holeCharIdx = [];
   let awaitingGameOverTap = false; // true once dead — frozen board, waiting for player to tap through
 
@@ -5334,10 +5333,6 @@ window.confirmCharSelect = function() {
       return `<img src="${src}" style="width:100%;height:100%;object-fit:contain;border-radius:50%">`;
     }
     return `<div class="whack-char-placeholder" style="background:${c.color}">${face}</div>`;
-  }
-
-  function livesHTML() {
-    return [0,1,2].map(i => `<span style="opacity:${i<strikes?0.2:1}">${i<strikes?'💀':'❤️'}</span>`).join('');
   }
 
   function pickMole() {
@@ -5385,6 +5380,16 @@ window.confirmCharSelect = function() {
 
   // Freeze the board exactly as it is at the moment of death — no re-render, no reset —
   // and wait for the player to tap before showing the results screen.
+  // Zero-tolerance wave clearing: any self-hit or missed mole ends the run immediately —
+  // no life budget to absorb it. Shared by both failure paths so the flow is identical.
+  function failWave(reason) {
+    holeTimers.forEach(clearTimeout);
+    flashBrokenHeart();
+    showStatus(reason);
+    SFX.over();
+    freezeForGameOver();
+  }
+
   function freezeForGameOver() {
     awaitingGameOverTap = true;
     const wrap = document.getElementById('whack-wrap');
@@ -5436,13 +5441,13 @@ window.confirmCharSelect = function() {
             <div style="display:flex;flex-direction:column;gap:10px;width:100%">
               <div style="line-height:1.4">
                 <div style="font-size:15px;letter-spacing:3px;color:#ff4444;font-family:'VCR',monospace;text-shadow:0 0 10px #ff444488">MISS A MOLE?</div>
-                <div style="font-size:15px;letter-spacing:3px;color:rgba(242,239,232,0.95);font-family:'VCR',monospace">LOSE A LIFE</div>
+                <div style="font-size:15px;letter-spacing:3px;color:rgba(242,239,232,0.95);font-family:'VCR',monospace">WAVE OVER</div>
               </div>
               <div style="line-height:1.4">
                 <div style="font-size:15px;letter-spacing:3px;color:#ff4444;font-family:'VCR',monospace;text-shadow:0 0 10px #ff444488">WHACK YOURSELF?</div>
-                <div style="font-size:15px;letter-spacing:3px;color:rgba(242,239,232,0.95);font-family:'VCR',monospace">LOSE A LIFE</div>
+                <div style="font-size:15px;letter-spacing:3px;color:rgba(242,239,232,0.95);font-family:'VCR',monospace">WAVE OVER</div>
               </div>
-              <div style="font-size:12px;letter-spacing:2px;color:rgba(255,220,30,0.9);font-family:'VCR',monospace;text-shadow:0 0 8px rgba(255,220,30,0.5)">3 LIVES. HOW MANY WAVES CAN YOU SURVIVE?</div>
+              <div style="font-size:12px;letter-spacing:2px;color:rgba(255,220,30,0.9);font-family:'VCR',monospace;text-shadow:0 0 8px rgba(255,220,30,0.5)">CLEAR EACH WAVE PERFECTLY. HOW FAR CAN YOU GO?</div>
             </div>
           </div>
           <div class="arcade-cab-foot" style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">
@@ -5458,14 +5463,12 @@ window.confirmCharSelect = function() {
     }
 
     if (state === 'playing') {
-      const hudRight = `<div style="text-align:right;font-size:24px;line-height:1;letter-spacing:3px" id="whack-lives">${livesHTML()}</div>`;
       const youGc = GAME_CHARS[activeChar], moleGc = GAME_CHARS[moleChar];
       wrap.innerHTML = `
         <div class="whack-hud" style="flex-direction:column;justify-content:flex-start;gap:6px;padding:8px 14px">
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;width:100%">
-            <div><div class="whack-stat-label">SCORE</div><div class="whack-stat-val" id="whack-score-val">${score}</div></div>
-            <div style="text-align:center"><div style="font-family:'VCR',monospace;font-size:8px;letter-spacing:2px;opacity:0.5">WAVE</div><div id="whack-wave-val" style="font-family:'Bebas Neue',cursive;font-size:32px;line-height:1;color:#ffe61a;text-shadow:0 0 10px #ffe61a88">${wave}</div></div>
-            ${hudRight}
+          <div style="text-align:center;width:100%">
+            <div style="font-family:'VCR',monospace;font-size:8px;letter-spacing:2px;opacity:0.5">WAVE</div>
+            <div id="whack-wave-val" style="font-family:'Bebas Neue',cursive;font-size:36px;line-height:1;color:#ffe61a;text-shadow:0 0 10px #ffe61a88">${wave}</div>
           </div>
           <div style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding-top:4px;border-top:1px solid rgba(242,239,232,0.1)">
             <div style="width:46px;height:46px;border-radius:8px;overflow:hidden;border:2px solid #33ff66;background:#33ff6622;box-shadow:0 0 12px #33ff6666;flex-shrink:0">${charFace(youGc,'normal')}</div>
@@ -5492,52 +5495,57 @@ window.confirmCharSelect = function() {
     }
 
     if (state === 'over') {
+      // Score is now waves actually cleared — `wave` is the one that was in progress
+      // when the run ended, so the last one *cleared* is wave-1.
+      const wavesCleared = Math.max(0, wave - 1);
       const key = 'whack-best-survival';
       const best = parseInt(localStorage.getItem(key)||'0');
-      const isNew = score > best;
-      if (isNew) localStorage.setItem(key, score);
+      const isNew = wavesCleared > best;
+      if (isNew) localStorage.setItem(key, wavesCleared);
       wrap.innerHTML = `
         <div class="whack-msg">GAME OVER</div>
-        <div class="whack-stat-val" style="font-size:72px">${score}</div>
-        <div class="whack-sub">WAVE ${wave}</div>
+        <div class="whack-stat-val" style="font-size:72px">${wavesCleared}</div>
+        <div class="whack-sub">WAVES CLEARED</div>
         <div class="whack-sub">${isNew?'🏆 NEW BEST!':`BEST: ${best}`}</div>
         <div style="width:100%;max-width:360px">${LB.html('whack','#ff00cc')}</div>
         <button class="whack-btn" onclick="whackPlay()">PLAY AGAIN</button>
         <button class="whack-btn" style="background:none;border-color:rgba(242,239,232,0.1)" onclick="nav('lobby')">BACK TO ARCADE</button>`;
       if (!wrap.dataset.lbShown) {
         wrap.dataset.lbShown = '1';
-        setTimeout(() => promptLeaderboard('whack', score, `WAVE ${wave}`, '#ff00cc', () => {}), 300);
+        setTimeout(() => promptLeaderboard('whack', wavesCleared, difficulty.toUpperCase(), '#ff00cc', () => {}), 300);
       }
     }
   }
 
   function getPopDelay() {
-    // "wave" not "wave-1" — game starts at what used to be wave 2's pace, no slow warm-up
+    // Both difficulties approach a floor asymptotically rather than a linear ramp
+    // clamped by Math.max — climb toward max difficulty stretches over dozens of
+    // waves and mathematically can never cross the floor. Slowed further than before
+    // since waves are now zero-tolerance (a miss ends the run, not just a life) —
+    // less grace per mistake means the ramp itself needs to be gentler.
     if (difficulty === 'easy') {
-      // EASY = old HARD baseline
-      const waveBoost = wave * 60;
-      return Math.max(160, 980 - waveBoost - waveHits * 8) + Math.random() * 80;
+      const decay = 1 + (wave - 1) * 0.05 + waveHits * 0.012;
+      return 260 + (980 - 260) / decay + Math.random() * 80;
     }
-    // HARD: approaches a floor asymptotically instead of a linear ramp clamped by
-    // Math.max — same starting pace as before, but the climb toward max difficulty
-    // stretches over dozens of waves and mathematically can never cross the floor,
-    // however high the wave number gets. The floor itself (200ms) was picked to stay
-    // fast without stacking unplayably with full concurrency — see getUpTime() for the
-    // floor that actually matters for human reaction time.
-    const decay = 1 + (wave - 1) * 0.12 + waveHits * 0.025;
+    const decay = 1 + (wave - 1) * 0.08 + waveHits * 0.015;
     const popDelay = 200 + (790 - 200) / decay;
     return popDelay + Math.random() * 60;
   }
   function getUpTime() {
+    // Floors (620ms easy / 480ms hard) were sanity-checked against human reaction
+    // time for a "visually identify, then tap" task — demanding at the limit, but
+    // never literally impossible no matter how long a run goes.
     if (difficulty === 'easy') {
-      const waveBoost = wave * 80;
-      return (Math.max(420, 2240 - waveBoost - waveHits * 20) + Math.random() * 120) * 0.7;
+      const decay = 1 + (wave - 1) * 0.04 + waveHits * 0.01;
+      let upTime = 620 + (1550 - 620) / decay;
+      upTime += (concurrencyForWave(wave) - 1) * 110;
+      return upTime + Math.random() * 120;
     }
     // HARD: same asymptotic approach as getPopDelay(). Floor is 480ms — demanding
     // (requires real, sustained skill) but above the ~400ms+ that visual-search-plus-tap
     // tasks actually take even for skilled players, so it stays masterable rather than
     // becoming a wall no amount of practice gets past.
-    const decay = 1 + (wave - 1) * 0.1 + waveHits * 0.02;
+    const decay = 1 + (wave - 1) * 0.07 + waveHits * 0.012;
     let upTime = 480 + (1100 - 480) / decay;
     // More moles up at once means more to visually track — give each one a little extra
     // time so "more moles" and "less time per mole" don't both hit at once.
@@ -5565,23 +5573,6 @@ window.confirmCharSelect = function() {
     scheduleSurvivalNext();
   }
 
-  function scheduleHeart() {
-    if (state !== 'playing' || wave < nextHeartWave) return;
-    nextHeartWave = wave + 5; // block next heart for 5 waves
-    const delay = 1800 + Math.random() * 2400;
-    setTimeout(() => {
-      if (state !== 'playing') return;
-      const open = Array.from({length:HOLES}, (_,i) => i).filter(i => holeStates[i] === 'empty');
-      if (!open.length) return;
-      const hi = open[Math.floor(Math.random() * open.length)];
-      holeStates[hi] = 'up'; holeCharIdx[hi] = HEART_IDX;
-      const hole = document.getElementById(`wh-${hi}`), charEl = document.getElementById(`wc-${hi}`);
-      if (!hole || !charEl) return;
-      charEl.innerHTML = `<div style="font-size:44px;line-height:1;display:flex;align-items:center;justify-content:center;width:100%;height:100%">❤️</div>`;
-      hole.classList.add('up');
-      holeTimers[hi] = setTimeout(() => popDown(hi, false), getUpTime() / 3);
-    }, delay);
-  }
 
   function popUp(i) {
     if (state !== 'playing' || holeStates[i] !== 'empty') {
@@ -5590,10 +5581,22 @@ window.confirmCharSelect = function() {
     }
 
     let picked = moleChar;
-    if (selfActive && Math.random() > 0.72) picked = activeChar;
+    // Self-character rate ramps in gradually from the wave it's introduced, instead of
+    // flipping on at a flat ~28% forever — under zero-tolerance that flat rate made a
+    // self-hit (instant fail) feel like it could happen at any moment with no warm-up.
+    if (selfActive) {
+      const easy = difficulty === 'easy';
+      const selfRate = Math.min(easy ? 0.16 : 0.22, (wave - selfIntroWave) * (easy ? 0.008 : 0.012));
+      if (Math.random() < selfRate) picked = activeChar;
+    }
 
-    // Tease glow: starts ~58% decoy, ramps to ~88% by late waves — harder to read over time
-    const decoyRate = Math.min(0.88, 0.55 + wave * 0.014);
+    // Tease glow: starts lower and ramps more gently than before — doesn't directly
+    // cause a fail (tapping a glowing-but-empty hole is just a no-op), but combined
+    // with the new self-character risk, easing the early game in from this too helps.
+    // Wasn't difficulty-gated before — Easy now gets its own gentler version too.
+    const decoyRate = difficulty === 'easy'
+      ? Math.min(0.6, 0.2 + wave * 0.007)
+      : Math.min(0.85, 0.35 + wave * 0.012);
     const useDecoy = Math.random() < decoyRate;
     let teaseIdx = i;
     if (useDecoy) {
@@ -5669,30 +5672,15 @@ window.confirmCharSelect = function() {
     hole.classList.remove('up', 'hit', 'hit-success', 'wrong-hit');
 
     if (!wasHit && prev === moleChar) {
-      // Missed the mole — lose a life. Internally this hole is already resolved
-      // ('empty') the instant we get here — whackHit() won't register anything on it
-      // anymore. But it was staying *visually* identical to a live mole for the full
-      // 1s hold, so clicking it looked like a real hit that silently did nothing —
-      // exactly the "I whacked it and still lost a life" confusion. The X + grayscale
-      // + pointer-events:none below stay up for the *entire* hold (not a quick flash)
-      // so it's unmistakable that this one's done.
+      // Missed the mole — instant fail under zero-tolerance (no life budget anymore).
+      // Still show the X marker briefly first so it's clear *what* was missed, rather
+      // than cutting straight to the freeze screen with no explanation.
       const charEl = document.getElementById(`wc-${i}`);
       if (charEl) charEl.innerHTML = charHTML(moleChar, 'normal');
       hole.classList.add('up', 'missed');
       showMissX(i);
       SFX.moleEscaped();
-      strikes++;
-      flashBrokenHeart();
-      showStatus('💔 MISSED MOLE');
-      const lv = document.getElementById('whack-lives');
-      if (lv) lv.innerHTML = livesHTML();
-      setTimeout(() => {
-        hole.classList.remove('up', 'missed');
-        clearTint(i);
-        hideMissX(i);
-        if (strikes < 3) scheduleSurvivalNext();
-      }, 1000);
-      if (strikes >= 3) setTimeout(() => { holeTimers.forEach(clearTimeout); SFX.over(); freezeForGameOver(); }, 1050);
+      setTimeout(() => failWave('💔 MISSED MOLE'), 700);
       return;
     }
 
@@ -5705,6 +5693,7 @@ window.confirmCharSelect = function() {
     // communicates "don't whack" clearly enough on its own by now.
     if (selfActive) return;
     selfActive = true;
+    selfIntroWave = wave; // self-hit rate ramps up gradually starting from here
   }
 
   window.whackHit = function(i) {
@@ -5715,24 +5704,6 @@ window.confirmCharSelect = function() {
     const hole = document.getElementById(`wh-${i}`), charEl = document.getElementById(`wc-${i}`);
     if (!hole || !charEl) return;
 
-    if (ci === HEART_IDX) {
-      charEl.innerHTML = `<div style="font-size:44px;display:flex;align-items:center;justify-content:center;width:100%;height:100%">💖</div>`;
-      hole.classList.add('hit'); // genuine good outcome — keep the glow
-      clearTint(i);
-      if (strikes > 0) {
-        strikes--;
-        const lv = document.getElementById('whack-lives');
-        if (lv) lv.innerHTML = livesHTML();
-        const pop = document.createElement('div');
-        pop.className = 'whack-score-pop'; pop.textContent = '+LIFE';
-        pop.style.cssText = `left:${20+Math.random()*60}%;top:${20+Math.random()*40}%`;
-        hole.appendChild(pop); setTimeout(() => pop.remove(), 700);
-        SFX.win();
-      }
-      setTimeout(() => popDown(i, true), 350);
-      return;
-    }
-
     if (ci === moleChar) {
       // hit-success (not 'hit') deliberately skips the yellow glow — that glow was
       // bleeding through behind the sad face and reading like a weird character aura.
@@ -5740,54 +5711,54 @@ window.confirmCharSelect = function() {
       hole.classList.add('hit-success');
       clearTint(i);
       const pop = document.createElement('div');
-      pop.className = 'whack-score-pop'; pop.textContent = '+10';
+      pop.className = 'whack-score-pop'; pop.textContent = '✓';
       pop.style.cssText = `left:${20+Math.random()*60}%;top:${20+Math.random()*40}%`;
       hole.appendChild(pop); setTimeout(() => pop.remove(), 700);
       SFX.whack(); SFX.hit();
-      score++; hits++; // score is just a count of moles whacked now, 1 per hit
-      const sv = document.getElementById('whack-score-val');
-      if (sv) sv.textContent = score;
       waveHits++;
       const easy = difficulty === 'easy';
       const threshold = wave === 1 ? 3 : (easy ? 8 : 5);
       if (waveHits >= threshold) {
         waveHits = 0; wave++;
-        announceWave(wave);
+        clearWaveTransition();
         const w1 = easy ? 3 : 2;
         if (wave === w1 && !selfActive) setTimeout(addSelf, 900);
-        if (wave >= nextHeartWave) setTimeout(scheduleHeart, 1200);
       }
       setTimeout(() => popDown(i, true), 350);
     } else {
-      // Hit self — lose a life. Always sad, no exceptions.
+      // Hit self — instant fail under zero-tolerance. Always sad, no exceptions.
       charEl.innerHTML = charHTML(ci, 'sad');
       hole.classList.add('wrong-hit');
       SFX.selfWhack();
-      strikes++;
-      flashBrokenHeart();
-      showStatus('💔 YOU WHACKED YOURSELF');
-      const lv = document.getElementById('whack-lives');
-      if (lv) lv.innerHTML = livesHTML();
-      if (strikes >= 3) {
-        holeTimers.forEach(clearTimeout);
-        SFX.over();
-        freezeForGameOver();
-      } else {
-        setTimeout(() => { clearTint(i); popDown(i, true); }, 1000);
-      }
+      setTimeout(() => failWave('💔 YOU WHACKED YOURSELF'), 600);
     }
   };
 
-  // Waves are useful as a difficulty ramp internally, but the big screen-covering
-  // banner was just an annoying interruption — and worse, clearing timers to avoid a
-  // stuck mole meant wiping moles the player was still actively trying to whack. So:
-  // no banner, no clearing, no pause. In-flight moles resolve exactly as they would
-  // have anyway; only the displayed wave number changes, instantly and quietly.
-  function announceWave(w) {
+  // Waves now clear-then-break instead of blending into each other: cancel anything
+  // still live (no penalty — this is a deliberate transition, not a miss), show a
+  // brief "WAVE CLEARED" beat, then start the next wave fresh. The old version avoided
+  // any pause specifically because waves used to flow continuously into one another;
+  // now that each wave is its own discrete clear-it-or-fail unit, a clean visible break
+  // is the whole point.
+  function clearWaveTransition() {
+    holeTimers.forEach(clearTimeout);
+    for (let h = 0; h < HOLES; h++) {
+      if (holeStates[h] === 'up') {
+        holeStates[h] = 'empty'; holeCharIdx[h] = -1;
+        const hole = document.getElementById(`wh-${h}`);
+        if (hole) hole.classList.remove('up','hit','hit-success','wrong-hit','missed');
+        clearTint(h); hideMissX(h);
+      }
+    }
     const el = document.getElementById('whack-wave-val');
-    if (el) el.textContent = w;
-    const n = concurrencyForWave(w);
-    for (let k = 0; k < n; k++) scheduleSurvivalNext();
+    if (el) el.textContent = wave;
+    showStatus(`✅ WAVE ${wave - 1} CLEARED!`);
+    setTimeout(() => {
+      if (state !== 'playing') return;
+      showStatus('');
+      const n = concurrencyForWave(wave);
+      for (let k = 0; k < n; k++) scheduleSurvivalNext();
+    }, 1000);
   }
 
   window.whackBack = function() { state = 'idle'; render(); ArcadeMusic.unduck(); };
@@ -5796,8 +5767,8 @@ window.confirmCharSelect = function() {
     holeTimers.forEach(clearTimeout); clearInterval(timerInterval);
     activeChar = getGlobalChar();
     moleChar = pickMole();
-    score = 0; hits = 0; strikes = 0; wave = 1; waveHits = 0;
-    selfActive = false; nextHeartWave = 8;
+    wave = 1; waveHits = 0;
+    selfActive = false; selfIntroWave = 0;
     holeStates = Array(HOLES).fill('empty');
     holeCharIdx = Array(HOLES).fill(-1);
     holeTimers   = Array(HOLES).fill(null);
@@ -5815,8 +5786,8 @@ window.confirmCharSelect = function() {
     holeTimers.forEach(clearTimeout); clearInterval(timerInterval);
     activeChar = getGlobalChar();
     moleChar = pickMole();
-    state = 'instructions'; score = 0; hits = 0; strikes = 0; wave = 1; waveHits = 0;
-    selfActive = false; nextHeartWave = 8;
+    state = 'instructions'; wave = 1; waveHits = 0;
+    selfActive = false; selfIntroWave = 0;
     holeStates = Array(HOLES).fill('empty');
     holeCharIdx = Array(HOLES).fill(-1);
     holeTimers   = Array(HOLES).fill(null);
