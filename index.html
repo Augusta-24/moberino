@@ -5465,40 +5465,31 @@ window.confirmCharSelect = function() {
         <div class="arcade-cabinet" style="--nc:#ff00cc">
           <div class="arcade-cab-rail"></div>
           <div class="arcade-cab-marquee" style="font-size:26px;letter-spacing:7px">GET READY!</div>
-          <div class="arcade-cab-screen" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px 16px">
-            <div style="display:flex;align-items:center;justify-content:center;gap:20px;width:100%">
-              <div style="display:flex;flex-direction:column;align-items:center;gap:5px">
-                <div style="font-size:10px;letter-spacing:2px;color:rgba(242,239,232,0.45);font-family:'VCR',monospace">YOU</div>
-                <div style="width:80px;height:80px;border-radius:10px;background:${gc.color}22;display:flex;align-items:center;justify-content:center;border:2px solid ${gc.color}88;box-shadow:0 0 16px ${gc.color}44">
-                  <div style="width:64px;height:64px;display:flex;align-items:center;justify-content:center">${charFace(gc,'normal')}</div>
+          <div class="arcade-cab-screen" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 16px">
+            <div style="display:flex;align-items:center;justify-content:center;gap:16px;width:100%">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                <div style="font-size:9px;letter-spacing:2px;color:rgba(242,239,232,0.45);font-family:'VCR',monospace">YOU</div>
+                <div style="width:64px;height:64px;border-radius:8px;background:${gc.color}22;display:flex;align-items:center;justify-content:center;border:2px solid ${gc.color}88;box-shadow:0 0 14px ${gc.color}44">
+                  <div style="width:50px;height:50px;display:flex;align-items:center;justify-content:center">${charFace(gc,'normal')}</div>
                 </div>
-                <div style="min-height:14px"></div>
               </div>
-              <div style="font-family:'Bebas Neue',cursive;font-size:26px;color:rgba(242,239,232,0.4);padding-top:20px">VS</div>
-              <div style="display:flex;flex-direction:column;align-items:center;gap:5px">
-                <div style="font-size:10px;letter-spacing:2px;color:#ff4444;font-family:'VCR',monospace">WHACK THIS</div>
-                <div id="whack-slot-box" style="width:80px;height:80px;border-radius:10px;background:rgba(255,68,68,0.08);display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,68,68,0.5);box-shadow:0 0 12px rgba(255,68,68,0.2);transition:border-color 0.3s,box-shadow 0.3s">
-                  <div id="whack-slot-face" style="width:64px;height:64px;display:flex;align-items:center;justify-content:center"></div>
+              <div style="font-family:'Bebas Neue',cursive;font-size:22px;color:rgba(242,239,232,0.4)">VS</div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                <div style="font-size:9px;letter-spacing:2px;color:#ff4444;font-family:'VCR',monospace">WHACK THIS</div>
+                <div id="whack-slot-box" style="width:64px;height:64px;border-radius:8px;background:rgba(255,68,68,0.08);display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,68,68,0.5);box-shadow:0 0 10px rgba(255,68,68,0.2);transition:border-color 0.3s,box-shadow 0.3s">
+                  <div id="whack-slot-face" style="width:50px;height:50px;display:flex;align-items:center;justify-content:center"></div>
                 </div>
-                <div id="whack-slot-name" style="font-family:'VCR',monospace;font-size:10px;letter-spacing:2px;opacity:0;transition:opacity 0.4s;min-height:14px;text-align:center"></div>
+                <div id="whack-slot-name" style="font-family:'VCR',monospace;font-size:9px;letter-spacing:2px;opacity:0;transition:opacity 0.4s;min-height:12px;text-align:center"></div>
               </div>
             </div>
-            <div style="display:flex;flex-direction:column;gap:10px;width:100%">
-              <div style="line-height:1.4">
-                <div style="font-size:15px;letter-spacing:3px;color:#ff4444;font-family:'VCR',monospace;text-shadow:0 0 10px #ff444488">MISS A MOLE?</div>
-                <div style="font-size:15px;letter-spacing:3px;color:rgba(242,239,232,0.95);font-family:'VCR',monospace">WAVE OVER</div>
+            <div style="width:100%;display:flex;flex-direction:column;gap:5px;text-align:left;border-top:1px solid rgba(242,239,232,0.1);padding-top:8px">
+              <div style="font-size:9px;letter-spacing:2px;color:rgba(242,239,232,0.4);font-family:'VCR',monospace;text-align:center;margin-bottom:1px">WAVES ROTATE THROUGH THREE MODES</div>
+              <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:1px;line-height:1.3">
+                <span style="color:#ff00cc">WHACK</span> — tap the right one before it escapes
+                <div style="font-size:9px;color:rgba(255,68,68,0.85);margin-top:1px">miss it or whack yourself = wave over</div>
               </div>
-              <div style="line-height:1.4">
-                <div style="font-size:15px;letter-spacing:3px;color:#ff4444;font-family:'VCR',monospace;text-shadow:0 0 10px #ff444488">WHACK YOURSELF?</div>
-                <div style="font-size:15px;letter-spacing:3px;color:rgba(242,239,232,0.95);font-family:'VCR',monospace">WAVE OVER</div>
-              </div>
-              <div style="font-size:12px;letter-spacing:2px;color:rgba(255,220,30,0.9);font-family:'VCR',monospace;text-shadow:0 0 8px rgba(255,220,30,0.5)">CLEAR EACH WAVE PERFECTLY. HOW FAR CAN YOU GO?</div>
-            </div>
-            <div style="width:100%;display:flex;flex-direction:column;gap:8px;text-align:left;border-top:1px solid rgba(242,239,232,0.1);padding-top:12px;margin-top:4px">
-              <div style="font-size:10px;letter-spacing:2px;color:rgba(242,239,232,0.4);font-family:'VCR',monospace;text-align:center">WAVES ROTATE THROUGH THREE MODES</div>
-              <div style="font-family:'VCR',monospace;font-size:12px;letter-spacing:1.5px;line-height:1.5"><span style="color:#ff00cc">WHACK</span> — tap the right one before it escapes</div>
-              <div style="font-family:'VCR',monospace;font-size:12px;letter-spacing:1.5px;line-height:1.5"><span style="color:#ffe61a">CLEAR</span> — clear the board before time runs out</div>
-              <div style="font-family:'VCR',monospace;font-size:12px;letter-spacing:1.5px;line-height:1.5"><span style="color:#00e5ff">FIND</span> — memorize the spots, then tap them blind</div>
+              <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:1px;line-height:1.3"><span style="color:#ffe61a">CLEAR</span> — clear the board before time runs out</div>
+              <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:1px;line-height:1.3"><span style="color:#00e5ff">FIND</span> — memorize the spots, then tap them blind</div>
             </div>
           </div>
           <div class="arcade-cab-foot" style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">
