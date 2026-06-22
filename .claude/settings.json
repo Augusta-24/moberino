@@ -56,7 +56,9 @@
       "Bash(curl -s 'https://gsetfibwyygirpuuvcbs.supabase.co/rest/v1/leaderboard_entries?select=game&limit=50' -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzZXRmaWJ3eXlnaXJwdXV2Y2JzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNzIyMTAsImV4cCI6MjA5NzY0ODIxMH0.PV5Yh3FKFXhg3Wf2sqblEx4OICcHVth0rkGitga0DJo' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzZXRmaWJ3eXlnaXJwdXV2Y2JzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNzIyMTAsImV4cCI6MjA5NzY0ODIxMH0.PV5Yh3FKFXhg3Wf2sqblEx4OICcHVth0rkGitga0DJo')",
       "Bash(awk -F: '$1 < 5950')",
       "Bash(grep -n \"html, body { height: 100%; overflow: hidden; }\" /Users/kevinseverino/Documents/moberino/index.html)",
-      "Bash(grep -n \"\\\\${headline}\" /Users/kevinseverino/Documents/moberino/index.html)"
+      "Bash(grep -n \"\\\\${headline}\" /Users/kevinseverino/Documents/moberino/index.html)",
+      "Bash(grep -n \"wrap.innerHTML = \\\\`\" /Users/kevinseverino/Documents/moberino/index.html)",
+      "Bash(awk -F: '$1 < 7089')"
     ]
   }
 }

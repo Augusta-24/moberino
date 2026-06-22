@@ -4366,6 +4366,10 @@ heroCassette.addEventListener('animationend', function() {
 
   function startScreensaver() {
     if (ssOn || document.getElementById('lb').classList.contains('open')) return;
+    // Never kick in on an arcade page — mid-game pauses (reading an intro screen,
+    // waiting for the next mole) are long enough to hit the old 60s timer, and having
+    // a video slideshow take over while someone's mid-game would be disruptive.
+    if (document.body.matches('.on-lobby,.on-whack,.on-match,.on-space,.on-char')) return;
     ssOn = true;
     document.getElementById('screensaver').classList.add('on');
     ssShowNext();
@@ -6199,7 +6203,7 @@ window.confirmCharSelect = function() {
   // Full phrase — used for the big, transient next-wave intro overlay, where there's
   // room to spell it out and it reads more clearly than a bare verb.
   function roundTypePhrase() {
-    if (currentRoundType === 'clear') return 'CLEAR THE BOARD';
+    if (currentRoundType === 'clear') return 'CLEAR THE MOLES';
     if (currentRoundType === 'memory') return 'FIND THE MOLES';
     return 'WHACK THE MOLE';
   }
@@ -7024,7 +7028,7 @@ window.confirmCharSelect = function() {
   // plus a generous time limit so move-efficiency, not the clock, is the real challenge.
   const MODE_CONFIG = {
     hard:       { pairs: 12, time: 60, targetMoves: null },
-    challenge:  { pairs: 15, time: 90, targetMoves: null },
+    challenge:  { pairs: 15, time: 60, targetMoves: null },
     impossible: { pairs: 21, time: 150, targetMoves: null }, // time unused — see matchPlay()/render(). No target benchmark either now that the 45-move cutoff + give-up/finish-anyway prompt replaces it.
   };
 
@@ -7082,11 +7086,11 @@ window.confirmCharSelect = function() {
             </button>
             <button class="whack-btn match-mode-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.1);padding:10px 16px;text-align:left" onclick="matchPlay('challenge')">
               <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;line-height:1.1">⏰ CHALLENGE</div>
-              <div style="font-family:'VCR',monospace;font-size:13px;letter-spacing:2px;opacity:0.8;margin-top:4px">15 PAIRS · 90 SECONDS</div>
+              <div style="font-family:'VCR',monospace;font-size:13px;letter-spacing:2px;opacity:0.8;margin-top:4px">15 PAIRS · 60 SECONDS</div>
             </button>
             <button class="whack-btn match-mode-btn" style="border-color:#ff4444;background:rgba(255,68,68,0.1);padding:10px 16px;text-align:left" onclick="matchPlay('impossible')">
               <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;line-height:1.1">💀 IMPOSSIBLE</div>
-              <div style="font-family:'VCR',monospace;font-size:13px;letter-spacing:2px;opacity:0.8;margin-top:4px">21 PAIRS · NO TIME LIMIT</div>
+              <div style="font-family:'VCR',monospace;font-size:13px;letter-spacing:2px;opacity:0.8;margin-top:4px">21 PAIRS · ${IMPOSSIBLE_MOVE_CUTOFF} MOVE LIMIT</div>
             </button>
           </div>
         </div>`;
@@ -7124,7 +7128,7 @@ window.confirmCharSelect = function() {
       const _gStyle = `--card:min(calc((min(100vw,460px) - ${_ghp}px) / ${_gl.cols}),calc((100dvh - 196px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card))`;
       wrap.innerHTML = `
         <div class="match-hud" style="padding:8px 16px">
-          <div style="font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:5px;color:#ffe61a;text-shadow:0 0 14px #ffe61a88" id="match-preview-cd">MEMORIZE!  ${matchMode === 'impossible' ? 7 : 3}</div>
+          <div style="font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:5px;color:#ffe61a;text-shadow:0 0 14px #ffe61a88" id="match-preview-cd">MEMORIZE!  ${matchMode === 'impossible' ? 7 : matchMode === 'challenge' ? 4 : 3}</div>
         </div>
         <div class="match-grid" style="${_gStyle}">${
           cards.map((c,i) => {
@@ -7408,7 +7412,7 @@ window.confirmCharSelect = function() {
     // Impossible gets longer to actually take in a 21-pair/42-card board.
     locked = true;
     state = 'preview'; render();
-    let countdown = matchMode === 'impossible' ? 7 : 3;
+    let countdown = matchMode === 'impossible' ? 7 : matchMode === 'challenge' ? 4 : 3;
     previewInt = setInterval(() => {
       countdown--;
       const cd = document.getElementById('match-preview-cd');
@@ -7475,11 +7479,21 @@ window.confirmCharSelect = function() {
   // null when inactive. state: 'active' while escorting, 'leaving' during its fly-off.
   let escort = null;
   const ESCORT_DURATION_MS = 10000;
-  // Boss waves — every 5 waves, a scaled-up enemy that hovers near the top (never
-  // crosses the danger line) and alternates between a telegraphed laser and a
-  // machine-gun burst. Never reuses a character that's already been a rescued hero.
+  // Boss waves — starting wave 3 and every 5 waves after, a big scary creature (not
+  // one of the family characters) hovers near the top (never crosses the danger line),
+  // alternates a telegraphed laser and a machine-gun burst, and periodically deploys
+  // a regular enemy of its own. Asteroids are paused for the duration of the fight so
+  // the encounter stays the focus.
   let boss = null;
+  let bossDeployTimer = 0;
   const rescuedChars = new Set();
+  const BOSS_CREATURES = [
+    { name: 'VOID WRAITH',  emoji: '👻' },
+    { name: 'STAR OGRE',    emoji: '👹' },
+    { name: 'SKY DRAGON',   emoji: '🐉' },
+    { name: 'REX PRIME',    emoji: '🦖' },
+    { name: 'GRAY VISITOR', emoji: '👽' },
+  ];
 
   function addFloatText(text, x, y, color, size) {
     floatTexts.push({text, x, y, color, a: 1, vy: -1.5, size: size || 20});
@@ -7543,18 +7557,17 @@ window.confirmCharSelect = function() {
 
   function spawnBoss() {
     if (boss) return;
-    const candidates = GAME_CHARS.map((_, i) => i).filter(i => i !== activeChar && !rescuedChars.has(i));
-    const pool = candidates.length ? candidates : GAME_CHARS.map((_, i) => i).filter(i => i !== activeChar);
-    const ci = pool[Math.floor(Math.random() * pool.length)];
+    const creature = BOSS_CREATURES[Math.floor(Math.random() * BOSS_CREATURES.length)];
     boss = {
-      ci, x: W / 2, y: 90, vx: (Math.random() < 0.5 ? -1 : 1) * 1.1,
+      creature, x: W / 2, y: 90, vx: (Math.random() < 0.5 ? -1 : 1) * 1.1,
       r: BOSS_R, hp: BOSS_HP, maxHp: BOSS_HP,
       attackType: Math.random() < 0.5 ? 'laser' : 'machinegun',
       nextAttack: Date.now() + 1800,
       laserPhase: null, laserChargeStart: 0, laserX: 0,
       hitFlash: 0,
     };
-    addFloatText('BOSS INCOMING', W / 2, 140, '#ff4444', 24);
+    bossDeployTimer = Date.now() + 3500; // first reinforcement a little after the fight starts
+    addFloatText(`${creature.name} INCOMING`, W / 2, 140, '#ff4444', 22);
     SFX.over();
   }
 
@@ -7624,6 +7637,10 @@ window.confirmCharSelect = function() {
     spawnsRemaining = cfg.poolSize;
     function doSpawn() {
       if (state !== 'playing') return;
+      // Paused entirely while a boss fight is active — it's deploying its own minions
+      // instead, not stacked on top of the regular wave queue. Resumes exactly where
+      // it left off (spawnsRemaining untouched) once the boss is gone.
+      if (boss) { spawnTimer = setTimeout(doSpawn, 500); return; }
       if (spawnsRemaining <= 0) return; // pool exhausted — let the board clear naturally, no forced wipe
       spawnObstacle(cfg);
       spawnsRemaining--;
@@ -7641,7 +7658,7 @@ window.confirmCharSelect = function() {
     if (wave >= 2 && Math.random() < 0.65) {
       setTimeout(() => { if (state === 'playing') spawnPowerup(); }, 2500 + Math.random() * 4000);
     }
-    if (wave % 5 === 0) setTimeout(() => { if (state === 'playing') spawnBoss(); }, 1200);
+    if (wave >= 3 && (wave - 3) % 3 === 0) setTimeout(() => { if (state === 'playing') spawnBoss(); }, 1200);
   }
 
   function announceWave(w) {
@@ -7857,10 +7874,22 @@ window.confirmCharSelect = function() {
     if(leftHeld)  player.x=Math.max(player.r,     player.x-curSpeed);
     if(rightHeld) player.x=Math.min(W-player.r,   player.x+curSpeed);
 
-    // Hero escort: follows the player and auto-fires while active, then flies off
-    // with a "thanks" instead of just vanishing once its time is up.
+    // Hero escort: flies down from the rescue spot, follows the player and auto-fires
+    // while active, then flies off with a "thanks" instead of just vanishing once its
+    // time is up. The departure is deliberately slow — it was easy to miss before.
     if (escort) {
-      if (escort.state === 'active') {
+      if (escort.state === 'entering') {
+        const targetX = player.x - 40, targetY = player.y;
+        const dx = targetX - escort.x, dy = targetY - escort.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 8) {
+          escort.state = 'active';
+          escort.expiresAt = Date.now() + ESCORT_DURATION_MS;
+        } else {
+          escort.x += (dx / dist) * 7;
+          escort.y += (dy / dist) * 7;
+        }
+      } else if (escort.state === 'active') {
         escort.x = player.x - 40;
         escort.y = player.y + 4;
         if (Date.now() > escort.expiresAt) {
@@ -7871,18 +7900,25 @@ window.confirmCharSelect = function() {
           escort.lastFire = ts;
         }
       } else {
-        escort.y -= 3.5;
-        escort.opacity -= 0.018;
+        escort.y -= 1.6;
+        escort.opacity -= 0.007;
         if (escort.opacity <= 0 || escort.y < -60) escort = null;
       }
     }
 
     // Boss: hovers near the top (never crosses the danger line), alternates a
-    // telegraphed laser (dodge sideways during the charge-up) and a machine-gun burst.
+    // telegraphed laser (dodge sideways during the charge-up) and a machine-gun burst,
+    // and periodically deploys a minion of its own — the only enemies that show up
+    // during the fight, since the regular wave queue is paused for its duration.
     if (boss) {
       boss.x += boss.vx;
       if (boss.x < boss.r + 20 || boss.x > W - boss.r - 20) boss.vx *= -1;
       boss.hitFlash = Math.max(0, boss.hitFlash - 0.05);
+
+      if (Date.now() > bossDeployTimer) {
+        obstacles.push({ type:'face', x:rand(FACE_R, W-FACE_R), y:-FACE_R-10, vx:rand(-0.6,0.6)*currentCfg.speed, vy:currentCfg.speed*0.55, r:FACE_R, ci: Math.floor(Math.random()*GAME_CHARS.length), hp:3, isTrapped:false, ringHp:0, pausedBurstDone:false, paused:false, pauseUntil:0, burstShotsLeft:0, lastBurstShot:0 });
+        bossDeployTimer = Date.now() + 4000 + Math.random()*1500;
+      }
 
       if (Date.now() > boss.nextAttack && !boss.laserPhase) {
         if (boss.attackType === 'laser') {
@@ -8021,7 +8057,7 @@ window.confirmCharSelect = function() {
             health = Math.min(100, health + hpGain);
             score += 500 + wave * 20;
             triggerShake(14);
-            bigExplosion(boss.x, boss.y, GAME_CHARS[boss.ci].color);
+            bigExplosion(boss.x, boss.y, '#ff4444');
             addFloatText('BOSS DOWN! +500', boss.x, boss.y, '#ffe61a', 22);
             if (hpGain > 0) addFloatText(`+${hpGain} HP`, boss.x, boss.y - 30, '#33ff66', 16);
             SFX.win();
@@ -8055,7 +8091,10 @@ window.confirmCharSelect = function() {
                 addFloatText('+150 RESCUED!', o.x, o.y, '#00e5ff', 22);
                 const hpGain = Math.min(30, 100 - health);
                 if(hpGain > 0){ health = Math.min(100, health + 30); addFloatText(`+${hpGain} HP`, o.x, o.y - 30, '#33ff66', 18); }
-                escort = { ci: o.ci, state: 'active', expiresAt: Date.now() + ESCORT_DURATION_MS, x: player.x - 40, y: player.y, lastFire: 0, opacity: 1 };
+                // Starts at the rescue spot and flies down to the player instead of
+                // teleporting straight to their side — the 'entering' state in the main
+                // loop handles the actual flight, expiresAt only starts once it arrives.
+                escort = { ci: o.ci, state: 'entering', x: o.x, y: o.y, lastFire: 0, opacity: 1 };
                 rescuedChars.add(o.ci);
               } else {
                 addFloatText('RING HIT!', o.x, o.y, '#00e5ff', 18);
@@ -8217,7 +8256,6 @@ window.confirmCharSelect = function() {
       ctx.restore();
     }
 
-    const gc = GAME_CHARS[boss.ci];
     ctx.save();
     ctx.translate(boss.x, boss.y);
     ctx.beginPath(); ctx.arc(0, 0, boss.r + 6, 0, Math.PI*2);
@@ -8225,13 +8263,8 @@ window.confirmCharSelect = function() {
     ctx.beginPath(); ctx.arc(0, 0, boss.r, 0, Math.PI*2);
     ctx.fillStyle = '#cc1a1a'; ctx.fill();
     ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 4; ctx.stroke();
-    if (gc.img) {
-      const img = _getImg(gc.img);
-      if (img.complete && img.naturalWidth) ctx.drawImage(img, -boss.r*0.8, -boss.r*0.8, boss.r*1.6, boss.r*1.6);
-    } else {
-      ctx.font = `${boss.r}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(gc.emoji, 0, 0);
-    }
+    ctx.font = `${boss.r * 1.3}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(boss.creature.emoji, 0, 0);
     if (boss.hitFlash > 0) {
       ctx.globalAlpha = boss.hitFlash;
       ctx.fillStyle = '#fff';
@@ -8239,8 +8272,11 @@ window.confirmCharSelect = function() {
     }
     ctx.restore();
 
-    // Health bar above the boss
+    // Name + health bar above the boss
     const barW = boss.r * 2.2, barX = boss.x - barW/2, barY = boss.y - boss.r - 18;
+    ctx.font = `bold 13px 'Bebas Neue', cursive`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = '#ff4444';
+    ctx.fillText(boss.creature.name, boss.x, barY - 6);
     ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(barX, barY, barW, 8);
     ctx.fillStyle = '#ff4444'; ctx.fillRect(barX, barY, barW * (boss.hp / boss.maxHp), 8);
   }
