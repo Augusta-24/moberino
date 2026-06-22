@@ -4892,20 +4892,90 @@ const LB = (() => {
     },
     get(game) { return (load()[game] || []); },
     html(game, neonColor) {
-      const rows = this.get(game);
-      if (!rows.length) return '<div style="font-size:18px;letter-spacing:2px;opacity:0.4;text-align:center;padding:24px 0">NO SCORES YET</div>';
-      return `<table style="width:100%;border-collapse:collapse;font-family:VCR,monospace;font-size:18px">` +
-        rows.slice(0,5).map((r,i)=>
-          `<tr>
-            <td style="padding:8px 10px;color:${i===0?neonColor:'rgba(242,239,232,0.6)'}">${i===0?'👑':'#'+(i+1)}</td>
-            <td style="padding:8px 10px;color:${i===0?neonColor:'rgba(242,239,232,0.8)'};letter-spacing:2px">${r.name}</td>
-            <td style="padding:8px 10px;text-align:right;color:${i===0?neonColor:'rgba(242,239,232,0.7)'}">${r.score}</td>
-            <td style="padding:8px 10px;text-align:right;color:rgba(242,239,232,0.35);font-size:13px">${r.extra||''}</td>
-          </tr>`
-        ).join('') + '</table>';
+      return renderLbRows(this.get(game).slice(0,5).map(r => ({ name: r.name, extra: r.extra, displayScore: r.score })), neonColor);
     }
   };
 })();
+
+function fmtTimeG(s) { s = Math.max(0, Math.round(s)); return Math.floor(s/60)+':'+(s%60<10?'0':'')+s%60; }
+
+function renderLbRows(rows, neonColor) {
+  if (!rows || !rows.length) return '<div style="font-size:18px;letter-spacing:2px;opacity:0.4;text-align:center;padding:24px 0">NO SCORES YET</div>';
+  return `<table style="width:100%;border-collapse:collapse;font-family:VCR,monospace;font-size:18px">` +
+    rows.slice(0,5).map((r,i)=>
+      `<tr>
+        <td style="padding:8px 10px;color:${i===0?neonColor:'rgba(242,239,232,0.6)'}">${i===0?'👑':'#'+(i+1)}</td>
+        <td style="padding:8px 10px;color:${i===0?neonColor:'rgba(242,239,232,0.8)'};letter-spacing:2px">${r.name}</td>
+        <td style="padding:8px 10px;text-align:right;color:${i===0?neonColor:'rgba(242,239,232,0.7)'}">${r.displayScore}</td>
+        <td style="padding:8px 10px;text-align:right;color:rgba(242,239,232,0.35);font-size:13px">${r.extra||''}</td>
+      </tr>`
+    ).join('') + '</table>';
+}
+
+// ══════════════════════════════════════
+//  SHARED LEADERBOARD (Supabase — one table, public anon read+insert via RLS)
+// ══════════════════════════════════════
+// One shared "leaderboard_entries" table holds rows for every game, told apart by the
+// `game` column. The anon key below is meant to be public (it's the whole point of a
+// client-side public API key) — RLS policies on the table are what actually constrain
+// it to read+insert only, nothing else.
+const RemoteLB = (() => {
+  const SUPABASE_URL = 'https://gsetfibwyygirpuuvcbs.supabase.co';
+  const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzZXRmaWJ3eXlnaXJwdXV2Y2JzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNzIyMTAsImV4cCI6MjA5NzY0ODIxMH0.PV5Yh3FKFXhg3Wf2sqblEx4OICcHVth0rkGitga0DJo';
+  const TABLE_URL = `${SUPABASE_URL}/rest/v1/leaderboard_entries`;
+  const HEADERS = { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` };
+
+  // Per-game ranking: which column decides the order, and which direction wins.
+  const SORT = {
+    whack:               { col: 'score',   dir: 'desc' },
+    space:               { col: 'score',   dir: 'desc' },
+    'match-challenge':   { col: 'seconds', dir: 'asc'  },
+    'match-impossible':  { col: 'score',   dir: 'asc'  },
+  };
+
+  function isConfigured(game) { return !!SORT[game]; }
+
+  function submit(game, name, score, seconds, text) {
+    if (!isConfigured(game)) return;
+    const body = {
+      game, name: name.trim().slice(0,12).toUpperCase(),
+      score: Math.max(0, Math.round(score)), seconds: Math.max(0, Math.round(seconds||0)),
+      extra: (text || '').slice(0, 60),
+    };
+    fetch(TABLE_URL, {
+      method: 'POST',
+      headers: { ...HEADERS, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(body),
+    }).catch(e => console.warn('[RemoteLB] submit failed:', game, e));
+  }
+
+  function fetchTop(game, count) {
+    if (!isConfigured(game)) return Promise.resolve(null);
+    const s = SORT[game];
+    const url = `${TABLE_URL}?game=eq.${encodeURIComponent(game)}&order=${s.col}.${s.dir}&limit=${count || 5}`;
+    return fetch(url, { headers: HEADERS }).then(r => r.json()).then(rows =>
+      (rows || []).map(r => ({ name: r.name, score: r.score, seconds: r.seconds, extra: r.extra }))
+    ).catch(e => { console.warn('[RemoteLB] fetch failed:', game, e); return null; });
+  }
+
+  return { submit, fetchTop, isConfigured };
+})();
+
+// Renders the local cache instantly, then swaps in the shared Supabase board once it
+// loads. If that fetch fails, the local board just stays put — no error shown, this
+// is meant to degrade invisibly.
+function loadRemoteBoard(game, targetId, neonColor, field) {
+  const target = document.getElementById(targetId);
+  if (!target) return;
+  target.innerHTML = LB.html(game, neonColor);
+  RemoteLB.fetchTop(game, 5).then(entries => {
+    if (entries === null) return;
+    const el = document.getElementById(targetId);
+    if (!el) return; // user navigated away before this resolved
+    const rows = entries.map(e => ({ name: e.name, extra: e.extra, displayScore: field === 'seconds' ? fmtTimeG(e.seconds) : e.score }));
+    el.innerHTML = renderLbRows(rows, neonColor);
+  });
+}
 
 window.promptLeaderboard = function(game, score, extra, neonColor, onDone) {
   const ov = document.createElement('div');
@@ -4946,7 +5016,7 @@ window.promptLeaderboard = function(game, score, extra, neonColor, onDone) {
       <div style="display:flex;gap:10px;justify-content:center">
         <button onclick="document.getElementById('lb-modal').remove();(${onDone.toString()})()"
           style="font-family:'VCR',monospace;font-size:10px;letter-spacing:2px;background:none;border:1px solid rgba(242,239,232,0.2);border-radius:4px;padding:9px 16px;color:rgba(242,239,232,0.5);cursor:pointer">SKIP</button>
-        <button onclick="(function(){const n=document.getElementById('lb-name-input').value.trim();if(!n)return;LB.add('${game}',n,${score},'${extra||''}');document.getElementById('lb-modal').remove();(${onDone.toString()})();})()"
+        <button onclick="(function(){const n=document.getElementById('lb-name-input').value.trim();if(!n)return;LB.add('${game}',n,${score},'${extra||''}');RemoteLB.submit('${game}',n,${score},0,'${extra||''}');document.getElementById('lb-modal').remove();(${onDone.toString()})();})()"
           style="font-family:'VCR',monospace;font-size:10px;letter-spacing:2px;background:${nc}22;border:1.5px solid ${nc};border-radius:4px;padding:9px 20px;color:${nc};cursor:pointer;text-shadow:0 0 8px ${nc}">SAVE ▶</button>
       </div>
     </div>`;
@@ -5066,12 +5136,15 @@ function renderLbTabs(activeGame) {
   if (activeGame === 'match') {
     content.innerHTML = `
       <div style="font-size:13px;letter-spacing:2px;color:#ff9933;margin-bottom:4px">🔥 CHALLENGE · FASTEST TIME</div>
-      ${LB.html('match-challenge', '#ff9933')}
+      <div id="lb-remote-match-challenge"></div>
       <div style="font-size:13px;letter-spacing:2px;color:#ff4444;margin:16px 0 4px">💀 IMPOSSIBLE · FEWEST MOVES</div>
-      ${LB.html('match-impossible', '#ff4444')}
+      <div id="lb-remote-match-impossible"></div>
     `;
+    loadRemoteBoard('match-challenge', 'lb-remote-match-challenge', '#ff9933', 'seconds');
+    loadRemoteBoard('match-impossible', 'lb-remote-match-impossible', '#ff4444', 'score');
   } else {
-    content.innerHTML = LB.html(activeGame, g.nc);
+    content.innerHTML = `<div id="lb-remote-${activeGame}"></div>`;
+    loadRemoteBoard(activeGame, `lb-remote-${activeGame}`, g.nc, 'score');
   }
   content.style.cssText = 'line-height:1.8';
 }
@@ -6678,7 +6751,7 @@ window.confirmCharSelect = function() {
             const extraStr = `${fmtTime(matchTimer)} · ${moves} MOVES`;
             saveUI = `
               <input id="lb-name-input-m" maxlength="12" autocomplete="off" spellcheck="false" placeholder="YOUR NAME" style="width:220px;background:#0e0b22;border:1.5px solid #ffe61a;border-radius:4px;padding:10px 12px;font-family:'VCR',monospace;font-size:16px;letter-spacing:4px;color:#fff;text-align:center;text-transform:uppercase;outline:none">
-              <button onclick="(function(){const n=document.getElementById('lb-name-input-m');if(n&&n.value.trim())LB.add('match-challenge',n.value.trim(),${matchTimer},'${extraStr}',true);})()" style="font-family:'VCR',monospace;font-size:13px;letter-spacing:3px;background:#ffe61a22;border:2px solid #ffe61a;border-radius:6px;padding:14px 40px;color:#ffe61a;cursor:pointer">SAVE TIME</button>`;
+              <button onclick="(function(){const n=document.getElementById('lb-name-input-m');if(n&&n.value.trim()){LB.add('match-challenge',n.value.trim(),${matchTimer},'${extraStr}',true);RemoteLB.submit('match-challenge',n.value.trim(),${matchScore},${matchTimer},'${extraStr}');}})()" style="font-family:'VCR',monospace;font-size:13px;letter-spacing:3px;background:#ffe61a22;border:2px solid #ffe61a;border-radius:6px;padding:14px 40px;color:#ffe61a;cursor:pointer">SAVE TIME</button>`;
           }
         } else if (matchMode === 'impossible') {
           const bestKey = 'match-best-moves-impossible';
@@ -6690,7 +6763,7 @@ window.confirmCharSelect = function() {
             const extraStr = `${fmtTime(matchTimer)} · ${moves} MOVES`;
             saveUI = `
               <input id="lb-name-input-m" maxlength="12" autocomplete="off" spellcheck="false" placeholder="YOUR NAME" style="width:220px;background:#0e0b22;border:1.5px solid #ffe61a;border-radius:4px;padding:10px 12px;font-family:'VCR',monospace;font-size:16px;letter-spacing:4px;color:#fff;text-align:center;text-transform:uppercase;outline:none">
-              <button onclick="(function(){const n=document.getElementById('lb-name-input-m');if(n&&n.value.trim())LB.add('match-impossible',n.value.trim(),${moves},'${extraStr}',true);})()" style="font-family:'VCR',monospace;font-size:13px;letter-spacing:3px;background:#ffe61a22;border:2px solid #ffe61a;border-radius:6px;padding:14px 40px;color:#ffe61a;cursor:pointer">SAVE MOVES</button>`;
+              <button onclick="(function(){const n=document.getElementById('lb-name-input-m');if(n&&n.value.trim()){LB.add('match-impossible',n.value.trim(),${moves},'${extraStr}',true);RemoteLB.submit('match-impossible',n.value.trim(),${moves},${matchTimer},'${extraStr}');}})()" style="font-family:'VCR',monospace;font-size:13px;letter-spacing:3px;background:#ffe61a22;border:2px solid #ffe61a;border-radius:6px;padding:14px 40px;color:#ffe61a;cursor:pointer">SAVE MOVES</button>`;
           }
         }
 
