@@ -2640,6 +2640,15 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
   }
   window.lockViewportHeight = lockViewportHeight;
   lockViewportHeight();
+  // The very first measurement (synchronous, in <head>, before layout/paint) can be
+  // taken before the browser's chrome (address bar collapsed/expanded) has actually
+  // settled, especially on mobile — which on its own caused the hero to render off
+  // the top of the screen on a fresh load until something else (e.g. opening and
+  // closing spotlight) re-measured it correctly. Re-measure again shortly after load
+  // once the browser has had a chance to settle, not just on the listed live events.
+  document.addEventListener('DOMContentLoaded', lockViewportHeight);
+  window.addEventListener('load', lockViewportHeight);
+  setTimeout(lockViewportHeight, 300);
   window.addEventListener('resize', lockViewportHeight);
   window.addEventListener('orientationchange', lockViewportHeight);
   if (window.visualViewport) window.visualViewport.addEventListener('resize', lockViewportHeight);
