@@ -3780,13 +3780,15 @@ function syncSpotToViewport() {
   if (!ov || !ov.classList.contains('open')) return;
   const vv = window.visualViewport;
   if (!vv) return;
-  // ov's own top must track the same offset as the bar — otherwise while the keyboard
-  // pans the visual viewport (offsetTop > 0), the bar slides down to follow it but the
-  // results below stay at their original static position, so the (still-opaque) bar
-  // ends up overlapping and hiding the top of the results until the keyboard closes
-  // and offsetTop returns to 0.
-  ov.style.top = vv.offsetTop + 'px';
-  ov.style.height = vv.height + 'px';
+  // ov stays pinned at the layout viewport's top (never move its own top — that was
+  // shrinking the whole overlay into a tiny band hugging the keyboard whenever
+  // offsetTop was large on first open). Its height instead needs to reach all the way
+  // down to match the visible viewport's bottom edge, which sits at offsetTop+height
+  // in layout-viewport terms, not just height — otherwise content stops short of the
+  // keyboard and the fixed bar (which does track offsetTop, correctly, to stay visually
+  // pinned to the top of whatever's currently on screen) ends up overlapping content
+  // that assumed a shorter, unpanned overlay.
+  ov.style.height = (vv.offsetTop + vv.height) + 'px';
   const bar = document.querySelector('.spot-top-bar');
   if (bar) bar.style.top = vv.offsetTop + 'px';
 }
@@ -3819,7 +3821,6 @@ function closeSpot() {
   const ov = document.getElementById('spot-overlay');
   ov.classList.remove('open');
   ov.style.height = '';
-  ov.style.top = '';
   const bar = document.querySelector('.spot-top-bar');
   if (bar) bar.style.top = '';
   document.body.style.overflow = '';
