@@ -5744,7 +5744,7 @@ window.confirmCharSelect = function() {
     const el = document.createElement('div');
     el.style.cssText = 'position:fixed;inset:0;z-index:9500;background:#33ff66;opacity:0;pointer-events:none;transition:opacity 0.15s ease-out';
     document.body.appendChild(el);
-    requestAnimationFrame(() => { el.style.opacity = '0.14'; });
+    requestAnimationFrame(() => { el.style.opacity = '0.22'; });
     setTimeout(() => {
       el.style.opacity = '0';
       setTimeout(() => el.remove(), 250);
@@ -5984,7 +5984,9 @@ window.confirmCharSelect = function() {
       if (hole && charEl) {
         charEl.innerHTML = charHTML(ci, 'normal');
         hole.classList.add('up');
-        setTint(hi, ci);
+        // No tint here on purpose — showing the red/green color-cue on all 7 pieces at
+        // once gave away which were safe to hit before you even looked at the faces,
+        // making the round trivial. Recognize them by face, same as a normal wave.
       }
     });
     clearRoundTimeLeft = CLEAR_ROUND_SECONDS;
@@ -6032,8 +6034,7 @@ window.confirmCharSelect = function() {
       holeStates[dest] = 'up'; holeCharIdx[dest] = piece.ci;
       const newHole = document.getElementById(`wh-${dest}`), newChar = document.getElementById(`wc-${dest}`);
       if (newHole) newHole.classList.add('up');
-      if (newChar) newChar.innerHTML = charHTML(piece.ci, 'normal');
-      setTint(dest, piece.ci);
+      if (newChar) newChar.innerHTML = charHTML(piece.ci, 'normal'); // no tint — same reasoning as the initial placement
     });
   }
 
