@@ -5518,19 +5518,31 @@ window.confirmCharSelect = function() {
       const waveBoost = wave * 60;
       return Math.max(160, 980 - waveBoost - waveHits * 8) + Math.random() * 80;
     }
-    // HARD = same starting pace as before, ramping up gradually wave-to-wave (and
-    // again gradually within a wave as waveHits climbs — slowed further per feedback
-    // that it was still getting hard in a hurry)
-    const waveBoost = (wave - 1) * 30;
-    return Math.max(110, 790 - waveBoost - waveHits * 8) + Math.random() * 60;
+    // HARD: approaches a floor asymptotically instead of a linear ramp clamped by
+    // Math.max — same starting pace as before, but the climb toward max difficulty
+    // stretches over dozens of waves and mathematically can never cross the floor,
+    // however high the wave number gets. The floor itself (200ms) was picked to stay
+    // fast without stacking unplayably with full concurrency — see getUpTime() for the
+    // floor that actually matters for human reaction time.
+    const decay = 1 + (wave - 1) * 0.12 + waveHits * 0.025;
+    const popDelay = 200 + (790 - 200) / decay;
+    return popDelay + Math.random() * 60;
   }
   function getUpTime() {
     if (difficulty === 'easy') {
       const waveBoost = wave * 80;
       return (Math.max(420, 2240 - waveBoost - waveHits * 20) + Math.random() * 120) * 0.7;
     }
-    const waveBoost = (wave - 1) * 40;
-    return (Math.max(320, 1750 - waveBoost - waveHits * 16) + Math.random() * 100) * 0.62;
+    // HARD: same asymptotic approach as getPopDelay(). Floor is 480ms — demanding
+    // (requires real, sustained skill) but above the ~400ms+ that visual-search-plus-tap
+    // tasks actually take even for skilled players, so it stays masterable rather than
+    // becoming a wall no amount of practice gets past.
+    const decay = 1 + (wave - 1) * 0.1 + waveHits * 0.02;
+    let upTime = 480 + (1100 - 480) / decay;
+    // More moles up at once means more to visually track — give each one a little extra
+    // time so "more moles" and "less time per mole" don't both hit at once.
+    upTime += (concurrencyForWave(wave) - 1) * 90;
+    return upTime + Math.random() * 100;
   }
   // How many moles can be up/scheduled at once — this is what makes "overlapping moles" real
   function concurrencyForWave(w) {
