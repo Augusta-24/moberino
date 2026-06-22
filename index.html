@@ -2188,7 +2188,7 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
   scroll-snap-align: center;
   flex: 0 0 72vw;
   max-width: 320px;
-  transition: opacity 0.3s, transform 0.3s;
+  transition: opacity 0.15s, transform 0.15s;
   opacity: 0.45;
   transform: scale(0.92);
 }
@@ -2353,6 +2353,12 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 .whack-hole.hit   { box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 20px rgba(255,230,26,0.55); }
 /* Correct-mole hit: no yellow glow — it was bleeding through behind the sad face */
 .whack-hole.hit-success { box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e; }
+/* Clear round failure: highlights the good targets still standing so it's obvious
+   what should have been hit instead. */
+.whack-hole.reveal-correct {
+  box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 22px rgba(51,255,102,0.75) !important;
+  border-color: rgba(51,255,102,0.9) !important;
+}
 @keyframes crack-in {
   0%   { opacity: 0; transform: scale(0.7); }
   40%  { opacity: 0.9; transform: scale(1.05); }
@@ -2362,6 +2368,7 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
   position: absolute; bottom: -100%; left: 50%;
   transform: translateX(-50%);
   width: 80%; aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
   transition: bottom 0.18s cubic-bezier(0.34,1.56,0.64,1);
   pointer-events: none;
   user-select: none;
@@ -5085,7 +5092,9 @@ function initCarousel() {
     return best;
   }
 
-  // Swipe/touch scroll doesn't call scrollCarousel(), so track scroll settling directly
+  // Swipe/touch scroll doesn't call scrollCarousel(), so track scroll settling directly.
+  // Debounce shortened from 100ms — was adding noticeable lag on top of the CSS
+  // transition before the swiped-to card actually became front and center.
   carousel.addEventListener('scroll', () => {
     clearTimeout(scrollEndTimer);
     scrollEndTimer = setTimeout(() => {
@@ -5096,7 +5105,7 @@ function initCarousel() {
         syncActive(logIdx);
         updateCarouselDots(logIdx, N);
       }
-    }, 100);
+    }, 50);
   }, { passive: true });
 
   requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -5237,12 +5246,16 @@ GAME_CHARS.forEach(c => {
 
 // Returns innerHTML string for a character face (image or emoji fallback)
 function charFace(c, expr) {
+  // Self-centering regardless of the parent's own display mode — this gets dropped
+  // into many different containers across the site (VS bar chips, intro screen boxes,
+  // match cards, char select), and not all of them happen to be flex containers
+  // themselves, which is exactly what caused faces to sit off-center in some boxes.
   if (c.img) {
     const src = expr === 'happy' ? (c.imgHappy || c.img)
               : expr === 'sad'   ? (c.imgSad   || c.img) : c.img;
-    return `<img src="${src}" style="width:90%;height:90%;object-fit:contain;display:block">`;
+    return `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center"><img src="${src}" style="width:90%;height:90%;object-fit:contain;display:block"></div>`;
   }
-  return expr === 'happy' ? c.happy : expr === 'sad' ? c.sad : c.emoji;
+  return `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:inherit">${expr === 'happy' ? c.happy : expr === 'sad' ? c.sad : c.emoji}</div>`;
 }
 
 // ══════════════════════════════════════
@@ -5363,17 +5376,22 @@ window.confirmCharSelect = function() {
   let currentRoundType = 'whack';
   const CLEAR_ROUND_SECONDS = 8;
   let clearRoundTargets = 0, clearRoundHit = 0, clearRoundTimeLeft = 0, clearRoundInterval = null;
+  // From the 2nd Clear round on, pieces hop to a touching/diagonal empty hole on a
+  // timer instead of staying put — clearRoundPieces tracks each one's current hole so
+  // moveClearRoundPieces() knows what to relocate. Speed climbs with each appearance.
+  let clearRoundAppearances = 0, clearRoundPieces = [], clearRoundMoveInterval = null;
   // Memory round: a handful of holes flash a mole, then go blank — recall those exact
   // spots to clear it. Wrong spot (or any spot not in memoryTargets) is an instant fail,
   // same zero-tolerance rule as everything else.
   let memoryTargets = [], memoryHit = 0, memoryPhase = null; // 'showing' | 'recall' | null
+  let memoryAppearances = 0; // counts up each Memory round this run — drives difficulty scaling
 
   function charHTML(ci, expr) {
     const c = GAME_CHARS[ci];
     const face = expr === 'happy' ? c.happy : expr === 'sad' ? c.sad : c.emoji;
     if (c.img) {
       const src = expr === 'happy' ? (c.imgHappy||c.img) : expr === 'sad' ? (c.imgSad||c.img) : c.img;
-      return `<img src="${src}" style="width:100%;height:100%;object-fit:contain;border-radius:50%">`;
+      return `<img src="${src}" style="width:100%;height:100%;object-fit:contain;border-radius:50%;display:block;margin:0 auto">`;
     }
     return `<div class="whack-char-placeholder" style="background:${c.color}">${face}</div>`;
   }
@@ -5428,6 +5446,8 @@ window.confirmCharSelect = function() {
   function failWave(reason) {
     holeTimers.forEach(clearTimeout);
     clearInterval(clearRoundInterval); // in case a Clear round's countdown is still running
+    clearInterval(clearRoundMoveInterval);
+    removeClearTimerOverlay();
     memoryPhase = null; // in case a Memory round is mid-recall
     flashBrokenHeart();
     showStatus(reason);
@@ -5466,7 +5486,7 @@ window.confirmCharSelect = function() {
           <div class="arcade-cab-rail"></div>
           <div class="arcade-cab-marquee" style="font-size:26px;letter-spacing:7px">GET READY!</div>
           <div class="arcade-cab-screen" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 16px">
-            <div style="display:flex;align-items:center;justify-content:center;gap:16px;width:100%">
+            <div style="display:flex;align-items:flex-start;justify-content:center;gap:16px;width:100%">
               <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
                 <div style="font-size:9px;letter-spacing:2px;color:rgba(242,239,232,0.45);font-family:'VCR',monospace">YOU</div>
                 <div style="width:64px;height:64px;border-radius:8px;background:${gc.color}22;display:flex;align-items:center;justify-content:center;border:2px solid ${gc.color}88;box-shadow:0 0 14px ${gc.color}44">
@@ -5568,30 +5588,32 @@ window.confirmCharSelect = function() {
     // since waves are now zero-tolerance (a miss ends the run, not just a life) —
     // less grace per mistake means the ramp itself needs to be gentler.
     if (difficulty === 'easy') {
-      const decay = 1 + (wave - 1) * 0.09 + waveHits * 0.016;
-      return 260 + (980 - 260) / decay + Math.random() * 80;
+      const decay = 1 + (wave - 1) * 0.07 + waveHits * 0.014;
+      return 260 + (900 - 260) / decay + Math.random() * 80;
     }
-    const decay = 1 + (wave - 1) * 0.15 + waveHits * 0.02;
-    const popDelay = 200 + (790 - 200) / decay;
+    // Starting pace nudged harder (790->720) and the ramp rate brought back down a
+    // bit (0.15->0.11) — last pass made the climb too steep again chasing "too easy."
+    const decay = 1 + (wave - 1) * 0.11 + waveHits * 0.017;
+    const popDelay = 200 + (720 - 200) / decay;
     return popDelay + Math.random() * 60;
   }
   function getUpTime() {
     // Floors (620ms easy / 480ms hard) were sanity-checked against human reaction
     // time for a "visually identify, then tap" task — demanding at the limit, but
-    // never literally impossible no matter how long a run goes. Ramp rate (how fast it
-    // approaches that floor) bumped back up after feedback that it started too easy.
+    // never literally impossible no matter how long a run goes.
     if (difficulty === 'easy') {
-      const decay = 1 + (wave - 1) * 0.08 + waveHits * 0.014;
-      let upTime = 620 + (1550 - 620) / decay;
+      const decay = 1 + (wave - 1) * 0.06 + waveHits * 0.012;
+      let upTime = 620 + (1450 - 620) / decay;
       upTime += (concurrencyForWave(wave) - 1) * 110;
       return upTime + Math.random() * 120;
     }
     // HARD: same asymptotic approach as getPopDelay(). Floor is 480ms — demanding
     // (requires real, sustained skill) but above the ~400ms+ that visual-search-plus-tap
     // tasks actually take even for skilled players, so it stays masterable rather than
-    // becoming a wall no amount of practice gets past.
-    const decay = 1 + (wave - 1) * 0.13 + waveHits * 0.018;
-    let upTime = 480 + (1100 - 480) / decay;
+    // becoming a wall no amount of practice gets past. Starting pace nudged harder
+    // (1100->1000), ramp rate brought back down a bit (0.13->0.10) for a smoother climb.
+    const decay = 1 + (wave - 1) * 0.10 + waveHits * 0.015;
+    let upTime = 480 + (1000 - 480) / decay;
     // More moles up at once means more to visually track — give each one a little extra
     // time so "more moles" and "less time per mole" don't both hit at once.
     upTime += (concurrencyForWave(wave) - 1) * 90;
@@ -5714,6 +5736,19 @@ window.confirmCharSelect = function() {
     }, 650);
   }
 
+  // Green confirm-flash for Clear/Memory correct hits — same idea as Match's
+  // matchFlash(), full-screen and click-through so it never blocks the next tap.
+  function successFlash() {
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;inset:0;z-index:9500;background:#33ff66;opacity:0;pointer-events:none;transition:opacity 0.15s ease-out';
+    document.body.appendChild(el);
+    requestAnimationFrame(() => { el.style.opacity = '0.3'; });
+    setTimeout(() => {
+      el.style.opacity = '0';
+      setTimeout(() => el.remove(), 250);
+    }, 150);
+  }
+
   function popDown(i, wasHit) {
     const prev = holeCharIdx[i];
     // Grace window: the very first time the up-time timeout fires for a genuine miss,
@@ -5736,10 +5771,10 @@ window.confirmCharSelect = function() {
 
     if (!wasHit && prev === moleChar) {
       // Missed the mole — instant fail under zero-tolerance (no life budget anymore).
-      // Still show the X marker briefly first so it's clear *what* was missed, rather
-      // than cutting straight to the freeze screen with no explanation.
+      // X marker only, no face — showing the character here read as ambiguous/confusing
+      // (looked like it might still be "there").
       const charEl = document.getElementById(`wc-${i}`);
-      if (charEl) charEl.innerHTML = charHTML(moleChar, 'normal');
+      if (charEl) charEl.innerHTML = '';
       hole.classList.add('up', 'missed');
       showMissX(i);
       SFX.moleEscaped();
@@ -5784,9 +5819,13 @@ window.confirmCharSelect = function() {
       if (currentRoundType === 'clear') {
         // Clear rounds finish when every good target placed at round-start is hit —
         // not the usual running waveHits threshold, since this is a fixed snapshot.
+        successFlash();
         clearRoundHit++;
+        clearRoundPieces = clearRoundPieces.filter(p => p.hole !== i); // stop tracking it, it's resolved
         if (clearRoundHit >= clearRoundTargets) {
           clearInterval(clearRoundInterval);
+          clearInterval(clearRoundMoveInterval);
+          removeClearTimerOverlay();
           wave++;
           clearWaveTransition();
         }
@@ -5800,8 +5839,9 @@ window.confirmCharSelect = function() {
       if (waveHits >= threshold) {
         waveHits = 0; wave++;
         clearWaveTransition();
-        const w1 = easy ? 3 : 2;
-        if (wave === w1 && !selfActive) setTimeout(addSelf, 900);
+        // Wave 4 is the second WHACK-type wave in the round cycle (wave 1 is the
+        // first) — same intro point for both difficulties now.
+        if (wave === 4 && !selfActive) setTimeout(addSelf, 900);
       }
       setTimeout(() => popDown(i, true), 350);
     } else {
@@ -5809,6 +5849,17 @@ window.confirmCharSelect = function() {
       charEl.innerHTML = charHTML(ci, 'sad');
       hole.classList.add('wrong-hit');
       SFX.selfWhack();
+      if (currentRoundType === 'clear') {
+        // Mark the mistake, and highlight the good targets still standing so it's
+        // obvious what should have been hit instead.
+        showMissX(i);
+        for (let h = 0; h < HOLES; h++) {
+          if (holeStates[h] === 'up' && holeCharIdx[h] === moleChar) {
+            const goodHole = document.getElementById(`wh-${h}`);
+            if (goodHole) goodHole.classList.add('reveal-correct');
+          }
+        }
+      }
       setTimeout(() => failWave('💔 YOU WHACKED YOURSELF'), 600);
     }
   };
@@ -5855,14 +5906,30 @@ window.confirmCharSelect = function() {
       if (currentRoundType === 'memory') { startMemoryRound(); return; }
       const n = concurrencyForWave(wave);
       for (let k = 0; k < n; k++) scheduleSurvivalNext();
-    }, 1800);
+    }, 2200);
   }
 
   // Clear round: several holes fill at once (mixed good/bad, no decoy trickery — the
   // whole point is a clean snapshot to scan), with a countdown to clear every good one.
   // A bad hit still ends the run instantly (whackHit's self-hit branch is unchanged and
   // applies here too); running out of time does the same via failWave().
+  // 8-directional neighbors on the 3-col x 4-row board — used to give Clear-round
+  // pieces somewhere valid to hop to.
+  function getNeighbors(i) {
+    const row = Math.floor(i / 3), col = i % 3;
+    const out = [];
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const r = row + dr, c = col + dc;
+        if (r >= 0 && r < 4 && c >= 0 && c < 3) out.push(r * 3 + c);
+      }
+    }
+    return out;
+  }
+
   function startClearRound() {
+    clearRoundAppearances++;
     const goodCount = 5, badCount = 2;
     const open = Array.from({length: HOLES}, (_, i) => i);
     for (let i = open.length - 1; i > 0; i--) {
@@ -5872,6 +5939,7 @@ window.confirmCharSelect = function() {
     const chosen = open.slice(0, goodCount + badCount);
     clearRoundTargets = goodCount;
     clearRoundHit = 0;
+    clearRoundPieces = chosen.map((hi, idx) => ({ hole: hi, ci: idx < goodCount ? moleChar : activeChar }));
     chosen.forEach((hi, idx) => {
       const ci = idx < goodCount ? moleChar : activeChar;
       holeStates[hi] = 'up'; holeCharIdx[hi] = ci;
@@ -5883,6 +5951,7 @@ window.confirmCharSelect = function() {
       }
     });
     clearRoundTimeLeft = CLEAR_ROUND_SECONDS;
+    showClearTimerOverlay();
     updateClearTimerDisplay();
     clearInterval(clearRoundInterval);
     clearRoundInterval = setInterval(() => {
@@ -5893,33 +5962,98 @@ window.confirmCharSelect = function() {
         failWave('⏰ TIME UP!');
       }
     }, 1000);
+
+    // Pieces stay put on the very first Clear round so the mechanic itself isn't
+    // sprung on the player along with everything else — from the 2nd appearance on,
+    // they hop to a touching/diagonal empty hole, faster each time after that.
+    clearInterval(clearRoundMoveInterval);
+    if (clearRoundAppearances > 1) {
+      const moveMs = Math.max(700, 2000 - (clearRoundAppearances - 2) * 200);
+      clearRoundMoveInterval = setInterval(moveClearRoundPieces, moveMs);
+    }
+  }
+
+  function moveClearRoundPieces() {
+    if (state !== 'playing' || currentRoundType !== 'clear') {
+      clearInterval(clearRoundMoveInterval);
+      return;
+    }
+    const occupied = new Set(clearRoundPieces.map(p => p.hole));
+    clearRoundPieces.forEach(piece => {
+      const options = getNeighbors(piece.hole).filter(n => !occupied.has(n) && holeStates[n] === 'empty');
+      if (!options.length) return; // nowhere to go this tick, stays put
+      const dest = options[Math.floor(Math.random() * options.length)];
+      occupied.delete(piece.hole);
+      holeStates[piece.hole] = 'empty'; holeCharIdx[piece.hole] = -1;
+      const oldHole = document.getElementById(`wh-${piece.hole}`), oldChar = document.getElementById(`wc-${piece.hole}`);
+      if (oldHole) oldHole.classList.remove('up');
+      if (oldChar) oldChar.innerHTML = '';
+      clearTint(piece.hole);
+
+      piece.hole = dest;
+      occupied.add(dest);
+      holeStates[dest] = 'up'; holeCharIdx[dest] = piece.ci;
+      const newHole = document.getElementById(`wh-${dest}`), newChar = document.getElementById(`wc-${dest}`);
+      if (newHole) newHole.classList.add('up');
+      if (newChar) newChar.innerHTML = charHTML(piece.ci, 'normal');
+      setTint(dest, piece.ci);
+    });
+  }
+
+  // Full-screen-positioned (so it's never clipped by .whack-wrap) but visually tucked
+  // into a top corner and click-through — "shouldn't impact sight or clicking" on the
+  // actual board, just needs to always be reachable/visible regardless of layout.
+  let clearTimerOverlayEl = null;
+  function showClearTimerOverlay() {
+    removeClearTimerOverlay();
+    clearTimerOverlayEl = document.createElement('div');
+    clearTimerOverlayEl.style.cssText = 'position:fixed;top:14px;right:14px;z-index:9400;pointer-events:none;font-family:\'Bebas Neue\',cursive;font-size:30px;color:#ffe61a;text-shadow:0 0 14px #ffe61a;background:rgba(5,2,18,0.55);padding:4px 16px;border-radius:10px;border:1.5px solid rgba(255,230,26,0.5)';
+    document.body.appendChild(clearTimerOverlayEl);
+  }
+  function removeClearTimerOverlay() {
+    if (clearTimerOverlayEl) { clearTimerOverlayEl.remove(); clearTimerOverlayEl = null; }
   }
 
   function updateClearTimerDisplay() {
-    const el = document.getElementById('whack-wave-mode');
-    if (!el) return;
-    el.textContent = `WAVE ${wave}: CLEAR · ⏰${clearRoundTimeLeft}s`;
-    el.style.color = clearRoundTimeLeft <= 3 ? '#ff4444' : '#ffe61a';
+    if (!clearTimerOverlayEl) return;
+    clearTimerOverlayEl.textContent = `⏰ ${clearRoundTimeLeft}s`;
+    clearTimerOverlayEl.style.color = clearRoundTimeLeft <= 3 ? '#ff4444' : '#ffe61a';
   }
 
   function startMemoryRound() {
-    const goodCount = 5;
+    memoryAppearances++;
+    // Same difficulty for the first 3 appearances, then scales up gradually: more
+    // targets, less time to memorize, and — a few appearances in — your own character
+    // shows up among the targets purely as visual noise. It's never a target itself
+    // (recall logic only ever checks memoryTargets), but it's one more face to filter
+    // out while memorizing, which is real extra load even though the actual pattern
+    // of correct spots hasn't changed.
+    const tier = Math.max(0, memoryAppearances - 3);
+    const goodCount = Math.min(8, 5 + Math.floor(tier / 2));
+    const memorizeMs = Math.max(1400, 2400 - tier * 150);
+    const showDistraction = memoryAppearances > 4;
+
     const open = Array.from({length: HOLES}, (_, i) => i);
     for (let i = open.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [open[i], open[j]] = [open[j], open[i]];
     }
     memoryTargets = open.slice(0, goodCount);
+    const distractionHoles = showDistraction ? open.slice(goodCount, goodCount + 2) : [];
     memoryHit = 0;
     memoryPhase = 'showing';
     memoryTargets.forEach(hi => {
       const hole = document.getElementById(`wh-${hi}`), charEl = document.getElementById(`wc-${hi}`);
       if (hole && charEl) { charEl.innerHTML = charHTML(moleChar, 'normal'); hole.classList.add('up'); }
     });
+    distractionHoles.forEach(hi => {
+      const hole = document.getElementById(`wh-${hi}`), charEl = document.getElementById(`wc-${hi}`);
+      if (hole && charEl) { charEl.innerHTML = charHTML(activeChar, 'normal'); hole.classList.add('up'); }
+    });
     setTimeout(() => {
       if (state !== 'playing') return;
-      // Every hole becomes a face-down card — not just the 5 targets — so the board
-      // reads as "12 cards, flip to find the 5 you memorized" rather than some holes
+      // Every hole becomes a face-down card — not just the targets — so the board
+      // reads as "N cards, flip to find the ones you memorized" rather than some holes
       // being mysteriously blank and others not.
       for (let h = 0; h < HOLES; h++) {
         const hole = document.getElementById(`wh-${h}`), charEl = document.getElementById(`wc-${h}`);
@@ -5931,7 +6065,7 @@ window.confirmCharSelect = function() {
         </div>`;
       }
       memoryPhase = 'recall';
-    }, 2800);
+    }, memorizeMs);
   }
 
   // Routed here from whackHit() while memoryPhase === 'recall' — every hole is a
@@ -5946,6 +6080,7 @@ window.confirmCharSelect = function() {
 
     if (memoryTargets.includes(i)) {
       if (faceEl) faceEl.innerHTML = charHTML(moleChar, 'happy');
+      successFlash();
       SFX.whack(); SFX.hit();
       memoryHit++;
       if (memoryHit >= memoryTargets.length) {
@@ -5971,7 +6106,7 @@ window.confirmCharSelect = function() {
     moleChar = pickMole();
     wave = 1; waveHits = 0;
     selfActive = false; selfIntroWave = 0; waveTransitioning = false;
-    currentRoundType = 'whack'; clearInterval(clearRoundInterval); memoryPhase = null;
+    currentRoundType = 'whack'; clearInterval(clearRoundInterval); clearInterval(clearRoundMoveInterval); memoryPhase = null; removeClearTimerOverlay(); memoryAppearances = 0; clearRoundAppearances = 0;
     holeStates = Array(HOLES).fill('empty');
     holeCharIdx = Array(HOLES).fill(-1);
     holeGrace = Array(HOLES).fill(false);
@@ -6009,13 +6144,13 @@ window.confirmCharSelect = function() {
     const subLine = currentRoundType === 'clear'
       ? `BEFORE THE TIME RUNS OUT<br><span style="font-size:22px;color:#ffe61a">${CLEAR_ROUND_SECONDS} SECONDS</span>`
       : '';
-    ann.innerHTML = `<div style="text-align:center;animation:wave-announce 1.8s ease-out forwards">
+    ann.innerHTML = `<div style="text-align:center;animation:wave-announce 2.2s ease-out forwards">
       <div style="font-family:'Bebas Neue',cursive;font-size:72px;letter-spacing:8px;color:${nc};text-shadow:0 0 20px ${nc},0 0 40px ${nc}66;line-height:1">WAVE ${w}</div>
       <div style="font-family:'VCR',monospace;font-size:16px;letter-spacing:4px;color:rgba(242,239,232,0.9);margin-top:8px">${roundTypeLabel()}</div>
       ${subLine ? `<div style="font-family:'VCR',monospace;font-size:13px;letter-spacing:2px;color:rgba(242,239,232,0.7);margin-top:10px;line-height:1.8">${subLine}</div>` : ''}
     </div>`;
     document.body.appendChild(ann);
-    setTimeout(() => ann.remove(), 1800);
+    setTimeout(() => ann.remove(), 2200);
   }
 
   window.whackBegin = function() {
@@ -6027,7 +6162,7 @@ window.confirmCharSelect = function() {
       if (state !== 'playing') return;
       waveTransitioning = false;
       scheduleAll();
-    }, 1800);
+    }, 2200);
   };
 
   window.initWhack = function() {
@@ -6036,7 +6171,7 @@ window.confirmCharSelect = function() {
     moleChar = pickMole();
     state = 'instructions'; wave = 1; waveHits = 0;
     selfActive = false; selfIntroWave = 0; waveTransitioning = false;
-    currentRoundType = 'whack'; clearInterval(clearRoundInterval); memoryPhase = null;
+    currentRoundType = 'whack'; clearInterval(clearRoundInterval); clearInterval(clearRoundMoveInterval); memoryPhase = null; removeClearTimerOverlay(); memoryAppearances = 0; clearRoundAppearances = 0;
     holeStates = Array(HOLES).fill('empty');
     holeCharIdx = Array(HOLES).fill(-1);
     holeGrace = Array(HOLES).fill(false);
@@ -6803,7 +6938,7 @@ window.confirmCharSelect = function() {
   let cards = [], flipped = [], locked = false;
   let moves = 0, matched = 0, state = 'idle', matchScore = 0, combo = 0, matchTimer = 0, timerInt, previewInt, timeLimit = 60;
   let matchOutOfMoves = false;
-  const IMPOSSIBLE_MOVE_CUTOFF = 36;
+  const IMPOSSIBLE_MOVE_CUTOFF = 42;
   let matchMode = 'hard'; // 'free' | 'hard' | 'challenge' | 'impossible'
   let freePlayCharCount = 8; // 4–20, how many distinct characters appear in free play
   // Hard = the old "timed" mode. Challenge/Impossible add a target-moves benchmark to
@@ -6859,10 +6994,21 @@ window.confirmCharSelect = function() {
             ${best ? `<div class="match-sub" style="color:#ffe61a;margin-bottom:4px">🏆 BEST SCORE: ${best}</div>` : ''}
           </div>
           <div class="arcade-cab-foot" style="display:flex;flex-direction:column;gap:8px;align-items:stretch">
-            <button class="whack-btn match-mode-btn" style="border-color:rgba(255,230,26,0.4);background:rgba(255,230,26,0.06)" onclick="matchGoFreeSetup()">∞ FREE PLAY</button>
-            <button class="whack-btn match-mode-btn" style="border-color:#ffe61a;background:rgba(255,230,26,0.14)" onclick="matchPlay('hard')">⏱ HARD · 12 PAIRS · 60s</button>
-            <button class="whack-btn match-mode-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.1)" onclick="matchPlay('challenge')">🔥 CHALLENGE · 15 PAIRS</button>
-            <button class="whack-btn match-mode-btn" style="border-color:#ff4444;background:rgba(255,68,68,0.1)" onclick="matchPlay('impossible')">💀 IMPOSSIBLE · 20 PAIRS</button>
+            <button class="whack-btn match-mode-btn" style="border-color:rgba(255,230,26,0.4);background:rgba(255,230,26,0.06);padding:10px 16px" onclick="matchGoFreeSetup()">
+              <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;line-height:1.1">🔁 FREE PLAY</div>
+            </button>
+            <button class="whack-btn match-mode-btn" style="border-color:#ffe61a;background:rgba(255,230,26,0.14);padding:10px 16px" onclick="matchPlay('hard')">
+              <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;line-height:1.1">⏱ HARD</div>
+              <div style="font-family:'VCR',monospace;font-size:13px;letter-spacing:2px;opacity:0.8;margin-top:4px">12 PAIRS · 60 SECONDS</div>
+            </button>
+            <button class="whack-btn match-mode-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.1);padding:10px 16px" onclick="matchPlay('challenge')">
+              <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;line-height:1.1">⏰ CHALLENGE</div>
+              <div style="font-family:'VCR',monospace;font-size:13px;letter-spacing:2px;opacity:0.8;margin-top:4px">15 PAIRS · 90 SECONDS</div>
+            </button>
+            <button class="whack-btn match-mode-btn" style="border-color:#ff4444;background:rgba(255,68,68,0.1);padding:10px 16px" onclick="matchPlay('impossible')">
+              <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;line-height:1.1">💀 IMPOSSIBLE</div>
+              <div style="font-family:'VCR',monospace;font-size:13px;letter-spacing:2px;opacity:0.8;margin-top:4px">21 PAIRS · NO TIME LIMIT</div>
+            </button>
           </div>
         </div>`;
       return;
@@ -6899,7 +7045,7 @@ window.confirmCharSelect = function() {
       const _gStyle = `--card:min(calc((min(100vw,460px) - ${_ghp}px) / ${_gl.cols}),calc((100dvh - 196px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card))`;
       wrap.innerHTML = `
         <div class="match-hud" style="padding:8px 16px">
-          <div style="font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:5px;color:#ffe61a;text-shadow:0 0 14px #ffe61a88" id="match-preview-cd">MEMORIZE!  3</div>
+          <div style="font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:5px;color:#ffe61a;text-shadow:0 0 14px #ffe61a88" id="match-preview-cd">MEMORIZE!  ${matchMode === 'impossible' ? 7 : 3}</div>
         </div>
         <div class="match-grid" style="${_gStyle}">${
           cards.map((c,i) => {
@@ -6922,7 +7068,7 @@ window.confirmCharSelect = function() {
       wrap.innerHTML = `
         <div class="match-hud">
           <div><div class="whack-stat-label">SCORE</div><div class="whack-stat-val" id="ms" style="font-size:24px">${matchScore}</div></div>
-          <div style="text-align:center"><div class="whack-stat-label">TIME</div><div class="whack-stat-val" id="mt" style="font-size:38px;line-height:1">${(matchMode === 'free' || matchMode === 'impossible') ? '∞' : Math.max(0, timeLimit - matchTimer) + 's'}</div></div>
+          <div style="text-align:center"><div class="whack-stat-label">TIME</div><div class="whack-stat-val" id="mt" style="font-size:${(matchMode === 'free' || matchMode === 'impossible') ? 22 : 38}px;line-height:1">${(matchMode === 'free' || matchMode === 'impossible') ? 'NONE' : Math.max(0, timeLimit - matchTimer) + 's'}</div></div>
           <div style="text-align:right"><div class="whack-stat-label">PAIRS</div><div class="whack-stat-val" id="match-pairs" style="font-size:24px">${matched}/${PAIRS}</div></div>
           <div style="text-align:right"><div class="whack-stat-label">MOVES</div><div class="whack-stat-val" id="match-moves" style="font-size:24px">${moves}${matchMode==='impossible'?'/'+IMPOSSIBLE_MOVE_CUTOFF:''}</div></div>
         </div>
@@ -7150,10 +7296,11 @@ window.confirmCharSelect = function() {
       return;
     }
 
-    // Hard/Challenge/Impossible all share the same memorize-preview + countdown flow
+    // Hard/Challenge/Impossible all share the same memorize-preview + countdown flow.
+    // Impossible gets longer to actually take in a 21-pair/42-card board.
     locked = true;
     state = 'preview'; render();
-    let countdown = 3;
+    let countdown = matchMode === 'impossible' ? 7 : 3;
     previewInt = setInterval(() => {
       countdown--;
       const cd = document.getElementById('match-preview-cd');
