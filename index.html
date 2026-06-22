@@ -5744,7 +5744,7 @@ window.confirmCharSelect = function() {
     const el = document.createElement('div');
     el.style.cssText = 'position:fixed;inset:0;z-index:9500;background:#33ff66;opacity:0;pointer-events:none;transition:opacity 0.15s ease-out';
     document.body.appendChild(el);
-    requestAnimationFrame(() => { el.style.opacity = '0.22'; });
+    requestAnimationFrame(() => { el.style.opacity = '0.18'; });
     setTimeout(() => {
       el.style.opacity = '0';
       setTimeout(() => el.remove(), 250);
@@ -6019,22 +6019,44 @@ window.confirmCharSelect = function() {
     }
     const occupied = new Set(clearRoundPieces.map(p => p.hole));
     clearRoundPieces.forEach(piece => {
-      const options = getNeighbors(piece.hole).filter(n => !occupied.has(n) && holeStates[n] === 'empty');
+      const oldHoleIdx = piece.hole;
+      const options = getNeighbors(oldHoleIdx).filter(n => !occupied.has(n) && holeStates[n] === 'empty');
       if (!options.length) return; // nowhere to go this tick, stays put
       const dest = options[Math.floor(Math.random() * options.length)];
-      occupied.delete(piece.hole);
-      holeStates[piece.hole] = 'empty'; holeCharIdx[piece.hole] = -1;
-      const oldHole = document.getElementById(`wh-${piece.hole}`), oldChar = document.getElementById(`wc-${piece.hole}`);
-      if (oldHole) oldHole.classList.remove('up');
-      if (oldChar) oldChar.innerHTML = '';
-      clearTint(piece.hole);
+
+      const oldHoleEl = document.getElementById(`wh-${oldHoleIdx}`), oldCharEl = document.getElementById(`wc-${oldHoleIdx}`);
+      const newHoleEl = document.getElementById(`wh-${dest}`), newCharEl = document.getElementById(`wc-${dest}`);
+
+      occupied.delete(oldHoleIdx);
+      holeStates[oldHoleIdx] = 'empty'; holeCharIdx[oldHoleIdx] = -1;
+      if (oldHoleEl) oldHoleEl.classList.remove('up');
+      if (oldCharEl) oldCharEl.innerHTML = '';
+      clearTint(oldHoleIdx);
 
       piece.hole = dest;
       occupied.add(dest);
       holeStates[dest] = 'up'; holeCharIdx[dest] = piece.ci;
-      const newHole = document.getElementById(`wh-${dest}`), newChar = document.getElementById(`wc-${dest}`);
-      if (newHole) newHole.classList.add('up');
-      if (newChar) newChar.innerHTML = charHTML(piece.ci, 'normal'); // no tint — same reasoning as the initial placement
+      if (newHoleEl) newHoleEl.classList.add('up');
+
+      // Slide instead of teleport: place the character in its new hole, but offset
+      // by exactly the distance back to the old hole, then animate that offset to
+      // zero. Wrapped in its own inner div rather than touching .whack-char's own
+      // transform directly, since that's already doing the translateX(-50%) centering
+      // for the pop-up animation and overwriting it would knock that off-center.
+      if (newCharEl && oldHoleEl && newHoleEl) {
+        const oldRect = oldHoleEl.getBoundingClientRect();
+        const newRect = newHoleEl.getBoundingClientRect();
+        const dx = oldRect.left - newRect.left, dy = oldRect.top - newRect.top;
+        const slideId = `wslide-${dest}`;
+        newCharEl.innerHTML = `<div id="${slideId}" style="width:100%;height:100%;transform:translate(${dx}px,${dy}px)">${charHTML(piece.ci, 'normal')}</div>`;
+        requestAnimationFrame(() => {
+          const slideEl = document.getElementById(slideId);
+          if (slideEl) {
+            slideEl.style.transition = 'transform 0.35s ease-in-out';
+            slideEl.style.transform = 'translate(0,0)';
+          }
+        });
+      }
     });
   }
 
