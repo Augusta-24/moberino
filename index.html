@@ -1686,9 +1686,13 @@ html, body { height: 100%; overflow: hidden; }
   z-index: 10;
   border-bottom: 1px solid rgba(242,239,232,0.10);
 }
-@media (max-width: 1023px) {
-  /* Purely cosmetic sizing for narrow screens — width-based is correct here,
-     this should also kick in for a narrow desktop window, touch or not. */
+@media (max-width: 1023px), (max-height: 900px) and (orientation: landscape) and (pointer: coarse) {
+  /* Width-based alone misses tablet landscape: an iPad's landscape WIDTH (1024px+
+     on every current model) clears this breakpoint even though its landscape
+     HEIGHT is just as constrained as a phone's portrait height — that's the gap
+     that left the header/tape-icon/search treatment below only applying in
+     portrait. The added (max-height + landscape + coarse-pointer) clause catches
+     that case without touching real desktop windows, which are (pointer: fine). */
   #pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active, #pg-charselect.active {
     padding-top: 0;
   }
@@ -1701,7 +1705,7 @@ html, body { height: 100%; overflow: hidden; }
 }
 
 /* ── SPOTLIGHT: SLIDE UP ON MOBILE/TABLET ── */
-@media (max-width: 1023px) {
+@media (max-width: 1023px), (max-height: 900px) and (orientation: landscape) and (pointer: coarse) {
   #spot-overlay {
     display: flex !important;
     flex-direction: column;
@@ -1728,7 +1732,7 @@ html, body { height: 100%; overflow: hidden; }
   flex-direction: column;
   overflow: hidden;
 }
-@media (max-width: 1023px) {
+@media (max-width: 1023px), (max-height: 900px) and (orientation: landscape) and (pointer: coarse) {
   #rec-drawer {
     display: flex;
     transform: translateY(100%);
@@ -1874,7 +1878,12 @@ button.cats-search-wrap {
 /* ══════════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════════ */
-@media (max-height: 500px) and (orientation: landscape) {
+@media (max-height: 900px) and (orientation: landscape) and (pointer: coarse) {
+  /* Was max-height:500px with no pointer check — caught phone landscape only.
+     iPad landscape heights (744-1024px depending on model) need the same row
+     layout for the same reason: the normal portrait-oriented vertical stack is
+     taller than the available height, cutting the header off / pushing search up.
+     pointer:coarse keeps real desktop windows out of this. */
   #pg-home { justify-content: center; overflow-y: auto; height: var(--app-vh, 100svh); }
   .home-hero {
     transform: translateY(0);
