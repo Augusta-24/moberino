@@ -94,20 +94,23 @@ body.on-lobby, body.on-char, body.on-whack, body.on-match, body.on-space {
 .neon-pulse      { animation: neon-pulse 2.4s ease-in-out infinite; }
 
 /* ── Arcade header mute/LB buttons ── */
+/* outline:none on all three — without it, tapping one (the trophy button
+   especially, since it already has a gold border/glow) leaves the browser's
+   default focus ring stuck on top, reading as a stray/wrong-colored highlight. */
 .arcade-mute-btn {
   font-family: 'VCR', monospace; font-size: 9px; letter-spacing: 1px;
-  background: none; border: 1px solid rgba(242,239,232,0.2);
+  background: none; border: 1px solid rgba(242,239,232,0.2); outline: none;
   border-radius: 3px; padding: 3px 7px; color: rgba(242,239,232,0.6); cursor: pointer;
 }
 .arcade-lb-btn {
   font-family: 'VCR', monospace; font-size: 9px; letter-spacing: 1px;
-  background: rgba(255,230,26,0.1); border: 1px solid rgba(255,230,26,0.3);
+  background: rgba(255,230,26,0.1); border: 1px solid rgba(255,230,26,0.3); outline: none;
   border-radius: 3px; padding: 3px 8px; color: #ffe61a; cursor: pointer;
   text-shadow: 0 0 8px #ffe61a66;
 }
 .arcade-exit-btn {
   font-family: 'VCR', monospace; font-size: 9px; letter-spacing: 2px;
-  background: rgba(255,0,204,0.1); border: 1px solid rgba(255,0,204,0.35);
+  background: rgba(255,0,204,0.1); border: 1px solid rgba(255,0,204,0.35); outline: none;
   border-radius: 4px; padding: 5px 10px; color: #ff00cc; cursor: pointer;
   text-shadow: 0 0 8px #ff00cc66; white-space: nowrap;
 }
@@ -2570,6 +2573,13 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
    space reads as intentional "cabinet" framing, not empty page background. */
 #pg-space { position: relative; z-index: 1; height: 100dvh; overflow: hidden; display: none; flex-direction: column; align-items: center; justify-content: center; background: #030110; }
 #pg-space.active { display: flex; }
+/* #pg-space's align-items:center is for letterboxing the canvas (a flex column
+   child, centered horizontally when narrower than the screen) — but the same rule
+   also shrinks .cats-header to its content width and centers it instead of letting
+   it stretch full-width with space-between, squeezing the back/trophy/sound row
+   into a narrow centered block. Whack/Match don't set align-items here, so they
+   were never affected — this overrides just the header back to full width. */
+#pg-space .cats-header { align-self: stretch; width: 100%; }
 #space-canvas { flex: none; display: block; touch-action: none; background: #030110; }
 #space-overlay {
   position: fixed; left: 0; right: 0; bottom: 0; top: 56px;
@@ -4850,10 +4860,42 @@ const SFX = (() => {
     miniBossHit()   { tone(380,'square',0,0.08,0.06); },
     miniBossDown()  { [440,659,880].forEach((f,i)=>tone(f,'square',i*0.08,0.10,0.06)); },
     freeze()        { tone(1200,'sine',0,0.05,0.05,2000); tone(600,'triangle',0.05,0.3,0.06,150); },
-    mysteryGood()   { [659,880,1175].forEach((f,i)=>tone(f,'square',i*0.06,0.09,0.06)); },
-    mysteryBad()    { tone(260,'sawtooth',0,0.10,0.07,120); tone(180,'sawtooth',0.08,0.16,0.07,90); },
+    // Bigger "jackpot" shimmer — a longer ascending run plus a high sine sparkle on
+    // top, instead of the plain 3-note arpeggio it used to be.
+    mysteryGood()   {
+      [523,659,784,988,1175].forEach((f,i)=>tone(f,'square',i*0.05,0.13,0.065));
+      tone(2200,'sine',0.2,0.3,0.05); tone(1760,'sine',0.24,0.3,0.04);
+    },
+    // Bigger "uh-oh" — a falling growl across three overlapping low tones instead
+    // of one quick descending pair, with real weight to it.
+    mysteryBad()    {
+      tone(200,'sawtooth',0,0.24,0.12,65); tone(140,'square',0.04,0.32,0.10,55);
+      tone(100,'sawtooth',0.14,0.38,0.09,40);
+    },
+    powerupCollect(){ tone(880,'square',0,0.06,0.07); tone(1320,'square',0.05,0.09,0.06); tone(1760,'sine',0.09,0.13,0.045); },
+    guitarNote() { tone(330,'sawtooth',0,0.18,0.07,300); tone(415,'triangle',0.02,0.22,0.05,380); },
+    pianoNote()  { tone(523,'triangle',0,0.28,0.08); tone(659,'sine',0.01,0.3,0.05); },
+    drumHit() {
+      const c = getAudioCtx();
+      const dur = 0.16;
+      const bufferSize = Math.floor(c.sampleRate * dur);
+      const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 1.5);
+      const noise = c.createBufferSource(); noise.buffer = buffer;
+      const filter = c.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 200;
+      const gain = c.createGain();
+      const t0 = c.currentTime + 0.02;
+      gain.gain.setValueAtTime(0.3, t0);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+      noise.connect(filter); filter.connect(gain); gain.connect(c.destination);
+      noise.start(t0); noise.stop(t0 + dur + 0.02);
+      tone(90, 'sine', 0, 0.15, 0.08, 50);
+    },
     boxOpen()       { tone(523,'square',0,0.05,0.05); tone(784,'square',0.04,0.07,0.05); },
     neonOn()        { tone(220,'square',0,0.05,0.05,880); tone(880,'square',0.05,0.05,0.05,220); },
+    slotTick()      { tone(700,'square',0,0.03,0.04); },
+    slotLand()      { tone(440,'square',0,0.06,0.08); tone(880,'square',0.04,0.12,0.08); },
     // Low, wet, slightly comedic "toot" — a sawtooth wobbling down, on the ZAPPED
     // blaster's fart-shot. Deliberately silly, not a normal weapon sound.
     // Wetter and funnier — a short lowpass-filtered noise "plop" (same scaffold as
@@ -5312,8 +5354,8 @@ window._lbActiveTab = 'whack';
 function renderLbTabs(activeGame) {
   window._lbActiveTab = activeGame;
   const games = [
-    { key:'whack',   label:'WHACK',   nc:'#ff00cc' },
-    { key:'classic', label:'CLASSIC', nc:'#00e5ff' },
+    { key:'whack',   label:'ADVENTURE', nc:'#ff00cc' },
+    { key:'classic', label:'FRENZY', nc:'#00e5ff' },
     { key:'match',   label:'MEMORY',  nc:'#ffe61a' },
     { key:'space',   label:'SPACE',   nc:'#33ff66' },
   ];
@@ -5714,11 +5756,11 @@ window.confirmCharSelect = function() {
           <div class="arcade-cab-marquee" style="font-size:24px;letter-spacing:6px">CHOOSE MODE</div>
           <div class="arcade-cab-screen" style="display:flex;flex-direction:column;gap:14px;padding:16px">
             <div>
-              <button onclick="whackChooseMode('classic')" class="whack-btn" style="width:100%;border-color:#00e5ff;background:rgba(0,229,255,0.14);padding:14px 8px;font-size:18px;letter-spacing:5px;text-shadow:0 0 10px #00e5ff88">CLASSIC</button>
+              <button onclick="whackChooseMode('classic')" class="whack-btn" style="width:100%;border-color:#00e5ff;background:rgba(0,229,255,0.14);padding:14px 8px;font-size:18px;letter-spacing:5px;text-shadow:0 0 10px #00e5ff88">FRENZY</button>
               <div style="font-family:'VCR',monospace;font-size:13px;letter-spacing:1px;color:rgba(242,239,232,0.5);text-align:center;margin-top:6px">45 SECONDS. WHACK AS MANY MOLES AS YOU CAN.</div>
             </div>
             <div>
-              <button onclick="whackChooseMode('frenzy')" class="whack-btn" style="width:100%;border-color:#ff00cc;background:rgba(255,0,204,0.14);padding:14px 8px;font-size:18px;letter-spacing:5px;text-shadow:0 0 10px #ff00cc88">FRENZY</button>
+              <button onclick="whackChooseMode('frenzy')" class="whack-btn" style="width:100%;border-color:#ff00cc;background:rgba(255,0,204,0.14);padding:14px 8px;font-size:18px;letter-spacing:5px;text-shadow:0 0 10px #ff00cc88">ADVENTURE</button>
               <div style="font-family:'VCR',monospace;font-size:13px;letter-spacing:1px;color:rgba(242,239,232,0.5);text-align:center;margin-top:6px">SURVIVE AS LONG AS YOU CAN. 3 GAMES IN ONE.</div>
             </div>
           </div>
@@ -5771,7 +5813,7 @@ window.confirmCharSelect = function() {
             <div style="width:100%;display:flex;flex-direction:column;gap:5px;text-align:left;border-top:1px solid rgba(242,239,232,0.1);padding-top:8px">
               ${isClassic ? `
               <div style="font-size:9px;letter-spacing:2px;color:rgba(242,239,232,0.4);font-family:'VCR',monospace;text-align:center;margin-bottom:1px">45 SECONDS · ONE MOBE · NONSTOP MOTION</div>
-              <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:1px;line-height:1.3"><span style="color:#00e5ff">CLASSIC</span> — hit anything that pops up, as many as you can</div>
+              <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:1px;line-height:1.3"><span style="color:#00e5ff">FRENZY</span> — hit anything that pops up, as many as you can</div>
               ` : `
               <div style="font-size:9px;letter-spacing:2px;color:rgba(242,239,232,0.4);font-family:'VCR',monospace;text-align:center;margin-bottom:1px">WAVES ROTATE THROUGH THREE MODES</div>
               <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:1px;line-height:1.3"><span style="color:#ff00cc">WHACK</span> — tap the right one before it escapes</div>
@@ -5791,7 +5833,7 @@ window.confirmCharSelect = function() {
     if (state === 'playing' && gameMode === 'classic') {
       wrap.innerHTML = `
         <div class="whack-hud" style="flex-direction:column;justify-content:flex-start;gap:6px;padding:8px 14px">
-          <div style="text-align:center;width:100%;font-family:'Bebas Neue',cursive;font-size:24px;letter-spacing:2px;color:#00e5ff;text-shadow:0 0 10px #00e5ff88">CLASSIC — <span id="classic-time">45</span>s</div>
+          <div style="text-align:center;width:100%;font-family:'Bebas Neue',cursive;font-size:24px;letter-spacing:2px;color:#00e5ff;text-shadow:0 0 10px #00e5ff88">FRENZY — <span id="classic-time">45</span>s</div>
           <div style="text-align:center;width:100%;font-family:'VCR',monospace;font-size:12px;letter-spacing:2px;color:rgba(242,239,232,0.6);padding-top:4px;border-top:1px solid rgba(242,239,232,0.1)">HITS: <span id="classic-hits" style="color:#33ff66">0</span></div>
         </div>
         <div class="whack-grid" id="whack-grid" style="--cols:${GRID_COLS};--rows:${GRID_ROWS}">${
@@ -7806,9 +7848,14 @@ window.confirmCharSelect = function() {
   let canvas, ctx, W, H, raf, state = 'idle';
   let spaceIntroShown = false; // first-time-only objective intro, before the real run starts
   let player, bullets, obstacles, stars, score, health, wave, waveKills, highScore, spawnsRemaining;
-  let leftHeld = false, rightHeld = false, lastAutoFire = 0, activeChar = getGlobalChar();
+  let leftHeld = false, rightHeld = false, lastAutoFire = 0, lastPizzaFire = 0, activeChar = getGlobalChar();
   let enemyBullets = [], lastEnemyFire = 0;
   let dangerY = 0, lineFlashA = 0;
+  // REVERSE theme: a separate fixed "escape" line near the top, just below the
+  // HUD/banner strip — kept independent of dangerY on purpose, since dangerY tracks
+  // the player position and also drives the socket column's placement; repurposing
+  // it for this would yank the sockets up to the top during a reverse wave.
+  const REVERSE_LINE_Y = 92;
   let floatTexts = []; // {text, x, y, color, a, vy, size}
   let currentCfg = null;
   let powerups = []; // {type:'speed'|'gun'|'bomb'|'shield'|'hp'|'mystery', x, y, vy, r}
@@ -7818,8 +7865,44 @@ window.confirmCharSelect = function() {
   // the two "disabled state" debuffs shared by the ICE/EMP mini-bosses and the
   // mystery box's bad outcomes — one timer each, regardless of source.
   let buffFrozenUntil = 0, buffZappedUntil = 0;
+  let buffPizzaUntil = 0; // mystery "pizza blast" — fires a shotgun spread of pizza-slice bullets instead of one straight shot
+  let snowingUntil = 0; // mystery "negative one" — ambient snow; any hit taken while it's active also freezes for 2s
+  let lastRaveConfetti = 0; // throttles RAVE's periodic confetti bursts
+  let snowParticles = [];
   let controlsReversedUntil = 0; // mystery box: left/right flipped, briefly
   let twin = null; // mystery box "twin ship" — {x,y,lastFire}, mirrors player and auto-fires
+  let rebound = null; // mystery box "rebound" penalty — a bouncing hazard ball that can hit the player
+
+  // Powerup inventory — speed/gun/shield/bomb are now banked on catch (max 1 each)
+  // and deployed on demand instead of applying instantly. HP and mystery boxes are
+  // unaffected — both still apply immediately on catch, same as before.
+  let inventory = { gun: false, shield: false, bomb: false };
+  const SOCKET_TYPES = ['gun', 'shield', 'bomb'];
+  const SOCKET_COLOR = { gun: '#ffe61a', shield: '#00e5ff', bomb: '#ff8800' };
+  const SOCKET_GLYPH = { gun: '⚡', bomb: '💣' }; // shield is drawn as a hexagon, not a glyph
+  const SOCKET_SIZE = 34, SOCKET_GAP = 8, SOCKET_X = 10;
+  // Anchored to the danger line (bottom-left, just above it) rather than a fixed
+  // top-of-screen position — follows dangerY automatically if the canvas re-fits.
+  function socketRect(i) {
+    const n = SOCKET_TYPES.length;
+    const totalH = n * SOCKET_SIZE + (n - 1) * SOCKET_GAP;
+    const groupTop = (dangerY - 14) - totalH;
+    return { x: SOCKET_X, y: groupTop + i * (SOCKET_SIZE + SOCKET_GAP), w: SOCKET_SIZE, h: SOCKET_SIZE };
+  }
+  // Returns the socket type hit by a canvas-space point, or null — used both for
+  // touch (reserving that column from also moving the ship) and desktop clicks.
+  function hitSocket(x, y) {
+    for (let i = 0; i < SOCKET_TYPES.length; i++) {
+      const r = socketRect(i);
+      if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) return SOCKET_TYPES[i];
+    }
+    return null;
+  }
+  function deploySocket(type) {
+    if (!inventory[type]) return;
+    inventory[type] = false;
+    applyPowerup(type);
+  }
   let mysteryTimer = null;
   let shakeMag = 0; // screen shake on big hits — decays each frame
   function triggerShake(amount) { shakeMag = Math.max(shakeMag, amount); }
@@ -7840,20 +7923,29 @@ window.confirmCharSelect = function() {
   // handful of branch points rather than restructuring the ramp itself.
   let waveTheme = null; // null = normal wave, else one of WAVE_THEMES
   let lastThemedWave = -99;
-  const WAVE_THEMES = ['asteroids','ghost','captive','rave','swarm','blackout','mirror','bomber','emp','goldrush'];
+  let themeEffectsAt = 0; // BLACKOUT's vignette waits until this time so it doesn't visually swallow the wave/theme announcement
+  let waveTransitioning = false; // true from nextWave() until its announcement clears — guards against the per-frame wave-cleared check re-firing nextWave()
+  // BOSS used to be a hardcoded "every 3rd wave" rule running alongside the theme
+  // system; now it's just one more entry in the same pool — a boss fight is simply
+  // one of the special-wave outcomes instead of a separate guaranteed schedule.
+  // That also means ghost/emp/captive no longer need wave-number-based exclusion
+  // from "boss waves" — there's no such concept anymore, only one theme is ever
+  // picked per wave, so boss can never land alongside a mini-boss theme by definition.
+  // 'flip' (not 'reverse') for the wave theme key — the mystery outcome list below
+  // already uses 'reverse' for reversed controls, an unrelated effect; same string
+  // in both would be confusing to read even though they're different variables.
+  const WAVE_THEMES = ['asteroids','ghost','captive','rave','swarm','blackout','mirror','bomber','emp','goldrush','boss','music','flip'];
   const THEME_LABEL = {
     asteroids: 'ALL ASTEROIDS', ghost: 'GHOST ATTACK', captive: 'HERO TAKEN CAPTIVE',
     rave: 'PARTY RAVE MODE', swarm: 'SWARM', blackout: 'BLACKOUT', mirror: 'MIRROR ENEMY',
-    bomber: 'BOMBER RUN', emp: 'EMP WARNING', goldrush: 'GOLD RUSH',
+    bomber: 'BOMBER RUN', emp: 'EMP WARNING', goldrush: 'GOLD RUSH', boss: 'BOSS',
+    music: 'JAM SESSION', flip: 'REVERSE',
   };
-  const THEME_MIN_WAVE = 3, THEME_COOLDOWN = 1, THEME_CHANCE = 0.55;
+  const THEME_MIN_WAVE = 3, THEME_COOLDOWN = 1, THEME_CHANCE = 0.5; // every other wave is special
   function pickWaveTheme(w) {
     if (w < THEME_MIN_WAVE || w - lastThemedWave < THEME_COOLDOWN || Math.random() > THEME_CHANCE) return null;
-    const isBossWave = w >= 3 && (w - 3) % 3 === 0;
-    const pool = WAVE_THEMES.filter(t => t === 'captive' ? isBossWave : (t === 'ghost' || t === 'emp') ? !isBossWave : true);
-    if (!pool.length) return null;
     lastThemedWave = w;
-    return pool[Math.floor(Math.random() * pool.length)];
+    return WAVE_THEMES[Math.floor(Math.random() * WAVE_THEMES.length)];
   }
   // Lighter-weight boss-style encounter for GHOST/ICE/EMP — deliberately separate
   // from `boss` so the "pause all normal spawning" behavior tied to a real boss
@@ -7936,6 +8028,7 @@ window.confirmCharSelect = function() {
     floatTexts.push({text, x, y, color, a: 1, vy: -1.5, size: size || 20});
   }
 
+
   const P_SPEED = 5, B_SPEED = 9, O_SPEED_BASE = 2.0; // +10% over original 1.8
   const AUTO_FIRE_MS = 200;
   const FACE_R = 22, ASTEROID_R_MIN = 14, ASTEROID_R_MAX = 30;
@@ -7980,7 +8073,24 @@ window.confirmCharSelect = function() {
     enemyBullets.push({ x: shooter.x, y: shooter.y + shooter.r, vx: (dx/dist)*bulletSpeed, vy: (dy/dist)*bulletSpeed, r: 4 });
   }
 
+  // REVERSE theme: spawns from the bottom moving upward instead of the normal
+  // top-down fall. Rather than threading a flip through every push() site below
+  // (asteroid/swarm/bomber/normal/mirror all have their own hardcoded y/vy), this
+  // wrapper just corrects whatever _spawnObstacleReal() actually pushed afterward.
   function spawnObstacle(cfg) {
+    const before = obstacles.length;
+    _spawnObstacleReal(cfg);
+    if (waveTheme === 'flip' && obstacles.length > before) {
+      const o = obstacles[obstacles.length - 1];
+      o.y = H + o.r + 10;
+      o.vy = -Math.abs(o.vy);
+      // The normal "pause partway down, then burst-fire" behavior assumes top-down
+      // travel — with obstacles now moving continuously upward instead, force it
+      // off so nothing gets stuck mid-pause or fires unexpectedly close-range.
+      o.pausedBurstDone = true;
+    }
+  }
+  function _spawnObstacleReal(cfg) {
     // Themed waves bend the asteroid/enemy mix and a few spawn stats without
     // touching waveConfig(cfg) itself — purely a local override of this one roll.
     let ratio = cfg.asteroidRatio;
@@ -8001,25 +8111,32 @@ window.confirmCharSelect = function() {
       obstacles.push({ type:'asteroid', x:rand(r,W-r), y:-r-10, vx: jitter ? rand(-0.4,0.4)*cfg.speed : 0, vy: jitter ? cfg.speed*(0.8+Math.random()*0.4) : cfg.speed, r, verts, rot:0, rotSpeed:rand(-0.02,0.02), hp:1 });
     } else {
       const ci = Math.floor(Math.random() * GAME_CHARS.length);
-      const isTrapped = Math.random() < Math.max(0.05, 0.13 - wave * 0.012); // a tad more frequent than before
+      const isTrapped = Math.random() < Math.max(0.055, 0.143 - wave * 0.012); // bumped 10% over the previous 0.05/0.13
       // Enemies take 3 hits to clear; trapped heroes still resolve via the ring, hp unused for them.
       // Non-hero enemies descend slower and pause partway down for a burst of fire before
       // continuing — a middle ground between "charges the line" and "just hovers and shoots":
       // keeps some advance pressure but spaces out how much is closing in on the player at once.
       if (waveTheme === 'swarm') {
-        // Many small, weak, fast enemies instead of a few tough ones.
+        // Many small, weak, fast enemies instead of a few tough ones. Faster now
+        // that powerups are banked, not lost if you can't immediately catch one —
+        // there's more of a safety net to draw on, so this can push harder.
         const r = FACE_R * 0.6;
-        obstacles.push({ type:'face', x:rand(r,W-r), y:-r-10, vx:rand(-0.8,0.8)*cfg.speed, vy:cfg.speed*1.6, r, ci, hp:1, isTrapped:false, ringHp:0, pausedBurstDone:true, paused:false, pauseUntil:0, burstShotsLeft:0, lastBurstShot:0 });
+        obstacles.push({ type:'face', x:rand(r,W-r), y:-r-10, vx:rand(-0.8,0.8)*cfg.speed, vy:cfg.speed*2.0, r, ci, hp:1, isTrapped:false, ringHp:0, pausedBurstDone:true, paused:false, pauseUntil:0, burstShotsLeft:0, lastBurstShot:0 });
         return;
       }
       if (waveTheme === 'bomber') {
-        // Dives straight at wherever the player currently is instead of pausing to
-        // shoot — pure dodge-or-shoot-first pressure, no burst-fire behavior.
-        const x = rand(FACE_R, W-FACE_R);
-        const dx = (player ? player.x - x : 0);
-        obstacles.push({ type:'face', x, y:-FACE_R-10, vx: dx*0.01, vy: cfg.speed*1.3, r:FACE_R, ci, hp:3, isTrapped:false, ringHp:0, pausedBurstDone:true, paused:false, pauseUntil:0, burstShotsLeft:0, lastBurstShot:0, isBomber:true });
-        SFX.bomberDive();
-        return;
+        // Capped at 3 on screen at a time — up from the original cap of 1 now that
+        // banked powerups give more of a safety net. Past the cap, fall through to
+        // a normal enemy instead of stacking even more divers.
+        if (obstacles.filter(o => o.isBomber).length < 3) {
+          const x = rand(FACE_R, W-FACE_R);
+          const dx = (player ? player.x - x : 0);
+          // Faster dive and more HP than before — same "banked powerups give more
+          // safety net" reasoning as SWARM.
+          obstacles.push({ type:'face', x, y:-FACE_R-10, vx: dx*0.01, vy: cfg.speed*1.7, r:FACE_R, ci, hp:4, isTrapped:false, ringHp:0, pausedBurstDone:true, paused:false, pauseUntil:0, burstShotsLeft:0, lastBurstShot:0, isBomber:true });
+          SFX.bomberDive();
+          return;
+        }
       }
       obstacles.push({ type:'face', x:rand(FACE_R,W-FACE_R), y:-FACE_R-10, vx:rand(-0.6,0.6)*cfg.speed, vy:cfg.speed*(0.7+Math.random()*0.5)*(isTrapped?1:0.6), r:FACE_R, ci, hp: isTrapped ? 1 : 3, isTrapped, ringHp: isTrapped ? 2 : 0, pausedBurstDone: isTrapped, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0 });
     }
@@ -8090,7 +8207,7 @@ window.confirmCharSelect = function() {
   function powerupFallSpeed() { return hpFallSpeed() * 1.7; }
 
   function spawnPowerup() {
-    const types = ['speed', 'gun', 'bomb', 'shield'];
+    const types = ['gun', 'bomb', 'shield'];
     const type = types[Math.floor(Math.random() * types.length)];
     powerups.push({ type, x: rand(POWERUP_R, W - POWERUP_R), y: -POWERUP_R - 10, vy: powerupFallSpeed(), r: POWERUP_R, bob: Math.random() * Math.PI * 2 });
   }
@@ -8098,28 +8215,49 @@ window.confirmCharSelect = function() {
   // Rare, risky pickup — could be great or could backfire. "Just enough to be
   // special": a much longer random interval than the other two schedules.
   function spawnMysteryBox() {
-    // Falls noticeably slower than every other pickup — it's on a parachute, and
-    // it's rare enough to deserve a beat to actually register before it lands.
-    powerups.push({ type: 'mystery', x: rand(POWERUP_R, W - POWERUP_R), y: -POWERUP_R - 10, vy: powerupFallSpeed() * 0.4, r: POWERUP_R, bob: Math.random() * Math.PI * 2 });
+    // Falls a lot slower than every other pickup — it's on a parachute, it's rare,
+    // and now it's a shoot target (ringHp) rather than something to catch, so there's
+    // no rush to intercept it before it lands.
+    powerups.push({ type: 'mystery', x: rand(POWERUP_R, W - POWERUP_R), y: -POWERUP_R - 10, vy: powerupFallSpeed() * 0.2, r: POWERUP_R, bob: Math.random() * Math.PI * 2, ringHp: 5 });
   }
   function scheduleMysteryBox() {
     clearTimeout(mysteryTimer);
     mysteryTimer = setTimeout(() => {
       if (state !== 'playing') return;
-      if (!boss) spawnMysteryBox();
+      if (!boss && !waveTransitioning) spawnMysteryBox();
       scheduleMysteryBox();
     }, 14000 + Math.random() * 9000);
+  }
+
+  // MUSIC ("JAM SESSION") theme — purely fun, no extra danger: asteroids/enemies
+  // fall exactly as normal, but instrument pickups also drop. Shoot one (not catch
+  // — same shoot-target language as the mystery ring) for its own note/sound and points.
+  const INSTRUMENT_KINDS = ['guitar', 'piano', 'drum'];
+  function spawnInstrument() {
+    const kind = INSTRUMENT_KINDS[Math.floor(Math.random() * INSTRUMENT_KINDS.length)];
+    powerups.push({ type: 'instrument', kind, x: rand(POWERUP_R, W - POWERUP_R), y: -POWERUP_R - 10, vy: powerupFallSpeed() * 0.55, r: POWERUP_R, bob: Math.random() * Math.PI * 2 });
+  }
+  let instrumentTimer = null;
+  function scheduleInstrument() {
+    clearTimeout(instrumentTimer);
+    instrumentTimer = setTimeout(() => {
+      if (state !== 'playing') return;
+      if (waveTheme === 'music' && !boss && !waveTransitioning) spawnInstrument();
+      scheduleInstrument();
+    }, 700 + Math.random() * 700);
   }
 
   let powerupTimer = null;
   function schedulePowerup() {
     clearTimeout(powerupTimer);
-    // GOLD RUSH: heavy powerup rain, the whole point of the wave. Normal rate is
-    // tuned down 25% (longer waits) from the original 4000-7800 — felt too frequent.
-    const range = waveTheme === 'goldrush' ? [600, 1500] : [5000, 9750];
+    // GOLD RUSH: heavy powerup rain, the whole point of the wave — unaffected by the
+    // halving below. Normal rate halved now that catching one banks it instead of
+    // using it instantly — no longer "use it now or it's wasted," so it can afford
+    // to be rarer and feel more deliberate.
+    const range = waveTheme === 'goldrush' ? [600, 1500] : [10000, 19500];
     powerupTimer = setTimeout(() => {
       if (state !== 'playing') return;
-      if (!boss) spawnPowerup();
+      if (!boss && !waveTransitioning) spawnPowerup();
       schedulePowerup();
     }, range[0] + Math.random() * (range[1] - range[0]));
   }
@@ -8137,23 +8275,11 @@ window.confirmCharSelect = function() {
     clearTimeout(hpPowerupTimer);
     hpPowerupTimer = setTimeout(() => {
       if (state !== 'playing') return;
-      if (!boss) spawnHpPowerup();
+      if (!boss && !waveTransitioning) spawnHpPowerup();
       scheduleHpPowerup();
     }, 3150 + Math.random() * 3150); // halfway between the original 2800-5600 and the 25%-slower 3500-7000
   }
 
-  // Falling pickups are small and fast — a short upward gradient streak (same idea
-  // as the bullet tail) makes them much easier to track at a glance than the pulse
-  // alone, without slowing anything down.
-  function drawFallTrail(p, color) {
-    const len = Math.min(46, (p.vy || 0) * 6);
-    if (len < 6) return;
-    const grad = ctx.createLinearGradient(p.x, p.y - len, p.x, p.y - p.r);
-    grad.addColorStop(0, 'rgba(0,0,0,0)');
-    grad.addColorStop(1, color);
-    ctx.strokeStyle = grad; ctx.lineWidth = p.r * 0.7; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(p.x, p.y - len); ctx.lineTo(p.x, p.y - p.r); ctx.stroke();
-  }
 
   // Wooden crate on a parachute, falling slower than every other pickup — visually
   // distinct from the start (not just a colored circle) and an obvious "special,
@@ -8161,25 +8287,26 @@ window.confirmCharSelect = function() {
   function drawMysteryBox(p) {
     ctx.save(); ctx.translate(p.x, p.y);
     const sway = Math.sin(Date.now() * 0.0025 + p.bob) * 7;
-    // Canopy — semi-transparent, not a flat solid fill.
+    // Canopy — semi-transparent, not a flat solid fill. Shrunk smaller now that the
+    // ring is the main visual signal, not the parachute.
     ctx.save(); ctx.rotate(sway * 0.01);
-    ctx.beginPath(); ctx.ellipse(0, -p.r * 1.9, p.r * 1.5, p.r * 1.05, 0, Math.PI, 0);
+    ctx.beginPath(); ctx.ellipse(0, -p.r * 1.5, p.r * 1.05, p.r * 0.75, 0, Math.PI, 0);
     ctx.fillStyle = 'rgba(204,102,255,0.55)'; ctx.fill();
     ctx.strokeStyle = 'rgba(255,215,0,0.7)'; ctx.lineWidth = 1.5; ctx.stroke();
     for (let i = -1; i <= 1; i++) {
-      ctx.beginPath(); ctx.moveTo(i * p.r * 1.3, -p.r * 1.9);
-      ctx.lineTo(i * p.r * 0.55 + sway * 0.3, -p.r * 0.55);
+      ctx.beginPath(); ctx.moveTo(i * p.r * 0.9, -p.r * 1.5);
+      ctx.lineTo(i * p.r * 0.45 + sway * 0.3, -p.r * 0.5);
       ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1; ctx.stroke();
     }
     ctx.restore();
     // Crate — square (not the wider rect that read as an envelope), with horizontal
     // plank lines and corner brackets for actual texture instead of a flap-like X.
     ctx.translate(sway * 0.3, 0);
-    const s = p.r * 1.05;
-    // Soft translucent halo behind the crate, same pulsing-glow language every
-    // other powerup already uses.
+    const s = p.r * 0.9; // crate itself a little smaller than before
+    // Soft translucent halo behind the crate, enlarged and sized off p.r (not the
+    // now-smaller crate half-size s) so shrinking the crate doesn't also shrink it.
     const pulse = 0.85 + Math.sin(Date.now() * 0.006 + p.bob) * 0.15;
-    ctx.beginPath(); ctx.arc(0, 0, s * pulse + 8, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(0, 0, p.r * 1.3 * pulse + 14, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(204,102,255,0.16)'; ctx.fill();
     ctx.fillStyle = '#7a4a28'; ctx.fillRect(-s, -s, s * 2, s * 2);
     // Plank seams
@@ -8206,13 +8333,92 @@ window.confirmCharSelect = function() {
     ctx.strokeStyle = '#2a1a40'; ctx.lineWidth = 3;
     ctx.strokeText('?', 0, 3);
     ctx.fillText('?', 0, 3);
+    // Purple dashed "shoot this" ring — same rotating-dots language as the trapped
+    // hero's rescue ring, pulled in to overlap the crate's edge rather than floating
+    // outside it (same tightening as the enemy reticle). It's now a shoot target,
+    // not a catch target, so this ring is the whole signal for that.
+    if (p.ringHp > 0) {
+      const t2 = Date.now() * 0.003;
+      ctx.save();
+      ctx.rotate(t2);
+      ctx.beginPath(); ctx.arc(0, 0, s * 1.05, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(204,102,255,0.3)'; ctx.lineWidth = 6; ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, s * 0.98, 0, Math.PI * 2);
+      ctx.strokeStyle = '#cc66ff'; ctx.lineWidth = 2.5; ctx.stroke();
+      for (let d = 0; d < 4; d++) {
+        const a = (d / 4) * Math.PI * 2 + t2;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(Math.cos(a) * s * 0.98, Math.sin(a) * s * 0.98, 3, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  // Shared 6-spoke hand-drawn snowflake — used by both the FROZEN bullet skin and
+  // the ambient snowstorm particles, so the two read as the same thing rather than
+  // the ambient version looking like generic background stars.
+  function drawSnowflake(x, y, R, color, glowColor) {
+    ctx.save();
+    ctx.translate(x, y);
+    if (glowColor) { ctx.shadowColor = glowColor; ctx.shadowBlur = R * 0.85; }
+    ctx.strokeStyle = color; ctx.lineWidth = Math.max(1, R * 0.21); ctx.lineCap = 'round';
+    const branch = R * 0.35;
+    for (let k = 0; k < 6; k++) {
+      const a = k * Math.PI / 3;
+      const ex = Math.cos(a) * R, ey = Math.sin(a) * R;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(ex, ey); ctx.stroke();
+      const mx = ex * 0.6, my = ey * 0.6;
+      ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(mx + Math.cos(a + 1) * branch, my + Math.sin(a + 1) * branch); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(mx + Math.cos(a - 1) * branch, my + Math.sin(a - 1) * branch); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // MUSIC theme instrument pickups — hand-drawn (no emoji/images), one hit to
+  // "play" and clear. A soft pulsing halo + gentle bob (mirrors every other
+  // powerup) so it still reads as "catch my attention" despite being a shoot target.
+  function drawInstrument(p) {
+    ctx.save(); ctx.translate(p.x, p.y);
+    const pulse = 0.85 + Math.sin(Date.now() * 0.006 + p.bob) * 0.15;
+    ctx.beginPath(); ctx.arc(0, 0, p.r * pulse + 6, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,230,26,0.15)'; ctx.fill();
+    const s = p.r;
+    if (p.kind === 'guitar') {
+      ctx.strokeStyle = '#3a2410'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(0, -s * 0.2); ctx.lineTo(0, -s * 1.15); ctx.stroke();
+      ctx.fillStyle = '#1a1008'; ctx.fillRect(-s * 0.12, -s * 1.25, s * 0.24, s * 0.18);
+      ctx.beginPath(); ctx.ellipse(-s * 0.18, s * 0.15, s * 0.42, s * 0.55, -0.2, 0, Math.PI * 2);
+      ctx.fillStyle = '#c47a32'; ctx.fill();
+      ctx.strokeStyle = '#7a4a1a'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.beginPath(); ctx.arc(-s * 0.18, s * 0.15, s * 0.16, 0, Math.PI * 2);
+      ctx.fillStyle = '#2a1a0a'; ctx.fill();
+      ctx.strokeStyle = '#eee'; ctx.lineWidth = 1;
+      for (const dx of [-0.32, -0.18, -0.04]) { ctx.beginPath(); ctx.moveTo(dx * s, -s * 0.2); ctx.lineTo(dx * s + s * 0.14, s * 0.62); ctx.stroke(); }
+    } else if (p.kind === 'piano') {
+      ctx.fillStyle = '#161616'; ctx.fillRect(-s * 0.85, -s * 0.55, s * 1.7, s * 1.1);
+      ctx.strokeStyle = '#555'; ctx.lineWidth = 1.5; ctx.strokeRect(-s * 0.85, -s * 0.55, s * 1.7, s * 1.1);
+      const keyW = s * 1.6 / 5;
+      ctx.fillStyle = '#f5f3ec';
+      for (let k = 0; k < 5; k++) ctx.fillRect(-s * 0.8 + k * keyW, -s * 0.05, keyW * 0.92, s * 0.5);
+      ctx.fillStyle = '#161616';
+      for (let k = 0; k < 4; k++) ctx.fillRect(-s * 0.8 + (k + 0.7) * keyW, -s * 0.05, keyW * 0.36, s * 0.3);
+    } else {
+      ctx.fillStyle = '#a02020'; ctx.fillRect(-s * 0.62, -s * 0.15, s * 1.24, s * 0.85);
+      ctx.beginPath(); ctx.ellipse(0, -s * 0.15, s * 0.62, s * 0.22, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#ecdfc4'; ctx.fill(); ctx.strokeStyle = '#c0a878'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(0, s * 0.7, s * 0.62, s * 0.2, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#7a1818'; ctx.fill();
+      ctx.strokeStyle = '#d8b85a'; ctx.lineWidth = 1.5;
+      for (const dx of [-0.5, 0, 0.5]) { ctx.beginPath(); ctx.moveTo(dx * s, -s * 0.1); ctx.lineTo(dx * s, s * 0.65); ctx.stroke(); }
+    }
     ctx.restore();
   }
 
   function drawPowerup(p) {
     if (p.type === 'mystery') { drawMysteryBox(p); return; }
+    if (p.type === 'instrument') { drawInstrument(p); return; }
     if (p.type === 'hp') {
-      drawFallTrail(p, 'rgba(51,255,102,0.55)');
       ctx.save(); ctx.translate(p.x, p.y);
       const pulse = 0.85 + Math.sin(Date.now() * 0.006 + p.bob) * 0.15;
       ctx.beginPath(); ctx.arc(0, 0, p.r * pulse + 6, 0, Math.PI * 2);
@@ -8228,7 +8434,6 @@ window.confirmCharSelect = function() {
       return;
     }
     if (p.type === 'shield') {
-      drawFallTrail(p, 'rgba(0,229,255,0.55)');
       ctx.save(); ctx.translate(p.x, p.y);
       const pulse = 0.85 + Math.sin(Date.now() * 0.006 + p.bob) * 0.15;
       ctx.beginPath(); ctx.arc(0, 0, p.r * pulse + 6, 0, Math.PI * 2);
@@ -8257,49 +8462,41 @@ window.confirmCharSelect = function() {
       ctx.restore();
       return;
     }
-    drawFallTrail(p, 'rgba(255,230,26,0.55)');
     ctx.save(); ctx.translate(p.x, p.y);
     const pulse = 0.85 + Math.sin(Date.now() * 0.006 + p.bob) * 0.15;
+    const ringColor = p.type === 'bomb' ? '#ff8800' : '#ffe61a';
     ctx.beginPath(); ctx.arc(0, 0, p.r * pulse + 6, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,230,26,0.18)'; ctx.fill();
+    ctx.fillStyle = p.type === 'bomb' ? 'rgba(255,136,0,0.18)' : 'rgba(255,230,26,0.18)'; ctx.fill();
     ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2);
     ctx.fillStyle = '#1a1530'; ctx.fill();
-    ctx.strokeStyle = C('#ffe61a'); ctx.lineWidth = 2; ctx.stroke();
+    ctx.strokeStyle = C(ringColor); ctx.lineWidth = 2; ctx.stroke();
     ctx.font = `${p.r * 1.3}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(p.type === 'speed' ? '🍕' : p.type === 'gun' ? '⚡' : '💣', 0, 1);
+    ctx.fillText(p.type === 'gun' ? '⚡' : '💣', 0, 1);
     ctx.restore();
   }
 
-  // Brief, very transparent full-screen callout for what was just grabbed — same
-  // font/glow language as the intro's objective text, color-matched to that
-  // pickup's own ring color. Separate from addFloatText (which stays at the pickup
-  // location) — this is the "make sure it actually registers" layer, especially for
-  // mystery box outcomes that otherwise read as "something happened, not sure what."
-  function showPickupBanner(text, color) {
-    const ann = document.createElement('div');
-    ann.style.cssText = 'position:fixed;inset:0;z-index:9700;display:flex;align-items:center;justify-content:center;pointer-events:none;background:rgba(5,2,18,0.10)';
-    ann.innerHTML = `<div style="font-family:'Bebas Neue',cursive;font-size:36px;letter-spacing:3px;color:${color};text-shadow:0 0 20px ${color},0 0 40px ${color}66;text-align:center;opacity:0;transform:scale(0.82);transition:opacity 0.18s ease-out,transform 0.18s ease-out">${text}</div>`;
-    document.body.appendChild(ann);
-    const inner = ann.firstElementChild;
-    requestAnimationFrame(() => { inner.style.opacity = '0.75'; inner.style.transform = 'scale(1)'; });
-    setTimeout(() => {
-      inner.style.transition = 'opacity 0.25s ease-in';
-      inner.style.opacity = '0';
-      setTimeout(() => ann.remove(), 260);
-    }, 700);
+
+  // Mystery box "rebound" penalty — a single hazard ball that bounces off the side
+  // walls and the top, so it keeps re-aiming back into the play field ("bounces off
+  // and shoots back at you") instead of just drifting offscreen. Disappears either
+  // on hitting the player (after dealing damage) or once its timer runs out.
+  function spawnRebound() {
+    const ang = Math.PI * 0.25 + Math.random() * Math.PI * 0.5; // roughly downward, varied angle
+    const speed = 3.5;
+    rebound = {
+      x: W / 2, y: H * 0.25,
+      vx: Math.cos(ang) * speed * (Math.random() < 0.5 ? -1 : 1),
+      vy: Math.sin(ang) * speed,
+      r: 15, expiresAt: Date.now() + 9000, nextFire: 0,
+    };
   }
 
   function applyPowerup(type) {
-    if (type === 'speed') {
-      buffSpeedUntil = Date.now() + 10000;
-      addFloatText('SPEED BOOST!', player.x, player.y - 50, '#ffe61a', 20);
-      showPickupBanner('SPEED BOOST', '#ffe61a');
-      SFX.win();
-    } else if (type === 'gun') {
+    if (type === 'gun') {
       buffGunUntil = Date.now() + 8000;
       addFloatText('MACHINE GUN!', player.x, player.y - 50, '#ffe61a', 20);
-      showPickupBanner('MACHINE GUN', '#ffe61a');
-      SFX.win();
+      showTopBanner('MACHINE GUN', 'good');
+      SFX.powerupCollect();
     } else if (type === 'bomb') {
       let cleared = 0;
       obstacles.forEach(o => {
@@ -8311,69 +8508,81 @@ window.confirmCharSelect = function() {
       });
       obstacles = obstacles.filter(o => o.alive !== false);
       addFloatText(`BOMB! +${cleared}`, player.x, player.y - 50, '#ff8800', 22);
-      showPickupBanner('BOMB', '#ff8800');
+      showTopBanner(`BOMB +${cleared}`, 'good');
       SFX.over();
     } else if (type === 'hp') {
       const gain = 2 + Math.floor(Math.random() * 2); // 2 or 3
       health = Math.min(100, health + gain);
       addFloatText(`+${gain} HP`, player.x, player.y - 50, '#33ff66', 20);
-      SFX.win();
+      showTopBanner(`+${gain} HP`, 'good');
+      SFX.powerupCollect();
     } else if (type === 'shield') {
       buffShieldUntil = Date.now() + 8000;
       addFloatText('SHIELD UP!', player.x, player.y - 50, '#00e5ff', 20);
-      showPickupBanner('SHIELD UP', '#00e5ff');
-      SFX.win();
+      showTopBanner('SHIELD UP', 'good');
+      SFX.powerupCollect();
     } else if (type === 'mystery') {
       SFX.boxOpen();
-      const outcomes = ['bigHp', 'bigScore', 'tripleBuff', 'bomb', 'twin', 'frozen', 'zapped', 'reverse', 'tiny'];
+      // No plain "bomb" here — that's already a normal pickup with no twist on it.
+      // Every outcome below is either not a regular powerup at all, or a clear
+      // escalation of one (tripleBuff stacks all 3 AND extends on top of whatever's
+      // already running, never just resetting/wasting active time).
+      const outcomes = ['bigHp', 'tripleBuff', 'twin', 'pizzaBlast', 'frozen', 'zapped', 'reverse', 'tiny', 'rebound', 'snowing'];
       const roll = outcomes[Math.floor(Math.random() * outcomes.length)];
       if (roll === 'bigHp') {
         health = Math.min(100, health + 25);
         addFloatText('MYSTERY: +25 HP!', player.x, player.y - 50, '#33ff66', 20);
-        showPickupBanner('MYSTERY: +25 HP!', '#33ff66');
-        SFX.mysteryGood();
-      } else if (roll === 'bigScore') {
-        score += 300 + wave * 15;
-        addFloatText('MYSTERY: +SCORE!', player.x, player.y - 50, '#ffe61a', 20);
-        showPickupBanner('MYSTERY: BIG SCORE!', '#ffe61a');
+        showTopBanner('MYSTERY: +25 HP!', 'good');
         SFX.mysteryGood();
       } else if (roll === 'tripleBuff') {
-        const t = Date.now() + 8000;
-        buffSpeedUntil = buffGunUntil = buffShieldUntil = t;
+        const now = Date.now();
+        buffSpeedUntil = Math.max(buffSpeedUntil, now) + 8000;
+        buffGunUntil = Math.max(buffGunUntil, now) + 8000;
+        buffShieldUntil = Math.max(buffShieldUntil, now) + 8000;
         addFloatText('MYSTERY: TRIPLE BUFF!', player.x, player.y - 50, '#ffe61a', 20);
-        showPickupBanner('MYSTERY: TRIPLE BUFF!', '#ffe61a');
+        showTopBanner('MYSTERY: TRIPLE BUFF!', 'good');
         SFX.mysteryGood(); ticketConfetti(true);
-      } else if (roll === 'bomb') {
-        addFloatText('MYSTERY: BOMB!', player.x, player.y - 60, '#ff8800', 18);
-        showPickupBanner('MYSTERY: BOMB!', '#ff8800');
-        SFX.mysteryGood();
-        applyPowerup('bomb');
       } else if (roll === 'twin') {
         twin = { x: player.x + 40, y: player.y, lastFire: 0, expiresAt: Date.now() + 8000 };
         addFloatText('MYSTERY: TWIN SHIP!', player.x, player.y - 50, '#ffe61a', 20);
-        showPickupBanner('MYSTERY: TWIN SHIP!', '#ffe61a');
+        showTopBanner('MYSTERY: TWIN SHIP!', 'good');
         SFX.mysteryGood(); ticketConfetti(true);
+      } else if (roll === 'pizzaBlast') {
+        buffPizzaUntil = Date.now() + 8000;
+        addFloatText('MYSTERY: PIZZA BLAST!', player.x, player.y - 50, '#ffcc44', 20);
+        showTopBanner('MYSTERY: PIZZA BLAST!', 'good');
+        SFX.mysteryGood();
       } else if (roll === 'frozen') {
-        buffFrozenUntil = Date.now() + 5500;
+        buffFrozenUntil = Date.now() + 5000;
         addFloatText('MYSTERY: FROZEN!', player.x, player.y - 50, '#66ddff', 20);
-        showPickupBanner('MYSTERY: FROZEN!', '#66ddff');
+        showTopBanner('MYSTERY: FROZEN!', 'bad');
         SFX.mysteryBad();
       } else if (roll === 'zapped') {
-        buffZappedUntil = Date.now() + 4000;
-        addFloatText('MYSTERY: ZAPPED!', player.x, player.y - 50, '#cc99ff', 20);
-        showPickupBanner('MYSTERY: ZAPPED!', '#cc99ff');
+        buffZappedUntil = Date.now() + 5000;
+        addFloatText('MYSTERY: FARTED!', player.x, player.y - 50, '#cc99ff', 20);
+        showTopBanner('MYSTERY: FARTED!', 'bad');
         SFX.mysteryBad();
       } else if (roll === 'reverse') {
         controlsReversedUntil = Date.now() + 4000;
         addFloatText('MYSTERY: REVERSED!', player.x, player.y - 50, '#ff5500', 20);
-        showPickupBanner('MYSTERY: REVERSED!', '#ff5500');
+        showTopBanner('MYSTERY: REVERSED!', 'bad');
         SFX.mysteryBad();
       } else if (roll === 'tiny') {
         player.r = Math.max(8, player.r * 0.6);
         addFloatText('MYSTERY: TINY SHIP!', player.x, player.y - 50, '#cc66ff', 20);
-        showPickupBanner('MYSTERY: TINY SHIP!', '#cc66ff');
+        showTopBanner('MYSTERY: TINY SHIP!', 'bad');
         SFX.mysteryBad();
         setTimeout(() => { if (state === 'playing') player.r = 18; }, 6000);
+      } else if (roll === 'rebound') {
+        spawnRebound();
+        addFloatText('MYSTERY: REBOUND!', player.x, player.y - 50, '#ff4444', 20);
+        showTopBanner('MYSTERY: REBOUND!', 'bad');
+        SFX.mysteryBad();
+      } else if (roll === 'snowing') {
+        snowingUntil = Date.now() + 12000;
+        addFloatText('MYSTERY: SNOWSTORM!', player.x, player.y - 50, '#aee8ff', 20);
+        showTopBanner('MYSTERY: SNOWSTORM!', 'bad');
+        SFX.mysteryBad();
       }
     }
   }
@@ -8408,23 +8617,27 @@ window.confirmCharSelect = function() {
     enemyBullets=[]; lastEnemyFire=0; floatTexts=[]; lineFlashA=0;
     powerups=[]; buffSpeedUntil=0; buffGunUntil=0; buffShieldUntil=0; escort=null; shakeMag=0;
     boss=null; rescuedChars.clear();
-    waveTheme = null; lastThemedWave = -99; miniBoss = null;
-    buffFrozenUntil = 0; buffZappedUntil = 0; controlsReversedUntil = 0; twin = null;
+    waveTheme = null; lastThemedWave = -99; miniBoss = null; themeEffectsAt = 0; waveTransitioning = false;
+    buffFrozenUntil = 0; buffZappedUntil = 0; controlsReversedUntil = 0; twin = null; rebound = null; buffPizzaUntil = 0; snowingUntil = 0; snowParticles = [];
+    inventory = { gun: false, shield: false, bomb: false };
     dangerY = player.y - player.r * 1.2 - 2;
     highScore = parseInt(localStorage.getItem('space-best')||'0');
-    leftHeld=false; rightHeld=false; lastAutoFire=0;
+    leftHeld=false; rightHeld=false; lastAutoFire=0; lastPizzaFire=0;
     mkStars();
     currentCfg = waveConfig(wave);
     startWaveSpawn(currentCfg);
     scheduleHpPowerup();
     schedulePowerup();
     scheduleMysteryBox();
+    scheduleInstrument();
   }
 
   let spawnTimer = null;
   function startWaveSpawn(cfg) {
     clearTimeout(spawnTimer);
-    spawnsRemaining = cfg.poolSize;
+    // ALL ASTEROIDS spawns 3x per tick — without a bigger pool the wave would just
+    // exhaust itself 3x faster instead of actually feeling like a sustained rain.
+    spawnsRemaining = waveTheme === 'asteroids' ? cfg.poolSize * 3 : cfg.poolSize;
     function doSpawn() {
       if (state !== 'playing') return;
       // Paused entirely while a boss fight is active — it's deploying its own minions
@@ -8435,40 +8648,117 @@ window.confirmCharSelect = function() {
       if (spawnsRemaining <= 0) return; // pool exhausted — let the board clear naturally, no forced wipe
       spawnObstacle(cfg);
       spawnsRemaining--;
-      // SWARM reads as a genuine swarm (numbers, not just faster) by doubling up
-      // per tick rather than only shrinking the interval.
-      if (waveTheme === 'swarm' && spawnsRemaining > 0) { spawnObstacle(cfg); spawnsRemaining--; }
-      const themeSpeedup = (waveTheme === 'swarm' || waveTheme === 'goldrush') ? 0.6 : 1;
+      // SWARM used to also double-spawn per tick on top of the faster interval —
+      // between that and the speed-up, way too many were ever on screen at once
+      // ("too many at once"). Dropped the double-spawn; the faster interval alone
+      // plus small/fast/weak enemies is enough to read as a swarm without flooding.
+      // ALL ASTEROIDS still triples up — "a lot more asteroids" is the explicit ask there.
+      if (waveTheme === 'asteroids') {
+        for (let k = 0; k < 2 && spawnsRemaining > 0; k++) { spawnObstacle(cfg); spawnsRemaining--; }
+      }
+      const themeSpeedup = waveTheme === 'swarm' ? 0.65 : waveTheme === 'goldrush' ? 0.6 : waveTheme === 'asteroids' ? 0.45 : 1;
       spawnTimer = setTimeout(doSpawn, cfg.spawnMs * 0.8 * themeSpeedup * (0.7 + Math.random()*0.6));
     }
     spawnTimer = setTimeout(doSpawn, 1500);
   }
 
+  // Brief "WAVE N CLEARED" checkmark beat, same language as the equivalent moment
+  // in Whack-a-Mobe — a clean confirmation that the wave is actually done, shown
+  // for ~1s before the slot-machine announcement for the next wave begins.
+  function showWaveClearedBeat(clearedWave, onDone) {
+    SFX.win();
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;inset:0;z-index:9997;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity 0.2s ease-in-out;background:rgba(3,1,16,0.7)';
+    el.innerHTML = `
+      <div style="font-size:min(30vw,120px);color:#33ff66;text-shadow:0 0 30px #33ff66,0 0 60px #33ff6688;line-height:1">✓</div>
+      <div style="font-family:'Bebas Neue',cursive;font-size:26px;letter-spacing:4px;color:#33ff66;text-shadow:0 0 14px #33ff66;margin-top:8px">WAVE ${clearedWave} CLEARED</div>
+    `;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => { el.style.opacity = '1'; });
+    setTimeout(() => {
+      el.style.opacity = '0';
+      setTimeout(() => { el.remove(); onDone(); }, 200);
+    }, 1000);
+  }
+
   function nextWave() {
+    if (waveTransitioning) return; // hard start/stop between waves — the per-frame
+    // "wave cleared" check in loop() would otherwise re-fire this every frame for
+    // the whole announcement window (spawnsRemaining/obstacles don't update until
+    // startWaveSpawn actually runs below), stacking dozens of overlapping banners.
+    waveTransitioning = true;
+    const clearedWave = wave;
     wave++; waveKills=0;
     currentCfg = waveConfig(wave);
     waveTheme = pickWaveTheme(wave);
-    announceWave(wave);
-    startWaveSpawn(currentCfg);
-    if (wave >= 3 && (wave - 3) % 3 === 0) setTimeout(() => { if (state === 'playing') spawnBoss(waveTheme === 'captive'); }, 1200);
-    if (waveTheme === 'ghost' || waveTheme === 'emp') setTimeout(() => { if (state === 'playing') spawnMiniBoss(waveTheme); }, 1200);
-    if (waveTheme === 'mirror') setTimeout(() => { if (state === 'playing') spawnMirrorEnemy(); }, 800);
-    if (waveTheme === 'rave') SFX.neonOn();
+    const announceMs = 5200; // a bit more breathing room on top of the spin+hold
+    showWaveClearedBeat(clearedWave, () => {
+      themeEffectsAt = Date.now() + announceMs;
+      // Nothing for the new wave spawns until the announcement is actually gone —
+      // previously these fired on their own shorter timers, racing the announcement
+      // rather than waiting for it.
+      announceWave(wave, announceMs, () => {
+        waveTransitioning = false;
+        if (state !== 'playing') return;
+        startWaveSpawn(currentCfg);
+        if (waveTheme === 'boss' || waveTheme === 'captive') spawnBoss(waveTheme === 'captive');
+        if (waveTheme === 'ghost' || waveTheme === 'emp') spawnMiniBoss(waveTheme);
+        if (waveTheme === 'mirror') spawnMirrorEnemy();
+        if (waveTheme === 'rave') SFX.neonOn();
+      });
+    });
   }
 
-  function announceWave(w) {
+  const SLOT_SPIN_LABELS = ['SURVIVE', ...WAVE_THEMES.map(t => THEME_LABEL[t])];
+
+  // TYPE (theme name, or SURVIVE for a normal wave) is the headline, with the wave
+  // number underneath as the smaller secondary line. Before landing on the actual
+  // roll, it spins through random labels like a slot machine, slowing down toward
+  // the end — gives the player a clear, dramatic beat to register what's coming
+  // instead of an instant reveal. The outer fade-in/out animation runs once across
+  // the whole duration; only the type line's text/color is touched during the spin.
+  function announceWave(w, duration, onDone) {
     const ann = document.createElement('div');
-    ann.style.cssText='position:fixed;inset:0;z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none';
-    const nc='#33ff66';
-    const themeLine = waveTheme ? `<div style="font-family:'Bebas Neue',cursive;font-size:26px;letter-spacing:3px;color:#ff00cc;text-shadow:0 0 14px #ff00cc;margin-top:6px">${THEME_LABEL[waveTheme]}</div>` : '';
-    ann.innerHTML=`<div style="text-align:center;animation:wave-announce 1.8s ease-out forwards">
-      <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:5px;color:${nc}">INCOMING</div>
-      <div style="font-family:'Bebas Neue',cursive;font-size:72px;letter-spacing:8px;color:${nc};text-shadow:0 0 20px ${nc},0 0 40px ${nc}66;line-height:1">WAVE ${w}</div>
-      ${themeLine}
+    // A real dark "intermission" backdrop, not just text floating over still-visible
+    // gameplay — this isn't a rush game, a clear break between waves is fine. Fades
+    // in/out on its own short transition rather than riding the text's scale/opacity
+    // keyframe, so the backdrop itself doesn't appear to "shrink."
+    ann.style.cssText='position:fixed;inset:0;z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;background:rgba(3,1,16,0);transition:background 0.45s ease';
+    const ds = (duration / 1000).toFixed(2);
+    ann.innerHTML=`<div style="text-align:center;animation:wave-announce ${ds}s ease-out forwards">
+      <div id="sp-wave-incoming" style="font-family:'VCR',monospace;font-size:11px;letter-spacing:5px;color:#33ff66">INCOMING</div>
+      <div id="sp-wave-type" style="font-family:'Bebas Neue',cursive;font-size:60px;letter-spacing:6px;color:#33ff66;text-shadow:0 0 20px #33ff66,0 0 40px #33ff6688;line-height:1;transition:transform 0.3s ease-out">SURVIVE</div>
+      <div style="font-family:'Bebas Neue',cursive;font-size:26px;letter-spacing:4px;color:#33ff66;text-shadow:0 0 10px #33ff6688;margin-top:6px">WAVE ${w}</div>
     </div>`;
     document.body.appendChild(ann);
-    SFX.win();
-    setTimeout(()=>ann.remove(),1800);
+    requestAnimationFrame(() => { ann.style.background = 'rgba(3,1,16,0.88)'; });
+    setTimeout(() => { ann.style.background = 'rgba(3,1,16,0)'; }, Math.max(0, duration - 450));
+    const typeEl = ann.querySelector('#sp-wave-type'), incomingEl = ann.querySelector('#sp-wave-incoming');
+    // BOSS is now just another theme entry, with its own THEME_LABEL — no more
+    // separate wave-number-based fallback needed.
+    const finalLabel = waveTheme ? THEME_LABEL[waveTheme] : 'SURVIVE';
+    const finalColor = waveTheme ? '#ff00cc' : '#33ff66';
+    const spinDelays = [60,60,70,80,90,110,140,180,230,300,400];
+    let i = 0;
+    function spin() {
+      if (i >= spinDelays.length) {
+        typeEl.textContent = finalLabel;
+        typeEl.style.color = finalColor;
+        typeEl.style.textShadow = `0 0 20px ${finalColor},0 0 40px ${finalColor}88`;
+        incomingEl.style.color = finalColor;
+        typeEl.style.transform = 'scale(1.18)';
+        setTimeout(() => { typeEl.style.transform = 'scale(1)'; }, 10);
+        SFX.slotLand();
+        return;
+      }
+      typeEl.textContent = SLOT_SPIN_LABELS[Math.floor(Math.random() * SLOT_SPIN_LABELS.length)];
+      typeEl.style.color = '#999';
+      typeEl.style.textShadow = 'none';
+      SFX.slotTick();
+      setTimeout(spin, spinDelays[i++]);
+    }
+    spin();
+    setTimeout(() => { ann.remove(); if (onDone) onDone(); }, duration);
   }
 
   function takeDamage(amount) {
@@ -8481,6 +8771,13 @@ window.confirmCharSelect = function() {
     addFloatText(`-${amount}`, player.x, player.y - 40, '#ff4444', 20);
     miniExplosion(player.x, player.y, '#ff4444');
     triggerShake(amount * 0.5);
+    // Mystery "snowing" outcome — getting hit at all while it's snowing also
+    // freezes you briefly, on top of the normal damage. Reuses the existing
+    // FROZEN debuff (movement slow + snowflake bullets) rather than a new state.
+    if (Date.now() < snowingUntil) {
+      buffFrozenUntil = Math.max(buffFrozenUntil, Date.now() + 2000);
+      addFloatText('FROZEN!', player.x, player.y - 60, '#66ddff', 16);
+    }
     if (health <= 0) {
       // 'dying' (not 'over' yet) — loop() keeps redrawing a frozen frame (background,
       // stars, frozen obstacles/player) for this window instead of stopping outright.
@@ -8559,28 +8856,55 @@ window.confirmCharSelect = function() {
         ctx.fillText(gc.emoji,0,2);
       }
       if (!o.isTrapped) {
-        // enemy: red ring — thick double-stroke, no shadowBlur for perf
-        ctx.beginPath(); ctx.arc(0,0,o.r+10,0,Math.PI*2);
-        ctx.strokeStyle='rgba(255,30,30,0.35)'; ctx.lineWidth=6; ctx.stroke();
-        ctx.beginPath(); ctx.arc(0,0,o.r+9,0,Math.PI*2);
-        ctx.strokeStyle='#ff4444'; ctx.lineWidth=2.5; ctx.stroke();
+        // enemy: outer corner brackets pulled in to overlap the sprite's perimeter
+        // (rather than floating outside it), PLUS a smaller pulsing crosshair set
+        // directly over the sprite at half opacity — combined, reads as a HUD
+        // target-lock reticle rather than a hard outline around the enemy.
+        const outerS = o.r * 0.95, outerLen = outerS * 0.55;
+        ctx.lineCap = 'round';
+        for (const [sx, sy] of [[-1,-1],[1,-1],[-1,1],[1,1]]) {
+          const cx = sx * outerS, cy = sy * outerS;
+          ctx.beginPath();
+          ctx.moveTo(cx - sx * outerLen, cy); ctx.lineTo(cx, cy); ctx.lineTo(cx, cy - sy * outerLen);
+          ctx.strokeStyle = 'rgba(255,30,30,0.35)'; ctx.lineWidth = 6; ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(cx - sx * outerLen, cy); ctx.lineTo(cx, cy); ctx.lineTo(cx, cy - sy * outerLen);
+          ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 2.5; ctx.stroke();
+        }
+        // Per-enemy phase offset must be a fixed seed, not o.x — using the live x
+        // position meant enemies drifting sideways at different speeds (vx) also
+        // pulsed at different effective rates, not just different phases.
+        if (o._pulseSeed === undefined) o._pulseSeed = Math.random() * 1000;
+        const pulse = 0.85 + Math.sin(Date.now() * 0.003 + o._pulseSeed) * 0.15;
+        const s = o.r * 0.55 * pulse, len = s * 0.6;
+        ctx.save();
+        ctx.globalAlpha = 0.6;
+        for (const [sx, sy] of [[-1,-1],[1,-1],[-1,1],[1,1]]) {
+          const cx = sx * s, cy = sy * s;
+          ctx.beginPath();
+          ctx.moveTo(cx - sx * len, cy); ctx.lineTo(cx, cy); ctx.lineTo(cx, cy - sy * len);
+          ctx.strokeStyle = 'rgba(255,30,30,0.7)'; ctx.lineWidth = 5; ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(cx - sx * len, cy); ctx.lineTo(cx, cy); ctx.lineTo(cx, cy - sy * len);
+          ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 2; ctx.stroke();
+        }
+        ctx.restore();
       }
       if (o.isTrapped && o.ringHp > 0) {
-        const t = Date.now() * 0.003;
+        // Laid further over the character (was 0.95, just the edge) rather than
+        // sitting mostly outside it. Dash animation uses lineDashOffset directly
+        // — the same proven technique the danger line already uses — instead of
+        // rotating a redrawn full circle to fake the dash movement, which turned
+        // out not to actually animate visibly.
+        const ringR = o.r * 0.7;
         ctx.save();
-        ctx.rotate(t);
-        // cyan ring — thick outer halo instead of shadowBlur
-        ctx.beginPath(); ctx.arc(0, 0, o.r + 11, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(0,229,255,0.25)'; ctx.lineWidth = 7; ctx.stroke();
-        ctx.beginPath(); ctx.arc(0, 0, o.r + 10, 0, Math.PI * 2);
+        ctx.setLineDash([6, 5]);
+        ctx.lineDashOffset = -(Date.now() / 40) % 11;
+        ctx.beginPath(); ctx.arc(0, 0, ringR + 1, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(0,229,255,0.3)'; ctx.lineWidth = 6; ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, ringR, 0, Math.PI * 2);
         ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 2.5; ctx.stroke();
-        for (let d = 0; d < 4; d++) {
-          const a = (d / 4) * Math.PI * 2 + t;
-          ctx.fillStyle = '#fff';
-          ctx.beginPath();
-          ctx.arc(Math.cos(a) * (o.r + 10), Math.sin(a) * (o.r + 10), 3, 0, Math.PI * 2);
-          ctx.fill();
-        }
+        ctx.setLineDash([]);
         ctx.restore();
       }
     }
@@ -8592,6 +8916,24 @@ window.confirmCharSelect = function() {
   function drawDiscoBall() {
     const x = W / 2, y = 46, r = 22;
     const t = Date.now() * 0.0012;
+    // Rotating colored light beams sweeping down from the ball — drawn first so
+    // the ball itself sits in front of them.
+    const beamColors = ['255,0,255', '0,255,255', '255,255,0', '57,255,20'];
+    for (let i = 0; i < beamColors.length; i++) {
+      const a = t * 1.3 + (i / beamColors.length) * Math.PI * 2;
+      const len = H * 0.5;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(a);
+      const grad = ctx.createLinearGradient(0, 0, 0, len);
+      grad.addColorStop(0, `rgba(${beamColors[i]},0.22)`);
+      grad.addColorStop(1, `rgba(${beamColors[i]},0)`);
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(-6, 0); ctx.lineTo(6, 0); ctx.lineTo(34, len); ctx.lineTo(-34, len);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
     ctx.save();
     ctx.translate(x, y);
     ctx.strokeStyle = 'rgba(200,200,210,0.5)'; ctx.lineWidth = 1.5;
@@ -8628,30 +8970,23 @@ window.confirmCharSelect = function() {
   }
 
   function drawHUD() {
-    // Score (top left)
-    ctx.fillStyle = 'rgba(242,239,232,0.92)';
-    ctx.font = `bold 23px 'Bebas Neue', cursive`;
-    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-    ctx.fillText(`SCORE ${score}`, 10, 6);
+    // Score (top left) — hidden while the top banner is showing (appears through
+    // its full fade-in/hold/fade-out) rather than competing with it; nobody reads
+    // it that closely mid-action anyway.
+    if (!topBanner) {
+      ctx.fillStyle = 'rgba(242,239,232,0.92)';
+      ctx.font = `bold 23px 'Bebas Neue', cursive`;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      ctx.fillText(`SCORE ${score}`, 10, 6);
+    }
 
-    // Wave (top center) — shows obstacles left this wave (spawned-but-unresolved + still to spawn)
-    ctx.textAlign = 'center';
-    const leftThisWave = obstacles.length + spawnsRemaining;
-    ctx.fillText(`WAVE ${wave}  ·  ${leftThisWave} LEFT`, W/2, 6);
-
-    // Health bar — moved up to the top, under the score/wave row. Keeps the bottom
-    // of the screen clear for a thumb to drag/swipe on mobile without covering the HUD.
+    // Wave number / HP percent text both removed — the health bar fill is already
+    // the at-a-glance signal, and wave number isn't something players read mid-action.
     const barY = 56;
     const barW = W; // spans the full screen edge-to-edge, not inset
     const barX = 0;
     const barH = 14;
-
-    // HP label — bigger and clearer
     const hp = Math.max(0, health) / 100;
-    ctx.fillStyle = hp > 0.4 ? 'rgba(242,239,232,0.85)' : '#ff6666';
-    ctx.font = `bold 17px 'Bebas Neue', cursive`;
-    ctx.textAlign = 'left';
-    ctx.fillText(`HP  ${Math.ceil(health)}%`, 12, barY - 19);
 
     // Background track
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
@@ -8692,7 +9027,7 @@ window.confirmCharSelect = function() {
     let buffY = barY + barH + 16;
     const now = Date.now();
     if (now < buffSpeedUntil) {
-      drawBuffLine(`🍕 SPEED ${Math.ceil((buffSpeedUntil - now) / 1000)}s`, buffY, '#ffe61a', 13);
+      drawBuffLine(`⏩ SPEED ${Math.ceil((buffSpeedUntil - now) / 1000)}s`, buffY, '#ffe61a', 13);
       buffY += 18;
     }
     if (now < buffGunUntil) {
@@ -8708,11 +9043,15 @@ window.confirmCharSelect = function() {
       buffY += 18;
     }
     if (now < buffZappedUntil) {
-      drawBuffLine(`💨 ZAPPED ${Math.ceil((buffZappedUntil - now) / 1000)}s`, buffY, '#cc99ff', 13);
+      drawBuffLine(`💨 FART ${Math.ceil((buffZappedUntil - now) / 1000)}s`, buffY, '#cc99ff', 13);
       buffY += 18;
     }
     if (now < controlsReversedUntil) {
       drawBuffLine(`🔀 REVERSED ${Math.ceil((controlsReversedUntil - now) / 1000)}s`, buffY, '#ff5500', 13);
+      buffY += 18;
+    }
+    if (now < buffPizzaUntil) {
+      drawBuffLine(`🍕 PIZZA BLAST ${Math.ceil((buffPizzaUntil - now) / 1000)}s`, buffY, '#ffcc44', 13);
       buffY += 18;
     }
     if (waveTheme === 'rave') {
@@ -8769,15 +9108,47 @@ window.confirmCharSelect = function() {
       ctx.fillStyle = _rave ? `rgba(${RAVE_STAR_COLORS[Math.floor(s.x + s.y) % RAVE_STAR_COLORS.length]},${s.a})` : `rgba(255,255,255,${s.a})`;
       ctx.fill();
     }
-    if (_rave) drawDiscoBall();
+    if (_rave) {
+      drawDiscoBall();
+      // Periodic confetti bursts — reuses the same celebratory effect used for
+      // mini-boss kills/triple-buff elsewhere, just on a timer instead of an event.
+      if (Date.now() - lastRaveConfetti > 2800) { ticketConfetti(true); lastRaveConfetti = Date.now(); }
+    }
+
+    // Mystery "snowing" outcome — ambient, not overly dense, purely atmospheric on
+    // its own. takeDamage() is what actually punishes getting hit while this is up.
+    if (Date.now() < snowingUntil) {
+      while (snowParticles.length < 22) snowParticles.push({ x: rand(0, W), y: rand(-20, H), speed: 0.6 + Math.random() * 0.9, r: 6 + Math.random() * 4, drift: Math.random() * Math.PI * 2 });
+      for (const sp of snowParticles) {
+        sp.y += sp.speed;
+        sp.x += Math.sin(sp.drift + sp.y * 0.02) * 0.4;
+        if (sp.y > H) { sp.y = -10; sp.x = rand(0, W); }
+        drawSnowflake(sp.x, sp.y, sp.r, 'rgba(190,225,255,0.8)', null);
+      }
+    } else if (snowParticles.length) {
+      snowParticles = [];
+    }
 
     const _now = Date.now();
     const _frozen = _now < buffFrozenUntil, _zapped = _now < buffZappedUntil;
+    const _pizza = _now < buffPizzaUntil;
     const curFireMs = _now < buffGunUntil ? AUTO_FIRE_MS * 0.4 : AUTO_FIRE_MS;
-    if(ts-lastAutoFire>curFireMs){
+    if (_pizza) {
+      // Its own much slower, separate cadence — a deliberate pump-shotgun rhythm,
+      // not rapid fire — plus slower bullets so each blast reads as heavy rather
+      // than just "more bullets at the normal speed."
+      const PIZZA_FIRE_MS = 950;
+      if (ts - lastPizzaFire > PIZZA_FIRE_MS) {
+        for (const a of [-0.36, -0.18, 0, 0.18, 0.36]) {
+          bullets.push({x:player.x,y:player.y-player.r*1.2,vy:-B_SPEED*0.5*Math.cos(a),vx:-B_SPEED*0.5*Math.sin(a),isPizza:true});
+        }
+        SFX.bomberDive();
+        lastPizzaFire = ts;
+      }
+    } else if(ts-lastAutoFire>curFireMs){
       bullets.push({x:player.x,y:player.y-player.r*1.2,vy:-B_SPEED});
-      lastAutoFire=ts;
       if (_zapped) SFX.fart(); else SFX.blaster();
+      lastAutoFire=ts;
     }
 
     let curSpeed = _now < buffSpeedUntil ? P_SPEED * 1.6 : P_SPEED;
@@ -8819,6 +9190,47 @@ window.confirmCharSelect = function() {
       else if (ts - twin.lastFire > AUTO_FIRE_MS) {
         bullets.push({x:twin.x, y:twin.y-player.r*1.2, vy:-B_SPEED});
         twin.lastFire = ts;
+      }
+    }
+
+    // Mystery box "rebound" hazard — bounces off the side walls/top AND off any
+    // enemy or asteroid it touches (true reflection off the obstacle's surface,
+    // not just a wall-style axis flip), so its path stays unpredictable rather
+    // than passing straight through the rest of the wave. Hits the player once
+    // for real damage (shield still blocks it) then clears, or expires on its own.
+    if (rebound) {
+      rebound.x += rebound.vx; rebound.y += rebound.vy;
+      if (rebound.x < rebound.r || rebound.x > W - rebound.r) rebound.vx *= -1;
+      if (rebound.y < rebound.r) rebound.vy *= -1;
+      if (rebound.y > dangerY) rebound.vy *= -1; // stays in the playfield, doesn't sneak through as a free hit at the line
+      for (const o of obstacles) {
+        if (o.alive === false) continue;
+        const odx = rebound.x - o.x, ody = rebound.y - o.y;
+        const dist = Math.hypot(odx, ody);
+        const minDist = rebound.r + o.r;
+        if (dist > 0 && dist < minDist) {
+          const nx = odx / dist, ny = ody / dist;
+          const dot = rebound.vx * nx + rebound.vy * ny;
+          rebound.vx -= 2 * dot * nx; rebound.vy -= 2 * dot * ny;
+          rebound.x += nx * (minDist - dist); rebound.y += ny * (minDist - dist);
+          miniExplosion(rebound.x, rebound.y, '#ff8855');
+          break; // one bounce per frame is plenty
+        }
+      }
+      if (Math.hypot(rebound.x - player.x, rebound.y - player.y) < rebound.r + player.r * 0.8) {
+        takeDamage(15);
+        miniExplosion(rebound.x, rebound.y, '#ff4444');
+        rebound = null;
+      } else if (Date.now() > rebound.expiresAt) {
+        rebound = null;
+      } else if (Date.now() > rebound.nextFire) {
+        // Fires along its own spin angle (same formula drawRebound uses to rotate
+        // it visually) — rapid-fire that sweeps through every direction as it spins,
+        // rather than aiming at the player.
+        const spinAngle = Date.now() * 0.006;
+        const fireSpeed = 4;
+        enemyBullets.push({ x: rebound.x, y: rebound.y, vx: Math.cos(spinAngle) * fireSpeed, vy: Math.sin(spinAngle) * fireSpeed, r: 4 });
+        rebound.nextFire = Date.now() + 130;
       }
     }
 
@@ -8916,7 +9328,12 @@ window.confirmCharSelect = function() {
 
     bullets=bullets.filter(b=>b.y>-10);
     bullets.forEach(b=>{
-      if (_zapped) {
+      if (_frozen) {
+        // Was moving at full normal speed despite the icy snowflake skin implying
+        // otherwise — slowed to actually feel cold/sluggish, not just look different.
+        b.y += b.vy * 0.4;
+        if (b.vx) b.x += b.vx * 0.4;
+      } else if (_zapped) {
         // Even floatier and gassier — drifts up slowly with a wide, loose wobble
         // instead of a clean straight shot, on top of dealing 0 damage.
         b.y += b.vy * 0.28;
@@ -8924,12 +9341,15 @@ window.confirmCharSelect = function() {
         b.x += Math.sin(b._wob) * 2.2;
       } else {
         b.y += b.vy;
+        if (b.vx) b.x += b.vx;
       }
     });
 
     // Power-ups: drift down, draw, collect by touch only — bullets pass straight
     // through them. SHOOT is for hostiles, CATCH is for pickups; letting bullets
-    // also collect them blurred that distinction.
+    // also collect them blurred that distinction. Mystery is the one deliberate
+    // exception now — it's a shoot target (ring takes 7 hits to break, then the
+    // outcome applies automatically), not something you fly into to catch.
     powerups = powerups.filter(p => p.y < H + 40);
     for (const p of powerups) {
       p.y += p.vy;
@@ -8938,14 +9358,62 @@ window.confirmCharSelect = function() {
       if (p.type === 'mystery') p.y += Math.sin(Date.now() * 0.003 + p.bob) * 0.4;
       if (p.rotSpeed) p.rot += p.rotSpeed;
       drawPowerup(p);
-      let gotIt = Math.hypot(p.x - player.x, p.y - player.y) < p.r + player.r * 0.9;
+      if (p.type === 'mystery' && p.ringHp > 0) {
+        for (const b of bullets) {
+          if (b.vy === 999) continue; // already spent on something else this frame
+          if (Math.hypot(b.x - p.x, b.y - p.y) < p.r * 1.1) {
+            b.vy = 999;
+            p.ringHp--;
+            if (p.ringHp <= 0) {
+              miniExplosion(p.x, p.y, '#cc66ff');
+              applyPowerup('mystery');
+              p._collected = true;
+            } else {
+              SFX.score();
+            }
+            break;
+          }
+        }
+        if (p._collected) continue;
+      }
+      if (p.type === 'instrument') {
+        // One hit and it's gone — pure fun, no ring/HP, just a note + points.
+        for (const b of bullets) {
+          if (b.vy === 999) continue;
+          if (Math.hypot(b.x - p.x, b.y - p.y) < p.r * 1.1) {
+            b.vy = 999;
+            score += 20;
+            addFloatText('♪ +20', p.x, p.y - 10, '#ffe61a', 18);
+            miniExplosion(p.x, p.y, p.kind === 'guitar' ? '#c47a32' : p.kind === 'piano' ? '#f5f3ec' : '#a02020');
+            if (p.kind === 'guitar') SFX.guitarNote();
+            else if (p.kind === 'piano') SFX.pianoNote();
+            else SFX.drumHit();
+            p._collected = true;
+            break;
+          }
+        }
+        if (p._collected) continue;
+      }
+      let gotIt = p.type !== 'mystery' && p.type !== 'instrument' && Math.hypot(p.x - player.x, p.y - player.y) < p.r + player.r * 0.9;
       // An active escort can also catch pickups itself, not just the player ship —
       // it's right there next to you, no reason it should be unable to grab one.
-      if (!gotIt && escort && escort.state === 'active') {
+      if (!gotIt && p.type !== 'mystery' && p.type !== 'instrument' && escort && escort.state === 'active') {
         gotIt = Math.hypot(p.x - escort.x, p.y - escort.y) < p.r + 16 * 0.9;
       }
       if (gotIt) {
-        applyPowerup(p.type);
+        if (SOCKET_TYPES.includes(p.type)) {
+          // Banked, not applied — deployed later by tapping its socket. HP and
+          // mystery boxes aren't bankable and keep applying instantly below.
+          if (inventory[p.type]) {
+            showTopBanner('ALREADY HELD', 'bad');
+          } else {
+            inventory[p.type] = true;
+            showTopBanner(p.type.toUpperCase() + ' ADDED', 'good');
+            SFX.powerupCollect();
+          }
+        } else {
+          applyPowerup(p.type);
+        }
         miniExplosion(p.x, p.y, p.type === 'hp' ? '#33ff66' : p.type === 'mystery' ? '#cc66ff' : '#ffe61a');
         p._collected = true;
       }
@@ -8983,22 +9451,26 @@ window.confirmCharSelect = function() {
       o.y+=o.vy;
       if(o.type==='asteroid') o.rot+=o.rotSpeed;
     }
-    // Danger line crossing
+    // Danger line crossing — REVERSE flips both which line and which direction
+    // counts as "crossed", since obstacles travel upward toward REVERSE_LINE_Y
+    // instead of downward toward dangerY.
+    const _lineY = waveTheme === 'flip' ? REVERSE_LINE_Y : dangerY;
     for(const o of obstacles){
-      if(!o._crossed && o.y > dangerY){
+      const _crossedLine = waveTheme === 'flip' ? o.y < _lineY : o.y > _lineY;
+      if(!o._crossed && _crossedLine){
         o._crossed = true;
         o.alive = false;
         lineFlashA = 1.0;
         if(o.type==='asteroid'){
           takeDamage(10);
-          bigExplosion(o.x, dangerY, '#aa8855');
+          bigExplosion(o.x, _lineY, '#aa8855');
           SFX.whack && SFX.whack(); // thud sound
           waveKills++;
         } else if(!o.isTrapped){
           // enemy crosses line — big damage
           takeDamage(30);
-          bigExplosion(o.x, dangerY, GAME_CHARS[o.ci].color);
-          faceFlash(o.ci, 'sad', o.x, dangerY - 30);
+          bigExplosion(o.x, _lineY, GAME_CHARS[o.ci].color);
+          faceFlash(o.ci, 'sad', o.x, _lineY - 30);
           SFX.miss();
           waveKills++;
         } else {
@@ -9026,20 +9498,7 @@ window.confirmCharSelect = function() {
         // Hand-drawn, not the emoji glyph — guarantees it's actually blue (emoji
         // snowflakes render with their own baked-in color on most platforms) and
         // lets it be drawn comically oversized compared to a normal bullet.
-        ctx.save();
-        ctx.translate(b.x, b.y);
-        ctx.shadowColor = '#66ddff'; ctx.shadowBlur = 12;
-        ctx.strokeStyle = '#33aaff'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-        const R = 14;
-        for (let k = 0; k < 6; k++) {
-          const a = k * Math.PI / 3;
-          const ex = Math.cos(a)*R, ey = Math.sin(a)*R;
-          ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(ex,ey); ctx.stroke();
-          const mx = ex*0.6, my = ey*0.6;
-          ctx.beginPath(); ctx.moveTo(mx,my); ctx.lineTo(mx+Math.cos(a+1)*5, my+Math.sin(a+1)*5); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(mx,my); ctx.lineTo(mx+Math.cos(a-1)*5, my+Math.sin(a-1)*5); ctx.stroke();
-        }
-        ctx.restore();
+        drawSnowflake(b.x, b.y, 14, '#33aaff', '#66ddff');
       } else if (_zapped) {
         // Hand-drawn puff cluster instead of the emoji glyph — soft translucent
         // greenish-brown blobs, comedic rather than a clean projectile. Bigger and
@@ -9047,13 +9506,33 @@ window.confirmCharSelect = function() {
         ctx.save();
         ctx.translate(b.x, b.y);
         const wob = b._wob || 0;
-        ctx.fillStyle = 'rgba(150,200,90,0.5)';
-        ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = 'rgba(180,160,90,0.42)';
-        ctx.beginPath(); ctx.arc(Math.cos(wob)*8, Math.sin(wob)*6, 9, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(-Math.cos(wob)*8, 6, 8, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = 'rgba(150,200,90,0.35)';
-        ctx.beginPath(); ctx.arc(Math.sin(wob)*6, -7, 6.5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(150,200,90,0.45)';
+        ctx.beginPath(); ctx.arc(0, 0, 17, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(180,160,90,0.38)';
+        ctx.beginPath(); ctx.arc(Math.cos(wob)*14, Math.sin(wob)*10, 12, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(-Math.cos(wob)*14, 10, 11, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(150,200,90,0.32)';
+        ctx.beginPath(); ctx.arc(Math.sin(wob)*11, -13, 9, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(-Math.sin(wob)*12, 4, 7.5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(180,160,90,0.28)';
+        ctx.beginPath(); ctx.arc(Math.cos(wob*0.7)*16, -4, 7, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+      } else if (b.isPizza) {
+        // Hand-drawn pizza slice — wedge with a crust arc and pepperoni dots,
+        // rotated to face the direction it's actually flying (the shotgun spread
+        // fans out at angles, not just straight up).
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.rotate(Math.atan2(b.vy, b.vx) + Math.PI / 2);
+        ctx.beginPath();
+        ctx.moveTo(0, -10); ctx.lineTo(-7, 8); ctx.lineTo(7, 8); ctx.closePath();
+        ctx.fillStyle = '#ffcc44'; ctx.fill();
+        ctx.strokeStyle = '#e8a020'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 8, 7.3, Math.PI * 0.18, Math.PI * 0.82); ctx.strokeStyle = '#f0d8a0'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = '#cc3322';
+        ctx.beginPath(); ctx.arc(-2.5, -1, 1.6, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(2.5, 2, 1.6, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(0.5, -4.5, 1.4, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
       } else {
         ctx.fillRect(b.x-2,b.y-12,4,14);
@@ -9195,18 +9674,26 @@ window.confirmCharSelect = function() {
     obstacles=obstacles.filter(o=>o.alive!==false);
     bullets=bullets.filter(b=>b.vy!==999);
 
-    for(const o of obstacles){
-      if(Math.hypot(o.x-player.x,o.y-player.y)<o.r+player.r*0.7){
-        o.alive=false; SFX.miss();
-        takeDamage(o.type==='face' ? 30 : 15);
-        if(state==='over') return;
+    // REVERSE: obstacles spawn right next to the ship and immediately retreat
+    // upward — they're not "attacking" by being close, so simple contact doesn't
+    // hurt here. Shooting them (still works normally, bullets pass right through
+    // this check) is the only way they actually do anything to the player.
+    if (waveTheme !== 'flip') {
+      for(const o of obstacles){
+        if(Math.hypot(o.x-player.x,o.y-player.y)<o.r+player.r*0.7){
+          o.alive=false; SFX.miss();
+          takeDamage(o.type==='face' ? 30 : 15);
+          if(state==='over') return;
+        }
       }
+      obstacles=obstacles.filter(o=>o.alive!==false);
     }
-    obstacles=obstacles.filter(o=>o.alive!==false);
 
-    // Wave ends naturally once the spawn pool is exhausted and the board has actually cleared —
-    // no forced wipe, so the last few obstacles fly off / get resolved normally first.
-    if (spawnsRemaining <= 0 && obstacles.length === 0 && state === 'playing') {
+    // Wave ends naturally once the spawn pool is exhausted, the board has cleared,
+    // AND every falling powerup has resolved (caught, broken, or fallen off-screen)
+    // — no forced wipe, and nothing is still visibly falling once the wave-transition
+    // announcement covers the screen.
+    if (spawnsRemaining <= 0 && obstacles.length === 0 && powerups.length === 0 && state === 'playing') {
       nextWave();
     }
 
@@ -9245,12 +9732,12 @@ window.confirmCharSelect = function() {
       if(Math.sqrt(dx*dx+dy*dy) < (b.r||4) + player.r*0.8){
         b._hit=true;
         if (b.isIce) {
-          buffFrozenUntil = Date.now() + 5500;
+          buffFrozenUntil = Date.now() + 5000;
           addFloatText('FROZEN!', player.x, player.y - 40, '#66ddff', 18);
           SFX.freeze();
         } else if (b.isZap) {
-          buffZappedUntil = Date.now() + 4000;
-          addFloatText('ZAPPED!', player.x, player.y - 40, '#cc99ff', 18);
+          buffZappedUntil = Date.now() + 5000;
+          addFloatText('FARTED!', player.x, player.y - 40, '#cc99ff', 18);
           SFX.emp();
         } else {
           SFX.miss();
@@ -9274,18 +9761,19 @@ window.confirmCharSelect = function() {
       ctx.restore();
     });
 
-    // Danger line — no shadowBlur; use a wider semi-transparent halo line instead
+    // Danger line — no shadowBlur; use a wider semi-transparent halo line instead.
+    // Drawn at _lineY so REVERSE's relocated top line shows instead of dangerY.
     if (lineFlashA > 0) lineFlashA = Math.max(0, lineFlashA - 0.04);
     ctx.save();
     ctx.setLineDash([6, 5]);
     ctx.lineDashOffset = -(Date.now() / 90) % 11;
     // halo
-    ctx.beginPath(); ctx.moveTo(0, dangerY); ctx.lineTo(W, dangerY);
+    ctx.beginPath(); ctx.moveTo(0, _lineY); ctx.lineTo(W, _lineY);
     ctx.strokeStyle = `rgba(51,255,100,${(0.28 + lineFlashA * 0.62) * 0.35})`;
     ctx.lineWidth = 6 + lineFlashA * 4;
     ctx.stroke();
     // core line
-    ctx.beginPath(); ctx.moveTo(0, dangerY); ctx.lineTo(W, dangerY);
+    ctx.beginPath(); ctx.moveTo(0, _lineY); ctx.lineTo(W, _lineY);
     ctx.strokeStyle = `rgba(51,255,100,${0.28 + lineFlashA * 0.62})`;
     ctx.lineWidth = 1.5 + lineFlashA;
     ctx.stroke();
@@ -9296,12 +9784,13 @@ window.confirmCharSelect = function() {
     if (miniBoss) drawMiniBoss();
     drawPlayer();
     if (twin) drawTwin();
+    if (rebound) drawRebound();
     if (escort) drawEscort();
     // BLACKOUT: a radial-gradient vignette drawn over everything — nearly opaque
     // dark except a small clear radius around the ship, so vision is the actual
     // gameplay constraint rather than a new spawn/damage rule.
-    if (waveTheme === 'blackout') {
-      const grad = ctx.createRadialGradient(player.x, player.y, player.r*2.5, player.x, player.y, player.r*7);
+    if (waveTheme === 'blackout' && Date.now() > themeEffectsAt) {
+      const grad = ctx.createRadialGradient(player.x, player.y, player.r*3, player.x, player.y, player.r*8.4); // spotlight enlarged 20%
       grad.addColorStop(0, 'rgba(3,1,16,0)');
       grad.addColorStop(1, 'rgba(3,1,16,0.96)');
       ctx.fillStyle = grad;
@@ -9309,6 +9798,87 @@ window.confirmCharSelect = function() {
     }
     ctx.restore(); // undo shake before HUD — text should stay stable/readable
     drawHUD();
+    drawSockets();
+    drawTopBanner();
+  }
+
+  // Unified callout for every power/advantage/HP event — one consistent place to
+  // look instead of scattered popups (ship-position float text, socket flashes,
+  // full-screen banners), which is exactly the "everything flying at me" chaos this
+  // is meant to cut down on. Drawn last so it visually covers the score/wave row
+  // for its duration. Same cyan/red as the hero ring / enemy reticle, same glowing
+  // Bebas Neue language as the intro objective text. Fades in and out rather than
+  // snapping on/off — reads as "appearing," not a flash.
+  let topBanner = null;
+  const TOP_BANNER_FADE_IN = 220, TOP_BANNER_HOLD = 700, TOP_BANNER_FADE_OUT = 380;
+  function showTopBanner(text, kind) {
+    topBanner = {
+      text,
+      color: kind === 'bad' ? '#ff4444' : '#00e5ff',
+      startedAt: Date.now(),
+    };
+  }
+  function drawTopBanner() {
+    if (!topBanner) return;
+    const elapsed = Date.now() - topBanner.startedAt;
+    const total = TOP_BANNER_FADE_IN + TOP_BANNER_HOLD + TOP_BANNER_FADE_OUT;
+    if (elapsed > total) { topBanner = null; return; }
+    let a;
+    if (elapsed < TOP_BANNER_FADE_IN) a = elapsed / TOP_BANNER_FADE_IN;
+    else if (elapsed < TOP_BANNER_FADE_IN + TOP_BANNER_HOLD) a = 1;
+    else a = 1 - (elapsed - TOP_BANNER_FADE_IN - TOP_BANNER_HOLD) / TOP_BANNER_FADE_OUT;
+    const c = topBanner.color;
+    ctx.save();
+    ctx.globalAlpha = a;
+    // Solid enough to actually obscure what's happening underneath, on purpose —
+    // half-visible motion through a translucent banner read as more confusing than
+    // just hiding it for the brief moment the banner is up.
+    ctx.fillStyle = '#0a0418';
+    ctx.fillRect(0, 0, W, 54);
+    ctx.fillStyle = c + '33';
+    ctx.fillRect(0, 0, W, 54);
+    ctx.shadowColor = c; ctx.shadowBlur = 20;
+    ctx.fillStyle = c;
+    ctx.font = `38px 'Bebas Neue', cursive`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(topBanner.text, W / 2, 28);
+    ctx.restore();
+  }
+
+  // Left-edge inventory sockets — dim/gray glyph when empty, full-color when holding
+  // one (max 1 per type). Tapping/clicking a filled socket deploys it (see
+  // deploySocket/hitSocket above); empty sockets just sit there as a placeholder.
+  function drawSockets() {
+    SOCKET_TYPES.forEach((type, i) => {
+      const r = socketRect(i);
+      const cx = r.x + r.w / 2, cy = r.y + r.h / 2, rad = r.w / 2;
+      const held = inventory[type];
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.beginPath(); ctx.arc(0, 0, rad, 0, Math.PI * 2);
+      ctx.fillStyle = held ? '#1a1530' : 'rgba(120,120,130,0.08)'; ctx.fill();
+      ctx.strokeStyle = held ? SOCKET_COLOR[type] : 'rgba(150,150,160,0.35)';
+      ctx.lineWidth = held ? 2.5 : 2;
+      ctx.stroke();
+      if (!held) ctx.globalAlpha = 0.3;
+      if (type === 'shield') {
+        const hr = rad * 0.6;
+        ctx.beginPath();
+        for (let k = 0; k < 6; k++) {
+          const a = -Math.PI / 2 + k * Math.PI / 3;
+          const x = Math.cos(a) * hr, y = Math.sin(a) * hr;
+          if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = held ? SOCKET_COLOR.shield : 'rgba(150,150,160,0.5)';
+        ctx.fill();
+      } else {
+        ctx.font = `${rad * 1.1}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = held ? '#fff' : 'rgba(150,150,160,0.5)';
+        ctx.fillText(SOCKET_GLYPH[type], 0, 1);
+      }
+      ctx.restore();
+    });
   }
 
   // Renders a half-grid sprite mirrored into a full symmetric sprite, centered at
@@ -9355,8 +9925,9 @@ window.confirmCharSelect = function() {
     ctx.save();
     ctx.translate(boss.x, boss.y);
     if (boss.isCaptive) {
-      // Jail cell reskin — same fight underneath, but it's a held hero behind bars
-      // instead of a creature to defeat.
+      // Jail cell reskin — same fight underneath, but restyled to match the look
+      // of a normal trapped hero (blue square frame + the same rotating pulsing
+      // ring) instead of a separate gray jail-bars design.
       ctx.beginPath(); ctx.arc(0, 0, boss.r * 0.95, 0, Math.PI * 2);
       ctx.fillStyle = '#1a1530'; ctx.fill();
       const gc = GAME_CHARS[boss.captiveCi];
@@ -9367,8 +9938,21 @@ window.confirmCharSelect = function() {
         ctx.font = `${boss.r}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(gc.emoji, 0, 2);
       }
-      ctx.strokeStyle = '#cfcfd8'; ctx.lineWidth = 4;
-      for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(i*boss.r*0.4, -boss.r); ctx.lineTo(i*boss.r*0.4, boss.r); ctx.stroke(); }
+      ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 3;
+      ctx.strokeRect(-boss.r * 0.95, -boss.r * 0.95, boss.r * 1.9, boss.r * 1.9);
+      // Laid over the character (was 1.18, floating outside the square frame) and
+      // animated via lineDashOffset directly — rotating a redrawn full circle
+      // doesn't actually move the dashes, same fix as the normal trapped-hero ring.
+      const _bRingR = boss.r * 0.85;
+      ctx.save();
+      ctx.setLineDash([6, 5]);
+      ctx.lineDashOffset = -(Date.now() / 40) % 11;
+      ctx.beginPath(); ctx.arc(0, 0, _bRingR + 1, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(0,229,255,0.3)'; ctx.lineWidth = 6; ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, _bRingR, 0, Math.PI * 2);
+      ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
     } else {
       // No red ring here — unlike a small enemy face, the boss is already unmistakably
       // a threat (its size, name label, and health bar), so the ring was redundant.
@@ -9423,6 +10007,28 @@ window.confirmCharSelect = function() {
       ctx.font = `${player.r*1.4}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(gc.emoji, 0, 2);
     }
+    ctx.restore();
+  }
+
+  // SVG-style drawn shape (no emoji) — a spinning red/orange hazard ball with a
+  // warning-stripe pattern, deliberately reading as "dangerous to touch."
+  function drawRebound() {
+    const t = Date.now() * 0.006;
+    ctx.save();
+    ctx.translate(rebound.x, rebound.y);
+    ctx.rotate(t);
+    ctx.beginPath(); ctx.arc(0, 0, rebound.r, 0, Math.PI * 2);
+    ctx.fillStyle = '#7a1010'; ctx.fill();
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, 0, rebound.r, 0, Math.PI * 2); ctx.clip();
+    ctx.fillStyle = '#ff4444';
+    for (let i = 0; i < 6; i++) {
+      ctx.save(); ctx.rotate((i / 6) * Math.PI * 2);
+      ctx.fillRect(-rebound.r, -2, rebound.r * 2, 4);
+      ctx.restore();
+    }
+    ctx.restore();
+    ctx.strokeStyle = '#ffaa55'; ctx.lineWidth = 2; ctx.stroke();
     ctx.restore();
   }
 
@@ -9559,7 +10165,10 @@ window.confirmCharSelect = function() {
                   </svg>
                   <svg width="30" height="30" viewBox="0 0 30 30" style="flex-shrink:0">
                     <circle cx="15" cy="15" r="11" fill="#cc44ff"/>
-                    <circle cx="15" cy="15" r="13.5" fill="none" stroke="#ff4444" stroke-width="2.5"/>
+                    <polyline points="6.5,1.5 1.5,1.5 1.5,6.5" fill="none" stroke="#ff4444" stroke-width="2.5" stroke-linecap="round"/>
+                    <polyline points="23.5,1.5 28.5,1.5 28.5,6.5" fill="none" stroke="#ff4444" stroke-width="2.5" stroke-linecap="round"/>
+                    <polyline points="1.5,23.5 1.5,28.5 6.5,28.5" fill="none" stroke="#ff4444" stroke-width="2.5" stroke-linecap="round"/>
+                    <polyline points="28.5,23.5 28.5,28.5 23.5,28.5" fill="none" stroke="#ff4444" stroke-width="2.5" stroke-linecap="round"/>
                   </svg>
                   <svg width="30" height="30" viewBox="0 0 30 30" style="flex-shrink:0">
                     <circle cx="15" cy="15" r="11" fill="#33d4e0"/>
@@ -9579,7 +10188,6 @@ window.confirmCharSelect = function() {
                     <polygon points="15,6 22.79,10.5 22.79,19.5 15,24 7.21,19.5 7.21,10.5" fill="#00e5ff" stroke="#eafffd" stroke-width="2"/>
                     <polygon points="13.92,10.05 17.88,14.55 15,14.55 16.08,19.95 12.12,15.45 15,15.45" fill="#1a1530"/>
                   </svg>
-                  <div style="font-size:22px;width:30px;text-align:center;flex-shrink:0">🍕</div>
                   <div style="font-size:22px;width:30px;text-align:center;flex-shrink:0">⚡</div>
                   <div style="font-size:22px;width:30px;text-align:center;flex-shrink:0">💣</div>
                 </div>
@@ -9678,7 +10286,13 @@ window.confirmCharSelect = function() {
               <div id="sp-intro-bullet1" style="position:absolute;left:21px;top:84px;width:4px;height:14px;background:#fff;border-radius:2px;box-shadow:0 0 6px #fff;transition:top 0.35s linear"></div>
             </div>
             <div style="position:relative;width:46px;height:90px">
-              <div id="sp-intro-enemy" style="position:absolute;top:4px;left:0;width:0;height:0;border-left:23px solid transparent;border-right:23px solid transparent;border-bottom:38px solid #ff4444;transform:rotate(180deg)"></div>
+              <div id="sp-intro-ring" style="position:absolute;top:2px;left:2px;width:42px;height:42px">
+                <div style="position:absolute;top:0;left:0;width:10px;height:10px;border-top:2.5px solid #ff4444;border-left:2.5px solid #ff4444"></div>
+                <div style="position:absolute;top:0;right:0;width:10px;height:10px;border-top:2.5px solid #ff4444;border-right:2.5px solid #ff4444"></div>
+                <div style="position:absolute;bottom:0;left:0;width:10px;height:10px;border-bottom:2.5px solid #ff4444;border-left:2.5px solid #ff4444"></div>
+                <div style="position:absolute;bottom:0;right:0;width:10px;height:10px;border-bottom:2.5px solid #ff4444;border-right:2.5px solid #ff4444"></div>
+              </div>
+              <div id="sp-intro-enemy" style="position:absolute;top:6px;left:6px;width:34px;height:34px;border-radius:50%;background:#cc44ff"></div>
               <div id="sp-intro-bullet2" style="position:absolute;left:21px;top:84px;width:4px;height:14px;background:#fff;border-radius:2px;box-shadow:0 0 6px #fff;transition:top 0.35s linear"></div>
             </div>
           </div>`);
@@ -9691,13 +10305,14 @@ window.confirmCharSelect = function() {
         }, 700);
         setTimeout(() => {
           const rock = document.getElementById('sp-intro-rock'), enemy = document.getElementById('sp-intro-enemy');
+          const ring = document.getElementById('sp-intro-ring');
           const b1 = document.getElementById('sp-intro-bullet1'), b2 = document.getElementById('sp-intro-bullet2');
           [rock, enemy].forEach(el => {
             if (!el) return;
             const rect = el.getBoundingClientRect();
             spIntroBurst(rect.left + rect.width / 2, rect.top + rect.height / 2);
           });
-          [rock, enemy, b1, b2].forEach(el => { if (el) el.style.opacity = '0'; });
+          [rock, enemy, ring, b1, b2].forEach(el => { if (el) el.style.opacity = '0'; });
         }, 1050);
       }},
       { duration: 3000, show: () => {
@@ -9733,13 +10348,19 @@ window.confirmCharSelect = function() {
         ann.innerHTML = spIntroObjectiveHTML('RESCUE HEROES',
           `<div style="position:relative;width:80px;height:140px">
             <div id="sp-intro-hero-wrap" style="position:absolute;top:0;width:80px;height:80px;display:flex;align-items:center;justify-content:center">
-              <div id="sp-intro-ring" style="position:absolute;inset:0;border-radius:50%;border:3px solid #00e5ff;box-shadow:0 0 16px rgba(0,229,255,0.5);animation:sp-ring-spin 2s linear infinite"></div>
-              <div style="font-size:34px">🧑</div>
+              <div id="sp-intro-ring" style="position:absolute;inset:0;border-radius:50%;border:3px dashed #00e5ff;box-shadow:0 0 16px rgba(0,229,255,0.5);animation:sp-ring-spin 2s linear infinite"></div>
+              <svg width="36" height="36" viewBox="0 0 36 36" style="flex-shrink:0">
+                <path d="M18,15 L8,33 L28,33 Z" fill="#a020a0" opacity="0.8"/>
+                <path d="M18,15 L11,33 L25,33 Z" fill="#2255cc"/>
+                <circle cx="18" cy="9" r="6.5" fill="#f0c9a0"/>
+                <path d="M12,8 Q12,2 18,2 Q24,2 24,8 Q22,5 18,5 Q14,5 12,8 Z" fill="#5a3520"/>
+                <ellipse cx="25" cy="11" rx="3" ry="5" fill="#5a3520" transform="rotate(25 25 11)"/>
+              </svg>
             </div>
-            <div id="sp-intro-bullet3" style="position:absolute;left:38px;bottom:0;width:4px;height:14px;background:#fff;border-radius:2px;box-shadow:0 0 6px #fff;transition:bottom 0.4s linear"></div>
+            <div id="sp-intro-bullet3" style="position:absolute;left:6px;bottom:0;width:4px;height:14px;background:#fff;border-radius:2px;box-shadow:0 0 6px #fff;transition:bottom 0.4s linear"></div>
           </div>`);
-        // The bullet hits the ring specifically (not the hero) — it's the cage that
-        // breaks, demonstrating you shoot the ring open to free them.
+        // Travels up the ring's left edge, not straight through the center where
+        // the heroine sits — reads as "hits the ring," not "hits the person."
         setTimeout(() => {
           const b = document.getElementById('sp-intro-bullet3');
           if (b) b.style.bottom = '60px';
@@ -9795,6 +10416,34 @@ window.confirmCharSelect = function() {
           if (check) check.style.opacity = '1';
         }, 3200);
       }},
+      { duration: 3000, show: () => {
+        ann.innerHTML = spIntroObjectiveHTML('USE YOUR POWERUPS',
+          `<div style="position:relative;width:80px;height:90px;display:flex;flex-direction:column;align-items:center;gap:10px">
+            <div style="position:relative;width:44px;height:44px">
+              <div id="sp-intro-socket" style="width:44px;height:44px;border-radius:50%;background:#1a1530;border:3px solid #ffe61a;display:flex;align-items:center;justify-content:center;font-size:22px;transition:border-color 0.4s ease-out,opacity 0.4s ease-out,box-shadow 0.4s ease-out;box-shadow:0 0 14px rgba(255,230,26,0.5)">⚡</div>
+              <div id="sp-intro-tap" style="position:absolute;top:0;left:0;width:44px;height:44px;border-radius:50%;border:3px solid #fff;opacity:0;transition:transform 0.5s ease-out,opacity 0.5s ease-out"></div>
+            </div>
+            <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:1px;color:rgba(242,239,232,0.5)">TAP A SOCKET TO USE IT</div>
+          </div>`);
+        // Lit (held) → tap ripple → fades to the same dim/gray empty look the real
+        // socket uses once spent, so the demo matches the actual in-game states.
+        setTimeout(() => {
+          const tap = document.getElementById('sp-intro-tap');
+          if (tap) { tap.style.opacity = '0.8'; tap.style.transform = 'scale(1.5)'; }
+        }, 900);
+        setTimeout(() => {
+          const tap = document.getElementById('sp-intro-tap');
+          if (tap) tap.style.opacity = '0';
+        }, 1300);
+        setTimeout(() => {
+          const socket = document.getElementById('sp-intro-socket');
+          if (socket) {
+            socket.style.borderColor = 'rgba(150,150,160,0.35)';
+            socket.style.boxShadow = 'none';
+            socket.style.opacity = '0.4';
+          }
+        }, 1350);
+      }},
     ];
     steps._ann = ann;
     spPlayIntroSteps(steps, () => { ann.remove(); onDone(); });
@@ -9828,7 +10477,7 @@ window.confirmCharSelect = function() {
     reset(); state='playing'; raf=requestAnimationFrame(loop);
   };
   window.spacePause=function(){
-    clearTimeout(spawnTimer);clearTimeout(hpPowerupTimer);clearTimeout(powerupTimer);clearTimeout(mysteryTimer);cancelAnimationFrame(raf);state='idle';
+    clearTimeout(spawnTimer);clearTimeout(hpPowerupTimer);clearTimeout(powerupTimer);clearTimeout(mysteryTimer);clearTimeout(instrumentTimer);cancelAnimationFrame(raf);state='idle';
     const _ov=document.getElementById('space-overlay');
     if(_ov) _ov.classList.add('hidden');
   };
@@ -9847,14 +10496,45 @@ window.confirmCharSelect = function() {
         const rect=canvas.getBoundingClientRect();
         return (e.touches[0].clientX-rect.left)*(canvas.width/rect.width);
       }
+      function getTouchY(e){
+        const rect=canvas.getBoundingClientRect();
+        return (e.touches[0].clientY-rect.top)*(canvas.height/rect.height);
+      }
+      // Movement reads touch X only (ship Y is fixed) across the whole canvas width,
+      // so the socket column needs its own reserved hit-zone on touchstart — a tap
+      // there deploys instead of moving the ship. _touchOnSocket suppresses the rest
+      // of that same gesture's touchmove from also dragging the ship, in case the
+      // finger drifts slightly after the initial tap.
+      let _touchOnSocket = false;
       canvas.addEventListener('touchstart',e=>{
         e.preventDefault();
-        if(state==='playing') player.x=Math.max(player.r,Math.min(W-player.r,getTouchX(e)));
+        if(state!=='playing') return;
+        const tx=getTouchX(e), ty=getTouchY(e);
+        const hitType=hitSocket(tx,ty);
+        if(hitType){ _touchOnSocket=true; deploySocket(hitType); return; }
+        _touchOnSocket=false;
+        player.x=Math.max(player.r,Math.min(W-player.r,tx));
       },{passive:false});
       canvas.addEventListener('touchmove',e=>{
         e.preventDefault();
-        if(state==='playing') player.x=Math.max(player.r,Math.min(W-player.r,getTouchX(e)));
+        if(state==='playing' && !_touchOnSocket) player.x=Math.max(player.r,Math.min(W-player.r,getTouchX(e)));
       },{passive:false});
+      canvas.addEventListener('touchend',()=>{ _touchOnSocket=false; },{passive:true});
+      canvas.addEventListener('touchcancel',()=>{ _touchOnSocket=false; },{passive:true});
+      // Desktop: click a socket to deploy it, or number keys 1-4 as a shortcut.
+      canvas.addEventListener('click',e=>{
+        if(state!=='playing') return;
+        const rect=canvas.getBoundingClientRect();
+        const cx=(e.clientX-rect.left)*(canvas.width/rect.width);
+        const cy=(e.clientY-rect.top)*(canvas.height/rect.height);
+        const hitType=hitSocket(cx,cy);
+        if(hitType) deploySocket(hitType);
+      });
+      document.addEventListener('keydown',e=>{
+        if(state!=='playing' || !document.body.classList.contains('on-space')) return;
+        const idx={'1':0,'2':1,'3':2}[e.key];
+        if(idx!==undefined) deploySocket(SOCKET_TYPES[idx]);
+      });
     }
     // rAF ensures the page has painted before we measure canvas dimensions
     requestAnimationFrame(function(){

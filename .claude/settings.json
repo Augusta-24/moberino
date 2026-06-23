@@ -86,7 +86,11 @@
       "Bash(grep -n \"4-20 PAIRS · NO TIME LIMIT\\\\|12 PAIRS · 60 SECONDS\\\\|15 PAIRS · 60 SECONDS\\\\|21 PAIRS · \\\\${IMPOSSIBLE_MOVE_CUTOFF}\" /Users/kevinseverino/Documents/moberino/index.html)",
       "Bash(grep -n \"4-20 PAIRS · UNLIMITED MOVES · NO TIME LIMIT\\\\|12 PAIRS · UNLIMITED MOVES · 60 SECONDS\\\\|15 PAIRS · UNLIMITED MOVES · 60 SECONDS\\\\|21 PAIRS · \\\\${IMPOSSIBLE_MOVE_CUTOFF}\" /Users/kevinseverino/Documents/moberino/index.html)",
       "Bash(awk -F: '$1>4090 && $1<4260')",
-      "Bash(awk 'NR==4255,NR==4280 {print NR\": \"$0}' /Users/kevinseverino/Documents/moberino/index.html)"
+      "Bash(awk 'NR==4255,NR==4280 {print NR\": \"$0}' /Users/kevinseverino/Documents/moberino/index.html)",
+      "Bash(grep -n \"font-family:'Bebas Neue',cursive;font-size:36px;letter-spacing:3px;color:\\\\${color}\" /Users/kevinseverino/Documents/moberino/index.html)",
+      "Bash(grep -n \"font-size:36px;letter-spacing:3px;color:\\\\${color}\" /Users/kevinseverino/Documents/moberino/index.html)",
+      "Bash(python3 -)",
+      "Bash(grep -n \"drawBuffLine\\(\\\\`\" /Users/kevinseverino/Documents/moberino/index.html)"
     ],
     "additionalDirectories": [
       "/tmp"
