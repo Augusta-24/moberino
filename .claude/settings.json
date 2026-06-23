@@ -76,7 +76,17 @@
       "Bash(jobs)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git merge *)"
+      "Bash(git merge *)",
+      "Bash(grep -n \"\\\\.whack-card-flip\\\\|\\\\.whack-card-back\\\\|\\\\.whack-card-face\\\\|id=\\\\\"wc-\\\\|wc-\\\\${\" /Users/kevinseverino/Documents/moberino/index.html)",
+      "Bash(grep -n \"wflip-\\\\${h}\\\\`\\);\" /Users/kevinseverino/Documents/moberino/index.html)",
+      "Bash(grep -n \"A permanent clipping wrapper\\\\|wflip-\\\\${h}\\\\|const oldContent = charEl.innerHTML\" /Users/kevinseverino/Documents/moberino/index.html)",
+      "Bash(awk -F: '$1>7500 && $1<7700')",
+      "Bash(grep -n \"ctx.fillStyle=\\\\`rgba\\(255,255,255,\\\\${s.a}\\)\\\\`; ctx.fill\\(\\);\" /Users/kevinseverino/Documents/moberino/index.html)",
+      "Bash(awk 'NR==8762,NR==8870 {print NR\": \"$0}' /Users/kevinseverino/Documents/moberino/index.html)",
+      "Bash(grep -n \"4-20 PAIRS · NO TIME LIMIT\\\\|12 PAIRS · 60 SECONDS\\\\|15 PAIRS · 60 SECONDS\\\\|21 PAIRS · \\\\${IMPOSSIBLE_MOVE_CUTOFF}\" /Users/kevinseverino/Documents/moberino/index.html)",
+      "Bash(grep -n \"4-20 PAIRS · UNLIMITED MOVES · NO TIME LIMIT\\\\|12 PAIRS · UNLIMITED MOVES · 60 SECONDS\\\\|15 PAIRS · UNLIMITED MOVES · 60 SECONDS\\\\|21 PAIRS · \\\\${IMPOSSIBLE_MOVE_CUTOFF}\" /Users/kevinseverino/Documents/moberino/index.html)",
+      "Bash(awk -F: '$1>4090 && $1<4260')",
+      "Bash(awk 'NR==4255,NR==4280 {print NR\": \"$0}' /Users/kevinseverino/Documents/moberino/index.html)"
     ],
     "additionalDirectories": [
       "/tmp"
