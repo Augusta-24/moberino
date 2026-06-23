@@ -2393,8 +2393,9 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 }
 .whack-hole.up    { box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 14px rgba(255,0,204,0.22); }
 .whack-hole.hit   { box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 20px rgba(255,230,26,0.55); }
-/* Correct-mole hit: no yellow glow — it was bleeding through behind the sad face */
-.whack-hole.hit-success { box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e; }
+/* Correct-mole hit: green outline on the hole itself instead of a full-screen
+   flash — no yellow glow bleeding through behind the sad face either. */
+.whack-hole.hit-success { border-color: rgba(51,255,102,0.9); box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 22px rgba(51,255,102,0.5); }
 /* Clear round failure: highlights the good targets still standing so it's obvious
    what should have been hit instead. */
 .whack-hole.reveal-correct {
@@ -6111,18 +6112,6 @@ window.confirmCharSelect = function() {
     }, BROKEN_HEART_HOLD_MS);
   }
 
-  // Green confirm-flash for Clear/Memory correct hits — same idea as Match's
-  // matchFlash(), full-screen and click-through so it never blocks the next tap.
-  function successFlash() {
-    const el = document.createElement('div');
-    el.style.cssText = 'position:fixed;inset:0;z-index:9500;background:#33ff66;opacity:0;pointer-events:none;transition:opacity 0.15s ease-out';
-    document.body.appendChild(el);
-    requestAnimationFrame(() => { el.style.opacity = '0.18'; });
-    setTimeout(() => {
-      el.style.opacity = '0';
-      setTimeout(() => el.remove(), 250);
-    }, 150);
-  }
 
   function popDown(i, wasHit) {
     const prev = holeCharIdx[i];
@@ -6202,7 +6191,6 @@ window.confirmCharSelect = function() {
       if (currentRoundType === 'clear') {
         // Clear rounds finish when every good target placed at round-start is hit —
         // not the usual running waveHits threshold, since this is a fixed snapshot.
-        successFlash();
         clearRoundHit++;
         clearRoundPieces = clearRoundPieces.filter(p => p.hole !== i); // stop tracking it, it's resolved
         if (clearRoundHit >= clearRoundTargets) {
@@ -6255,8 +6243,8 @@ window.confirmCharSelect = function() {
   // now that each wave is its own discrete clear-it-or-fail unit, a clean visible break
   // is the whole point.
   // Big checkmark + sound, fades in then out — confirmation that a whole wave (not
-  // just one hit) is cleared. Distinct from successFlash(), which is the smaller green
-  // flash for individual correct hits within a Clear/Memory round.
+  // just one hit) is cleared. Distinct from the green hit-success outline on an
+  // individual hole, which is the per-hit confirmation within a Clear/Memory round.
   function showWaveClearCheckmark(clearedWave) {
     SFX.win();
     const el = document.createElement('div');
@@ -6536,7 +6524,6 @@ window.confirmCharSelect = function() {
     if (charEl) charEl.innerHTML = charHTML(moleChar, 'sad') + CRACK_SVG;
     if (holeEl) holeEl.classList.add('hit-success');
     clearTint(i);
-    successFlash();
     SFX.whack(); SFX.hit();
     const hitsEl = document.getElementById('classic-hits');
     if (hitsEl) hitsEl.textContent = classicHits;
@@ -6803,7 +6790,8 @@ window.confirmCharSelect = function() {
 
     if (memoryTargets.includes(i)) {
       if (faceEl) faceEl.innerHTML = charHTML(moleChar, 'happy');
-      successFlash();
+      const holeEl = document.getElementById(`wh-${i}`);
+      if (holeEl) holeEl.classList.add('hit-success');
       SFX.whack(); SFX.hit();
       memoryHit++;
       if (memoryHit >= memoryTargets.length) {
