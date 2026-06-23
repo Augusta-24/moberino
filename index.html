@@ -1686,13 +1686,13 @@ html, body { height: 100%; overflow: hidden; }
   z-index: 10;
   border-bottom: 1px solid rgba(242,239,232,0.10);
 }
-@media (max-width: 1023px), (max-height: 900px) and (orientation: landscape) and (pointer: coarse) {
-  /* Width-based alone misses tablet landscape: an iPad's landscape WIDTH (1024px+
-     on every current model) clears this breakpoint even though its landscape
-     HEIGHT is just as constrained as a phone's portrait height — that's the gap
-     that left the header/tape-icon/search treatment below only applying in
-     portrait. The added (max-height + landscape + coarse-pointer) clause catches
-     that case without touching real desktop windows, which are (pointer: fine). */
+@media (max-width: 1023px), (max-width: 1400px) and (orientation: landscape) and (pointer: coarse) {
+  /* The plain max-width:1023px alone misses tablet landscape — an iPad's landscape
+     WIDTH (1024-1366px depending on model) clears it even though the layout below
+     is just as needed there as in portrait. The second clause re-applies it up to
+     1366px specifically when also landscape + coarse-pointer, so real desktop
+     windows (pointer: fine) in that width range are unaffected. Width, not height,
+     since iPad Pro 12.9" landscape is ~1024px tall — a height cutoff kept missing it. */
   #pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active, #pg-charselect.active {
     padding-top: 0;
   }
@@ -1705,7 +1705,7 @@ html, body { height: 100%; overflow: hidden; }
 }
 
 /* ── SPOTLIGHT: SLIDE UP ON MOBILE/TABLET ── */
-@media (max-width: 1023px), (max-height: 900px) and (orientation: landscape) and (pointer: coarse) {
+@media (max-width: 1023px), (max-width: 1400px) and (orientation: landscape) and (pointer: coarse) {
   #spot-overlay {
     display: flex !important;
     flex-direction: column;
@@ -1732,7 +1732,7 @@ html, body { height: 100%; overflow: hidden; }
   flex-direction: column;
   overflow: hidden;
 }
-@media (max-width: 1023px), (max-height: 900px) and (orientation: landscape) and (pointer: coarse) {
+@media (max-width: 1023px), (max-width: 1400px) and (orientation: landscape) and (pointer: coarse) {
   #rec-drawer {
     display: flex;
     transform: translateY(100%);
@@ -1878,12 +1878,12 @@ button.cats-search-wrap {
 /* ══════════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════════ */
-@media (max-height: 900px) and (orientation: landscape) and (pointer: coarse) {
+@media (max-width: 1400px) and (orientation: landscape) and (pointer: coarse) {
   /* Was max-height:500px with no pointer check — caught phone landscape only.
-     iPad landscape heights (744-1024px depending on model) need the same row
-     layout for the same reason: the normal portrait-oriented vertical stack is
-     taller than the available height, cutting the header off / pushing search up.
-     pointer:coarse keeps real desktop windows out of this. */
+     Switched the gate to max-width (not max-height) — iPad Pro 12.9" landscape is
+     ~1024px tall, which slipped past a height-based cutoff, but every current iPad's
+     landscape WIDTH tops out at 1366px, a much more predictable number to key off.
+     pointer:coarse keeps real desktop windows out of this regardless of width. */
   #pg-home { justify-content: center; overflow-y: auto; height: var(--app-vh, 100svh); }
   .home-hero {
     transform: translateY(0);
@@ -2558,15 +2558,19 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 .card-drift { transform-box: fill-box; transform-origin: center; animation: card-drift 3.4s ease-in-out infinite; }
 
 /* ── Space Mobe ── */
-#pg-space { position: relative; z-index: 1; height: 100dvh; overflow: hidden; display: none; flex-direction: column; }
+/* Locked aspect ratio (not just a max-width) — width alone used to cap how wide the
+   canvas could get on desktop, but left height free to stretch with the viewport, so
+   the SAME fall speed covered a much shorter trip in landscape (where height is
+   short) than in tall portrait (where it's long) — orientation/screen-shape was
+   silently changing difficulty. Locking the ratio fixes the geometry itself instead
+   of recalibrating speed constants: fitSpaceCanvas() (JS) computes the largest box
+   at this ratio that fits the available space and sets it via inline width/height;
+   align/justify-center here just centers whatever size that ends up being. The
+   #030110 page background matches the canvas's own in-game fill so any letterbox
+   space reads as intentional "cabinet" framing, not empty page background. */
+#pg-space { position: relative; z-index: 1; height: 100dvh; overflow: hidden; display: none; flex-direction: column; align-items: center; justify-content: center; background: #030110; }
 #pg-space.active { display: flex; }
-/* Capped at the same phone-ish width as Whack/Match, centered via auto margins (not
-   align-items on the parent, which would also shrink the full-width header bar).
-   Without this, a wide desktop window stretches the canvas full-bleed, and since
-   player speed is a fixed pixel value per frame, the ship has to "travel" much
-   further to cross a wider canvas — movement feels sluggish even though the speed
-   constant never changed. */
-#space-canvas { flex: 1; width: 100%; max-width: 460px; margin: 0 auto; display: block; touch-action: none; }
+#space-canvas { flex: none; display: block; touch-action: none; background: #030110; }
 #space-overlay {
   position: fixed; left: 0; right: 0; bottom: 0; top: 56px;
   max-width: 460px; margin: 0 auto;
@@ -8374,9 +8378,31 @@ window.confirmCharSelect = function() {
     }
   }
 
+  // Locked aspect ratio instead of a free-stretching height — see the CSS comment on
+  // #pg-space for why (orientation/screen-shape was silently changing difficulty by
+  // changing how far obstacles had to fall to reach the danger line). Computes the
+  // largest box at SPACE_RATIO that fits the space below the header, sets it as the
+  // canvas's actual CSS size via inline style, and keeps canvas.width/height (and W/H)
+  // matching 1:1 — same no-DPI-scaling approach the old offsetWidth/offsetHeight code
+  // already used, just now ratio-constrained instead of filling whatever's available.
+  const SPACE_RATIO = 9 / 16; // width / height
+  function fitSpaceCanvas() {
+    const wrap = document.getElementById('pg-space');
+    if (!wrap || !canvas) return;
+    const headerEl = wrap.querySelector('.cats-header');
+    const availW = wrap.clientWidth || window.innerWidth;
+    const availH = (wrap.clientHeight || window.innerHeight) - (headerEl ? headerEl.offsetHeight : 0);
+    let w = availW, h = w / SPACE_RATIO;
+    if (h > availH) { h = availH; w = h * SPACE_RATIO; }
+    w = Math.floor(w); h = Math.floor(h);
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    W = canvas.width = w;
+    H = canvas.height = h;
+  }
+
   function reset() {
-    W = canvas.width  = canvas.offsetWidth  || window.innerWidth;
-    H = canvas.height = canvas.offsetHeight || (window.innerHeight - 150);
+    fitSpaceCanvas();
     player = { x:W/2, y:H-70, r:18 };
     bullets=[]; obstacles=[]; score=0; health=100; wave=1; waveKills=0;
     enemyBullets=[]; lastEnemyFire=0; floatTexts=[]; lineFlashA=0;
@@ -9833,8 +9859,7 @@ window.confirmCharSelect = function() {
     // rAF ensures the page has painted before we measure canvas dimensions
     requestAnimationFrame(function(){
       try {
-        W=canvas.width=canvas.offsetWidth||window.innerWidth;
-        H=canvas.height=canvas.offsetHeight||(window.innerHeight-88-64);
+        fitSpaceCanvas();
         mkStars();
         showSpaceOverlay('select');
       } catch(err) {
@@ -9843,6 +9868,28 @@ window.confirmCharSelect = function() {
       }
     });
   };
+
+  // Re-fit on rotate/resize while the page is actually visible — otherwise turning
+  // an iPad from portrait to landscape (or just resizing a desktop window) would
+  // leave the canvas at its old size until the next full reset(). Debounced since
+  // resize/orientationchange can fire several times in quick succession.
+  let _spaceFitTimer = null;
+  function _spaceRefit() {
+    clearTimeout(_spaceFitTimer);
+    _spaceFitTimer = setTimeout(() => {
+      if (!document.body.classList.contains('on-space') || !canvas) return;
+      const oldW = W, oldH = H;
+      fitSpaceCanvas();
+      if (player && oldW) {
+        player.x = Math.min(Math.max(player.r, player.x * (W / oldW)), W - player.r);
+        player.y = H - (oldH - player.y) * (H / oldH || 1);
+        dangerY = player.y - player.r * 1.2 - 2;
+      }
+      mkStars();
+    }, 150);
+  }
+  window.addEventListener('resize', _spaceRefit);
+  window.addEventListener('orientationchange', _spaceRefit);
 })();
 
 // ── ARCADE FLOATING COINS + TICKETS ──────────────────────────────────────────
