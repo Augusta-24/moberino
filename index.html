@@ -8438,7 +8438,7 @@ window.confirmCharSelect = function() {
   const P_SPEED = 5, B_SPEED = 9, O_SPEED_BASE = 2.0; // +10% over original 1.8
   const AUTO_FIRE_MS = 200;
   const FACE_R = 22, ASTEROID_R_MIN = 14, ASTEROID_R_MAX = 30;
-  const BOSS_R = FACE_R * 2.5, BOSS_HP = 24;
+  const BOSS_R = FACE_R * 2.5, BOSS_HP = 35;
   const MINIBOSS_R = FACE_R * 1.6, MINIBOSS_HP = 6;
 
   // PARTY RAVE wave theme: a lookup-table + wrapper instead of refactoring every
@@ -8583,7 +8583,7 @@ window.confirmCharSelect = function() {
     const creature = BOSS_CREATURES[Math.floor(Math.random() * BOSS_CREATURES.length)];
     const isGhost = kind === 'ghost';
     const r = isGhost ? BOSS_R * 0.5 : MINIBOSS_R;
-    const hp = isGhost ? 18 : MINIBOSS_HP;
+    const hp = isGhost ? 25 : MINIBOSS_HP;
     miniBoss = {
       kind, creature, x: rand(r + 20, W - r - 20), y: 140,
       r, hp, maxHp: hp,
@@ -8650,7 +8650,7 @@ window.confirmCharSelect = function() {
       if (state !== 'playing') return;
       if (waveTheme === 'music' && !boss && !waveTransitioning) spawnInstrument();
       scheduleInstrument();
-    }, 700 + Math.random() * 700);
+    }, 230 + Math.random() * 230);
   }
 
   let powerupTimer = null;
@@ -9089,15 +9089,20 @@ window.confirmCharSelect = function() {
     }, 1000);
   }
 
-  function nextWave() {
-    if (waveTransitioning) return; // hard start/stop between waves — the per-frame
-    // "wave cleared" check in loop() would otherwise re-fire this every frame for
-    // the whole announcement window (spawnsRemaining/obstacles don't update until
-    // startWaveSpawn actually runs below), stacking dozens of overlapping banners.
+function nextWave() {
+    if (waveTransitioning) return;
+
     waveTransitioning = true;
+
+    // Reward player for clearing a wave
+    health = Math.min(100, health + 5);
+    addFloatText('+5 HP', player.x, player.y - 50, '#33ff66', 22);
+    showTopBanner('+5 HP', 'good');
+
     const clearedWave = wave;
     const previousTheme = waveTheme;
-    wave++; waveKills=0;
+    wave++;
+    waveKills=0;
     currentCfg = waveConfig(wave);
     waveTheme = pickWaveTheme(wave, previousTheme);
     const announceMs = 5200; // a bit more breathing room on top of the spin+hold
@@ -9179,7 +9184,7 @@ window.confirmCharSelect = function() {
     health = Math.max(0, health - amount);
     addFloatText(`-${amount}`, player.x, player.y - 40, '#ff4444', 20);
     miniExplosion(player.x, player.y, '#ff4444');
-    triggerShake(amount * 0.5);
+    triggerShake(amount * 1.2);
     // Mystery "snowing" outcome — getting hit at all while it's snowing also
     // freezes you briefly, on top of the normal damage. Reuses the existing
     // FROZEN debuff (movement slow + snowflake bullets) rather than a new state.
