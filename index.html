@@ -5576,11 +5576,11 @@ window.confirmCharSelect = function() {
   let wave = 1, waveHits = 0;
   let timerInterval;
   let difficulty = 'hard'; // 'easy' | 'hard'
-  // Classic is a standalone 45s score-attack sibling to the wave-based game (now
+  // Classic is a standalone 30s score-attack sibling to the wave-based game (now
   // labeled "Frenzy" in the UI) — gameMode persists across replays the same way
   // difficulty already does, only defaulting to 'frenzy' on script init.
   let gameMode = 'frenzy'; // 'classic' | 'frenzy'
-  let classicHits = 0, classicPieces = [], classicTimeLeft = 45, classicInterval = null;
+  let classicHits = 0, classicPieces = [], classicTimeLeft = 30, classicInterval = null;
   let activeChar = getGlobalChar(); // user's char — to AVOID
   let moleChar = -1;               // random other char — to WHACK
   let selfActive = false;          // true once user's char starts appearing
@@ -5758,7 +5758,7 @@ window.confirmCharSelect = function() {
           <div class="arcade-cab-screen" style="display:flex;flex-direction:column;gap:14px;padding:16px">
             <div>
               <button onclick="whackChooseMode('classic')" class="whack-btn" style="width:100%;border-color:#00e5ff;background:rgba(0,229,255,0.14);padding:14px 8px;font-size:18px;letter-spacing:5px;text-shadow:0 0 10px #00e5ff88">FRENZY</button>
-              <div style="font-family:'VCR',monospace;font-size:13px;letter-spacing:1px;color:rgba(242,239,232,0.5);text-align:center;margin-top:6px">45 SECONDS. WHACK AS MANY MOLES AS YOU CAN.</div>
+              <div style="font-family:'VCR',monospace;font-size:13px;letter-spacing:1px;color:rgba(242,239,232,0.5);text-align:center;margin-top:6px">30 SECONDS. WHACK AS MANY MOLES AS YOU CAN.</div>
             </div>
             <div>
               <button onclick="whackChooseMode('frenzy')" class="whack-btn" style="width:100%;border-color:#ff00cc;background:rgba(255,0,204,0.14);padding:14px 8px;font-size:18px;letter-spacing:5px;text-shadow:0 0 10px #ff00cc88">ADVENTURE</button>
@@ -5813,7 +5813,7 @@ window.confirmCharSelect = function() {
             </div>
             <div style="width:100%;display:flex;flex-direction:column;gap:5px;text-align:left;border-top:1px solid rgba(242,239,232,0.1);padding-top:8px">
               ${isClassic ? `
-              <div style="font-size:9px;letter-spacing:2px;color:rgba(242,239,232,0.4);font-family:'VCR',monospace;text-align:center;margin-bottom:1px">45 SECONDS · ONE MOBE · NONSTOP MOTION</div>
+              <div style="font-size:9px;letter-spacing:2px;color:rgba(242,239,232,0.4);font-family:'VCR',monospace;text-align:center;margin-bottom:1px">30 SECONDS · ONE MOBE · NONSTOP MOTION</div>
               <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:1px;line-height:1.3"><span style="color:#00e5ff">FRENZY</span> — hit anything that pops up, as many as you can</div>
               ` : `
               <div style="font-size:9px;letter-spacing:2px;color:rgba(242,239,232,0.4);font-family:'VCR',monospace;text-align:center;margin-bottom:1px">WAVES ROTATE THROUGH THREE MODES</div>
@@ -5834,7 +5834,7 @@ window.confirmCharSelect = function() {
     if (state === 'playing' && gameMode === 'classic') {
       wrap.innerHTML = `
         <div class="whack-hud" style="flex-direction:column;justify-content:flex-start;gap:6px;padding:8px 14px">
-          <div style="text-align:center;width:100%;font-family:'Bebas Neue',cursive;font-size:24px;letter-spacing:2px;color:#00e5ff;text-shadow:0 0 10px #00e5ff88">FRENZY — <span id="classic-time">45</span>s</div>
+          <div style="text-align:center;width:100%;font-family:'Bebas Neue',cursive;font-size:24px;letter-spacing:2px;color:#00e5ff;text-shadow:0 0 10px #00e5ff88">FRENZY — <span id="classic-time">30</span>s</div>
           <div style="text-align:center;width:100%;font-family:'VCR',monospace;font-size:12px;letter-spacing:2px;color:rgba(242,239,232,0.6);padding-top:4px;border-top:1px solid rgba(242,239,232,0.1)">HITS: <span id="classic-hits" style="color:#33ff66">0</span></div>
         </div>
         <div class="whack-grid" id="whack-grid" style="--cols:${GRID_COLS};--rows:${GRID_ROWS}">${
@@ -6431,7 +6431,7 @@ window.confirmCharSelect = function() {
     });
   }
 
-  // ── Classic mode ── standalone 45s score-attack: no waves, no self-character to
+  // ── Classic mode ── standalone 30s score-attack: no waves, no self-character to
   // avoid — every spawn is the single character chosen at mole-select, hit anything.
   // Moles continuously reposition between holes like Clear's pieces, but each on its
   // own independently-timed clock instead of one shared interval, so speeds can be
@@ -6539,7 +6539,7 @@ window.confirmCharSelect = function() {
     }, 250);
   }
 
-  const CLASSIC_DURATION_S = 45;
+  const CLASSIC_DURATION_S = 30;
   function classicStart() {
     classicHits = 0;
     classicPieces.forEach(p => clearTimeout(p.timer));
@@ -7839,6 +7839,8 @@ window.confirmCharSelect = function() {
   let leftHeld = false, rightHeld = false, lastAutoFire = 0, lastPizzaFire = 0, activeChar = getGlobalChar();
   let enemyBullets = [], lastEnemyFire = 0;
   let dangerY = 0, socketAnchorY = 0, lineFlashA = 0;
+  const SPACE_SHIP_BOTTOM_OFFSET = 40;
+  const SPACE_SOCKET_ANCHOR_BOTTOM_OFFSET = 94;
   // REVERSE theme: a separate fixed "escape" line near the top, just below the
   // HUD/banner strip — kept independent of dangerY on purpose, since dangerY tracks
   // the player position and also drives the socket column's placement; repurposing
@@ -8600,7 +8602,7 @@ window.confirmCharSelect = function() {
 
   function reset() {
     fitSpaceCanvas();
-    player = { x:W/2, y:H-70, r:18 };
+    player = { x:W/2, y:H-SPACE_SHIP_BOTTOM_OFFSET, r:18 };
     bullets=[]; obstacles=[]; score=0; health=100; wave=1; waveKills=0;
     enemyBullets=[]; lastEnemyFire=0; floatTexts=[]; lineFlashA=0;
     powerups=[]; buffSpeedUntil=0; buffGunUntil=0; buffShieldUntil=0; escort=null; shakeMag=0;
@@ -8608,7 +8610,7 @@ window.confirmCharSelect = function() {
     waveTheme = null; lastThemedWave = -99; miniBoss = null; themeEffectsAt = 0; waveTransitioning = false;
     buffFrozenUntil = 0; buffZappedUntil = 0; controlsReversedUntil = 0; twin = null; rebound = null; buffPizzaUntil = 0; snowingUntil = 0; snowParticles = [];
     inventory = { gun: false, shield: false, bomb: false };
-    socketAnchorY = player.y - player.r * 1.2 - 2;
+    socketAnchorY = H - SPACE_SOCKET_ANCHOR_BOTTOM_OFFSET;
     dangerY = socketAnchorY + (H - socketAnchorY) * 0.5;
     highScore = parseInt(localStorage.getItem('space-best')||'0');
     leftHeld=false; rightHeld=false; lastAutoFire=0; lastPizzaFire=0;
@@ -10566,8 +10568,8 @@ window.confirmCharSelect = function() {
       fitSpaceCanvas();
       if (player && oldW) {
         player.x = Math.min(Math.max(player.r, player.x * (W / oldW)), W - player.r);
-        player.y = H - (oldH - player.y) * (H / oldH || 1);
-        socketAnchorY = player.y - player.r * 1.2 - 2;
+        player.y = H - SPACE_SHIP_BOTTOM_OFFSET;
+        socketAnchorY = H - SPACE_SOCKET_ANCHOR_BOTTOM_OFFSET;
         dangerY = socketAnchorY + (H - socketAnchorY) * 0.5;
       }
       mkStars();
