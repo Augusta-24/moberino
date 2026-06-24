@@ -147,14 +147,19 @@ body.on-space .cats-header {
 #arcade-game-exit {
   display: none;
   position: fixed;
-  top: max(12px, env(safe-area-inset-top, 12px));
-  right: max(12px, env(safe-area-inset-right, 12px));
+  top: max(10px, env(safe-area-inset-top, 10px));
+  right: max(10px, env(safe-area-inset-right, 10px));
   z-index: 9999;
   pointer-events: auto;
-  min-width: 48px;
-  height: 48px;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 16px;
+  line-height: 1;
   justify-content: center;
   align-items: center;
+  border-radius: 6px;
   box-shadow: 0 6px 18px rgba(0,0,0,0.35);
 }
 body.on-whack #arcade-game-exit,
@@ -3634,6 +3639,14 @@ function nav(p) {
   document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('on',el.dataset.p===p));
   document.getElementById(`pg-${p}`)?.classList.add('active');
   window.scrollTo(0,0);
+  if (document.activeElement && typeof document.activeElement.blur === 'function') {
+    const active = document.activeElement;
+    if (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) active.blur();
+  }
+  if (window.visualViewport && typeof window.visualViewport.scrollTo === 'function') {
+    window.visualViewport.scrollTo(0, 0);
+  }
+  if (window.lockViewportHeight) window.lockViewportHeight();
   document.getElementById(`pg-${p}`)?.scrollTo(0,0);
   const onHome   = p === 'home';
   const onCats   = p === 'cats';
@@ -3987,9 +4000,11 @@ function doSearch(q) {
   const dropGrid = document.getElementById('home-drop-grid');
   const homeWrap = document.getElementById('homeSearchWrap');
 
-  // On mobile/tablet: tapping the search bar opens spotlight instead
+  // On mobile/tablet: tapping the search bar opens spotlight instead.
+  // Use pointer-coarse detection so tablets in landscape still get the overlay,
+  // preventing the native keyboard from shifting the underlying hero layout.
   homeWrap.addEventListener('touchstart', function(e) {
-    if (window.innerWidth <= 1023) {
+    if (window.innerWidth <= 1023 || window.matchMedia('(pointer:coarse)').matches) {
       e.preventDefault();
       openSpot();
     }
@@ -5141,9 +5156,20 @@ const LB = (() => {
       data[game] = data[game].slice(0, 10);
       save(data);
     },
-    get(game) { return (load()[game] || []); },
+    get(game) {
+      const data = load();
+      const rows = data[game] || [];
+      if (game !== 'whack') return rows;
+      const filtered = filterLbRows(game, rows);
+      if (filtered.length !== rows.length) {
+        data[game] = filtered;
+        save(data);
+      }
+      return filtered;
+    },
     html(game, neonColor) {
-      return renderLbRows(this.get(game).slice(0,5).map(r => ({ name: r.name, extra: r.extra, displayScore: r.score })), neonColor);
+      const rows = this.get(game);
+      return renderLbRows(rows.slice(0,5).map(r => ({ name: r.name, extra: r.extra, displayScore: r.score })), neonColor);
     }
   };
 })();
@@ -5161,6 +5187,18 @@ function renderLbRows(rows, neonColor) {
         <td style="padding:8px 10px;text-align:right;color:rgba(242,239,232,0.35);font-size:13px">${r.extra||''}</td>
       </tr>`
     ).join('') + '</table>';
+}
+
+function filterLbRows(game, rows) {
+  if (!rows || !rows.length) return [];
+  if (game !== 'whack') return rows;
+  return rows.filter(r => {
+    const score = Number(r.score);
+    if (!Number.isFinite(score) || score < 0 || score > 50) return false;
+    const extra = (r.extra || '').trim().toUpperCase();
+    if (extra && !/^(EASY|HARD)$/.test(extra)) return false;
+    return true;
+  });
 }
 
 // ══════════════════════════════════════
@@ -5220,11 +5258,13 @@ function loadRemoteBoard(game, targetId, neonColor, field) {
   const target = document.getElementById(targetId);
   if (!target) return;
   target.innerHTML = LB.html(game, neonColor);
-  RemoteLB.fetchTop(game, 5).then(entries => {
+  const count = game === 'whack' ? 10 : 5;
+  RemoteLB.fetchTop(game, count).then(entries => {
     if (entries === null) return;
     const el = document.getElementById(targetId);
     if (!el) return; // user navigated away before this resolved
-    const rows = entries.map(e => ({ name: e.name, extra: e.extra, displayScore: field === 'seconds' ? fmtTimeG(e.seconds) : e.score }));
+    const filtered = filterLbRows(game, entries).slice(0, 5);
+    const rows = filtered.map(e => ({ name: e.name, extra: e.extra, displayScore: field === 'seconds' ? fmtTimeG(e.seconds) : e.score }));
     el.innerHTML = renderLbRows(rows, neonColor);
   });
 }
@@ -5234,7 +5274,7 @@ window.promptLeaderboard = function(game, score, extra, neonColor, onDone) {
   ov.id = 'lb-modal';
   ov.style.cssText = 'position:fixed;inset:0;z-index:9700;display:flex;align-items:center;justify-content:center;background:rgba(5,2,18,0.88);backdrop-filter:blur(8px)';
   const nc = neonColor || '#ffe61a';
-  const rows = LB.get(game);
+  const rows = filterLbRows(game, LB.get(game));
   const top5 = rows.slice(0, 5);
   const myRank = rows.findIndex(r => r.score < score);
   const actualRank = myRank === -1 ? rows.length : myRank; // 0-indexed position
@@ -8643,6 +8683,7 @@ window.confirmCharSelect = function() {
     inventory = { gun: false, shield: false, bomb: false };
     socketAnchorY = H - SPACE_SOCKET_ANCHOR_BOTTOM_OFFSET;
     dangerY = socketAnchorY + (H - socketAnchorY) * 0.5;
+    player.y = dangerY + player.r * 1.1;
     highScore = parseInt(localStorage.getItem('space-best')||'0');
     leftHeld=false; rightHeld=false; lastAutoFire=0; lastPizzaFire=0;
     mkStars();
@@ -8657,9 +8698,9 @@ window.confirmCharSelect = function() {
   let spawnTimer = null;
   function startWaveSpawn(cfg) {
     clearTimeout(spawnTimer);
-    // ALL ASTEROIDS spawns 3x per tick — without a bigger pool the wave would just
-    // exhaust itself 3x faster instead of actually feeling like a sustained rain.
-    spawnsRemaining = waveTheme === 'asteroids' ? cfg.poolSize * 3 : cfg.poolSize;
+    // ALL ASTEROIDS still triples up per tick, but reduce the total wave volume
+    // so the rain feels less punishing.
+    spawnsRemaining = waveTheme === 'asteroids' ? Math.max(1, Math.ceil(cfg.poolSize * 1.5)) : cfg.poolSize;
     function doSpawn() {
       if (state !== 'playing') return;
       // Paused entirely while a boss fight is active — it's deploying its own minions
@@ -10447,7 +10488,7 @@ window.confirmCharSelect = function() {
               <div id="sp-intro-socket" style="width:44px;height:44px;border-radius:50%;background:#1a1530;border:3px solid #ffe61a;display:flex;align-items:center;justify-content:center;font-size:22px;transition:border-color 0.4s ease-out,opacity 0.4s ease-out,box-shadow 0.4s ease-out;box-shadow:0 0 14px rgba(255,230,26,0.5)">⚡</div>
               <div id="sp-intro-tap" style="position:absolute;top:0;left:0;width:44px;height:44px;border-radius:50%;border:3px solid #fff;opacity:0;transition:transform 0.5s ease-out,opacity 0.5s ease-out"></div>
             </div>
-            <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:1px;color:rgba(242,239,232,0.5)">TAP A SOCKET TO USE IT</div>
+            <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:1px;color:rgba(242,239,232,0.5)">TAP A POWER TO USE IT</div>
           </div>`);
         // Lit (held) → tap ripple → fades to the same dim/gray empty look the real
         // socket uses once spent, so the demo matches the actual in-game states.
