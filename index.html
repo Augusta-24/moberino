@@ -7631,10 +7631,8 @@ window.confirmCharSelect = function() {
         }
       } else {
         combo = 0;
+       combo = 0;
         SFX.mismatch();
-        // Miss — flash sad briefly, then flip back quickly. No separate "revert to
-        // normal while still face-up" step: the card's about to flip away regardless,
-        // so just reset the back face to normal at the same moment it flips down.
         [a, b].forEach(idx => {
           const el = document.getElementById(`mc-${idx}`);
           if (el) {
@@ -7651,11 +7649,12 @@ window.confirmCharSelect = function() {
             const back = el && el.querySelector('.match-card-back');
             if (back) back.innerHTML = charFace(GAME_CHARS[cards[idx].ci], 'normal');
           });
-          flipped = []; locked = false;
+          flipped = [];
+          locked = false;
           checkMoveCutoff();
-        }, 480);
+        }, 280);
       }
-    }, 260);
+    }, 180);
   };
 
   // Impossible mode's hard fail-state: run out of moves before clearing the board.
