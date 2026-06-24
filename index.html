@@ -138,6 +138,30 @@ body.on-match .arcade-mute-btn, body.on-space .arcade-mute-btn {
   font-size: 11px !important; letter-spacing: 1px !important;
   padding: 5px 9px !important; border-radius: 4px !important;
 }
+/* Game pages use a minimal floating exit button instead of the page header. */
+body.on-whack .cats-header,
+body.on-match .cats-header,
+body.on-space .cats-header {
+  display: none !important;
+}
+#arcade-game-exit {
+  display: none;
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top, 12px));
+  right: max(12px, env(safe-area-inset-right, 12px));
+  z-index: 9999;
+  pointer-events: auto;
+  min-width: 48px;
+  height: 48px;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+}
+body.on-whack #arcade-game-exit,
+body.on-match #arcade-game-exit,
+body.on-space #arcade-game-exit {
+  display: inline-flex;
+}
 /* All arcade header buttons: uniform height */
 body.on-lobby .cats-header button, body.on-char .cats-header button,
 body.on-whack .cats-header button,
@@ -3684,6 +3708,12 @@ function closeRecDrawer() {
   document.body.style.overflow = '';
 }
 
+function confirmExitArcade() {
+  if (!confirm('EXIT GAME?\nReturn to arcade menu?')) return;
+  if (typeof SFX !== 'undefined' && typeof SFX.menuSelect === 'function') SFX.menuSelect();
+  nav('lobby');
+}
+
 function toggleRec() {
   if (window.innerWidth <= 1023) {
     openRecDrawer();
@@ -4333,6 +4363,7 @@ heroCassette.addEventListener('animationend', function() {
 
 <!-- ── ARCADE: floating ambient elements (coins, tickets, pizza) ── -->
 <div id="arcade-float"></div>
+<button id="arcade-game-exit" class="arcade-exit-btn" onclick="confirmExitArcade()" aria-label="Exit game">✕</button>
 
 
 <!-- ── LEADERBOARD OVERLAY ── -->
