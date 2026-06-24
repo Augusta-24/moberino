@@ -4861,8 +4861,27 @@ const SFX = (() => {
     o.start(t0); o.stop(t0 + dur + 0.01);
   }
   return {
-    hit()      { tone(440,'square',0,0.10,0.08); tone(660,'square',0.07,0.07,0.06); },
-    miss()     { tone(220,'sawtooth',0,0.14,0.07,100); },
+hit() {
+      // 1. THE SUB-BASS DROP: Extreme low-end weight that punches through the cabinet
+      tone(180, 'triangle', 0, 0.22, 0.60, 40); // Cascades down into heavy 40Hz sub-bass
+
+      // 2. THE MECHANICAL ACCELERATION: A whip-crack pitch slide that simulates high velocity
+      tone(900, 'sawtooth', 0, 0.05, 0.25, 200); // Massive instant pitch drop (900Hz -> 200Hz)
+      
+      // 3. THE CRUNCH: A tight acoustic snap for the physical mallet-on-mole contact
+      tone(600, 'square', 0, 0.04, 0.15, 300);
+
+      // --- THE ADDICTIVE "WAHOO" TRIAD FLARE ---
+      // A bright, major arpeggio that feels like collecting a rare coin
+      tone(523, 'square', 0.03, 0.04, 0.18); // Note 1 (C5)
+      tone(659, 'square', 0.06, 0.04, 0.18); // Note 2 (E5)
+      tone(784, 'square', 0.09, 0.06, 0.22); // Note 3 (G5) - Triumphant peak
+
+      // --- THE JUICE: HARMONIC ECHO SPARKLE ---
+      // A high-pitched, softer echo of the final note that mimics a glittering reward
+      tone(1568, 'square', 0.13, 0.04, 0.06); // Ultra-high G6 octave sparkle at a fraction of the volume
+    },
+        miss()     { tone(220,'sawtooth',0,0.14,0.07,100); },
     match()    { tone(523,'square',0,0.11,0.07); tone(659,'square',0.08,0.11,0.07); tone(784,'square',0.16,0.17,0.08); },
     mismatch() { tone(300,'sawtooth',0,0.08,0.06); tone(220,'sawtooth',0.06,0.14,0.07,140); },
     win()      { [523,659,784,1047].forEach((f,i)=>tone(f,'square',i*0.09,0.14,0.07)); },
