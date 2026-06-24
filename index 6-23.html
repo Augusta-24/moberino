@@ -10480,48 +10480,35 @@ window.confirmCharSelect = function() {
     state='idle';
     if(!canvas._spaceTouchReady){
       canvas._spaceTouchReady=true;
-      function getTouchPos(touch){
+      function getTouchX(e){
         const rect=canvas.getBoundingClientRect();
-        return {
-          x: (touch.clientX-rect.left)*(canvas.width/rect.width),
-          y: (touch.clientY-rect.top)*(canvas.height/rect.height)
-        };
+        return (e.touches[0].clientX-rect.left)*(canvas.width/rect.width);
+      }
+      function getTouchY(e){
+        const rect=canvas.getBoundingClientRect();
+        return (e.touches[0].clientY-rect.top)*(canvas.height/rect.height);
       }
       // Movement reads touch X only (ship Y is fixed) across the whole canvas width,
       // so the socket column needs its own reserved hit-zone on touchstart — a tap
-      // there deploys instead of moving the ship. _touchOnSocket maps touch ids to
-      // whether that individual pointer started on a socket.
-      const _touchOnSocket = new Map();
+      // there deploys instead of moving the ship. _touchOnSocket suppresses the rest
+      // of that same gesture's touchmove from also dragging the ship, in case the
+      // finger drifts slightly after the initial tap.
+      let _touchOnSocket = false;
       canvas.addEventListener('touchstart',e=>{
         e.preventDefault();
         if(state!=='playing') return;
-        for(const touch of e.changedTouches){
-          const {x:tx,y:ty}=getTouchPos(touch);
-          const hitType=hitSocket(tx,ty);
-          if(hitType){
-            _touchOnSocket.set(touch.identifier, true);
-            deploySocket(hitType);
-          } else {
-            _touchOnSocket.set(touch.identifier, false);
-            player.x=Math.max(player.r,Math.min(W-player.r,tx));
-          }
-        }
+        const tx=getTouchX(e), ty=getTouchY(e);
+        const hitType=hitSocket(tx,ty);
+        if(hitType){ _touchOnSocket=true; deploySocket(hitType); return; }
+        _touchOnSocket=false;
+        player.x=Math.max(player.r,Math.min(W-player.r,tx));
       },{passive:false});
       canvas.addEventListener('touchmove',e=>{
         e.preventDefault();
-        if(state!=='playing') return;
-        for(const touch of e.changedTouches){
-          if(_touchOnSocket.get(touch.identifier)) continue;
-          const {x:tx}=getTouchPos(touch);
-          player.x=Math.max(player.r,Math.min(W-player.r,tx));
-        }
+        if(state==='playing' && !_touchOnSocket) player.x=Math.max(player.r,Math.min(W-player.r,getTouchX(e)));
       },{passive:false});
-      canvas.addEventListener('touchend',e=>{
-        for(const touch of e.changedTouches) _touchOnSocket.delete(touch.identifier);
-      },{passive:true});
-      canvas.addEventListener('touchcancel',e=>{
-        for(const touch of e.changedTouches) _touchOnSocket.delete(touch.identifier);
-      },{passive:true});
+      canvas.addEventListener('touchend',()=>{ _touchOnSocket=false; },{passive:true});
+      canvas.addEventListener('touchcancel',()=>{ _touchOnSocket=false; },{passive:true});
       // Desktop: click a socket to deploy it, or number keys 1-4 as a shortcut.
       canvas.addEventListener('click',e=>{
         if(state!=='playing') return;
