@@ -7838,7 +7838,7 @@ window.confirmCharSelect = function() {
   let player, bullets, obstacles, stars, score, health, wave, waveKills, highScore, spawnsRemaining;
   let leftHeld = false, rightHeld = false, lastAutoFire = 0, lastPizzaFire = 0, activeChar = getGlobalChar();
   let enemyBullets = [], lastEnemyFire = 0;
-  let dangerY = 0, lineFlashA = 0;
+  let dangerY = 0, socketAnchorY = 0, lineFlashA = 0;
   // REVERSE theme: a separate fixed "escape" line near the top, just below the
   // HUD/banner strip — kept independent of dangerY on purpose, since dangerY tracks
   // the player position and also drives the socket column's placement; repurposing
@@ -7869,12 +7869,12 @@ window.confirmCharSelect = function() {
   const SOCKET_COLOR = { gun: '#ffe61a', shield: '#00e5ff', bomb: '#ff8800' };
   const SOCKET_GLYPH = { gun: '⚡', bomb: '💣' }; // shield is drawn as a hexagon, not a glyph
   const SOCKET_SIZE = 34, SOCKET_GAP = 8, SOCKET_X = 10;
-  // Anchored to the danger line (bottom-left, just above it) rather than a fixed
-  // top-of-screen position — follows dangerY automatically if the canvas re-fits.
+  // Anchored to the old danger line position rather than the actual current
+  // danger boundary, so the sockets stay where they were even if the line moves.
   function socketRect(i) {
     const n = SOCKET_TYPES.length;
     const totalH = n * SOCKET_SIZE + (n - 1) * SOCKET_GAP;
-    const groupTop = (dangerY - 14) - totalH;
+    const groupTop = (socketAnchorY - 14) - totalH;
     return { x: SOCKET_X, y: groupTop + i * (SOCKET_SIZE + SOCKET_GAP), w: SOCKET_SIZE, h: SOCKET_SIZE };
   }
   // Returns the socket type hit by a canvas-space point, or null — used both for
@@ -8608,7 +8608,8 @@ window.confirmCharSelect = function() {
     waveTheme = null; lastThemedWave = -99; miniBoss = null; themeEffectsAt = 0; waveTransitioning = false;
     buffFrozenUntil = 0; buffZappedUntil = 0; controlsReversedUntil = 0; twin = null; rebound = null; buffPizzaUntil = 0; snowingUntil = 0; snowParticles = [];
     inventory = { gun: false, shield: false, bomb: false };
-    dangerY = player.y - player.r * 1.2 - 2;
+    socketAnchorY = player.y - player.r * 1.2 - 2;
+    dangerY = socketAnchorY + (H - socketAnchorY) * 0.5;
     highScore = parseInt(localStorage.getItem('space-best')||'0');
     leftHeld=false; rightHeld=false; lastAutoFire=0; lastPizzaFire=0;
     mkStars();
@@ -9750,18 +9751,20 @@ window.confirmCharSelect = function() {
     });
 
     // Danger line — no shadowBlur; use a wider semi-transparent halo line instead.
-    // Drawn at _lineY so REVERSE's relocated top line shows instead of dangerY.
+    // Drawn at the actual danger boundary, which has been moved down while the
+    // sockets remain anchored to their original line.
+    const _renderLineY = waveTheme === 'flip' ? REVERSE_LINE_Y : dangerY;
     if (lineFlashA > 0) lineFlashA = Math.max(0, lineFlashA - 0.04);
     ctx.save();
     ctx.setLineDash([6, 5]);
     ctx.lineDashOffset = -(Date.now() / 90) % 11;
     // halo
-    ctx.beginPath(); ctx.moveTo(0, _lineY); ctx.lineTo(W, _lineY);
+    ctx.beginPath(); ctx.moveTo(0, _renderLineY); ctx.lineTo(W, _renderLineY);
     ctx.strokeStyle = `rgba(51,255,100,${(0.28 + lineFlashA * 0.62) * 0.35})`;
     ctx.lineWidth = 6 + lineFlashA * 4;
     ctx.stroke();
     // core line
-    ctx.beginPath(); ctx.moveTo(0, _lineY); ctx.lineTo(W, _lineY);
+    ctx.beginPath(); ctx.moveTo(0, _renderLineY); ctx.lineTo(W, _renderLineY);
     ctx.strokeStyle = `rgba(51,255,100,${0.28 + lineFlashA * 0.62})`;
     ctx.lineWidth = 1.5 + lineFlashA;
     ctx.stroke();
@@ -10564,7 +10567,8 @@ window.confirmCharSelect = function() {
       if (player && oldW) {
         player.x = Math.min(Math.max(player.r, player.x * (W / oldW)), W - player.r);
         player.y = H - (oldH - player.y) * (H / oldH || 1);
-        dangerY = player.y - player.r * 1.2 - 2;
+        socketAnchorY = player.y - player.r * 1.2 - 2;
+        dangerY = socketAnchorY + (H - socketAnchorY) * 0.5;
       }
       mkStars();
     }, 150);
