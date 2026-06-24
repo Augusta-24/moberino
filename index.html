@@ -5902,7 +5902,7 @@ window.confirmCharSelect = function() {
         </div>
         <div class="whack-grid" id="whack-grid" style="--cols:${GRID_COLS};--rows:${GRID_ROWS}">${
           Array.from({length:HOLES},(_,i)=>
-            `<div class="whack-hole" id="wh-${i}" onclick="whackHit(${i})">
+            `<div class="whack-hole" id="wh-${i}" onpointerdown="whackHit(${i})">
                <div class="whack-char" id="wc-${i}"></div>
                <div class="whack-tint" id="wt-${i}"></div>
                <div class="whack-miss-x" id="wx-${i}">✕</div>
@@ -5935,7 +5935,7 @@ window.confirmCharSelect = function() {
         <div id="whack-memorize-banner" style="display:none;text-align:center;padding:10px 0 6px;font-family:'Bebas Neue',cursive;font-size:36px;letter-spacing:4px;color:#00e5ff;text-shadow:0 0 20px #00e5ff,0 0 40px #00e5ff66">MEMORIZE</div>
         <div class="whack-grid" id="whack-grid" style="--cols:${GRID_COLS};--rows:${GRID_ROWS}">${
           Array.from({length:HOLES},(_,i)=>
-            `<div class="whack-hole" id="wh-${i}" onclick="whackHit(${i})">
+            `<div class="whack-hole" id="wh-${i}" onpointerdown="whackHit(${i})">
                <div class="whack-char" id="wc-${i}"></div>
                <div class="whack-tint" id="wt-${i}"></div>
                <div class="whack-miss-x" id="wx-${i}">✕</div>
