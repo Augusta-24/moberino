@@ -8403,19 +8403,12 @@ window.confirmCharSelect = function() {
   let boss = null;
   let bossDeployTimer = 0;
   const rescuedChars = new Set();
-  // Occasional themed waves layered on top of the normal smooth difficulty ramp —
-  // purely orthogonal to waveConfig(), consulted by spawnObstacle/doSpawn/loop at a
-  // handful of branch points rather than restructuring the ramp itself.
+  // Themed waves run on a light chapter cadence instead of pure randomness.
+  // Regular waves still exist as breathers, but boss/captive fights are chapter
+  // gates and the wave immediately after them is always a special "new tier" wave.
   let waveTheme = null; // null = normal wave, else one of WAVE_THEMES
-  let lastThemedWave = -99;
   let themeEffectsAt = 0; // BLACKOUT's vignette waits until this time so it doesn't visually swallow the wave/theme announcement
   let waveTransitioning = false; // true from nextWave() until its announcement clears — guards against the per-frame wave-cleared check re-firing nextWave()
-  // BOSS used to be a hardcoded "every 3rd wave" rule running alongside the theme
-  // system; now it's just one more entry in the same pool — a boss fight is simply
-  // one of the special-wave outcomes instead of a separate guaranteed schedule.
-  // That also means ghost/emp/captive no longer need wave-number-based exclusion
-  // from "boss waves" — there's no such concept anymore, only one theme is ever
-  // picked per wave, so boss can never land alongside a mini-boss theme by definition.
   // 'flip' (not 'reverse') for the wave theme key — the mystery outcome list below
   // already uses 'reverse' for reversed controls, an unrelated effect; same string
   // in both would be confusing to read even though they're different variables.
@@ -8426,19 +8419,24 @@ window.confirmCharSelect = function() {
     bomber: 'BOMBER RUN', emp: 'EMP WARNING', goldrush: 'GOLD RUSH', boss: 'BOSS',
     music: 'JAM SESSION', flip: 'REVERSE',
   };
-  const THEME_MIN_WAVE = 3, THEME_COOLDOWN = 1, THEME_CHANCE = 0.5; // base chance
-  let wavesSinceSpecial = 0;
+  const EARLY_SPECIALS = ['asteroids', 'swarm'];
+  const MID_SPECIALS = ['bomber', 'mirror', 'music', 'blackout'];
+  const LATE_SPECIALS = ['ghost', 'emp', 'flip', 'rave'];
+  const POST_BOSS_SPECIALS = ['swarm', 'bomber', 'asteroids', 'rave'];
+  function chapterPick(pool, w, previousTheme, offset) {
+    const choices = pool.filter(t => t !== previousTheme);
+    const list = choices.length ? choices : pool;
+    return list[(Math.floor(w / 5) + (offset || 0)) % list.length];
+  }
   function pickWaveTheme(w, previousTheme) {
-    if (w < THEME_MIN_WAVE) return null;
-    const forceSpecial = wavesSinceSpecial >= 1; // guarantee at least every other wave
-    if (!forceSpecial && Math.random() > THEME_CHANCE) {
-      wavesSinceSpecial++;
-      return null;
-    }
-    const pool = previousTheme ? WAVE_THEMES.filter(t => t !== previousTheme) : WAVE_THEMES;
-    lastThemedWave = w;
-    wavesSinceSpecial = 0;
-    return pool[Math.floor(Math.random() * pool.length)];
+    if (w < 3) return null;
+    if (previousTheme === 'boss' || previousTheme === 'captive') return chapterPick(POST_BOSS_SPECIALS, w, previousTheme, 0);
+    if (w % 5 === 0) return Math.floor(w / 5) % 2 === 0 ? 'captive' : 'boss';
+    const pos = ((w - 1) % 5) + 1;
+    if (pos === 3) return chapterPick(EARLY_SPECIALS, w, previousTheme, 0);
+    if (pos === 4) return chapterPick(MID_SPECIALS, w, previousTheme, 1);
+    if (w >= 8 && pos === 2) return chapterPick(LATE_SPECIALS, w, previousTheme, 2);
+    return null;
   }
   // Lighter-weight boss-style encounter for GHOST/ICE/EMP — deliberately separate
   // from `boss` so the "pause all normal spawning" behavior tied to a real boss
@@ -9119,7 +9117,7 @@ window.confirmCharSelect = function() {
     enemyBullets=[]; lastEnemyFire=0; floatTexts=[]; lineFlashA=0;
     powerups=[]; buffSpeedUntil=0; buffGunUntil=0; buffShieldUntil=0; escort=null; shakeMag=0;
     boss=null; rescuedChars.clear();
-    waveTheme = null; lastThemedWave = -99; wavesSinceSpecial = 0; miniBoss = null; themeEffectsAt = 0; waveTransitioning = false;
+    waveTheme = null; miniBoss = null; themeEffectsAt = 0; waveTransitioning = false;
     buffFrozenUntil = 0; buffZappedUntil = 0; controlsReversedUntil = 0; twin = null; rebound = null; buffPizzaUntil = 0; snowingUntil = 0; snowParticles = [];
     inventory = { gun: false, shield: false, bomb: false };
     socketAnchorY = H - SPACE_SOCKET_ANCHOR_BOTTOM_OFFSET;
@@ -9139,15 +9137,15 @@ window.confirmCharSelect = function() {
   let spawnTimer = null;
   function startWaveSpawn(cfg) {
     clearTimeout(spawnTimer);
-    // ALL ASTEROIDS still triples up per tick, but reduce the total wave volume
-    // so the rain feels less punishing.
-    spawnsRemaining = waveTheme === 'asteroids' ? Math.max(1, Math.ceil(cfg.poolSize * 1.5)) : cfg.poolSize;
+    // Boss/captive waves are true encounter waves now: beat the boss, then advance
+    // into the next chapter beat instead of resuming a hidden regular spawn pool.
+    if (waveTheme === 'boss' || waveTheme === 'captive') spawnsRemaining = 0;
+    else spawnsRemaining = waveTheme === 'asteroids' ? Math.max(1, Math.ceil(cfg.poolSize * 1.5)) : cfg.poolSize;
     function doSpawn() {
       if (state !== 'playing') return;
       // Paused entirely while a boss fight is active — it's deploying its own minions
-      // instead, not stacked on top of the regular wave queue. Resumes exactly where
-      // it left off (spawnsRemaining untouched) once the boss is gone. GHOST gets the
-      // same full pause — it's meant to read as a real boss fight, not a wave feature.
+      // instead, not stacked on top of the regular wave queue. GHOST gets the same
+      // full pause because it is meant to read as a real encounter.
       if (boss || (miniBoss && miniBoss.kind === 'ghost')) { spawnTimer = setTimeout(doSpawn, 500); return; }
       if (spawnsRemaining <= 0) return; // pool exhausted — let the board clear naturally, no forced wipe
       spawnObstacle(cfg);
@@ -10205,7 +10203,7 @@ function nextWave() {
     // AND every falling powerup has resolved (caught, broken, or fallen off-screen)
     // — no forced wipe, and nothing is still visibly falling once the wave-transition
     // announcement covers the screen.
-    if (spawnsRemaining <= 0 && obstacles.length === 0 && powerups.length === 0 && state === 'playing') {
+    if (spawnsRemaining <= 0 && obstacles.length === 0 && powerups.length === 0 && !boss && !miniBoss && state === 'playing') {
       nextWave();
     }
 
