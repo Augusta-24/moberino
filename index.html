@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#08102a">
 <title>MOBERINO</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Russo+One&family=Permanent+Marker&display=swap" rel="stylesheet">
@@ -21,7 +22,10 @@
   --line:  rgba(242,239,232,0.07);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
+html{
+  scroll-behavior:smooth;
+  background: var(--navy);
+}
 
 body {
   background: var(--navy);
@@ -46,7 +50,10 @@ body.on-space #bg { display: none; }
 
 /* Neon arcade floor — even diamond grid, fills full viewport */
 body.on-lobby, body.on-char, body.on-whack, body.on-match, body.on-space {
-  min-height: 100dvh;
+  min-height: var(--app-vh, 100dvh);
+  background-color: #02040e;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 body.on-whack,
 body.on-match {
@@ -1704,15 +1711,12 @@ body.rec-open { overflow-y: auto; }
    and removes that whole class of "desktop-only" layout bugs. */
 html, body { height: 100%; overflow: hidden; }
 
-/* Scrollable pages each become their own scroll container. #pg-match/#pg-space were
-   missing from this list — Whack had overscroll-behavior-y:contain (the property
-   that actually stops a rubber-band drag from leaking into scrolling the page behind
-   it) but Memory/Space didn't, which is the likely cause of the page shifting during
-   play on iPad: it allows more deliberate two-finger/edge gestures than a phone, and
-   without containment a stray one can bubble up to the body. */
-#pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active, #pg-charselect.active,
-#pg-lobby.active, #pg-whack.active, #pg-match.active, #pg-space.active {
-  height: 100dvh;
+/* Scrollable pages each become their own scroll container. Arcade game screens are
+   excluded because they manage scrolling inside their own panels/lists; letting the
+   page itself scroll exposes Safari's under-page area during rubber-band gestures. */
+#pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active,
+#pg-lobby.active {
+  height: var(--app-vh, 100dvh);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
@@ -1740,7 +1744,7 @@ html, body { height: 100%; overflow: hidden; }
      1366px specifically when also landscape + coarse-pointer, so real desktop
      windows (pointer: fine) in that width range are unaffected. Width, not height,
      since iPad Pro 12.9" landscape is ~1024px tall — a height cutoff kept missing it. */
-  #pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active, #pg-charselect.active {
+  #pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active {
     padding-top: 0;
   }
   .cats-header { height: 46px; padding: 0px 6px 0px; }
@@ -2135,19 +2139,33 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 /* ══════════════════════════════════════
    GAMES
 ══════════════════════════════════════ */
-#pg-lobby { height: 100dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; z-index: 1; }
+#pg-lobby { height: var(--app-vh, 100dvh); overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; z-index: 1; }
 .lobby-wrap { padding: 10px 0 48px; display: flex; flex-direction: column; gap: 12px; position: relative; }
 
 /* ── Character Select Screen ── */
 #pg-charselect {
   background: transparent;
   align-items: flex-start; justify-content: center;
-  height: 100dvh; overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
+  height: var(--app-vh, 100dvh);
+  max-height: var(--app-vh, 100dvh);
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+#pg-charselect.active {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  display: flex;
+  overflow: hidden !important;
+  -webkit-overflow-scrolling: auto;
 }
 #char-select-screen {
-  width: 100%; max-width: 480px; padding: 32px 16px 48px; margin: auto;
-  display: flex; flex-direction: column; align-items: center; gap: 18px;
+  width: 100%; max-width: 480px;
+  height: 100%;
+  min-height: 0;
+  padding: max(16px, env(safe-area-inset-top, 0px) + 12px) 16px max(18px, env(safe-area-inset-bottom, 0px) + 16px);
+  margin: auto;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
 }
 #char-select-title {
   font-family: 'Bebas Neue', cursive;
@@ -2161,7 +2179,8 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 #char-scroll-wrap {
   position: relative;
   width: 100%;
-  height: 280px;
+  height: min(280px, max(190px, calc(var(--app-vh, 100dvh) - 360px)));
+  flex: 0 1 280px;
   overflow: hidden;
 }
 #char-scroll-wrap::before,
@@ -2189,6 +2208,7 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
   scrollbar-width: none;
   scroll-snap-type: y mandatory;
   overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 #char-scroll-list::-webkit-scrollbar { display: none; }
 .cs-char-row {
@@ -2382,7 +2402,7 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 }
 
 /* ── Whack-a-Mole ── */
-#pg-whack { height: 100dvh; overflow: hidden; position: relative; z-index: 1; display: none; flex-direction: column; }
+#pg-whack { height: var(--app-vh, 100dvh); overflow: hidden; position: relative; z-index: 1; display: none; flex-direction: column; background: transparent; }
 #pg-whack.active { display: flex; }
 .whack-wrap { padding: 8px 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; flex: 1; min-height: 0; overflow-y: auto; }
 .whack-wrap.mode-select-layout {
@@ -2685,7 +2705,7 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
    align/justify-center here just centers whatever size that ends up being. The
    #030110 page background matches the canvas's own in-game fill so any letterbox
    space reads as intentional "cabinet" framing, not empty page background. */
-#pg-space { position: relative; z-index: 1; height: 100dvh; overflow: hidden; display: none; flex-direction: column; align-items: center; justify-content: center; background: #030110; }
+#pg-space { position: relative; z-index: 1; height: var(--app-vh, 100dvh); overflow: hidden; display: none; flex-direction: column; align-items: center; justify-content: center; background: #030110; }
 #pg-space.active { display: flex; }
 /* #pg-space's align-items:center is for letterboxing the canvas (a flex column
    child, centered horizontally when narrower than the screen) — but the same rule
@@ -2716,7 +2736,7 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
   100% { opacity:0; transform:scale(0.95) translateY(-10px); }
 }
 /* ── MATCH GAME ── */
-#pg-match { height: 100dvh; overflow: hidden; position: relative; z-index: 1; display: none; flex-direction: column; }
+#pg-match { height: var(--app-vh, 100dvh); overflow: hidden; position: relative; z-index: 1; display: none; flex-direction: column; background: transparent; }
 #pg-match.active { display: flex; }
 .match-wrap { padding: 8px 12px; flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; overflow-y: auto; }
 .match-msg { font-family: 'Bebas Neue', cursive; font-size: 34px; letter-spacing: 6px; text-align: center; }
