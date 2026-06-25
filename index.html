@@ -1955,6 +1955,9 @@ button.cats-search-wrap {
 }
 
 @media (max-width: 599px) {
+  #pg-home {
+    padding-bottom: max(88px, env(safe-area-inset-bottom, 0px) + 82px);
+  }
   .cgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ctile-lbl { font-size: 18px; height: 54px; }
   .cats-search-wrap { padding: 5px 8px; }
@@ -3741,9 +3744,10 @@ function _unlockMapTouch() {
 
 // ── NAV ──
 function nav(p) {
+  const targetPageId = `pg-${p}`;
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('on',el.dataset.p===p));
-  document.getElementById(`pg-${p}`)?.classList.add('active');
+  document.getElementById(targetPageId)?.classList.add('active');
   window.scrollTo(0,0);
   if (document.activeElement && typeof document.activeElement.blur === 'function') {
     const active = document.activeElement;
@@ -3753,7 +3757,16 @@ function nav(p) {
     window.visualViewport.scrollTo(0, 0);
   }
   if (window.lockViewportHeight) window.lockViewportHeight();
-  document.getElementById(`pg-${p}`)?.scrollTo(0,0);
+  document.getElementById(targetPageId)?.scrollTo(0,0);
+  const recDrawer = document.getElementById('rec-drawer');
+  if (recDrawer) recDrawer.classList.remove('open');
+  const memoriesEl = document.getElementById('memories');
+  if (memoriesEl) memoriesEl.classList.remove('open');
+  document.getElementById('pg-home')?.classList.remove('rec-open');
+  document.body.classList.remove('rec-open');
+  if (p !== 'home') document.body.style.overflow = '';
+  const recBtn = document.getElementById('recBtn');
+  if (recBtn) recBtn.textContent = 'RECOMMENDED';
   const onHome   = p === 'home';
   const onCats   = p === 'cats';
   const onDetail = p === 'detail';
@@ -3812,8 +3825,17 @@ function nav(p) {
   // isn't the current target, strip it. Class-only (no inline styles) so it
   // can't override CSS the way a stuck inline display would.
   document.querySelectorAll('.page.active').forEach(el=>{
-    if (el.id !== `pg-${p}`) el.classList.remove('active');
+    if (el.id !== targetPageId) el.classList.remove('active');
   });
+  const settleViewport = () => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    const target = document.getElementById(targetPageId);
+    if (target) target.scrollTop = 0;
+  };
+  requestAnimationFrame(settleViewport);
+  setTimeout(settleViewport, 120);
 }
 
 function openRecDrawer() {
@@ -3841,7 +3863,8 @@ function setArcadeExitVisible(show) {
 }
 
 function toggleRec() {
-  if (window.innerWidth <= 1023) {
+  const useDrawer = window.innerWidth <= 1023 || (window.matchMedia && window.matchMedia('(pointer: coarse) and (max-width: 1400px)').matches);
+  if (useDrawer) {
     openRecDrawer();
     return;
   }
