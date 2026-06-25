@@ -3793,9 +3793,6 @@ function nav(p) {
   document.body.classList.toggle('on-space', onSpace);
   document.documentElement.classList.toggle('arcade-root', isArcade);
   if (onMap) _lockMapTouch(); else _unlockMapTouch();
-  // Dismiss any stale leaderboard modal on navigation
-  const staleModal = document.getElementById('lb-modal');
-  if (staleModal) staleModal.remove();
   if(onTL)    buildTimeline();
   if(onMap)   initMap();
   if(onShelf) { buildShelf(); drawShelfBg(); }
@@ -5290,12 +5287,18 @@ function filterLbRows(game, rows) {
   });
 }
 
-function getWhackLeaderboardKey() {
-  return `whack-${gameMode}-${difficulty}`;
+function getWhackLeaderboardKey(options) {
+  const opts = options || {};
+  const mode = opts.mode || window._whackMode || 'frenzy';
+  const level = opts.difficulty || window._whackDifficulty || 'hard';
+  return `whack-${mode}-${level}`;
 }
 
-function getMatchLeaderboardKey() {
-  return matchMode === 'free' ? `match-free-${freePlayCharCount}` : `match-${matchMode}`;
+function getMatchLeaderboardKey(options) {
+  const opts = options || {};
+  const mode = opts.mode || window._matchMode || 'hard';
+  const pairs = opts.pairs || window._matchFreePairs || 8;
+  return mode === 'free' ? `match-free-${pairs}` : `match-${mode}`;
 }
 
 function getSpaceLeaderboardKey() {
@@ -5317,7 +5320,7 @@ function getLeaderboardBoards() {
     { key: 'whack-classic-hard', label: 'FRENZY · HARD', color: '#00e5ff', field: 'score' },
     { key: 'whack-frenzy-easy', label: 'ADVENTURE · MEDIUM', color: '#ff00cc', field: 'score' },
     { key: 'whack-frenzy-hard', label: 'ADVENTURE · HARD', color: '#ff00cc', field: 'score' },
-    { key: matchFreeKey, label: `FREE PLAY · ${freePlayCharCount}`, color: '#33ff66', field: 'score' },
+    { key: matchFreeKey, label: `FREE PLAY · ${window._matchFreePairs || 8}`, color: '#33ff66', field: 'score' },
     { key: 'match-hard', label: 'MATCH · HARD', color: '#ffe61a', field: 'score' },
     { key: 'match-challenge', label: 'MATCH · CHALLENGE', color: '#ff9933', field: 'seconds' },
     { key: 'match-impossible', label: 'MATCH · IMPOSSIBLE', color: '#ff4444', field: 'score' },
@@ -5502,64 +5505,17 @@ function buildArcadeResultCard(options) {
             ${statusLine ? `<div id="${statusId}" style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:${color};text-shadow:0 0 8px ${color}66">${statusLine}</div>` : `<div id="${statusId}" style="display:none"></div>`}
           </div>
           <div id="${boardTargetId}"></div>
-          <div data-save-row="arcade" style="position:relative;width:min(100%,240px);height:40px;margin:${saveMarginTop}px auto 0">
+          <div data-save-row="arcade" style="width:min(100%,280px);height:40px;margin:${saveMarginTop}px auto 0;display:flex;align-items:stretch;gap:8px">
             <input id="${inputId}" maxlength="12" autocomplete="off" spellcheck="false" placeholder="ENTER NAME"
-              style="width:100%;height:40px;box-sizing:border-box;background:#0e0b22;border:1.5px solid ${color};border-radius:4px;padding:10px 12px;font-family:'VCR',monospace;font-size:15px;letter-spacing:4px;color:#fff;text-align:center;text-transform:uppercase;outline:none">
+              style="flex:1;min-width:0;height:40px;box-sizing:border-box;background:#0e0b22;border:1.5px solid ${color};border-radius:4px;padding:10px 12px;font-family:'VCR',monospace;font-size:15px;letter-spacing:4px;color:#fff;text-align:center;text-transform:uppercase;outline:none">
             <button id="${saveButtonId}" aria-label="Submit score" onclick="saveArcadeLeaderboard(${JSON.stringify(boardKey)}, ${JSON.stringify(saveValue)}, ${JSON.stringify(saveValue)}, ${JSON.stringify(options.seconds || 0)}, ${JSON.stringify(options.extra || '')}, ${options.ascending ? 'true' : 'false'}, '${inputId}', '${statusId}', '${boardTargetId}', '${color}', '${boardField}', '${artTargetId}', '${artGame}')"
-              style="position:absolute;left:calc(100% + 8px);top:0;width:40px;height:40px;box-sizing:border-box;background:${color}22;border:1.5px solid ${color};border-radius:4px;color:${color};cursor:pointer;text-shadow:0 0 8px ${color}66;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center">▶</button>
+              style="flex:0 0 44px;width:44px;height:40px;box-sizing:border-box;background:${color}22;border:1.5px solid ${color};border-radius:4px;color:${color};cursor:pointer;text-shadow:0 0 8px ${color}66;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center">${submitLabel}</button>
           </div>
         </div>
       </div>
       <div class="arcade-cab-foot" style="position:relative;z-index:2;flex-direction:column;align-items:center;gap:8px;background:rgba(5,3,16,0.78);padding:22px 16px 18px;border-top:1px solid rgba(242,239,232,0.12)">${buttons}</div>
     </div>`;
 }
-
-window.promptLeaderboard = function(game, score, extra, neonColor, onDone) {
-  const ov = document.createElement('div');
-  ov.id = 'lb-modal';
-  ov.style.cssText = 'position:fixed;inset:0;z-index:9700;display:flex;align-items:center;justify-content:center;background:rgba(5,2,18,0.88);backdrop-filter:blur(8px)';
-  const nc = neonColor || '#ffe61a';
-  const rows = filterLbRows(game, LB.get(game));
-  const top5 = rows.slice(0, 5);
-  const myRank = rows.findIndex(r => r.score < score);
-  const actualRank = myRank === -1 ? rows.length : myRank; // 0-indexed position
-  const inTop5 = actualRank < 5;
-  const rankLabel = actualRank === 0 ? '👑' : `#${actualRank + 1}`;
-
-  const boardRows = top5.map((r, i) =>
-    `<tr>
-      <td style="padding:6px 8px;color:${i===0?nc:'rgba(242,239,232,0.5)'};font-size:16px">${i===0?'👑':'#'+(i+1)}</td>
-      <td style="padding:6px 8px;color:${i===0?nc:'rgba(242,239,232,0.8)'};letter-spacing:2px;font-size:16px">${r.name}</td>
-      <td style="padding:6px 8px;text-align:right;color:${i===0?nc:'rgba(242,239,232,0.7)'};font-size:16px">${r.score}</td>
-    </tr>`
-  ).join('');
-
-  const youRow = !inTop5 ? `
-    <tr><td colspan="3" style="padding:2px 8px;font-size:13px;color:rgba(242,239,232,0.25);text-align:center;letter-spacing:2px">· · ·</td></tr>
-    <tr style="background:${nc}11">
-      <td style="padding:6px 8px;color:${nc};font-size:16px">${rankLabel}</td>
-      <td style="padding:6px 8px;color:${nc};letter-spacing:2px;font-size:16px">YOU</td>
-      <td style="padding:6px 8px;text-align:right;color:${nc};font-size:16px">${score}</td>
-    </tr>` : '';
-
-  ov.innerHTML = `
-    <div style="background:#080515;border:2px solid ${nc};border-radius:12px;padding:24px 20px;max-width:300px;width:90vw;text-align:center;box-shadow:0 0 30px ${nc}44">
-      <div style="font-family:'Bebas Neue',cursive;font-size:44px;color:${nc};text-shadow:0 0 20px ${nc};line-height:1">${score}</div>
-      ${extra ? `<div style="font-family:'VCR',monospace;font-size:13px;letter-spacing:2px;color:rgba(242,239,232,0.4);margin-bottom:12px">${extra}</div>` : '<div style="margin-bottom:12px"></div>'}
-      ${boardRows || youRow ? `<table style="width:100%;border-collapse:collapse;font-family:VCR,monospace;margin-bottom:14px">${boardRows}${youRow}</table>` : ''}
-      <input id="lb-name-input" maxlength="12" autocomplete="off" spellcheck="false"
-        style="width:100%;box-sizing:border-box;background:#0e0b22;border:1.5px solid ${nc};border-radius:4px;padding:10px 12px;font-family:'VCR',monospace;font-size:16px;letter-spacing:4px;color:#fff;text-align:center;text-transform:uppercase;outline:none;margin-bottom:10px"
-        placeholder="YOUR NAME">
-      <div style="display:flex;gap:10px;justify-content:center">
-        <button onclick="document.getElementById('lb-modal').remove();(${onDone.toString()})()"
-          style="font-family:'VCR',monospace;font-size:10px;letter-spacing:2px;background:none;border:1px solid rgba(242,239,232,0.2);border-radius:4px;padding:9px 16px;color:rgba(242,239,232,0.5);cursor:pointer">SKIP</button>
-        <button onclick="(function(){const n=document.getElementById('lb-name-input').value.trim();if(!n)return;LB.add('${game}',n,${score},'${extra||''}');RemoteLB.submit('${game}',n,${score},0,'${extra||''}');document.getElementById('lb-modal').remove();(${onDone.toString()})();})()"
-          style="font-family:'VCR',monospace;font-size:10px;letter-spacing:2px;background:${nc}22;border:1.5px solid ${nc};border-radius:4px;padding:9px 20px;color:${nc};cursor:pointer;text-shadow:0 0 8px ${nc}">SAVE ▶</button>
-      </div>
-    </div>`;
-  document.body.appendChild(ov);
-  setTimeout(() => { const inp = document.getElementById('lb-name-input'); if(inp) inp.focus(); }, 100);
-};
 
 // ── Carousel (infinite loop, JS-driven) ───────────────────────────────────────
 let _carouselIdx = 0;
@@ -5878,7 +5834,7 @@ window.confirmCharSelect = function() {
   // labeled "Frenzy" in the UI) — gameMode persists across replays the same way
   // difficulty already does, only defaulting to 'frenzy' on script init.
   let gameMode = 'frenzy'; // 'classic' | 'frenzy'
-  let classicHits = 0, classicPieces = [], classicTimeLeft = 30, classicInterval = null, classicEndTimer = null;
+  let classicHits = 0, classicPieces = [], classicTimeLeft = 30, classicInterval = null;
   let activeChar = getGlobalChar(); // user's char — to AVOID
   let moleChar = -1;               // random other char — to WHACK
   let selfActive = false;          // true once user's char starts appearing
@@ -6211,7 +6167,7 @@ window.confirmCharSelect = function() {
 
     if (state === 'over' && gameMode === 'classic') {
       setArcadeExitVisible(false);
-      const boardKey = getWhackLeaderboardKey();
+      const boardKey = getWhackLeaderboardKey({ mode: gameMode, difficulty });
       const key = 'classic-best';
       const best = parseInt(localStorage.getItem(key)||'0');
       const isNew = classicHits > best;
@@ -6246,7 +6202,7 @@ window.confirmCharSelect = function() {
       setArcadeExitVisible(false);
       // Score is now waves actually cleared — `wave` is the one that was in progress
       // when the run ended, so the last one *cleared* is wave-1.
-      const boardKey = getWhackLeaderboardKey();
+      const boardKey = getWhackLeaderboardKey({ mode: gameMode, difficulty });
       const wavesCleared = Math.max(0, wave - 1);
       const key = 'whack-best-survival';
       const best = parseInt(localStorage.getItem(key)||'0');
@@ -6877,7 +6833,6 @@ window.confirmCharSelect = function() {
   const CLASSIC_DURATION_S = 30;
   function classicStart() {
     classicHits = 0;
-    clearTimeout(classicEndTimer);
     classicPieces.forEach(p => clearTimeout(p.timer));
     classicPieces = [];
     classicTimeLeft = CLASSIC_DURATION_S;
@@ -6899,13 +6854,9 @@ window.confirmCharSelect = function() {
       if (tEl) tEl.textContent = classicTimeLeft;
       if (classicTimeLeft <= 0) { clearInterval(classicInterval); classicEnd(); }
     }, 1000);
-    classicEndTimer = setTimeout(() => {
-      if (state === 'playing' && gameMode === 'classic') classicEnd();
-    }, (CLASSIC_DURATION_S + 1) * 1000);
   }
 
   function classicEnd() {
-    clearTimeout(classicEndTimer);
     clearInterval(classicInterval);
     classicPieces.forEach(p => clearTimeout(p.timer));
     classicPieces = [];
@@ -6920,7 +6871,6 @@ window.confirmCharSelect = function() {
     clearInterval(timerInterval);
     clearInterval(clearRoundInterval);
     clearInterval(clearRoundMoveInterval);
-    clearTimeout(classicEndTimer);
     classicPieces.forEach(p => clearTimeout(p.timer));
     classicPieces = [];
     clearInterval(classicInterval);
@@ -6933,47 +6883,9 @@ window.confirmCharSelect = function() {
     memoryPhase = null;
     waveTransitioning = false;
     state = 'over';
-    try {
-      render();
-    } catch(e) {
-      console.warn('[Whack] result render failed:', e);
-      const wrap = document.getElementById('whack-wrap');
-      if (wrap) {
-        const isClassic = gameMode === 'classic';
-        const score = gameMode === 'classic' ? classicHits : Math.max(0, wave - 1);
-        const color = isClassic ? '#00e5ff' : '#ff00cc';
-        const uid = `whack-${isClassic ? 'classic' : 'frenzy'}-${difficulty}-fallback`;
-        wrap.innerHTML = buildArcadeResultCard({
-          uid,
-          boardKey: getWhackLeaderboardKey(),
-          artGame: 'whack',
-          color,
-          marquee: 'GAME OVER',
-          marqueeEnd: isClassic ? '#006677' : '#990066',
-          scoreLabel: 'YOUR SCORE',
-          scoreValue: score,
-          saveValue: score,
-          field: 'score',
-          extra: difficulty.toUpperCase(),
-          ascending: false,
-          saveMarginTop: 12,
-          buttons: `
-            <button class="whack-btn" style="border-color:${color};background:${isClassic ? 'rgba(0,229,255,0.30)' : 'rgba(255,0,204,0.30)'}" onclick="whackPlay()">PLAY AGAIN</button>
-            <button class="whack-btn" style="border-color:${color};background:${isClassic ? 'rgba(0,229,255,0.30)' : 'rgba(255,0,204,0.30)'}" onclick="whackChangeMode()">CHANGE MODE</button>
-            <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="nav('lobby')">BACK TO ARCADE</button>
-          `,
-        });
-        loadRemoteBoard(getWhackLeaderboardKey(), `${uid}-board`, color, 'score');
-        mountSelectionArt(`${uid}-art`, 'whack');
-      }
-    }
+    render();
     const wrap = document.getElementById('whack-wrap');
     if (wrap) wrap.scrollTop = 0;
-    requestAnimationFrame(() => {
-      const wrap = document.getElementById('whack-wrap');
-      if (state === 'over' && wrap && !wrap.querySelector('[data-save-row="arcade"]')) render();
-      if (wrap) wrap.scrollTop = 0;
-    });
   }
 
   // Measures the actual HUD bar (wave/mode line + VS row) and covers it exactly,
@@ -7218,7 +7130,7 @@ window.confirmCharSelect = function() {
   window.whackBack = function() {
     holeTimers.forEach(clearTimeout); clearInterval(timerInterval);
     clearInterval(clearRoundInterval); clearInterval(clearRoundMoveInterval);
-    classicPieces.forEach(p => clearTimeout(p.timer)); classicPieces = []; clearInterval(classicInterval); clearTimeout(classicEndTimer);
+    classicPieces.forEach(p => clearTimeout(p.timer)); classicPieces = []; clearInterval(classicInterval);
     removeSideBar();
     removeClearTimerOverlay();
     document.querySelectorAll('.whack-intro-overlay').forEach(el => el.remove());
@@ -7232,18 +7144,13 @@ window.confirmCharSelect = function() {
 
   window.whackPlay = function() {
     holeTimers.forEach(clearTimeout); clearInterval(timerInterval);
-    // Reset the leaderboard-prompt-shown flag for the new run — without this, the
-    // prompt only ever appeared on the very first game-over per page load, since
-    // wrap is a persistent DOM node and its dataset survives across replays.
-    const wrapEl = document.getElementById('whack-wrap');
-    if (wrapEl) delete wrapEl.dataset.lbShown;
     introShownFor = { whack: false, clear: false, memory: false };
     activeChar = getGlobalChar();
     moleChar = pickMole();
     wave = 1; waveHits = 0;
     selfActive = false; selfIntroWave = 0; waveTransitioning = false;
     currentRoundType = 'whack'; clearInterval(clearRoundInterval); clearInterval(clearRoundMoveInterval); memoryPhase = null; removeClearTimerOverlay(); removeSideBar(); memoryAppearances = 0; clearRoundAppearances = 0;
-    classicPieces.forEach(p => clearTimeout(p.timer)); classicPieces = []; clearInterval(classicInterval); clearTimeout(classicEndTimer); classicHits = 0;
+    classicPieces.forEach(p => clearTimeout(p.timer)); classicPieces = []; clearInterval(classicInterval); classicHits = 0;
     holeStates = Array(HOLES).fill('empty');
     holeCharIdx = Array(HOLES).fill(-1);
     holeGrace = Array(HOLES).fill(false);
@@ -7635,16 +7542,24 @@ window.confirmCharSelect = function() {
   // call its plain `render()`. Every screen-transition triggered from markup must go
   // through an explicitly window-exposed function like these, the same way
   // whackBegin/whackPlay/whackHit already are.
+  function syncWhackLeaderboardState() {
+    window._whackMode = gameMode;
+    window._whackDifficulty = difficulty;
+  }
+  syncWhackLeaderboardState();
   window.whackChooseMode = function(mode) {
     gameMode = mode;
+    syncWhackLeaderboardState();
     render();
   };
   window.whackSetDifficulty = function(d) {
     difficulty = d;
+    syncWhackLeaderboardState();
   };
   window.whackSelectModeDifficulty = function(mode, d) {
     gameMode = mode;
     difficulty = d;
+    syncWhackLeaderboardState();
     moleChar = pickMole();
     state = 'mole-select';
     render();
@@ -7678,15 +7593,14 @@ window.confirmCharSelect = function() {
 
   window.initWhack = function() {
     holeTimers.forEach(clearTimeout); clearInterval(timerInterval);
-    const wrapEl = document.getElementById('whack-wrap');
-    if (wrapEl) delete wrapEl.dataset.lbShown;
+    syncWhackLeaderboardState();
     introShownFor = { whack: false, clear: false, memory: false };
     activeChar = getGlobalChar();
     moleChar = pickMole();
     state = 'mode-select'; wave = 1; waveHits = 0;
     selfActive = false; selfIntroWave = 0; waveTransitioning = false;
     currentRoundType = 'whack'; clearInterval(clearRoundInterval); clearInterval(clearRoundMoveInterval); memoryPhase = null; removeClearTimerOverlay(); removeSideBar(); memoryAppearances = 0; clearRoundAppearances = 0;
-    classicPieces.forEach(p => clearTimeout(p.timer)); classicPieces = []; clearInterval(classicInterval); clearTimeout(classicEndTimer); classicHits = 0;
+    classicPieces.forEach(p => clearTimeout(p.timer)); classicPieces = []; clearInterval(classicInterval); classicHits = 0;
     holeStates = Array(HOLES).fill('empty');
     holeCharIdx = Array(HOLES).fill(-1);
     holeGrace = Array(HOLES).fill(false);
@@ -7707,6 +7621,8 @@ window.confirmCharSelect = function() {
   const IMPOSSIBLE_MOVE_CUTOFF = 45;
   let matchMode = 'hard'; // 'free' | 'hard' | 'challenge' | 'impossible'
   let freePlayCharCount = 8; // 4–20, how many distinct characters appear in free play
+  window._matchMode = matchMode;
+  window._matchFreePairs = freePlayCharCount;
   // Hard = the old "timed" mode. Challenge/Impossible add a target-moves benchmark to
   // beat (not a hard fail — you can always finish, it's just a "did you beat it?" badge)
   // plus a generous time limit so move-efficiency, not the clock, is the real challenge.
@@ -7877,7 +7793,7 @@ window.confirmCharSelect = function() {
       wrap.scrollTop = 0;
       const didWin = matched === PAIRS;
       if (matchMode === 'free') {
-        const boardKey = getMatchLeaderboardKey();
+        const boardKey = getMatchLeaderboardKey({ mode: matchMode, pairs: freePlayCharCount });
         const uid = `match-free-${freePlayCharCount}`;
         wrap.innerHTML = buildArcadeResultCard({
           uid,
@@ -7903,9 +7819,8 @@ window.confirmCharSelect = function() {
         loadRemoteBoard(boardKey, `${uid}-board`, '#ff9933', 'score');
         mountSelectionArt(`${uid}-art`, 'match');
       } else {
-        const modeLabel = matchMode.toUpperCase();
         const headline = didWin ? 'CLEARED!' : (matchOutOfMoves ? 'OUT OF MOVES!' : "TIME'S UP!");
-        const boardKey = getMatchLeaderboardKey();
+        const boardKey = getMatchLeaderboardKey({ mode: matchMode, pairs: freePlayCharCount });
         const uid = `match-${matchMode}`;
         let scoreLabel = 'YOUR SCORE';
         let scoreValue = matchScore;
@@ -8003,13 +7918,15 @@ window.confirmCharSelect = function() {
             const timeBonus = Math.max(0, (timeLimit - matchTimer) * 5);
             matchScore += timeBonus;
           }
-          setTimeout(() => { SFX.win(); ticketConfetti(); showMatchGameOver(); }, 700);
+          setTimeout(() => {
+            showMatchGameOver();
+            try { SFX.win(); ticketConfetti(); } catch(e) { console.warn('[Match] finish effect failed:', e); }
+          }, 700);
         } else {
           checkMoveCutoff();
         }
       } else {
         combo = 0;
-       combo = 0;
         SFX.mismatch();
         [a, b].forEach(idx => {
           const el = document.getElementById(`mc-${idx}`);
@@ -8083,28 +8000,6 @@ window.confirmCharSelect = function() {
     requestAnimationFrame(() => { el.style.opacity = '0'; });
     setTimeout(() => el.remove(), 350);
   }
-
-  // Single source of truth for "save this score" — used by both Challenge and
-  // Impossible. Building the post-save confirmation via DOM methods (not an HTML
-  // string inside an onclick attribute) sidesteps nested-quote escaping entirely, and
-  // replacing the input+button with a confirmation is what actually prevents the
-  // repeated-click-because-nothing-visibly-happened bug that caused dozens of
-  // duplicate Supabase rows from one run.
-  window.matchSaveScore = function(game, localScore, remoteScore, seconds, extra, ascending) {
-    const input = document.getElementById('lb-name-input-m');
-    if (!input || !input.value.trim()) return;
-    const name = input.value.trim();
-    LB.add(game, name, localScore, extra, ascending);
-    RemoteLB.submit(game, name, remoteScore, seconds, extra);
-    const ui = document.getElementById('match-save-ui');
-    if (ui) {
-      ui.innerHTML = '';
-      const div = document.createElement('div');
-      div.style.cssText = 'color:#33ff66;font-family:VCR,monospace;font-size:13px;letter-spacing:2px';
-      div.textContent = '✓ SUBMITTED';
-      ui.appendChild(div);
-    }
-  };
 
   // Vertical countdown bar to the right of the board for the timed modes (Hard,
   // Challenge) — same fixed-position-against-the-grid trick used in Whack, but kept
@@ -8203,6 +8098,7 @@ window.confirmCharSelect = function() {
   function _matchPlayReal(mode) {
     matchMode = mode || 'hard';
     window._matchMode = matchMode;
+    window._matchFreePairs = freePlayCharCount;
     removeMatchSideBar();
     if (matchMode !== 'free') timeLimit = MODE_CONFIG[matchMode].time;
     cards = makeCards(); flipped=[]; locked=false; moves=0; matched=0; matchOutOfMoves=false; matchCutoffWaived=false;
@@ -8270,53 +8166,14 @@ window.confirmCharSelect = function() {
     document.querySelectorAll('.match-intro-overlay').forEach(el => el.remove());
     locked = false;
     state = 'over';
-    try {
-      render();
-    } catch(e) {
-      console.warn('[Match] result render failed:', e);
-      const wrap = document.getElementById('match-wrap');
-      if (wrap) {
-        const boardKey = getMatchLeaderboardKey();
-        const uid = `match-${matchMode}-fallback`;
-        const scoreValue = matchMode === 'challenge' ? fmtTime(matchTimer) : matchMode === 'impossible' ? moves : matchScore;
-        const saveValue = matchMode === 'challenge' ? matchTimer : matchMode === 'impossible' ? moves : matchScore;
-        wrap.innerHTML = buildArcadeResultCard({
-          uid,
-          boardKey,
-          artGame: 'match',
-          color: '#ff9933',
-          marquee: matched === PAIRS ? 'CLEARED!' : (matchOutOfMoves ? 'OUT OF MOVES!' : "TIME'S UP!"),
-          marqueeEnd: '#ff00cc',
-          marqueeSolid: true,
-          marqueeBg: '#ff9933',
-          scoreLabel: matchMode === 'challenge' ? 'YOUR TIME' : matchMode === 'impossible' ? 'YOUR MOVES' : 'YOUR SCORE',
-          scoreValue,
-          saveValue,
-          field: matchMode === 'challenge' ? 'seconds' : 'score',
-          extra: matchMode === 'free' ? `FREE PLAY · ${freePlayCharCount} PAIRS` : '',
-          seconds: matchMode === 'challenge' ? matchTimer : 0,
-          ascending: matchMode === 'challenge' || matchMode === 'impossible',
-          buttons: `
-            <button class="whack-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.30)" onclick="matchPlay('${matchMode}')">PLAY AGAIN</button>
-            <button class="whack-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.30)" onclick="matchChangeMode()">CHANGE MODE</button>
-            <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="nav('lobby')">BACK TO ARCADE</button>
-          `,
-        });
-        loadRemoteBoard(boardKey, `${uid}-board`, '#ff9933', matchMode === 'challenge' ? 'seconds' : 'score');
-        mountSelectionArt(`${uid}-art`, 'match');
-      }
-    }
+    render();
     const wrap = document.getElementById('match-wrap');
     if (wrap) wrap.scrollTop = 0;
-    requestAnimationFrame(() => {
-      const wrap = document.getElementById('match-wrap');
-      if (state === 'over' && wrap && !wrap.querySelector('[data-save-row="arcade"]')) render();
-      if (wrap) wrap.scrollTop = 0;
-    });
   }
 
   window.matchAdjChar = function(delta) {
     freePlayCharCount = Math.min(Math.max(4, freePlayCharCount + delta), Math.min(20, GAME_CHARS.length));
+    window._matchFreePairs = freePlayCharCount;
     const el = document.getElementById('match-char-ct');
     if (el) el.textContent = freePlayCharCount;
   };
@@ -11087,7 +10944,7 @@ function nextWave() {
     ArcadeMusic.stop();
     activeChar=getGlobalChar();
     const ov=document.getElementById('space-overlay');
-    if(ov){ov.classList.add('hidden'); delete ov.dataset.lbShown;}
+    if(ov) ov.classList.add('hidden');
     if (!spaceIntroShown) {
       spaceIntroShown = true;
       spaceIntroSteps(() => { reset(); state='playing'; raf=requestAnimationFrame(loop); });
@@ -11106,7 +10963,7 @@ function nextWave() {
     if(!canvas)return;
     // Always unhide the overlay when entering the space page
     const _ov=document.getElementById('space-overlay');
-    if(_ov){ _ov.classList.remove('hidden'); delete _ov.dataset.lbShown; }
+    if(_ov) _ov.classList.remove('hidden');
     ctx=canvas.getContext('2d');
     state='idle';
     if(!canvas._spaceTouchReady){
