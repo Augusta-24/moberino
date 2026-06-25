@@ -371,9 +371,9 @@ body.on-match::after, body.on-space::after { display: none; }
   max-height: 100svh;
   overflow: hidden;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   position: relative;
-  padding: max(16px, env(safe-area-inset-top, 0px) + 10px) 0 max(16px, env(safe-area-inset-bottom, 0px) + 10px);
+  padding: max(clamp(42px, 8svh, 88px), env(safe-area-inset-top, 0px) + 18px) 0 max(16px, env(safe-area-inset-bottom, 0px) + 10px);
 }
 #pg-home.active {
   display: flex;
@@ -431,7 +431,7 @@ body.on-timeline #collage::after {
 
 /* Hero — stable in normal flow; no page-level translate. */
 .home-hero {
-  padding: 20px 24px;
+  padding: 0 24px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -654,10 +654,9 @@ body.on-timeline #collage::after {
 /* Allow memories to overflow pg-home's clipping area */
 #pg-home.rec-open {
   overflow-y: auto;
-  justify-content: flex-start;
 }
 #pg-home.rec-open .home-hero {
-  padding-top: 20px;
+  padding-top: 0;
 }
 body.rec-open { overflow-y: auto; }
 @keyframes fadeUp {
@@ -1939,7 +1938,7 @@ button.cats-search-wrap {
      ~1024px tall, which slipped past a height-based cutoff, but every current iPad's
      landscape WIDTH tops out at 1366px, a much more predictable number to key off.
      pointer:coarse keeps real desktop windows out of this regardless of width. */
-  #pg-home { justify-content: center; overflow-y: auto; height: 100vh; height: 100svh; }
+  #pg-home { justify-content: flex-start; overflow-y: auto; height: 100vh; height: 100svh; padding-top: max(16px, env(safe-area-inset-top, 0px) + 8px); }
   .home-hero {
     flex-direction: row;
     align-items: center;
@@ -1956,6 +1955,7 @@ button.cats-search-wrap {
 
 @media (max-width: 599px) {
   #pg-home {
+    padding-top: max(10px, env(safe-area-inset-top, 0px) + 4px);
     padding-bottom: max(88px, env(safe-area-inset-bottom, 0px) + 82px);
   }
   .cgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1965,7 +1965,7 @@ button.cats-search-wrap {
   .tl-thumb { width: min(55vw, 220px); }
   .tl-more-tile { width: min(55vw, 220px); }
   .cats-dice-btn { width: 44px; }
-  .hero-logo-wrap { width: 100vw; transform: translate(-7px, 40px); }
+  .hero-logo-wrap { width: 100vw; transform: translate(-7px, 8px); }
   .hero-logo-text { width: 120%; transform: translate(-6px, 3px); }
   .hero-logo-tape { width: 16.2%; left: calc(15% + 7px); top: calc(35% + 2px); }
   .hero-lower { width: calc(100vw - 16px); }
@@ -2587,6 +2587,19 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
   40% { transform: translateX(5px); }
   60% { transform: translateX(-4px); }
   80% { transform: translateX(4px); }
+}
+@keyframes tap-miss-flash {
+  0% {
+    border-color: rgba(255,60,60,0.95);
+    box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 26px rgba(255,40,40,0.72);
+    transform: scale(0.98);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.whack-hole.tap-miss {
+  animation: tap-miss-flash 0.2s ease-out;
 }
 /* First-time Clear intro: a standalone demo face sliding back and forth, previewing
    "pieces can move" before the player has seen it happen on the real board. */
@@ -3758,6 +3771,8 @@ function nav(p) {
   }
   if (window.lockViewportHeight) window.lockViewportHeight();
   document.getElementById(targetPageId)?.scrollTo(0,0);
+  const spot = document.getElementById('spot-overlay');
+  if (spot && spot.classList.contains('open') && p !== 'home') closeSpot();
   const recDrawer = document.getElementById('rec-drawer');
   if (recDrawer) recDrawer.classList.remove('open');
   const memoriesEl = document.getElementById('memories');
@@ -3864,14 +3879,8 @@ function setArcadeExitVisible(show) {
 
 function syncActivePageHeader() {
   document.querySelectorAll('.cats-header').forEach(el => {
-    if (!el.closest('.page.active')) el.style.transform = '';
+    el.style.transform = '';
   });
-  const hdr = document.querySelector('body:not(.on-lobby):not(.on-char):not(.on-whack):not(.on-match):not(.on-space) .page.active .cats-header');
-  if (!hdr) return;
-  const vv = window.visualViewport;
-  const coarseTablet = window.matchMedia && window.matchMedia('(pointer: coarse) and (max-width: 1400px)').matches;
-  const offset = vv && coarseTablet ? Math.max(0, vv.offsetTop || 0) : 0;
-  hdr.style.transform = offset ? `translateY(${offset}px)` : '';
 }
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', syncActivePageHeader);
@@ -3898,6 +3907,8 @@ function toggleRec() {
 // settled, but it also made the home hero vulnerable to keyboard/address-bar viewport
 // changes. Categories now uses normal navigation plus a tiny fade.
 function prepHomeForNavigation() {
+  const spot = document.getElementById('spot-overlay');
+  if (spot && spot.classList.contains('open')) closeSpot();
   if(typeof closeHomeDrop === 'function') closeHomeDrop();
   document.getElementById('memories').classList.remove('open');
   document.getElementById('rec-drawer').classList.remove('open');
@@ -3991,6 +4002,7 @@ function closeSpot() {
     window.scrollTo(0, 0);
     if (window.lockViewportHeight) window.lockViewportHeight();
     if (window._updateBackTopBar) window._updateBackTopBar();
+    syncActivePageHeader();
   };
   _resync();
   setTimeout(_resync, 350);
@@ -6384,6 +6396,15 @@ window.confirmCharSelect = function() {
     const x = document.getElementById(`wx-${i}`);
     if (x) x.classList.remove('show');
   }
+  function flashWhackEmptyTap(i) {
+    const hole = document.getElementById(`wh-${i}`);
+    if (!hole) return;
+    hole.classList.remove('tap-miss');
+    void hole.offsetWidth;
+    hole.classList.add('tap-miss');
+    setTimeout(() => hole.classList.remove('tap-miss'), 220);
+    SFX.whack();
+  }
 
   // Faded heart flash behind the board whenever a life is lost — easy to miss otherwise
   const BROKEN_HEART_HOLD_MS = 2600; // 4x the original 650ms — gives it room to register before the tap prompt shows up
@@ -6459,7 +6480,10 @@ window.confirmCharSelect = function() {
     if (state !== 'playing') return;
     if (gameMode === 'classic') { classicHit(i); return; }
     if (currentRoundType === 'memory' && memoryPhase === 'recall') { handleMemoryClick(i); return; }
-    if (holeStates[i] !== 'up') return;
+    if (holeStates[i] !== 'up') {
+      if (currentRoundType === 'whack') flashWhackEmptyTap(i);
+      return;
+    }
     const ci = holeCharIdx[i];
     holeStates[i] = 'hit';
     clearTimeout(holeTimers[i]);
@@ -6804,7 +6828,7 @@ window.confirmCharSelect = function() {
 
   function classicHit(i) {
     const idx = classicPieces.findIndex(p => p.hole === i);
-    if (idx === -1) return;
+    if (idx === -1) { flashWhackEmptyTap(i); return; }
     const piece = classicPieces[idx];
     clearTimeout(piece.timer);
     classicPieces.splice(idx, 1);
@@ -7230,7 +7254,7 @@ window.confirmCharSelect = function() {
     const btn = document.createElement('button');
     btn.className = 'intro-skip-btn';
     btn.textContent = 'SKIP';
-    btn.style.cssText = "position:fixed;top:max(14px, env(safe-area-inset-top, 14px));right:calc(max(14px, env(safe-area-inset-right, 14px)) + 44px);z-index:10000;pointer-events:auto;font-family:'VCR',monospace;font-size:10px;letter-spacing:2px;background:none;border:1px solid rgba(242,239,232,0.2);border-radius:4px;padding:9px 16px;color:rgba(242,239,232,0.5);cursor:pointer";
+    btn.style.cssText = "position:fixed;top:max(10px, env(safe-area-inset-top, 10px));right:calc(max(10px, env(safe-area-inset-right, 10px)) + 44px);z-index:10000;pointer-events:auto;height:32px;min-height:32px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;font-family:'VCR',monospace;font-size:10px;letter-spacing:2px;background:none;border:1px solid rgba(242,239,232,0.2);border-radius:6px;padding:0 12px;color:rgba(242,239,232,0.5);cursor:pointer";
     btn.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -10709,7 +10733,7 @@ function nextWave() {
     const btn = document.createElement('button');
     btn.className = 'intro-skip-btn';
     btn.textContent = 'SKIP';
-    btn.style.cssText = "position:fixed;top:max(14px, env(safe-area-inset-top, 14px));right:calc(max(14px, env(safe-area-inset-right, 14px)) + 44px);z-index:10000;pointer-events:auto;font-family:'VCR',monospace;font-size:10px;letter-spacing:2px;background:none;border:1px solid rgba(242,239,232,0.2);border-radius:4px;padding:9px 16px;color:rgba(242,239,232,0.5);cursor:pointer";
+    btn.style.cssText = "position:fixed;top:max(10px, env(safe-area-inset-top, 10px));right:calc(max(10px, env(safe-area-inset-right, 10px)) + 44px);z-index:10000;pointer-events:auto;height:32px;min-height:32px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;font-family:'VCR',monospace;font-size:10px;letter-spacing:2px;background:none;border:1px solid rgba(242,239,232,0.2);border-radius:6px;padding:0 12px;color:rgba(242,239,232,0.5);cursor:pointer";
     btn.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
