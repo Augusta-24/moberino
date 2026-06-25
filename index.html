@@ -5346,13 +5346,11 @@ function getLeaderboardKey(game, options) {
 }
 
 function getLeaderboardBoards() {
-  const matchFreeKey = getMatchLeaderboardKey();
   return [
     { key: 'whack-classic-easy', label: 'FRENZY · MEDIUM', color: '#00e5ff', field: 'score' },
     { key: 'whack-classic-hard', label: 'FRENZY · HARD', color: '#00e5ff', field: 'score' },
     { key: 'whack-frenzy-easy', label: 'ADVENTURE · MEDIUM', color: '#ff00cc', field: 'score' },
     { key: 'whack-frenzy-hard', label: 'ADVENTURE · HARD', color: '#ff00cc', field: 'score' },
-    { key: matchFreeKey, label: `FREE PLAY · ${window._matchFreePairs || 8}`, color: '#33ff66', field: 'score' },
     { key: 'match-hard', label: 'MATCH · HARD', color: '#ffe61a', field: 'score' },
     { key: 'match-challenge', label: 'MATCH · CHALLENGE', color: '#ff9933', field: 'seconds' },
     { key: 'match-impossible', label: 'MATCH · IMPOSSIBLE', color: '#ff4444', field: 'score' },
@@ -5364,7 +5362,7 @@ function getLeaderboardGroups() {
   const boards = getLeaderboardBoards();
   return [
     { title: 'WHACK', keys: ['whack-classic-easy', 'whack-classic-hard', 'whack-frenzy-easy', 'whack-frenzy-hard'] },
-    { title: 'MATCH', keys: boards.filter(b => b.key.startsWith('match-')).map(b => b.key) },
+    { title: 'MATCH', keys: ['match-hard', 'match-challenge', 'match-impossible'] },
     { title: 'SPACE', keys: ['space'] },
   ].map(group => ({ ...group, boards: group.keys.map(key => boards.find(b => b.key === key)).filter(Boolean) }));
 }
