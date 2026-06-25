@@ -8003,7 +8003,7 @@ window.confirmCharSelect = function() {
             const timeBonus = Math.max(0, (timeLimit - matchTimer) * 5);
             matchScore += timeBonus;
           }
-          setTimeout(() => { SFX.win(); ticketConfetti(); state='over'; render(); }, 700);
+          setTimeout(() => { SFX.win(); ticketConfetti(); showMatchGameOver(); }, 700);
         } else {
           checkMoveCutoff();
         }
@@ -8066,7 +8066,7 @@ window.confirmCharSelect = function() {
     if (ov) ov.remove();
     matchOutOfMoves = true;
     removeMatchSideBar();
-    state = 'over'; render();
+    showMatchGameOver();
   };
 
   window.matchFinishAnyway = function() {
@@ -8248,7 +8248,7 @@ window.confirmCharSelect = function() {
               clearInterval(timerInt);
               removeMatchSideBar();
               SFX.over();
-              setTimeout(() => { state = 'over'; render(); }, 700);
+              setTimeout(showMatchGameOver, 700);
             }
           }, 1000);
         };
@@ -8259,6 +8259,60 @@ window.confirmCharSelect = function() {
         startTimer();
       }
     }, 1000);
+  }
+
+  function showMatchGameOver() {
+    clearInterval(timerInt);
+    clearInterval(previewInt);
+    removeMatchSideBar();
+    const cutoff = document.getElementById('match-cutoff-modal');
+    if (cutoff) cutoff.remove();
+    document.querySelectorAll('.match-intro-overlay').forEach(el => el.remove());
+    locked = false;
+    state = 'over';
+    try {
+      render();
+    } catch(e) {
+      console.warn('[Match] result render failed:', e);
+      const wrap = document.getElementById('match-wrap');
+      if (wrap) {
+        const boardKey = getMatchLeaderboardKey();
+        const uid = `match-${matchMode}-fallback`;
+        const scoreValue = matchMode === 'challenge' ? fmtTime(matchTimer) : matchMode === 'impossible' ? moves : matchScore;
+        const saveValue = matchMode === 'challenge' ? matchTimer : matchMode === 'impossible' ? moves : matchScore;
+        wrap.innerHTML = buildArcadeResultCard({
+          uid,
+          boardKey,
+          artGame: 'match',
+          color: '#ff9933',
+          marquee: matched === PAIRS ? 'CLEARED!' : (matchOutOfMoves ? 'OUT OF MOVES!' : "TIME'S UP!"),
+          marqueeEnd: '#ff00cc',
+          marqueeSolid: true,
+          marqueeBg: '#ff9933',
+          scoreLabel: matchMode === 'challenge' ? 'YOUR TIME' : matchMode === 'impossible' ? 'YOUR MOVES' : 'YOUR SCORE',
+          scoreValue,
+          saveValue,
+          field: matchMode === 'challenge' ? 'seconds' : 'score',
+          extra: matchMode === 'free' ? `FREE PLAY · ${freePlayCharCount} PAIRS` : '',
+          seconds: matchMode === 'challenge' ? matchTimer : 0,
+          ascending: matchMode === 'challenge' || matchMode === 'impossible',
+          buttons: `
+            <button class="whack-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.30)" onclick="matchPlay('${matchMode}')">PLAY AGAIN</button>
+            <button class="whack-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.30)" onclick="matchChangeMode()">CHANGE MODE</button>
+            <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="nav('lobby')">BACK TO ARCADE</button>
+          `,
+        });
+        loadRemoteBoard(boardKey, `${uid}-board`, '#ff9933', matchMode === 'challenge' ? 'seconds' : 'score');
+        mountSelectionArt(`${uid}-art`, 'match');
+      }
+    }
+    const wrap = document.getElementById('match-wrap');
+    if (wrap) wrap.scrollTop = 0;
+    requestAnimationFrame(() => {
+      const wrap = document.getElementById('match-wrap');
+      if (state === 'over' && wrap && !wrap.querySelector('[data-save-row="arcade"]')) render();
+      if (wrap) wrap.scrollTop = 0;
+    });
   }
 
   window.matchAdjChar = function(delta) {
@@ -10666,7 +10720,7 @@ function nextWave() {
     if(mode==='select'){
       const gc=GAME_CHARS[activeChar];
       ov.innerHTML=`
-        <div class="whack-mode-shell" style="max-width:440px;margin-top:700px">
+        <div class="whack-mode-shell" style="max-width:440px;margin-top:16px">
           <div class="whack-mode-title">GET READY</div>
           <div class="game-card whack-mode-card" style="border-color:#33ff6677;cursor:default;min-height:0">
             <div class="game-card-art" style="background:#0d0a1e">
