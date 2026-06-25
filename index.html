@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
-<meta name="theme-color" content="#08102a">
 <title>MOBERINO</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Russo+One&family=Permanent+Marker&display=swap" rel="stylesheet">
@@ -24,7 +23,9 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{
   scroll-behavior:smooth;
-  background: var(--navy);
+}
+html.arcade-root {
+  background: #02040e;
 }
 
 body {
@@ -3763,6 +3764,7 @@ function nav(p) {
   const onWhack  = p === 'whack';
   const onMatch  = p === 'match';
   const onSpace  = p === 'space';
+  const isArcade = onLobby || onCharSelect || onWhack || onMatch || onSpace;
   const showCollage = onHome || onCats || onDetail || onTL || onMap;
   document.getElementById('collage').classList.toggle('hidden', !showCollage);
   document.getElementById('hdr').style.display = (showCollage || onShelf || onLobby || onCharSelect || onWhack || onMatch || onSpace) ? 'none' : 'flex';
@@ -3775,6 +3777,7 @@ function nav(p) {
   document.body.classList.toggle('on-whack', onWhack);
   document.body.classList.toggle('on-match', onMatch);
   document.body.classList.toggle('on-space', onSpace);
+  document.documentElement.classList.toggle('arcade-root', isArcade);
   if (onMap) _lockMapTouch(); else _unlockMapTouch();
   // Dismiss any stale leaderboard modal on navigation
   const staleModal = document.getElementById('lb-modal');
@@ -3783,7 +3786,6 @@ function nav(p) {
   if(onMap)   initMap();
   if(onShelf) { buildShelf(); drawShelfBg(); }
   // Arcade music: start/stop BEFORE any early returns
-  const isArcade = onLobby || onCharSelect || onWhack || onMatch || onSpace;
   if (isArcade && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
   if (!isArcade) ArcadeMusic.stop();
   if (onLobby || onCharSelect) ArcadeMusic.unduck();
@@ -8227,8 +8229,48 @@ window.confirmCharSelect = function() {
     if (el) el.textContent = freePlayCharCount;
   };
 
-  window.matchGoFreeSetup = function() { state = 'free-setup'; render(); };
-  window.matchGoIdle      = function() { state = 'idle'; render(); };
+  function closeMatchFreeSetup() {
+    const ov = document.getElementById('match-free-setup-modal');
+    if (ov) ov.remove();
+  }
+
+  window.matchStartFreeFromPopup = function() {
+    closeMatchFreeSetup();
+    matchPlay('free');
+  };
+
+  window.matchGoFreeSetup = function() {
+    closeMatchFreeSetup();
+    if (!ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
+    const btnStyle = "font-family:'VCR',monospace;font-size:13px;background:none;border:1px solid rgba(242,239,232,0.2);border-radius:4px;color:rgba(242,239,232,0.78);width:38px;height:38px;cursor:pointer;padding:0;line-height:1";
+    const ov = document.createElement('div');
+    ov.id = 'match-free-setup-modal';
+    ov.className = 'match-free-setup-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9700;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(5,2,18,0.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)';
+    ov.innerHTML = `
+      <div style="width:min(92vw,360px);background:#080515;border:2px solid #33ff66;border-radius:10px;padding:22px 18px 18px;text-align:center;box-shadow:0 0 28px rgba(51,255,102,0.24), inset 0 0 22px rgba(51,255,102,0.05)">
+        <div style="font-family:'Bebas Neue',cursive;font-size:42px;letter-spacing:5px;line-height:1;color:#33ff66;text-shadow:0 0 18px #33ff6688;margin-bottom:10px">FREE PLAY</div>
+        <div class="match-sub">ONE PAIR PER CHARACTER</div>
+        <div class="match-sub" style="margin-top:5px;color:rgba(242,239,232,0.72)">HOW MANY MATCHES?</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:22px;margin:16px 0 8px">
+          <button onclick="matchAdjChar(-1)" style="${btnStyle}" aria-label="Fewer matches">−</button>
+          <span id="match-char-ct" style="font-family:'Bebas Neue',cursive;font-size:62px;letter-spacing:4px;color:#33ff66;line-height:1;text-shadow:0 0 18px #33ff6688;min-width:72px;display:inline-block">${freePlayCharCount}</span>
+          <button onclick="matchAdjChar(1)" style="${btnStyle}" aria-label="More matches">+</button>
+        </div>
+        <div class="match-sub" style="opacity:0.45;margin-bottom:16px">4 - 20</div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <button class="whack-btn match-mode-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.16)" onclick="matchStartFreeFromPopup()">▶ START</button>
+          <button class="whack-btn match-mode-btn" style="border-color:rgba(242,239,232,0.18);background:none;font-size:10px;color:rgba(242,239,232,0.6)" onclick="matchGoIdle()">CANCEL</button>
+        </div>
+      </div>`;
+    document.body.appendChild(ov);
+  };
+
+  window.matchGoIdle = function() {
+    closeMatchFreeSetup();
+    state = 'idle';
+    render();
+  };
 
   window.matchChangeMode = function() {
     window.matchBack();
@@ -8250,6 +8292,7 @@ window.confirmCharSelect = function() {
   window.matchBack = function() {
     clearInterval(timerInt); clearInterval(previewInt);
     removeMatchSideBar();
+    closeMatchFreeSetup();
     document.querySelectorAll('.match-intro-overlay').forEach(el => el.remove());
   };
 })();
