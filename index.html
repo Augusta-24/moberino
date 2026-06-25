@@ -2754,6 +2754,13 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
   background: rgba(5, 2, 16, 0.88);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
 }
+#space-overlay.space-over {
+  align-items: center;
+  justify-content: flex-start;
+  padding: 18px 0 24px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
 #space-overlay.hidden { display: none; }
 @keyframes sp-ring-spin {
   from { transform: rotate(0deg); }
@@ -5520,6 +5527,39 @@ window.saveArcadeLeaderboard = async function(boardKey, localScore, remoteScore,
   mountSelectionArt(artTargetId, artGame);
 };
 
+function handleArcadeLeaderboardSubmit(e) {
+  const btn = e.target.closest && e.target.closest('[data-arcade-save]');
+  if (!btn || btn.disabled) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const d = btn.dataset;
+  window.saveArcadeLeaderboard(
+    d.boardKey,
+    Number(d.localScore),
+    Number(d.remoteScore),
+    Number(d.seconds || 0),
+    d.extra || '',
+    d.ascending === 'true',
+    d.inputId,
+    d.statusId,
+    d.boardTargetId,
+    d.neonColor,
+    d.field || 'score',
+    d.artTargetId,
+    d.artGame
+  );
+}
+document.addEventListener('click', handleArcadeLeaderboardSubmit, true);
+document.addEventListener('pointerup', handleArcadeLeaderboardSubmit, true);
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const input = e.target.closest && e.target.closest('[data-arcade-name]');
+  if (!input) return;
+  const row = input.closest('[data-save-row="arcade"]');
+  const btn = row && row.querySelector('[data-arcade-save]');
+  if (btn) handleArcadeLeaderboardSubmit({ target: btn, preventDefault(){ e.preventDefault(); }, stopPropagation(){ e.stopPropagation(); } });
+}, true);
+
 function buildArcadeResultCard(options) {
   const uid = options.uid;
   const boardKey = options.boardKey;
@@ -5541,6 +5581,9 @@ function buildArcadeResultCard(options) {
   const statusLine = options.statusLine || '';
   const buttons = options.buttons || '';
   const saveMarginTop = Object.prototype.hasOwnProperty.call(options, 'saveMarginTop') ? options.saveMarginTop : 26;
+  const attr = value => String(value ?? '').replace(/[&"<>\u0000-\u001f]/g, ch => ({
+    '&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;'
+  }[ch] || ''));
   return `
     <div class="arcade-cabinet" style="--nc:${color};max-width:${options.maxWidth || 390}px;width:92vw;position:relative">
       <div id="${artTargetId}" style="position:absolute;inset:0;z-index:0;opacity:0.40;transform:scale(1.26) translateY(10px);filter:saturate(1.18) brightness(1.02);pointer-events:none;mix-blend-mode:screen"></div>
@@ -5558,9 +5601,11 @@ function buildArcadeResultCard(options) {
           </div>
           <div id="${boardTargetId}"></div>
           <div data-save-row="arcade" style="width:min(100%,280px);height:40px;margin:${saveMarginTop}px auto 0;display:flex;align-items:stretch;gap:8px">
-            <input id="${inputId}" maxlength="12" autocomplete="off" spellcheck="false" placeholder="ENTER NAME"
+            <input id="${inputId}" data-arcade-name="1" maxlength="12" autocomplete="off" spellcheck="false" placeholder="ENTER NAME"
               style="flex:1;min-width:0;height:40px;box-sizing:border-box;background:#0e0b22;border:1.5px solid ${color};border-radius:4px;padding:10px 12px;font-family:'VCR',monospace;font-size:15px;letter-spacing:4px;color:#fff;text-align:center;text-transform:uppercase;outline:none">
-            <button id="${saveButtonId}" aria-label="Submit score" onclick="saveArcadeLeaderboard(${JSON.stringify(boardKey)}, ${JSON.stringify(saveValue)}, ${JSON.stringify(saveValue)}, ${JSON.stringify(options.seconds || 0)}, ${JSON.stringify(options.extra || '')}, ${options.ascending ? 'true' : 'false'}, '${inputId}', '${statusId}', '${boardTargetId}', '${color}', '${boardField}', '${artTargetId}', '${artGame}')"
+            <button id="${saveButtonId}" type="button" aria-label="Submit score" data-arcade-save="1"
+              data-board-key="${attr(boardKey)}" data-local-score="${attr(saveValue)}" data-remote-score="${attr(saveValue)}" data-seconds="${attr(options.seconds || 0)}" data-extra="${attr(options.extra || '')}" data-ascending="${options.ascending ? 'true' : 'false'}"
+              data-input-id="${attr(inputId)}" data-status-id="${attr(statusId)}" data-board-target-id="${attr(boardTargetId)}" data-neon-color="${attr(color)}" data-field="${attr(boardField)}" data-art-target-id="${attr(artTargetId)}" data-art-game="${attr(artGame)}"
               style="flex:0 0 44px;width:44px;height:40px;box-sizing:border-box;background:${color}22;border:1.5px solid ${color};border-radius:4px;color:${color};cursor:pointer;text-shadow:0 0 8px ${color}66;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center">${submitLabel}</button>
           </div>
         </div>
@@ -5745,7 +5790,11 @@ function renderLbTabs(activeGame) {
     </div>
   `).join('');
   const g = games.find(x=>x.key===activeGame);
-  content.innerHTML = `<div id="lb-remote-${activeGame}"></div>`;
+  content.innerHTML = `
+    <div style="border:1.5px solid ${(g && g.color) || '#ffe61a'}55;background:rgba(5,3,16,0.72);border-radius:6px;padding:12px 10px 14px;box-shadow:inset 0 0 35px rgba(0,0,0,0.55)">
+      <div style="font-family:'Bebas Neue',cursive;font-size:30px;letter-spacing:4px;line-height:1;color:${(g && g.color) || '#ffe61a'};text-shadow:0 0 12px ${((g && g.color) || '#ffe61a')}88;margin-bottom:8px">${g ? g.label : activeGame}</div>
+      <div id="lb-remote-${activeGame}"></div>
+    </div>`;
   loadRemoteBoard(activeGame, `lb-remote-${activeGame}`, g ? g.color : '#ffe61a', g ? g.field : 'score');
   content.style.cssText = 'line-height:1.8';
 }
@@ -10725,8 +10774,9 @@ function nextWave() {
     }
     const ov=document.getElementById('space-overlay');
     if(!ov) return;
-    ov.style.justifyContent = mode === 'select' ? 'flex-start' : 'center';
-    ov.style.paddingTop = mode === 'select' ? '16px' : '0';
+    ov.classList.toggle('space-over', mode === 'over');
+    ov.style.justifyContent = mode === 'select' ? 'flex-start' : '';
+    ov.style.paddingTop = mode === 'select' ? '16px' : '';
     setArcadeExitVisible(mode !== 'over');
     if(mode==='select'){
       const gc=GAME_CHARS[activeChar];
@@ -10807,10 +10857,13 @@ function nextWave() {
         scoreLabel: 'YOUR SCORE',
         scoreValue: score,
         saveValue: score,
-        field: 'score',
-        extra: `WAVE ${wave}`,
-        ascending: false,
-        buttons: `
+	        field: 'score',
+	        extra: `WAVE ${wave}`,
+	        ascending: false,
+	        maxWidth: 410,
+	        minHeight: 330,
+	        saveMarginTop: 18,
+	        buttons: `
           <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY AGAIN</button>
           <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="nav('lobby')">BACK TO ARCADE</button>
         `,
