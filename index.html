@@ -9084,10 +9084,11 @@ window.confirmCharSelect = function() {
   // #pg-space for why (orientation/screen-shape was silently changing difficulty by
   // changing how far obstacles had to fall to reach the danger line). Computes the
   // largest box at SPACE_RATIO that fits the space below the header, sets it as the
-  // canvas's actual CSS size via inline style, and keeps canvas.width/height (and W/H)
-  // matching 1:1 — same no-DPI-scaling approach the old offsetWidth/offsetHeight code
-  // already used, just now ratio-constrained instead of filling whatever's available.
+  // canvas's actual CSS size via inline style. The backing bitmap is scaled up for
+  // high-DPI displays, while W/H stay in CSS/game coordinates so gameplay speed and
+  // collision math do not change.
   const SPACE_RATIO = 9 / 16; // width / height
+  let spaceDpr = 1;
   function fitSpaceCanvas() {
     const wrap = document.getElementById('pg-space');
     if (!wrap || !canvas) return;
@@ -9099,8 +9100,16 @@ window.confirmCharSelect = function() {
     w = Math.floor(w); h = Math.floor(h);
     canvas.style.width = w + 'px';
     canvas.style.height = h + 'px';
-    W = canvas.width = w;
-    H = canvas.height = h;
+    spaceDpr = Math.min(Math.max(window.devicePixelRatio || 1, 1), 2.5);
+    W = w;
+    H = h;
+    canvas.width = Math.max(1, Math.round(w * spaceDpr));
+    canvas.height = Math.max(1, Math.round(h * spaceDpr));
+    if (ctx) {
+      ctx.setTransform(spaceDpr, 0, 0, spaceDpr, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      if ('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
+    }
   }
 
   function reset() {
@@ -11047,8 +11056,8 @@ function nextWave() {
       function getTouchPos(touch){
         const rect=canvas.getBoundingClientRect();
         return {
-          x: (touch.clientX-rect.left)*(canvas.width/rect.width),
-          y: (touch.clientY-rect.top)*(canvas.height/rect.height)
+          x: (touch.clientX-rect.left)*(W/rect.width),
+          y: (touch.clientY-rect.top)*(H/rect.height)
         };
       }
       // Movement reads touch X only (ship Y is fixed) across the whole canvas width,
@@ -11090,8 +11099,8 @@ function nextWave() {
       canvas.addEventListener('click',e=>{
         if(state!=='playing') return;
         const rect=canvas.getBoundingClientRect();
-        const cx=(e.clientX-rect.left)*(canvas.width/rect.width);
-        const cy=(e.clientY-rect.top)*(canvas.height/rect.height);
+        const cx=(e.clientX-rect.left)*(W/rect.width);
+        const cy=(e.clientY-rect.top)*(H/rect.height);
         const hitType=hitSocket(cx,cy);
         if(hitType) deploySocket(hitType);
       });
