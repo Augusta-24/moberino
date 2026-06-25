@@ -2262,14 +2262,20 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 
 /* ── Horizontal Game Carousel ── */
 #game-carousel {
+  --carousel-card-w: min(72vw, 320px);
   display: flex;
+  opacity: 0;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
   gap: 12px;
-  padding: 8px 15vw;
+  padding: 8px max(15vw, calc((100% - var(--carousel-card-w)) / 2));
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+}
+#game-carousel.ready {
+  opacity: 1;
+  transition: opacity 0.16s ease-out;
 }
 #game-carousel::-webkit-scrollbar { display: none; }
 /* Arrows + dots are redundant once you can swipe — shown only when a real pointing
@@ -2282,8 +2288,8 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 }
 .carousel-item {
   scroll-snap-align: center;
-  flex: 0 0 72vw;
-  max-width: 320px;
+  scroll-snap-stop: always;
+  flex: 0 0 var(--carousel-card-w);
   transition: opacity 0.15s, transform 0.15s;
   opacity: 0.45;
   transform: scale(0.92);
@@ -5535,9 +5541,31 @@ let _carouselIdx = 0;
 function initCarousel() {
   const carousel = document.getElementById('game-carousel');
   if (!carousel) return;
-  const items = [...carousel.querySelectorAll('.carousel-item')];
-  const N = items.length;
+  if (carousel.dataset.carouselReady === '1') {
+    carousel.classList.add('ready');
+    return;
+  }
+  carousel.dataset.carouselReady = '1';
+  const originals = [...carousel.querySelectorAll('.carousel-item')];
+  const N = originals.length;
   if (!N) return;
+
+  function stripCloneIds(clone) {
+    [clone, ...clone.querySelectorAll('[id]')].forEach(el => el.removeAttribute('id'));
+    clone.dataset.clone = 'true';
+  }
+
+  if (N > 1) {
+    const before = originals[N - 1].cloneNode(true);
+    const after = originals[0].cloneNode(true);
+    stripCloneIds(before);
+    stripCloneIds(after);
+    carousel.insertBefore(before, originals[0]);
+    carousel.appendChild(after);
+  }
+
+  const items = [...carousel.querySelectorAll('.carousel-item')];
+  const firstReal = N > 1 ? 1 : 0;
 
   let logIdx = 0;
   let scrollEndTimer = null;
@@ -5561,19 +5589,20 @@ function initCarousel() {
     scrollAnimFrame = requestAnimationFrame(tick);
   }
 
-  function scrollToIdx(idx, behavior) {
+  function scrollToVisualIdx(idx, behavior) {
     const item = items[idx];
     if (!item) return;
-    const offset = Math.max(0, item.offsetLeft - (carousel.offsetWidth - item.offsetWidth) / 2);
+    const offset = item.offsetLeft - (carousel.offsetWidth - item.offsetWidth) / 2;
     if (behavior === 'instant') carousel.scrollTo({ left: offset, behavior: 'instant' });
-    else animateScrollTo(offset, 220);
+    else animateScrollTo(offset, 360);
   }
 
-  function syncActive(idx) {
-    items.forEach((el, i) => el.classList.toggle('active-card', i === idx));
+  function syncActive(logicalIdx, visualIdx) {
+    const activeVisual = visualIdx == null ? firstReal + logicalIdx : visualIdx;
+    items.forEach((el, i) => el.classList.toggle('active-card', i === activeVisual));
   }
 
-  function closestIdx() {
+  function closestVisualIdx() {
     const center = carousel.scrollLeft + carousel.offsetWidth / 2;
     let best = 0, bestDist = Infinity;
     items.forEach((el, i) => {
@@ -5583,36 +5612,56 @@ function initCarousel() {
     return best;
   }
 
-  // Swipe/touch scroll doesn't call scrollCarousel(), so track scroll settling directly.
-  // Debounce shortened from 100ms — was adding noticeable lag on top of the CSS
-  // transition before the swiped-to card actually became front and center.
+  function settleToVisualIdx(visualIdx) {
+    if (N > 1 && visualIdx === 0) {
+      logIdx = N - 1;
+      _carouselIdx = logIdx;
+      syncActive(logIdx);
+      updateCarouselDots(logIdx, N);
+      scrollToVisualIdx(firstReal + logIdx, 'instant');
+      return;
+    }
+    if (N > 1 && visualIdx === items.length - 1) {
+      logIdx = 0;
+      _carouselIdx = logIdx;
+      syncActive(logIdx);
+      updateCarouselDots(logIdx, N);
+      scrollToVisualIdx(firstReal, 'instant');
+      return;
+    }
+    logIdx = Math.max(0, Math.min(N - 1, visualIdx - firstReal));
+    _carouselIdx = logIdx;
+    syncActive(logIdx, visualIdx);
+    updateCarouselDots(logIdx, N);
+    scrollToVisualIdx(visualIdx, 'smooth');
+  }
+
+  // Swipe/touch scroll doesn't call scrollCarousel(), so track scroll settling directly
+  // and gently finish on the nearest centered card.
   carousel.addEventListener('scroll', () => {
     clearTimeout(scrollEndTimer);
     scrollEndTimer = setTimeout(() => {
-      const idx = closestIdx();
-      if (idx !== logIdx) {
-        logIdx = idx;
-        _carouselIdx = logIdx;
-        syncActive(logIdx);
-        updateCarouselDots(logIdx, N);
-      }
-    }, 50);
+      settleToVisualIdx(closestVisualIdx());
+    }, 120);
   }, { passive: true });
 
   requestAnimationFrame(() => requestAnimationFrame(() => {
-    scrollToIdx(0, 'instant');
+    scrollToVisualIdx(firstReal, 'instant');
     syncActive(0);
     updateCarouselDots(0, N);
+    carousel.classList.add('ready');
   }));
 
-  // Wraparound: left from first card jumps to last, right from last jumps to first
+  // Merry-go-round wrap: scroll onto a clone, then silently reset to the matching real card.
   window.scrollCarousel = function(dir) {
-    const prev = logIdx;
+    const current = logIdx;
     logIdx = (logIdx + dir + N) % N;
     _carouselIdx = logIdx;
-    const isWrap = (prev === 0 && dir === -1) || (prev === N - 1 && dir === 1);
-    scrollToIdx(logIdx, isWrap ? 'instant' : 'smooth');
-    syncActive(logIdx);
+    let visualIdx = firstReal + logIdx;
+    if (N > 1 && current === 0 && dir < 0) visualIdx = 0;
+    if (N > 1 && current === N - 1 && dir > 0) visualIdx = items.length - 1;
+    scrollToVisualIdx(visualIdx, 'smooth');
+    syncActive(logIdx, visualIdx);
     updateCarouselDots(logIdx, N);
   };
 }
