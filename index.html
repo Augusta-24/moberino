@@ -8685,9 +8685,19 @@ window.confirmCharSelect = function() {
   // One tankier, non-falling enemy that hovers and tracks the player's x every
   // frame instead of descending — see the obstacle-update loop for the tracking.
   function spawnMirrorEnemy() {
-    const ci = Math.floor(Math.random() * GAME_CHARS.length);
-    obstacles.push({ type:'face', x: W/2, y: H*0.22, vx:0, vy:0, r:FACE_R, ci, hp:5, isTrapped:false, ringHp:0, pausedBurstDone:true, paused:false, pauseUntil:0, burstShotsLeft:0, lastBurstShot:0, isMirror:true });
-    addFloatText('MIRROR ENEMY!', W/2, 140, '#ff4444', 20);
+    const count = 3;
+    const baseY = H * 0.2;
+    for (let i = 0; i < count; i++) {
+      const ci = Math.floor(Math.random() * GAME_CHARS.length);
+      const offset = (i - 1) * Math.min(78, W * 0.18);
+      obstacles.push({
+        type:'face', x: Math.max(FACE_R, Math.min(W - FACE_R, W / 2 + offset)), y: baseY + i * 34,
+        vx:0, vy:0, r:FACE_R * 0.95, ci, hp:4, isTrapped:false, ringHp:0,
+        pausedBurstDone:true, paused:false, pauseUntil:0, burstShotsLeft:0, lastBurstShot:0,
+        isMirror:true, mirrorOffset: offset, mirrorEase: 0.1 + i * 0.025
+      });
+    }
+    addFloatText('MIRROR ENEMIES!', W/2, 140, '#ff4444', 20);
   }
 
   const POWERUP_R = 18;
@@ -8757,8 +8767,10 @@ window.confirmCharSelect = function() {
   // asteroid shape, so it's never visually confused with an actual (hostile) asteroid
   // at a glance.
   function spawnHpPowerup() {
-    const r = rand(ASTEROID_R_MIN, ASTEROID_R_MAX) * 0.85;
-    powerups.push({ type:'hp', x: rand(r, W-r), y: -r-10, vy: hpFallSpeed(), r, bob: Math.random() * Math.PI * 2 });
+    const roll = Math.random();
+    const hpValue = roll < 0.15 ? 5 : roll < 0.5 ? 3 : 2;
+    const r = hpValue === 5 ? 18 : hpValue === 3 ? 13.5 : 11;
+    powerups.push({ type:'hp', hpValue, x: rand(r, W-r), y: -r-10, vy: hpFallSpeed(), r, bob: Math.random() * Math.PI * 2 });
   }
 
   let hpPowerupTimer = null;
@@ -8797,8 +8809,20 @@ window.confirmCharSelect = function() {
     // Soft translucent halo behind the crate, enlarged and sized off p.r (not the
     // now-smaller crate half-size s) so shrinking the crate doesn't also shrink it.
     const pulse = 0.85 + Math.sin(Date.now() * 0.006 + p.bob) * 0.15;
-    ctx.beginPath(); ctx.arc(0, 0, p.r * 1.3 * pulse + 14, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(204,102,255,0.16)'; ctx.fill();
+    const haloR = p.r * 1.45 * pulse + 16;
+    const halo = ctx.createRadialGradient(0, 0, p.r * 0.25, 0, 0, haloR);
+    halo.addColorStop(0, 'rgba(255,120,220,0.34)');
+    halo.addColorStop(0.38, 'rgba(195,90,255,0.28)');
+    halo.addColorStop(0.72, 'rgba(70,170,255,0.18)');
+    halo.addColorStop(1, 'rgba(70,170,255,0)');
+    ctx.beginPath(); ctx.arc(0, 0, haloR, 0, Math.PI * 2);
+    ctx.fillStyle = halo; ctx.fill();
+    const glow = ctx.createLinearGradient(-s, -s, s, s);
+    glow.addColorStop(0, 'rgba(255,105,210,0.26)');
+    glow.addColorStop(0.5, 'rgba(170,80,255,0.16)');
+    glow.addColorStop(1, 'rgba(90,170,255,0.24)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(-s - 3, -s - 3, s * 2 + 6, s * 2 + 6);
     ctx.fillStyle = '#7a4a28'; ctx.fillRect(-s, -s, s * 2, s * 2);
     // Plank seams
     ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1.5;
@@ -8832,14 +8856,19 @@ window.confirmCharSelect = function() {
       const t2 = Date.now() * 0.003;
       ctx.save();
       ctx.rotate(t2);
-      ctx.beginPath(); ctx.arc(0, 0, s * 1.05, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(204,102,255,0.3)'; ctx.lineWidth = 6; ctx.stroke();
-      ctx.beginPath(); ctx.arc(0, 0, s * 0.98, 0, Math.PI * 2);
-      ctx.strokeStyle = '#cc66ff'; ctx.lineWidth = 2.5; ctx.stroke();
+      const ringPulse = 1 + Math.sin(Date.now() * 0.008 + p.bob) * 0.05;
+      ctx.beginPath(); ctx.arc(0, 0, s * 1.14 * ringPulse, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,120,220,0.26)'; ctx.lineWidth = 8; ctx.stroke();
+      const ringGrad = ctx.createLinearGradient(-s, -s, s, s);
+      ringGrad.addColorStop(0, '#ff76d2');
+      ringGrad.addColorStop(0.5, '#cc66ff');
+      ringGrad.addColorStop(1, '#5ab1ff');
+      ctx.beginPath(); ctx.arc(0, 0, s * 1.02 * ringPulse, 0, Math.PI * 2);
+      ctx.strokeStyle = ringGrad; ctx.lineWidth = 2.8; ctx.stroke();
       for (let d = 0; d < 4; d++) {
         const a = (d / 4) * Math.PI * 2 + t2;
-        ctx.fillStyle = '#fff';
-        ctx.beginPath(); ctx.arc(Math.cos(a) * s * 0.98, Math.sin(a) * s * 0.98, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = d % 2 ? '#fff' : '#ff9be3';
+        ctx.beginPath(); ctx.arc(Math.cos(a) * s * 1.02 * ringPulse, Math.sin(a) * s * 1.02 * ringPulse, 3.2, 0, Math.PI * 2); ctx.fill();
       }
       ctx.restore();
     }
@@ -8921,6 +8950,12 @@ window.confirmCharSelect = function() {
       const armLen = p.r * 0.45;
       ctx.beginPath(); ctx.moveTo(-armLen, 0); ctx.lineTo(armLen, 0); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(0, -armLen); ctx.lineTo(0, armLen); ctx.stroke();
+      if (p.hpValue >= 3) {
+        ctx.fillStyle = '#eafff0';
+        ctx.font = `bold ${Math.max(9, p.r * 0.72)}px 'Bebas Neue', cursive`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(String(p.hpValue), 0, p.r * 0.9);
+      }
       ctx.restore();
       return;
     }
@@ -9002,7 +9037,7 @@ window.confirmCharSelect = function() {
       showTopBanner(`BOMB +${cleared}`, 'good');
       SFX.over();
     } else if (type === 'hp') {
-      const gain = 2 + Math.floor(Math.random() * 2); // 2 or 3
+      const gain = arguments[1] || 2;
       health = Math.min(100, health + gain);
       addFloatText(`+${gain} HP`, player.x, player.y - 50, '#33ff66', 20);
       showTopBanner(`+${gain} HP`, 'good');
@@ -9140,7 +9175,7 @@ window.confirmCharSelect = function() {
     // Boss/captive waves are true encounter waves now: beat the boss, then advance
     // into the next chapter beat instead of resuming a hidden regular spawn pool.
     if (waveTheme === 'boss' || waveTheme === 'captive') spawnsRemaining = 0;
-    else spawnsRemaining = waveTheme === 'asteroids' ? Math.max(1, Math.ceil(cfg.poolSize * 1.5)) : cfg.poolSize;
+    else spawnsRemaining = waveTheme === 'asteroids' ? Math.max(1, Math.ceil(cfg.poolSize * 2.1)) : cfg.poolSize;
     function doSpawn() {
       if (state !== 'playing') return;
       // Paused entirely while a boss fight is active — it's deploying its own minions
@@ -9150,15 +9185,10 @@ window.confirmCharSelect = function() {
       if (spawnsRemaining <= 0) return; // pool exhausted — let the board clear naturally, no forced wipe
       spawnObstacle(cfg);
       spawnsRemaining--;
-      // SWARM used to also double-spawn per tick on top of the faster interval —
-      // between that and the speed-up, way too many were ever on screen at once
-      // ("too many at once"). Dropped the double-spawn; the faster interval alone
-      // plus small/fast/weak enemies is enough to read as a swarm without flooding.
-      // ALL ASTEROIDS still triples up — "a lot more asteroids" is the explicit ask there.
-      if (waveTheme === 'asteroids') {
-        for (let k = 0; k < 2 && spawnsRemaining > 0; k++) { spawnObstacle(cfg); spawnsRemaining--; }
-      }
-      const themeSpeedup = waveTheme === 'swarm' ? 0.65 : waveTheme === 'goldrush' ? 0.6 : waveTheme === 'asteroids' ? 0.45 : 1;
+      // SWARM speeds up by cadence, not by screen-flooding. ALL ASTEROIDS now works
+      // the same way: more total rocks across the wave, but no triple-dumps that
+      // make one bomb erase the whole mode or create impossible clumps.
+      const themeSpeedup = waveTheme === 'swarm' ? 0.65 : waveTheme === 'goldrush' ? 0.6 : waveTheme === 'asteroids' ? 0.72 : 1;
       spawnTimer = setTimeout(doSpawn, cfg.spawnMs * 0.8 * themeSpeedup * (0.7 + Math.random()*0.6));
     }
     spawnTimer = setTimeout(doSpawn, 1500);
@@ -9922,7 +9952,7 @@ function nextWave() {
             SFX.powerupCollect();
           }
         } else {
-          applyPowerup(p.type);
+          applyPowerup(p.type, p.type === 'hp' ? p.hpValue : undefined);
         }
         miniExplosion(p.x, p.y, p.type === 'hp' ? '#33ff66' : p.type === 'mystery' ? '#cc66ff' : '#ffe61a');
         p._collected = true;
@@ -9934,7 +9964,11 @@ function nextWave() {
     for(const o of obstacles){
       // MIRROR ENEMY: hovers at a fixed height and tracks the player's x every frame
       // instead of falling — skips the normal vx/vy movement entirely.
-      if (o.isMirror) { o.x = Math.max(o.r, Math.min(W - o.r, player.x)); continue; }
+      if (o.isMirror) {
+        const targetX = Math.max(o.r, Math.min(W - o.r, player.x + (o.mirrorOffset || 0)));
+        o.x += (targetX - o.x) * (o.mirrorEase || 0.12);
+        continue;
+      }
       o.x+=o.vx;
       if(o.x<o.r&&o.vx<0) o.vx*=-1;
       if(o.x>W-o.r&&o.vx>0) o.vx*=-1;
