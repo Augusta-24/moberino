@@ -5485,6 +5485,7 @@ function buildArcadeResultCard(options) {
   const rowsLine = options.rowsLine || '';
   const statusLine = options.statusLine || '';
   const buttons = options.buttons || '';
+  const saveMarginTop = Object.prototype.hasOwnProperty.call(options, 'saveMarginTop') ? options.saveMarginTop : 26;
   return `
     <div class="arcade-cabinet" style="--nc:${color};max-width:${options.maxWidth || 390}px;width:92vw;position:relative">
       <div id="${artTargetId}" style="position:absolute;inset:0;z-index:0;opacity:0.40;transform:scale(1.26) translateY(10px);filter:saturate(1.18) brightness(1.02);pointer-events:none;mix-blend-mode:screen"></div>
@@ -5501,7 +5502,7 @@ function buildArcadeResultCard(options) {
             ${statusLine ? `<div id="${statusId}" style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:${color};text-shadow:0 0 8px ${color}66">${statusLine}</div>` : `<div id="${statusId}" style="display:none"></div>`}
           </div>
           <div id="${boardTargetId}"></div>
-          <div data-save-row="arcade" style="position:relative;width:min(100%,240px);height:40px;margin:26px auto 0">
+          <div data-save-row="arcade" style="position:relative;width:min(100%,240px);height:40px;margin:${saveMarginTop}px auto 0">
             <input id="${inputId}" maxlength="12" autocomplete="off" spellcheck="false" placeholder="ENTER NAME"
               style="width:100%;height:40px;box-sizing:border-box;background:#0e0b22;border:1.5px solid ${color};border-radius:4px;padding:10px 12px;font-family:'VCR',monospace;font-size:15px;letter-spacing:4px;color:#fff;text-align:center;text-transform:uppercase;outline:none">
             <button id="${saveButtonId}" aria-label="Submit score" onclick="saveArcadeLeaderboard(${JSON.stringify(boardKey)}, ${JSON.stringify(saveValue)}, ${JSON.stringify(saveValue)}, ${JSON.stringify(options.seconds || 0)}, ${JSON.stringify(options.extra || '')}, ${options.ascending ? 'true' : 'false'}, '${inputId}', '${statusId}', '${boardTargetId}', '${color}', '${boardField}', '${artTargetId}', '${artGame}')"
@@ -6229,6 +6230,7 @@ window.confirmCharSelect = function() {
         field: 'score',
         extra: difficulty.toUpperCase(),
         ascending: false,
+        saveMarginTop: 12,
         buttons: `
           <button class="whack-btn" style="border-color:#00e5ff;background:rgba(0,229,255,0.30)" onclick="whackPlay()">PLAY AGAIN</button>
           <button class="whack-btn" style="border-color:#00e5ff;background:rgba(0,229,255,0.30)" onclick="whackChangeMode()">CHANGE MODE</button>
@@ -6264,6 +6266,7 @@ window.confirmCharSelect = function() {
         field: 'score',
         extra: difficulty.toUpperCase(),
         ascending: false,
+        saveMarginTop: 12,
         buttons: `
           <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="whackPlay()">PLAY AGAIN</button>
           <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="whackChangeMode()">CHANGE MODE</button>
@@ -6936,27 +6939,39 @@ window.confirmCharSelect = function() {
       console.warn('[Whack] result render failed:', e);
       const wrap = document.getElementById('whack-wrap');
       if (wrap) {
+        const isClassic = gameMode === 'classic';
         const score = gameMode === 'classic' ? classicHits : Math.max(0, wave - 1);
-        wrap.innerHTML = `
-          <div class="arcade-cabinet" style="--nc:#ff00cc;max-width:390px;width:92vw;position:relative">
-            <div class="arcade-cab-marquee" style="background:#ff00cc;opacity:0.9">GAME OVER</div>
-            <div class="arcade-cab-screen" style="position:relative;z-index:2;padding:24px 18px;background:rgba(5,3,16,0.86);text-align:center">
-              <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;color:rgba(242,239,232,0.42)">YOUR SCORE</div>
-              <div style="font-family:'Bebas Neue',cursive;font-size:56px;letter-spacing:4px;color:#ff00cc;line-height:1;text-shadow:0 0 18px #ff00cc88">${score}</div>
-            </div>
-            <div class="arcade-cab-foot" style="position:relative;z-index:2;flex-direction:column;align-items:center;gap:8px;background:rgba(5,3,16,0.78);padding:22px 16px 18px;border-top:1px solid rgba(242,239,232,0.12)">
-              <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="whackPlay()">PLAY AGAIN</button>
-              <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="whackChangeMode()">CHANGE MODE</button>
-              <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="nav('lobby')">BACK TO ARCADE</button>
-            </div>
-          </div>`;
+        const color = isClassic ? '#00e5ff' : '#ff00cc';
+        const uid = `whack-${isClassic ? 'classic' : 'frenzy'}-${difficulty}-fallback`;
+        wrap.innerHTML = buildArcadeResultCard({
+          uid,
+          boardKey: getWhackLeaderboardKey(),
+          artGame: 'whack',
+          color,
+          marquee: 'GAME OVER',
+          marqueeEnd: isClassic ? '#006677' : '#990066',
+          scoreLabel: 'YOUR SCORE',
+          scoreValue: score,
+          saveValue: score,
+          field: 'score',
+          extra: difficulty.toUpperCase(),
+          ascending: false,
+          saveMarginTop: 12,
+          buttons: `
+            <button class="whack-btn" style="border-color:${color};background:${isClassic ? 'rgba(0,229,255,0.30)' : 'rgba(255,0,204,0.30)'}" onclick="whackPlay()">PLAY AGAIN</button>
+            <button class="whack-btn" style="border-color:${color};background:${isClassic ? 'rgba(0,229,255,0.30)' : 'rgba(255,0,204,0.30)'}" onclick="whackChangeMode()">CHANGE MODE</button>
+            <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="nav('lobby')">BACK TO ARCADE</button>
+          `,
+        });
+        loadRemoteBoard(getWhackLeaderboardKey(), `${uid}-board`, color, 'score');
+        mountSelectionArt(`${uid}-art`, 'whack');
       }
     }
     const wrap = document.getElementById('whack-wrap');
     if (wrap) wrap.scrollTop = 0;
     requestAnimationFrame(() => {
       const wrap = document.getElementById('whack-wrap');
-      if (state === 'over' && wrap && !wrap.querySelector('.arcade-cabinet')) render();
+      if (state === 'over' && wrap && !wrap.querySelector('[data-save-row="arcade"]')) render();
       if (wrap) wrap.scrollTop = 0;
     });
   }
