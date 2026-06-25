@@ -359,16 +359,21 @@ body.on-match::after, body.on-space::after { display: none; }
 /* ══════════════════════════════════════
    HOME
 ══════════════════════════════════════ */
-/* Home page locks to viewport — no dead scroll below content. Height prefers the
-   JS-locked --app-vh (set in <head>, before first paint) over the browser's own
-   svh recalculation, which is what was causing the hero to jump on mobile. */
+/* Home is a stable pinned surface. Avoid transform-based vertical positioning here:
+   mobile Safari changes visual viewport geometry around search/keyboard/browser UI,
+   and transformed full-screen pages made the hero drift across devices. */
 #pg-home {
-  height: var(--app-vh, 100svh);
-  max-height: var(--app-vh, 100svh);
+  height: 100vh;
+  min-height: 100vh;
+  max-height: 100vh;
+  height: 100svh;
+  min-height: 100svh;
+  max-height: 100svh;
   overflow: hidden;
   flex-direction: column;
   justify-content: center;
   position: relative;
+  padding: max(16px, env(safe-area-inset-top, 0px) + 10px) 0 max(16px, env(safe-area-inset-bottom, 0px) + 10px);
 }
 #pg-home.active {
   display: flex;
@@ -424,10 +429,9 @@ body.on-timeline #collage::after {
   background: rgba(8,16,42,0.98);
 }
 
-/* Hero — vertically centered by #pg-home flex; equal padding so centering isn't biased */
+/* Hero — stable in normal flow; no page-level translate. */
 .home-hero {
   padding: 20px 24px;
-  transform: translateY(-150px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -653,7 +657,6 @@ body.on-timeline #collage::after {
   justify-content: flex-start;
 }
 #pg-home.rec-open .home-hero {
-  transform: translateY(0);
   padding-top: 20px;
 }
 body.rec-open { overflow-y: auto; }
@@ -1936,9 +1939,8 @@ button.cats-search-wrap {
      ~1024px tall, which slipped past a height-based cutoff, but every current iPad's
      landscape WIDTH tops out at 1366px, a much more predictable number to key off.
      pointer:coarse keeps real desktop windows out of this regardless of width. */
-  #pg-home { justify-content: center; overflow-y: auto; height: var(--app-vh, 100svh); }
+  #pg-home { justify-content: center; overflow-y: auto; height: 100vh; height: 100svh; }
   .home-hero {
-    transform: translateY(0);
     flex-direction: row;
     align-items: center;
     padding: 12px 24px;
@@ -1953,7 +1955,6 @@ button.cats-search-wrap {
 }
 
 @media (max-width: 599px) {
-  .home-hero { transform: translateY(-120px); }
   .cgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ctile-lbl { font-size: 18px; height: 54px; }
   .cats-search-wrap { padding: 5px 8px; }
@@ -3852,121 +3853,36 @@ function toggleRec() {
   document.getElementById('recBtn').textContent = open ? 'HIDE ▲' : 'RECOMMENDED';
 }
 
-// ── CATEGORIES TRANSITION — simultaneous slide for "same canvas" feel ──
-function navToCats() {
-  const pgHome = document.getElementById('pg-home');
-  const pgCats = document.getElementById('pg-cats');
-  const DUR    = 480;
-  const EASE   = 'cubic-bezier(0.42,0,0.18,1)';
-
-  // Defensive: force a clean scroll/viewport state before measuring or animating
-  // anything below. A prior keyboard interaction (e.g. spotlight search) can leave the
-  // page panned/scrolled even after closing — this transition's own bRect measurement
-  // and fixed-position math assume a settled (0,0) viewport, so don't trust that's
-  // already true no matter what happened just before this was called.
-  window.scrollTo(0, 0);
-  if (window.lockViewportHeight) window.lockViewportHeight();
-
-  // Close home search drop if open
+// ── CATEGORIES TRANSITION ──
+// Keep this boring and stable: the old same-canvas slide fixed/transformed the home
+// and categories pages by full viewport heights. That looked nice when Safari was
+// settled, but it also made the home hero vulnerable to keyboard/address-bar viewport
+// changes. Categories now uses normal navigation plus a tiny fade.
+function prepHomeForNavigation() {
   if(typeof closeHomeDrop === 'function') closeHomeDrop();
-  // Close memories panel + rec-drawer
   document.getElementById('memories').classList.remove('open');
   document.getElementById('rec-drawer').classList.remove('open');
-  pgHome.classList.remove('rec-open');
+  document.getElementById('pg-home').classList.remove('rec-open');
   document.body.classList.remove('rec-open');
   document.body.style.overflow = '';
-  document.getElementById('recBtn').textContent = 'RECOMMENDED';
+  const recBtn = document.getElementById('recBtn');
+  if (recBtn) recBtn.textContent = 'RECOMMENDED';
+  window.scrollTo(0, 0);
+}
 
-  // Collage stays visible (shared background — never hidden during cats)
-  document.getElementById('collage').classList.remove('hidden');
-
-  // Make cats visible and position both pages fixed for the joint animation
-  // Constrain to body rect so width matches post-animation layout (no snap on desktop)
-  const bRect = document.body.getBoundingClientRect();
-  pgCats.classList.add('active');
-  // Reset scroll BEFORE it becomes visible — without this, a cats visit left scrolled
-  // down from earlier reappears at that same scroll position (back-to-top bar already
-  // showing, first row cut off), since nothing else in this path resets it.
+function navToCats() {
+  prepHomeForNavigation();
+  nav('cats');
+  const pgCats = document.getElementById('pg-cats');
   pgCats.scrollTop = 0;
-  Object.assign(pgCats.style, {
-    position: 'fixed', left: bRect.left + 'px', top: '0',
-    width: bRect.width + 'px', height: 'var(--app-vh, 100dvh)',
-    zIndex: '10', overflowY: 'hidden', transform: 'translateY(var(--app-vh, 100dvh))', transition: 'none'
-  });
-  Object.assign(pgHome.style, {
-    position: 'fixed', left: bRect.left + 'px', top: '0',
-    width: bRect.width + 'px', height: 'var(--app-vh, 100dvh)',
-    zIndex: '10', overflowY: 'hidden', transform: 'translateY(0)', transition: 'none'
-  });
-
-  // Kick off simultaneous slide — home exits up, cats enters from below
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    const t = `transform ${DUR}ms ${EASE}`;
-    pgHome.style.transition = t;
-    pgHome.style.transform  = 'translateY(calc(-1 * var(--app-vh, 100dvh)))';
-    pgCats.style.transition = t;
-    pgCats.style.transform  = 'translateY(0)';
-  }));
-
-  setTimeout(() => {
-    // Settle: home gone, cats becomes normal scrollable page
-    pgHome.classList.remove('active');
-    pgHome.style.cssText = '';
-    pgCats.style.cssText = '';
-    // pgCats stays .active — no class changes needed
-    document.body.classList.remove('on-home');
-    document.getElementById('hdr').style.display = 'none';
-    // collage already visible — no-op
-  }, DUR + 40);
+  pgCats.animate?.([{ opacity: 0.6 }, { opacity: 1 }], { duration: 140, easing: 'ease-out' });
 }
 
 function navHome() {
+  prepHomeForNavigation();
+  nav('home');
   const pgHome = document.getElementById('pg-home');
-  const pgCats = document.getElementById('pg-cats');
-  const DUR    = 440;
-  const EASE   = 'cubic-bezier(0.42,0,0.18,1)';
-
-  // Re-activate home, restore collage + body class
-  pgHome.classList.add('active');
-  document.getElementById('collage').classList.remove('hidden');
-  document.body.classList.add('on-home');
-  document.getElementById('hdr').style.display = 'none';
-
-  // Snap cats scroll to top before locking it (prevents jank on exit)
-  pgCats.scrollTop = 0;
-
-  // Lock both in fixed position for joint exit animation
-  // Constrain to body rect so width matches normal layout (no snap on desktop)
-  const bRect = document.body.getBoundingClientRect();
-  Object.assign(pgCats.style, {
-    position: 'fixed', left: bRect.left + 'px', top: '0',
-    width: bRect.width + 'px', height: 'var(--app-vh, 100dvh)',
-    zIndex: '10', overflowY: 'hidden', transform: 'translateY(0)', transition: 'none'
-  });
-  Object.assign(pgHome.style, {
-    position: 'fixed', left: bRect.left + 'px', top: '0',
-    width: bRect.width + 'px', height: 'var(--app-vh, 100dvh)',
-    zIndex: '10', overflowY: 'hidden', transform: 'translateY(calc(-1 * var(--app-vh, 100dvh)))', transition: 'none'
-  });
-
-  // Cats exits downward, home comes back down from above
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    const t = `transform ${DUR}ms ${EASE}`;
-    pgCats.style.transition = t;
-    pgCats.style.transform  = 'translateY(var(--app-vh, 100dvh))';
-    pgHome.style.transition = t;
-    pgHome.style.transform  = 'translateY(0)';
-  }));
-
-  setTimeout(() => {
-    pgCats.classList.remove('active');
-    pgCats.style.cssText = '';
-    // rAF lets the browser settle cats removal before unlocking home layout
-    requestAnimationFrame(() => {
-      pgHome.style.cssText = '';
-      window.scrollTo(0, 0);
-    });
-  }, DUR + 40);
+  pgHome.animate?.([{ opacity: 0.7 }, { opacity: 1 }], { duration: 140, easing: 'ease-out' });
 }
 
 // ── SPOTLIGHT SEARCH ──
