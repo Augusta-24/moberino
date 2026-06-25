@@ -3833,6 +3833,7 @@ function nav(p) {
     document.body.scrollTop = 0;
     const target = document.getElementById(targetPageId);
     if (target) target.scrollTop = 0;
+    syncActivePageHeader();
   };
   requestAnimationFrame(settleViewport);
   setTimeout(settleViewport, 120);
@@ -3844,10 +3845,12 @@ function openRecDrawer() {
   recommended(8).forEach((v, i, a) => grid.appendChild(vcard(v, a, i)));
   document.getElementById('rec-drawer').classList.add('open');
   document.body.style.overflow = 'hidden';
+  syncActivePageHeader();
 }
 function closeRecDrawer() {
   document.getElementById('rec-drawer').classList.remove('open');
   document.body.style.overflow = '';
+  requestAnimationFrame(syncActivePageHeader);
 }
 
 function confirmExitArcade() {
@@ -3860,6 +3863,22 @@ function setArcadeExitVisible(show) {
   const btn = document.getElementById('arcade-game-exit');
   if (!btn) return;
   btn.style.display = show ? '' : 'none';
+}
+
+function syncActivePageHeader() {
+  document.querySelectorAll('.cats-header').forEach(el => {
+    if (!el.closest('.page.active')) el.style.transform = '';
+  });
+  const hdr = document.querySelector('body:not(.on-lobby):not(.on-char):not(.on-whack):not(.on-match):not(.on-space) .page.active .cats-header');
+  if (!hdr) return;
+  const vv = window.visualViewport;
+  const coarseTablet = window.matchMedia && window.matchMedia('(pointer: coarse) and (max-width: 1400px)').matches;
+  const offset = vv && coarseTablet ? Math.max(0, vv.offsetTop || 0) : 0;
+  hdr.style.transform = offset ? `translateY(${offset}px)` : '';
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', syncActivePageHeader);
+  window.visualViewport.addEventListener('scroll', syncActivePageHeader);
 }
 
 function toggleRec() {
@@ -5390,16 +5409,21 @@ const RemoteLB = (() => {
 function loadRemoteBoard(game, targetId, neonColor, field) {
   const target = document.getElementById(targetId);
   if (!target) return;
-  target.innerHTML = LB.html(game, neonColor);
+  try { target.innerHTML = LB.html(game, neonColor); }
+  catch(e) { target.innerHTML = ''; console.warn('[LB] render failed:', game, e); }
   const count = String(game).startsWith('whack') ? 10 : 5;
-  RemoteLB.fetchTop(game, count).then(entries => {
+  let pending;
+  try { pending = RemoteLB.fetchTop(game, count); }
+  catch(e) { console.warn('[RemoteLB] fetch failed:', game, e); return; }
+  if (!pending || typeof pending.then !== 'function') return;
+  pending.then(entries => {
     if (entries === null) return;
     const el = document.getElementById(targetId);
     if (!el) return; // user navigated away before this resolved
     const filtered = filterLbRows(game, entries).slice(0, 3);
     const rows = filtered.map(e => ({ name: e.name, extra: e.extra, displayScore: field === 'seconds' ? fmtTimeG(e.seconds) : e.score }));
     el.innerHTML = renderLbRows(rows, neonColor);
-  });
+  }).catch(e => console.warn('[RemoteLB] fetch failed:', game, e));
 }
 
 function mountSelectionArt(targetId, game) {
@@ -5853,7 +5877,7 @@ window.confirmCharSelect = function() {
   // labeled "Frenzy" in the UI) — gameMode persists across replays the same way
   // difficulty already does, only defaulting to 'frenzy' on script init.
   let gameMode = 'frenzy'; // 'classic' | 'frenzy'
-  let classicHits = 0, classicPieces = [], classicTimeLeft = 30, classicInterval = null;
+  let classicHits = 0, classicPieces = [], classicTimeLeft = 30, classicInterval = null, classicEndTimer = null;
   let activeChar = getGlobalChar(); // user's char — to AVOID
   let moleChar = -1;               // random other char — to WHACK
   let selfActive = false;          // true once user's char starts appearing
@@ -6850,6 +6874,7 @@ window.confirmCharSelect = function() {
   const CLASSIC_DURATION_S = 30;
   function classicStart() {
     classicHits = 0;
+    clearTimeout(classicEndTimer);
     classicPieces.forEach(p => clearTimeout(p.timer));
     classicPieces = [];
     classicTimeLeft = CLASSIC_DURATION_S;
@@ -6871,9 +6896,14 @@ window.confirmCharSelect = function() {
       if (tEl) tEl.textContent = classicTimeLeft;
       if (classicTimeLeft <= 0) { clearInterval(classicInterval); classicEnd(); }
     }, 1000);
+    classicEndTimer = setTimeout(() => {
+      if (state === 'playing' && gameMode === 'classic') classicEnd();
+    }, (CLASSIC_DURATION_S + 1) * 1000);
   }
 
   function classicEnd() {
+    clearTimeout(classicEndTimer);
+    clearInterval(classicInterval);
     classicPieces.forEach(p => clearTimeout(p.timer));
     classicPieces = [];
     removeSideBar();
@@ -6887,6 +6917,7 @@ window.confirmCharSelect = function() {
     clearInterval(timerInterval);
     clearInterval(clearRoundInterval);
     clearInterval(clearRoundMoveInterval);
+    clearTimeout(classicEndTimer);
     classicPieces.forEach(p => clearTimeout(p.timer));
     classicPieces = [];
     clearInterval(classicInterval);
@@ -6899,10 +6930,34 @@ window.confirmCharSelect = function() {
     memoryPhase = null;
     waveTransitioning = false;
     state = 'over';
-    render();
+    try {
+      render();
+    } catch(e) {
+      console.warn('[Whack] result render failed:', e);
+      const wrap = document.getElementById('whack-wrap');
+      if (wrap) {
+        const score = gameMode === 'classic' ? classicHits : Math.max(0, wave - 1);
+        wrap.innerHTML = `
+          <div class="arcade-cabinet" style="--nc:#ff00cc;max-width:390px;width:92vw;position:relative">
+            <div class="arcade-cab-marquee" style="background:#ff00cc;opacity:0.9">GAME OVER</div>
+            <div class="arcade-cab-screen" style="position:relative;z-index:2;padding:24px 18px;background:rgba(5,3,16,0.86);text-align:center">
+              <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;color:rgba(242,239,232,0.42)">YOUR SCORE</div>
+              <div style="font-family:'Bebas Neue',cursive;font-size:56px;letter-spacing:4px;color:#ff00cc;line-height:1;text-shadow:0 0 18px #ff00cc88">${score}</div>
+            </div>
+            <div class="arcade-cab-foot" style="position:relative;z-index:2;flex-direction:column;align-items:center;gap:8px;background:rgba(5,3,16,0.78);padding:22px 16px 18px;border-top:1px solid rgba(242,239,232,0.12)">
+              <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="whackPlay()">PLAY AGAIN</button>
+              <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="whackChangeMode()">CHANGE MODE</button>
+              <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="nav('lobby')">BACK TO ARCADE</button>
+            </div>
+          </div>`;
+      }
+    }
+    const wrap = document.getElementById('whack-wrap');
+    if (wrap) wrap.scrollTop = 0;
     requestAnimationFrame(() => {
       const wrap = document.getElementById('whack-wrap');
       if (state === 'over' && wrap && !wrap.querySelector('.arcade-cabinet')) render();
+      if (wrap) wrap.scrollTop = 0;
     });
   }
 
@@ -7148,7 +7203,7 @@ window.confirmCharSelect = function() {
   window.whackBack = function() {
     holeTimers.forEach(clearTimeout); clearInterval(timerInterval);
     clearInterval(clearRoundInterval); clearInterval(clearRoundMoveInterval);
-    classicPieces.forEach(p => clearTimeout(p.timer)); classicPieces = []; clearInterval(classicInterval);
+    classicPieces.forEach(p => clearTimeout(p.timer)); classicPieces = []; clearInterval(classicInterval); clearTimeout(classicEndTimer);
     removeSideBar();
     removeClearTimerOverlay();
     document.querySelectorAll('.whack-intro-overlay').forEach(el => el.remove());
@@ -7173,7 +7228,7 @@ window.confirmCharSelect = function() {
     wave = 1; waveHits = 0;
     selfActive = false; selfIntroWave = 0; waveTransitioning = false;
     currentRoundType = 'whack'; clearInterval(clearRoundInterval); clearInterval(clearRoundMoveInterval); memoryPhase = null; removeClearTimerOverlay(); removeSideBar(); memoryAppearances = 0; clearRoundAppearances = 0;
-    classicPieces.forEach(p => clearTimeout(p.timer)); classicPieces = []; clearInterval(classicInterval); classicHits = 0;
+    classicPieces.forEach(p => clearTimeout(p.timer)); classicPieces = []; clearInterval(classicInterval); clearTimeout(classicEndTimer); classicHits = 0;
     holeStates = Array(HOLES).fill('empty');
     holeCharIdx = Array(HOLES).fill(-1);
     holeGrace = Array(HOLES).fill(false);
@@ -7616,7 +7671,7 @@ window.confirmCharSelect = function() {
     state = 'mode-select'; wave = 1; waveHits = 0;
     selfActive = false; selfIntroWave = 0; waveTransitioning = false;
     currentRoundType = 'whack'; clearInterval(clearRoundInterval); clearInterval(clearRoundMoveInterval); memoryPhase = null; removeClearTimerOverlay(); removeSideBar(); memoryAppearances = 0; clearRoundAppearances = 0;
-    classicPieces.forEach(p => clearTimeout(p.timer)); classicPieces = []; clearInterval(classicInterval); classicHits = 0;
+    classicPieces.forEach(p => clearTimeout(p.timer)); classicPieces = []; clearInterval(classicInterval); clearTimeout(classicEndTimer); classicHits = 0;
     holeStates = Array(HOLES).fill('empty');
     holeCharIdx = Array(HOLES).fill(-1);
     holeGrace = Array(HOLES).fill(false);
@@ -7804,6 +7859,7 @@ window.confirmCharSelect = function() {
 
     if (state === 'over') {
       setArcadeExitVisible(false);
+      wrap.scrollTop = 0;
       const didWin = matched === PAIRS;
       if (matchMode === 'free') {
         const boardKey = getMatchLeaderboardKey();
@@ -8177,7 +8233,7 @@ window.confirmCharSelect = function() {
               clearInterval(timerInt);
               removeMatchSideBar();
               SFX.over();
-              setTimeout(() => { state = 'over'; render(); }, 3000);
+              setTimeout(() => { state = 'over'; render(); }, 700);
             }
           }, 1000);
         };
