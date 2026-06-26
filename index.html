@@ -4029,8 +4029,13 @@ function resetHomeViewport() {
   window.scrollTo(0, 0);
   document.documentElement.scrollTop = 0;
   document.body.scrollTop = 0;
-  const pgHome = document.getElementById('pg-home');
-  if (pgHome) pgHome.scrollTop = 0;
+  // Was hardcoded to #pg-home only — fine if search closes while still on home, but
+  // closeSpot() also runs mid-nav() (tapping a tab while spotlight is open closes it
+  // as part of switching pages), so by the time its delayed retries fire, whichever
+  // page you navigated to is the one left fighting the keyboard's residual viewport
+  // pan. Reset whatever's actually active instead.
+  const activePage = document.querySelector('.page.active');
+  if (activePage) activePage.scrollTop = 0;
   syncActivePageHeader();
 }
 window.resetHomeViewport = resetHomeViewport;
@@ -4052,6 +4057,22 @@ function nav(p) {
   document.getElementById(targetPageId)?.scrollTo(0,0);
   const spot = document.getElementById('spot-overlay');
   if (spot && spot.classList.contains('open') && p !== 'home') closeSpot();
+  // If search's keyboard was up in roughly the last couple seconds, iOS can leave the
+  // visual viewport panned even after closeSpot()'s own retries — e.g. search was
+  // already closed, then the user taps a nav tab as a separate later action, well
+  // after closeSpot()'s 350/800ms retries already ran (and targeted whatever page
+  // was active back then, not this one). Re-correct the page actually being switched
+  // to, scoped to recent search use only — normal navigation never hits this.
+  if (Date.now() - _lastSpotKeyboardAt < 2000) {
+    const tgt = document.getElementById(targetPageId);
+    const reCorrect = () => {
+      if (window.lockViewportHeight) window.lockViewportHeight();
+      window.scrollTo(0, 0);
+      if (tgt) tgt.scrollTop = 0;
+    };
+    setTimeout(reCorrect, 350);
+    setTimeout(reCorrect, 800);
+  }
   const recDrawer = document.getElementById('rec-drawer');
   if (recDrawer) recDrawer.classList.remove('open');
   const memoriesEl = document.getElementById('memories');
@@ -4234,8 +4255,13 @@ function syncSpotToViewport() {
   if (bar) bar.style.top = vv.offsetTop + 'px';
 }
 
+// Timestamp of the last time the spotlight keyboard was summoned — nav() checks this
+// so it can add extra residual-viewport-pan corrections, but only on navigations that
+// happen shortly after search was actually used (see nav() below).
+let _lastSpotKeyboardAt = 0;
 function openSpot() {
   const ov = document.getElementById('spot-overlay');
+  _lastSpotKeyboardAt = Date.now();
   // Lock body scroll BEFORE focusing — otherwise iOS can scroll the underlying
   // home page into a weird position while bringing the focused input into view.
   document.body.style.overflow = 'hidden';
