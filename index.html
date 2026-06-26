@@ -814,7 +814,7 @@ body.rec-open { overflow-y: auto; }
 .cats-home-btn {
   background: none; border: none;
   cursor: pointer; padding: 0;
-  display: flex; align-items: center; gap: 9px;
+  display: flex; align-items: flex-start; gap: 9px;
   -webkit-tap-highlight-color: transparent;
   opacity: 0.88;
   transition: opacity 0.15s;
@@ -822,8 +822,20 @@ body.rec-open { overflow-y: auto; }
 .cats-home-btn:active { opacity: 1; }
 /* Explicit home icon — the logo itself has always navigated home too, but that
    wasn't obvious to people who haven't used a site where the logo doubles as a
-   home link before. */
-.cats-home-icon { width: 19px; height: 19px; flex-shrink: 0; color: rgba(242,239,232,1); }
+   home link before. Sized/positioned to match the logo's actual visible glyph
+   (Title.png has transparent padding — glyph content runs from ~9.7% to ~95.2% of
+   the image height), not the logo wrap's full box, so top and bottom both line up
+   with the top and bottom of the "M". align-items:flex-start above + this margin-top
+   place it; height is the matching content-height fraction of the same width basis
+   the logo wrap uses (min(175px,40vw)), so it scales together with the logo. */
+.cats-home-icon {
+  width: min(32px, 7.34vw);
+  height: min(32px, 7.34vw);
+  margin-top: min(3.7px, 0.83vw);
+  margin-left: 3px;
+  flex-shrink: 0;
+  color: rgba(242,239,232,1);
+}
 .cats-logo-wrap {
   position: relative;
   width: min(175px, 40vw);
@@ -893,14 +905,15 @@ body.rec-open { overflow-y: auto; }
   transition: transform 0.15s;
 }
 .ctile:active { transform: scale(0.97); }
-/* Gentle, perpetual wiggle — like a photo print sitting slightly crooked in its
-   polaroid frame. Small angle + long duration so it reads as "alive," not dizzying;
-   per-tile --wig/--wig-delay (set inline in renderCats()) keep tiles from swaying
-   in unison. Lives on .ctile-photo (not .ctile) so it doesn't fight the tap-press
-   scale on .ctile:active. */
+/* Photo nudges out of place, then drifts back — rests most of the cycle, rather
+   than a continuous back-and-forth wobble. Per-tile --shift-x/--shift-y/--wig/
+   --wig-delay (set inline in renderCats()) keep tiles from moving in unison. Lives
+   on .ctile-photo (not .ctile) so it doesn't fight the tap-press scale on
+   .ctile:active. */
 @keyframes ctile-wiggle {
-  0%, 100% { transform: rotate(calc(var(--wig, 1deg) * -1)); }
-  50% { transform: rotate(var(--wig, 1deg)); }
+  0%, 62% { transform: translate(0,0) rotate(0deg); }
+  78% { transform: translate(var(--shift-x, 3px), var(--shift-y, -2px)) rotate(var(--wig, 1.2deg)); }
+  100% { transform: translate(0,0) rotate(0deg); }
 }
 .ctile-photo {
   position: relative;
@@ -1793,6 +1806,9 @@ html, body { height: 100%; overflow: hidden; }
   .cats-logo-wrap { width: auto; max-width: 58vw; }
   .cats-logo-img { display: block; height: 40px; width: auto; }
   .cats-logo-tape { display: none; }
+  /* Logo height is fixed (not width-driven) at this breakpoint — recompute the
+     home icon's match-the-glyph sizing off that same 40px basis. */
+  .cats-home-icon { width: 34px; height: 34px; margin-top: 3.9px; }
   .nav-icon-btn { width: 28px; }
   .nav-icon-btn svg { width: 18px; height: 18px; }
 }
@@ -1925,13 +1941,17 @@ button.cats-search-wrap {
   gap: 14px;
 }
 .detail-back-link {
-  background: none; border: none; cursor: pointer; padding: 6px 0;
-  font-family: 'VCR', monospace;
-  font-size: 15px; letter-spacing: 2px;
+  background: none; border: none; cursor: pointer; padding: 6px 0 14px;
+  /* Neutral system font on purpose — a contrast to the thematic VCR/Bebas display
+     fonts everywhere else, since this is just a plain utility nav link. */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px; letter-spacing: 0.5px; font-weight: 500;
   color: rgba(242,239,232,1);
   display: flex; align-items: center; gap: 8px;
   -webkit-tap-highlight-color: transparent;
   transition: color 0.15s;
+  border-bottom: 1px solid rgba(242,239,232,0.14);
+  margin-bottom: -4px;
 }
 .detail-back-link:active { color: rgba(242,239,232,1); }
 .detail-back-link svg { width: 18px; height: 18px; flex-shrink: 0; }
@@ -2168,7 +2188,11 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 }
 #shake-close:active { color: var(--white); }
 #shake-close svg { width: 22px; height: 22px; }
-#shake-tape-img { width: 120px; height: auto; animation: sh-wobble 0.2s ease-in-out infinite; }
+#shake-tape-img {
+  width: 190px; height: auto;
+  border: 2px solid rgba(255,255,255,0.92);
+  animation: sh-wobble 0.2s ease-in-out infinite;
+}
 @keyframes sh-wobble {
   0%,100% { transform: rotate(-10deg) scale(1.04); }
   50%     { transform: rotate(10deg) scale(0.97); }
@@ -2177,7 +2201,9 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
   font-family: 'VCR', monospace;
   color: rgba(242,239,232,0.88); font-size: 13px; letter-spacing: 3px;
   margin-top: 30px; text-align: center; padding: 0 20px;
-  animation: ss-blink 0.5s step-end infinite;
+  /* Slowed down + shares its duration with "TAP TO WATCH"/"SHUFFLE AGAIN" below it
+     (both set to the same 2s in triggerShakeTape()) so they blink in sync. */
+  animation: ss-blink 2s step-end infinite;
 }
 
 /* ══════════════════════════════════════
@@ -2235,7 +2261,7 @@ body.on-match .mobe-face-img {
 #char-scroll-wrap {
   position: relative;
   width: 100%;
-  height: min(280px, max(190px, calc(var(--app-vh, 100dvh) - 360px)));
+  height: min(280px, max(190px, calc(var(--app-vh, 100dvh) - 380px)));
   flex: 0 1 280px;
   overflow: hidden;
 }
@@ -2295,8 +2321,16 @@ body.on-match .mobe-face-img {
   min-height: 110px; width: 100%;
 }
 #char-preview-face {
-  width: 96px; height: 96px;
+  width: 116px; height: 116px;
   display: flex; align-items: center; justify-content: center;
+  position: relative;
+  border-radius: 50%;
+  /* Background glow behind the character — white near the center fading through
+     their own signature color (set inline via --char-color in updateCharPreview()),
+     so each pilot pops against the dark backdrop instead of floating plain. */
+  background: radial-gradient(circle, white 0%, var(--char-color, transparent) 42%, transparent 72%);
+  box-shadow: 0 0 26px 2px var(--char-color, transparent);
+  transition: box-shadow 0.25s;
 }
 #char-preview-name {
   font-family: 'Bebas Neue', cursive; font-size: 28px;
@@ -3237,7 +3271,7 @@ body.on-match .mobe-face-img {
 <div id="pg-cats" class="page">
   <div class="cats-header">
     <button class="cats-home-btn" onclick="navHome()" aria-label="Home">
-      <svg class="cats-home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg>
+      <svg class="cats-home-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 3.1 2.5 11H5v9.5a1 1 0 0 0 1 1h4.5v-7h3v7H18a1 1 0 0 0 1-1V11h2.5z"/></svg>
       <div class="cats-logo-wrap">
         <img src="Title.png" class="cats-logo-img" alt="MOBERINO">
         <img src="Untitled_Artwork.png" class="cats-logo-tape" alt="">
@@ -3262,7 +3296,7 @@ body.on-match .mobe-face-img {
 <div id="pg-detail" class="page">
   <div class="cats-header">
     <button class="cats-home-btn" onclick="nav('home')" aria-label="Home">
-      <svg class="cats-home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg>
+      <svg class="cats-home-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 3.1 2.5 11H5v9.5a1 1 0 0 0 1 1h4.5v-7h3v7H18a1 1 0 0 0 1-1V11h2.5z"/></svg>
       <div class="cats-logo-wrap">
         <img src="Title.png" class="cats-logo-img" alt="MOBERINO">
         <img src="Untitled_Artwork.png" class="cats-logo-tape" alt="">
@@ -3297,7 +3331,7 @@ body.on-match .mobe-face-img {
 <div id="pg-timeline" class="page">
   <div class="cats-header">
     <button class="cats-home-btn" onclick="nav('home')" aria-label="Home">
-      <svg class="cats-home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg>
+      <svg class="cats-home-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 3.1 2.5 11H5v9.5a1 1 0 0 0 1 1h4.5v-7h3v7H18a1 1 0 0 0 1-1V11h2.5z"/></svg>
       <div class="cats-logo-wrap">
         <img src="Title.png" class="cats-logo-img" alt="MOBERINO">
         <img src="Untitled_Artwork.png" class="cats-logo-tape" alt="">
@@ -3329,7 +3363,7 @@ body.on-match .mobe-face-img {
 <div id="pg-map" class="page">
   <div class="cats-header">
     <button class="cats-home-btn" onclick="nav('home')" aria-label="Home">
-      <svg class="cats-home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg>
+      <svg class="cats-home-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 3.1 2.5 11H5v9.5a1 1 0 0 0 1 1h4.5v-7h3v7H18a1 1 0 0 0 1-1V11h2.5z"/></svg>
       <div class="cats-logo-wrap">
         <img src="Title.png" class="cats-logo-img" alt="MOBERINO">
         <img src="Untitled_Artwork.png" class="cats-logo-tape" alt="">
@@ -3362,7 +3396,7 @@ body.on-match .mobe-face-img {
   <div id="shelf-bg"></div>
   <div class="cats-header">
     <button class="cats-home-btn" onclick="nav('home')" aria-label="Home">
-      <svg class="cats-home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg>
+      <svg class="cats-home-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 3.1 2.5 11H5v9.5a1 1 0 0 0 1 1h4.5v-7h3v7H18a1 1 0 0 0 1-1V11h2.5z"/></svg>
       <div class="cats-logo-wrap">
         <img src="Title.png" class="cats-logo-img" alt="MOBERINO">
       </div>
@@ -3669,11 +3703,15 @@ function renderCats() {
     tile.onclick=()=>openCat(cat);
     const color = CC[cat]||'#151f2e';
     const imgSrc = CAT_THUMBS[cat] || videoThumbs[cat] || '';
-    const wig = (0.8 + Math.random() * 0.8).toFixed(2);       // 0.8–1.6deg
+    const wig = (1 + Math.random() * 1.4).toFixed(2);         // 1–2.4deg
     const wigDelay = (Math.random() * 4).toFixed(2);          // 0–4s, desyncs tiles
     const wigDur = (5 + Math.random() * 2.5).toFixed(2);      // 5–7.5s
+    const shiftAng = Math.random() * Math.PI * 2;
+    const shiftDist = 3 + Math.random() * 3;                  // 3–6px nudge
+    const shiftX = (Math.cos(shiftAng) * shiftDist).toFixed(2);
+    const shiftY = (Math.sin(shiftAng) * shiftDist).toFixed(2);
     tile.innerHTML=`
-      <div class="ctile-photo" style="--wig:${wig}deg;--wig-delay:${wigDelay}s;--wig-dur:${wigDur}s">
+      <div class="ctile-photo" style="--wig:${wig}deg;--wig-delay:${wigDelay}s;--wig-dur:${wigDur}s;--shift-x:${shiftX}px;--shift-y:${shiftY}px">
         <div class="ctile-color" style="background:${color}"></div>
         ${imgSrc?`<img class="ctile-img" src="${imgSrc}" loading="lazy" decoding="async" alt="" onerror="this.style.display='none'">`:''}
       </div>
@@ -5161,7 +5199,7 @@ function triggerShakeTape() {
     img.onerror = () => { img.src = `https://img.youtube.com/vi/${v.video_id}/sddefault.jpg`; img.onerror = null; };
     msg.textContent = fmtTitle(v.title, v.year) + (v.year ? '  ·  ' + v.year : '');
     const tap = document.createElement('div');
-    tap.style.cssText = 'font-family:VCR,monospace;font-size:15px;letter-spacing:3px;color:rgba(242,239,232,0.45);margin-top:14px;animation:ss-blink 0.8s step-end infinite';
+    tap.style.cssText = 'font-family:VCR,monospace;font-size:15px;letter-spacing:3px;color:rgba(242,239,232,0.45);margin-top:14px;animation:ss-blink 2s step-end infinite';
     tap.textContent = 'TAP TO WATCH';
     ov.appendChild(tap);
     const again = document.createElement('button');
@@ -6262,7 +6300,10 @@ function updateCharPreview(i) {
   const c = GAME_CHARS[i];
   const face = document.getElementById('char-preview-face');
   const name = document.getElementById('char-preview-name');
-  if (face) face.innerHTML = charFace(c, 'normal');
+  if (face) {
+    face.innerHTML = charFace(c, 'normal');
+    face.style.setProperty('--char-color', c.color);
+  }
   if (name) { name.textContent = c.name; name.style.color = c.color; name.style.textShadow = `0 0 12px ${c.color}88`; }
 }
 
