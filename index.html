@@ -452,7 +452,7 @@ body.on-timeline #collage::after {
 .hero-logo-wrap {
   position: relative;
   width: min(94vw, 640px);
-  margin-bottom: -14%;
+  margin-bottom: -19%;
   transform: translateX(5.2%);
   pointer-events: none;
 }
@@ -608,9 +608,10 @@ body.on-timeline #collage::after {
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 2px;
 }
 .hero-icon-btn {
-  width: 56px; height: 56px;
+  width: 84px; height: 84px;
   background: none; border: none;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
@@ -620,7 +621,7 @@ body.on-timeline #collage::after {
 }
 .hero-icon-btn:hover { color: rgba(242,239,232,1); }
 .hero-icon-btn:active { transform: scale(0.88); color: var(--white); }
-.hero-icon-btn svg { width: 26px; height: 26px; }
+.hero-icon-btn svg { width: 39px; height: 39px; }
 
 /* CTA buttons — white tape label look */
 .hero-cta-btn {
@@ -797,6 +798,7 @@ body.rec-open { overflow-y: auto; }
 /* Cats page — same collage background as home, transition via JS */
 #pg-cats {
   min-height: 100dvh;
+  padding-top: 4px;
   padding-bottom: 40px;
   position: relative;
   z-index: 1;
@@ -814,7 +816,7 @@ body.rec-open { overflow-y: auto; }
 .cats-home-btn {
   background: none; border: none;
   cursor: pointer; padding: 0;
-  display: flex; align-items: flex-start; gap: 4.5px;
+  display: flex; align-items: flex-start; gap: 2.5px;
   -webkit-tap-highlight-color: transparent;
   opacity: 0.88;
   transition: opacity 0.15s;
@@ -905,15 +907,6 @@ body.rec-open { overflow-y: auto; }
   transition: transform 0.15s;
 }
 .ctile:active { transform: scale(0.97); }
-/* Continuous small lean side to side — like a photo print rocking slightly in its
-   polaroid frame. Small angle, no translate (that read as "floaty" rather than a
-   lean). Per-tile --wig/--wig-delay (set inline in renderCats()) keep tiles from
-   swaying in unison. Lives on .ctile-photo (not .ctile) so it doesn't fight the
-   tap-press scale on .ctile:active. */
-@keyframes ctile-wiggle {
-  0%, 100% { transform: rotate(calc(var(--wig, 1.2deg) * -1)); }
-  50% { transform: rotate(var(--wig, 1.2deg)); }
-}
 .ctile-photo {
   position: relative;
   width: 100%;
@@ -921,8 +914,6 @@ body.rec-open { overflow-y: auto; }
   height: 0;
   overflow: hidden;
   flex-shrink: 0;
-  animation: ctile-wiggle var(--wig-dur, 6s) ease-in-out infinite;
-  animation-delay: var(--wig-delay, 0s);
 }
 .ctile-color { position: absolute; inset: 0; }
 .ctile-img {
@@ -1798,9 +1789,10 @@ html, body { height: 100%; overflow: hidden; }
      1366px specifically when also landscape + coarse-pointer, so real desktop
      windows (pointer: fine) in that width range are unaffected. Width, not height,
      since iPad Pro 12.9" landscape is ~1024px tall — a height cutoff kept missing it. */
-  #pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active {
+  #pg-detail.active, #pg-timeline.active, #pg-shelf.active {
     padding-top: 0;
   }
+  #pg-cats.active { padding-top: 4px; }
   .cats-header { height: 46px; padding: 0px 6px 0px; }
   .cats-logo-wrap { width: auto; max-width: 58vw; }
   .cats-logo-img { display: block; height: 40px; width: auto; }
@@ -1991,12 +1983,12 @@ button.cats-search-wrap {
        the CTA buttons + icon row below the search bar). */
     transform: translateY(-57px);
   }
-  .hero-logo-wrap { width: min(60vh, 94vw, 460px); margin-bottom: -10%; }
+  .hero-logo-wrap { width: min(60vh, 94vw, 460px); margin-bottom: -15%; }
   .hero-lower { gap: 6px; width: min(60vh, 94vw, 460px); }
   .search-wrap { padding: 8px 12px; }
   .hero-cta-btn { padding: 5px 6px; font-size: 12px; }
-  .hero-icon-btn { width: 36px; height: 36px; }
-  .hero-icon-btn svg { width: 20px; height: 20px; }
+  .hero-icon-btn { width: 54px; height: 54px; }
+  .hero-icon-btn svg { width: 30px; height: 30px; }
 }
 
 /* Tablet portrait (e.g. iPad) — same stacked hero as phone, shifted up a bit per the
@@ -2023,7 +2015,7 @@ button.cats-search-wrap {
      above the 640px cap (tablet/desktop) that gives more overlap than below it
      (phone, where width truly tracks the viewport), so the base -14% undershoots
      here and leaves a visible gap above the search bar. Tightened to match. */
-  .hero-logo-wrap { width: 100vw; margin-bottom: -26%; transform: translate(-7px, 8px); }
+  .hero-logo-wrap { width: 100vw; margin-bottom: -32%; transform: translate(-7px, 8px); }
   .hero-logo-text { width: 120%; transform: translate(-6px, 3px); }
   .hero-logo-tape { width: 16.2%; left: calc(15% + 7px); top: calc(35% + 2px); }
   .hero-lower { width: calc(100vw - 16px); }
@@ -2325,11 +2317,12 @@ body.on-match .mobe-face-img {
   width: 116px; height: 116px;
   display: flex; align-items: center; justify-content: center;
   position: relative;
-  /* Soft ambient glow behind the character, not a solid badge/disc — faded and
-     fairly tight to the character rather than spreading far out. --char-glow (set
-     inline in updateCharPreview()) is their signature color at low alpha, so it
-     reads as a hint of color in the dark rather than a hard-edged shape. */
+  /* Soft ambient glow behind the character, not a solid badge/disc — fairly tight to
+     the character rather than spreading far out. --char-glow (set inline in
+     updateCharPreview()) is their signature color at ~50% alpha, so it reads as a
+     real glow rather than a hint or a hard-edged shape. */
   background: radial-gradient(circle, var(--char-glow, transparent) 0%, transparent 55%);
+  box-shadow: 0 0 13px var(--char-glow, transparent);
 }
 #char-preview-name {
   font-family: 'Bebas Neue', cursive; font-size: 28px;
@@ -2341,6 +2334,7 @@ body.on-match .mobe-face-img {
   border-radius: 6px; padding: 14px 40px; color: #ffe61a;
   cursor: pointer; text-shadow: 0 0 10px #ffe61a88;
   box-shadow: 0 0 20px rgba(255,230,26,0.25);
+  margin-top: 12px;
 }
 @keyframes gcblink { 0%,100% { opacity:1; } 50% { opacity:0; } }
 
@@ -3541,12 +3535,28 @@ function recommended(n) {
 }
 
 // ── SEARCH ──
+// Cardinal direction normalization for address search — "226 W 22nd St" should also
+// turn up for a search of "west", and vice versa. Substring match alone is unsafe for
+// the single-letter abbreviations (h.includes('w') would match "Williamsburg"), so
+// those need a word-boundary check; the spelled-out word is safe as a plain substring.
+const CARDINAL = { n:'north', north:'n', s:'south', south:'s', e:'east', east:'e', w:'west', west:'w' };
+function locationMatches(locationH, t) {
+  const alt = CARDINAL[t];
+  if (!alt) return locationH.includes(t); // not a cardinal term — plain substring is fine
+  // The single-letter form of the pair needs a word-boundary check no matter which
+  // side the user typed (t.includes(t) alone would let 'w' match inside "Williamsburg");
+  // the spelled-out form is safe to match as a plain substring either way.
+  if (t.length === 1) return new RegExp(`\\b${t}\\b`, 'i').test(locationH) || locationH.includes(alt);
+  return locationH.includes(t) || new RegExp(`\\b${alt}\\b`, 'i').test(locationH);
+}
+
 function search(q) {
   const terms = q.toLowerCase().trim().split(/\s+/).filter(Boolean);
   if(!terms.length) return [];
   return VIDEOS.filter(v=>{
-    const h=`${v.title} ${v.category} ${v.year||''} ${v.objects||''} ${v.location||''}`.toLowerCase();
-    return terms.every(t=>h.includes(t));
+    const h=`${v.title} ${v.category} ${v.year||''} ${v.objects||''}`.toLowerCase();
+    const locationH = (v.location||'').toLowerCase();
+    return terms.every(t=>h.includes(t) || locationMatches(locationH, t));
   });
 }
 
@@ -3559,7 +3569,7 @@ function matchReason(v, q) {
 
   if(terms.every(t=>titleH.includes(t)))    return null; // obvious from card title
   if(terms.every(t=>categoryH.includes(t))) return 'CATEGORY: '+v.category.toUpperCase();
-  if(terms.every(t=>locationH.includes(t))) return 'LOCATION: '+v.location.toUpperCase();
+  if(terms.every(t=>locationMatches(locationH, t))) return 'LOCATION: '+v.location.toUpperCase();
 
   // find which specific tags matched
   const matchedTags = (v.objects||'').split(',')
@@ -3702,11 +3712,8 @@ function renderCats() {
     tile.onclick=()=>openCat(cat);
     const color = CC[cat]||'#151f2e';
     const imgSrc = CAT_THUMBS[cat] || videoThumbs[cat] || '';
-    const wig = (0.8 + Math.random() * 0.8).toFixed(2);       // 0.8–1.6deg
-    const wigDelay = (Math.random() * 4).toFixed(2);          // 0–4s, desyncs tiles
-    const wigDur = (5 + Math.random() * 2.5).toFixed(2);      // 5–7.5s
     tile.innerHTML=`
-      <div class="ctile-photo" style="--wig:${wig}deg;--wig-delay:${wigDelay}s;--wig-dur:${wigDur}s">
+      <div class="ctile-photo">
         <div class="ctile-color" style="background:${color}"></div>
         ${imgSrc?`<img class="ctile-img" src="${imgSrc}" loading="lazy" decoding="async" alt="" onerror="this.style.display='none'">`:''}
       </div>
@@ -6309,7 +6316,7 @@ function updateCharPreview(i) {
   const name = document.getElementById('char-preview-name');
   if (face) {
     face.innerHTML = charFace(c, 'normal');
-    face.style.setProperty('--char-glow', c.color + '55'); // ~33% alpha — faded, not solid
+    face.style.setProperty('--char-glow', c.color + '80'); // ~50% alpha
   }
   if (name) { name.textContent = c.name; name.style.color = c.color; name.style.textShadow = `0 0 12px ${c.color}88`; }
 }
