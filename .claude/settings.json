@@ -90,7 +90,22 @@
       "Bash(grep -n \"font-family:'Bebas Neue',cursive;font-size:36px;letter-spacing:3px;color:\\\\${color}\" /Users/kevinseverino/Documents/moberino/index.html)",
       "Bash(grep -n \"font-size:36px;letter-spacing:3px;color:\\\\${color}\" /Users/kevinseverino/Documents/moberino/index.html)",
       "Bash(python3 -)",
-      "Bash(grep -n \"drawBuffLine\\(\\\\`\" /Users/kevinseverino/Documents/moberino/index.html)"
+      "Bash(grep -n \"drawBuffLine\\(\\\\`\" /Users/kevinseverino/Documents/moberino/index.html)",
+      "Bash(git mv *)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "Bash(python3 -c \"import playwright; print\\('py playwright ok'\\)\")",
+      "Bash(npx --yes playwright --version)",
+      "Bash(pip3 install *)",
+      "Bash(python3 -c \"import playwright; print\\('ok'\\)\")",
+      "Bash(python3 -m playwright install chromium)",
+      "Bash(curl -s http://localhost:8732/index.html)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/9c3db86a-04e7-4205-93dd-cb2f67278d2e/scratchpad/space_mobe_check.py)",
+      "Bash(pkill -f \"http.server 8732\")",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/9c3db86a-04e7-4205-93dd-cb2f67278d2e/scratchpad/verify_fixes.py)",
+      "Bash(python3 -c 'from playwright.sync_api import sync_playwright *)",
+      "Bash(pip3 show *)",
+      "Bash(python3 -m playwright install webkit)"
     ],
     "additionalDirectories": [
       "/tmp"
