@@ -370,12 +370,9 @@ body.on-match::after, body.on-space::after { display: none; }
    mobile Safari changes visual viewport geometry around search/keyboard/browser UI,
    and transformed full-screen pages made the hero drift across devices. */
 #pg-home {
-  height: 100vh;
-  min-height: 100vh;
-  max-height: 100vh;
-  height: var(--app-vh, 100vh);
-  min-height: var(--app-vh, 100vh);
-  max-height: var(--app-vh, 100vh);
+  height: 100dvh;
+  min-height: 100dvh;
+  max-height: 100dvh;
   overflow: hidden;
   flex-direction: column;
   /* Hero centers vertically in the available space rather than sitting pinned near
@@ -1621,25 +1618,35 @@ body.rec-open { overflow-y: auto; }
 /* ══════════════════════════════════════
    SPOTLIGHT SEARCH OVERLAY
 ══════════════════════════════════════ */
+/* display:none by default; toggled to display:flex via .is-shown (JS-added,
+   independent of the transition), with .open (added a frame later) driving the
+   actual opacity/transform animation. No JS measures or pins anything here —
+   100dvh tracks the keyboard/toolbar natively, and #spot-results (below) is the
+   one actual scroll container, so there's nothing for a keyboard-driven viewport
+   change to desync. */
 #spot-overlay {
   display: none;
   position: fixed; inset: 0; z-index: 8500;
+  height: 100dvh;
   background: rgba(8,16,42,0.90);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   flex-direction: column;
   align-items: center;
-  padding: 0 16px;
-  /* Reserve space for the now-fixed .spot-top-bar so content starts below it */
-  padding-top: calc(env(safe-area-inset-top, 0px) + 100px);
-  overscroll-behavior: contain;
+  padding: env(safe-area-inset-top, 0px) 16px 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
 }
-#spot-overlay.open { display: flex; }
-/* Pinned via position:fixed (not normal flow) so the keyboard's native "scroll input
-   into view" can't drag this off-screen on the first focus — it's already anchored
-   to a fixed screen position, immune to any scroll/viewport-shift behavior. */
+#spot-overlay.is-shown { display: flex; }
+#spot-overlay.open { opacity: 1; transform: translateY(0); }
+/* Normal flow now (not position:fixed) — a plain flex child above #spot-results,
+   which is the actual scroll container, so there's nothing to keep pinned. */
 .spot-top-bar {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 5;
+  align-self: stretch;
+  flex-shrink: 0;
+  z-index: 5;
   display: flex; flex-direction: column; align-items: center;
   background: rgba(8,16,42,0.92);
   backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
@@ -1651,7 +1658,7 @@ body.rec-open { overflow-y: auto; }
   display: flex; align-items: center; justify-content: center; gap: 8px;
   padding: 8px 12px;
   align-self: center;
-  margin-top: max(14px, env(safe-area-inset-top, 0px) + 10px);
+  margin-top: 14px;
   margin-bottom: 8px;
   font-family: 'VCR', monospace;
   font-size: 11px; letter-spacing: 2px;
@@ -1687,6 +1694,7 @@ body.rec-open { overflow-y: auto; }
 #spot-results {
   width: 100%; max-width: 580px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   flex: 1;
   padding-bottom: 32px;
 }
@@ -1727,7 +1735,13 @@ html, body { height: 100%; overflow: hidden; }
 /* Scrollable pages each become their own scroll container. Arcade game screens are
    excluded because they manage scrolling inside their own panels/lists; letting the
    page itself scroll exposes Safari's under-page area during rubber-band gestures. */
-#pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active,
+#pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active {
+  height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+/* #pg-lobby.active kept on the legacy var(--app-vh) lock — arcade, untouched. */
 #pg-lobby.active {
   height: var(--app-vh, 100dvh);
   overflow-y: auto;
@@ -1766,22 +1780,6 @@ html, body { height: 100%; overflow: hidden; }
   .cats-logo-tape { display: none; }
   .nav-icon-btn { width: 28px; }
   .nav-icon-btn svg { width: 18px; height: 18px; }
-}
-
-/* ── SPOTLIGHT: SLIDE UP ON MOBILE/TABLET ── */
-@media (max-width: 1023px), (max-width: 1400px) and (orientation: landscape) and (pointer: coarse) {
-  #spot-overlay {
-    display: flex !important;
-    flex-direction: column;
-    align-items: center;
-    transform: translateY(100%);
-    transition: transform 0.34s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    pointer-events: none;
-  }
-  #spot-overlay.open {
-    transform: translateY(0);
-    pointer-events: auto;
-  }
 }
 
 /* ── RECOMMENDATIONS DRAWER (mobile/tablet only) ── */
@@ -1952,7 +1950,7 @@ button.cats-search-wrap {
      scaled down by viewport HEIGHT (not a row layout) so it doesn't eat all the
      vertical space on a short landscape phone screen, while staying full-size-ish
      on a tall landscape tablet. */
-  #pg-home { justify-content: center; overflow-y: auto; height: var(--app-vh, 100vh); min-height: var(--app-vh, 100vh); max-height: var(--app-vh, 100vh); padding-top: max(10px, env(safe-area-inset-top, 0px)); }
+  #pg-home { justify-content: center; overflow-y: auto; height: 100dvh; min-height: 100dvh; max-height: 100dvh; padding-top: max(10px, env(safe-area-inset-top, 0px)); }
   .home-hero {
     padding: 8px 24px 14px;
     gap: 4px;
@@ -4057,22 +4055,6 @@ function nav(p) {
   document.getElementById(targetPageId)?.scrollTo(0,0);
   const spot = document.getElementById('spot-overlay');
   if (spot && spot.classList.contains('open') && p !== 'home') closeSpot();
-  // If search's keyboard was up in roughly the last couple seconds, iOS can leave the
-  // visual viewport panned even after closeSpot()'s own retries — e.g. search was
-  // already closed, then the user taps a nav tab as a separate later action, well
-  // after closeSpot()'s 350/800ms retries already ran (and targeted whatever page
-  // was active back then, not this one). Re-correct the page actually being switched
-  // to, scoped to recent search use only — normal navigation never hits this.
-  if (Date.now() - _lastSpotKeyboardAt < 2000) {
-    const tgt = document.getElementById(targetPageId);
-    const reCorrect = () => {
-      if (window.lockViewportHeight) window.lockViewportHeight();
-      window.scrollTo(0, 0);
-      if (tgt) tgt.scrollTop = 0;
-    };
-    setTimeout(reCorrect, 350);
-    setTimeout(reCorrect, 800);
-  }
   const recDrawer = document.getElementById('rec-drawer');
   if (recDrawer) recDrawer.classList.remove('open');
   const memoriesEl = document.getElementById('memories');
@@ -4233,84 +4215,43 @@ function navHome() {
 }
 
 // ── SPOTLIGHT SEARCH ──
-// Keyboard opening shrinks the *visual* viewport, and on iOS can also pan it (offsetTop
-// becomes non-zero) — position:fixed alone doesn't reliably track either of those during
-// the keyboard's open animation. Explicitly pin the overlay + top bar to the live visual
-// viewport geometry via JS, instead of trusting CSS fixed-positioning to keep up.
-function syncSpotToViewport() {
-  const ov = document.getElementById('spot-overlay');
-  if (!ov || !ov.classList.contains('open')) return;
-  const vv = window.visualViewport;
-  if (!vv) return;
-  // ov stays pinned at the layout viewport's top (never move its own top — that was
-  // shrinking the whole overlay into a tiny band hugging the keyboard whenever
-  // offsetTop was large on first open). Its height instead needs to reach all the way
-  // down to match the visible viewport's bottom edge, which sits at offsetTop+height
-  // in layout-viewport terms, not just height — otherwise content stops short of the
-  // keyboard and the fixed bar (which does track offsetTop, correctly, to stay visually
-  // pinned to the top of whatever's currently on screen) ends up overlapping content
-  // that assumed a shorter, unpanned overlay.
-  ov.style.height = (vv.offsetTop + vv.height) + 'px';
-  const bar = document.querySelector('.spot-top-bar');
-  if (bar) bar.style.top = vv.offsetTop + 'px';
-}
-
-// Timestamp of the last time the spotlight keyboard was summoned — nav() checks this
-// so it can add extra residual-viewport-pan corrections, but only on navigations that
-// happen shortly after search was actually used (see nav() below).
-let _lastSpotKeyboardAt = 0;
+// #spot-overlay is height:100dvh, which tracks the keyboard/dynamic toolbar natively —
+// no JS measuring visualViewport or pinning inline styles needed. display:none/flex is
+// toggled via .is-shown (independent of the transition, which runs on .open, added a
+// frame later so the display change commits first).
 function openSpot() {
   const ov = document.getElementById('spot-overlay');
-  _lastSpotKeyboardAt = Date.now();
   // Lock body scroll BEFORE focusing — otherwise iOS can scroll the underlying
   // home page into a weird position while bringing the focused input into view.
   document.body.style.overflow = 'hidden';
-  ov.classList.add('open');
+  ov.classList.add('is-shown');
   ov.scrollTop = 0;
-  void ov.offsetHeight; // force layout to commit the overlay before focus() runs
-  syncSpotToViewport();
   document.getElementById('spotQ').value = '';
   document.getElementById('spot-results').innerHTML = '';
   document.getElementById('spot-meta').textContent = '';
+  void ov.offsetHeight; // commit display:flex before starting the transition
+  requestAnimationFrame(() => ov.classList.add('open'));
   // Mobile only auto-opens the keyboard if focus() runs synchronously in the tap
   // handler that opened this — a setTimeout-deferred focus (even a short one) is too late.
   document.getElementById('spotQ').focus();
-  // Re-sync repeatedly through the keyboard's open animation (not just once on 'resize')
-  // since iOS can fire viewport changes in several small steps rather than one clean jump.
-  let _syncTries = 0;
-  const _syncInterval = setInterval(() => {
-    syncSpotToViewport();
-    if (++_syncTries > 15) clearInterval(_syncInterval);
-  }, 50);
 }
 function closeSpot() {
   document.getElementById('spotQ').blur();
   const ov = document.getElementById('spot-overlay');
   ov.classList.remove('open');
-  ov.style.height = '';
-  const bar = document.querySelector('.spot-top-bar');
-  if (bar) bar.style.top = '';
   document.body.style.overflow = '';
-  // The keyboard closing (from the blur above) resizes/pans the visual viewport on its
-  // own animation timeline, separate from this function returning. iOS Safari can pan
-  // the page to keep a focused input visible above the keyboard even with body scroll
-  // "locked" via overflow:hidden (that only blocks CSS-driven scrolling, not the
-  // keyboard's own viewport pan) — and that pan doesn't reliably self-correct once the
-  // keyboard closes. Force scroll back to (0,0) and re-run these once immediately and
-  // again after the keyboard's close animation has had time to finish, so #pg-home, the
-  // back-to-top bar, and any subsequent page-slide transition (which reads body's
-  // current rect) aren't left working against a residual pan/offset.
-  const _resync = () => {
+  // Wait for the opacity/transform transition (.25s, see #spot-overlay CSS) before
+  // actually removing it from layout, so it doesn't just vanish mid-animation.
+  setTimeout(() => ov.classList.remove('is-shown'), 260);
+  // iOS can still pan the page slightly to keep a focused input visible above the
+  // keyboard, independent of anything this overlay does — a single delayed re-check
+  // covers that without the repeated polling the old implementation needed.
+  resetHomeViewport();
+  if (window._updateBackTopBar) window._updateBackTopBar();
+  setTimeout(() => {
     resetHomeViewport();
     if (window._updateBackTopBar) window._updateBackTopBar();
-  };
-  _resync();
-  setTimeout(_resync, 350);
-  setTimeout(_resync, 800);
-}
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', syncSpotToViewport);
-  window.visualViewport.addEventListener('scroll', syncSpotToViewport);
+  }, 350);
 }
 // Backdrop tap: on mobile just close keyboard; on desktop close overlay
 document.getElementById('spot-overlay').addEventListener('click', e => {

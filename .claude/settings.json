@@ -105,7 +105,8 @@
       "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/9c3db86a-04e7-4205-93dd-cb2f67278d2e/scratchpad/verify_fixes.py)",
       "Bash(python3 -c 'from playwright.sync_api import sync_playwright *)",
       "Bash(pip3 show *)",
-      "Bash(python3 -m playwright install webkit)"
+      "Bash(python3 -m playwright install webkit)",
+      "Bash(python3 arcade_baseline.py before)"
     ],
     "additionalDirectories": [
       "/tmp"
