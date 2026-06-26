@@ -1956,7 +1956,7 @@ button.cats-search-wrap {
     /* Design preference: shift up a bit so the logo-to-search transition sits closer
        to true vertical center, instead of the whole block's centroid (pulled down by
        the CTA buttons + icon row below the search bar). */
-    transform: translateY(-32px);
+    transform: translateY(-57px);
   }
   .hero-logo-wrap { width: min(60vh, 94vw, 460px); margin-bottom: -10%; }
   .hero-lower { gap: 6px; width: min(60vh, 94vw, 460px); }
@@ -1971,7 +1971,7 @@ button.cats-search-wrap {
    transition sits closer to true vertical center. Scoped with min-width so phone
    portrait (which already reads correctly) is untouched. */
 @media (min-width: 600px) and (max-width: 1400px) and (orientation: portrait) and (pointer: coarse) {
-  .home-hero { transform: translateY(-46px); }
+  .home-hero { transform: translateY(-71px); }
 }
 
 @media (max-width: 599px) {
@@ -1986,7 +1986,11 @@ button.cats-search-wrap {
   .tl-thumb { width: min(55vw, 220px); }
   .tl-more-tile { width: min(55vw, 220px); }
   .cats-dice-btn { width: 44px; }
-  .hero-logo-wrap { width: 100vw; transform: translate(-7px, 8px); }
+  /* margin-bottom is a % of the *containing block's* width, not the logo's own —
+     above the 640px cap (tablet/desktop) that gives more overlap than below it
+     (phone, where width truly tracks the viewport), so the base -14% undershoots
+     here and leaves a visible gap above the search bar. Tightened to match. */
+  .hero-logo-wrap { width: 100vw; margin-bottom: -22%; transform: translate(-7px, 8px); }
   .hero-logo-text { width: 120%; transform: translate(-6px, 3px); }
   .hero-logo-tape { width: 16.2%; left: calc(15% + 7px); top: calc(35% + 2px); }
   .hero-lower { width: calc(100vw - 16px); }
@@ -3489,7 +3493,7 @@ function search(q) {
   const terms = q.toLowerCase().trim().split(/\s+/).filter(Boolean);
   if(!terms.length) return [];
   return VIDEOS.filter(v=>{
-    const h=`${v.title} ${v.category} ${v.year||''} ${v.objects||''}`.toLowerCase();
+    const h=`${v.title} ${v.category} ${v.year||''} ${v.objects||''} ${v.location||''}`.toLowerCase();
     return terms.every(t=>h.includes(t));
   });
 }
@@ -3499,9 +3503,11 @@ function matchReason(v, q) {
   const titleH    = (v.title+' '+(v.year||'')).toLowerCase();
   const categoryH = (v.category||'').toLowerCase();
   const objectsH  = (v.objects||'').toLowerCase();
+  const locationH = (v.location||'').toLowerCase();
 
   if(terms.every(t=>titleH.includes(t)))    return null; // obvious from card title
   if(terms.every(t=>categoryH.includes(t))) return 'CATEGORY: '+v.category.toUpperCase();
+  if(terms.every(t=>locationH.includes(t))) return 'LOCATION: '+v.location.toUpperCase();
 
   // find which specific tags matched
   const matchedTags = (v.objects||'').split(',')
@@ -4816,6 +4822,7 @@ heroCassette.addEventListener('animationend', function() {
   }
 
   function startScreensaver() {
+    return; // Disabled site-wide — remove this line to re-enable.
     if (ssOn || document.getElementById('lb').classList.contains('open')) return;
     // Never kick in on an arcade page — mid-game pauses (reading an intro screen,
     // waiting for the next mole) are long enough to hit the old 60s timer, and having
