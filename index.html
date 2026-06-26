@@ -814,7 +814,7 @@ body.rec-open { overflow-y: auto; }
 .cats-home-btn {
   background: none; border: none;
   cursor: pointer; padding: 0;
-  display: flex; align-items: flex-start; gap: 9px;
+  display: flex; align-items: flex-start; gap: 4.5px;
   -webkit-tap-highlight-color: transparent;
   opacity: 0.88;
   transition: opacity 0.15s;
@@ -905,15 +905,14 @@ body.rec-open { overflow-y: auto; }
   transition: transform 0.15s;
 }
 .ctile:active { transform: scale(0.97); }
-/* Photo nudges out of place, then drifts back — rests most of the cycle, rather
-   than a continuous back-and-forth wobble. Per-tile --shift-x/--shift-y/--wig/
-   --wig-delay (set inline in renderCats()) keep tiles from moving in unison. Lives
-   on .ctile-photo (not .ctile) so it doesn't fight the tap-press scale on
-   .ctile:active. */
+/* Continuous small lean side to side — like a photo print rocking slightly in its
+   polaroid frame. Small angle, no translate (that read as "floaty" rather than a
+   lean). Per-tile --wig/--wig-delay (set inline in renderCats()) keep tiles from
+   swaying in unison. Lives on .ctile-photo (not .ctile) so it doesn't fight the
+   tap-press scale on .ctile:active. */
 @keyframes ctile-wiggle {
-  0%, 62% { transform: translate(0,0) rotate(0deg); }
-  78% { transform: translate(var(--shift-x, 3px), var(--shift-y, -2px)) rotate(var(--wig, 1.2deg)); }
-  100% { transform: translate(0,0) rotate(0deg); }
+  0%, 100% { transform: rotate(calc(var(--wig, 1.2deg) * -1)); }
+  50% { transform: rotate(var(--wig, 1.2deg)); }
 }
 .ctile-photo {
   position: relative;
@@ -2190,9 +2189,10 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
 #shake-close svg { width: 22px; height: 22px; }
 #shake-tape-img {
   width: 190px; height: auto;
-  border: 2px solid rgba(255,255,255,0.92);
+  border: 2px solid transparent;
   animation: sh-wobble 0.2s ease-in-out infinite;
 }
+#shake-tape-img.revealed { border-color: rgba(255,255,255,0.92); }
 @keyframes sh-wobble {
   0%,100% { transform: rotate(-10deg) scale(1.04); }
   50%     { transform: rotate(10deg) scale(0.97); }
@@ -2201,9 +2201,10 @@ body.on-match #back-top, body.on-space #back-top { display: none; }
   font-family: 'VCR', monospace;
   color: rgba(242,239,232,0.88); font-size: 13px; letter-spacing: 3px;
   margin-top: 30px; text-align: center; padding: 0 20px;
-  /* Slowed down + shares its duration with "TAP TO WATCH"/"SHUFFLE AGAIN" below it
-     (both set to the same 2s in triggerShakeTape()) so they blink in sync. */
-  animation: ss-blink 2s step-end infinite;
+  /* No animation set here on purpose — started via JS in triggerShakeTape() at the
+     exact same moment as "TAP TO WATCH"'s, so both begin their cycle in phase.
+     Setting it here unconditionally let it start (and drift out of sync) as soon as
+     "LOADING..." first appeared, well before "TAP TO WATCH" even existed. */
 }
 
 /* ══════════════════════════════════════
@@ -2324,13 +2325,11 @@ body.on-match .mobe-face-img {
   width: 116px; height: 116px;
   display: flex; align-items: center; justify-content: center;
   position: relative;
-  border-radius: 50%;
-  /* Background glow behind the character — white near the center fading through
-     their own signature color (set inline via --char-color in updateCharPreview()),
-     so each pilot pops against the dark backdrop instead of floating plain. */
-  background: radial-gradient(circle, white 0%, var(--char-color, transparent) 42%, transparent 72%);
-  box-shadow: 0 0 26px 2px var(--char-color, transparent);
-  transition: box-shadow 0.25s;
+  /* Soft ambient glow behind the character, not a solid badge/disc — faded and
+     fairly tight to the character rather than spreading far out. --char-glow (set
+     inline in updateCharPreview()) is their signature color at low alpha, so it
+     reads as a hint of color in the dark rather than a hard-edged shape. */
+  background: radial-gradient(circle, var(--char-glow, transparent) 0%, transparent 55%);
 }
 #char-preview-name {
   font-family: 'Bebas Neue', cursive; font-size: 28px;
@@ -3703,15 +3702,11 @@ function renderCats() {
     tile.onclick=()=>openCat(cat);
     const color = CC[cat]||'#151f2e';
     const imgSrc = CAT_THUMBS[cat] || videoThumbs[cat] || '';
-    const wig = (1 + Math.random() * 1.4).toFixed(2);         // 1–2.4deg
+    const wig = (0.8 + Math.random() * 0.8).toFixed(2);       // 0.8–1.6deg
     const wigDelay = (Math.random() * 4).toFixed(2);          // 0–4s, desyncs tiles
     const wigDur = (5 + Math.random() * 2.5).toFixed(2);      // 5–7.5s
-    const shiftAng = Math.random() * Math.PI * 2;
-    const shiftDist = 3 + Math.random() * 3;                  // 3–6px nudge
-    const shiftX = (Math.cos(shiftAng) * shiftDist).toFixed(2);
-    const shiftY = (Math.sin(shiftAng) * shiftDist).toFixed(2);
     tile.innerHTML=`
-      <div class="ctile-photo" style="--wig:${wig}deg;--wig-delay:${wigDelay}s;--wig-dur:${wigDur}s;--shift-x:${shiftX}px;--shift-y:${shiftY}px">
+      <div class="ctile-photo" style="--wig:${wig}deg;--wig-delay:${wigDelay}s;--wig-dur:${wigDur}s">
         <div class="ctile-color" style="background:${color}"></div>
         ${imgSrc?`<img class="ctile-img" src="${imgSrc}" loading="lazy" decoding="async" alt="" onerror="this.style.display='none'">`:''}
       </div>
@@ -5169,7 +5164,10 @@ window.closeShakeOverlay = function() {
   const tapeImg = document.getElementById('shake-tape-img');
   tapeImg.style.animation = 'sh-wobble 0.2s ease-in-out infinite';
   tapeImg.src = 'Untitled_Artwork.png'; // reset back to the tape icon for next time
-  document.getElementById('shake-msg').textContent = 'LOADING MYSTERY TAPE...';
+  tapeImg.classList.remove('revealed');
+  const shakeMsgEl = document.getElementById('shake-msg');
+  shakeMsgEl.textContent = 'LOADING MYSTERY TAPE...';
+  shakeMsgEl.style.animation = 'none';
   nav('home');
 };
 
@@ -5187,17 +5185,26 @@ function triggerShakeTape() {
 
   const v = VIDEOS[Math.floor(Math.random() * VIDEOS.length)];
   msg.textContent = 'LOADING MYSTERY TAPE...';
+  msg.style.animation = 'none';
   img.src = 'Untitled_Artwork.png';
+  img.classList.remove('revealed');
   img.style.animation = 'sh-wobble 0.2s ease-in-out infinite';
   ov.onclick = null;
   ov.classList.add('on');
 
   setTimeout(() => {
-    // Tape icon morphs into the actual thumbnail once it's "chosen."
+    // Tape icon morphs into the actual thumbnail once it's "chosen" — outline only
+    // applies once revealed, not during the loading wobble.
     img.style.animation = 'none';
     img.src = v.thumb;
+    img.classList.add('revealed');
     img.onerror = () => { img.src = `https://img.youtube.com/vi/${v.video_id}/sddefault.jpg`; img.onerror = null; };
     msg.textContent = fmtTitle(v.title, v.year) + (v.year ? '  ·  ' + v.year : '');
+    // Both lines' blink animations are started here, in the same tick, with the same
+    // duration — that's what actually keeps them in phase. Setting #shake-msg's blink
+    // via CSS alone let it start (and drift out of phase) back when "LOADING..." first
+    // showed, well before this "TAP TO WATCH" line even existed.
+    msg.style.animation = 'ss-blink 2s step-end infinite';
     const tap = document.createElement('div');
     tap.style.cssText = 'font-family:VCR,monospace;font-size:15px;letter-spacing:3px;color:rgba(242,239,232,0.45);margin-top:14px;animation:ss-blink 2s step-end infinite';
     tap.textContent = 'TAP TO WATCH';
@@ -6302,7 +6309,7 @@ function updateCharPreview(i) {
   const name = document.getElementById('char-preview-name');
   if (face) {
     face.innerHTML = charFace(c, 'normal');
-    face.style.setProperty('--char-color', c.color);
+    face.style.setProperty('--char-glow', c.color + '55'); // ~33% alpha — faded, not solid
   }
   if (name) { name.textContent = c.name; name.style.color = c.color; name.style.textShadow = `0 0 12px ${c.color}88`; }
 }
