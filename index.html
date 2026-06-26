@@ -1783,29 +1783,28 @@ html, body { height: 100%; overflow: hidden; }
 }
 
 /* ── RECOMMENDATIONS DRAWER (mobile/tablet only) ── */
+/* display:none by default; toggled via .is-shown (JS-added, independent of the
+   transition) with .open (added a frame later) driving the actual animation — same
+   fix as #spot-overlay above. toggleRec()'s JS already decides desktop (inline
+   #memories tuck) vs touch/narrow (this true overlay), so no breakpoint-specific
+   override is needed here either. */
 #rec-drawer {
-  display: none; /* hidden on desktop */
+  display: none;
   position: fixed;
   inset: 0;
+  height: 100dvh;
   z-index: 8200;
   background: rgba(8,16,42,0.97);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   flex-direction: column;
   overflow: hidden;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
 }
-@media (max-width: 1023px), (max-width: 1400px) and (orientation: landscape) and (pointer: coarse) {
-  #rec-drawer {
-    display: flex;
-    transform: translateY(100%);
-    transition: transform 0.34s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    pointer-events: none;
-  }
-  #rec-drawer.open {
-    transform: translateY(0);
-    pointer-events: auto;
-  }
-}
+#rec-drawer.is-shown { display: flex; }
+#rec-drawer.open { opacity: 1; transform: translateY(0); }
 .rec-drawer-hdr {
   display: flex;
   align-items: center;
@@ -1954,6 +1953,10 @@ button.cats-search-wrap {
   .home-hero {
     padding: 8px 24px 14px;
     gap: 4px;
+    /* Design preference: shift up a bit so the logo-to-search transition sits closer
+       to true vertical center, instead of the whole block's centroid (pulled down by
+       the CTA buttons + icon row below the search bar). */
+    transform: translateY(-32px);
   }
   .hero-logo-wrap { width: min(60vh, 94vw, 460px); margin-bottom: -10%; }
   .hero-lower { gap: 6px; width: min(60vh, 94vw, 460px); }
@@ -1961,6 +1964,14 @@ button.cats-search-wrap {
   .hero-cta-btn { padding: 5px 6px; font-size: 12px; }
   .hero-icon-btn { width: 36px; height: 36px; }
   .hero-icon-btn svg { width: 20px; height: 20px; }
+}
+
+/* Tablet portrait (e.g. iPad) — same stacked hero as phone, shifted up a bit per the
+   same design preference as the landscape rule above, so the logo-to-search
+   transition sits closer to true vertical center. Scoped with min-width so phone
+   portrait (which already reads correctly) is untouched. */
+@media (min-width: 600px) and (max-width: 1400px) and (orientation: portrait) and (pointer: coarse) {
+  .home-hero { transform: translateY(-46px); }
 }
 
 @media (max-width: 599px) {
@@ -4056,7 +4067,7 @@ function nav(p) {
   const spot = document.getElementById('spot-overlay');
   if (spot && spot.classList.contains('open') && p !== 'home') closeSpot();
   const recDrawer = document.getElementById('rec-drawer');
-  if (recDrawer) recDrawer.classList.remove('open');
+  if (recDrawer) recDrawer.classList.remove('open', 'is-shown');
   const memoriesEl = document.getElementById('memories');
   if (memoriesEl) memoriesEl.classList.remove('open');
   document.getElementById('pg-home')?.classList.remove('rec-open');
@@ -4134,13 +4145,18 @@ function openRecDrawer() {
   const grid = document.getElementById('recDrawerGrid');
   grid.innerHTML = '';
   recommended(8).forEach((v, i, a) => grid.appendChild(vcard(v, a, i)));
-  document.getElementById('rec-drawer').classList.add('open');
+  const drawer = document.getElementById('rec-drawer');
+  drawer.classList.add('is-shown');
   document.body.style.overflow = 'hidden';
+  void drawer.offsetHeight; // commit display:flex before starting the transition
+  requestAnimationFrame(() => drawer.classList.add('open'));
   syncActivePageHeader();
 }
 function closeRecDrawer() {
-  document.getElementById('rec-drawer').classList.remove('open');
+  const drawer = document.getElementById('rec-drawer');
+  drawer.classList.remove('open');
   document.body.style.overflow = '';
+  setTimeout(() => drawer.classList.remove('is-shown'), 260);
   requestAnimationFrame(syncActivePageHeader);
 }
 
@@ -4190,7 +4206,7 @@ function prepHomeForNavigation() {
   if (spot && spot.classList.contains('open')) closeSpot();
   if(typeof closeHomeDrop === 'function') closeHomeDrop();
   document.getElementById('memories').classList.remove('open');
-  document.getElementById('rec-drawer').classList.remove('open');
+  document.getElementById('rec-drawer').classList.remove('open', 'is-shown');
   document.getElementById('pg-home').classList.remove('rec-open');
   document.body.classList.remove('rec-open');
   document.body.style.overflow = '';
