@@ -19,6 +19,9 @@
   --white: #f2efe8;
   --dim:   rgba(242,239,232,1);
   --line:  rgba(242,239,232,0.07);
+  --desktop-nav-width: min(calc(100vw - 32px), 920px);
+  --desktop-nav-pad: 10px 16px 8px;
+  --desktop-nav-slot: 96px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{
@@ -723,76 +726,22 @@ body.on-timeline #collage::after {
   gap: 8px;
   width: 100%;
 }
-/* Hero icon row — timeline / map / dice below CTA */
-.hero-icon-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-}
-.hero-icon-btn {
-  flex: 1;
-  min-width: 0;
-  height: 72px;
-  background: rgba(180,190,220,0.13);
-  border: 1px solid rgba(242,239,232,0.16);
-  border-radius: 12px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  -webkit-tap-highlight-color: transparent;
-  color: rgba(242,239,232,1);
-  box-shadow: 0 10px 24px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.08);
-  backdrop-filter: blur(24px) saturate(1.2);
-  -webkit-backdrop-filter: blur(24px) saturate(1.2);
-  transition: color 0.15s, transform 0.12s, border-color 0.15s, background 0.15s;
-}
-.hero-icon-btn:hover { color: rgba(242,239,232,1); border-color: rgba(242,239,232,0.28); }
-.hero-icon-btn:active { transform: scale(0.97); color: var(--white); background: rgba(180,190,220,0.20); }
-.hero-icon-btn svg { width: 24px; height: 24px; }
-.hero-icon-label {
-  font-family: 'VCR', monospace;
-  font-size: 9px;
-  letter-spacing: 1.4px;
-  line-height: 1;
-  color: rgba(242,239,232,0.72);
-  text-transform: uppercase;
-}
-.hero-section-title {
-  font-family: 'VCR', monospace;
-  font-size: 10px;
-  letter-spacing: 2px;
-  color: rgba(242,239,232,0.55);
-  text-transform: uppercase;
-  text-align: left;
-  padding: 2px 2px 0;
-}
-.home-desktop-nav {
-  display: none;
-}
 @media (min-width: 768px) and (pointer: fine) {
-  /* Compound selector (both classes live on the same element) so this beats
-     .cats-header-nav { width:100% } — without it the fixed nav stretched edge-to-edge
-     and never lined up with the inner-page nav column. Centered at the same 920px max
-     content width the rest of the site uses (body cap), with matching 16px gutters, so
-     the home nav's buttons sit in the exact same column as every page header's nav. */
-  .home-desktop-nav.cats-header-nav {
-    position: fixed;
-    top: 0;
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
-    width: min(calc(100vw - 32px), 920px);
-    z-index: 5;
-    display: flex;
-    padding: 10px 16px 8px;
+  /* One desktop header ruler for the whole main website. Home/Search used to have
+     their own header patterns, while Browse/Years/Map used page headers; that made
+     nav buttons appear to jump between different coordinate systems. */
+  .main-site-header {
+    width: var(--desktop-nav-width);
+    max-width: none;
+    padding: var(--desktop-nav-pad);
+    margin-left: auto;
+    margin-right: auto;
   }
-  #pg-home .hero-section-title,
-  #pg-home .hero-icon-row {
-    display: none;
+  .cats-header-nav .page-nav-btn:not(.is-search) {
+    width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+    justify-content: center;
   }
 }
 
@@ -1009,12 +958,19 @@ body.rec-open { overflow-y: auto; }
   z-index: 2;
   border-bottom: 1px solid rgba(242,239,232,0.08);
 }
+.main-site-header {
+  display: none;
+}
+@media (min-width: 768px) and (pointer: fine) {
+  .main-site-header {
+    display: flex;
+  }
+}
 .cats-header-nav {
-  display: flex;
+  display: grid;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-start;
+  grid-template-columns: repeat(4, var(--desktop-nav-slot)) minmax(12px, 1fr) var(--desktop-nav-slot);
   width: 100%;
 }
 .page-nav-btn {
@@ -1037,12 +993,15 @@ body.rec-open { overflow-y: auto; }
 }
 .page-nav-btn:hover { border-color: rgba(242,239,232,0.28); color: var(--white); }
 .page-nav-btn:active { transform: scale(0.97); background: rgba(180,190,220,0.16); }
-.page-nav-btn.is-search { margin-left: auto; }
+.page-nav-btn.is-search {
+  grid-column: 6;
+  margin-left: 0;
+  justify-content: center;
+  width: 100%;
+}
 .page-nav-btn.nav-sparkle-btn {
-  /* Matches the inner-page HOME button's rendered width (icon + "HOME" label) so the
-     buttons after it — Browse / Years / Places — sit at the exact same x on Home as on
-     every inner page, making the nav feel stationary across navigation. */
-  width: 77px;
+  /* Occupies the same first slot as the inner-page HOME button. */
+  width: 100%;
   padding: 0;
   justify-content: center;
   color: rgba(242,239,232,0.88);
@@ -2048,11 +2007,12 @@ html, body { height: 100%; overflow: hidden; }
 /* Scrollable pages each become their own scroll container. Arcade game screens are
    excluded because they manage scrolling inside their own panels/lists; letting the
    page itself scroll exposes Safari's under-page area during rubber-band gestures. */
-#pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active {
+#pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-search.active, #pg-shelf.active {
   height: 100dvh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
+  scrollbar-gutter: stable both-edges;
 }
 /* #pg-lobby.active kept on the legacy var(--app-vh) lock — arcade, untouched. */
 #pg-lobby.active {
@@ -2075,6 +2035,7 @@ html, body { height: 100%; overflow: hidden; }
 #pg-detail .cats-header,
 #pg-timeline .cats-header,
 #pg-map .cats-header,
+#pg-search .cats-header,
 #pg-shelf .cats-header {
   background: transparent;
   border-bottom: 0;
@@ -2094,7 +2055,7 @@ html, body { height: 100%; overflow: hidden; }
      1366px specifically when also landscape + coarse-pointer, so real desktop
      windows (pointer: fine) in that width range are unaffected. Width, not height,
      since iPad Pro 12.9" landscape is ~1024px tall — a height cutoff kept missing it. */
-  #pg-detail.active, #pg-timeline.active, #pg-shelf.active {
+  #pg-detail.active, #pg-timeline.active, #pg-search.active, #pg-shelf.active {
     padding-top: 0;
   }
   #pg-cats.active { padding-top: 0; }
@@ -2102,6 +2063,7 @@ html, body { height: 100%; overflow: hidden; }
   #pg-detail .cats-header,
   #pg-timeline .cats-header,
   #pg-map .cats-header,
+  #pg-search .cats-header,
   #pg-shelf .cats-header {
     display: none;
   }
@@ -2359,9 +2321,6 @@ button.cats-search-wrap {
   .hero-lower { gap: 6px; }
   .search-wrap { padding: 8px 12px; }
   .hero-cta-btn { padding: 9px 6px; font-size: 9px; letter-spacing: 1.2px; }
-  .hero-icon-btn { height: 52px; gap: 4px; }
-  .hero-icon-btn svg { width: 18px; height: 18px; }
-  .hero-icon-label { font-size: 7px; }
   .hero-season-wrap { top: -4px; }
 }
 
@@ -2392,21 +2351,26 @@ button.cats-search-wrap {
   .ctile-lbl { font-size: 17px; height: 52px; }
 }
 @media (min-width: 960px) {
+  :root { --desktop-nav-width: 920px; }
   body { max-width: 920px; margin: 0 auto; }
-  /* The body cap above centers the app at 920px, but it also caps the scrollable
-     pages (each is its own overflow-y:auto scroll container) — so their scrollbar
-     landed at the 920px box edge, ~200px in from the real screen edge on wide
-     monitors. Break those four scrollers out to the full viewport width so the
-     scrollbar rides the actual page edge, then re-center their contents back to 920px.
-     overflow-x:clip on html/body stops the full-bleed width from adding a horizontal
-     scrollbar. Home & arcade are untouched (they self-center within the body cap). */
+  /* Main website pages use one desktop page frame. The body remains capped for legacy
+     sizing, but each active main-site page breaks out to the viewport and then centers
+     its shared shell/content inside that frame. Arcade pages are intentionally excluded. */
   html, body { overflow-x: clip; }
-  #pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active {
+  #pg-home.active,
+  #pg-cats.active,
+  #pg-detail.active,
+  #pg-timeline.active,
+  #pg-map.active,
+  #pg-search.active,
+  #pg-shelf.active {
     width: 100vw;
     margin-left: calc(50% - 50vw);
   }
   #pg-cats.active > *, #pg-detail.active > *,
-  #pg-timeline.active > *, #pg-shelf.active > * {
+  #pg-timeline.active > *, #pg-search.active > *, #pg-shelf.active > *,
+  #pg-home.active > .main-site-header,
+  #pg-map.active > .main-site-header, #pg-map.active > .sub-page-title {
     max-width: 920px;
     margin-left: auto;
     margin-right: auto;
@@ -3603,32 +3567,34 @@ body.on-match .mobe-face-img {
       <circle cx="2.5" cy="15" r="0.8" opacity="0.28"/>
     </svg>
   </button>
-  <div class="home-desktop-nav cats-header-nav">
-    <button class="page-nav-btn nav-sparkle-btn" id="seasonBtn" onclick="toggleSeasonTheme()" aria-label="Surprise">
-      <svg id="seasonIcon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-        <path d="M12 2.5 L13.08 10.92 L21.5 12 L13.08 13.08 L12 21.5 L10.92 13.08 L2.5 12 L10.92 10.92 Z" opacity="0.95"/>
-        <path d="M19.5 4 L20.12 7.38 L23.5 8 L20.12 8.62 L19.5 12 L18.88 8.62 L15.5 8 L18.88 7.38 Z" opacity="0.6"/>
-        <circle cx="4.5" cy="18.5" r="1.3" opacity="0.45"/>
-        <circle cx="7" cy="21.5" r="0.85" opacity="0.3"/>
-        <circle cx="2.5" cy="15" r="0.8" opacity="0.28"/>
-      </svg>
-    </button>
-    <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-      <span>Browse</span>
-    </button>
-    <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
-      <span>Years</span>
-    </button>
-    <button class="page-nav-btn" onclick="nav('map')" aria-label="Places">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-      <span>Places</span>
-    </button>
-    <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-      <span>Search</span>
-    </button>
+  <div class="cats-header main-site-header">
+    <div class="cats-header-nav">
+      <button class="page-nav-btn nav-sparkle-btn" id="seasonBtn" onclick="toggleSeasonTheme()" aria-label="Surprise">
+        <svg id="seasonIcon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+          <path d="M12 2.5 L13.08 10.92 L21.5 12 L13.08 13.08 L12 21.5 L10.92 13.08 L2.5 12 L10.92 10.92 Z" opacity="0.95"/>
+          <path d="M19.5 4 L20.12 7.38 L23.5 8 L20.12 8.62 L19.5 12 L18.88 8.62 L15.5 8 L18.88 7.38 Z" opacity="0.6"/>
+          <circle cx="4.5" cy="18.5" r="1.3" opacity="0.45"/>
+          <circle cx="7" cy="21.5" r="0.85" opacity="0.3"/>
+          <circle cx="2.5" cy="15" r="0.8" opacity="0.28"/>
+        </svg>
+      </button>
+      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        <span>Browse</span>
+      </button>
+      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
+        <span>Years</span>
+      </button>
+      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+        <span>Places</span>
+      </button>
+      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+        <span>Search</span>
+      </button>
+    </div>
   </div>
   <div class="home-hero">
     <!-- Anchor pattern: hero-above and hero-below both get flex:1, so whatever's left
@@ -3664,21 +3630,6 @@ body.on-match .mobe-face-img {
           <button class="hero-cta-btn" id="recBtn" onclick="toggleRec()">WATCH RECOMMENDED</button>
           <button class="hero-cta-btn" onclick="navToCats()">BROWSE CATEGORIES</button>
         </div>
-        <!-- hero-section-title removed -->
-        <div class="hero-icon-row">
-          <button class="hero-icon-btn" onclick="nav('timeline')" aria-label="Years">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.8"/><circle cx="7" cy="12" r="1.8"/><circle cx="7" cy="18" r="1.8"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
-            <span class="hero-icon-label">Years</span>
-          </button>
-          <button class="hero-icon-btn" onclick="nav('map')" aria-label="Places">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polygon points="2 6 2 21 8 18 16 21 22 18 22 3 16 6 8 3 2 6"/><line x1="8" y1="3" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="21"/></svg>
-            <span class="hero-icon-label">Places</span>
-          </button>
-          <button class="hero-icon-btn" onclick="enableShake()" id="shakeBtn" aria-label="Shuffle">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><path d="M4 20 21 3"/><polyline points="21 16 21 21 16 21"/><path d="M4 4h3.5c1.8 0 3.1.8 4.1 2.4"/><path d="M14.5 17.8c.9 1.2 2.1 1.8 3.7 1.8H21"/></svg>
-            <span class="hero-icon-label">Shuffle</span>
-          </button>
-        </div>
         <div id="memories">
           <div class="season-header">
             <div class="season-label" id="seasonLabel">RECOMMENDED</div>
@@ -3692,7 +3643,7 @@ body.on-match .mobe-face-img {
 
 <!-- ── CATEGORIES ── -->
 <div id="pg-cats" class="page">
-  <div class="cats-header">
+  <div class="cats-header main-site-header">
     <div class="cats-header-nav">
       <button class="page-nav-btn" onclick="navHome()" aria-label="Home">
         <img src="home.png" class="nav-icon-img" alt="">
@@ -3722,7 +3673,7 @@ body.on-match .mobe-face-img {
 
 <!-- ── DETAIL ── -->
 <div id="pg-detail" class="page">
-  <div class="cats-header">
+  <div class="cats-header main-site-header">
     <div class="cats-header-nav">
       <button class="page-nav-btn" onclick="nav('home')" aria-label="Home">
         <img src="home.png" class="nav-icon-img" alt="">
@@ -3761,7 +3712,7 @@ body.on-match .mobe-face-img {
 
 <!-- ── TIMELINE ── -->
 <div id="pg-timeline" class="page">
-  <div class="cats-header">
+  <div class="cats-header main-site-header">
     <div class="cats-header-nav">
       <button class="page-nav-btn" onclick="nav('home')" aria-label="Home">
         <img src="home.png" class="nav-icon-img" alt="">
@@ -3797,7 +3748,7 @@ body.on-match .mobe-face-img {
 
 <!-- ── MAP ── -->
 <div id="pg-map" class="page">
-  <div class="cats-header">
+  <div class="cats-header main-site-header">
     <div class="cats-header-nav">
       <button class="page-nav-btn" onclick="nav('home')" aria-label="Home">
         <img src="home.png" class="nav-icon-img" alt="">
@@ -3834,7 +3785,7 @@ body.on-match .mobe-face-img {
 <!-- ── VHS SHELF ── -->
 <div id="pg-shelf" class="page">
   <div id="shelf-bg"></div>
-  <div class="cats-header">
+  <div class="cats-header main-site-header">
     <div class="cats-header-nav">
       <button class="page-nav-btn" onclick="nav('home')" aria-label="Home">
         <img src="home.png" class="nav-icon-img" alt="">
@@ -3863,6 +3814,30 @@ body.on-match .mobe-face-img {
 
 <!-- ── SEARCH ── -->
 <div id="pg-search" class="page">
+  <div class="cats-header main-site-header">
+    <div class="cats-header-nav">
+      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home">
+        <img src="home.png" class="nav-icon-img" alt="">
+        <span>Home</span>
+      </button>
+      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        <span>Browse</span>
+      </button>
+      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
+        <span>Years</span>
+      </button>
+      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+        <span>Places</span>
+      </button>
+      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+        <span>Search</span>
+      </button>
+    </div>
+  </div>
   <div class="srch-top">
     <button class="srch-logo-btn" onclick="nav('home')" aria-label="Home">
       <img src="Title.png" class="srch-logo-img" alt="MOBERINO">
