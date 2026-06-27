@@ -22,7 +22,11 @@
       "Bash(swift ocr_vision.swift \"$\\(pwd\\)/thumbnails/7zg2qq4mBo8.jpg\")",
       "Bash(swiftc -O -o ocr_vision ocr_vision.swift)",
       "Bash(./ocr_vision \"$\\(pwd\\)/thumbnails/7zg2qq4mBo8.jpg\")",
-      "Bash(./ocr_vision \"$\\(pwd\\)/thumbnails/7tH2ncn-lxU.jpg\")"
+      "Bash(./ocr_vision \"$\\(pwd\\)/thumbnails/7tH2ncn-lxU.jpg\")",
+      "Bash(python3 -m http.server 8765)",
+      "Bash(mkdir -p /Users/kevinseverino/Documents/moberino/.claude)",
+      "Bash(kill 60505)",
+      "mcp__Claude_Preview__preview_start"
     ]
   }
 }
