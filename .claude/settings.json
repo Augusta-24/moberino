@@ -107,7 +107,9 @@
       "Bash(pip3 show *)",
       "Bash(python3 -m playwright install webkit)",
       "Bash(python3 arcade_baseline.py before)",
-      "Bash(python3 -c \"from PIL import Image; print\\('PIL ok'\\)\")"
+      "Bash(python3 -c \"from PIL import Image; print\\('PIL ok'\\)\")",
+      "Bash(awk 'NR>=1790 && NR<=1815 && \\(/@media/ || /cats-home-icon/ || /cats-logo-img/ || /cats-header/\\)' /Users/kevinseverino/Documents/moberino/index.html)",
+      "Bash(awk -F: '$1>1780 && $1<1810')"
     ],
     "additionalDirectories": [
       "/tmp"

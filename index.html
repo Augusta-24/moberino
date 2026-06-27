@@ -848,12 +848,15 @@ body.rec-open { overflow-y: auto; }
    place it; height is the matching content-height fraction of the same width basis
    the logo wrap uses (min(175px,40vw)), so it scales together with the logo. */
 .cats-home-icon {
-  /* Title.png is now cropped tight to its visible glyphs (negligible ~1.3% margin
-     on each side), so this is essentially the logo's own rendered height/position —
-     no more compensating for a large baked-in transparent margin. */
-  width: min(31.9px, 7.3vw);
-  height: min(31.9px, 7.3vw);
-  margin-top: min(0.4px, 0.1vw);
+  /* Sized to ~1.48× the logo's rendered glyph height — the same icon:logo ratio the
+     (approved) mobile/tablet breakpoint uses (37px icon / 25px logo). The logo wrap
+     here is min(110px,38vw) wide and Title.png renders ~0.17× its width tall, so the
+     glyph height is 110×0.17 ≈ 18.7px → icon = 18.7×1.48 ≈ 27.7px. If you resize the
+     logo wrap again, scale this px cap by the same 0.252 of the new wrap width to keep
+     them matched (110×0.252 ≈ 27.7). */
+  width: min(27.7px, 9.56vw);
+  height: min(27.7px, 9.56vw);
+  margin-top: min(0.35px, 0.087vw);
   margin-left: 3px;
   flex-shrink: 0;
   color: rgba(242,239,232,1);
