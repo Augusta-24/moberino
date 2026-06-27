@@ -2219,46 +2219,6 @@ html, body { height: 100%; overflow: hidden; }
   z-index: 10;
   border-bottom: 0;
 }
-/* Scrolled main-site header shield: keep the shared nav glassy at the top,
-   but add a navy windshield only once page content is scrolling beneath it.
-   These page-specific selectors intentionally beat the earlier
-   `#pg-* .cats-header { background: transparent; backdrop-filter: none; }` rule. */
-body.main-scrolled #pg-cats .main-site-header,
-body.main-scrolled #pg-detail .main-site-header,
-body.main-scrolled #pg-timeline .main-site-header,
-body.main-scrolled #pg-search .main-site-header,
-body.main-scrolled #pg-shelf .main-site-header {
-  position: sticky;
-  isolation: isolate;
-  background: rgba(8,16,42,0.94);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.22);
-  transition: background 0.18s ease, box-shadow 0.18s ease, backdrop-filter 0.18s ease;
-}
-body.main-scrolled #pg-cats .main-site-header::before,
-body.main-scrolled #pg-detail .main-site-header::before,
-body.main-scrolled #pg-timeline .main-site-header::before,
-body.main-scrolled #pg-search .main-site-header::before,
-body.main-scrolled #pg-shelf .main-site-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100vw;
-  height: 100%;
-  z-index: -1;
-  pointer-events: none;
-  background: rgba(8,16,42,0.94);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-body.main-scrolled .main-site-header .page-nav-btn.active::before,
-body.main-scrolled .main-site-header .page-nav-btn.active::after {
-  /* Keep the active fog readable on top of the darker scrolled header shield. */
-  opacity: 0.62;
-}
 @media (max-width: 1023px), (max-width: 1400px) and (orientation: landscape) and (pointer: coarse) {
   /* The plain max-width:1023px alone misses tablet landscape — an iPad's landscape
      WIDTH (1024-1366px depending on model) clears it even though the layout below
@@ -2733,7 +2693,7 @@ button.cats-search-wrap {
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 49;
-  background: rgba(18,36,88,0.96);
+  background: rgba(18,36,88,0.90);
   border: none;
   border-bottom: 1px solid rgba(242,239,232,0.10);
   color: rgba(242,239,232,0.65);
@@ -5095,7 +5055,6 @@ function nav(p, opts = {}) {
     resetHomeViewport();
     const target = document.getElementById(targetPageId);
     if (target) target.scrollTop = 0;
-    if (window._updateBackTopBar) window._updateBackTopBar();
   };
   requestAnimationFrame(settleViewport);
   setTimeout(settleViewport, 120);
@@ -5710,18 +5669,10 @@ setTimeout(resetHomeViewport, 900);
     return (active && active.scrollTop > 0) ? active.scrollTop : window.scrollY;
   }
 
-  function shouldShieldMainHeader(active, scrollTop) {
-    if (!active || scrollTop <= 8) return false;
-    return ['pg-cats', 'pg-detail', 'pg-timeline', 'pg-search', 'pg-shelf'].includes(active.id);
-  }
-
   function updateBar() {
-    const active = document.querySelector('.page.active');
-    const scrollTop = getScrollTop();
-    const show = scrollTop > 80;
-    document.body.classList.toggle('main-scrolled', shouldShieldMainHeader(active, scrollTop));
+    const show = getScrollTop() > 80;
     if (show) {
-      const hdr = active ? active.querySelector('.cats-header') : null;
+      const hdr = document.querySelector('.page.active .cats-header');
       const bottom = hdr ? hdr.getBoundingClientRect().bottom : 0;
       bar.style.top = Math.max(0, bottom) + 'px';
     }
@@ -5737,7 +5688,6 @@ setTimeout(resetHomeViewport, 900);
   // Covers the general case (not just spotlight closing) — any keyboard open/close or
   // address-bar show/hide resizes the visual viewport without necessarily firing scroll.
   if (window.visualViewport) window.visualViewport.addEventListener('resize', updateBar);
-  updateBar();
 
   bar.onclick = function() {
     const active = document.querySelector('.page.active');
