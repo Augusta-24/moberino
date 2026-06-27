@@ -450,6 +450,12 @@ body.on-timeline #collage::after {
   position: relative;
   z-index: 1;
   text-align: center;
+  /* One shared width for the logo, search bar and button block so they always match
+     and stay centered (align-items:center above). 88vw leaves a comfortable gutter on
+     every phone width; the 560px cap keeps it from getting too wide (and a touch
+     smaller overall) on tablets/desktop. Tune side-padding by editing this one line —
+     each breakpoint just overrides --hero-w. */
+  --hero-w: min(88vw, 560px);
 }
 /* The anchor pattern: equal flex:1 on both sides of .hero-search means whatever
    vertical space is left over after the search bar's own height splits evenly above
@@ -480,7 +486,7 @@ body.on-timeline #collage::after {
    line up flush with the search bar/buttons with no horizontal shift. */
 .hero-logo-wrap {
   position: relative;
-  width: min(94vw, 640px);
+  width: var(--hero-w);
   /* Title.png is cropped tight to its visible glyphs (~1.3% margin each side) — this
      only needs to cancel that tiny residual. Written as max() of absolute units (not
      a plain %) because margin-bottom% resolves against the *containing block's*
@@ -500,7 +506,7 @@ body.on-timeline #collage::after {
    a sibling of .hero-above/.hero-below now, not nested, so it needs its own matching
    cap instead of inheriting one from a parent. */
 .hero-search {
-  width: min(94vw, 640px);
+  width: var(--hero-w);
   flex-shrink: 0;
 }
 .search-row {
@@ -605,7 +611,7 @@ body.on-timeline #collage::after {
   display: flex;
   flex-direction: column;
   gap: 9px;
-  width: min(94vw, 640px);
+  width: var(--hero-w);
 }
 
 /* Buttons row — each half width */
@@ -1982,10 +1988,12 @@ button.cats-search-wrap {
   .home-hero {
     padding: 8px 24px 14px;
     gap: 10px;
+    /* Short landscape screens: also cap by viewport HEIGHT so the stacked hero never
+       eats the whole screen, while keeping the same comfortable side gutter. */
+    --hero-w: min(56vh, 88vw, 410px);
   }
-  .hero-logo-wrap { width: min(60vh, 94vw, 460px); margin-bottom: max(-0.81vh, -1.26vw, -6.2px); }
-  .hero-search { width: min(60vh, 94vw, 460px); }
-  .hero-lower { gap: 6px; width: min(60vh, 94vw, 460px); }
+  .hero-logo-wrap { margin-bottom: max(-0.81vh, -1.26vw, -6.2px); }
+  .hero-lower { gap: 6px; }
   .search-wrap { padding: 8px 12px; }
   .hero-cta-btn { padding: 5px 6px; font-size: 12px; }
   .hero-icon-btn { width: 40.5px; height: 40.5px; }
@@ -2004,14 +2012,10 @@ button.cats-search-wrap {
   .tl-thumb { width: min(55vw, 220px); }
   .tl-more-tile { width: min(55vw, 220px); }
   .cats-dice-btn { width: 44px; }
-  /* Logo spans the same width as the search bar / buttons below, edges aligned.
-     (The old 120%-width edge-bleed was tuned for the heavily-padded
-     Title_without_tape.png; the tight-cropped Title.png used here would just clip
-     the real letters off both sides at 120%.) */
-  .hero-logo-wrap { width: calc(100vw - 16px); margin-bottom: -1.27vw; }
-  .hero-logo-text { width: 100%; }
-  .hero-search { width: calc(100vw - 16px); }
-  .hero-lower { width: calc(100vw - 16px); }
+  /* Logo/search/buttons all inherit --hero-w (min(88vw,560px) → 88vw on phones), so
+     they line up flush with each other AND keep a real ~6vw gutter on each side
+     instead of running to the edge. Only the logo's own margin-bottom is phone-tuned. */
+  .hero-logo-wrap { margin-bottom: -1.27vw; }
 }
 @media (min-width: 600px) {
   .vgrid { grid-template-columns: repeat(3, 1fr); }
