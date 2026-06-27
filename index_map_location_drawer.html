@@ -356,12 +356,12 @@ body.on-match::after, body.on-space::after { display: none; }
     display: flex;
     align-items: center;
     width: auto;
-    height: 64px;
-    max-height: 64px;
+    height: 58px;
+    max-height: 58px;
     transform: none;
     gap: 0;
     border: 1px solid rgba(242,239,232,0.14);
-    border-radius: 20px;
+    border-radius: 18px;
     background: rgba(8,16,42,0.78);
     box-shadow: 0 10px 26px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.04);
     backdrop-filter: blur(18px);
@@ -380,8 +380,8 @@ body.on-match::after, body.on-space::after { display: none; }
   .tab {
     min-width: 0;
     height: 100%;
-    padding: 7px 2px 6px;
-    font-size: 9px;
+    padding: 6px 2px 5px;
+    font-size: 8px;
     letter-spacing: 1px;
     border: none;
     border-radius: 0;
@@ -391,23 +391,23 @@ body.on-match::after, body.on-space::after { display: none; }
     -webkit-backdrop-filter: none;
   }
   .tab.on { background: rgba(255,255,255,0.08); }
-  .tab svg { width: 21px; height: 21px; }
-  .tab-line { width: 20px; }
+  .tab svg { width: 19px; height: 19px; }
+  .tab-line { width: 18px; }
   .cats-header-nav { display: none; }
   #pg-cats.active,
   #pg-detail.active,
   #pg-timeline.active,
   #pg-shelf.active {
-    padding-bottom: max(94px, env(safe-area-inset-bottom, 0px) + 88px);
+    padding-bottom: max(88px, env(safe-area-inset-bottom, 0px) + 82px);
   }
   #pg-map {
-    padding-bottom: max(86px, env(safe-area-inset-bottom, 0px) + 80px);
+    padding-bottom: max(80px, env(safe-area-inset-bottom, 0px) + 74px);
   }
   #pg-search {
-    padding-bottom: max(102px, env(safe-area-inset-bottom, 0px) + 96px);
+    padding-bottom: max(96px, env(safe-area-inset-bottom, 0px) + 90px);
   }
   #map-zoom-btns {
-    bottom: max(100px, env(safe-area-inset-bottom, 0px) + 94px);
+    bottom: max(94px, env(safe-area-inset-bottom, 0px) + 88px);
   }
 }
 
@@ -1900,13 +1900,12 @@ body.rec-open { overflow-y: auto; }
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 15px;
-  min-height: 112px;
+  gap: 10px;
   border: none;
   border-bottom: 1px solid rgba(242,239,232,0.08);
   background: transparent;
   color: rgba(242,239,232,0.92);
-  padding: 18px 8px;
+  padding: 10px 6px;
   text-align: left;
   font-family: 'VCR', monospace;
   cursor: pointer;
@@ -1915,61 +1914,27 @@ body.rec-open { overflow-y: auto; }
 .map-location-video-row:last-child { border-bottom: none; }
 .map-location-video-row:active { background: rgba(242,239,232,0.06); }
 .map-location-thumb {
-  flex: 0 0 104px;
-  width: 104px;
+  flex: 0 0 58px;
+  width: 58px;
   aspect-ratio: 16 / 9;
   object-fit: cover;
   background: rgba(242,239,232,0.08);
   border: 1px solid rgba(242,239,232,0.10);
-  border-radius: 8px;
+  border-radius: 5px;
 }
-.map-location-video-main {
-  min-width: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
+.map-location-video-main { min-width: 0; flex: 1; }
 .map-location-video-title {
-  font-size: 15px;
-  line-height: 1.18;
+  font-size: 11px;
+  line-height: 1.25;
   letter-spacing: 0.8px;
   color: rgba(242,239,232,0.95);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .map-location-video-meta {
-  margin-top: 8px;
-  font-size: 10px;
+  margin-top: 5px;
+  font-size: 8px;
   line-height: 1.25;
   letter-spacing: 1px;
   color: rgba(242,239,232,0.48);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Desktop map overlays: keep the controls/drawer visually inside the map viewport
-   even when the main site breaks the map page out of the legacy capped body width.
-   This avoids the side panel/Top Places control being clipped by the desktop shell
-   without resizing the map or moving the nav/header. */
-@media (min-width: 768px) and (pointer: fine) {
-  body.on-map #map-places-drawer {
-    position: fixed;
-    top: var(--map-overlay-top, 118px);
-    left: max(14px, calc((100vw - min(100vw, 920px)) / 2 + 14px));
-    width: min(360px, calc(100vw - 28px));
-    z-index: 120;
-  }
-  body.on-map #map-location-panel {
-    position: fixed;
-    top: var(--map-overlay-top, 118px);
-    right: max(14px, calc((100vw - min(100vw, 920px)) / 2 + 14px));
-    bottom: var(--map-overlay-bottom, 14px);
-    width: min(360px, calc(100vw - 28px));
-    z-index: 130;
-  }
 }
 
 /* Mobile: stretch the drawer edge-to-edge instead of capping at the
@@ -1986,11 +1951,11 @@ body.rec-open { overflow-y: auto; }
     top: auto;
     left: 10px;
     right: 10px;
-    bottom: max(35px, env(safe-area-inset-bottom, 0px) + 33px);
+    bottom: max(82px, env(safe-area-inset-bottom, 0px) + 74px);
     width: auto;
     max-height: min(58vh, 430px);
     border-radius: 18px 18px 16px 16px;
-    transform: translateY(calc(100% + 104px)) translateZ(0);
+    transform: translateY(calc(100% + 96px)) translateZ(0);
   }
   #map-location-panel.open {
     transform: translateY(0) translateZ(0);
@@ -2003,22 +1968,6 @@ body.rec-open { overflow-y: auto; }
   }
   #map-location-list {
     padding-bottom: 12px;
-  }
-  .map-location-video-row {
-    gap: 13px;
-    min-height: 102px;
-    padding: 17px 6px;
-  }
-  .map-location-thumb {
-    flex-basis: 94px;
-    width: 94px;
-  }
-  .map-location-video-title {
-    font-size: 14px;
-  }
-  .map-location-video-meta {
-    font-size: 9.5px;
-    margin-top: 7px;
   }
   #map-zoom-btns {
     right: 14px;
@@ -4980,8 +4929,8 @@ function initMap() {
     window._map = glMap = new maplibregl.Map({
       container: 'map-container',
       style: 'https://tiles.openfreemap.org/styles/dark',
-      center: [-73.411011, 40.821365],
-      zoom: 9.5,
+      center: [-73.3, 40.85],
+      zoom: 10,
       attributionControl: false
     });
 
@@ -4991,10 +4940,7 @@ function initMap() {
     // this page is open. Without it the canvas can get stuck rendering at a
     // stale size with the rest of the container left blank.
     if (window.ResizeObserver) {
-      new ResizeObserver(() => { if (glMap) glMap.resize(); updateMapOverlayVars(); }).observe(document.getElementById('map-container'));
-      window.addEventListener('resize', updateMapOverlayVars);
-      window.addEventListener('orientationchange', updateMapOverlayVars);
-      updateMapOverlayVars();
+      new ResizeObserver(() => glMap && glMap.resize()).observe(document.getElementById('map-container'));
     }
 
     glMap.on('load', () => {
@@ -5135,18 +5081,10 @@ function renderTopPlaces(groups) {
   });
   window._topPlaces = top;
 }
-function updateMapOverlayVars() {
-  const mapEl = document.getElementById('map-container');
-  if (!mapEl) return;
-  const r = mapEl.getBoundingClientRect();
-  document.documentElement.style.setProperty('--map-overlay-top', `${Math.max(14, Math.round(r.top + 14))}px`);
-  document.documentElement.style.setProperty('--map-overlay-bottom', `${Math.max(14, Math.round(window.innerHeight - r.bottom + 14))}px`);
-}
 function isMobileMapView() {
   return window.matchMedia('(max-width: 767px), (pointer: coarse) and (max-width: 1023px)').matches;
 }
 function getMapPanelOffset() {
-  updateMapOverlayVars();
   const mapEl = document.getElementById('map-container');
   if (!mapEl) return [0, 0];
   if (isMobileMapView()) return [0, -Math.round(mapEl.clientHeight * 0.18)];
@@ -5169,7 +5107,6 @@ function flyToPlace(i) {
   flyToMapGroup(g, true);
 }
 function toggleMapPlacesDrawer() {
-  updateMapOverlayVars();
   document.getElementById('map-places-drawer')?.classList.toggle('open');
 }
 function renderMapLocationPanel(g) {
@@ -5213,7 +5150,6 @@ function renderMapLocationPanel(g) {
   });
 }
 function openMapLocationPanel(g) {
-  updateMapOverlayVars();
   renderMapLocationPanel(g);
   document.getElementById('map-location-panel')?.classList.add('open');
 }
