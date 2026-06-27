@@ -827,7 +827,7 @@ body.rec-open { overflow-y: auto; }
 .cats-home-btn {
   background: none; border: none;
   cursor: pointer; padding: 0;
-  display: flex; align-items: flex-start; gap: 2.5px;
+  display: flex; align-items: flex-end; gap: 2.5px;
   -webkit-tap-highlight-color: transparent;
   opacity: 0.88;
   transition: opacity 0.15s;
@@ -854,7 +854,7 @@ body.rec-open { overflow-y: auto; }
 }
 .cats-logo-wrap {
   position: relative;
-  width: min(166px, 38vw);
+  width: min(110px, 38vw);
 }
 .cats-logo-img {
   width: 100%;
@@ -1799,8 +1799,8 @@ html, body { height: 100%; overflow: hidden; }
   }
   #pg-cats.active { padding-top: 4px; }
   .cats-header { height: 50px; padding: 0px 6px 0px; }
-  .cats-logo-wrap { width: auto; max-width: 58vw; }
-  .cats-logo-img { display: block; height: 38px; width: auto; }
+  .cats-logo-wrap { width: auto; max-width: 58vw; transform: translateY(-3px);}
+  .cats-logo-img { display: block; height: 25px; width: auto; }
   /* Logo height is fixed (not width-driven) at this breakpoint — recompute the
      home icon's match-the-glyph sizing off that same 38px basis. */
   .cats-home-icon { width: 37px; height: 37px; margin-top: 0.5px; }
