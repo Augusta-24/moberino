@@ -2356,8 +2356,8 @@ body.main-scrolled .main-site-header .page-nav-btn.active::after {
 body.theme-july4     #collage::after {
   background: repeating-linear-gradient(
     -28deg,
-    rgba(68,4,12,0.96) 0px, rgba(68,4,12,0.96) 44px,
-    rgba(4,14,68,0.96) 44px, rgba(4,14,68,0.96) 88px
+    rgba(68,4,12,0.92) 0px, rgba(68,4,12,0.92) 44px,
+    rgba(4,14,68,0.92) 44px, rgba(4,14,68,0.92) 88px
   );
 }
 body.theme-halloween #collage::after { background: rgba(52,18,0,0.90); }
@@ -5956,21 +5956,21 @@ buildDecadeBar();
         }
         ctx.closePath(); ctx.fill(); ctx.restore();
       }
-      const stars = Array.from({length: 52}, () => ({
+      const stars = Array.from({length: 60}, () => ({
         x: Math.random() * innerWidth, y: Math.random() * innerHeight,
         r: 5 + Math.random() * 7,
         vx: (Math.random() - 0.5) * 0.15, vy: -0.1 - Math.random() * 0.25,
         t: Math.random() * Math.PI * 2, // phase for twinkle
-        baseA: 0.28 + Math.random() * 0.34,
+        baseA: 0.35 + Math.random() * 0.45,
       }));
 
       const bursts = [];
       function addBurst() {
         const pal = PALETTES[Math.floor(Math.random() * PALETTES.length)];
-        const N = 58 + Math.floor(Math.random() * 24);
+        const N = 70 + Math.floor(Math.random() * 30);
         const cx = W * (0.08 + Math.random() * 0.84);
         const cy = H * (0.05 + Math.random() * 0.55);
-        const baseSpd = 3.1 + Math.random() * 2.8;
+        const baseSpd = 3.5 + Math.random() * 3.5;
         bursts.push({
           cx, cy,
           particles: Array.from({length: N}, (_, i) => {
@@ -6024,12 +6024,12 @@ buildDecadeBar();
             ctx.lineTo(b.cx + p.x, b.cy + p.y);
             ctx.strokeStyle = p.color;
             ctx.lineWidth = p.size * 0.7;
-            ctx.globalAlpha = alpha * 0.42;
+            ctx.globalAlpha = alpha * 0.6;
             ctx.stroke();
             ctx.beginPath();
             ctx.arc(b.cx + p.x, b.cy + p.y, p.size, 0, Math.PI * 2);
             ctx.fillStyle = p.color;
-            ctx.globalAlpha = alpha * 0.72;
+            ctx.globalAlpha = alpha;
             ctx.fill();
           });
         }
