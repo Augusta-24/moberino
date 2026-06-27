@@ -13,6 +13,10 @@
   font-family: 'VCR';
   src: url('VCR_OSD_MONO_1.001.ttf') format('truetype');
 }
+@font-face {
+  font-family: 'DuckTape';
+  src: url('Duck Tape.ttf') format('truetype');
+}
 :root {
   --navy:  #08102a;
   --navy2: #0c1836;
@@ -2388,18 +2392,46 @@ button.cats-search-wrap {
 .detail-back-link:active { color: rgba(242,239,232,1); }
 .detail-back-link svg { width: 18px; height: 18px; flex-shrink: 0; }
 .detail-cat-title {
-  font-family: 'Bebas Neue', cursive;
+  font-family: 'DuckTape', 'Bebas Neue', cursive;
   font-size: clamp(22px, 6vw, 36px);
   letter-spacing: 3px;
   color: #ffffff;
   text-shadow: 0 1px 10px rgba(0,0,0,0.5);
   line-height: 1.1;
 }
+.detail-cat-title:not(:empty)::after {
+  content: '';
+  display: block;
+  height: 2px;
+  margin-top: 10px;
+  background: linear-gradient(to right, rgba(242,239,232,0.9) 0%, rgba(242,239,232,0.28) 45%, rgba(242,239,232,0) 85%);
+}
 .sub-page-title {
   padding: 14px 16px 10px;
-  font-family: 'Bebas Neue', cursive;
+  font-family: 'DuckTape', 'Bebas Neue', cursive;
   font-size: 32px; letter-spacing: 5px;
-  color: rgba(242,239,232,1);
+  color: var(--white);
+  text-align: left;
+  display: block;
+  /* Explicit (non-auto) width sidesteps a flex quirk: in a flex-direction:column
+     container (e.g. #pg-map), setting margin-left/right:auto on a child disables
+     the default cross-axis stretch, so the title shrinks to its own text width
+     and then auto-centers as a small box instead of stretching to the shared
+     920px content column like it does on block-layout pages (Categories,
+     Timeline). Width:100% + border-box sizing gives every page the same
+     capped-and-centered 920px column, with text flush left inside it. */
+  width: 100%;
+  box-sizing: border-box;
+}
+/* Thin cinematic fade-out rule under each page title — solid at the left edge,
+   gone well before the title column's right edge. Lives on the title's own
+   (already 920px-capped) box, so it never reaches full viewport width. */
+.sub-page-title::after {
+  content: '';
+  display: block;
+  height: 2px;
+  margin-top: 10px;
+  background: linear-gradient(to right, rgba(242,239,232,0.9) 0%, rgba(242,239,232,0.28) 45%, rgba(242,239,232,0) 85%);
 }
 
 /* ══════════════════════════════════════
