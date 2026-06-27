@@ -815,7 +815,10 @@ body.rec-open { overflow-y: auto; }
 /* Cats page — same collage background as home, transition via JS */
 #pg-cats {
   min-height: 100dvh;
-  padding-top: 4px;
+  /* No padding-top: it sat ABOVE the sticky .cats-header, which parked the header at
+     y=4 and let the grid/collage peek through that gap at the very top. The header is
+     now flush at top:0; breathing room comes from the header's own padding + the
+     grid's padding below it. */
   padding-bottom: 40px;
   position: relative;
   z-index: 1;
@@ -1806,7 +1809,7 @@ html, body { height: 100%; overflow: hidden; }
   #pg-detail.active, #pg-timeline.active, #pg-shelf.active {
     padding-top: 0;
   }
-  #pg-cats.active { padding-top: 4px; }
+  #pg-cats.active { padding-top: 0; }
   .cats-header { height: 50px; padding: 0px 6px 0px; }
   .cats-logo-wrap { width: auto; max-width: 58vw; transform: translateY(-3px);}
   .cats-logo-img { display: block; height: 25px; width: auto; }
@@ -2027,6 +2030,24 @@ button.cats-search-wrap {
 }
 @media (min-width: 960px) {
   body { max-width: 920px; margin: 0 auto; }
+  /* The body cap above centers the app at 920px, but it also caps the scrollable
+     pages (each is its own overflow-y:auto scroll container) — so their scrollbar
+     landed at the 920px box edge, ~200px in from the real screen edge on wide
+     monitors. Break those four scrollers out to the full viewport width so the
+     scrollbar rides the actual page edge, then re-center their contents back to 920px.
+     overflow-x:clip on html/body stops the full-bleed width from adding a horizontal
+     scrollbar. Home & arcade are untouched (they self-center within the body cap). */
+  html, body { overflow-x: clip; }
+  #pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+  }
+  #pg-cats.active > *, #pg-detail.active > *,
+  #pg-timeline.active > *, #pg-shelf.active > * {
+    max-width: 920px;
+    margin-left: auto;
+    margin-right: auto;
+  }
   #hdr { max-width: 920px; left: 50%; transform: translateX(-50%); right: auto; width: 100%; }
   .vgrid { grid-template-columns: repeat(4, 1fr); }
   .cgrid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
