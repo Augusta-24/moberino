@@ -820,7 +820,7 @@ body.rec-open { overflow-y: auto; }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 2px 16px 2px;
+  padding: 5px 16px 5px;
   position: relative;
   z-index: 2;
 }
@@ -845,8 +845,8 @@ body.rec-open { overflow-y: auto; }
   /* Title.png is now cropped tight to its visible glyphs (negligible ~1.3% margin
      on each side), so this is essentially the logo's own rendered height/position —
      no more compensating for a large baked-in transparent margin. */
-  width: min(33.6px, 7.68vw);
-  height: min(33.6px, 7.68vw);
+  width: min(31.9px, 7.3vw);
+  height: min(31.9px, 7.3vw);
   margin-top: min(0.4px, 0.1vw);
   margin-left: 3px;
   flex-shrink: 0;
@@ -854,7 +854,7 @@ body.rec-open { overflow-y: auto; }
 }
 .cats-logo-wrap {
   position: relative;
-  width: min(175px, 40vw);
+  width: min(166px, 38vw);
 }
 .cats-logo-img {
   width: 100%;
@@ -1798,12 +1798,12 @@ html, body { height: 100%; overflow: hidden; }
     padding-top: 0;
   }
   #pg-cats.active { padding-top: 4px; }
-  .cats-header { height: 46px; padding: 0px 6px 0px; }
+  .cats-header { height: 50px; padding: 0px 6px 0px; }
   .cats-logo-wrap { width: auto; max-width: 58vw; }
-  .cats-logo-img { display: block; height: 40px; width: auto; }
+  .cats-logo-img { display: block; height: 38px; width: auto; }
   /* Logo height is fixed (not width-driven) at this breakpoint — recompute the
-     home icon's match-the-glyph sizing off that same 40px basis. */
-  .cats-home-icon { width: 39px; height: 39px; margin-top: 0.5px; }
+     home icon's match-the-glyph sizing off that same 38px basis. */
+  .cats-home-icon { width: 37px; height: 37px; margin-top: 0.5px; }
   .nav-icon-btn { width: 28px; }
   .nav-icon-btn svg { width: 18px; height: 18px; }
 }
@@ -2004,8 +2004,12 @@ button.cats-search-wrap {
   .tl-thumb { width: min(55vw, 220px); }
   .tl-more-tile { width: min(55vw, 220px); }
   .cats-dice-btn { width: 44px; }
-  .hero-logo-wrap { width: 100vw; margin-bottom: -1.27vw; transform: translate(-7px, 8px); }
-  .hero-logo-text { width: 120%; transform: translate(-6px, 3px); }
+  /* Logo spans the same width as the search bar / buttons below, edges aligned.
+     (The old 120%-width edge-bleed was tuned for the heavily-padded
+     Title_without_tape.png; the tight-cropped Title.png used here would just clip
+     the real letters off both sides at 120%.) */
+  .hero-logo-wrap { width: calc(100vw - 16px); margin-bottom: -1.27vw; }
+  .hero-logo-text { width: 100%; }
   .hero-search { width: calc(100vw - 16px); }
   .hero-lower { width: calc(100vw - 16px); }
 }
