@@ -318,7 +318,6 @@ body.on-match::after, body.on-space::after { display: none; }
 
 /* ── MOBILE TAB DOCK — desktop uses page headers instead ── */
 #tabs { display: none; }
-.tab-toggle { display: none; }
 .tab {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 4px;
@@ -363,20 +362,6 @@ body.on-match::after, body.on-space::after { display: none; }
     overflow: hidden;
     transition: width 0.25s ease, left 0.25s ease, right 0.25s ease, border-radius 0.25s ease;
   }
-  body.on-home #tabs {
-    right: auto;
-    width: 56px;
-    height: 56px;
-    max-height: 56px;
-    border-radius: 999px;
-  }
-  body.on-home.mobile-nav-open #tabs {
-    right: max(10px, env(safe-area-inset-right, 0px) + 8px);
-    width: auto;
-    height: 58px;
-    max-height: 58px;
-    border-radius: 18px;
-  }
   body.on-lobby #tabs,
   body.on-char #tabs,
   body.on-whack #tabs,
@@ -384,31 +369,7 @@ body.on-match::after, body.on-space::after { display: none; }
   body.on-space #tabs {
     display: none;
   }
-  .tab-toggle {
-    flex: 0 0 54px;
-    border: none;
-    border-radius: 0;
-    background: none;
-    box-shadow: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    color: rgba(242,239,232,0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .tab-toggle svg {
-    width: 24px;
-    height: 24px;
-    stroke-width: 1.8;
-  }
   #tabs .tab { display: flex; }
-  body.on-home #tabs .tab { display: none; }
-  body.on-home.mobile-nav-open #tabs .tab { display: flex; }
-  body:not(.on-home) .tab-toggle { display: none; }
-  body.on-home.mobile-nav-open .tab-toggle { display: none; }
   .tab {
     min-width: 0;
     height: 100%;
@@ -3961,13 +3922,6 @@ body.on-match .mobe-face-img {
 
 <!-- ── TAB BAR ── -->
 <nav id="tabs">
-  <button class="tab-toggle" onclick="toggleMobileNav(event)" aria-label="Open navigation">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round">
-      <path d="M4 7h16"/>
-      <path d="M4 12h16"/>
-      <path d="M4 17h16"/>
-    </svg>
-  </button>
   <button class="tab on" data-p="home" onclick="nav('home')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
     HOME<div class="tab-line"></div>
@@ -4704,12 +4658,49 @@ function resetHomeViewport() {
 }
 window.resetHomeViewport = resetHomeViewport;
 
-function toggleMobileNav(event) {
-  if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
-  document.body.classList.toggle('mobile-nav-open');
+const HASH_TO_PAGE = {
+  home: 'home',
+  browse: 'cats',
+  years: 'timeline',
+  places: 'map',
+  search: 'search',
+  shelf: 'shelf',
+  arcade: 'lobby'
+};
+const PAGE_TO_HASH = {
+  home: 'home',
+  cats: 'browse',
+  timeline: 'years',
+  map: 'places',
+  search: 'search',
+  shelf: 'shelf',
+  lobby: 'arcade'
+};
+let suppressHashNav = false;
+
+function pageFromHash(hash) {
+  const key = String(hash || '').replace(/^#/, '').trim().toLowerCase();
+  return HASH_TO_PAGE[key] || 'home';
 }
 
-function nav(p) {
+function syncHashForPage(p) {
+  const key = PAGE_TO_HASH[p];
+  if (!key) return;
+  const nextHash = `#${key}`;
+  if (window.location.hash === nextHash) return;
+  suppressHashNav = true;
+  window.location.hash = nextHash;
+  setTimeout(() => { suppressHashNav = false; }, 0);
+}
+
+function handleHashRoute() {
+  if (suppressHashNav) return;
+  nav(pageFromHash(window.location.hash), { skipHash: true });
+}
+
+function nav(p, opts = {}) {
+  if (!document.getElementById(`pg-${p}`)) p = 'home';
+  if (!opts.skipHash) syncHashForPage(p);
   const targetPageId = `pg-${p}`;
   const tabKey = p === 'detail' ? 'cats' : p;
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
@@ -4753,7 +4744,6 @@ function nav(p) {
   const hideGlobalHeader = showCollage || onCats || onDetail || onTL || onMap || onSearch || onShelf || isArcade;
   document.getElementById('collage').classList.toggle('hidden', !showCollage);
   document.getElementById('hdr').style.display = hideGlobalHeader ? 'none' : 'flex';
-  document.body.classList.toggle('mobile-nav-open', !onHome && !isArcade);
   document.body.classList.toggle('on-home', onHome);
   document.body.classList.toggle('on-detail', onDetail);
   document.body.classList.toggle('on-timeline', onTL);
@@ -4894,6 +4884,9 @@ function navHome() {
   const pgHome = document.getElementById('pg-home');
   pgHome.animate?.([{ opacity: 0.7 }, { opacity: 1 }], { duration: 140, easing: 'ease-out' });
 }
+
+window.addEventListener('hashchange', handleHashRoute);
+if (window.location.hash) handleHashRoute();
 
 // ── SPOTLIGHT SEARCH ──
 // #spot-overlay is height:100dvh, which tracks the keyboard/dynamic toolbar natively —
