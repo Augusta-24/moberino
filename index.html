@@ -978,6 +978,8 @@ body.rec-open { overflow-y: auto; }
   width: 100%;
 }
 .page-nav-btn {
+  position: relative;
+  overflow: hidden;
   background: rgba(180,190,220,0.08);
   border: 1px solid rgba(242,239,232,0.12);
   border-radius: 999px;
@@ -997,6 +999,65 @@ body.rec-open { overflow-y: auto; }
 }
 .page-nav-btn:hover { border-color: rgba(242,239,232,0.28); color: var(--white); }
 .page-nav-btn:active { transform: scale(0.97); background: rgba(180,190,220,0.16); }
+/* Keep icon/label above the decorative fog layers added below. */
+.page-nav-btn > * { position: relative; z-index: 1; }
+/* Active-button smoke/fog fill — two blurred, independently-drifting layers of
+   radial gradients standing in for vapor, clipped to the pill by the button's
+   own overflow:hidden. Pseudo-elements so no new DOM/markup is needed. */
+.page-nav-btn.active {
+  background: rgba(180,190,220,0.16);
+  border-color: rgba(242,239,232,0.3);
+  color: var(--white);
+}
+.page-nav-btn.active::before,
+.page-nav-btn.active::after {
+  content: '';
+  /* inset:0 (not a negative/expanded inset) so this box exactly matches the
+     button's own rounded silhouette — an expanded box needs its own matching
+     border-radius math to avoid a visible rectangular edge peeking past the
+     pill's curve at the corners; inset:0 + border-radius:inherit sidesteps
+     that entirely since there's no offset to reconcile. */
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background-repeat: no-repeat;
+}
+.page-nav-btn.active::before {
+  background-image:
+    radial-gradient(circle at 30% 35%, rgba(255,255,255,0.46) 0%, transparent 42%),
+    radial-gradient(circle at 72% 60%, rgba(255,255,255,0.36) 0%, transparent 44%),
+    radial-gradient(circle at 50% 85%, rgba(255,255,255,0.28) 0%, transparent 46%);
+  background-size: 220% 220%;
+  background-position: 0% 0%;
+  filter: blur(4px);
+  opacity: 0.85;
+  animation: nav-fog-pan-a 7s ease-in-out infinite;
+}
+.page-nav-btn.active::after {
+  background-image: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.46) 0%, transparent 48%);
+  background-size: 200% 200%;
+  background-position: 100% 100%;
+  filter: blur(3px);
+  opacity: 0.55;
+  mix-blend-mode: screen;
+  animation: nav-fog-pan-b 5.5s ease-in-out infinite;
+}
+@keyframes nav-fog-pan-a {
+  0%, 100% { background-position: 10% 20%; }
+  50%      { background-position: 80% 70%; }
+}
+@keyframes nav-fog-pan-b {
+  0%, 100% { background-position: 90% 80%; }
+  50%      { background-position: 20% 30%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-nav-btn.active::before,
+  .page-nav-btn.active::after {
+    animation: none;
+  }
+}
 .page-nav-btn.is-search {
   grid-column: 6;
   margin-left: 0;
@@ -3719,19 +3780,19 @@ body.on-match .mobe-face-img {
           <circle cx="2.5" cy="15" r="0.8" opacity="0.28"/>
         </svg>
       </button>
-      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse">
+      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse" data-page="cats">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         <span>Browse</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years">
+      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years" data-page="timeline">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
         <span>Years</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places">
+      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places" data-page="map">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
         <span>Places</span>
       </button>
-      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search">
+      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search" data-page="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
         <span>Search</span>
       </button>
@@ -3786,23 +3847,23 @@ body.on-match .mobe-face-img {
 <div id="pg-cats" class="page">
   <div class="cats-header main-site-header">
     <div class="cats-header-nav">
-      <button class="page-nav-btn" onclick="navHome()" aria-label="Home">
+      <button class="page-nav-btn" onclick="navHome()" aria-label="Home" data-page="home">
         <img src="home.png" class="nav-icon-img" alt="">
         <span>Home</span>
       </button>
-      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse">
+      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse" data-page="cats">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         <span>Browse</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years">
+      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years" data-page="timeline">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
         <span>Years</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places">
+      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places" data-page="map">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
         <span>Places</span>
       </button>
-      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search">
+      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search" data-page="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
         <span>Search</span>
       </button>
@@ -3816,23 +3877,23 @@ body.on-match .mobe-face-img {
 <div id="pg-detail" class="page">
   <div class="cats-header main-site-header">
     <div class="cats-header-nav">
-      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home">
+      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home" data-page="home">
         <img src="home.png" class="nav-icon-img" alt="">
         <span>Home</span>
       </button>
-      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse">
+      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse" data-page="cats">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         <span>Browse</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years">
+      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years" data-page="timeline">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
         <span>Years</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places">
+      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places" data-page="map">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
         <span>Places</span>
       </button>
-      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search">
+      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search" data-page="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
         <span>Search</span>
       </button>
@@ -3855,23 +3916,23 @@ body.on-match .mobe-face-img {
 <div id="pg-timeline" class="page">
   <div class="cats-header main-site-header">
     <div class="cats-header-nav">
-      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home">
+      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home" data-page="home">
         <img src="home.png" class="nav-icon-img" alt="">
         <span>Home</span>
       </button>
-      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse">
+      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse" data-page="cats">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         <span>Browse</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years">
+      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years" data-page="timeline">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
         <span>Years</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places">
+      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places" data-page="map">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
         <span>Places</span>
       </button>
-      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search">
+      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search" data-page="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
         <span>Search</span>
       </button>
@@ -3891,23 +3952,23 @@ body.on-match .mobe-face-img {
 <div id="pg-map" class="page">
   <div class="cats-header main-site-header">
     <div class="cats-header-nav">
-      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home">
+      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home" data-page="home">
         <img src="home.png" class="nav-icon-img" alt="">
         <span>Home</span>
       </button>
-      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse">
+      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse" data-page="cats">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         <span>Browse</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years">
+      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years" data-page="timeline">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
         <span>Years</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places">
+      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places" data-page="map">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
         <span>Places</span>
       </button>
-      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search">
+      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search" data-page="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
         <span>Search</span>
       </button>
@@ -3936,23 +3997,23 @@ body.on-match .mobe-face-img {
   <div id="shelf-bg"></div>
   <div class="cats-header main-site-header">
     <div class="cats-header-nav">
-      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home">
+      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home" data-page="home">
         <img src="home.png" class="nav-icon-img" alt="">
         <span>Home</span>
       </button>
-      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse">
+      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse" data-page="cats">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         <span>Browse</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years">
+      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years" data-page="timeline">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
         <span>Years</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places">
+      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places" data-page="map">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
         <span>Places</span>
       </button>
-      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search">
+      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search" data-page="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
         <span>Search</span>
       </button>
@@ -3965,30 +4026,30 @@ body.on-match .mobe-face-img {
 <div id="pg-search" class="page">
   <div class="cats-header main-site-header">
     <div class="cats-header-nav">
-      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home">
+      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home" data-page="home">
         <img src="home.png" class="nav-icon-img" alt="">
         <span>Home</span>
       </button>
-      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse">
+      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse" data-page="cats">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         <span>Browse</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years">
+      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years" data-page="timeline">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
         <span>Years</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places">
+      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places" data-page="map">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
         <span>Places</span>
       </button>
-      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search">
+      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search" data-page="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
         <span>Search</span>
       </button>
     </div>
   </div>
   <div class="srch-top">
-    <button class="srch-logo-btn" onclick="nav('home')" aria-label="Home">
+    <button class="srch-logo-btn" onclick="nav('home')" aria-label="Home" data-page="home">
       <img src="Title.png" class="srch-logo-img" alt="MOBERINO">
     </button>
     <div class="srch-row">
@@ -4907,6 +4968,7 @@ function nav(p, opts = {}) {
   const tabKey = p === 'detail' ? 'cats' : p;
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('on',el.dataset.p===tabKey));
+  document.querySelectorAll('.page-nav-btn[data-page]').forEach(el=>el.classList.toggle('active', el.dataset.page===tabKey));
   document.getElementById(targetPageId)?.classList.add('active');
   window.scrollTo(0,0);
   if (document.activeElement && typeof document.activeElement.blur === 'function') {
@@ -5097,6 +5159,7 @@ if (window.location.hash) handleHashRoute();
 // frame later so the display change commits first).
 function openSpot() {
   const ov = document.getElementById('spot-overlay');
+  document.querySelectorAll('.page-nav-btn[data-page="search"]').forEach(el=>el.classList.add('active'));
   // Lock body scroll BEFORE focusing — otherwise iOS can scroll the underlying
   // home page into a weird position while bringing the focused input into view.
   document.body.style.overflow = 'hidden';
@@ -5113,6 +5176,7 @@ function openSpot() {
 }
 function closeSpot() {
   document.getElementById('spotQ').blur();
+  document.querySelectorAll('.page-nav-btn[data-page="search"]').forEach(el=>el.classList.remove('active'));
   const ov = document.getElementById('spot-overlay');
   ov.classList.remove('open');
   document.body.style.overflow = '';
