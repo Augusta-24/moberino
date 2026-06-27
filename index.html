@@ -41,14 +41,6 @@ body.on-home {
   padding-bottom: 0 !important;
   padding-bottom: 0;
 }
-/* Arcade pages are full-screen takeovers too — same reasoning as on-home. Without
-   this, body's reserved bottom-nav padding silently adds extra height past 100dvh,
-   which used to be masked by the (pointer:coarse)-only scroll lock and is now exposed
-   as a stray strip of body background on any pointer type. */
-body.on-lobby #bg, body.on-char #bg, body.on-whack #bg,
-body.on-match #bg,
-body.on-space #bg { display: none; }
-
 /* Neon arcade floor — even diamond grid, fills full viewport */
 body.on-lobby, body.on-char, body.on-whack, body.on-match, body.on-space {
   min-height: var(--app-vh, 100dvh);
@@ -232,22 +224,6 @@ body.arcade-selection-open #arcade-float { display: block; }
 body.arcade-selection-open .af-coin { opacity: 0.09; }
 body.arcade-selection-open .af-ticket { opacity: 0.075; }
 body.arcade-selection-open .af-pizza { opacity: 0.085; }
-
-/* ── FLOATING VHS ICONS ── */
-#bg {
-  position: fixed; inset: 0;
-  pointer-events: none; z-index: 0; overflow: hidden;
-}
-.bgi {
-  position: absolute;
-  color: rgba(242,239,232,0.025);
-  animation: drift linear infinite;
-}
-@keyframes drift {
-  0%   { transform: translateY(0)   rotate(0deg);  }
-  50%  { transform: translateY(-22px) rotate(4deg); }
-  100% { transform: translateY(0)   rotate(0deg);  }
-}
 
 /* ── PAGES ── */
 .page { display: none; position: relative; z-index: 1; }
@@ -596,6 +572,7 @@ body.on-timeline #collage::after {
 .nav-icon-btn:hover { color: rgba(242,239,232,1); }
 .nav-icon-btn:active { transform: scale(0.88); color: var(--white); }
 .nav-icon-btn svg { width: 22px; height: 22px; }
+.nav-icon-btn .nav-icon-img { width: 22px; height: 22px; object-fit: contain; }
 .search-wrap:focus-within { background: rgba(180,190,220,0.28); }
 .search-play-btn svg { width: 13px; height: 14px; }
 .search-wrap input {
@@ -808,6 +785,22 @@ body.rec-open { overflow-y: auto; }
   color: rgba(255,255,255,0.65);
   text-shadow: 0 1px 8px rgba(0,0,0,0.95), 0 0 2px rgba(0,0,0,0.8);
 }
+/* "Why recommended" tag — same green-phosphor VCR-OSD look as the screensaver's
+   "● MOBERINO" tag, scaled down to fit on a small card. */
+.vcard-rec-tag {
+  position: absolute;
+  top: 4px; left: 4px;
+  z-index: 4;
+  font-family: 'VCR', monospace;
+  font-size: clamp(8.5px, 2.4vw, 11.5px);
+  letter-spacing: 0.5px;
+  color: rgba(120,255,140,0.95);
+  background: rgba(0,0,0,0.82);
+  padding: 3px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  text-shadow: 0 0 4px rgba(0,255,80,0.5);
+}
 
 /* ══════════════════════════════════════
    CATEGORIES  (4-col grid)
@@ -851,18 +844,23 @@ body.rec-open { overflow-y: auto; }
    place it; height is the matching content-height fraction of the same width basis
    the logo wrap uses (min(175px,40vw)), so it scales together with the logo. */
 .cats-home-icon {
-  /* Sized to ~1.48× the logo's rendered glyph height — the same icon:logo ratio the
-     (approved) mobile/tablet breakpoint uses (37px icon / 25px logo). The logo wrap
-     here is min(110px,38vw) wide and Title.png renders ~0.17× its width tall, so the
-     glyph height is 110×0.17 ≈ 18.7px → icon = 18.7×1.48 ≈ 27.7px. If you resize the
-     logo wrap again, scale this px cap by the same 0.252 of the new wrap width to keep
-     them matched (110×0.252 ≈ 27.7). */
-  width: min(27.7px, 9.56vw);
-  height: min(27.7px, 9.56vw);
-  margin-top: min(0.35px, 0.087vw);
+  /* viewBox is cropped tight to the icon's actual drawn content (measured off an
+     isolated render: content spans 1.85-20.95 of the original 0-24 box), so the
+     visible house now fills ~91% of its own box — both top and bottom padding are
+     small and roughly equal, which is what actually matters for flex's bottom-edge
+     alignment (.cats-home-btn's align-items:flex-end aligns BOXES, not visible
+     content, so a lopsided fill — most of it concentrated at the top, like the old
+     77%-with-all-the-gap-at-the-bottom version — left the visible house floating
+     above the logo's baseline even when total heights matched). With ~91% fill, to
+     match the logo's visible glyph height (~18px against a 110px-wide logo wrap):
+     box = 18/0.91 ≈ 19.8px → ratio 19.8/110 ≈ 0.18 of the logo wrap width. If the
+     logo wrap is resized, scale this box by that same 0.18 ratio. */
+  width: min(19.8px, 6.83vw);
+  height: min(19.8px, 6.83vw);
+  margin-top: min(0.3px, 0.087vw);
   margin-left: 3px;
   flex-shrink: 0;
-  color: rgba(242,239,232,1);
+  color: #fff;
 }
 .cats-logo-wrap {
   position: relative;
@@ -1029,12 +1027,27 @@ body.rec-open { overflow-y: auto; }
   font-size: 10px; color: var(--dim); letter-spacing: 2px;
 }
 .srch-body { padding: 0 14px; }
-.vcard-match {
+/* "Why it matched" tags — one pill per field type (LOCATION/CATEGORY/TAG/DATE) that
+   contributed to a search hit, shown below the card. Plain/neutral styling (vs. the
+   green VCR-OSD "why recommended" tag on the photo itself) keeps the two distinct. */
+.vcard-tags {
+  display: flex; flex-wrap: wrap; gap: 3px;
+  padding: 3px 0 0;
+}
+.vcard-tag {
   font-family: 'VCR', monospace;
-  font-size: 8px; letter-spacing: 1.5px;
-  color: rgba(242,239,232,0.45);
-  padding: 2px 0 0;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 7px; letter-spacing: 0.5px;
+  color: rgba(242,239,232,0.7);
+  background: rgba(242,239,232,0.08);
+  border: 1px solid rgba(242,239,232,0.16);
+  padding: 2px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.vcard-tag b {
+  font-weight: 400;
+  color: rgba(242,239,232,0.4);
+  margin-right: 3px;
 }
 .no-results {
   text-align: center; padding: 80px 16px 120px;
@@ -1813,11 +1826,14 @@ html, body { height: 100%; overflow: hidden; }
   .cats-header { height: 50px; padding: 0px 6px 0px; }
   .cats-logo-wrap { width: auto; max-width: 58vw; transform: translateY(-3px);}
   .cats-logo-img { display: block; height: 25px; width: auto; }
-  /* Logo height is fixed (not width-driven) at this breakpoint — recompute the
-     home icon's match-the-glyph sizing off that same 38px basis. */
-  .cats-home-icon { width: 37px; height: 37px; margin-top: 0.5px; }
+  /* Logo height is fixed (not width-driven) at this breakpoint (25px) — the icon's
+     own house shape fills ~91% of its (now tightly-cropped) viewBox, so to match the
+     logo's ~97%-filled glyph height (25×0.972≈24.3px) the box needs to be
+     24.3/0.91 ≈ 26.7px. */
+  .cats-home-icon { width: 26.7px; height: 26.7px; margin-top: 0.4px; }
   .nav-icon-btn { width: 28px; }
   .nav-icon-btn svg { width: 18px; height: 18px; }
+  .nav-icon-btn .nav-icon-img { width: 18px; height: 18px; }
 }
 
 /* ── RECOMMENDATIONS DRAWER (mobile/tablet only) ── */
@@ -3214,14 +3230,6 @@ body.on-match .mobe-face-img {
   </defs>
 </svg>
 
-<!-- Floating BG -->
-<div id="bg">
-  <svg class="bgi" style="top:4%;left:6%;width:100px;animation-duration:19s;animation-delay:0s" viewBox="0 0 100 60" fill="currentColor"><rect x="4" y="4" width="92" height="52" rx="5" fill="none" stroke="currentColor" stroke-width="3.5"/><rect x="16" y="11" width="68" height="28" rx="2" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="32" cy="44" r="8" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="68" cy="44" r="8" fill="none" stroke="currentColor" stroke-width="2.5"/><line x1="40" y1="44" x2="60" y2="44" stroke="currentColor" stroke-width="2"/></svg>
-  <svg class="bgi" style="top:28%;left:72%;width:76px;animation-duration:24s;animation-delay:-7s" viewBox="0 0 100 60" fill="currentColor"><rect x="4" y="4" width="92" height="52" rx="5" fill="none" stroke="currentColor" stroke-width="3.5"/><rect x="16" y="11" width="68" height="28" rx="2" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="32" cy="44" r="8" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="68" cy="44" r="8" fill="none" stroke="currentColor" stroke-width="2.5"/><line x1="40" y1="44" x2="60" y2="44" stroke="currentColor" stroke-width="2"/></svg>
-  <svg class="bgi" style="top:62%;left:12%;width:88px;animation-duration:21s;animation-delay:-13s" viewBox="0 0 100 60" fill="currentColor"><rect x="4" y="4" width="92" height="52" rx="5" fill="none" stroke="currentColor" stroke-width="3.5"/><rect x="16" y="11" width="68" height="28" rx="2" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="32" cy="44" r="8" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="68" cy="44" r="8" fill="none" stroke="currentColor" stroke-width="2.5"/><line x1="40" y1="44" x2="60" y2="44" stroke="currentColor" stroke-width="2"/></svg>
-  <svg class="bgi" style="top:82%;left:55%;width:65px;animation-duration:17s;animation-delay:-4s" viewBox="0 0 100 60" fill="currentColor"><rect x="4" y="4" width="92" height="52" rx="5" fill="none" stroke="currentColor" stroke-width="3.5"/><rect x="16" y="11" width="68" height="28" rx="2" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="32" cy="44" r="8" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="68" cy="44" r="8" fill="none" stroke="currentColor" stroke-width="2.5"/><line x1="40" y1="44" x2="60" y2="44" stroke="currentColor" stroke-width="2"/></svg>
-</div>
-
 <!-- Header -->
 <div id="hdr">
   <svg width="28" height="17" viewBox="0 0 100 60" fill="none" opacity="0.75">
@@ -3307,12 +3315,14 @@ body.on-match .mobe-face-img {
 <div id="pg-cats" class="page">
   <div class="cats-header">
     <button class="cats-home-btn" onclick="navHome()" aria-label="Home">
-      <svg class="cats-home-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 3.1 2.5 11H5v9.5a1 1 0 0 0 1 1h4.5v-7h3v7H18a1 1 0 0 0 1-1V11h2.5z"/></svg>
       <div class="cats-logo-wrap">
         <img src="Title.png" class="cats-logo-img" alt="MOBERINO">
       </div>
     </button>
     <div style="display:flex;align-items:center">
+      <button class="nav-icon-btn" onclick="navHome()" aria-label="Home">
+        <img src="home.png" class="nav-icon-img" alt="">
+      </button>
       <button class="nav-icon-btn" onclick="openSpot()" aria-label="Search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
       </button>
@@ -3331,12 +3341,14 @@ body.on-match .mobe-face-img {
 <div id="pg-detail" class="page">
   <div class="cats-header">
     <button class="cats-home-btn" onclick="nav('home')" aria-label="Home">
-      <svg class="cats-home-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 3.1 2.5 11H5v9.5a1 1 0 0 0 1 1h4.5v-7h3v7H18a1 1 0 0 0 1-1V11h2.5z"/></svg>
       <div class="cats-logo-wrap">
         <img src="Title.png" class="cats-logo-img" alt="MOBERINO">
       </div>
     </button>
     <div style="display:flex;align-items:center">
+      <button class="nav-icon-btn" onclick="nav('home')" aria-label="Home">
+        <img src="home.png" class="nav-icon-img" alt="">
+      </button>
       <button class="nav-icon-btn" onclick="openSpot()" aria-label="Search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
       </button>
@@ -3365,12 +3377,14 @@ body.on-match .mobe-face-img {
 <div id="pg-timeline" class="page">
   <div class="cats-header">
     <button class="cats-home-btn" onclick="nav('home')" aria-label="Home">
-      <svg class="cats-home-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 3.1 2.5 11H5v9.5a1 1 0 0 0 1 1h4.5v-7h3v7H18a1 1 0 0 0 1-1V11h2.5z"/></svg>
       <div class="cats-logo-wrap">
         <img src="Title.png" class="cats-logo-img" alt="MOBERINO">
       </div>
     </button>
     <div style="display:flex;align-items:center">
+      <button class="nav-icon-btn" onclick="nav('home')" aria-label="Home">
+        <img src="home.png" class="nav-icon-img" alt="">
+      </button>
       <button class="nav-icon-btn" onclick="openSpot()" aria-label="Search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
       </button>
@@ -3396,12 +3410,14 @@ body.on-match .mobe-face-img {
 <div id="pg-map" class="page">
   <div class="cats-header">
     <button class="cats-home-btn" onclick="nav('home')" aria-label="Home">
-      <svg class="cats-home-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 3.1 2.5 11H5v9.5a1 1 0 0 0 1 1h4.5v-7h3v7H18a1 1 0 0 0 1-1V11h2.5z"/></svg>
       <div class="cats-logo-wrap">
         <img src="Title.png" class="cats-logo-img" alt="MOBERINO">
       </div>
     </button>
     <div style="display:flex;align-items:center">
+      <button class="nav-icon-btn" onclick="nav('home')" aria-label="Home">
+        <img src="home.png" class="nav-icon-img" alt="">
+      </button>
       <button class="nav-icon-btn" onclick="openSpot()" aria-label="Search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
       </button>
@@ -3428,7 +3444,6 @@ body.on-match .mobe-face-img {
   <div id="shelf-bg"></div>
   <div class="cats-header">
     <button class="cats-home-btn" onclick="nav('home')" aria-label="Home">
-      <svg class="cats-home-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 3.1 2.5 11H5v9.5a1 1 0 0 0 1 1h4.5v-7h3v7H18a1 1 0 0 0 1-1V11h2.5z"/></svg>
       <div class="cats-logo-wrap">
         <img src="Title.png" class="cats-logo-img" alt="MOBERINO">
       </div>
@@ -3564,13 +3579,55 @@ function season() {
   return {label:"FAMILY FAVORITES",terms:[]};
 }
 
+// A round-number anniversary (5, 10, 15... years ago) in the current month outranks
+// a plain "also happened this month" — returns the year-count or null.
+function milestoneYearsAgo(v) {
+  if (!v.year) return null;
+  const diff = new Date().getFullYear() - v.year;
+  return diff > 0 && diff % 5 === 0 ? diff : null;
+}
+
 function recommended(n) {
-  const {terms} = season();
-  let pool = terms.length
-    ? VIDEOS.filter(v=>{const h=(v.title+' '+v.category+' '+(v.objects||'')).toLowerCase();return terms.some(t=>h.includes(t));})
-    : [];
-  if(pool.length<4) pool=[...VIDEOS].sort(()=>Math.random()-0.5);
-  return pool.slice(0,n);
+  const curMonth = new Date().getMonth()+1;
+  const CATEGORY_CAP = 2; // so one event type (e.g. December's many Christmas videos) can't fill every slot
+  const picked = [];
+  const catCount = {};
+  const seen = new Set();
+  function tryAdd(v, reason, respectCap) {
+    if (seen.has(v.video_id)) return;
+    if (respectCap && (catCount[v.category||'']||0) >= CATEGORY_CAP) return;
+    picked.push({...v, _recReason: reason});
+    seen.add(v.video_id);
+    catCount[v.category||''] = (catCount[v.category||'']||0)+1;
+  }
+
+  const anniversaries = VIDEOS.filter(v=>v.month===curMonth && milestoneYearsAgo(v));
+  const thisMonth     = VIDEOS.filter(v=>v.month===curMonth && !milestoneYearsAgo(v));
+
+  // Pass 1: anniversaries first, then this-month, both respecting the per-category cap.
+  [...anniversaries].sort(()=>Math.random()-0.5).forEach(v=>{ if(picked.length<n) tryAdd(v, `${milestoneYearsAgo(v)} YEARS AGO`, true); });
+  [...thisMonth].sort(()=>Math.random()-0.5).forEach(v=>{ if(picked.length<n) tryAdd(v, 'THIS MONTH', true); });
+
+  // Pass 2: a thin month may not have enough variety to fill n while respecting the
+  // cap — relax it rather than leave the section sparse.
+  [...anniversaries, ...thisMonth].sort(()=>Math.random()-0.5).forEach(v=>{
+    if(picked.length<n) tryAdd(v, milestoneYearsAgo(v) ? `${milestoneYearsAgo(v)} YEARS AGO` : 'THIS MONTH', false);
+  });
+
+  // Pass 3/4: old keyword-text fallback, then pure random — only kicks in for
+  // months with almost no dated matches at all.
+  if(picked.length<4){
+    const {terms} = season();
+    if(terms.length){
+      const kw = VIDEOS.filter(v=>{const h=(v.title+' '+v.category+' '+(v.objects||'')).toLowerCase();return terms.some(t=>h.includes(t));});
+      [...kw].sort(()=>Math.random()-0.5).forEach(v=>{ if(picked.length<n) tryAdd(v, null, false); });
+    }
+  }
+  if(picked.length<4){
+    [...VIDEOS].sort(()=>Math.random()-0.5).forEach(v=>{ if(picked.length<n) tryAdd(v, null, false); });
+  }
+
+  return picked.slice(0,n);
 }
 
 // ── SEARCH ──
@@ -3589,6 +3646,23 @@ function locationMatches(locationH, t) {
   return locationH.includes(t) || new RegExp(`\\b${alt}\\b`, 'i').test(locationH);
 }
 
+// Relevance tier for a result against the query: title hit outranks an
+// address/location hit, which outranks category, then object tags, then a bare
+// year match — same priority order surfaced to the user as match tags below.
+function matchRank(v, terms) {
+  const titleH = v.title.toLowerCase();
+  if(terms.some(t=>titleH.includes(t))) return 0;
+  const locationH = (v.location||'').toLowerCase();
+  if(terms.some(t=>locationMatches(locationH, t))) return 1;
+  const categoryH = (v.category||'').toLowerCase();
+  if(terms.some(t=>categoryH.includes(t))) return 2;
+  const objectsArr = (v.objects||'').split(',').map(t=>t.trim().toLowerCase());
+  if(terms.some(t=>objectsArr.some(tag=>tag.includes(t)))) return 3;
+  const yearS = v.year ? String(v.year) : '';
+  if(terms.some(t=>t===yearS)) return 4;
+  return 5;
+}
+
 function search(q) {
   const terms = q.toLowerCase().trim().split(/\s+/).filter(Boolean);
   if(!terms.length) return [];
@@ -3596,26 +3670,36 @@ function search(q) {
     const h=`${v.title} ${v.category} ${v.year||''} ${v.objects||''}`.toLowerCase();
     const locationH = (v.location||'').toLowerCase();
     return terms.every(t=>h.includes(t) || locationMatches(locationH, t));
-  });
+  }).sort((a,b)=>matchRank(a,terms)-matchRank(b,terms));
 }
 
-function matchReason(v, q) {
+// Structured "why it matched" tags shown below a search result card — one tag per
+// field type that contributed a term the title text *doesn't already show*, so a
+// card never states the obvious. Several can appear together (e.g. a query that
+// hits both the location and an object tag).
+function matchTags(v, q) {
   const terms = q.toLowerCase().trim().split(/\s+/).filter(Boolean);
-  const titleH    = (v.title+' '+(v.year||'')).toLowerCase();
-  const categoryH = (v.category||'').toLowerCase();
-  const objectsH  = (v.objects||'').toLowerCase();
+  const titleH = v.title.toLowerCase();
+  const nonObvious = terms.filter(t=>!titleH.includes(t));
+  if(!nonObvious.length) return [];
+
+  const tags = [];
   const locationH = (v.location||'').toLowerCase();
+  if(v.location && nonObvious.some(t=>locationMatches(locationH, t))) {
+    tags.push({type:'LOCATION', text:v.location});
+  }
+  const categoryH = (v.category||'').toLowerCase();
+  if(v.category && nonObvious.some(t=>categoryH.includes(t))) {
+    tags.push({type:'CATEGORY', text:v.category});
+  }
+  const matchedObjects = (v.objects||'').split(',').map(t=>t.trim())
+    .filter(t=>nonObvious.some(term=>t.toLowerCase().includes(term)))
+    .map(t=>t.replace(/_/g,' '));
+  matchedObjects.slice(0,3).forEach(text=>tags.push({type:'TAG', text}));
+  const yearS = v.year ? String(v.year) : '';
+  if(yearS && nonObvious.some(t=>t===yearS)) tags.push({type:'DATE', text:yearS});
 
-  if(terms.every(t=>titleH.includes(t)))    return null; // obvious from card title
-  if(terms.every(t=>categoryH.includes(t))) return 'CATEGORY: '+v.category.toUpperCase();
-  if(terms.every(t=>locationMatches(locationH, t))) return 'LOCATION: '+v.location.toUpperCase();
-
-  // find which specific tags matched
-  const matchedTags = (v.objects||'').split(',')
-    .map(t=>t.trim()).filter(t=>terms.some(term=>t.includes(term)))
-    .map(t=>t.replace(/_/g,' ').toUpperCase());
-  if(matchedTags.length) return matchedTags.slice(0,3).join(' · ');
-  return null;
+  return tags;
 }
 
 // ── FORMAT TITLE ──
@@ -3628,7 +3712,7 @@ function fmtTitle(raw, year) {
 }
 
 // ── VIDEO CARD ──
-function vcard(v, playlist, idx, matchHint) {
+function vcard(v, playlist, idx, tags) {
   const el = document.createElement('div');
   el.className = 'vcard';
   el.onclick = () => openLB(playlist, idx);
@@ -3641,13 +3725,14 @@ function vcard(v, playlist, idx, matchHint) {
         onerror="this.src='https://img.youtube.com/vi/${v.video_id}/sddefault.jpg';this.onerror=null"
         loading="lazy" alt="">
       <div class="vcard-grad"></div>
+      ${v._recReason ? `<div class="vcard-rec-tag">● ${v._recReason}</div>` : ''}
       <div class="vcard-body">
         ${v.year ? `<div class="vcard-year">${v.year}</div>` : ''}
         <div class="vcard-title">${event}</div>
       </div>
     </div>
     <div class="vcard-lbl">${v.year ? v.year + ' · ' : ''}${event}</div>
-    ${matchHint ? `<div class="vcard-match">▸ ${matchHint}</div>` : ''}`;
+    ${tags && tags.length ? `<div class="vcard-tags">${tags.map(t=>`<span class="vcard-tag"><b>${t.type}</b>${t.text.toUpperCase()}</span>`).join('')}</div>` : ''}`;
   return el;
 }
 
@@ -4401,7 +4486,7 @@ document.getElementById('spotQ').addEventListener('input', e => {
   results.innerHTML = '';
   const g = document.createElement('div');
   g.className = 'vgrid';
-  vids.forEach((v,i,a) => g.appendChild(vcard(v,a,i)));
+  vids.forEach((v,i,a) => g.appendChild(vcard(v,a,i,matchTags(v,q))));
   results.appendChild(g);
 });
 document.addEventListener('keydown', e => { if(e.key === 'Escape') closeSpot(); });
@@ -4432,7 +4517,7 @@ function doSearch(q) {
   meta.textContent=`${res.length} RESULT${res.length!==1?'S':''} FOR "${q.toUpperCase()}"`;
   grid.innerHTML='';
   noRes.style.display=res.length?'none':'block';
-  res.forEach((v,i,a)=>grid.appendChild(vcard(v,a,i,matchReason(v,q))));
+  res.forEach((v,i,a)=>grid.appendChild(vcard(v,a,i,matchTags(v,q))));
 }
 
 // ── HOME SEARCH (submit to show results) ──
@@ -4485,7 +4570,7 @@ function doSearch(q) {
     if (hits.length) {
       const g = document.createElement('div');
       g.className = 'vgrid';
-      hits.forEach((v, i, a) => g.appendChild(vcard(v, a, i)));
+      hits.forEach((v, i, a) => g.appendChild(vcard(v, a, i, matchTags(v,q))));
       dropGrid.appendChild(g);
     }
     positionDrop();
