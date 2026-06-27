@@ -2243,7 +2243,7 @@ body.on-match .mobe-face-img {
 #char-scroll-wrap {
   position: relative;
   width: 100%;
-  height: min(280px, max(190px, calc(var(--app-vh, 100dvh) - 380px)));
+  height: min(280px, max(190px, calc(var(--app-vh, 100dvh) - 409px)));
   flex: 0 1 280px;
   overflow: hidden;
 }
@@ -2303,15 +2303,27 @@ body.on-match .mobe-face-img {
   min-height: 110px; width: 100%;
 }
 #char-preview-face {
-  width: 116px; height: 116px;
+  width: 145px; height: 145px;
   display: flex; align-items: center; justify-content: center;
   position: relative;
-  /* Soft ambient glow behind the character, not a solid badge/disc — fairly tight to
-     the character rather than spreading far out. --char-glow (set inline in
-     updateCharPreview()) is their signature color at ~50% alpha, so it reads as a
-     real glow rather than a hint or a hard-edged shape. */
-  background: radial-gradient(circle, var(--char-glow, transparent) 0%, transparent 55%);
-  box-shadow: 0 0 13px var(--char-glow, transparent);
+  /* Own stacking context so the glow ::before (z-index:-1) tucks behind the photo
+     without falling behind ancestor backgrounds too. */
+  isolation: isolate;
+}
+/* The glow is a radial gradient on a ::before BEHIND the photo (z-index:-1) — brightest
+   at the center (directly behind the character's head) and fading outward, so it reads
+   as a halo emanating from them and bleeding out past the head, not a ring around an
+   empty disc. (A box-shadow only glows at the element's edge, leaving a dark gap
+   between the head and the ring — that was the "dark circle" problem.) The gradient
+   reaches full transparency well inside its own bounds, so it stays soft and circular
+   with no hard square edge to clip. */
+#char-preview-face::before {
+  content: '';
+  position: absolute;
+  inset: -16%;
+  z-index: -1;
+  background: radial-gradient(circle, var(--char-glow, transparent) 0%, var(--char-glow, transparent) 15%, transparent 58%);
+  pointer-events: none;
 }
 #char-preview-name {
   font-family: 'Bebas Neue', cursive; font-size: 28px;
