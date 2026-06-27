@@ -13,19 +13,12 @@
   font-family: 'VCR';
   src: url('VCR_OSD_MONO_1.001.ttf') format('truetype');
 }
-@font-face {
-  font-family: 'DuckTape';
-  src: url('Duck Tape.ttf') format('truetype');
-}
 :root {
   --navy:  #08102a;
   --navy2: #0c1836;
   --white: #f2efe8;
   --dim:   rgba(242,239,232,1);
   --line:  rgba(242,239,232,0.07);
-  --desktop-nav-width: min(calc(100vw - 32px), 920px);
-  --desktop-nav-pad: 10px 16px 8px;
-  --desktop-nav-slot: 96px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{
@@ -325,6 +318,7 @@ body.on-match::after, body.on-space::after { display: none; }
 
 /* ── MOBILE TAB DOCK — desktop uses page headers instead ── */
 #tabs { display: none; }
+.tab-toggle { display: none; }
 .tab {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 4px;
@@ -354,20 +348,35 @@ body.on-match::after, body.on-space::after { display: none; }
     bottom: max(10px, env(safe-area-inset-bottom, 0px) + 8px);
     z-index: 7600;
     display: flex;
-    align-items: center;
     width: auto;
-    height: 64px;
-    max-height: 64px;
+    height: 58px;
+    max-height: 58px;
     transform: none;
-    gap: 0;
-    border: 1px solid rgba(242,239,232,0.14);
-    border-radius: 20px;
-    background: rgba(8,16,42,0.78);
-    box-shadow: 0 10px 26px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.04);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    overflow: hidden;
-    transition: width 0.25s ease, left 0.25s ease, right 0.25s ease, border-radius 0.25s ease;
+    gap: 6px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    overflow: visible;
+    transition: width 0.18s ease, left 0.18s ease, right 0.18s ease, transform 0.18s ease, border-radius 0.18s ease, background 0.18s ease;
+  }
+  body.on-home #tabs {
+    left: max(10px, env(safe-area-inset-left, 0px) + 8px);
+    right: auto;
+    width: 56px;
+    height: 56px;
+    max-height: 56px;
+    transform: none;
+  }
+  body.on-home.mobile-nav-open #tabs {
+    left: max(10px, env(safe-area-inset-left, 0px) + 8px);
+    right: max(10px, env(safe-area-inset-right, 0px) + 8px);
+    width: auto;
+    height: 58px;
+    max-height: 58px;
+    transform: none;
   }
   body.on-lobby #tabs,
   body.on-char #tabs,
@@ -376,38 +385,61 @@ body.on-match::after, body.on-space::after { display: none; }
   body.on-space #tabs {
     display: none;
   }
+  .tab-toggle {
+    flex: 0 0 54px;
+    border: 1px solid rgba(242,239,232,0.14);
+    border-radius: 999px;
+    background: rgba(8,16,42,0.72);
+    box-shadow: 0 10px 26px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.04);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    color: rgba(242,239,232,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tab-toggle svg {
+    width: 24px;
+    height: 24px;
+    stroke-width: 1.8;
+  }
   #tabs .tab { display: flex; }
+  body.on-home #tabs .tab { display: none; }
+  body.on-home.mobile-nav-open #tabs .tab { display: flex; }
+  body:not(.on-home) .tab-toggle { display: none; }
   .tab {
     min-width: 0;
-    height: 100%;
-    padding: 7px 2px 6px;
-    font-size: 9px;
+    height: 52px;
+    padding: 6px 2px 5px;
+    font-size: 8px;
     letter-spacing: 1px;
-    border: none;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    border: 1px solid rgba(242,239,232,0.14);
+    border-radius: 14px;
+    background: rgba(8,16,42,0.78);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.04);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
   }
-  .tab.on { background: rgba(255,255,255,0.08); }
-  .tab svg { width: 21px; height: 21px; }
-  .tab-line { width: 20px; }
+  .tab.on { background: rgba(18,28,58,0.86); border-color: rgba(242,239,232,0.24); }
+  .tab svg { width: 19px; height: 19px; }
+  .tab-line { width: 18px; }
   .cats-header-nav { display: none; }
   #pg-cats.active,
   #pg-detail.active,
   #pg-timeline.active,
   #pg-shelf.active {
-    padding-bottom: max(94px, env(safe-area-inset-bottom, 0px) + 88px);
+    padding-bottom: max(88px, env(safe-area-inset-bottom, 0px) + 82px);
   }
   #pg-map {
-    padding-bottom: max(86px, env(safe-area-inset-bottom, 0px) + 80px);
+    padding-bottom: max(80px, env(safe-area-inset-bottom, 0px) + 74px);
   }
   #pg-search {
-    padding-bottom: max(102px, env(safe-area-inset-bottom, 0px) + 96px);
+    padding-bottom: max(96px, env(safe-area-inset-bottom, 0px) + 90px);
   }
   #map-zoom-btns {
-    bottom: max(100px, env(safe-area-inset-bottom, 0px) + 94px);
+    bottom: max(94px, env(safe-area-inset-bottom, 0px) + 88px);
   }
 }
 
@@ -494,7 +526,7 @@ body.on-timeline #collage::after {
   align-items: center;
   flex: 1;
   min-height: 0;
-  gap: 10px;
+  gap: 18px;
   position: relative;
   z-index: 1;
   text-align: center;
@@ -542,7 +574,7 @@ body.on-timeline #collage::after {
      width, not this element's own (capped) width — at widths above the 640px cap
      that mismatch used to silently grow the overlap. Pre-multiplying each branch of
      the width formula by the padding ratio (1.27%) sidesteps that entirely. */
-  margin-bottom: 0;
+  margin-bottom: max(-1.19vw, -8.1px);
   pointer-events: none;
 }
 .hero-logo-text {
@@ -591,7 +623,6 @@ body.on-timeline #collage::after {
 .hero-search {
   width: var(--hero-w);
   flex-shrink: 0;
-  margin-top: 5px;
 }
 .search-row {
   display: flex;
@@ -612,11 +643,11 @@ body.on-timeline #collage::after {
   flex: 1;
   background: none; border: none; outline: none;
   font-family: 'VCR', 'Share Tech Mono', monospace;
-  font-size: 10px; letter-spacing: 1.2px;
+  font-size: 13px; letter-spacing: 2px;
   color: rgba(242,239,232,0.90);
   min-width: 0;
 }
-.home-search-input::placeholder { color: rgba(242,239,232,0.52); letter-spacing: 1px; }
+.home-search-input::placeholder { color: rgba(242,239,232,0.52); letter-spacing: 1.5px; }
 .home-search-input::-webkit-search-cancel-button { display: none; }
 /* Home search dropdown */
 #home-drop {
@@ -720,7 +751,7 @@ body.on-timeline #collage::after {
 .hero-lower {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   width: var(--hero-w);
 }
 
@@ -730,30 +761,77 @@ body.on-timeline #collage::after {
   gap: 8px;
   width: 100%;
 }
+/* Hero icon row — timeline / map / dice below CTA */
+.hero-icon-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.hero-icon-btn {
+  flex: 1;
+  min-width: 0;
+  height: 72px;
+  background: rgba(180,190,220,0.08);
+  border: 1px solid rgba(242,239,232,0.14);
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  -webkit-tap-highlight-color: transparent;
+  color: rgba(242,239,232,1);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.04);
+  transition: color 0.15s, transform 0.12s, border-color 0.15s, background 0.15s;
+}
+.hero-icon-btn:hover { color: rgba(242,239,232,1); border-color: rgba(242,239,232,0.28); }
+.hero-icon-btn:active { transform: scale(0.97); color: var(--white); background: rgba(180,190,220,0.16); }
+.hero-icon-btn svg { width: 24px; height: 24px; }
+.hero-icon-label {
+  font-family: 'VCR', monospace;
+  font-size: 9px;
+  letter-spacing: 1.4px;
+  line-height: 1;
+  color: rgba(242,239,232,0.72);
+  text-transform: uppercase;
+}
+.hero-section-title {
+  font-family: 'VCR', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: rgba(242,239,232,0.55);
+  text-transform: uppercase;
+  text-align: left;
+  padding: 2px 2px 0;
+}
+.home-desktop-nav {
+  display: none;
+}
 @media (min-width: 768px) and (pointer: fine) {
-  /* One desktop header ruler for the whole main website. Home/Search used to have
-     their own header patterns, while Browse/Years/Map used page headers; that made
-     nav buttons appear to jump between different coordinate systems. */
-  .main-site-header {
-    width: var(--desktop-nav-width);
-    max-width: none;
-    padding: var(--desktop-nav-pad);
-    margin-left: auto;
-    margin-right: auto;
+  .home-desktop-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: auto;
+    transform: none;
+    z-index: 5;
+    display: flex;
+    padding: 10px 16px 8px;
   }
-  .cats-header-nav .page-nav-btn:not(.is-search) {
-    width: 100%;
-    padding-left: 0;
-    padding-right: 0;
-    justify-content: center;
+  #pg-home .hero-section-title,
+  #pg-home .hero-icon-row {
+    display: none;
   }
 }
 
 /* CTA buttons — Apple-like glass, home-video typography */
 .hero-cta-btn {
   flex: 1;
-  background: rgba(180,190,220,0.13);
-  border: 1px solid rgba(242,239,232,0.16);
+  background: rgba(180,190,220,0.10);
+  border: 1px solid rgba(242,239,232,0.18);
   border-radius: 12px;
   padding: 13px 10px 12px;
   font-family: 'VCR', 'Share Tech Mono', monospace;
@@ -762,12 +840,12 @@ body.on-timeline #collage::after {
   color: rgba(242,239,232,0.9);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  box-shadow: 0 14px 32px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.08);
-  backdrop-filter: blur(24px) saturate(1.2);
-  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  box-shadow: 0 14px 32px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.06);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   transition: background 0.16s, transform 0.12s, border-color 0.16s, color 0.16s;
 }
-.hero-cta-btn:hover { color: var(--white); border-color: rgba(242,239,232,0.34); background: rgba(180,190,220,0.20); }
+.hero-cta-btn:hover { color: var(--white); border-color: rgba(242,239,232,0.34); background: rgba(180,190,220,0.16); }
 .hero-cta-btn:active  { transform: scale(0.98); border-color: rgba(242,239,232,0.44); }
 
 /* Play button inside search bar */
@@ -962,24 +1040,15 @@ body.rec-open { overflow-y: auto; }
   z-index: 2;
   border-bottom: 1px solid rgba(242,239,232,0.08);
 }
-.main-site-header {
-  display: none;
-}
-@media (min-width: 768px) and (pointer: fine) {
-  .main-site-header {
-    display: flex;
-  }
-}
 .cats-header-nav {
-  display: grid;
+  display: flex;
   align-items: center;
   gap: 8px;
-  grid-template-columns: repeat(4, var(--desktop-nav-slot)) minmax(12px, 1fr) var(--desktop-nav-slot);
+  flex-wrap: wrap;
+  justify-content: flex-start;
   width: 100%;
 }
 .page-nav-btn {
-  position: relative;
-  overflow: hidden;
   background: rgba(180,190,220,0.08);
   border: 1px solid rgba(242,239,232,0.12);
   border-radius: 999px;
@@ -999,74 +1068,9 @@ body.rec-open { overflow-y: auto; }
 }
 .page-nav-btn:hover { border-color: rgba(242,239,232,0.28); color: var(--white); }
 .page-nav-btn:active { transform: scale(0.97); background: rgba(180,190,220,0.16); }
-/* Keep icon/label above the decorative fog layers added below. */
-.page-nav-btn > * { position: relative; z-index: 1; }
-/* Active-button smoke/fog fill — two blurred, independently-drifting layers of
-   radial gradients standing in for vapor, clipped to the pill by the button's
-   own overflow:hidden. Pseudo-elements so no new DOM/markup is needed. */
-.page-nav-btn.active {
-  background: rgba(180,190,220,0.16);
-  border-color: rgba(242,239,232,0.3);
-  color: var(--white);
-}
-.page-nav-btn.active::before,
-.page-nav-btn.active::after {
-  content: '';
-  /* inset:0 (not a negative/expanded inset) so this box exactly matches the
-     button's own rounded silhouette — an expanded box needs its own matching
-     border-radius math to avoid a visible rectangular edge peeking past the
-     pill's curve at the corners; inset:0 + border-radius:inherit sidesteps
-     that entirely since there's no offset to reconcile. */
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  border-radius: inherit;
-  background-repeat: no-repeat;
-}
-.page-nav-btn.active::before {
-  background-image:
-    radial-gradient(circle at 30% 35%, rgba(255,255,255,0.46) 0%, transparent 42%),
-    radial-gradient(circle at 72% 60%, rgba(255,255,255,0.36) 0%, transparent 44%),
-    radial-gradient(circle at 50% 85%, rgba(255,255,255,0.28) 0%, transparent 46%);
-  background-size: 220% 220%;
-  background-position: 0% 0%;
-  filter: blur(4px);
-  opacity: 0.85;
-  animation: nav-fog-pan-a 7s ease-in-out infinite;
-}
-.page-nav-btn.active::after {
-  background-image: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.46) 0%, transparent 48%);
-  background-size: 200% 200%;
-  background-position: 100% 100%;
-  filter: blur(3px);
-  opacity: 0.55;
-  mix-blend-mode: screen;
-  animation: nav-fog-pan-b 5.5s ease-in-out infinite;
-}
-@keyframes nav-fog-pan-a {
-  0%, 100% { background-position: 10% 20%; }
-  50%      { background-position: 80% 70%; }
-}
-@keyframes nav-fog-pan-b {
-  0%, 100% { background-position: 90% 80%; }
-  50%      { background-position: 20% 30%; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .page-nav-btn.active::before,
-  .page-nav-btn.active::after {
-    animation: none;
-  }
-}
-.page-nav-btn.is-search {
-  grid-column: 6;
-  margin-left: 0;
-  justify-content: center;
-  width: 100%;
-}
+.page-nav-btn.is-search { margin-left: auto; }
 .page-nav-btn.nav-sparkle-btn {
-  /* Occupies the same first slot as the inner-page HOME button. */
-  width: 100%;
+  width: 48px;
   padding: 0;
   justify-content: center;
   color: rgba(242,239,232,0.88);
@@ -1686,14 +1690,6 @@ body.rec-open { overflow-y: auto; }
   min-height: 60dvh;
   position: relative;
 }
-/* Softer navy retint of the otherwise harsh black/white "dark" tile style —
-   grayscale tiles have no hue for hue-rotate alone to grab, so sepia() first
-   pushes them into a tinted (orange) range, then hue-rotate spins that tint
-   around to navy. Only targets the canvas maplibre paints into — markers,
-   popups, and zoom buttons are separate DOM elements and stay unaffected. */
-#map-container canvas.maplibregl-canvas {
-  filter: brightness(1.12) contrast(0.92) sepia(0.55) saturate(2.2) hue-rotate(185deg);
-}
 #map-zoom-btns {
   position: absolute;
   bottom: 24px; right: 14px;
@@ -1714,316 +1710,6 @@ body.rec-open { overflow-y: auto; }
   transition: background 0.15s;
 }
 #map-zoom-btns button:active { background: rgba(30,50,100,0.95); }
-
-/* Top-places drawer — slides up from the bottom edge of the map, overlaying
-   it rather than pushing #pg-map's locked 100svh/overflow:hidden height, so
-   the page's existing touch-lock/zoom behavior stays untouched. */
-#map-places-drawer {
-  position: absolute;
-  left: 14px; top: 14px;
-  z-index: 20;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  pointer-events: none;
-  width: min(360px, calc(100% - 28px));
-  /* Promotes this to its own compositing layer so it z-orders correctly
-     against the map canvas, which gets its own layer from the navy-tint
-     `filter` — without this, some browsers/GPU paths stack a plain
-     absolutely-positioned box under a filtered canvas despite z-index. */
-  transform: translateZ(0);
-  will-change: transform;
-}
-#map-places-tab {
-  align-self: flex-start;
-  pointer-events: auto;
-  display: flex; align-items: center; gap: 7px;
-  background: rgba(20,32,68,0.92);
-  border: 1px solid rgba(242,239,232,0.34);
-  border-radius: 999px;
-  padding: 9px 14px;
-  font-family: 'VCR', monospace;
-  font-size: 10px; letter-spacing: 1.6px;
-  color: rgba(242,239,232,0.96);
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 0 0 1px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08);
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s;
-}
-#map-places-tab:active { background: rgba(18,30,66,0.9); }
-.map-places-tab-chevron { font-size: 8px; transition: transform 0.22s ease; opacity: 0.7; }
-#map-places-drawer.open .map-places-tab-chevron { transform: rotate(180deg); }
-.map-places-tab-count {
-  background: rgba(242,239,232,0.16);
-  border-radius: 999px;
-  padding: 1px 7px;
-  font-size: 9px;
-}
-#map-places-list {
-  pointer-events: auto;
-  margin-top: 8px;
-  max-height: 0;
-  overflow: hidden;
-  border-radius: 14px;
-  background: rgba(8,16,42,0.88);
-  border: 1px solid rgba(242,239,232,0.16);
-  box-shadow: 0 12px 28px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.05);
-  transition: max-height 0.26s ease;
-}
-#map-places-drawer.open #map-places-list {
-  max-height: min(42vh, 360px);
-  overflow-y: auto;
-}
-.map-place-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  width: 100%;
-  background: none;
-  border: none;
-  border-bottom: 1px solid rgba(242,239,232,0.08);
-  padding: 11px 14px;
-  font-family: 'VCR', monospace;
-  color: rgba(242,239,232,0.92);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  text-align: left;
-}
-.map-place-row:last-child { border-bottom: none; }
-.map-place-row:active { background: rgba(242,239,232,0.06); }
-.map-place-name { font-size: 11px; letter-spacing: 1.2px; }
-.map-place-count {
-  flex-shrink: 0;
-  background: rgba(242,239,232,0.14);
-  border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 10px;
-}
-.map-place-text {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.map-place-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.map-place-subtitle {
-  font-size: 8px;
-  letter-spacing: 1px;
-  color: rgba(242,239,232,0.48);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Selected map location panel — custom replacement for full MapLibre popups. */
-#map-location-panel {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  bottom: 14px;
-  z-index: 30;
-  width: min(360px, calc(100% - 28px));
-  display: flex;
-  flex-direction: column;
-  pointer-events: auto;
-  background: rgba(8,16,42,0.92);
-  border: 1px solid rgba(242,239,232,0.18);
-  border-radius: 18px;
-  box-shadow: 0 18px 42px rgba(0,0,0,0.46), inset 0 1px 0 rgba(255,255,255,0.06);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  transform: translateX(calc(100% + 22px)) translateZ(0);
-  opacity: 0;
-  transition: transform 0.24s ease, opacity 0.18s ease;
-  overflow: hidden;
-  will-change: transform;
-}
-#map-location-panel.open {
-  transform: translateX(0) translateZ(0);
-  opacity: 1;
-}
-.map-location-panel-hdr {
-  flex-shrink: 0;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px 16px 12px;
-  border-bottom: 1px solid rgba(242,239,232,0.08);
-}
-.map-location-title-wrap { min-width: 0; flex: 1; }
-#map-location-title {
-  font-family: 'Bebas Neue', cursive;
-  font-size: 28px;
-  line-height: 0.95;
-  letter-spacing: 3px;
-  color: rgba(242,239,232,0.96);
-  overflow-wrap: anywhere;
-}
-#map-location-subtitle {
-  margin-top: 6px;
-  font-family: 'VCR', monospace;
-  font-size: 9px;
-  line-height: 1.35;
-  letter-spacing: 1.2px;
-  color: rgba(242,239,232,0.56);
-}
-.map-location-close {
-  flex-shrink: 0;
-  width: 30px;
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(242,239,232,0.18);
-  border-radius: 999px;
-  background: rgba(180,190,220,0.08);
-  color: rgba(242,239,232,0.84);
-  font-family: 'VCR', monospace;
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.map-location-close:active { background: rgba(180,190,220,0.16); color: var(--white); }
-#map-location-list {
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 8px 10px 14px;
-}
-.map-location-video-row {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  min-height: 112px;
-  border: none;
-  border-bottom: 1px solid rgba(242,239,232,0.08);
-  background: transparent;
-  color: rgba(242,239,232,0.92);
-  padding: 18px 8px;
-  text-align: left;
-  font-family: 'VCR', monospace;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.map-location-video-row:last-child { border-bottom: none; }
-.map-location-video-row:active { background: rgba(242,239,232,0.06); }
-.map-location-thumb {
-  flex: 0 0 104px;
-  width: 104px;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  background: rgba(242,239,232,0.08);
-  border: 1px solid rgba(242,239,232,0.10);
-  border-radius: 8px;
-}
-.map-location-video-main {
-  min-width: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-.map-location-video-title {
-  font-size: 15px;
-  line-height: 1.18;
-  letter-spacing: 0.8px;
-  color: rgba(242,239,232,0.95);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.map-location-video-meta {
-  margin-top: 8px;
-  font-size: 10px;
-  line-height: 1.25;
-  letter-spacing: 1px;
-  color: rgba(242,239,232,0.48);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Desktop map overlays: keep the controls/drawer visually inside the map viewport
-   even when the main site breaks the map page out of the legacy capped body width.
-   This avoids the side panel/Top Places control being clipped by the desktop shell
-   without resizing the map or moving the nav/header. */
-@media (min-width: 768px) and (pointer: fine) {
-  body.on-map #map-places-drawer {
-    position: fixed;
-    top: var(--map-overlay-top, 118px);
-    left: max(14px, calc((100vw - min(100vw, 920px)) / 2 + 14px));
-    width: min(360px, calc(100vw - 28px));
-    z-index: 120;
-  }
-  body.on-map #map-location-panel {
-    position: fixed;
-    top: var(--map-overlay-top, 118px);
-    right: max(14px, calc((100vw - min(100vw, 920px)) / 2 + 14px));
-    bottom: var(--map-overlay-bottom, 14px);
-    width: min(360px, calc(100vw - 28px));
-    z-index: 130;
-  }
-}
-
-/* Mobile: stretch the drawer edge-to-edge instead of capping at the
-   desktop 360px width — same top-left anchor, just wider on small screens. */
-@media (max-width: 767px), (pointer: coarse) and (max-width: 1023px) {
-  #map-places-drawer {
-    left: 14px; right: 14px; top: 14px;
-    width: auto;
-  }
-  #map-places-drawer.open #map-places-list {
-    max-height: 45vh;
-  }
-  #map-location-panel {
-    top: auto;
-    left: 10px;
-    right: 10px;
-    bottom: max(35px, env(safe-area-inset-bottom, 0px) + 33px);
-    width: auto;
-    max-height: min(58vh, 430px);
-    border-radius: 18px 18px 16px 16px;
-    transform: translateY(calc(100% + 104px)) translateZ(0);
-  }
-  #map-location-panel.open {
-    transform: translateY(0) translateZ(0);
-  }
-  .map-location-panel-hdr {
-    padding: 14px 14px 10px;
-  }
-  #map-location-title {
-    font-size: 24px;
-  }
-  #map-location-list {
-    padding-bottom: 12px;
-  }
-  .map-location-video-row {
-    gap: 13px;
-    min-height: 102px;
-    padding: 17px 6px;
-  }
-  .map-location-thumb {
-    flex-basis: 94px;
-    width: 94px;
-  }
-  .map-location-video-title {
-    font-size: 14px;
-  }
-  .map-location-video-meta {
-    font-size: 9.5px;
-    margin-top: 7px;
-  }
-  #map-zoom-btns {
-    right: 14px;
-  }
-}
 
 /* ══════════════════════════════════════
    VHS SHELF
@@ -2390,12 +2076,11 @@ html, body { height: 100%; overflow: hidden; }
 /* Scrollable pages each become their own scroll container. Arcade game screens are
    excluded because they manage scrolling inside their own panels/lists; letting the
    page itself scroll exposes Safari's under-page area during rubber-band gestures. */
-#pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-search.active, #pg-shelf.active {
+#pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active {
   height: 100dvh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
-  scrollbar-gutter: stable both-edges;
 }
 /* #pg-lobby.active kept on the legacy var(--app-vh) lock — arcade, untouched. */
 #pg-lobby.active {
@@ -2418,8 +2103,6 @@ html, body { height: 100%; overflow: hidden; }
 #pg-detail .cats-header,
 #pg-timeline .cats-header,
 #pg-map .cats-header,
-#pg-home .cats-header,
-#pg-search .cats-header,
 #pg-shelf .cats-header {
   background: transparent;
   border-bottom: 0;
@@ -2432,46 +2115,6 @@ html, body { height: 100%; overflow: hidden; }
   z-index: 10;
   border-bottom: 0;
 }
-/* Scrolled main-site header shield: keep the shared nav glassy at the top,
-   but add a navy windshield only once page content is scrolling beneath it.
-   These page-specific selectors intentionally beat the earlier
-   `#pg-* .cats-header { background: transparent; backdrop-filter: none; }` rule. */
-body.main-scrolled #pg-cats .main-site-header,
-body.main-scrolled #pg-detail .main-site-header,
-body.main-scrolled #pg-timeline .main-site-header,
-body.main-scrolled #pg-search .main-site-header,
-body.main-scrolled #pg-shelf .main-site-header {
-  position: sticky;
-  isolation: isolate;
-  background: rgba(8,16,42,0.94);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.22);
-  transition: background 0.18s ease, box-shadow 0.18s ease, backdrop-filter 0.18s ease;
-}
-body.main-scrolled #pg-cats .main-site-header::before,
-body.main-scrolled #pg-detail .main-site-header::before,
-body.main-scrolled #pg-timeline .main-site-header::before,
-body.main-scrolled #pg-search .main-site-header::before,
-body.main-scrolled #pg-shelf .main-site-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100vw;
-  height: 100%;
-  z-index: -1;
-  pointer-events: none;
-  background: rgba(8,16,42,0.94);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-body.main-scrolled .main-site-header .page-nav-btn.active::before,
-body.main-scrolled .main-site-header .page-nav-btn.active::after {
-  /* Keep the active fog readable on top of the darker scrolled header shield. */
-  opacity: 0.62;
-}
 @media (max-width: 1023px), (max-width: 1400px) and (orientation: landscape) and (pointer: coarse) {
   /* The plain max-width:1023px alone misses tablet landscape — an iPad's landscape
      WIDTH (1024-1366px depending on model) clears it even though the layout below
@@ -2479,7 +2122,7 @@ body.main-scrolled .main-site-header .page-nav-btn.active::after {
      1366px specifically when also landscape + coarse-pointer, so real desktop
      windows (pointer: fine) in that width range are unaffected. Width, not height,
      since iPad Pro 12.9" landscape is ~1024px tall — a height cutoff kept missing it. */
-  #pg-detail.active, #pg-timeline.active, #pg-search.active, #pg-shelf.active {
+  #pg-detail.active, #pg-timeline.active, #pg-shelf.active {
     padding-top: 0;
   }
   #pg-cats.active { padding-top: 0; }
@@ -2487,7 +2130,6 @@ body.main-scrolled .main-site-header .page-nav-btn.active::after {
   #pg-detail .cats-header,
   #pg-timeline .cats-header,
   #pg-map .cats-header,
-  #pg-search .cats-header,
   #pg-shelf .cats-header {
     display: none;
   }
@@ -2569,8 +2211,8 @@ body.main-scrolled .main-site-header .page-nav-btn.active::after {
 body.theme-july4     #collage::after {
   background: repeating-linear-gradient(
     -28deg,
-    rgba(68,4,12,0.96) 0px, rgba(68,4,12,0.96) 44px,
-    rgba(4,14,68,0.96) 44px, rgba(4,14,68,0.96) 88px
+    rgba(68,4,12,0.86) 0px, rgba(68,4,12,0.86) 44px,
+    rgba(4,14,68,0.86) 44px, rgba(4,14,68,0.86) 88px
   );
 }
 body.theme-halloween #collage::after { background: rgba(52,18,0,0.90); }
@@ -2589,77 +2231,17 @@ body.theme-xmas.on-detail   #collage::after,
 body.theme-xmas.on-timeline #collage::after { background: rgba(0,52,18,0.98); }
 
 /* Seasonal icon button */
-#seasonBtn { position: relative; overflow: hidden; }
+#seasonBtn { position: relative; }
 #seasonBtn.active { color: var(--white); }
-/* border-radius:inherit (=999px pill) + inset:0 so the gold glow fills the whole wide
-   button instead of an inscribed oval; overflow:hidden on the button clips the pulse so
-   it reads as a breathing fill, not a halo spilling past the edge. */
 #seasonBtn .season-glow {
-  position: absolute; inset: 0;
-  border-radius: inherit;
-  animation: season-pulse 2.4s ease-in-out infinite;
+  position: absolute; inset: 2px;
+  border-radius: 50%;
+  animation: season-pulse 2.2s ease-in-out infinite;
   pointer-events: none;
-  z-index: 0;
-}
-/* Icon sits above the glow and twinkles gold on a slightly different cadence than the
-   glow pulse, so the two don't beat in lockstep — a little life/shimmer. */
-#seasonIcon {
-  position: relative;
-  z-index: 1;
-  color: #ffe6a6;
-  animation: sparkle-shimmer 2.8s ease-in-out infinite;
 }
 @keyframes season-pulse {
-  0%,100% { opacity: 0.35; transform: scale(0.98); }
-  50%      { opacity: 0.6; transform: scale(1.03); }
-}
-@keyframes sparkle-shimmer {
-  0%,100% { opacity: 0.85; filter: drop-shadow(0 0 1px rgba(255,212,112,0.2)); transform: scale(0.96); }
-  50%      { opacity: 1;    filter: drop-shadow(0 0 3px rgba(255,218,134,0.5)); transform: scale(1.04); }
-}
-
-/* Mobile sparkle/surprise floating button — home only, top-right */
-.mobile-sparkle-btn {
-  display: none;
-}
-@media (max-width: 767px), (pointer: coarse) and (max-width: 1023px) {
-  .mobile-sparkle-btn {
-    position: fixed;
-    top: max(12px, env(safe-area-inset-top, 0px) + 8px);
-    right: max(12px, env(safe-area-inset-right, 0px) + 8px);
-    z-index: 7500;
-    width: 44px;
-    height: 44px;
-    border-radius: 999px;
-    border: 1px solid rgba(242,239,232,0.14);
-    background: rgba(8,16,42,0.72);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.04);
-    color: #ffe6a6;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    -webkit-tap-highlight-color: transparent;
-    overflow: hidden;
-    position: fixed;
-  }
-  .mobile-sparkle-btn svg {
-    width: 22px;
-    height: 22px;
-    position: relative;
-    z-index: 1;
-    animation: sparkle-shimmer 2.8s ease-in-out infinite;
-  }
-  .mobile-sparkle-btn .season-glow {
-    position: absolute; inset: 0;
-    border-radius: inherit;
-    animation: season-pulse 2.4s ease-in-out infinite;
-    pointer-events: none;
-    z-index: 0;
-  }
-  body:not(.on-home) .mobile-sparkle-btn { display: none; }
+  0%,100% { opacity: 0.12; transform: scale(0.88); }
+  50%      { opacity: 0.38; transform: scale(1.08); }
 }
 
 /* ── BODY LOCKED WHILE ON MAP ── */
@@ -2706,46 +2288,18 @@ button.cats-search-wrap {
 .detail-back-link:active { color: rgba(242,239,232,1); }
 .detail-back-link svg { width: 18px; height: 18px; flex-shrink: 0; }
 .detail-cat-title {
-  font-family: 'DuckTape', 'Bebas Neue', cursive;
+  font-family: 'Bebas Neue', cursive;
   font-size: clamp(22px, 6vw, 36px);
   letter-spacing: 3px;
   color: #ffffff;
   text-shadow: 0 1px 10px rgba(0,0,0,0.5);
   line-height: 1.1;
 }
-.detail-cat-title:not(:empty)::after {
-  content: '';
-  display: block;
-  height: 2px;
-  margin-top: 10px;
-  background: linear-gradient(to right, rgba(242,239,232,0.9) 0%, rgba(242,239,232,0.28) 45%, rgba(242,239,232,0) 85%);
-}
 .sub-page-title {
   padding: 14px 16px 10px;
-  font-family: 'DuckTape', 'Bebas Neue', cursive;
+  font-family: 'Bebas Neue', cursive;
   font-size: 32px; letter-spacing: 5px;
-  color: var(--white);
-  text-align: left;
-  display: block;
-  /* Explicit (non-auto) width sidesteps a flex quirk: in a flex-direction:column
-     container (e.g. #pg-map), setting margin-left/right:auto on a child disables
-     the default cross-axis stretch, so the title shrinks to its own text width
-     and then auto-centers as a small box instead of stretching to the shared
-     920px content column like it does on block-layout pages (Categories,
-     Timeline). Width:100% + border-box sizing gives every page the same
-     capped-and-centered 920px column, with text flush left inside it. */
-  width: 100%;
-  box-sizing: border-box;
-}
-/* Thin cinematic fade-out rule under each page title — solid at the left edge,
-   gone well before the title column's right edge. Lives on the title's own
-   (already 920px-capped) box, so it never reaches full viewport width. */
-.sub-page-title::after {
-  content: '';
-  display: block;
-  height: 2px;
-  margin-top: 10px;
-  background: linear-gradient(to right, rgba(242,239,232,0.9) 0%, rgba(242,239,232,0.28) 45%, rgba(242,239,232,0) 85%);
+  color: rgba(242,239,232,1);
 }
 
 /* ══════════════════════════════════════
@@ -2773,6 +2327,9 @@ button.cats-search-wrap {
   .hero-lower { gap: 6px; }
   .search-wrap { padding: 8px 12px; }
   .hero-cta-btn { padding: 9px 6px; font-size: 9px; letter-spacing: 1.2px; }
+  .hero-icon-btn { height: 52px; gap: 4px; }
+  .hero-icon-btn svg { width: 18px; height: 18px; }
+  .hero-icon-label { font-size: 7px; }
   .hero-season-wrap { top: -4px; }
 }
 
@@ -2803,29 +2360,21 @@ button.cats-search-wrap {
   .ctile-lbl { font-size: 17px; height: 52px; }
 }
 @media (min-width: 960px) {
-  :root { --desktop-nav-width: 920px; }
   body { max-width: 920px; margin: 0 auto; }
-  #pg-home {
-    padding-top: 0;
-  }
-  /* Main website pages use one desktop page frame. The body remains capped for legacy
-     sizing, but each active main-site page breaks out to the viewport and then centers
-     its shared shell/content inside that frame. Arcade pages are intentionally excluded. */
+  /* The body cap above centers the app at 920px, but it also caps the scrollable
+     pages (each is its own overflow-y:auto scroll container) — so their scrollbar
+     landed at the 920px box edge, ~200px in from the real screen edge on wide
+     monitors. Break those four scrollers out to the full viewport width so the
+     scrollbar rides the actual page edge, then re-center their contents back to 920px.
+     overflow-x:clip on html/body stops the full-bleed width from adding a horizontal
+     scrollbar. Home & arcade are untouched (they self-center within the body cap). */
   html, body { overflow-x: clip; }
-  #pg-home.active,
-  #pg-cats.active,
-  #pg-detail.active,
-  #pg-timeline.active,
-  #pg-map.active,
-  #pg-search.active,
-  #pg-shelf.active {
+  #pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-shelf.active {
     width: 100vw;
     margin-left: calc(50% - 50vw);
   }
   #pg-cats.active > *, #pg-detail.active > *,
-  #pg-timeline.active > *, #pg-search.active > *, #pg-shelf.active > *,
-  #pg-home.active > .main-site-header,
-  #pg-map.active > .main-site-header, #pg-map.active > .sub-page-title {
+  #pg-timeline.active > *, #pg-shelf.active > * {
     max-width: 920px;
     margin-left: auto;
     margin-right: auto;
@@ -2946,7 +2495,7 @@ button.cats-search-wrap {
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 49;
-  background: rgba(18,36,88,0.96);
+  background: rgba(18,36,88,0.90);
   border: none;
   border-bottom: 1px solid rgba(242,239,232,0.10);
   color: rgba(242,239,232,0.65);
@@ -4013,43 +3562,32 @@ body.on-match .mobe-face-img {
 
 <!-- ── HOME ── -->
 <div id="pg-home" class="page active">
-  <button class="mobile-sparkle-btn" id="mobileSeasonBtn" onclick="toggleSeasonTheme()" aria-label="Surprise">
-    <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
-      <path d="M12 2.5 L13.08 10.92 L21.5 12 L13.08 13.08 L12 21.5 L10.92 13.08 L2.5 12 L10.92 10.92 Z" opacity="0.95"/>
-      <path d="M19.5 4 L20.12 7.38 L23.5 8 L20.12 8.62 L19.5 12 L18.88 8.62 L15.5 8 L18.88 7.38 Z" opacity="0.6"/>
-      <circle cx="4.5" cy="18.5" r="1.3" opacity="0.45"/>
-      <circle cx="7" cy="21.5" r="0.85" opacity="0.3"/>
-      <circle cx="2.5" cy="15" r="0.8" opacity="0.28"/>
-    </svg>
-  </button>
-  <div class="cats-header main-site-header">
-    <div class="cats-header-nav">
-      <button class="page-nav-btn nav-sparkle-btn" id="seasonBtn" onclick="toggleSeasonTheme()" aria-label="Surprise">
-        <svg id="seasonIcon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-          <path d="M12 2.5 L13.08 10.92 L21.5 12 L13.08 13.08 L12 21.5 L10.92 13.08 L2.5 12 L10.92 10.92 Z" opacity="0.95"/>
-          <path d="M19.5 4 L20.12 7.38 L23.5 8 L20.12 8.62 L19.5 12 L18.88 8.62 L15.5 8 L18.88 7.38 Z" opacity="0.6"/>
-          <circle cx="4.5" cy="18.5" r="1.3" opacity="0.45"/>
-          <circle cx="7" cy="21.5" r="0.85" opacity="0.3"/>
-          <circle cx="2.5" cy="15" r="0.8" opacity="0.28"/>
-        </svg>
-      </button>
-      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse" data-page="cats">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-        <span>Browse</span>
-      </button>
-      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years" data-page="timeline">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
-        <span>Years</span>
-      </button>
-      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places" data-page="map">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-        <span>Places</span>
-      </button>
-      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search" data-page="search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-        <span>Search</span>
-      </button>
-    </div>
+  <div class="home-desktop-nav cats-header-nav">
+    <button class="page-nav-btn nav-sparkle-btn" id="seasonBtn" onclick="toggleSeasonTheme()" aria-label="Surprise">
+      <svg id="seasonIcon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+        <path d="M12 2.5 L13.08 10.92 L21.5 12 L13.08 13.08 L12 21.5 L10.92 13.08 L2.5 12 L10.92 10.92 Z" opacity="0.95"/>
+        <path d="M19.5 4 L20.12 7.38 L23.5 8 L20.12 8.62 L19.5 12 L18.88 8.62 L15.5 8 L18.88 7.38 Z" opacity="0.6"/>
+        <circle cx="4.5" cy="18.5" r="1.3" opacity="0.45"/>
+        <circle cx="7" cy="21.5" r="0.85" opacity="0.3"/>
+        <circle cx="2.5" cy="15" r="0.8" opacity="0.28"/>
+      </svg>
+    </button>
+    <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      <span>Browse</span>
+    </button>
+    <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
+      <span>Years</span>
+    </button>
+    <button class="page-nav-btn" onclick="nav('map')" aria-label="Places">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      <span>Places</span>
+    </button>
+    <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+      <span>Search</span>
+    </button>
   </div>
   <div class="home-hero">
     <!-- Anchor pattern: hero-above and hero-below both get flex:1, so whatever's left
@@ -4066,7 +3604,7 @@ body.on-match .mobe-face-img {
     <div class="hero-search">
       <div class="search-row">
         <div class="search-wrap" id="homeSearchWrap">
-          <input id="homeQ" type="search" placeholder="SEARCH VIDEOS, PLACES..." autocomplete="off" spellcheck="false" class="home-search-input">
+          <input id="homeQ" type="search" placeholder="SEARCH FOR PLACES, CATEGORIES, PEOPLE..." autocomplete="off" spellcheck="false" class="home-search-input">
           <button class="search-clear-btn" id="homeQClear" aria-label="Clear" style="display:none" onclick="homeSearchClear()">
             <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="1" y1="1" x2="13" y2="13"/><line x1="13" y1="1" x2="1" y2="13"/></svg>
           </button>
@@ -4085,6 +3623,21 @@ body.on-match .mobe-face-img {
           <button class="hero-cta-btn" id="recBtn" onclick="toggleRec()">WATCH RECOMMENDED</button>
           <button class="hero-cta-btn" onclick="navToCats()">BROWSE CATEGORIES</button>
         </div>
+        <div class="hero-section-title">Explore</div>
+        <div class="hero-icon-row">
+          <button class="hero-icon-btn" onclick="nav('timeline')" aria-label="Years">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.8"/><circle cx="7" cy="12" r="1.8"/><circle cx="7" cy="18" r="1.8"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
+            <span class="hero-icon-label">Years</span>
+          </button>
+          <button class="hero-icon-btn" onclick="nav('map')" aria-label="Places">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polygon points="2 6 2 21 8 18 16 21 22 18 22 3 16 6 8 3 2 6"/><line x1="8" y1="3" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="21"/></svg>
+            <span class="hero-icon-label">Places</span>
+          </button>
+          <button class="hero-icon-btn" onclick="enableShake()" id="shakeBtn" aria-label="Shuffle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><path d="M4 20 21 3"/><polyline points="21 16 21 21 16 21"/><path d="M4 4h3.5c1.8 0 3.1.8 4.1 2.4"/><path d="M14.5 17.8c.9 1.2 2.1 1.8 3.7 1.8H21"/></svg>
+            <span class="hero-icon-label">Shuffle</span>
+          </button>
+        </div>
         <div id="memories">
           <div class="season-header">
             <div class="season-label" id="seasonLabel">RECOMMENDED</div>
@@ -4098,25 +3651,25 @@ body.on-match .mobe-face-img {
 
 <!-- ── CATEGORIES ── -->
 <div id="pg-cats" class="page">
-  <div class="cats-header main-site-header">
+  <div class="cats-header">
     <div class="cats-header-nav">
-      <button class="page-nav-btn" onclick="navHome()" aria-label="Home" data-page="home">
+      <button class="page-nav-btn" onclick="navHome()" aria-label="Home">
         <img src="home.png" class="nav-icon-img" alt="">
         <span>Home</span>
       </button>
-      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse" data-page="cats">
+      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         <span>Browse</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years" data-page="timeline">
+      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
         <span>Years</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places" data-page="map">
+      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
         <span>Places</span>
       </button>
-      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search" data-page="search">
+      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
         <span>Search</span>
       </button>
@@ -4128,25 +3681,25 @@ body.on-match .mobe-face-img {
 
 <!-- ── DETAIL ── -->
 <div id="pg-detail" class="page">
-  <div class="cats-header main-site-header">
+  <div class="cats-header">
     <div class="cats-header-nav">
-      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home" data-page="home">
+      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home">
         <img src="home.png" class="nav-icon-img" alt="">
         <span>Home</span>
       </button>
-      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse" data-page="cats">
+      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         <span>Browse</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years" data-page="timeline">
+      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
         <span>Years</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places" data-page="map">
+      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
         <span>Places</span>
       </button>
-      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search" data-page="search">
+      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
         <span>Search</span>
       </button>
@@ -4167,25 +3720,25 @@ body.on-match .mobe-face-img {
 
 <!-- ── TIMELINE ── -->
 <div id="pg-timeline" class="page">
-  <div class="cats-header main-site-header">
+  <div class="cats-header">
     <div class="cats-header-nav">
-      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home" data-page="home">
+      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home">
         <img src="home.png" class="nav-icon-img" alt="">
         <span>Home</span>
       </button>
-      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse" data-page="cats">
+      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         <span>Browse</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years" data-page="timeline">
+      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
         <span>Years</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places" data-page="map">
+      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
         <span>Places</span>
       </button>
-      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search" data-page="search">
+      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
         <span>Search</span>
       </button>
@@ -4203,54 +3756,36 @@ body.on-match .mobe-face-img {
 
 <!-- ── MAP ── -->
 <div id="pg-map" class="page">
-  <div class="cats-header main-site-header">
+  <div class="cats-header">
     <div class="cats-header-nav">
-      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home" data-page="home">
+      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home">
         <img src="home.png" class="nav-icon-img" alt="">
         <span>Home</span>
       </button>
-      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse" data-page="cats">
+      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         <span>Browse</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years" data-page="timeline">
+      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
         <span>Years</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places" data-page="map">
+      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
         <span>Places</span>
       </button>
-      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search" data-page="search">
+      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
         <span>Search</span>
       </button>
     </div>
   </div>
-  <div class="sub-page-title">PLACES</div>
+  <div class="sub-page-title">MAP</div>
   <div id="map-container">
     <div id="map-zoom-btns">
       <button id="map-zoom-in"  onclick="if(window._map)window._map.zoomIn()"  aria-label="Zoom in">+</button>
       <button id="map-zoom-out" onclick="if(window._map)window._map.zoomOut()" aria-label="Zoom out">−</button>
     </div>
-    <div id="map-places-drawer">
-      <button id="map-places-tab" onclick="toggleMapPlacesDrawer()">
-        <span class="map-places-tab-chevron">▼</span>
-        <span>TOP PLACES</span>
-        <span class="map-places-tab-count">0</span>
-      </button>
-      <div id="map-places-list"></div>
-    </div>
-    <aside id="map-location-panel" aria-live="polite" aria-label="Selected place videos">
-      <div class="map-location-panel-hdr">
-        <div class="map-location-title-wrap">
-          <div id="map-location-title">PLACE</div>
-          <div id="map-location-subtitle"></div>
-        </div>
-        <button class="map-location-close" onclick="closeMapLocationPanel()" aria-label="Close selected place">×</button>
-      </div>
-      <div id="map-location-list"></div>
-    </aside>
   </div>
   <div style="height:max(20px,env(safe-area-inset-bottom,0px))"></div>
 </div>
@@ -4258,25 +3793,25 @@ body.on-match .mobe-face-img {
 <!-- ── VHS SHELF ── -->
 <div id="pg-shelf" class="page">
   <div id="shelf-bg"></div>
-  <div class="cats-header main-site-header">
+  <div class="cats-header">
     <div class="cats-header-nav">
-      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home" data-page="home">
+      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home">
         <img src="home.png" class="nav-icon-img" alt="">
         <span>Home</span>
       </button>
-      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse" data-page="cats">
+      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         <span>Browse</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years" data-page="timeline">
+      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
         <span>Years</span>
       </button>
-      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places" data-page="map">
+      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
         <span>Places</span>
       </button>
-      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search" data-page="search">
+      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
         <span>Search</span>
       </button>
@@ -4287,32 +3822,8 @@ body.on-match .mobe-face-img {
 
 <!-- ── SEARCH ── -->
 <div id="pg-search" class="page">
-  <div class="cats-header main-site-header">
-    <div class="cats-header-nav">
-      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home" data-page="home">
-        <img src="home.png" class="nav-icon-img" alt="">
-        <span>Home</span>
-      </button>
-      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse" data-page="cats">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-        <span>Browse</span>
-      </button>
-      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years" data-page="timeline">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
-        <span>Years</span>
-      </button>
-      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places" data-page="map">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-        <span>Places</span>
-      </button>
-      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search" data-page="search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-        <span>Search</span>
-      </button>
-    </div>
-  </div>
   <div class="srch-top">
-    <button class="srch-logo-btn" onclick="nav('home')" aria-label="Home" data-page="home">
+    <button class="srch-logo-btn" onclick="nav('home')" aria-label="Home">
       <img src="Title.png" class="srch-logo-img" alt="MOBERINO">
     </button>
     <div class="srch-row">
@@ -4370,6 +3881,13 @@ body.on-match .mobe-face-img {
 
 <!-- ── TAB BAR ── -->
 <nav id="tabs">
+  <button class="tab-toggle" onclick="toggleMobileNav(event)" aria-label="Open navigation">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round">
+      <path d="M4 7h16"/>
+      <path d="M4 12h16"/>
+      <path d="M4 17h16"/>
+    </svg>
+  </button>
   <button class="tab on" data-p="home" onclick="nav('home')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
     HOME<div class="tab-line"></div>
@@ -4967,35 +4485,16 @@ function buildShelf() {
 let mapInited = false;
 let glMap = null;
 function initMap() {
-  if (mapInited) {
-    // Re-entering the Places page after the container's size changed (e.g. a
-    // window resize or rotation while on another page) — without this the
-    // canvas stays locked to whatever size it had at first init, leaving the
-    // rest of the container blank.
-    if (glMap) requestAnimationFrame(() => glMap.resize());
-    return;
-  }
+  if(mapInited) return;
   mapInited = true;
   requestAnimationFrame(() => {
     window._map = glMap = new maplibregl.Map({
       container: 'map-container',
       style: 'https://tiles.openfreemap.org/styles/dark',
-      center: [-73.411011, 40.821365],
-      zoom: 9.5,
+      center: [-73.3, 40.85],
+      zoom: 10,
       attributionControl: false
     });
-
-    // Keeps the canvas matched to its container at all times — covers the
-    // cold-load case where web fonts/layout settle a moment after the map
-    // reads its initial size, plus any later window resize/rotation while
-    // this page is open. Without it the canvas can get stuck rendering at a
-    // stale size with the rest of the container left blank.
-    if (window.ResizeObserver) {
-      new ResizeObserver(() => { if (glMap) glMap.resize(); updateMapOverlayVars(); }).observe(document.getElementById('map-container'));
-      window.addEventListener('resize', updateMapOverlayVars);
-      window.addEventListener('orientationchange', updateMapOverlayVars);
-      updateMapOverlayVars();
-    }
 
     glMap.on('load', () => {
       // Group videos by lat/lng
@@ -5007,13 +4506,9 @@ function initMap() {
         groups[key].videos.push(v);
       });
 
-      mapGroups = groups;
       Object.values(groups).forEach(g => {
         const count = g.videos.length;
-        const el = document.createElement('button');
-        el.type = 'button';
-        el.setAttribute('aria-label', `${getMapGroupLabel(g)} — ${count} video${count === 1 ? '' : 's'}`);
-        el.title = getMapGroupLabel(g);
+        const el = document.createElement('div');
         el.style.cssText = `
           display:flex;align-items:center;justify-content:center;
           width:${count > 1 ? 28 : 10}px;height:${count > 1 ? 28 : 10}px;
@@ -5024,201 +4519,31 @@ function initMap() {
           font-family:VCR,monospace;font-size:9px;
           color:rgba(242,239,232,0.9);
           cursor:pointer;
-          padding:0;
         `;
         if (count > 1) el.textContent = count;
-        el.addEventListener('click', e => {
-          e.preventDefault();
-          e.stopPropagation();
-          flyToMapGroup(g, true);
-        });
 
-        const marker = new maplibregl.Marker({ element: el })
+        const rows = g.videos.map(v =>
+          `<div style="padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.1)">
+            <a href="https://www.youtube.com/watch?v=${v.video_id}" target="_blank"
+               style="color:#f2efe8;font-size:12px;text-decoration:none;line-height:1.3;display:block">
+              ${v.title}${v.year ? `<span style="opacity:0.45"> · ${v.year}</span>` : ''}
+            </a>
+          </div>`
+        ).join('');
+
+        const popupHTML = `
+          <div style="font-family:VCR,monospace;max-width:230px;overflow-y:auto;max-height:42vh">
+            <div style="font-size:10px;letter-spacing:1.5px;margin-bottom:8px;opacity:0.5;position:sticky;top:0;background:rgba(8,16,42,0.96);padding-bottom:6px">${g.location.toUpperCase()}</div>
+            ${rows}
+          </div>`;
+
+        new maplibregl.Marker({ element: el })
           .setLngLat([g.lng, g.lat])
+          .setPopup(new maplibregl.Popup({ offset: 16, maxWidth: '270px' }).setHTML(popupHTML))
           .addTo(glMap);
-        g.marker = marker;
       });
-      renderTopPlaces(groups);
     });
   });
-}
-
-// ── TOP PLACES + LOCATION PANEL ──
-let mapGroups = {};
-// Raw location strings are full street addresses ("10 Meath Ave, Huntington,
-// NY 11743") — too long for compact labels, so this reduces to "city, state".
-function shortLocation(loc) {
-  const parts = String(loc || '').split(',').map(s => s.trim()).filter(Boolean);
-  if (parts.length < 2) return loc || '';
-  const city = parts[parts.length - 2];
-  const state = (parts[parts.length - 1].split(/\s+/)[0] || '').replace(/\d+/g, '');
-  return state ? `${city}, ${state}` : city;
-}
-function cleanMapText(value) {
-  return String(value || '').replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
-}
-function getVideoSpecificPlaceName(v) {
-  const specificFields = ['placeName', 'place_name', 'place', 'venue', 'name'];
-  for (const field of specificFields) {
-    const val = cleanMapText(v && v[field]);
-    if (val) return val;
-  }
-  return '';
-}
-function getVideoPlaceName(v) {
-  const specific = getVideoSpecificPlaceName(v);
-  if (specific) return specific;
-  const fallbackFields = ['address', 'location'];
-  for (const field of fallbackFields) {
-    const val = cleanMapText(v && v[field]);
-    if (val) return val;
-  }
-  return 'Unknown place';
-}
-function mostCommonMapValue(values) {
-  const counts = new Map();
-  values.map(cleanMapText).filter(Boolean).forEach(value => {
-    const key = value.toLowerCase();
-    const current = counts.get(key) || { value, count: 0 };
-    current.count += 1;
-    counts.set(key, current);
-  });
-  return [...counts.values()].sort((a, b) => b.count - a.count)[0]?.value || '';
-}
-function getMapGroupLabel(g) {
-  const specificNames = (g.videos || []).map(getVideoSpecificPlaceName).filter(Boolean);
-  return mostCommonMapValue(specificNames) || cleanMapText(g.location) || getVideoPlaceName((g.videos || [])[0]) || 'Unknown place';
-}
-function getMapGroupSubtitle(g) {
-  const title = cleanMapText(getMapGroupLabel(g)).toLowerCase();
-  const addresses = (g.videos || []).map(v => v.address || v.location).filter(Boolean);
-  const broader = mostCommonMapValue(addresses) || cleanMapText(g.location);
-  if (!broader || broader.toLowerCase() === title) return '';
-  return broader;
-}
-function renderTopPlaces(groups) {
-  const list = document.getElementById('map-places-list');
-  const tab = document.getElementById('map-places-tab');
-  if (!list || !tab) return;
-  const top = Object.values(groups)
-    .filter(g => g.videos.length >= 5)
-    .sort((a, b) => b.videos.length - a.videos.length);
-  if (!top.length) { tab.style.display = 'none'; return; }
-  tab.style.display = '';
-  tab.querySelector('.map-places-tab-count').textContent = top.length;
-  list.innerHTML = '';
-  top.forEach((g, i) => {
-    const row = document.createElement('button');
-    row.type = 'button';
-    row.className = 'map-place-row';
-    row.onclick = () => flyToPlace(i);
-
-    const text = document.createElement('span');
-    text.className = 'map-place-text';
-    const name = document.createElement('span');
-    name.className = 'map-place-name';
-    name.textContent = getMapGroupLabel(g).toUpperCase();
-    text.appendChild(name);
-    const subtitleText = getMapGroupSubtitle(g);
-    if (subtitleText) {
-      const subtitle = document.createElement('span');
-      subtitle.className = 'map-place-subtitle';
-      subtitle.textContent = shortLocation(subtitleText).toUpperCase();
-      text.appendChild(subtitle);
-    }
-
-    const count = document.createElement('span');
-    count.className = 'map-place-count';
-    count.textContent = g.videos.length;
-    row.append(text, count);
-    list.appendChild(row);
-  });
-  window._topPlaces = top;
-}
-function updateMapOverlayVars() {
-  const mapEl = document.getElementById('map-container');
-  if (!mapEl) return;
-  const r = mapEl.getBoundingClientRect();
-  document.documentElement.style.setProperty('--map-overlay-top', `${Math.max(14, Math.round(r.top + 14))}px`);
-  document.documentElement.style.setProperty('--map-overlay-bottom', `${Math.max(14, Math.round(window.innerHeight - r.bottom + 14))}px`);
-}
-function isMobileMapView() {
-  return window.matchMedia('(max-width: 767px), (pointer: coarse) and (max-width: 1023px)').matches;
-}
-function getMapPanelOffset() {
-  updateMapOverlayVars();
-  const mapEl = document.getElementById('map-container');
-  if (!mapEl) return [0, 0];
-  if (isMobileMapView()) return [0, -Math.round(mapEl.clientHeight * 0.18)];
-  return [-150, 0];
-}
-function flyToMapGroup(g, openPanelAfterMove = true) {
-  if (!g || !glMap) return;
-  document.getElementById('map-places-drawer')?.classList.remove('open');
-  const openPanel = () => openPanelAfterMove && openMapLocationPanel(g);
-  glMap.once('moveend', openPanel);
-  glMap.flyTo({
-    center: [g.lng, g.lat],
-    zoom: isMobileMapView() ? 12.5 : 13,
-    duration: 700,
-    offset: getMapPanelOffset()
-  });
-}
-function flyToPlace(i) {
-  const g = window._topPlaces && window._topPlaces[i];
-  flyToMapGroup(g, true);
-}
-function toggleMapPlacesDrawer() {
-  updateMapOverlayVars();
-  document.getElementById('map-places-drawer')?.classList.toggle('open');
-}
-function renderMapLocationPanel(g) {
-  const titleEl = document.getElementById('map-location-title');
-  const subtitleEl = document.getElementById('map-location-subtitle');
-  const listEl = document.getElementById('map-location-list');
-  if (!titleEl || !subtitleEl || !listEl || !g) return;
-  titleEl.textContent = getMapGroupLabel(g).toUpperCase();
-  const subtitle = getMapGroupSubtitle(g);
-  subtitleEl.textContent = [subtitle, `${g.videos.length} VIDEO${g.videos.length === 1 ? '' : 'S'}`].filter(Boolean).join(' · ').toUpperCase();
-  listEl.innerHTML = '';
-  g.videos.forEach((v, idx) => {
-    const row = document.createElement('button');
-    row.type = 'button';
-    row.className = 'map-location-video-row';
-    row.onclick = () => openLB(g.videos, idx);
-
-    if (v.thumb || v.video_id) {
-      const img = document.createElement('img');
-      img.className = 'map-location-thumb';
-      img.loading = 'lazy';
-      img.alt = '';
-      img.src = v.thumb || `https://img.youtube.com/vi/${v.video_id}/mqdefault.jpg`;
-      if (v.video_id) {
-        img.onerror = () => { img.src = `https://img.youtube.com/vi/${v.video_id}/mqdefault.jpg`; img.onerror = null; };
-      }
-      row.appendChild(img);
-    }
-
-    const main = document.createElement('span');
-    main.className = 'map-location-video-main';
-    const title = document.createElement('span');
-    title.className = 'map-location-video-title';
-    title.textContent = fmtTitle ? fmtTitle(v.title || 'Untitled', v.year) : cleanMapText(v.title || 'Untitled').toUpperCase();
-    const meta = document.createElement('span');
-    meta.className = 'map-location-video-meta';
-    meta.textContent = [v.year, v.category].filter(Boolean).join(' · ').toUpperCase();
-    main.append(title, meta);
-    row.appendChild(main);
-    listEl.appendChild(row);
-  });
-}
-function openMapLocationPanel(g) {
-  updateMapOverlayVars();
-  renderMapLocationPanel(g);
-  document.getElementById('map-location-panel')?.classList.add('open');
-}
-function closeMapLocationPanel() {
-  document.getElementById('map-location-panel')?.classList.remove('open');
 }
 
 // ── LIGHTBOX ──
@@ -5299,54 +4624,16 @@ function resetHomeViewport() {
 }
 window.resetHomeViewport = resetHomeViewport;
 
-const HASH_TO_PAGE = {
-  home: 'home',
-  browse: 'cats',
-  years: 'timeline',
-  places: 'map',
-  search: 'search',
-  shelf: 'shelf',
-  arcade: 'lobby'
-};
-const PAGE_TO_HASH = {
-  home: 'home',
-  cats: 'browse',
-  timeline: 'years',
-  map: 'places',
-  search: 'search',
-  shelf: 'shelf',
-  lobby: 'arcade'
-};
-let suppressHashNav = false;
-
-function pageFromHash(hash) {
-  const key = String(hash || '').replace(/^#/, '').trim().toLowerCase();
-  return HASH_TO_PAGE[key] || 'home';
+function toggleMobileNav(event) {
+  if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
+  document.body.classList.toggle('mobile-nav-open');
 }
 
-function syncHashForPage(p) {
-  const key = PAGE_TO_HASH[p];
-  if (!key) return;
-  const nextHash = `#${key}`;
-  if (window.location.hash === nextHash) return;
-  suppressHashNav = true;
-  window.location.hash = nextHash;
-  setTimeout(() => { suppressHashNav = false; }, 0);
-}
-
-function handleHashRoute() {
-  if (suppressHashNav) return;
-  nav(pageFromHash(window.location.hash), { skipHash: true });
-}
-
-function nav(p, opts = {}) {
-  if (!document.getElementById(`pg-${p}`)) p = 'home';
-  if (!opts.skipHash) syncHashForPage(p);
+function nav(p) {
   const targetPageId = `pg-${p}`;
   const tabKey = p === 'detail' ? 'cats' : p;
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('on',el.dataset.p===tabKey));
-  document.querySelectorAll('.page-nav-btn[data-page]').forEach(el=>el.classList.toggle('active', el.dataset.page===tabKey));
   document.getElementById(targetPageId)?.classList.add('active');
   window.scrollTo(0,0);
   if (document.activeElement && typeof document.activeElement.blur === 'function') {
@@ -5386,6 +4673,7 @@ function nav(p, opts = {}) {
   const hideGlobalHeader = showCollage || onCats || onDetail || onTL || onMap || onSearch || onShelf || isArcade;
   document.getElementById('collage').classList.toggle('hidden', !showCollage);
   document.getElementById('hdr').style.display = hideGlobalHeader ? 'none' : 'flex';
+  document.body.classList.toggle('mobile-nav-open', !onHome && !isArcade);
   document.body.classList.toggle('on-home', onHome);
   document.body.classList.toggle('on-detail', onDetail);
   document.body.classList.toggle('on-timeline', onTL);
@@ -5397,13 +4685,7 @@ function nav(p, opts = {}) {
   document.body.classList.toggle('on-match', onMatch);
   document.body.classList.toggle('on-space', onSpace);
   document.documentElement.classList.toggle('arcade-root', isArcade);
-  if (onMap) {
-    _lockMapTouch();
-  } else {
-    closeMapLocationPanel?.();
-    document.getElementById('map-places-drawer')?.classList.remove('open');
-    _unlockMapTouch();
-  }
+  if (onMap) _lockMapTouch(); else _unlockMapTouch();
   if(onTL)    buildTimeline();
   if(onMap)   initMap();
   if(onShelf) { buildShelf(); drawShelfBg(); }
@@ -5439,7 +4721,6 @@ function nav(p, opts = {}) {
     resetHomeViewport();
     const target = document.getElementById(targetPageId);
     if (target) target.scrollTop = 0;
-    if (window._updateBackTopBar) window._updateBackTopBar();
   };
   requestAnimationFrame(settleViewport);
   setTimeout(settleViewport, 120);
@@ -5534,9 +4815,6 @@ function navHome() {
   pgHome.animate?.([{ opacity: 0.7 }, { opacity: 1 }], { duration: 140, easing: 'ease-out' });
 }
 
-window.addEventListener('hashchange', handleHashRoute);
-if (window.location.hash) handleHashRoute();
-
 // ── SPOTLIGHT SEARCH ──
 // #spot-overlay is height:100dvh, which tracks the keyboard/dynamic toolbar natively —
 // no JS measuring visualViewport or pinning inline styles needed. display:none/flex is
@@ -5544,7 +4822,6 @@ if (window.location.hash) handleHashRoute();
 // frame later so the display change commits first).
 function openSpot() {
   const ov = document.getElementById('spot-overlay');
-  document.querySelectorAll('.page-nav-btn[data-page="search"]').forEach(el=>el.classList.add('active'));
   // Lock body scroll BEFORE focusing — otherwise iOS can scroll the underlying
   // home page into a weird position while bringing the focused input into view.
   document.body.style.overflow = 'hidden';
@@ -5561,7 +4838,6 @@ function openSpot() {
 }
 function closeSpot() {
   document.getElementById('spotQ').blur();
-  document.querySelectorAll('.page-nav-btn[data-page="search"]').forEach(el=>el.classList.remove('active'));
   const ov = document.getElementById('spot-overlay');
   ov.classList.remove('open');
   document.body.style.overflow = '';
@@ -6054,18 +5330,10 @@ setTimeout(resetHomeViewport, 900);
     return (active && active.scrollTop > 0) ? active.scrollTop : window.scrollY;
   }
 
-  function shouldShieldMainHeader(active, scrollTop) {
-    if (!active || scrollTop <= 8) return false;
-    return ['pg-cats', 'pg-detail', 'pg-timeline', 'pg-search', 'pg-shelf'].includes(active.id);
-  }
-
   function updateBar() {
-    const active = document.querySelector('.page.active');
-    const scrollTop = getScrollTop();
-    const show = scrollTop > 80;
-    document.body.classList.toggle('main-scrolled', shouldShieldMainHeader(active, scrollTop));
+    const show = getScrollTop() > 80;
     if (show) {
-      const hdr = active ? active.querySelector('.cats-header') : null;
+      const hdr = document.querySelector('.page.active .cats-header');
       const bottom = hdr ? hdr.getBoundingClientRect().bottom : 0;
       bar.style.top = Math.max(0, bottom) + 'px';
     }
@@ -6081,7 +5349,6 @@ setTimeout(resetHomeViewport, 900);
   // Covers the general case (not just spotlight closing) — any keyboard open/close or
   // address-bar show/hide resizes the visual viewport without necessarily firing scroll.
   if (window.visualViewport) window.visualViewport.addEventListener('resize', updateBar);
-  updateBar();
 
   bar.onclick = function() {
     const active = document.querySelector('.page.active');
@@ -6188,10 +5455,7 @@ buildDecadeBar();
 
 // ── SEASONAL THEME ──
 (function() {
-  // Surprise/sparkle button glow — a soft golden radial that fades to transparent at
-  // the edges, so it fills the (pill-shaped) button without a hard rim. Always gold
-  // regardless of which season is active (the button's own "magic" identity).
-  const SPARKLE_GLOW = 'radial-gradient(ellipse at center, rgba(255,208,92,0.32) 0%, rgba(255,176,48,0.14) 55%, rgba(255,150,30,0) 100%)';
+  const GLOW = { july4: 'rgba(220,50,60,0.5)', halloween: 'rgba(200,80,0,0.5)', xmas: 'rgba(50,180,70,0.5)' };
 
   function getSeasonTheme() {
     const now = new Date(), m = now.getMonth() + 1, d = now.getDate();
@@ -6202,14 +5466,14 @@ buildDecadeBar();
   }
 
   const currentSeason = getSeasonTheme();
-  [document.getElementById('seasonBtn'), document.getElementById('mobileSeasonBtn')].forEach(btn => {
-    if (!btn) return;
+  const btn = document.getElementById('seasonBtn');
+  if (currentSeason && btn) {
     btn.style.display = '';
     const glow = document.createElement('div');
     glow.className = 'season-glow';
-    glow.style.background = SPARKLE_GLOW;
+    glow.style.background = GLOW[currentSeason];
     btn.appendChild(glow);
-  });
+  }
 
   let seasonOn = false, particleStop = null;
 
@@ -6217,12 +5481,10 @@ buildDecadeBar();
     if (particleStop) particleStop();
     const c = document.createElement('canvas');
     c.id = 'season-canvas';
-    // Above #collage::after's seasonal tint, but still inside the non-interactive
-    // collage layer so fireworks/stars stay behind site UI.
-    c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1000000;';
+    c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:900000;';
     document.getElementById('collage').appendChild(c);
     const ctx = c.getContext('2d');
-    let W, H, raf, burstTimer, clearSeedBursts = null;
+    let W, H, raf, burstTimer;
     function resize() { W = c.width = window.innerWidth; H = c.height = window.innerHeight; }
     resize();
     const ro = new ResizeObserver(resize);
@@ -6300,21 +5562,21 @@ buildDecadeBar();
         }
         ctx.closePath(); ctx.fill(); ctx.restore();
       }
-      const stars = Array.from({length: 52}, () => ({
+      const stars = Array.from({length: 60}, () => ({
         x: Math.random() * innerWidth, y: Math.random() * innerHeight,
         r: 5 + Math.random() * 7,
         vx: (Math.random() - 0.5) * 0.15, vy: -0.1 - Math.random() * 0.25,
         t: Math.random() * Math.PI * 2, // phase for twinkle
-        baseA: 0.28 + Math.random() * 0.34,
+        baseA: 0.35 + Math.random() * 0.45,
       }));
 
       const bursts = [];
       function addBurst() {
         const pal = PALETTES[Math.floor(Math.random() * PALETTES.length)];
-        const N = 58 + Math.floor(Math.random() * 24);
+        const N = 70 + Math.floor(Math.random() * 30);
         const cx = W * (0.08 + Math.random() * 0.84);
         const cy = H * (0.05 + Math.random() * 0.55);
-        const baseSpd = 3.1 + Math.random() * 2.8;
+        const baseSpd = 3.5 + Math.random() * 3.5;
         bursts.push({
           cx, cy,
           particles: Array.from({length: N}, (_, i) => {
@@ -6335,12 +5597,11 @@ buildDecadeBar();
       addBurst();
       const _s1 = setTimeout(addBurst, 200);
       const _s2 = setTimeout(addBurst, 450);
-      clearSeedBursts = () => { clearTimeout(_s1); clearTimeout(_s2); };
+      const _clearSeeds = () => { clearTimeout(_s1); clearTimeout(_s2); };
 
       (function tick() {
-        // Keep the seasonal canvas transparent so the July 4 stripe overlay
-        // remains visible underneath the stars/fireworks.
-        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = 'rgba(0,0,0,0.18)';
+        ctx.fillRect(0, 0, W, H);
 
         // Draw twinkling stars
         stars.forEach(s => {
@@ -6368,12 +5629,12 @@ buildDecadeBar();
             ctx.lineTo(b.cx + p.x, b.cy + p.y);
             ctx.strokeStyle = p.color;
             ctx.lineWidth = p.size * 0.7;
-            ctx.globalAlpha = alpha * 0.42;
+            ctx.globalAlpha = alpha * 0.6;
             ctx.stroke();
             ctx.beginPath();
             ctx.arc(b.cx + p.x, b.cy + p.y, p.size, 0, Math.PI * 2);
             ctx.fillStyle = p.color;
-            ctx.globalAlpha = alpha * 0.72;
+            ctx.globalAlpha = alpha;
             ctx.fill();
           });
         }
@@ -6385,7 +5646,7 @@ buildDecadeBar();
     particleStop = () => {
       cancelAnimationFrame(raf); ro.disconnect();
       clearTimeout(burstTimer);
-      if (clearSeedBursts) clearSeedBursts();
+      if (typeof _clearSeeds === 'function') _clearSeeds();
       c.remove(); particleStop = null;
     };
   }
@@ -6394,9 +5655,7 @@ buildDecadeBar();
     if (!currentSeason) return;
     seasonOn = !seasonOn;
     document.body.classList.toggle(`theme-${currentSeason}`, seasonOn);
-    [document.getElementById('seasonBtn'), document.getElementById('mobileSeasonBtn')].forEach(btn => {
-      if (btn) btn.classList.toggle('active', seasonOn);
-    });
+    btn.classList.toggle('active', seasonOn);
     if (seasonOn) startParticles(); else if (particleStop) particleStop();
   };
 })();
