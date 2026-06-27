@@ -26,7 +26,9 @@
       "Bash(python3 -m http.server 8765)",
       "Bash(mkdir -p /Users/kevinseverino/Documents/moberino/.claude)",
       "Bash(kill 60505)",
-      "mcp__Claude_Preview__preview_start"
+      "mcp__Claude_Preview__preview_start",
+      "Bash(lsof -ti:8765)",
+      "Bash(xargs -r kill -9)"
     ]
   }
 }

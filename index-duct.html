@@ -13,12 +13,19 @@
   font-family: 'VCR';
   src: url('VCR_OSD_MONO_1.001.ttf') format('truetype');
 }
+@font-face {
+  font-family: 'DuckTape';
+  src: url('Duck Tape.ttf') format('truetype');
+}
 :root {
   --navy:  #08102a;
   --navy2: #0c1836;
   --white: #f2efe8;
   --dim:   rgba(242,239,232,1);
   --line:  rgba(242,239,232,0.07);
+  --tape: #e6dcc1;
+  --tape-edge: #cfc3a2;
+  --tape-ink: #2f2a22;
   --desktop-nav-width: min(calc(100vw - 32px), 920px);
   --desktop-nav-pad: 10px 16px 8px;
   --desktop-nav-slot: 96px;
@@ -1194,7 +1201,7 @@ body.rec-open { overflow-y: auto; }
   padding: 18px 14px 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 14px;
 }
 .srch-logo-btn {
@@ -1621,14 +1628,6 @@ body.rec-open { overflow-y: auto; }
   min-height: 60dvh;
   position: relative;
 }
-/* Softer navy retint of the otherwise harsh black/white "dark" tile style —
-   grayscale tiles have no hue for hue-rotate alone to grab, so sepia() first
-   pushes them into a tinted (orange) range, then hue-rotate spins that tint
-   around to navy. Only targets the canvas maplibre paints into — markers,
-   popups, and zoom buttons are separate DOM elements and stay unaffected. */
-#map-container canvas.maplibregl-canvas {
-  filter: brightness(1.12) contrast(0.92) sepia(0.55) saturate(2.2) hue-rotate(185deg);
-}
 #map-zoom-btns {
   position: absolute;
   bottom: 24px; right: 14px;
@@ -1649,103 +1648,6 @@ body.rec-open { overflow-y: auto; }
   transition: background 0.15s;
 }
 #map-zoom-btns button:active { background: rgba(30,50,100,0.95); }
-
-/* Top-places drawer — slides up from the bottom edge of the map, overlaying
-   it rather than pushing #pg-map's locked 100svh/overflow:hidden height, so
-   the page's existing touch-lock/zoom behavior stays untouched. */
-#map-places-drawer {
-  position: absolute;
-  left: 14px; top: 14px;
-  z-index: 20;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  pointer-events: none;
-  width: min(360px, calc(100% - 28px));
-  /* Promotes this to its own compositing layer so it z-orders correctly
-     against the map canvas, which gets its own layer from the navy-tint
-     `filter` — without this, some browsers/GPU paths stack a plain
-     absolutely-positioned box under a filtered canvas despite z-index. */
-  transform: translateZ(0);
-  will-change: transform;
-}
-#map-places-tab {
-  align-self: flex-start;
-  pointer-events: auto;
-  display: flex; align-items: center; gap: 7px;
-  background: rgba(20,32,68,0.92);
-  border: 1px solid rgba(242,239,232,0.34);
-  border-radius: 999px;
-  padding: 9px 14px;
-  font-family: 'VCR', monospace;
-  font-size: 10px; letter-spacing: 1.6px;
-  color: rgba(242,239,232,0.96);
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 0 0 1px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08);
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s;
-}
-#map-places-tab:active { background: rgba(18,30,66,0.9); }
-.map-places-tab-chevron { font-size: 8px; transition: transform 0.22s ease; opacity: 0.7; }
-#map-places-drawer.open .map-places-tab-chevron { transform: rotate(180deg); }
-.map-places-tab-count {
-  background: rgba(242,239,232,0.16);
-  border-radius: 999px;
-  padding: 1px 7px;
-  font-size: 9px;
-}
-#map-places-list {
-  pointer-events: auto;
-  margin-top: 8px;
-  max-height: 0;
-  overflow: hidden;
-  border-radius: 14px;
-  background: rgba(8,16,42,0.88);
-  border: 1px solid rgba(242,239,232,0.16);
-  box-shadow: 0 12px 28px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.05);
-  transition: max-height 0.26s ease;
-}
-#map-places-drawer.open #map-places-list {
-  max-height: min(42vh, 360px);
-  overflow-y: auto;
-}
-.map-place-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  width: 100%;
-  background: none;
-  border: none;
-  border-bottom: 1px solid rgba(242,239,232,0.08);
-  padding: 11px 14px;
-  font-family: 'VCR', monospace;
-  color: rgba(242,239,232,0.92);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  text-align: left;
-}
-.map-place-row:last-child { border-bottom: none; }
-.map-place-row:active { background: rgba(242,239,232,0.06); }
-.map-place-name { font-size: 11px; letter-spacing: 1.2px; }
-.map-place-count {
-  flex-shrink: 0;
-  background: rgba(242,239,232,0.14);
-  border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 10px;
-}
-/* Mobile: stretch the drawer edge-to-edge instead of capping at the
-   desktop 360px width — same top-left anchor, just wider on small screens. */
-@media (max-width: 767px), (pointer: coarse) and (max-width: 1023px) {
-  #map-places-drawer {
-    left: 14px; right: 14px; top: 14px;
-    width: auto;
-  }
-  #map-places-drawer.open #map-places-list {
-    max-height: 45vh;
-  }
-}
 
 /* ══════════════════════════════════════
    VHS SHELF
@@ -2388,18 +2290,81 @@ button.cats-search-wrap {
 .detail-back-link:active { color: rgba(242,239,232,1); }
 .detail-back-link svg { width: 18px; height: 18px; flex-shrink: 0; }
 .detail-cat-title {
-  font-family: 'Bebas Neue', cursive;
-  font-size: clamp(22px, 6vw, 36px);
-  letter-spacing: 3px;
-  color: #ffffff;
-  text-shadow: 0 1px 10px rgba(0,0,0,0.5);
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 16px 7px;
+  font-family: 'DuckTape', 'Permanent Marker', cursive;
+  font-size: clamp(20px, 5vw, 31px);
+  letter-spacing: 1.4px;
+  color: var(--tape-ink);
+  text-shadow: none;
   line-height: 1.1;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0)),
+    repeating-linear-gradient(0deg, rgba(120,105,76,0.045) 0 2px, rgba(255,255,255,0.02) 2px 6px),
+    linear-gradient(180deg, var(--tape) 0%, #ddd1b4 100%);
+  border: 1px solid rgba(120,105,76,0.24);
+  border-radius: 2px 7px 3px 6px;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.16);
+  clip-path: polygon(1% 7%, 4% 0, 97% 2%, 100% 14%, 98% 92%, 95% 100%, 3% 97%, 0 88%);
 }
 .sub-page-title {
-  padding: 14px 16px 10px;
-  font-family: 'Bebas Neue', cursive;
-  font-size: 32px; letter-spacing: 5px;
-  color: rgba(242,239,232,1);
+  display: inline-flex;
+  align-items: center;
+  margin: 14px 16px 10px;
+  min-height: 38px;
+  max-width: calc(100% - 32px);
+  padding: 8px 16px 7px;
+  font-family: 'DuckTape', 'Permanent Marker', cursive;
+  font-size: clamp(22px, 4vw, 30px);
+  letter-spacing: 1.6px;
+  color: var(--tape-ink);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0)),
+    repeating-linear-gradient(0deg, rgba(120,105,76,0.045) 0 2px, rgba(255,255,255,0.02) 2px 6px),
+    linear-gradient(180deg, var(--tape) 0%, #ddd1b4 100%);
+  border: 1px solid rgba(120,105,76,0.24);
+  border-radius: 2px 7px 3px 6px;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.16);
+  clip-path: polygon(1% 7%, 4% 0, 97% 2%, 100% 14%, 98% 92%, 95% 100%, 3% 97%, 0 88%);
+}
+.sub-page-title,
+.detail-breadcrumb,
+.srch-top {
+  position: relative;
+}
+.sub-page-title::after,
+.detail-breadcrumb::after,
+.srch-top::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 1px;
+  width: min(100%, 560px);
+  background: linear-gradient(90deg, rgba(242,239,232,0.75) 0%, rgba(242,239,232,0.3) 45%, rgba(242,239,232,0) 100%);
+}
+.detail-breadcrumb {
+  padding-bottom: 18px;
+  margin-bottom: 6px;
+}
+.detail-breadcrumb::after {
+  left: 0;
+  right: auto;
+}
+.srch-top {
+  padding-bottom: 18px;
+  margin-bottom: 4px;
+}
+.srch-top::after {
+  left: 14px;
+  width: min(calc(100% - 28px), 560px);
+}
+@media (min-width: 960px) {
+  .sub-page-title {
+    margin-left: max(16px, calc((100vw - var(--desktop-nav-width)) / 2 + 16px));
+  }
 }
 
 /* ══════════════════════════════════════
@@ -3887,14 +3852,6 @@ body.on-match .mobe-face-img {
       <button id="map-zoom-in"  onclick="if(window._map)window._map.zoomIn()"  aria-label="Zoom in">+</button>
       <button id="map-zoom-out" onclick="if(window._map)window._map.zoomOut()" aria-label="Zoom out">−</button>
     </div>
-    <div id="map-places-drawer">
-      <button id="map-places-tab" onclick="toggleMapPlacesDrawer()">
-        <span class="map-places-tab-chevron">▼</span>
-        <span>TOP PLACES</span>
-        <span class="map-places-tab-count">0</span>
-      </button>
-      <div id="map-places-list"></div>
-    </div>
   </div>
   <div style="height:max(20px,env(safe-area-inset-bottom,0px))"></div>
 </div>
@@ -4611,14 +4568,7 @@ function buildShelf() {
 let mapInited = false;
 let glMap = null;
 function initMap() {
-  if (mapInited) {
-    // Re-entering the Places page after the container's size changed (e.g. a
-    // window resize or rotation while on another page) — without this the
-    // canvas stays locked to whatever size it had at first init, leaving the
-    // rest of the container blank.
-    if (glMap) requestAnimationFrame(() => glMap.resize());
-    return;
-  }
+  if(mapInited) return;
   mapInited = true;
   requestAnimationFrame(() => {
     window._map = glMap = new maplibregl.Map({
@@ -4628,15 +4578,6 @@ function initMap() {
       zoom: 10,
       attributionControl: false
     });
-
-    // Keeps the canvas matched to its container at all times — covers the
-    // cold-load case where web fonts/layout settle a moment after the map
-    // reads its initial size, plus any later window resize/rotation while
-    // this page is open. Without it the canvas can get stuck rendering at a
-    // stale size with the rest of the container left blank.
-    if (window.ResizeObserver) {
-      new ResizeObserver(() => glMap && glMap.resize()).observe(document.getElementById('map-container'));
-    }
 
     glMap.on('load', () => {
       // Group videos by lat/lng
@@ -4648,7 +4589,6 @@ function initMap() {
         groups[key].videos.push(v);
       });
 
-      mapGroups = groups;
       Object.values(groups).forEach(g => {
         const count = g.videos.length;
         const el = document.createElement('div');
@@ -4680,74 +4620,13 @@ function initMap() {
             ${rows}
           </div>`;
 
-        const marker = new maplibregl.Marker({ element: el })
+        new maplibregl.Marker({ element: el })
           .setLngLat([g.lng, g.lat])
           .setPopup(new maplibregl.Popup({ offset: 16, maxWidth: '270px' }).setHTML(popupHTML))
           .addTo(glMap);
-        g.marker = marker;
       });
-      renderTopPlaces(groups);
     });
   });
-}
-
-// ── TOP PLACES DRAWER (locations with 5+ videos) ──
-let mapGroups = {};
-// Raw location strings are full street addresses ("10 Meath Ave, Huntington,
-// NY 11743") — too long for a chip list, so this reduces to "city, state".
-function shortLocation(loc) {
-  const parts = String(loc || '').split(',').map(s => s.trim()).filter(Boolean);
-  if (parts.length < 2) return loc || '';
-  const city = parts[parts.length - 2];
-  const state = (parts[parts.length - 1].split(/\s+/)[0] || '').replace(/\d+/g, '');
-  return state ? `${city}, ${state}` : city;
-}
-function renderTopPlaces(groups) {
-  const list = document.getElementById('map-places-list');
-  const tab = document.getElementById('map-places-tab');
-  if (!list || !tab) return;
-  const top = Object.values(groups)
-    .filter(g => g.videos.length >= 5)
-    .sort((a, b) => b.videos.length - a.videos.length);
-  if (!top.length) { tab.style.display = 'none'; return; }
-  tab.querySelector('.map-places-tab-count').textContent = top.length;
-  list.innerHTML = top.map((g, i) => `
-    <button class="map-place-row" onclick="flyToPlace(${i})">
-      <span class="map-place-name">${shortLocation(g.location).toUpperCase()}</span>
-      <span class="map-place-count">${g.videos.length}</span>
-    </button>
-  `).join('');
-  window._topPlaces = top;
-}
-function flyToPlace(i) {
-  const g = window._topPlaces && window._topPlaces[i];
-  if (!g || !glMap) return;
-  document.getElementById('map-places-drawer')?.classList.remove('open');
-
-  // On mobile, land the marker above center (negative y offset) instead of
-  // dead-center, so the popup that opens above it has headroom and doesn't
-  // get clipped against the top of the locked #pg-map viewport.
-  const isMobileMap = window.matchMedia('(max-width: 767px), (pointer: coarse) and (max-width: 1023px)').matches;
-  const mapEl = document.getElementById('map-container');
-  const yOffset = isMobileMap && mapEl ? -Math.round(mapEl.clientHeight * 0.22) : 0;
-
-  glMap.once('moveend', () => {
-    // Close any other open popup first so repeated picks never stack.
-    (window._topPlaces || []).forEach(other => {
-      if (other.marker && other.marker !== g.marker) other.marker.getPopup()?.remove();
-    });
-    const popup = g.marker && g.marker.getPopup();
-    if (popup && !popup.isOpen()) g.marker.togglePopup();
-  });
-  glMap.flyTo({
-    center: [g.lng, g.lat],
-    zoom: isMobileMap ? 12.5 : 13,
-    duration: 700,
-    offset: [0, yOffset]
-  });
-}
-function toggleMapPlacesDrawer() {
-  document.getElementById('map-places-drawer')?.classList.toggle('open');
 }
 
 // ── LIGHTBOX ──
