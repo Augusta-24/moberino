@@ -2035,6 +2035,7 @@ html, body { height: 100%; overflow: hidden; }
 #pg-detail .cats-header,
 #pg-timeline .cats-header,
 #pg-map .cats-header,
+#pg-home .cats-header,
 #pg-search .cats-header,
 #pg-shelf .cats-header {
   background: transparent;
@@ -2353,6 +2354,9 @@ button.cats-search-wrap {
 @media (min-width: 960px) {
   :root { --desktop-nav-width: 920px; }
   body { max-width: 920px; margin: 0 auto; }
+  #pg-home {
+    padding-top: 0;
+  }
   /* Main website pages use one desktop page frame. The body remains capped for legacy
      sizing, but each active main-site page breaks out to the viewport and then centers
      its shared shell/content inside that frame. Arcade pages are intentionally excluded. */
