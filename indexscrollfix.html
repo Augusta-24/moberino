@@ -2356,8 +2356,8 @@ body.main-scrolled .main-site-header .page-nav-btn.active::after {
 body.theme-july4     #collage::after {
   background: repeating-linear-gradient(
     -28deg,
-    rgba(68,4,12,0.92) 0px, rgba(68,4,12,0.92) 44px,
-    rgba(4,14,68,0.92) 44px, rgba(4,14,68,0.92) 88px
+    rgba(68,4,12,0.86) 0px, rgba(68,4,12,0.86) 44px,
+    rgba(4,14,68,0.86) 44px, rgba(4,14,68,0.86) 88px
   );
 }
 body.theme-halloween #collage::after { background: rgba(52,18,0,0.90); }
@@ -5873,12 +5873,10 @@ buildDecadeBar();
     if (particleStop) particleStop();
     const c = document.createElement('canvas');
     c.id = 'season-canvas';
-    // Above #collage::after's seasonal tint, but still inside the non-interactive
-    // collage layer so fireworks/stars stay behind site UI.
-    c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1000000;';
+    c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:900000;';
     document.getElementById('collage').appendChild(c);
     const ctx = c.getContext('2d');
-    let W, H, raf, burstTimer, clearSeedBursts = null;
+    let W, H, raf, burstTimer;
     function resize() { W = c.width = window.innerWidth; H = c.height = window.innerHeight; }
     resize();
     const ro = new ResizeObserver(resize);
@@ -5991,12 +5989,11 @@ buildDecadeBar();
       addBurst();
       const _s1 = setTimeout(addBurst, 200);
       const _s2 = setTimeout(addBurst, 450);
-      clearSeedBursts = () => { clearTimeout(_s1); clearTimeout(_s2); };
+      const _clearSeeds = () => { clearTimeout(_s1); clearTimeout(_s2); };
 
       (function tick() {
-        // Keep the seasonal canvas transparent so the July 4 stripe overlay
-        // remains visible underneath the stars/fireworks.
-        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = 'rgba(0,0,0,0.18)';
+        ctx.fillRect(0, 0, W, H);
 
         // Draw twinkling stars
         stars.forEach(s => {
@@ -6041,7 +6038,7 @@ buildDecadeBar();
     particleStop = () => {
       cancelAnimationFrame(raf); ro.disconnect();
       clearTimeout(burstTimer);
-      if (clearSeedBursts) clearSeedBursts();
+      if (typeof _clearSeeds === 'function') _clearSeeds();
       c.remove(); particleStop = null;
     };
   }
@@ -6050,9 +6047,7 @@ buildDecadeBar();
     if (!currentSeason) return;
     seasonOn = !seasonOn;
     document.body.classList.toggle(`theme-${currentSeason}`, seasonOn);
-    [document.getElementById('seasonBtn'), document.getElementById('mobileSeasonBtn')].forEach(btn => {
-      if (btn) btn.classList.toggle('active', seasonOn);
-    });
+    btn.classList.toggle('active', seasonOn);
     if (seasonOn) startParticles(); else if (particleStop) particleStop();
   };
 })();
