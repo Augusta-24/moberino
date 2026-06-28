@@ -3313,9 +3313,9 @@ body.on-match .mobe-face-img {
 #pg-whack { height: var(--app-vh, 100dvh); overflow: hidden; position: relative; z-index: 1; display: none; flex-direction: column; background: transparent; }
 #pg-whack.active { display: flex; }
 .whack-wrap {
-  padding: max(52px, calc(env(safe-area-inset-top, 0px) + 48px)) 12px max(10px, env(safe-area-inset-bottom, 0px));
+  padding: max(12px, calc(env(safe-area-inset-top, 0px) + 10px)) 12px max(10px, env(safe-area-inset-bottom, 0px));
   display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-  gap: 8px; flex: 1; min-height: 0; overflow: hidden;
+  gap: 6px; flex: 1; min-height: 0; overflow: hidden;
 }
 .whack-wrap.mode-select-layout {
   justify-content: flex-start;
@@ -3418,29 +3418,32 @@ body.on-match .mobe-face-img {
 }
 .whack-hud {
   display: flex; justify-content: space-between; align-items: center;
-  width: 100%; max-width: 420px;
+  width: 100%; max-width: 420px; box-sizing: border-box;
   background: rgba(242,239,232,0.05);
   border: 1px solid rgba(242,239,232,0.12);
   border-radius: 6px;
-  padding: 8px 16px;
+  padding: 6px 16px;
+}
+@media (max-width: 600px) {
+  .whack-hud { padding-right: 52px !important; }
 }
 .whack-stat-label { font-size: 9px; letter-spacing: 2px; color: rgba(242,239,232,0.45); }
 .whack-stat-val { font-family: 'Bebas Neue', cursive; font-size: 36px; letter-spacing: 2px; line-height: 1; }
 #whack-timer-val.urgent { color: #ff4444; animation: whack-blink 0.5s infinite; }
 @keyframes whack-blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
 .whack-grid {
-  /* --cols/--rows are overridden inline from GRID_COLS/GRID_ROWS in the Whack IIFE —
-     that's the single place to change to resize the board, this CSS adapts automatically.
-     Uses wrapper top padding for the floating exit button, then lets the board claim
-     more of the remaining viewport without introducing an internal scrollbar. */
   --cols: 3;
   --rows: 4;
-  --hole-sz: min(calc(92vw / var(--cols)), calc((var(--app-vh, 100dvh) - 190px) / var(--rows)), 112px);
+  --grid-vpad: 180px;
+  --hole-sz: min(calc(90vw / var(--cols)), calc((var(--app-vh, 100dvh) - var(--grid-vpad)) / var(--rows)), 112px);
   display: grid;
   grid-template-columns: repeat(var(--cols), var(--hole-sz));
   grid-template-rows: repeat(var(--rows), var(--hole-sz));
   gap: 8px;
   margin: 0 auto;
+}
+@media (max-width: 600px) {
+  .whack-grid { --grid-vpad: 100px; }
 }
 /* Memory round's "look, don't touch yet" cue — a gentle pulsing blue glow around the
    whole board during the memorize window, so the board itself signals "hold up" rather
@@ -3820,14 +3823,17 @@ body.on-match .mobe-face-img {
 #pg-match { height: var(--app-vh, 100dvh); overflow: hidden; position: relative; z-index: 1; display: none; flex-direction: column; background: transparent; }
 #pg-match.active { display: flex; }
 .match-wrap {
-  padding: max(52px, calc(env(safe-area-inset-top, 0px) + 48px)) 10px max(10px, env(safe-area-inset-bottom, 0px));
+  padding: max(12px, calc(env(safe-area-inset-top, 0px) + 10px)) 10px max(10px, env(safe-area-inset-bottom, 0px));
   flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center;
-  gap: 8px; overflow: hidden;
+  gap: 6px; overflow: hidden;
 }
-.match-wrap.mode-select-layout { overflow-y: auto; }
+.match-wrap.mode-select-layout { overflow-y: auto; padding-top: max(52px, calc(env(safe-area-inset-top, 0px) + 48px)); }
 .match-msg { font-family: 'Bebas Neue', cursive; font-size: 34px; letter-spacing: 6px; text-align: center; }
 .match-sub { font-size: 11px; letter-spacing: 2px; color: rgba(242,239,232,0.55); text-align: center; }
-.match-hud { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 460px; }
+.match-hud { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 460px; box-sizing: border-box; }
+@media (max-width: 600px) {
+  .match-hud { padding-right: 52px !important; }
+}
 .match-grid {
   --card: min(
     calc((min(100vw, 520px) - 36px) / 3),
@@ -6206,7 +6212,17 @@ buildDecadeBar();
   // regardless of which season is active (the button's own "magic" identity).
   const SPARKLE_GLOW = 'radial-gradient(ellipse at center, rgba(255,208,92,0.32) 0%, rgba(255,176,48,0.14) 55%, rgba(255,150,30,0) 100%)';
 
+  function getSeasonOverride() {
+    const value = new URLSearchParams(window.location.search).get('season');
+    if (value === 'july4' || value === 'halloween' || value === 'xmas') return value;
+    if (value === 'off') return null;
+    return undefined;
+  }
+
   function getSeasonTheme() {
+    const override = getSeasonOverride();
+    if (override !== undefined) return override;
+
     const now = new Date(), m = now.getMonth() + 1, d = now.getDate();
     if (m === 12) return 'xmas';
     if (m === 10) return 'halloween';
@@ -9464,8 +9480,9 @@ window.confirmCharSelect = function() {
   window.whackBegin = function() {
     ArcadeMusic.stop();
     if (gameMode === 'classic') {
-      if (difficulty === 'easy') { GRID_COLS = 4; GRID_ROWS = 4; } // Medium: 16 holes
-      else                        { GRID_COLS = 4; GRID_ROWS = 5; } // Hard: 20 holes
+      const _mob = window.innerWidth <= 600;
+      if (difficulty === 'easy') { GRID_COLS = _mob ? 3 : 4; GRID_ROWS = _mob ? 5 : 4; }
+      else                        { GRID_COLS = 4; GRID_ROWS = 5; }
       HOLES = GRID_COLS * GRID_ROWS;
       state = 'playing'; render();
       classicIntroSteps(classicStart);
@@ -9533,9 +9550,6 @@ window.confirmCharSelect = function() {
   }
 
   function gridLayout(pairs) {
-    // Pick cols near sqrt(cardCount) so bigger pair counts (15, 20) get a roomier,
-    // more square grid instead of staying narrow-and-tall. CSS grid handles a
-    // not-quite-full last row fine, so no need for exact divisibility.
     const n = pairs * 2;
     const cols = Math.max(2, Math.min(7, Math.round(Math.sqrt(n))));
     return { cols, rows: Math.ceil(n / cols) };
@@ -9637,9 +9651,10 @@ window.confirmCharSelect = function() {
     if (state === 'preview') {
       const _gl = gridLayout(PAIRS);
       const _ghp = (_gl.cols - 1) * 6 + 24;
-      const _gStyle = `--card:min(calc((min(100vw,520px) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - 190px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card))`;
+      const _vPad = window.innerWidth <= 600 ? 100 : 180;
+      const _gStyle = `--card:min(calc((min(100vw,520px) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - ${_vPad}px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card))`;
       wrap.innerHTML = `
-        <div class="match-hud" style="padding:8px 16px">
+        <div class="match-hud" style="padding:6px 16px">
           <div style="font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:5px;color:#ffe61a;text-shadow:0 0 14px #ffe61a88" id="match-preview-cd">MEMORIZE!  ${matchMode === 'impossible' ? 7 : matchMode === 'challenge' ? 4 : 3}</div>
         </div>
         <div class="match-grid" style="${_gStyle}">${
@@ -9659,12 +9674,13 @@ window.confirmCharSelect = function() {
     if (state === 'playing') {
       const _gl = gridLayout(PAIRS);
       const _ghp = (_gl.cols - 1) * 6 + 24;
-      const _gStyle = `--card:min(calc((min(100vw,520px) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - 190px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card))`;
+      const _vPad = window.innerWidth <= 600 ? 100 : 180;
+      const _gStyle = `--card:min(calc((min(100vw,520px) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - ${_vPad}px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card))`;
       wrap.innerHTML = `
-        <div class="match-hud">
-          <div><div class="whack-stat-label">SCORE</div><div class="whack-stat-val" id="ms" style="font-size:24px">${matchScore}</div></div>
-	          <div style="text-align:center"><div class="whack-stat-label">TIME</div><div class="whack-stat-val" id="mt" style="font-size:${matchMode === 'free' ? 22 : 38}px;line-height:1">${matchMode === 'free' ? 'NONE' : Math.max(0, timeLimit - matchTimer) + 's'}</div></div>
-          <div style="text-align:right"><div class="whack-stat-label">PAIRS</div><div class="whack-stat-val" id="match-pairs" style="font-size:24px">${matched}/${PAIRS}</div></div>
+        <div class="match-hud" style="padding:6px 16px">
+          <div style="display:none"><div class="whack-stat-label">SCORE</div><div class="whack-stat-val" id="ms" style="font-size:24px">${matchScore}</div></div>
+          <div><div class="whack-stat-label">TIME</div><div class="whack-stat-val" id="mt" style="font-size:${matchMode === 'free' ? 22 : 32}px;line-height:1">${matchMode === 'free' ? 'NONE' : Math.max(0, timeLimit - matchTimer) + 's'}</div></div>
+          <div style="text-align:center"><div class="whack-stat-label">PAIRS</div><div class="whack-stat-val" id="match-pairs" style="font-size:24px">${matched}/${PAIRS}</div></div>
           <div style="text-align:right"><div class="whack-stat-label">MOVES</div><div class="whack-stat-val" id="match-moves" style="font-size:24px">${moves}${matchMode==='impossible'?'/'+IMPOSSIBLE_MOVE_CUTOFF:''}</div></div>
         </div>
         <div class="match-grid" style="${_gStyle}">${
@@ -10068,8 +10084,11 @@ window.confirmCharSelect = function() {
     if (wrap) wrap.scrollTop = 0;
   }
 
+  const PAIR_SAFE_COUNTS = [4,5,6,7,8,9,10,12,14,15,16,18,20].filter(n => n <= GAME_CHARS.length);
   window.matchAdjChar = function(delta) {
-    freePlayCharCount = Math.min(Math.max(4, freePlayCharCount + delta), Math.min(20, GAME_CHARS.length));
+    const idx = PAIR_SAFE_COUNTS.indexOf(freePlayCharCount);
+    const next = idx < 0 ? 0 : Math.max(0, Math.min(PAIR_SAFE_COUNTS.length - 1, idx + delta));
+    freePlayCharCount = PAIR_SAFE_COUNTS[next];
     window._matchFreePairs = freePlayCharCount;
     const el = document.getElementById('match-char-ct');
     if (el) el.textContent = freePlayCharCount;
