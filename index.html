@@ -639,6 +639,18 @@ body.on-timeline #collage::after {
     padding-right: 0;
     justify-content: center;
   }
+  /* The retro/classic theme toggle (js/site-theme.js installThemeToggle) is
+     inserted as a plain .page-nav-btn right before Search, so it inherits the
+     :not(.is-search) full-width rule above and stretches across the entire
+     flexible gap column. Override it alone, after the rule above so this wins
+     the specificity tie, to a compact auto-width pill right-aligned in that
+     same column — right next to Search. Columns 1-4 (Home/Sparkle, Browse,
+     Years, Places) and Search itself are untouched. */
+  .cats-header-nav .page-nav-btn.site-theme-nav-toggle {
+    width: auto;
+    justify-self: end;
+    padding: 0 14px;
+  }
 }
 
 /* CTA buttons — Apple-like glass, home-video typography */
