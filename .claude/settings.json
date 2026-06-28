@@ -124,7 +124,12 @@
       "Bash(awk 'NR>=2365 && NR<=2382{print NR\": \"$0}' index.html)",
       "Bash(awk 'NR<=288 && /@media/{line=NR; rule=$0} END{print line\": \"rule}' index.html)",
       "Bash(awk 'NR<=2379 && /@media/{line=NR; rule=$0} END{print line\": \"rule}' index.html)",
-      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/check_retro.py)"
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/check_retro.py)",
+      "Bash(node --check js/games/match.js)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/check_match.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/check_impossible.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/check_results.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/check_intro.py)"
     ],
     "additionalDirectories": [
       "/tmp"

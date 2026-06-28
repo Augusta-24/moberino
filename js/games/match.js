@@ -4,7 +4,7 @@
 (function() {
   let PAIRS = 9; // dynamic, set per-mode in makeCards()
   let cards = [], flipped = [], locked = false;
-  let moves = 0, matched = 0, state = 'idle', matchScore = 0, combo = 0, matchTimer = 0, timerInt, previewInt, timeLimit = 60;
+  let moves = 0, matched = 0, state = 'idle', matchTimer = 0, timerInt, previewInt, timeLimit = 60;
   let matchOutOfMoves = false;
   let matchCutoffWaived = false; // true once "FINISH ANYWAY" is chosen — stops re-prompting
   const IMPOSSIBLE_MOVE_CUTOFF = 55;
@@ -15,10 +15,12 @@
   // Hard = the old "timed" mode. Challenge/Impossible add a target-moves benchmark to
   // beat (not a hard fail — you can always finish, it's just a "did you beat it?" badge)
   // plus a generous time limit so move-efficiency, not the clock, is the real challenge.
+  // Impossible has no in-game timer at all (only the opening memorize countdown) — it's
+  // measured purely by moves once play begins, so it carries no `time` config.
   const MODE_CONFIG = {
     hard:       { pairs: 12, time: 60, targetMoves: null },
     challenge:  { pairs: 16, time: 60, targetMoves: null },
-    impossible: { pairs: 21, time: 20, targetMoves: null },
+    impossible: { pairs: 21, targetMoves: null },
   };
 
   function shuffle(arr) {
@@ -63,7 +65,6 @@
 
     if (state === 'idle') {
       if (!ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
-      const best = localStorage.getItem('match-best-score');
       wrap.innerHTML = `
         <div class="whack-mode-shell" style="max-width:440px;margin-top:24px">
           <div class="whack-mode-title">CHOOSE MODE</div>
@@ -82,7 +83,7 @@
               <text x="258" y="40" font-size="10" fill="#ffe61a" opacity="0.7">✦</text>
             </svg>
             <div class="game-card-marquee" style="color:#ffe61a;text-shadow:0 0 16px rgba(255,230,26,0.65)">FLIP CARDS TO FIND PAIRS</div>
-            ${best ? `<div class="game-card-desc" style="color:#ffe61a;opacity:0.9;margin-bottom:10px">BEST SCORE: ${best}</div>` : `<div style="height:8px"></div>`}
+            <div style="height:8px"></div>
             <div class="match-mode-select" style="display:flex;flex-direction:column;gap:8px;align-items:stretch;margin-top:2px">
             <button class="whack-btn match-mode-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.14);padding:10px 16px;text-align:left" onclick="matchGoFreeSetup()">
               <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;line-height:1.1">FREE PLAY</div>
@@ -98,7 +99,7 @@
             </button>
             <button class="whack-btn match-mode-btn" style="border-color:#ff4444;background:rgba(255,68,68,0.1);padding:10px 16px;text-align:left" onclick="matchPlay('impossible')">
               <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;line-height:1.1">IMPOSSIBLE</div>
-              <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:0.5px;opacity:0.9;margin-top:4px;white-space:nowrap">21 PAIRS · ${IMPOSSIBLE_MOVE_CUTOFF} MOVES · 20 SECONDS</div>
+              <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:0.5px;opacity:0.9;margin-top:4px;white-space:nowrap">21 PAIRS · ${IMPOSSIBLE_MOVE_CUTOFF} MOVES</div>
             </button>
             </div>
             </div>
@@ -173,8 +174,7 @@
       const _gStyle = `--card:min(calc((min(100vw,520px) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - ${_vPad}px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card));gap:${_gap}px`;
       wrap.innerHTML = `
         <div class="match-hud" style="padding:6px 16px">
-          <div style="display:none"><div class="whack-stat-label">SCORE</div><div class="whack-stat-val" id="ms" style="font-size:24px">${matchScore}</div></div>
-          <div><div class="whack-stat-label">TIME</div><div class="whack-stat-val" id="mt" style="font-size:${matchMode === 'free' ? 22 : 32}px;line-height:1">${matchMode === 'free' ? 'NONE' : Math.max(0, timeLimit - matchTimer) + 's'}</div></div>
+          <div><div class="whack-stat-label">TIME</div><div class="whack-stat-val" id="mt" style="font-size:${(matchMode === 'free' || matchMode === 'impossible') ? 22 : 32}px;line-height:1">${(matchMode === 'free' || matchMode === 'impossible') ? 'NONE' : Math.max(0, timeLimit - matchTimer) + 's'}</div></div>
           <div style="text-align:center"><div class="whack-stat-label">PAIRS</div><div class="whack-stat-val" id="match-pairs" style="font-size:24px">${matched}/${PAIRS}</div></div>
           <div style="text-align:right"><div class="whack-stat-label">MOVES</div><div class="whack-stat-val" id="match-moves" style="font-size:24px">${moves}${matchMode==='impossible'?'/'+IMPOSSIBLE_MOVE_CUTOFF:''}</div></div>
         </div>
@@ -208,12 +208,12 @@
           marqueeEnd: '#a89000',
           marqueeSolid: true,
           marqueeBg: '#ff9933',
-          scoreLabel: 'YOUR SCORE',
-          scoreValue: matchScore,
-          saveValue: matchScore,
+          scoreLabel: 'YOUR MOVES',
+          scoreValue: moves,
+          saveValue: moves,
           field: 'score',
           extra: `FREE PLAY · ${freePlayCharCount} PAIRS`,
-          ascending: false,
+          ascending: true,
           buttons: `
             <button class="whack-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.30)" onclick="matchGoFreeSetup()">PLAY AGAIN</button>
             <button class="whack-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.30)" onclick="matchChangeMode()">CHANGE MODE</button>
@@ -226,28 +226,21 @@
         const headline = didWin ? 'CLEARED!' : (matchOutOfMoves ? 'OUT OF MOVES!' : "TIME'S UP!");
         const boardKey = getMatchLeaderboardKey({ mode: matchMode, pairs: freePlayCharCount });
         const uid = `match-${matchMode}`;
-        let scoreLabel = 'YOUR SCORE';
-        let scoreValue = matchScore;
-        let saveValue = matchScore;
-        let scoreExtra = '';
-        let field = 'score';
-        let ascending = false;
-        if (matchMode === 'challenge') {
+        // Hard/Challenge have unlimited moves, so time-to-clear is the only meaningful
+        // measure. Impossible has no in-game timer at all, so moves is its only measure.
+        let scoreLabel, scoreValue, saveValue, field, ascending;
+        if (matchMode === 'hard' || matchMode === 'challenge') {
           scoreLabel = 'YOUR TIME';
           scoreValue = fmtTime(matchTimer);
           saveValue = matchTimer;
-          scoreExtra = '';
           field = 'seconds';
           ascending = true;
-        } else if (matchMode === 'impossible') {
+        } else {
           scoreLabel = 'YOUR MOVES';
           scoreValue = moves;
           saveValue = moves;
-          scoreExtra = '';
           field = 'score';
           ascending = true;
-        } else if (matchMode === 'hard') {
-          scoreExtra = '';
         }
         wrap.innerHTML = buildArcadeResultCard({
           uid,
@@ -261,10 +254,8 @@
           scoreLabel,
           scoreValue,
           saveValue,
-          scoreExtra,
           field,
-          extra: scoreExtra,
-          seconds: matchMode === 'challenge' ? matchTimer : 0,
+          seconds: (matchMode === 'hard' || matchMode === 'challenge') ? matchTimer : 0,
           ascending,
           buttons: `
             <button class="whack-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.30)" onclick="matchPlay('${matchMode}')">PLAY AGAIN</button>
@@ -299,9 +290,6 @@
       if (isMatch) {
         SFX.match();
         matchFlash();
-        combo++;
-        matchScore += 100 + (combo > 1 ? (combo - 1) * 60 : 0);
-        const sv = document.getElementById('ms'); if (sv) sv.textContent = matchScore;
         cards[a].matched = cards[b].matched = true;
         matched++;
         const pv = document.getElementById('match-pairs');
@@ -326,10 +314,6 @@
         if (matched === PAIRS) {
           clearInterval(timerInt); clearInterval(previewInt);
           removeMatchSideBar();
-          if (matchMode !== 'free') {
-            const timeBonus = Math.max(0, (timeLimit - matchTimer) * 5);
-            matchScore += timeBonus;
-          }
           setTimeout(() => {
             showMatchGameOver();
             try { SFX.win(); ticketConfetti(); } catch(e) { console.warn('[Match] finish effect failed:', e); }
@@ -338,7 +322,6 @@
           checkMoveCutoff();
         }
       } else {
-        combo = 0;
         SFX.mismatch();
         [a, b].forEach(idx => {
           const el = document.getElementById(`mc-${idx}`);
@@ -497,8 +480,11 @@
       items = ['16 PAIRS', 'UNLIMITED MOVES', '60 SECONDS'];
       watchTimer = true;
     } else {
+      // Text-only "20 SECONDS" beat stays (still true to the mode's framing) — just
+      // the watchTimer demo (the bar-drain animation) is skipped, since there's no
+      // actual in-game countdown bar for Impossible to demo anymore.
       items = ['21 PAIRS', `${IMPOSSIBLE_MOVE_CUTOFF} MOVE LIMIT`, '20 SECONDS'];
-      watchTimer = true;
+      watchTimer = false;
     }
     const steps = items.map(text => ({ duration: 1000, show: () => { ann.innerHTML = mmIntroHeadline(text); } }));
     if (watchTimer) {
@@ -518,9 +504,9 @@
     window._matchMode = matchMode;
     window._matchFreePairs = freePlayCharCount;
     removeMatchSideBar();
-    if (matchMode !== 'free') timeLimit = MODE_CONFIG[matchMode].time;
+    if (matchMode === 'hard' || matchMode === 'challenge') timeLimit = MODE_CONFIG[matchMode].time;
     cards = makeCards(); flipped=[]; locked=false; moves=0; matched=0; matchOutOfMoves=false; matchCutoffWaived=false;
-    matchScore=0; combo=0; matchTimer=0;
+    matchTimer=0;
     clearInterval(timerInt); clearInterval(previewInt);
     ArcadeMusic.stop();
 
@@ -543,7 +529,11 @@
         cards.forEach(c => { c.flipped = false; });
         locked = false;
         state = 'playing'; render();
-        const startTimer = () => {
+        // Impossible has no in-game timer/countdown/fail-by-time — once gameplay
+        // starts it's measured by moves only (see checkMoveCutoff).
+        if (matchMode === 'hard' || matchMode === 'challenge') {
+          showMatchSideBar();
+          updateMatchSideBar(100);
           SFX.raceStart();
           timerInt = setInterval(() => {
             matchTimer++;
@@ -561,12 +551,7 @@
               setTimeout(showMatchGameOver, 700);
             }
           }, 1000);
-        };
-        if (matchMode === 'hard' || matchMode === 'challenge' || matchMode === 'impossible') {
-          showMatchSideBar();
-          updateMatchSideBar(100);
         }
-        startTimer();
       }
     }, 1000);
   }
