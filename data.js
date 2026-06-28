@@ -2222,8 +2222,8 @@ const VIDEOS = [
     "month": 4,
     "objects": "living_room,house,backyard,car,driveway,shrubs,wallpaper,mirror,curtain,staircase,dark,bush,lawn,kitchen,power_lines,telephone_pole,windows,mailbox,picnic_table,bathroom,vanity,cabinet,handle,tile,flooring,paint,furniture,baby,public_bathroom,carpeted,birthday,april_14,asphalt,cabinets,refrigerator,counter,stove,silver,vintage,hallway,doorway,couch_on_the_first_floor,rug_on_the_ground,lamp_on_a_table,corner,empty_room,light_switch,black_sky,dark_night,bedroom,bed,pillows,dresser,nightstand,dark_room,ironing_board,blurry,yellow_flowers,pink_flowers,hedge_trimmer,video_camera_screen,flagpole,chimney,street_light,street_sign,leaves,rain_gutter,downspout,electrical_wire,tree_branches,tree_trunk,outdoor_furniture,patio,porch,lawn_chair,grill,trash_can,swing_set,playground_equipment,swing,slide,seesaw,sandbox,garden_hose,water_spigot,street_lamp,garden,gazebo",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "2001 Kristen After School",
@@ -2236,8 +2236,8 @@ const VIDEOS = [
     "month": null,
     "objects": "girl",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "March 2002 Kevin House Tour",
@@ -2250,8 +2250,8 @@ const VIDEOS = [
     "month": 3,
     "objects": "dog,birthday,birthday_cake,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,living_room,bookshelf,halloween,easter_eggs,police_car,driver's_side_door,passenger_seat,police_officer_in_uniform,radio_in_console,steering_wheel,speedometer,tachometer,rear_window,hallway,wooden_flooring,pet_dog,collar,2002._however,home_office,computer_desk,keyboard,mouse,books,printer,file_cabinet,ny_giants,yankees,dinosaur,stuffed_animal,award,trophy,vhs_player,date_stamp_2002,vcr_tape,vcr_machine,shelf,feel_free_to_provide_it,nothing_in_this_image,march_20,evening,kitchen_stove,pan,kettle,pot,wallpaper,cat,furniture,child,toddler,teenager,elderly,swimming,dancing,singing,opening_presents,blowing_candles,cooking,playing,beach,backyard,church,restaurant,school,hospital,park,pool,christmas,thanksgiving,easter,wedding,graduation",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "March 1997 Kevin's 7Th Birthday",
@@ -2264,8 +2264,8 @@ const VIDEOS = [
     "month": 3,
     "objects": "living_room,child,suit,tie,elderly,elderly_man,birthday,boy,opening_presents,backyard,park,television,glasses,teenager,birthday_cake,snow,swing_set,christmas,easter,pool,school,audience,pointing,hand,baby,kids,christmas_tree,balloon,fireplace,turkey,pumpkin,easter_eggs,playground,playground_equipment,basketball_hoop,slide,toy,inflatable_castle,house,street_lamp,leaves,clear_sky,cloud,sun,shadow,water_fountain,fire_hydrant,parked_car,inflatable_dinosaur,outdoor_activity,inflatable_balloon,toy_car,halloween,thanksgiving,graduation,magician,mic,cat_in_background,man_performing_magic_trick,child_standing_near_man,celebration,cake,child_holding_a_present,black_and_white_cat,bowl_on_table,books_on_table,red_tie_on_man,suit_coat_on_man,microphone_on_stand,cell_phone_in_hand,white_paper_in_man's_hand,silver_spoon,blue_shirt_on_man,brown_pants_on_man,black_shoes_on_man,wooden_flooring,white_wall_tiles,light_switch_panel,beige_carpeting,books,box,keyboard,mouse,scissors,spoon,fork,knife,cell_phone,bed,car,traffic_light,street_sign,beach,church,restaurant,hospital,birthday_party,christmas_celebration,halloween_costume_party,thanksgiving_dinner,easter_egg_hunt,wedding_reception,graduation_ceremony,easter_egg_decorating,pants,coat,microphone,podium,floor_lamp,picture_frame,bookshelf,wall_clock,teddy_bear,elderly_man_in_suit,boy_standing_next_to_him,hair,holding,phone,dining_table,living_room_setting,dressed_in_formal_attire,black_suit,candle_holder,black_tie,wine_glass,candle,handbag,adult_(likely_parent,elderly_woman,toddler,elderly_couple,young_boy,activities_(presentation,occasion_(formal_event,objects_(awards_or_plaques,talking,blowing_candles,cooking,playing,presentation,stage,old_man,older_woman,young_child,their_activities",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "August 2001 Kristen's Luau Birthday",
@@ -2278,8 +2278,8 @@ const VIDEOS = [
     "month": 8,
     "objects": "child,backyard,girl,pool,hula_hoop,birthday,swimming,birthday_cake,dancing,blowing_candles,children,dance,party,toddler,teenager,baby,summer,hula,elderly,playing,birthday_party,opening_presents,cake,balloons,costume,celebration,halloween,singing,cooking,august_25,beach,balloon,flowers,picnic_table,park,hula_dance,girls,dog,outdoor_pool,cell_phone,digital_camcorder,pavement,casual_clothing,christmas,thanksgiving,easter,graduation,wedding,swimsuit,towel,august_25th,christmas_tree,teenage,water_slides,august_25_2001,family_swimming,vacation,kids,summer_vacation,girls_in_pool,barbecue_grill,house,patio,plants,toy_gun,deck,swimwear,ponytails,hula_hoops,dance_costumes,instrument,video_camera,object\n\nperson,bush,path,basket,banner,people_(3,activities_(1,birthday_celebration,hula_hula_clothes,hawaiian_leis,person_(female,activity_(dancing,setting_(park,occasion_(none,hawaiian_dress,music_system,lawn_chairs,inflatable_balloon,music,lawn_chair,outdoor_furniture,birthday_balloons,phone,outdoor_setting,kids_dancing,grass_lawn,hawaiian_costume,gravel,green,performing,hula_hooping,grass_skirt,lei,stage,hawaiian_shirts,sunny_day,flower_leis,people(adults,activities(dancing,setting(park,occasion(celebration,people(child,settings(park,occasions(birthday,school,hula_dancing,women_in_hula_outfits,young_girls,grassy_field,casual_clothes,flowers_in_hand,lawn",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "March 1999 Kevin And Ted's Birthday",
@@ -2292,8 +2292,8 @@ const VIDEOS = [
     "month": 3,
     "objects": "elderly,living_room,kitchen,family,television,dancing,opening_a_present,home_environment,woman_kneeling_behind_him,baby_sitting_on_man's_lap,living_room_setting,family_gathering_occasion,social_gathering,sitting_on_couch,smoking,remote,coffee_table,adult_female,blowing_candles,fireplace",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "March 2001 Kevin And Ted's Birthday",
@@ -2306,8 +2306,8 @@ const VIDEOS = [
     "month": 3,
     "objects": "living_room,party,television,family,birthday_celebration,birthday_party,kitchen,birthday_cake,knives,spoons,forks,staircase,handrail,balloon,sofa,framed_picture,floor_lamp,elderly_couple,man_and_child,presents_being_opened,fireplace,children,playing,opening_presents,phone,boy,elderly,sitting_on_couch,watching_tv,cake,baby,child,toddler,dining_table,cake_cutting",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "May 2000 Dawn's Birthday",
@@ -2320,8 +2320,8 @@ const VIDEOS = [
     "month": 5,
     "objects": "backyard,elderly,dog,child,lawn_chair,elderly_woman,outdoor_setting,house,patio,cake,dining_table,lawn,patio_furniture,birthday_cake,park,kitchen,cage,dogs,wire_crate,man_standing,patio_table,party,next_to_pool,backyard_setting,casual_occasion,patio_table_and_chairs,sunny_day,white_plastic_chair,opening_presents,grill,flowers,barbecue_grill,outdoor_patio,pool,pet,cooler,outdoor_furniture,video_camera,sitting_on_patio_chair,wine_glass,patio_door_open,package,woman_standing,living_room,opening_door,pink_flowers,birthday,funeral,grave,cemetery,girl,elderly_man_using_phone,sitting_outside,both_men_talking_on_phones,shed,porch_swing,white_house,person_walking_in_rain,candle,cooking,family,kids,talking,blowing_candles",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "2000 Kristen's Birthday",
@@ -2334,8 +2334,8 @@ const VIDEOS = [
     "month": 11,
     "objects": "living_room,child,baby,birthday_party,toddler,elderly,opening_presents,people_sitting_on_floor,settings_(living_room,birthday,seated,people(adult,setting(living_room,occasion(birthday,person_(teenager,setting_(living_room,activity_(looking_down,elderly_woman,elderly_man,party,kitchen,counter,dining_table,wine_glasses,candle,party_hat,teenager,playing,lighting_sparklers",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "March 1997 Kevin's 7Th Birthday Party",
@@ -2348,8 +2348,8 @@ const VIDEOS = [
     "month": 3,
     "objects": "baby,living_room,kitchen,refrigerator,teenager,adult_male,family,evening,casual,dining_table,people_seated,food_on_table,kitchen_in_background,serving_food,birthday,surprised_expression,stove,old_woman,wallpaper,looking,playing,inside,drinking_from_cup,playing_in_swing,toddler,elderly,child",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "Christmas Morning 2002",
@@ -2362,8 +2362,8 @@ const VIDEOS = [
     "month": 12,
     "objects": "merry_christmas,easter,birthday,christmas,halloween,thanksgiving,wedding,graduation,banner,cake,gift,bag",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "Christmas Eve 2001 Mobergs",
@@ -2376,8 +2376,8 @@ const VIDEOS = [
     "month": 12,
     "objects": "living_room,child,elderly,christmas_tree,opening_presents,blowing_candles,christmas,family,baby,playing,merry_christmas,birthday_cake,fireplace,cozy_house,village,snowy_landscape,road_leading_to_home,snow_on_ground_and_roofs,holiday_lights,christmas_decorations,car_parked_outside_house,wreath_on_door,pine_cones,mistletoe,evergreen_trees,toddler,teenager,swims,dances,sings,cooking,birthday,halloween,thanksgiving,easter,boy,december_24,baby_girl,dinner_table,pen,sitting_at_table,blowing_out_candle,old_man,candle,dining_table,date_stamp_december_21",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "Christmas Eve 2001 Grandpa Reading The Christmasstory",
@@ -2390,8 +2390,8 @@ const VIDEOS = [
     "month": 12,
     "objects": "elderly_man,birthday_cake,candle,boy,girl,books,potted_plant,red_candle,white_flower,christmas_tree,flowers,date",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "Christmas Eve 1998 Woodview Drive",
@@ -2404,8 +2404,8 @@ const VIDEOS = [
     "month": 12,
     "objects": "empty_room,glass_door,dining_table,wine_glasses,candle,red_tablecloth,white_walls,yellow_curtains,framed_picture_on_wall,wood_floor,christmas_decorations,snow_outside,elderly,walking_up_stairs,christmas_tree,living_room,occasion_(dinner_party,girl,baby_doll",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "Christmas 2009",
@@ -2418,8 +2418,8 @@ const VIDEOS = [
     "month": 12,
     "objects": "living_room,christmas_tree,child,opening_presents,family,toddler,baby,christmas,celebration,birthday,balloon,fireplace,birthday_cake,blowing_candles,house,holiday_decorations,christmas_lights,snow,turkey,pumpkin,celebrating,joy,holiday,dining_table,cake,gift,birthday_candle,blowing_out_a_candle,christmas_decorations,birthday_presents,lit_candles_on_tree,sitting_on_couch,blowing_out_candles,smiling_faces,tie,glasses,holiday_celebration,elderly_woman,elderly,birthday_celebration,girl,young,santa_hat,singing,green,but_without_clear_context,teenager,cooking,playing",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "Christmas Morning 1996 Severinos",
@@ -2432,8 +2432,8 @@ const VIDEOS = [
     "month": 12,
     "objects": "child,living_room,baby,opening_presents,christmas_tree,christmas,toddler,elderly,birthday,birthday_cake,playing,dog,family,balloon,teenager,blowing_candles,candle,december_25,fireplace,snow,elderly_woman,socks,present_opening,birthday_party,children,turkey,pumpkin,easter_eggs,teenage,carpets,carpeting,teenage_girl,holiday_decoration,halloween,20th_century,wrapping_paper,scissors,ribbon,tags,child\n_huge_dog,santa_hat,dancing,december_25th,holiday,decorations,christmas_decoration,little_girl,opening_gifts,birthday_presents,dining_table,bookshelf,teddy_bear,car,wall_clock,festive_decorations,playtime",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "March 2002 Ted's 40Th Birthday",
@@ -2446,8 +2446,8 @@ const VIDEOS = [
     "month": 3,
     "objects": "living_room,birthday,elderly,cake,party,celebration,blowing_candles,kitchen,child,girl,children,conversation,night,television,wine_glass,towel,gloves,boots,dining_table,refrigerator,microwave,baby,cooking,stairs,evening,family,picnic_table,elderly_woman,birthday_cake,sofa,countertop,tie,button_down_shirt,t_shirt,jeans,shorts,sneakers,dress_shoes,socks,belt,watch,bracelet,ring,necklace,purse,wallet,keys,glasses,coat,scarf,cell_phone,microphone,speaker,guitar,piano,violin,drum_set,musical_notes,sheet_music,scoreboard,light_switch,thermostat,electrical_outlet,surge_protector,extension_cord,fire_extinguisher,first_aid_kit,sunscreen,insect_repellent,beach_ball,sand_pail,shovel,bucket,surfboard,wetsuit,swim_goggles,flippers,snorkel,water_bottle,chaise_lounge,parasol,pool,pool_toys,diving_board,ladder,teenagers,balloons,christmas,halloween,candle,kitchen_counter,cabinets,opening_presents,playing,hospital,park,balloon,people(2,activities(,settings(,occasions(,hair,wind,teenager,computer,people(adult,activity(socializing,setting(living_room,occasion(gathering,barbecue_grill,campfire,house,casual_conversation,dog_standing_next_to_her,television_in_background,dining_room_table,wall_with_framed_picture,window_with_curtains,painting,glass_table,mirror,curtain,floor_lamp,ceiling_light,pendant_light,rug,phone,keyboard,mouse,potted_plant,vase,fork,knife,spoon,faucet,window_seat,blinds,shower_curtain,bathtub,toilet,toothbrush,toothpaste,bathroom_mirror,shower_head,shower_hose,soap_dispenser,tissue_box,toilet_paper,trash_can,recycle_bin,handbag,backpack,suitcase,grill,lawn_mower,snow_shovel,snow_blower,snowboard,skis,ski_poles,helmet,goggles,baby_figurines,writing_on_a_board,waving,birthday_celebration,teddy_bear,doll,pink_ribbon,curtains,thanksgiving,easter,wedding,socializing,outside_at_night,including_cabinets,countertops,boy,finger_pointing_upwards,2_men,beer_bottles,birthday_party,almonds,bananas,oranges,apples,broccoli,kids_table_setting,party_decorations,plates_of_food,cups_of_drinks,party_hat,family_members,people_dancing,card,smoking,dining_room,talking,wallpaper,tablecloth,people_eating,party_hats,paper_plates,pizza,wine_glasses,cards,decorations",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "2013 Kristen's Birthday",
@@ -2460,8 +2460,8 @@ const VIDEOS = [
     "month": 9,
     "objects": "birthday_cake,celebration,2_people,candle,blowing_candles,party_hat,family_man,young_child,living_room,birthday_celebration,birthday,child,dining_table,opening_presents,tablecloth,cell_phone,girl,seated_at_dining_table,opening_birthday_present,party,drink",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "August 2001 Kristen's Luau Birthday Part",
@@ -2474,8 +2474,8 @@ const VIDEOS = [
     "month": 8,
     "objects": "pool,birthday,backyard,girl,child,hula_hoop,picnic_table,baby,swimming,summer,birthday_cake,park,outdoor_setting,costume,dancing,beach,children,girls,balloons,lawn_chair,party,birthday_party,dance,easter,patio,garden,celebration,green_trees,hula,hawaiian_dance,august_25_2001,swim,christmas,halloween,thanksgiving,graduation,teenager,swimsuit,teenagers,snacks,sunny_day,house,grill,skirt,undershirt,blowing_candles,lawn,flowers,hula_skirt,hula_dance,playing,activities_(dancing,teenage_girl,grass_field,clear_sky,tent,girls_in_pool,swim_goggles,swim_suit,wedding,people(teenager,setting(pool,activity(swimming,children_swimming_in_pool,people_(3,people(children,activities(swimming,settings(pool,occasions(none,inflatable_ball,child_in_swimming_pool,backyard_setting,talking,outdoor_party,decorations,swing,hawaiian,dance_team,cheerleaders,uniforms,school,dog,plants,hose,sprinkler,sun_umbrella,parasol,cooler,water_bottle,sports_ball,frisbee,skateboard,bicycle,surfboard,flag,mirror,teddy_bear,blanket,television,keyboard,guitar,saxophone,microphone,speaker,headphones,video_camera,phone,laptop,mouse,scissors,potted_plant,hose_reel,sprinkler_nozzle,lawn_chair_cushion,parasol_pole,umbrella_stand,table_leg,patio_heater,garden_hose_spigot,outdoor_light_fixture,mailbox,fence_post,tree_trunk,wheelbarrow,shovel,rake,garden_tool,water_fountain,pool_float,pool_ladder,pool_skimmer_net,street_sign,car,truck,clock_tower,bridge,tunnel,highway,traffic_light,pedestrian_crossing,store,mall,shopping_cart,suitcase,handbag,backpack,hair,eyes,ear,nose,mouth,teeth,lips,tongue,clothing,socks,watch,glasses,jewelry,coat,scarf,gloves,pants,sweater,tie,belt,shorts,trousers,dress,tank_top,blouse,t_shirt,hoodie,sweater_vest,cardigan,jeans,sneakers,boots,sandals,flip_flops,birthday_balloon,porch,front_door,entryway,red_balloon,string,social_gathering,family,kids,dog_sitting_on_the_lawn,front_yard,white_house,bush,balloon,party_hat,basket,coconuts,basket_of_flowers,wooden_fence_in_background,woman_dancing,2_people_(child,sunny_weather,hawaiian_shirt,outdoor_event,people_(child,settings_(backyard,occasions_(birthday,barbecue_grill,dining_table,deck,leisure_activity,people_enjoying_themselves,beach_chairs,towels,drinks,music,laughter,casual_attire,inflatable_pool,cake,i'm_sorry,hula_dancers,young_girls,summertime,grassy_area,hawaiian_costumes,floral_leis,settings_(park,cell_phone,person_standing,person_dancing,person_holding_hula_hoop,birthday_cake_on_table,birthday_candle,fire_hydrant,hula_dancing,girls_in_colorful_dresses,hawaiian_luau,hula_hup,hula_hut,grass_skirt,ukulele,hawaiian_music,young_girl,hula_hoops,dancing_activity,hawaiian_hula,date_stamp,opening_presents,girl_dancing_in_hula_skirt,trees_in_background",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "Thanksgiving 2008",
@@ -2488,8 +2488,8 @@ const VIDEOS = [
     "month": 11,
     "objects": "television,kitchen",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "New Years Eve 1996 Severinos",
@@ -2502,8 +2502,8 @@ const VIDEOS = [
     "month": 12,
     "objects": "television,christmas_tree",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "June 1999 Father's Day",
@@ -2516,8 +2516,8 @@ const VIDEOS = [
     "month": 6,
     "objects": "",
     "location": "9 Woodview Dr, Nesconset, NY",
-    "lat": null,
-    "lng": null
+    "lat": 40.8443,
+    "lng": -73.1492
   },
   {
     "title": "Summer 1992 Adventureland",
@@ -2544,8 +2544,8 @@ const VIDEOS = [
     "month": 6,
     "objects": "children,graduation,flag,church,graduates,graduation_cap,robe,cassock,podium,taking_photos,birthday_cake,christmas_tree,balloon,fireplace,snow,turkey,pumpkin,easter_eggs,graduation_ceremony",
     "location": "Bethel",
-    "lat": 60.794677,
-    "lng": -161.761906
+    "lat": 40.82726,
+    "lng": -73.414029
   },
   {
     "title": "Palisades Amusement Park",

@@ -59,8 +59,10 @@
   --theme-panel-bg-soft: rgba(180,190,220,0.08);
   --theme-panel-bg-mid: rgba(180,190,220,0.13);
   --theme-panel-bg-strong: rgba(180,190,220,0.16);
+  --theme-panel-bg-active: rgba(180,190,220,0.18);
   --theme-panel-bg-hover: rgba(180,190,220,0.20);
   --theme-panel-bg-focus: rgba(180,190,220,0.22);
+  --theme-panel-bg-overlay-input: rgba(180,190,220,0.12);
   --theme-nav-bg: rgba(8,16,42,0.94);
   --theme-nav-mobile-bg: rgba(8,16,42,0.78);
   --theme-dropdown-bg: rgba(8,16,42,0.97);
@@ -69,9 +71,42 @@
   --theme-photo-overlay: rgba(8,16,42,0.93);
   --theme-photo-overlay-strong: rgba(8,16,42,0.98);
   --theme-card-overlay: rgba(8,16,42,0.78);
+  --theme-overlay-bg: rgba(8,16,42,0.90);
+  --theme-lightbox-bg: #06080f;
+  --theme-shelf-bg: #080510;
+  --theme-shake-bg: #050202;
+  --theme-map-control-bg: rgba(20,32,68,0.92);
+  --theme-map-control-bg-active: rgba(18,30,66,0.9);
+  --theme-map-zoom-bg-active: rgba(30,50,100,0.95);
+  --theme-back-top-bg: rgba(18,36,88,0.96);
+  --theme-mobile-action-bg: rgba(8,16,42,0.72);
+  --theme-focus-line: rgba(242,239,232,0.42);
+  --theme-active-line: rgba(242,239,232,0.44);
+  --theme-fade-transparent: rgba(242,239,232,0);
+  --theme-video-grad-mid: rgba(8,16,42,0.45);
+  --theme-video-grad-soft: rgba(8,16,42,0.08);
+  --theme-marker-bg-many: rgba(242,239,232,0.15);
+  --theme-marker-bg-single: rgba(242,239,232,0.9);
+  --theme-marker-border-many: rgba(242,239,232,0.6);
+  --theme-marker-border-single: rgba(242,239,232,0.4);
+  --theme-marker-glow: rgba(242,239,232,0.4);
+  --theme-marker-text: rgba(242,239,232,0.9);
   --theme-shadow-strong: rgba(0,0,0,0.90);
   --theme-shadow-mid: rgba(0,0,0,0.70);
   --theme-shadow-soft: rgba(0,0,0,0.55);
+  --theme-shadow-faint: rgba(0,0,0,0.28);
+  --theme-shadow-ui: rgba(0,0,0,0.22);
+  --theme-highlight-soft: rgba(255,255,255,0.08);
+  --theme-highlight-mid: rgba(255,255,255,0.06);
+  --theme-highlight-low: rgba(255,255,255,0.05);
+  --theme-highlight-faint: rgba(255,255,255,0.04);
+  --theme-tab-active-bg: rgba(255,255,255,0.08);
+  --theme-video-year: rgba(255,255,255,0.65);
+  --theme-rec-tag-text: rgba(120,255,140,0.95);
+  --theme-rec-tag-bg: rgba(0,0,0,0.82);
+  --theme-rec-tag-glow: rgba(0,255,80,0.5);
+  --theme-screensaver-accent: rgba(0,255,80,0.75);
+  --theme-sparkle: #ffe6a6;
   --theme-white: #ffffff;
   --theme-polaroid-paper: #f7f4ee;
   --theme-polaroid-border: #f0ede6;
@@ -166,7 +201,7 @@ body.on-home {
   content: '';
   position: absolute; left: 0; right: 0;
   height: 5px;
-  background: rgba(0,0,0,0.22);
+  background: var(--theme-shadow-ui);
   top: -5px;
   animation: syncBand 11s linear infinite;
 }
@@ -227,7 +262,7 @@ body::after {
     border: 1px solid var(--theme-line-14);
     border-radius: 20px;
     background: var(--theme-card-overlay);
-    box-shadow: 0 10px 26px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.04);
+    box-shadow: 0 10px 26px var(--theme-shadow-faint), inset 0 1px 0 var(--theme-highlight-faint);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
     overflow: hidden;
@@ -247,7 +282,7 @@ body::after {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
-  .tab.on { background: rgba(255,255,255,0.08); }
+  .tab.on { background: var(--theme-tab-active-bg); }
   .tab svg { width: 21px; height: 21px; }
   .tab-line { width: 20px; }
   .cats-header-nav { display: none; }
@@ -427,11 +462,11 @@ body.on-timeline #collage::after {
   justify-content: center;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.06);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.24), inset 0 1px 0 var(--theme-highlight-mid);
   transition: transform 0.12s, background 0.16s, color 0.16s, border-color 0.16s;
 }
-.hero-season-btn:hover { color: var(--white); border-color: rgba(242,239,232,0.32); }
-.hero-season-btn:active { transform: scale(0.94); background: rgba(180,190,220,0.18); }
+.hero-season-btn:hover { color: var(--white); border-color: var(--theme-line-34); }
+.hero-season-btn:active { transform: scale(0.94); background: var(--theme-panel-bg-active); }
 .hero-season-btn svg { width: 22px; height: 22px; }
 .hero-season-btn .season-glow { inset: 4px; border-radius: 999px; }
 .hero-season-label {
@@ -463,7 +498,7 @@ body.on-timeline #collage::after {
   border-radius: 10px;
   padding: 13px 16px;
   transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.04);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.18), inset 0 1px 0 var(--theme-highlight-faint);
 }
 .home-search-input {
   flex: 1;
@@ -553,7 +588,7 @@ body.on-timeline #collage::after {
   justify-content: center;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.05);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.16), inset 0 1px 0 var(--theme-highlight-low);
   transition: transform 0.12s, background 0.16s, border-color 0.16s, color 0.16s;
 }
 .inline-shuffle-btn:hover { color: var(--white); border-color: var(--theme-line-34); background: var(--theme-panel-bg-strong); }
@@ -561,8 +596,8 @@ body.on-timeline #collage::after {
 .inline-shuffle-btn svg { width: 22px; height: 22px; }
 .search-wrap:focus-within {
   background: var(--theme-panel-bg-focus);
-  border-color: rgba(242,239,232,0.42);
-  box-shadow: 0 14px 34px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.08);
+  border-color: var(--theme-focus-line);
+  box-shadow: 0 14px 34px var(--theme-shadow-ui), inset 0 1px 0 var(--theme-highlight-soft);
 }
 .search-play-btn svg { width: 13px; height: 14px; }
 .search-wrap input {
@@ -604,6 +639,18 @@ body.on-timeline #collage::after {
     padding-right: 0;
     justify-content: center;
   }
+  /* The retro/classic theme toggle (js/site-theme.js installThemeToggle) is
+     inserted as a plain .page-nav-btn right before Search, so it inherits the
+     :not(.is-search) full-width rule above and stretches across the entire
+     flexible gap column. Override it alone, after the rule above so this wins
+     the specificity tie, to a compact auto-width pill right-aligned in that
+     same column — right next to Search. Columns 1-4 (Home/Sparkle, Browse,
+     Years, Places) and Search itself are untouched. */
+  .cats-header-nav .page-nav-btn.site-theme-nav-toggle {
+    width: auto;
+    justify-self: end;
+    padding: 0 14px;
+  }
 }
 
 /* CTA buttons — Apple-like glass, home-video typography */
@@ -619,13 +666,13 @@ body.on-timeline #collage::after {
   color: var(--theme-text-90);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  box-shadow: 0 14px 32px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.08);
+  box-shadow: 0 14px 32px rgba(0,0,0,0.20), inset 0 1px 0 var(--theme-highlight-soft);
   backdrop-filter: blur(24px) saturate(1.2);
   -webkit-backdrop-filter: blur(24px) saturate(1.2);
   transition: background 0.16s, transform 0.12s, border-color 0.16s, color 0.16s;
 }
 .hero-cta-btn:hover { color: var(--white); border-color: var(--theme-line-34); background: var(--theme-panel-bg-hover); }
-.hero-cta-btn:active  { transform: scale(0.98); border-color: rgba(242,239,232,0.44); }
+.hero-cta-btn:active  { transform: scale(0.98); border-color: var(--theme-active-line); }
 
 /* Play button inside search bar */
 .search-play-btn, .search-clear-btn {
@@ -751,8 +798,8 @@ body.rec-open { overflow-y: auto; }
   position: absolute; inset: 0; z-index: 2;
   background: linear-gradient(to top,
     var(--theme-card-overlay) 0%,
-    rgba(8,16,42,0.45) 40%,
-    rgba(8,16,42,0.08) 80%,
+    var(--theme-video-grad-mid) 40%,
+    var(--theme-video-grad-soft) 80%,
     transparent        100%);
 }
 .vcard-body {
@@ -773,7 +820,7 @@ body.rec-open { overflow-y: auto; }
   font-size: clamp(6px, 1.4vw, 7px);
   line-height: 1;
   letter-spacing: 1.5px;
-  color: rgba(255,255,255,0.65);
+  color: var(--theme-video-year);
   text-shadow: 0 1px 8px rgba(0,0,0,0.95), 0 0 2px rgba(0,0,0,0.8);
 }
 /* "Why recommended" tag — same green-phosphor VCR-OSD look as the screensaver's
@@ -785,12 +832,12 @@ body.rec-open { overflow-y: auto; }
   font-family: var(--theme-font-body);
   font-size: clamp(8.5px, 2.4vw, 11.5px);
   letter-spacing: 0.5px;
-  color: rgba(120,255,140,0.95);
-  background: rgba(0,0,0,0.82);
+  color: var(--theme-rec-tag-text);
+  background: var(--theme-rec-tag-bg);
   padding: 3px 6px;
   border-radius: 3px;
   white-space: nowrap;
-  text-shadow: 0 0 4px rgba(0,255,80,0.5);
+  text-shadow: 0 0 4px var(--theme-rec-tag-glow);
 }
 
 /* ══════════════════════════════════════
@@ -973,7 +1020,7 @@ body.rec-open { overflow-y: auto; }
   margin-top: min(0.3px, 0.087vw);
   margin-left: 3px;
   flex-shrink: 0;
-  color: #fff;
+  color: var(--theme-white);
 }
 .cats-logo-wrap {
   position: relative;
@@ -1145,13 +1192,13 @@ body.rec-open { overflow-y: auto; }
   border-radius: 10px;
   background: var(--theme-panel-bg);
   padding: 13px 16px;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.04);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.18), inset 0 1px 0 var(--theme-highlight-faint);
   transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
 }
 .srch-box:focus-within {
   border-color: var(--theme-text-55);
   background: var(--theme-panel-bg-focus);
-  box-shadow: 0 14px 34px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.08);
+  box-shadow: 0 14px 34px var(--theme-shadow-ui), inset 0 1px 0 var(--theme-highlight-soft);
 }
 .srch-box svg { width: 18px; height: 18px; color: var(--dim); flex-shrink: 0; }
 .srch-box input {
@@ -1206,7 +1253,7 @@ body.rec-open { overflow-y: auto; }
 #lb {
   display: none;
   position: fixed; inset: 0; z-index: 9000;
-  background: #06080f;
+  background: var(--theme-lightbox-bg);
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -1253,7 +1300,7 @@ body.rec-open { overflow-y: auto; }
   border-radius: 18px 18px 12px 12px;
   padding: 14px 14px 0;
   box-shadow:
-    inset 2px 2px 10px rgba(255,255,255,0.04),
+    inset 2px 2px 10px var(--theme-highlight-faint),
     inset -2px -2px 10px rgba(0,0,0,0.8),
     0 0 0 3px #2a1f0a,
     0 12px 50px rgba(0,0,0,0.95);
@@ -1266,7 +1313,7 @@ body.rec-open { overflow-y: auto; }
   border-radius: 10px 10px 8px 8px;
   padding: 8px;
   box-shadow:
-    inset 0 0 0 2px rgba(255,255,255,0.04),
+    inset 0 0 0 2px var(--theme-highlight-faint),
     inset 0 2px 12px rgba(0,0,0,0.9);
   position: relative;
 }
@@ -1292,7 +1339,7 @@ body.rec-open { overflow-y: auto; }
   content: '';
   position: absolute; inset: 0;
   background:
-    radial-gradient(ellipse 70% 50% at 30% 25%, rgba(255,255,255,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 30% 25%, var(--theme-highlight-faint) 0%, transparent 60%),
     radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
   pointer-events: none;
   z-index: 5;
@@ -1303,7 +1350,7 @@ body.rec-open { overflow-y: auto; }
   background: linear-gradient(to bottom, #141008, #0a0806);
   border-radius: 0 0 8px 8px;
   padding: 10px 16px 14px;
-  border-top: 1px solid rgba(255,255,255,0.04);
+  border-top: 1px solid var(--theme-highlight-faint);
 }
 #vcr-tape-opening {
   height: 38px;
@@ -1377,7 +1424,7 @@ body.rec-open { overflow-y: auto; }
   width: 12px; height: 12px;
   border-radius: 50%;
   background: var(--theme-text-88);
-  border: 2px solid rgba(8,16,42,1);
+  border: 2px solid var(--theme-site-bg);
   box-shadow: 0 0 10px var(--theme-text-45), 0 0 0 1px var(--theme-line-28);
 }
 /* Large year number */
@@ -1498,7 +1545,7 @@ body.rec-open { overflow-y: auto; }
   border: 1px solid var(--theme-line-22) !important;
   border-radius: 2px !important;
   color: var(--theme-text-90) !important;
-  font-family: 'VCR','Share Tech Mono',monospace !important;
+  font-family: var(--theme-font-body-alt) !important;
   font-size: 12px !important;
   letter-spacing: 1px !important;
   box-shadow: 0 4px 24px rgba(0,0,0,0.8) !important;
@@ -1506,7 +1553,7 @@ body.rec-open { overflow-y: auto; }
 }
 .maplibregl-popup-tip { border-top-color: var(--theme-dark-panel-bg) !important; border-bottom-color: var(--theme-dark-panel-bg) !important; }
 .maplibregl-popup-close-button {
-  color: rgba(242,239,232,0.60) !important;
+  color: var(--theme-text-58) !important;
   font-size: 18px !important;
   padding: 4px 8px !important;
 }
@@ -1570,7 +1617,7 @@ body.rec-open { overflow-y: auto; }
   -webkit-tap-highlight-color: transparent;
   transition: background 0.15s;
 }
-#map-zoom-btns button:active { background: rgba(30,50,100,0.95); }
+#map-zoom-btns button:active { background: var(--theme-map-zoom-bg-active); }
 
 /* Top-places drawer — slides up from the bottom edge of the map, overlaying
    it rather than pushing #pg-map's locked 100svh/overflow:hidden height, so
@@ -1595,7 +1642,7 @@ body.rec-open { overflow-y: auto; }
   align-self: flex-start;
   pointer-events: auto;
   display: flex; align-items: center; gap: 7px;
-  background: rgba(20,32,68,0.92);
+  background: var(--theme-map-control-bg);
   border: 1px solid var(--theme-line-34);
   border-radius: 999px;
   padding: 9px 14px;
@@ -1603,11 +1650,11 @@ body.rec-open { overflow-y: auto; }
   font-size: 10px; letter-spacing: 1.6px;
   color: var(--theme-text-96);
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 0 0 1px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 0 0 1px rgba(0,0,0,0.25), inset 0 1px 0 var(--theme-highlight-soft);
   -webkit-tap-highlight-color: transparent;
   transition: background 0.15s;
 }
-#map-places-tab:active { background: rgba(18,30,66,0.9); }
+#map-places-tab:active { background: var(--theme-map-control-bg-active); }
 .map-places-tab-chevron { font-size: 8px; transition: transform 0.22s ease; opacity: 0.7; }
 #map-places-drawer.open .map-places-tab-chevron { transform: rotate(180deg); }
 .map-places-tab-count {
@@ -1624,7 +1671,7 @@ body.rec-open { overflow-y: auto; }
   border-radius: 14px;
   background: var(--theme-card-overlay);
   border: 1px solid var(--theme-line-16);
-  box-shadow: 0 12px 28px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.05);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.34), inset 0 1px 0 var(--theme-highlight-low);
   transition: max-height 0.26s ease;
 }
 #map-places-drawer.open #map-places-list {
@@ -1691,7 +1738,7 @@ body.rec-open { overflow-y: auto; }
   background: var(--theme-deep-panel-bg);
   border: 1px solid var(--theme-line-18);
   border-radius: 18px;
-  box-shadow: 0 18px 42px rgba(0,0,0,0.46), inset 0 1px 0 rgba(255,255,255,0.06);
+  box-shadow: 0 18px 42px rgba(0,0,0,0.46), inset 0 1px 0 var(--theme-highlight-mid);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   transform: translateX(calc(100% + 22px)) translateZ(0);
@@ -1727,7 +1774,7 @@ body.rec-open { overflow-y: auto; }
   font-size: 9px;
   line-height: 1.35;
   letter-spacing: 1.2px;
-  color: rgba(242,239,232,0.56);
+  color: var(--theme-text-55);
 }
 .map-location-close {
   flex-shrink: 0;
@@ -1739,7 +1786,7 @@ body.rec-open { overflow-y: auto; }
   border: 1px solid var(--theme-line-18);
   border-radius: 999px;
   background: var(--theme-panel-bg-soft);
-  color: rgba(242,239,232,0.84);
+  color: var(--theme-text-88);
   font-family: var(--theme-font-body);
   font-size: 18px;
   line-height: 1;
@@ -1791,7 +1838,7 @@ body.rec-open { overflow-y: auto; }
   font-size: 15px;
   line-height: 1.18;
   letter-spacing: 0.8px;
-  color: rgba(242,239,232,0.95);
+  color: var(--theme-text-96);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1887,7 +1934,7 @@ body.rec-open { overflow-y: auto; }
 ══════════════════════════════════════ */
 #pg-shelf {
   min-height: 100dvh;
-  background: #080510;
+  background: var(--theme-shelf-bg);
   position: relative; z-index: 1;
   display: none;
   flex-direction: column;
@@ -1930,13 +1977,13 @@ body.rec-open { overflow-y: auto; }
 .shelf-sign-count {
   font-family: var(--theme-font-body);
   font-size: 9px; letter-spacing: 2px;
-  color: rgba(242,239,232,0.35);
+  color: var(--theme-text-40);
   white-space: nowrap;
 }
 .shelf-plank {
   height: 14px;
   background: linear-gradient(180deg, #2e1f0a 0%, #1c1205 60%, #0d0902 100%);
-  border-top: 1px solid rgba(255,255,255,0.06);
+  border-top: 1px solid var(--theme-highlight-mid);
   box-shadow: 0 6px 18px rgba(0,0,0,0.7), 0 2px 4px rgba(0,0,0,0.5);
   margin-bottom: 4px;
 }
@@ -1980,7 +2027,7 @@ body.rec-open { overflow-y: auto; }
 .tape-horiz-year span {
   font-family: var(--theme-font-title);
   font-size: 7px; letter-spacing: 1px;
-  color: rgba(242,239,232,0.6);
+  color: var(--theme-text-58);
   writing-mode: vertical-rl;
 }
 .shelf-row {
@@ -2014,7 +2061,7 @@ body.rec-open { overflow-y: auto; }
       transparent 44px, transparent 95px,
       rgba(0,0,0,0.09) 95px, rgba(0,0,0,0.09) 96px,
       transparent 96px, transparent 150px,
-      rgba(255,255,255,0.04) 150px, rgba(255,255,255,0.04) 151px
+      var(--theme-highlight-faint) 150px, var(--theme-highlight-faint) 151px
     ),
     repeating-linear-gradient(
       0deg,
@@ -2024,7 +2071,7 @@ body.rec-open { overflow-y: auto; }
     linear-gradient(to bottom,
       #5c3210 0%, #4a2608 32%, #381c06 62%, #240f02 100%);
   box-shadow: 0 7px 20px rgba(0,0,0,0.8),
-              inset 0 2px 0 rgba(255,255,255,0.06),
+              inset 0 2px 0 var(--theme-highlight-mid),
               inset 0 -1px 0 rgba(0,0,0,0.4);
   border-radius: 0 0 3px 3px;
   margin-bottom: 4px;
@@ -2040,7 +2087,7 @@ body.rec-open { overflow-y: auto; }
   cursor: pointer;
   border-radius: 2px 2px 0 0;
   box-shadow: 2px 0 4px rgba(0,0,0,0.6), -1px 0 2px rgba(0,0,0,0.4),
-              inset 0 0 0 1px rgba(255,255,255,0.04);
+              inset 0 0 0 1px var(--theme-highlight-faint);
   display: flex;
   flex-direction: column;
   transition: transform 0.15s;
@@ -2112,7 +2159,7 @@ body.rec-open { overflow-y: auto; }
 .tape-year-bot {
   font-family: var(--theme-font-title);
   font-size: 14px; letter-spacing: 2px;
-  color: rgba(242,239,232,0.72);
+  color: var(--theme-text-70);
 }
 .tape-brand-sub {
   writing-mode: vertical-rl;
@@ -2140,7 +2187,7 @@ body.rec-open { overflow-y: auto; }
   display: none;
   position: fixed; inset: 0; z-index: 8500;
   height: 100dvh;
-  background: rgba(8,16,42,0.90);
+  background: var(--theme-overlay-bg);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   flex-direction: column;
@@ -2182,7 +2229,7 @@ body.rec-open { overflow-y: auto; }
 .spot-box {
   width: 100%; max-width: 580px;
   display: flex; align-items: center; gap: 10px;
-  background: rgba(180,190,220,0.12);
+  background: var(--theme-panel-bg-overlay-input);
   border: 1px solid var(--theme-line-30);
   padding: 13px 16px;
   margin-bottom: 12px;
@@ -2194,7 +2241,7 @@ body.rec-open { overflow-y: auto; }
   font-size: 16px; letter-spacing: 2px;
   color: var(--white);
 }
-.spot-box input::placeholder { color: rgba(242,239,232,0.38); }
+.spot-box input::placeholder { color: var(--theme-text-40); }
 .spot-box input::-webkit-search-cancel-button { display: none; }
 #spot-meta {
   width: 100%; max-width: 580px;
@@ -2296,7 +2343,7 @@ body.main-scrolled #pg-shelf .main-site-header {
   background: var(--theme-nav-bg);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+  box-shadow: 0 8px 24px var(--theme-shadow-ui);
   transition: background 0.18s ease, box-shadow 0.18s ease, backdrop-filter 0.18s ease;
 }
 body.main-scrolled #pg-cats .main-site-header::before,
@@ -2456,7 +2503,7 @@ body.theme-xmas.on-timeline #collage::after { background: rgba(0,52,18,0.98); }
 #seasonIcon {
   position: relative;
   z-index: 1;
-  color: #ffe6a6;
+  color: var(--theme-sparkle);
   animation: sparkle-shimmer 2.8s ease-in-out infinite;
 }
 @keyframes season-pulse {
@@ -2482,11 +2529,11 @@ body.theme-xmas.on-timeline #collage::after { background: rgba(0,52,18,0.98); }
     height: 44px;
     border-radius: 999px;
     border: 1px solid var(--theme-line-14);
-    background: rgba(8,16,42,0.72);
+    background: var(--theme-mobile-action-bg);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.04);
-    color: #ffe6a6;
+    box-shadow: 0 6px 18px var(--theme-shadow-ui), inset 0 1px 0 var(--theme-highlight-faint);
+    color: var(--theme-sparkle);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -2528,7 +2575,7 @@ button.cats-search-wrap {
   flex: 1;
   font-family: var(--theme-font-body);
   font-size: 11px; letter-spacing: 1px;
-  color: rgba(242,239,232,0.38);
+  color: var(--theme-text-40);
   background: none; border: none;
   pointer-events: none;
 }
@@ -2556,7 +2603,7 @@ button.cats-search-wrap {
 .detail-back-link:active { color: var(--theme-site-muted); }
 .detail-back-link svg { width: 18px; height: 18px; flex-shrink: 0; }
 .detail-cat-title {
-  font-family: 'DuckTape', 'Bebas Neue', cursive;
+  font-family: var(--theme-font-marker);
   font-size: clamp(22px, 6vw, 36px);
   letter-spacing: 3px;
   color: var(--theme-white);
@@ -2568,11 +2615,11 @@ button.cats-search-wrap {
   display: block;
   height: 2px;
   margin-top: 10px;
-  background: linear-gradient(to right, var(--theme-text-90) 0%, var(--theme-line-28) 45%, rgba(242,239,232,0) 85%);
+  background: linear-gradient(to right, var(--theme-text-90) 0%, var(--theme-line-28) 45%, var(--theme-fade-transparent) 85%);
 }
 .sub-page-title {
   padding: 14px 16px 10px;
-  font-family: 'DuckTape', 'Bebas Neue', cursive;
+  font-family: var(--theme-font-marker);
   font-size: 32px; letter-spacing: 5px;
   color: var(--white);
   text-align: left;
@@ -2595,7 +2642,7 @@ button.cats-search-wrap {
   display: block;
   height: 2px;
   margin-top: 10px;
-  background: linear-gradient(to right, var(--theme-text-90) 0%, var(--theme-line-28) 45%, rgba(242,239,232,0) 85%);
+  background: linear-gradient(to right, var(--theme-text-90) 0%, var(--theme-line-28) 45%, var(--theme-fade-transparent) 85%);
 }
 
 /* ══════════════════════════════════════
@@ -2738,7 +2785,7 @@ button.cats-search-wrap {
 #ss-tag {
   font-family: var(--theme-font-body);
   font-size: 10px; letter-spacing: 6px;
-  color: rgba(0,255,80,0.75);
+  color: var(--theme-screensaver-accent);
   margin-bottom: 22px;
   animation: ss-blink 1.8s step-end infinite;
 }
@@ -2754,7 +2801,7 @@ button.cats-search-wrap {
 #ss-year {
   font-family: var(--theme-font-title);
   font-size: clamp(70px, 20vw, 130px);
-  color: rgba(242,239,232,0.065);
+  color: var(--theme-line-06);
   letter-spacing: 6px; line-height: 1;
   margin-top: -4px; user-select: none;
 }
@@ -2778,15 +2825,15 @@ button.cats-search-wrap {
   flex-shrink: 0;
   font-family: var(--theme-font-body);
   font-size: 11px; letter-spacing: 2px;
-  color: rgba(242,239,232,0.5);
-  background: rgba(242,239,232,0.05);
+  color: var(--theme-text-52);
+  background: var(--theme-line-06);
   border: 1px solid var(--theme-line-12);
   border-radius: 3px; padding: 5px 12px;
   cursor: pointer; transition: all 0.18s; white-space: nowrap;
 }
 .decade-chip:hover, .decade-chip.active {
   color: var(--theme-site-muted);
-  background: rgba(242,239,232,0.13);
+  background: var(--theme-panel-bg-mid);
   border-color: var(--theme-text-40);
 }
 .decade-chip .chip-ct { font-size: 8px; opacity: 0.5; margin-left: 4px; }
@@ -2796,7 +2843,7 @@ button.cats-search-wrap {
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 49;
-  background: rgba(18,36,88,0.96);
+  background: var(--theme-back-top-bg);
   border: none;
   border-bottom: 1px solid var(--theme-line-10);
   color: var(--theme-text-65);
@@ -2816,7 +2863,7 @@ body.on-home #back-top, body.on-map #back-top,
 
 #shake-overlay {
   display: none; position: fixed; inset: 0; z-index: 96000;
-  background: #050202;
+  background: var(--theme-shake-bg);
   flex-direction: column; align-items: center; justify-content: center;
 }
 #shake-overlay.on { display: flex; }
@@ -2859,7 +2906,7 @@ body.on-home #back-top, body.on-map #back-top,
 (function() {
   const STORAGE_KEY = 'moberinoSiteTheme';
   const DEFAULT_THEME = 'classic';
-  const ALLOWED = ['classic'];
+  const ALLOWED = ['classic', 'retro'];
   let saved = DEFAULT_THEME;
   try {
     saved = localStorage.getItem(STORAGE_KEY) || DEFAULT_THEME;
@@ -2872,7 +2919,7 @@ body.on-home #back-top, body.on-map #back-top,
   root.classList.add('site-theme-' + saved);
 })();
 </script>
-<link rel="stylesheet" href="css/site-themes.css">
+<link rel="stylesheet" href="css/site-themes.css?v=retro-theme-controls">
 <script>
 // Locks #pg-home's height to a JS-measured pixel value instead of letting the browser
 // recompute 100svh on every paint. Mobile browsers (especially iOS Safari) recalculate
@@ -3001,7 +3048,7 @@ body.on-home #back-top, body.on-map #back-top,
           </button>
         </div>
         <button class="inline-shuffle-btn" onclick="enableShake()" aria-label="Shuffle">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><path d="M4 20 21 3"/><polyline points="21 16 21 21 16 21"/><path d="M4 4h3.5c1.8 0 3.1.8 4.1 2.4"/><path d="M14.5 17.8c.9 1.2 2.1 1.8 3.7 1.8H21"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"><path d="M4 7h5l6 10h5"/><path d="M17 14l3 3-3 3"/><path d="M4 17h5l6-10h5"/><path d="M17 4l3 3-3 3"/></svg>
         </button>
       </div>
     </div>
@@ -3250,7 +3297,7 @@ body.on-home #back-top, body.on-map #back-top,
         </button>
       </div>
       <button class="inline-shuffle-btn" onclick="enableShake()" aria-label="Shuffle">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><path d="M4 20 21 3"/><polyline points="21 16 21 21 16 21"/><path d="M4 4h3.5c1.8 0 3.1.8 4.1 2.4"/><path d="M14.5 17.8c.9 1.2 2.1 1.8 3.7 1.8H21"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"><path d="M4 7h5l6 10h5"/><path d="M17 14l3 3-3 3"/><path d="M4 17h5l6-10h5"/><path d="M17 4l3 3-3 3"/></svg>
       </button>
     </div>
   </div>
@@ -3943,12 +3990,12 @@ function initMap() {
         el.style.cssText = `
           display:flex;align-items:center;justify-content:center;
           width:${count > 1 ? 28 : 10}px;height:${count > 1 ? 28 : 10}px;
-          background:rgba(242,239,232,${count > 1 ? '0.15' : '0.9'});
+          background:var(${count > 1 ? '--theme-marker-bg-many' : '--theme-marker-bg-single'});
           border-radius:50%;
-          border:2px solid rgba(242,239,232,${count > 1 ? '0.6' : '0.4'});
-          box-shadow:0 0 8px rgba(242,239,232,0.4);
-          font-family:VCR,monospace;font-size:9px;
-          color:rgba(242,239,232,0.9);
+          border:2px solid var(${count > 1 ? '--theme-marker-border-many' : '--theme-marker-border-single'});
+          box-shadow:0 0 8px var(--theme-marker-glow);
+          font-family:var(--theme-font-body);font-size:9px;
+          color:var(--theme-marker-text);
           cursor:pointer;
           padding:0;
         `;
@@ -5089,11 +5136,11 @@ function triggerShakeTape() {
     // showed, well before this "TAP TO WATCH" line even existed.
     msg.style.animation = 'ss-blink 2s step-end infinite';
     const tap = document.createElement('div');
-    tap.style.cssText = 'font-family:VCR,monospace;font-size:15px;letter-spacing:3px;color:rgba(242,239,232,0.45);margin-top:14px;animation:ss-blink 2s step-end infinite';
+    tap.style.cssText = 'font-family:var(--theme-font-body);font-size:15px;letter-spacing:3px;color:var(--theme-text-45);margin-top:14px;animation:ss-blink 2s step-end infinite';
     tap.textContent = 'TAP TO WATCH';
     ov.appendChild(tap);
     const again = document.createElement('button');
-    again.style.cssText = 'margin-top:22px;background:none;border:1px solid rgba(242,239,232,0.3);border-radius:20px;padding:8px 18px;font-family:VCR,monospace;font-size:12px;letter-spacing:2px;color:rgba(242,239,232,0.65);cursor:pointer;-webkit-tap-highlight-color:transparent';
+    again.style.cssText = 'margin-top:22px;background:none;border:1px solid var(--theme-line-30);border-radius:20px;padding:8px 18px;font-family:var(--theme-font-body);font-size:12px;letter-spacing:2px;color:var(--theme-text-65);cursor:pointer;-webkit-tap-highlight-color:transparent';
     again.textContent = '↻ SHUFFLE AGAIN';
     // Stop the click from bubbling to the overlay's own onclick (which opens the video).
     again.onclick = (e) => { e.stopPropagation(); triggerShakeTape(); };
@@ -5114,6 +5161,6 @@ window.enableShake = function() {
 
 // Arcade/game scripts moved to arcade.html.
 </script>
-<script src="js/site-theme.js"></script>
+<script src="js/site-theme.js?v=retro-theme-controls"></script>
 </body>
 </html>
