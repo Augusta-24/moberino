@@ -1,6514 +1,69 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
-<title>MOBERINO</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Russo+One&family=Permanent+Marker&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css"/>
-<script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
-<style>
-@font-face {
-  font-family: 'VCR';
-  src: url('VCR_OSD_MONO_1.001.ttf') format('truetype');
-}
-@font-face {
-  font-family: 'DuckTape';
-  src: url('Duck Tape.ttf') format('truetype');
-}
-:root {
-  --navy:  #08102a;
-  --navy2: #0c1836;
-  --white: #f2efe8;
-  --dim:   rgba(242,239,232,1);
-  --line:  rgba(242,239,232,0.07);
-  --desktop-nav-width: min(calc(100vw - 32px), 920px);
-  --desktop-nav-pad: 10px 16px 8px;
-  --desktop-nav-slot: 96px;
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{
-  scroll-behavior:smooth;
-}
-html.arcade-root {
-  background:
-    linear-gradient(180deg, rgba(3,6,18,1) 0%, rgba(2,4,14,1) 100%),
-    repeating-linear-gradient(45deg, rgba(255,0,204,0.035) 0px, rgba(255,0,204,0.035) 1px, transparent 1px, transparent 31px),
-    repeating-linear-gradient(-45deg, rgba(0,229,255,0.035) 0px, rgba(0,229,255,0.035) 1px, transparent 1px, transparent 31px);
-  background-size: auto, 44px 44px, 44px 44px;
-}
-
-body {
-  background: var(--navy);
-  color: var(--white);
-  font-family: 'VCR', monospace;
-  min-height: 100vh;
-  overflow-x: hidden;
-  padding-bottom: calc(62px + env(safe-area-inset-bottom));
-}
-body.on-home {
-  overflow: hidden;
-  padding-bottom: 0 !important;
-  padding-bottom: 0;
-}
-/* Neon arcade floor — even diamond grid, fills full viewport */
-body.on-lobby, body.on-char, body.on-whack, body.on-match, body.on-space {
-  min-height: var(--app-vh, 100dvh);
-  background-color: #02040e;
-  overflow: hidden;
-  overscroll-behavior: none;
-}
-body.on-whack,
-body.on-match {
-  padding-bottom: 0 !important;
-  background:
-    linear-gradient(180deg, rgba(3,6,18,1) 0%, rgba(2,4,14,1) 100%),
-    repeating-linear-gradient(45deg, rgba(255,0,204,0.035) 0px, rgba(255,0,204,0.035) 1px, transparent 1px, transparent 31px),
-    repeating-linear-gradient(-45deg, rgba(0,229,255,0.035) 0px, rgba(0,229,255,0.035) 1px, transparent 1px, transparent 31px);
-  background-size: auto, 44px 44px, 44px 44px;
-}
-body.on-lobby {
-  padding-bottom: 0 !important;
-  background:
-    linear-gradient(180deg, rgba(3,6,18,1) 0%, rgba(2,4,14,1) 100%),
-    repeating-linear-gradient(45deg, rgba(255,0,204,0.035) 0px, rgba(255,0,204,0.035) 1px, transparent 1px, transparent 31px),
-    repeating-linear-gradient(-45deg, rgba(0,229,255,0.035) 0px, rgba(0,229,255,0.035) 1px, transparent 1px, transparent 31px);
-  background-size: auto, 44px 44px, 44px 44px;
-}
-body.on-char {
-  padding-bottom: 0 !important;
-  background:
-    linear-gradient(180deg, rgba(3,6,18,1) 0%, rgba(2,4,14,1) 100%),
-    repeating-linear-gradient(45deg, rgba(255,0,204,0.04) 0px, rgba(255,0,204,0.04) 1px, transparent 1px, transparent 31px),
-    repeating-linear-gradient(-45deg, rgba(0,229,255,0.04) 0px, rgba(0,229,255,0.04) 1px, transparent 1px, transparent 31px);
-  background-size: auto, 44px 44px, 44px 44px;
-}
-#pg-lobby, #pg-charselect, #pg-whack, #pg-match, #pg-space {
-  background: transparent;
-}
-
-/* ── Neon glow utilities ── */
-@keyframes neon-pulse {
-  0%,100% { opacity: 1; }
-  50%      { opacity: 0.82; }
-}
-@keyframes neon-flicker {
-  0%,18%,20%,22%,100% { opacity: 1; }
-  19%,21%              { opacity: 0.35; }
-}
-@keyframes coin-float {
-  0%   { transform: translateY(0)   rotate(0deg)   scale(1); }
-  33%  { transform: translateY(-18px) rotate(12deg)  scale(1.04); }
-  66%  { transform: translateY(-8px)  rotate(-6deg)  scale(0.97); }
-  100% { transform: translateY(0)   rotate(0deg)   scale(1); }
-}
-@keyframes ticket-drift {
-  0%   { transform: translateY(0)   rotate(-4deg); }
-  50%  { transform: translateY(-22px) rotate(4deg); }
-  100% { transform: translateY(0)   rotate(-4deg); }
-}
-.neon-text-pink  { text-shadow: 0 0 8px #ff00cc, 0 0 20px #ff00cc, 0 0 40px #ff00cc88; }
-.neon-text-cyan  { text-shadow: 0 0 8px #00e5ff, 0 0 20px #00e5ff, 0 0 40px #00e5ff88; }
-.neon-text-yel   { text-shadow: 0 0 8px #ffe61a, 0 0 20px #ffe61a, 0 0 40px #ffe61a88; }
-.neon-text-grn   { text-shadow: 0 0 8px #33ff66, 0 0 20px #33ff66, 0 0 40px #33ff6688; }
-.neon-flicker    { animation: neon-flicker 6s step-end infinite; }
-.neon-pulse      { animation: neon-pulse 2.4s ease-in-out infinite; }
-
-/* ── Arcade header mute/LB buttons ── */
-/* outline:none on all three — without it, tapping one (the trophy button
-   especially, since it already has a gold border/glow) leaves the browser's
-   default focus ring stuck on top, reading as a stray/wrong-colored highlight. */
-.arcade-mute-btn {
-  font-family: 'VCR', monospace; font-size: 9px; letter-spacing: 1px;
-  background: none; border: 1px solid rgba(242,239,232,0.2); outline: none;
-  border-radius: 3px; padding: 3px 7px; color: rgba(242,239,232,0.6); cursor: pointer;
-}
-.arcade-lb-btn {
-  font-family: 'VCR', monospace; font-size: 9px; letter-spacing: 1px;
-  background: rgba(255,230,26,0.1); border: 1px solid rgba(255,230,26,0.3); outline: none;
-  border-radius: 3px; padding: 3px 8px; color: #ffe61a; cursor: pointer;
-  text-shadow: 0 0 8px #ffe61a66;
-}
-.arcade-exit-btn {
-  font-family: 'VCR', monospace; font-size: 9px; letter-spacing: 2px;
-  background: rgba(255,0,204,0.1); border: 1px solid rgba(255,0,204,0.35); outline: none;
-  border-radius: 4px; padding: 5px 10px; color: #ff00cc; cursor: pointer;
-  text-shadow: 0 0 8px #ff00cc66; white-space: nowrap;
-}
-body.on-lobby button, body.on-char button, body.on-whack button, body.on-match button, body.on-space button,
-body.on-lobby .game-card, body.on-char .game-card, body.on-whack .game-card, body.on-match .game-card, body.on-space .game-card {
-  touch-action: manipulation;
-}
-/* ── Arcade page header: compact ── */
-body.on-lobby .cats-header, body.on-char .cats-header,
-body.on-whack .cats-header,
-body.on-match .cats-header, body.on-space .cats-header {
-  height: 56px !important;
-  padding: 8px 16px !important;
-  background: transparent !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-body.on-lobby .arcade-exit-btn, body.on-char .arcade-exit-btn,
-body.on-whack .arcade-exit-btn,
-body.on-match .arcade-exit-btn, body.on-space .arcade-exit-btn {
-  font-size: 12px !important; letter-spacing: 1.5px !important;
-  padding: 6px 10px !important; border-radius: 5px !important;
-}
-body.on-lobby .arcade-lb-btn, body.on-char .arcade-lb-btn,
-body.on-whack .arcade-lb-btn,
-body.on-match .arcade-lb-btn, body.on-space .arcade-lb-btn {
-  font-size: 14px !important; padding: 5px 9px !important; border-radius: 4px !important;
-}
-body.on-lobby .arcade-mute-btn, body.on-char .arcade-mute-btn,
-body.on-whack .arcade-mute-btn,
-body.on-match .arcade-mute-btn, body.on-space .arcade-mute-btn {
-  font-size: 11px !important; letter-spacing: 1px !important;
-  padding: 5px 9px !important; border-radius: 4px !important;
-}
-/* Game pages use a minimal floating exit button instead of the page header. */
-body.on-whack .cats-header,
-body.on-match .cats-header,
-body.on-space .cats-header {
-  display: none !important;
-}
-#arcade-game-exit {
-  display: none;
-  position: fixed;
-  top: max(10px, env(safe-area-inset-top, 10px));
-  right: max(10px, env(safe-area-inset-right, 10px));
-  z-index: 9999;
-  pointer-events: auto;
-  width: 32px;
-  min-width: 32px;
-  height: 32px;
-  padding: 0;
-  font-size: 16px;
-  line-height: 1;
-  justify-content: center;
-  align-items: center;
-  border-radius: 6px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
-}
-body.on-whack #arcade-game-exit,
-body.on-match #arcade-game-exit,
-body.on-space #arcade-game-exit {
-  display: inline-flex;
-}
-/* All arcade header buttons: uniform height */
-body.on-lobby .cats-header button, body.on-char .cats-header button,
-body.on-whack .cats-header button,
-body.on-match .cats-header button, body.on-space .cats-header button {
-  height: 32px !important;
-  box-sizing: border-box !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-/* ── Arcade floating elements (all arcade pages) ── */
-#arcade-float {
-  display: none;
-  position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
-}
-body.on-lobby #arcade-float, body.on-char #arcade-float, body.on-whack #arcade-float { display: block; }
-body.arcade-selection-open #arcade-float { display: block; }
-.af-coin {
-  position: absolute;
-  animation: coin-float linear infinite;
-  opacity: 0.10;
-  filter: drop-shadow(0 0 6px #ffe61a44);
-}
-.af-ticket {
-  position: absolute;
-  animation: ticket-drift linear infinite;
-  opacity: 0.08;
-  filter: drop-shadow(0 0 6px #ff00cc44);
-}
-.af-pizza {
-  position: absolute;
-  animation: coin-float linear infinite;
-  opacity: 0.12;
-  filter: drop-shadow(0 0 6px #ff660044);
-}
-body.arcade-selection-open .af-coin { opacity: 0.09; }
-body.arcade-selection-open .af-ticket { opacity: 0.075; }
-body.arcade-selection-open .af-pizza { opacity: 0.085; }
-
-/* ── PAGES ── */
-.page { display: none; position: relative; z-index: 1; }
-.page.active { display: block; }
-#pg-charselect.active { display: flex; }
-
-/* ── STICKY HEADER ── */
-#hdr {
-  position: sticky; top: 0; z-index: 800;
-  background: rgba(8,16,42,0.94);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--line);
-  display: flex; align-items: center; gap: 10px;
-  padding: 11px 16px;
-}
-#logo {
-  font-family: 'Russo One', sans-serif;
-  font-size: 24px;
-  letter-spacing: 4px;
-  color: var(--white);
-  flex: 1;
-  text-shadow: 0 0 40px rgba(242,239,232,0.08);
-}
-#logo small {
-  display: block;
-  font-family: 'VCR', 'Share Tech Mono', monospace;
-  font-size: 9px; letter-spacing: 3px;
-  color: var(--dim);
-  font-weight: normal;
-  margin-top: 1px;
-}
-.hdr-play {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 10px; letter-spacing: 2px; color: rgba(242,239,232,1);
-}
-.hdr-play svg { width: 10px; height: 10px; fill: rgba(242,239,232,1); }
-
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0.15}}
-
-/* ── VHS TRACKING BANDS (whole site) ── */
-#vhs-bands {
-  position: fixed; inset: 0; z-index: 9200;
-  pointer-events: none; overflow: hidden;
-}
-#vhs-bands::before {
-  content: '';
-  position: absolute; inset: -100%;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent      0px,
-    transparent      54px,
-    rgba(255,255,255,0.016) 54px,
-    rgba(255,255,255,0.016) 57px,
-    transparent      57px,
-    transparent      108px,
-    rgba(0,0,0,0.03) 108px,
-    rgba(0,0,0,0.03) 112px
-  );
-  background-size: 100% 140px;
-  animation: rollBands 14s linear infinite;
-}
-#vhs-bands::after {
-  content: '';
-  position: absolute; left: 0; right: 0;
-  height: 5px;
-  background: rgba(0,0,0,0.22);
-  top: -5px;
-  animation: syncBand 11s linear infinite;
-}
-@keyframes rollBands {
-  from { background-position: 0 0; }
-  to   { background-position: 0 140px; }
-}
-@keyframes syncBand {
-  from { transform: translateY(0); }
-  to   { transform: translateY(calc(100vh + 5px)); }
-}
-body.on-lobby #vhs-bands, body.on-char #vhs-bands, body.on-whack #vhs-bands,
-body.on-match #vhs-bands,
-body.on-space #vhs-bands { display: none !important; }
-
-/* ── SCANLINES ── */
-body::after {
-  content: '';
-  position: fixed; inset: 0; z-index: 9400;
-  pointer-events: none;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
-}
-body.on-lobby::after, body.on-char::after, body.on-whack::after,
-body.on-match::after, body.on-space::after { display: none; }
-
-/* ── MOBILE TAB DOCK — desktop uses page headers instead ── */
-#tabs { display: none; }
-.tab {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 4px;
-  background: none; border: none; cursor: pointer;
-  color: var(--dim);
-  font-family: 'VCR', 'Share Tech Mono', monospace;
-  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
-  -webkit-tap-highlight-color: transparent;
-  transition: color 0.2s;
-  padding: 8px 0;
-}
-.tab.on { color: var(--white); }
-.tab svg { width: 20px; height: 20px; stroke-width: 1.5; }
-.tab-line {
-  width: 20px; height: 1px;
-  background: var(--white);
-  opacity: 0; transition: opacity 0.2s;
-  margin-top: 1px;
-}
-.tab.on .tab-line { opacity: 1; }
-
-@media (max-width: 767px), (pointer: coarse) and (max-width: 1023px) {
-  #tabs {
-    position: fixed;
-    left: max(10px, env(safe-area-inset-left, 0px) + 8px);
-    right: max(10px, env(safe-area-inset-right, 0px) + 8px);
-    bottom: max(10px, env(safe-area-inset-bottom, 0px) + 8px);
-    z-index: 7600;
-    display: flex;
-    align-items: center;
-    width: auto;
-    height: 64px;
-    max-height: 64px;
-    transform: none;
-    gap: 0;
-    border: 1px solid rgba(242,239,232,0.14);
-    border-radius: 20px;
-    background: rgba(8,16,42,0.78);
-    box-shadow: 0 10px 26px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.04);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    overflow: hidden;
-    transition: width 0.25s ease, left 0.25s ease, right 0.25s ease, border-radius 0.25s ease;
-  }
-  body.on-lobby #tabs,
-  body.on-char #tabs,
-  body.on-whack #tabs,
-  body.on-match #tabs,
-  body.on-space #tabs {
-    display: none;
-  }
-  #tabs .tab { display: flex; }
-  .tab {
-    min-width: 0;
-    height: 100%;
-    padding: 7px 2px 6px;
-    font-size: 9px;
-    letter-spacing: 1px;
-    border: none;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-  .tab.on { background: rgba(255,255,255,0.08); }
-  .tab svg { width: 21px; height: 21px; }
-  .tab-line { width: 20px; }
-  .cats-header-nav { display: none; }
-  #pg-cats.active,
-  #pg-detail.active,
-  #pg-timeline.active,
-  #pg-shelf.active {
-    padding-bottom: max(94px, env(safe-area-inset-bottom, 0px) + 88px);
-  }
-  #pg-map {
-    padding-bottom: max(86px, env(safe-area-inset-bottom, 0px) + 80px);
-  }
-  #pg-search {
-    padding-bottom: max(102px, env(safe-area-inset-bottom, 0px) + 96px);
-  }
-  #map-zoom-btns {
-    bottom: max(100px, env(safe-area-inset-bottom, 0px) + 94px);
-  }
-}
-
-/* ══════════════════════════════════════
-   HOME
-══════════════════════════════════════ */
-/* Home is a stable pinned surface. Avoid transform-based vertical positioning here:
-   mobile Safari changes visual viewport geometry around search/keyboard/browser UI,
-   and transformed full-screen pages made the hero drift across devices. */
-#pg-home {
-  height: 100dvh;
-  min-height: 100dvh;
-  max-height: 100dvh;
-  overflow: hidden;
-  flex-direction: column;
-  /* Hero centers vertically in the available space rather than sitting pinned near
-     the top with empty space below — a small safe-area floor keeps it off a notch/
-     status bar on short viewports without fighting the centering. */
-  justify-content: center;
-  position: relative;
-  padding: max(10px, env(safe-area-inset-top, 0px)) 0 max(16px, env(safe-area-inset-bottom, 0px) + 10px);
-}
-#pg-home.active {
-  display: flex;
-}
-
-/* Photo pile — fixed so it covers the entire screen edge to edge */
-#collage {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: -1;
-  overflow: hidden;
-}
-/* Hide collage when not on home */
-#collage.hidden { display: none; }
-
-/* Static pile photos */
-.pile-photo {
-  position: absolute;
-  width: 338px; height: 253px;
-  object-fit: cover;
-  border: 4px solid #f0ede6;
-  box-shadow: 3px 6px 20px rgba(0,0,0,0.9), 0 1px 4px rgba(0,0,0,0.6);
-  transform: rotate(var(--r));
-  opacity: 1;
-}
-/* Drops from close (large) down onto the pile */
-.falling-leaf {
-  position: absolute;
-  width: 338px; height: 253px;
-  object-fit: cover;
-  border: 4px solid #f0ede6;
-  box-shadow: 3px 6px 20px rgba(0,0,0,0.9), 0 1px 4px rgba(0,0,0,0.6);
-  pointer-events: none;
-  opacity: 0;
-  animation: dropIn var(--dur) cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
-}
-@keyframes dropIn {
-  0%   { opacity: 0; transform: rotate(calc(var(--r) + var(--tilt))) scale(2.0) translate(var(--sx), -30px); }
-  9%   { opacity: 1; }
-  100% { opacity: 1; transform: rotate(var(--r)) scale(1) translate(0px, 0px); }
-}
-/* Heavy blue overlay — must be above falling photos (which reach z-index 50000+) */
-#collage::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: rgba(8,16,42,0.93);
-  pointer-events: none;
-  z-index: 999999;
-}
-body.on-detail #collage::after,
-body.on-timeline #collage::after {
-  background: rgba(8,16,42,0.98);
-}
-
-/* Hero — stable in normal flow; no page-level translate. Fills #pg-home's full
-   available height (flex:1) so .hero-above/.hero-search/.hero-below below can split
-   that height around the search bar as a fixed anchor — see comment there. */
-.home-hero {
-  padding: 0 24px 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-  min-height: 0;
-  gap: 10px;
-  position: relative;
-  z-index: 1;
-  text-align: center;
-  /* One shared width for the logo, search bar and button block so they always match
-     and stay centered (align-items:center above). 88vw leaves a comfortable gutter on
-     every phone width; the 560px cap keeps it from getting too wide (and a touch
-     smaller overall) on tablets/desktop. Tune side-padding by editing this one line —
-     each breakpoint just overrides --hero-w. */
-  --hero-w: min(88vw, 560px);
-}
-/* The anchor pattern: equal flex:1 on both sides of .hero-search means whatever
-   vertical space is left over after the search bar's own height splits evenly above
-   and below it — so the search bar sits at dead center regardless of viewport size
-   or logo size, with no hand-tuned shift to re-break every time something resizes.
-   hero-above pins its content (the logo) to ITS OWN bottom edge; hero-below pins its
-   content to ITS OWN top edge — both sit flush against the search bar. */
-.hero-above {
-  flex: 1 1 0;
-  min-height: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
-  position: relative;
-}
-.hero-below {
-  flex: 1 1 0;
-  min-height: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
-}
-
-/* Logo wrap — same width formula as .hero-search/.hero-lower below it, so its edges
-   line up flush with the search bar/buttons with no horizontal shift. */
-.hero-logo-wrap {
-  position: relative;
-  width: var(--hero-w);
-  /* Title.png is cropped tight to its visible glyphs (~1.3% margin each side) — this
-     only needs to cancel that tiny residual. Written as max() of absolute units (not
-     a plain %) because margin-bottom% resolves against the *containing block's*
-     width, not this element's own (capped) width — at widths above the 640px cap
-     that mismatch used to silently grow the overlap. Pre-multiplying each branch of
-     the width formula by the padding ratio (1.27%) sidesteps that entirely. */
-  margin-bottom: 0;
-  pointer-events: none;
-}
-.hero-logo-text {
-  display: block;
-  width: 100%;
-  filter: drop-shadow(0 4px 28px rgba(0,0,0,0.9));
-}
-.hero-season-wrap {
-  position: absolute;
-  top: 0;
-  right: max(14px, env(safe-area-inset-right, 0px));
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.hero-season-btn {
-  width: 42px;
-  height: 42px;
-  border-radius: 999px;
-  border: 1px solid rgba(242,239,232,0.18);
-  background: rgba(180,190,220,0.10);
-  color: rgba(242,239,232,0.9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.06);
-  transition: transform 0.12s, background 0.16s, color 0.16s, border-color 0.16s;
-}
-.hero-season-btn:hover { color: var(--white); border-color: rgba(242,239,232,0.32); }
-.hero-season-btn:active { transform: scale(0.94); background: rgba(180,190,220,0.18); }
-.hero-season-btn svg { width: 22px; height: 22px; }
-.hero-season-btn .season-glow { inset: 4px; border-radius: 999px; }
-.hero-season-label {
-  font-family: 'VCR', monospace;
-  font-size: 9px;
-  letter-spacing: 1.6px;
-  color: rgba(242,239,232,0.58);
-  text-transform: uppercase;
-}
-
-/* Search — same width as the buttons/icons below it (.hero-lower's formula) — it's
-   a sibling of .hero-above/.hero-below now, not nested, so it needs its own matching
-   cap instead of inheriting one from a parent. */
-.hero-search {
-  width: var(--hero-w);
-  flex-shrink: 0;
-  margin-top: 5px;
-}
-.search-row {
-  display: flex;
-  align-items: stretch;
-  gap: 8px;
-}
-.search-wrap {
-  flex: 1;
-  display: flex; align-items: center; gap: 10px;
-  background: rgba(180,190,220,0.10);
-  border: 1px solid rgba(242,239,232,0.22);
-  border-radius: 10px;
-  padding: 13px 16px;
-  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.04);
-}
-.home-search-input {
-  flex: 1;
-  background: none; border: none; outline: none;
-  font-family: 'VCR', 'Share Tech Mono', monospace;
-  font-size: 10px; letter-spacing: 1.2px;
-  color: rgba(242,239,232,0.90);
-  min-width: 0;
-}
-.home-search-input::placeholder { color: rgba(242,239,232,0.52); letter-spacing: 1px; }
-.home-search-input::-webkit-search-cancel-button { display: none; }
-/* Home search dropdown */
-#home-drop {
-  display: none;
-  position: fixed;
-  background: rgba(8,16,42,0.97);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border: 1px solid rgba(242,239,232,0.18);
-  border-top: 1px solid rgba(242,239,232,0.08);
-  overflow-y: auto;
-  max-height: 56vh;
-  z-index: 300;
-}
-#home-drop.open { display: block; }
-#home-drop-meta {
-  font-family: 'VCR', monospace;
-  font-size: 10px; letter-spacing: 2px;
-  color: rgba(242,239,232,1);
-  padding: 10px 14px 2px;
-}
-#home-drop-meta.nores {
-  font-size: 16px; letter-spacing: 3px;
-  color: rgba(242,239,232,0.45);
-  text-align: center;
-  padding: 40px 14px;
-}
-#home-drop .vgrid {
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  padding: 10px 14px 20px;
-}
-#home-drop .vcard-title,
-#home-drop .vcard-year { display: none; }
-#home-drop .vcard-grad { display: none; }
-.dice-btn {
-  flex: none;
-  width: 52px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  -webkit-tap-highlight-color: transparent;
-  color: rgba(242,239,232,1);
-  opacity: 0.85;
-  transition: opacity 0.15s, transform 0.12s, color 0.15s;
-  padding: 3px 0;
-}
-.dice-btn:hover { opacity: 1; color: var(--white); }
-.dice-btn:active { transform: scale(0.88); opacity: 1; color: var(--white); }
-.dice-btn svg { width: 44px; height: 44px; }
-.nav-icon-btn {
-  flex: none;
-  width: 40px;
-  background: none; border: none;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  -webkit-tap-highlight-color: transparent;
-  color: rgba(242,239,232,1);
-  opacity: 1;
-  transition: color 0.15s, transform 0.12s;
-}
-.nav-icon-btn:hover { color: rgba(242,239,232,1); }
-.nav-icon-btn:active { transform: scale(0.88); color: var(--white); }
-.nav-icon-btn svg { width: 22px; height: 22px; }
-.nav-icon-btn .nav-icon-img { width: 22px; height: 22px; object-fit: contain; }
-.inline-shuffle-btn {
-  flex: 0 0 52px;
-  width: 52px;
-  min-height: 100%;
-  border: 1px solid rgba(242,239,232,0.18);
-  border-radius: 10px;
-  background: rgba(180,190,220,0.10);
-  color: rgba(242,239,232,0.9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.05);
-  transition: transform 0.12s, background 0.16s, border-color 0.16s, color 0.16s;
-}
-.inline-shuffle-btn:hover { color: var(--white); border-color: rgba(242,239,232,0.34); background: rgba(180,190,220,0.16); }
-.inline-shuffle-btn:active { transform: scale(0.96); }
-.inline-shuffle-btn svg { width: 22px; height: 22px; }
-.search-wrap:focus-within {
-  background: rgba(180,190,220,0.22);
-  border-color: rgba(242,239,232,0.42);
-  box-shadow: 0 14px 34px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.08);
-}
-.search-play-btn svg { width: 13px; height: 14px; }
-.search-wrap input {
-  flex: 1; background: none; border: none; outline: none;
-  color: var(--white);
-  font-family: 'VCR', 'Share Tech Mono', monospace;
-  font-size: 13px; letter-spacing: 2px;
-}
-.search-wrap input::placeholder { color: rgba(242,239,232,0.45); letter-spacing: 2px; }
-
-/* Hero lower stack: buttons row, icon row, recommendations — centered under search */
-.hero-lower {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: var(--hero-w);
-}
-
-/* Buttons row — each half width */
-.hero-cta-row {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-}
-@media (min-width: 768px) and (pointer: fine) {
-  /* One desktop header ruler for the whole main website. Home/Search used to have
-     their own header patterns, while Browse/Years/Map used page headers; that made
-     nav buttons appear to jump between different coordinate systems. */
-  .main-site-header {
-    width: var(--desktop-nav-width);
-    max-width: none;
-    padding: var(--desktop-nav-pad);
-    margin-left: auto;
-    margin-right: auto;
-  }
-  .cats-header-nav .page-nav-btn:not(.is-search) {
-    width: 100%;
-    padding-left: 0;
-    padding-right: 0;
-    justify-content: center;
-  }
-}
-
-/* CTA buttons — Apple-like glass, home-video typography */
-.hero-cta-btn {
-  flex: 1;
-  background: rgba(180,190,220,0.13);
-  border: 1px solid rgba(242,239,232,0.16);
-  border-radius: 12px;
-  padding: 13px 10px 12px;
-  font-family: 'VCR', 'Share Tech Mono', monospace;
-  font-size: 11px;
-  letter-spacing: 1.8px;
-  color: rgba(242,239,232,0.9);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  box-shadow: 0 14px 32px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.08);
-  backdrop-filter: blur(24px) saturate(1.2);
-  -webkit-backdrop-filter: blur(24px) saturate(1.2);
-  transition: background 0.16s, transform 0.12s, border-color 0.16s, color 0.16s;
-}
-.hero-cta-btn:hover { color: var(--white); border-color: rgba(242,239,232,0.34); background: rgba(180,190,220,0.20); }
-.hero-cta-btn:active  { transform: scale(0.98); border-color: rgba(242,239,232,0.44); }
-
-/* Play button inside search bar */
-.search-play-btn, .search-clear-btn {
-  background: none; border: none; padding: 2px 0 2px 6px;
-  color: rgba(242,239,232,0.7); cursor: pointer; flex-shrink: 0;
-  display: flex; align-items: center;
-  -webkit-tap-highlight-color: transparent;
-}
-.search-clear-btn svg { width: 12px; height: 12px; }
-.search-play-btn:active, .search-clear-btn:active { color: var(--white); }
-
-/* Recommended — inline below CTA buttons, above icon row */
-#memories {
-  display: none;
-  width: 100%;
-  padding-top: 6px;
-}
-#memories.open { display: block; }
-/* Allow memories to overflow pg-home's clipping area */
-#pg-home.rec-open {
-  overflow-y: auto;
-}
-#pg-home.rec-open .home-hero {
-  padding-top: 0;
-}
-body.rec-open { overflow-y: auto; }
-@keyframes fadeUp {
-  from { opacity:0; transform:translateY(8px); }
-  to   { opacity:1; transform:translateY(0); }
-}
-#memories.open { animation: fadeUp 0.22s ease both; }
-
-/* Stats strip */
-.stats-strip {
-  display: flex; justify-content: center; gap: 0;
-  padding: 28px 16px 0;
-  position: relative; z-index: 1;
-}
-.stat-item {
-  flex: 1; text-align: center;
-  border-right: 1px solid var(--line);
-  padding: 0 8px;
-}
-.stat-item:last-child { border-right: none; }
-.stat-num {
-  font-family: 'Bebas Neue', cursive;
-  font-size: 28px; letter-spacing: 2px; line-height: 1;
-  color: var(--white);
-}
-.stat-lbl {
-  font-size: 9px; letter-spacing: 2px; color: var(--dim);
-  margin-top: 3px;
-}
-
-/* Season strip */
-.season-header {
-  display: flex; align-items: baseline; gap: 10px;
-  padding: 32px 16px 14px;
-  position: relative; z-index: 1;
-}
-.season-label {
-  font-family: 'Bebas Neue', cursive;
-  font-size: 18px; letter-spacing: 3px;
-  color: var(--white);
-}
-.season-sub { font-size: 9px; color: var(--dim); letter-spacing: 1px; }
-
-/* ══════════════════════════════════════
-   VIDEO GRID  (2-col, Wix-style cards)
-══════════════════════════════════════ */
-.vgrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  padding: 0 14px 24px;
-}
-
-.vcard {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 0.12s;
-}
-.vcard:active { transform: scale(0.96); }
-
-/* Photo area — holds image, overlays, and corner dots */
-.vcard-photo {
-  position: relative;
-  aspect-ratio: 4/3;
-  overflow: hidden;
-  background: var(--navy2);
-  flex-shrink: 0;
-  box-shadow: 4px 6px 20px rgba(0,0,0,0.7);
-}
-
-
-/* Title label below the photo — only shown in detail grid */
-.vcard-lbl {
-  display: none;
-  padding: 8px 4px 5px;
-  font-family: 'VCR', monospace;
-  font-size: 18px;
-  letter-spacing: 1px;
-  line-height: 1.3;
-  color: #ffffff;
-  text-align: center;
-  word-break: break-word;
-}
-#detailGrid .vcard-lbl { display: block; }
-
-.vcard-img {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%; object-fit: cover;
-  display: block;
-  filter: brightness(1.28);
-}
-.vcard-tint {
-  position: absolute; inset: 0; opacity: 0.08; z-index: 1;
-}
-.vcard-grad {
-  position: absolute; inset: 0; z-index: 2;
-  background: linear-gradient(to top,
-    rgba(8,16,42,0.78) 0%,
-    rgba(8,16,42,0.45) 40%,
-    rgba(8,16,42,0.08) 80%,
-    transparent        100%);
-}
-.vcard-body {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  padding: 2px 5px 4px;
-  z-index: 3;
-}
-.vcard-title {
-  font-family: 'Bebas Neue', cursive;
-  font-size: clamp(7px, 1.8vw, 9px);
-  line-height: 1.05;
-  letter-spacing: 0.5px;
-  color: #ffffff;
-  text-shadow: 0 1px 8px rgba(0,0,0,0.95), 0 0 2px rgba(0,0,0,0.8);
-}
-.vcard-year {
-  font-family: 'Bebas Neue', cursive;
-  font-size: clamp(6px, 1.4vw, 7px);
-  line-height: 1;
-  letter-spacing: 1.5px;
-  color: rgba(255,255,255,0.65);
-  text-shadow: 0 1px 8px rgba(0,0,0,0.95), 0 0 2px rgba(0,0,0,0.8);
-}
-/* "Why recommended" tag — same green-phosphor VCR-OSD look as the screensaver's
-   "● MOBERINO" tag, scaled down to fit on a small card. */
-.vcard-rec-tag {
-  position: absolute;
-  top: 4px; left: 4px;
-  z-index: 4;
-  font-family: 'VCR', monospace;
-  font-size: clamp(8.5px, 2.4vw, 11.5px);
-  letter-spacing: 0.5px;
-  color: rgba(120,255,140,0.95);
-  background: rgba(0,0,0,0.82);
-  padding: 3px 6px;
-  border-radius: 3px;
-  white-space: nowrap;
-  text-shadow: 0 0 4px rgba(0,255,80,0.5);
-}
-
-/* ══════════════════════════════════════
-   CATEGORIES  (4-col grid)
-══════════════════════════════════════ */
-/* Cats page — same collage background as home, transition via JS */
-#pg-cats {
-  min-height: 100dvh;
-  /* No padding-top: it sat ABOVE the sticky .cats-header, which parked the header at
-     y=4 and let the grid/collage peek through that gap at the very top. The header is
-     now flush at top:0; breathing room comes from the header's own padding + the
-     grid's padding below it. */
-  padding-bottom: 40px;
-  position: relative;
-  z-index: 1;
-}
-
-/* Page header: navigation only. Home owns the big MOBERINO brand moment. */
-.cats-header {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  gap: 16px;
-  padding: 10px 16px 8px;
-  position: relative;
-  z-index: 2;
-  border-bottom: 1px solid rgba(242,239,232,0.08);
-}
-.main-site-header {
-  display: none;
-}
-@media (min-width: 768px) and (pointer: fine) {
-  .main-site-header {
-    display: flex;
-  }
-}
-.cats-header-nav {
-  display: grid;
-  align-items: center;
-  gap: 8px;
-  grid-template-columns: repeat(4, var(--desktop-nav-slot)) minmax(12px, 1fr) var(--desktop-nav-slot);
-  width: 100%;
-}
-.page-nav-btn {
-  position: relative;
-  overflow: hidden;
-  background: rgba(180,190,220,0.08);
-  border: 1px solid rgba(242,239,232,0.12);
-  border-radius: 999px;
-  min-height: 36px;
-  padding: 0 12px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  color: rgba(242,239,232,0.88);
-  font-family: 'VCR', monospace;
-  font-size: 10px;
-  letter-spacing: 1.1px;
-  text-transform: uppercase;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 0.12s, background 0.15s, border-color 0.15s, color 0.15s;
-}
-.page-nav-btn:hover { border-color: rgba(242,239,232,0.28); color: var(--white); }
-.page-nav-btn:active { transform: scale(0.97); background: rgba(180,190,220,0.16); }
-/* Keep icon/label above the decorative fog layers added below. */
-.page-nav-btn > * { position: relative; z-index: 1; }
-/* Active-button smoke/fog fill — two blurred, independently-drifting layers of
-   radial gradients standing in for vapor, clipped to the pill by the button's
-   own overflow:hidden. Pseudo-elements so no new DOM/markup is needed. */
-.page-nav-btn.active {
-  background: rgba(180,190,220,0.16);
-  border-color: rgba(242,239,232,0.3);
-  color: var(--white);
-}
-.page-nav-btn.active::before,
-.page-nav-btn.active::after {
-  content: '';
-  /* inset:0 (not a negative/expanded inset) so this box exactly matches the
-     button's own rounded silhouette — an expanded box needs its own matching
-     border-radius math to avoid a visible rectangular edge peeking past the
-     pill's curve at the corners; inset:0 + border-radius:inherit sidesteps
-     that entirely since there's no offset to reconcile. */
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  border-radius: inherit;
-  background-repeat: no-repeat;
-}
-.page-nav-btn.active::before {
-  background-image:
-    radial-gradient(circle at 30% 35%, rgba(255,255,255,0.46) 0%, transparent 42%),
-    radial-gradient(circle at 72% 60%, rgba(255,255,255,0.36) 0%, transparent 44%),
-    radial-gradient(circle at 50% 85%, rgba(255,255,255,0.28) 0%, transparent 46%);
-  background-size: 220% 220%;
-  background-position: 0% 0%;
-  filter: blur(4px);
-  opacity: 0.85;
-  animation: nav-fog-pan-a 7s ease-in-out infinite;
-}
-.page-nav-btn.active::after {
-  background-image: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.46) 0%, transparent 48%);
-  background-size: 200% 200%;
-  background-position: 100% 100%;
-  filter: blur(3px);
-  opacity: 0.55;
-  mix-blend-mode: screen;
-  animation: nav-fog-pan-b 5.5s ease-in-out infinite;
-}
-@keyframes nav-fog-pan-a {
-  0%, 100% { background-position: 10% 20%; }
-  50%      { background-position: 80% 70%; }
-}
-@keyframes nav-fog-pan-b {
-  0%, 100% { background-position: 90% 80%; }
-  50%      { background-position: 20% 30%; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .page-nav-btn.active::before,
-  .page-nav-btn.active::after {
-    animation: none;
-  }
-}
-.page-nav-btn.is-search {
-  grid-column: 6;
-  margin-left: 0;
-  justify-content: center;
-  width: 100%;
-}
-.page-nav-btn.nav-sparkle-btn {
-  /* Occupies the same first slot as the inner-page HOME button. */
-  width: 100%;
-  padding: 0;
-  justify-content: center;
-  color: rgba(242,239,232,0.88);
-}
-.page-nav-btn.nav-sparkle-btn.active {
-  color: var(--white);
-  border-color: rgba(242,239,232,0.34);
-  background: rgba(180,190,220,0.16);
-}
-.page-nav-btn svg, .page-nav-btn .nav-icon-img {
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-.cats-home-btn {
-  background: none; border: none;
-  cursor: pointer; padding: 0;
-  display: flex; align-items: flex-end; gap: 2.5px;
-  -webkit-tap-highlight-color: transparent;
-  opacity: 0.88;
-  transition: opacity 0.15s;
-}
-.cats-home-btn:active { opacity: 1; }
-/* Explicit home icon — the logo itself has always navigated home too, but that
-   wasn't obvious to people who haven't used a site where the logo doubles as a
-   home link before. Sized/positioned to match the logo's actual visible glyph
-   (Title.png has transparent padding — glyph content runs from ~9.7% to ~95.2% of
-   the image height), not the logo wrap's full box, so top and bottom both line up
-   with the top and bottom of the "M". align-items:flex-start above + this margin-top
-   place it; height is the matching content-height fraction of the same width basis
-   the logo wrap uses (min(175px,40vw)), so it scales together with the logo. */
-.cats-home-icon {
-  /* viewBox is cropped tight to the icon's actual drawn content (measured off an
-     isolated render: content spans 1.85-20.95 of the original 0-24 box), so the
-     visible house now fills ~91% of its own box — both top and bottom padding are
-     small and roughly equal, which is what actually matters for flex's bottom-edge
-     alignment (.cats-home-btn's align-items:flex-end aligns BOXES, not visible
-     content, so a lopsided fill — most of it concentrated at the top, like the old
-     77%-with-all-the-gap-at-the-bottom version — left the visible house floating
-     above the logo's baseline even when total heights matched). With ~91% fill, to
-     match the logo's visible glyph height (~18px against a 110px-wide logo wrap):
-     box = 18/0.91 ≈ 19.8px → ratio 19.8/110 ≈ 0.18 of the logo wrap width. If the
-     logo wrap is resized, scale this box by that same 0.18 ratio. */
-  width: min(19.8px, 6.83vw);
-  height: min(19.8px, 6.83vw);
-  margin-top: min(0.3px, 0.087vw);
-  margin-left: 3px;
-  flex-shrink: 0;
-  color: #fff;
-}
-.cats-logo-wrap {
-  position: relative;
-  width: min(110px, 38vw);
-}
-.cats-logo-img {
-  width: 100%;
-  display: block;
-}
-.cats-search-row {
-  display: flex;
-  align-items: stretch;
-  gap: 6px;
-}
-.cats-search-wrap {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(180,190,220,0.10);
-  border: 1px solid rgba(242,239,232,0.22);
-  padding: 6px 10px;
-}
-.cats-dice-btn { flex: none; width: 52px; padding: 3px 0; }
-.cats-search-input {
-  background: none; border: none; outline: none;
-  font-family: 'VCR', monospace;
-  font-size: 16px; letter-spacing: 1px;
-  color: var(--white);
-  width: 100px;
-}
-.cats-search-input::placeholder { color: rgba(242,239,232,0.4); }
-.cats-search-btn {
-  background: none; border: none;
-  color: rgba(242,239,232,1);
-  cursor: pointer; padding: 0;
-  display: flex; align-items: center;
-  -webkit-tap-highlight-color: transparent;
-}
-.cats-search-btn svg { width: 9px; height: 11px; }
-.cgrid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  padding: 5px 12px;
-  align-items: start;
-}
-/* Polaroid tiles */
-.ctile {
-  width: 100%;
-  min-width: 0;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  background: #f7f4ee;
-  padding: 5px 5px 0 5px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.55), 0 1px 3px rgba(0,0,0,0.25);
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.15s;
-}
-.ctile:active { transform: scale(0.97); }
-.ctile-photo {
-  position: relative;
-  width: 100%;
-  padding-bottom: 100%;
-  height: 0;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-.ctile-color { position: absolute; inset: 0; }
-.ctile-img {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%; object-fit: cover;
-  display: block;
-  transition: transform 0.3s;
-}
-.ctile:hover .ctile-img { transform: scale(1.04); }
-.ctile-lbl {
-  height: 52px;
-  display: flex; align-items: center; justify-content: center;
-  padding: 4px 6px;
-  font-family: 'VCR', 'Share Tech Mono', monospace;
-  font-size: 17px;
-  letter-spacing: 0px; line-height: 1.2;
-  text-align: center;
-  color: #17120a;
-  white-space: normal;
-  word-break: break-word;
-  overflow: hidden;
-}
-
-/* ══════════════════════════════════════
-   CATEGORY DETAIL  (cats-page template)
-══════════════════════════════════════ */
-#pg-detail {
-  min-height: 100dvh;
-  padding-bottom: 40px;
-  position: relative;
-  z-index: 1;
-}
-.detail-mini-hdr {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 2px 16px 2px;
-  position: relative; z-index: 2;
-}
-.detail-back-btn {
-  background: none; border: none;
-  font-family: 'Bebas Neue', cursive;
-  font-size: 24px; letter-spacing: 4px;
-  color: rgba(242,239,232,1);
-  cursor: pointer; padding: 0;
-  display: flex; align-items: center; gap: 8px;
-  -webkit-tap-highlight-color: transparent;
-  transition: color 0.15s;
-}
-.detail-back-btn svg { width: 16px; height: 16px; opacity: 1; }
-.detail-back-btn:active { color: var(--white); }
-.detail-cnt-badge {
-  display: none;
-}
-.detail-cat-banner {
-  padding: 2px 16px 10px;
-  font-family: 'Bebas Neue', cursive;
-  font-size: clamp(28px, 8vw, 48px);
-  letter-spacing: 4px;
-  color: rgba(242,239,232,1);
-  text-shadow: 0 2px 12px rgba(0,0,0,0.6);
-}
-.detail-vgrid {
-  padding: 0 12px;
-}
-
-/* ══════════════════════════════════════
-   SEARCH
-══════════════════════════════════════ */
-#pg-search { padding-bottom: 24px; }
-.srch-top {
-  padding: 18px 14px 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-}
-.srch-logo-btn {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.srch-logo-img {
-  display: block;
-  width: min(280px, 62vw);
-  filter: drop-shadow(0 4px 22px rgba(0,0,0,0.72));
-}
-.srch-row {
-  width: min(680px, calc(100vw - 28px));
-  display: flex;
-  align-items: stretch;
-  gap: 8px;
-}
-.srch-box {
-  flex: 1;
-  min-width: 0;
-  display: flex; align-items: center; gap: 10px;
-  border: 1px solid rgba(242,239,232,0.22);
-  border-radius: 10px;
-  background: rgba(180,190,220,0.10);
-  padding: 13px 16px;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.04);
-  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
-}
-.srch-box:focus-within {
-  border-color: rgba(242,239,232,0.55);
-  background: rgba(180,190,220,0.22);
-  box-shadow: 0 14px 34px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.08);
-}
-.srch-box svg { width: 18px; height: 18px; color: var(--dim); flex-shrink: 0; }
-.srch-box input {
-  flex: 1; background: none; border: none; outline: none;
-  color: var(--white);
-  font-family: 'VCR', 'Share Tech Mono', monospace;
-  font-size: 13px; letter-spacing: 2px;
-  min-width: 0;
-}
-.srch-box input::placeholder { color: rgba(242,239,232,0.52); }
-.srch-clear {
-  background: none; border: none; cursor: pointer;
-  color: var(--dim); padding: 0; line-height: 1;
-  transition: color 0.15s;
-}
-.srch-clear:hover { color: var(--white); }
-.srch-meta {
-  padding: 10px 16px 12px;
-  font-size: 10px; color: var(--dim); letter-spacing: 2px;
-}
-.srch-body { padding: 0 14px; }
-/* "Why it matched" tags — one pill per field type (LOCATION/CATEGORY/TAG/DATE) that
-   contributed to a search hit, shown below the card. Plain/neutral styling (vs. the
-   green VCR-OSD "why recommended" tag on the photo itself) keeps the two distinct. */
-.vcard-tags {
-  display: flex; flex-wrap: wrap; gap: 3px;
-  padding: 3px 0 0;
-}
-.vcard-tag {
-  font-family: 'VCR', monospace;
-  font-size: 7px; letter-spacing: 0.5px;
-  color: rgba(242,239,232,0.7);
-  background: rgba(242,239,232,0.08);
-  border: 1px solid rgba(242,239,232,0.16);
-  padding: 2px 5px;
-  border-radius: 3px;
-  white-space: nowrap;
-}
-.vcard-tag b {
-  font-weight: 400;
-  color: rgba(242,239,232,0.4);
-  margin-right: 3px;
-}
-.no-results {
-  text-align: center; padding: 80px 16px 120px;
-  color: rgba(242,239,232,0.45); font-size: 18px; letter-spacing: 4px;
-}
-
-/* ══════════════════════════════════════
-   TUBE TV LIGHTBOX
-══════════════════════════════════════ */
-#lb {
-  display: none;
-  position: fixed; inset: 0; z-index: 9000;
-  background: #06080f;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  overflow: hidden;
-}
-#lb.open { display: flex; }
-#lb-bg {
-  position: absolute; inset: -10%; z-index: 0;
-  background-size: cover; background-position: center;
-  filter: blur(14px) brightness(0.2);
-  animation: ss-kb 22s ease-in-out infinite alternate;
-  pointer-events: none;
-}
-
-/* TV close bar */
-#lb-hdr {
-  width: 100%; max-width: 520px;
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px 8px;
-  flex-shrink: 0;
-  position: relative; z-index: 1;
-}
-#lb-close {
-  background: none; border: none; cursor: pointer;
-  color: rgba(242,239,232,1); padding: 4px; line-height: 1;
-  transition: color 0.15s;
-}
-#lb-close:hover { color: var(--white); }
-#lb-close svg { width: 20px; height: 20px; }
-#lb-info { flex: 1; min-width: 0; }
-#lb-title {
-  font-family: 'Bebas Neue', cursive;
-  font-size: 22px; letter-spacing: 2px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-#lb-meta { font-size: 9px; color: var(--dim); letter-spacing: 2px; margin-top: 1px; }
-
-/* Tube TV shell */
-#tv-shell {
-  position: relative; z-index: 1;
-  width: 100%; max-width: 520px;
-  background: linear-gradient(160deg, #1a1208 0%, #0e0c06 60%, #080600 100%);
-  border-radius: 18px 18px 12px 12px;
-  padding: 14px 14px 0;
-  box-shadow:
-    inset 2px 2px 10px rgba(255,255,255,0.04),
-    inset -2px -2px 10px rgba(0,0,0,0.8),
-    0 0 0 3px #2a1f0a,
-    0 12px 50px rgba(0,0,0,0.95);
-  flex-shrink: 0;
-}
-
-/* CRT screen bezel */
-#tv-screen-bezel {
-  background: #050402;
-  border-radius: 10px 10px 8px 8px;
-  padding: 8px;
-  box-shadow:
-    inset 0 0 0 2px rgba(255,255,255,0.04),
-    inset 0 2px 12px rgba(0,0,0,0.9);
-  position: relative;
-}
-
-/* The actual CRT screen */
-#lb-frame-wrap {
-  position: relative;
-  aspect-ratio: 16/9;
-  border-radius: 6px 6px 10px 10px / 4px 4px 8px 8px; /* barrel curve */
-  overflow: hidden;
-  background: #000;
-  box-shadow:
-    inset 0 0 40px rgba(0,0,0,0.9),
-    0 0 0 2px #0a0806;
-}
-#lb-frame {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  border: none;
-}
-/* CRT reflection overlay */
-#lb-frame-wrap::after {
-  content: '';
-  position: absolute; inset: 0;
-  background:
-    radial-gradient(ellipse 70% 50% at 30% 25%, rgba(255,255,255,0.04) 0%, transparent 60%),
-    radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
-  pointer-events: none;
-  z-index: 5;
-}
-
-/* VCR combo slot — tape inserts below screen, no buttons */
-#vcr-unit {
-  background: linear-gradient(to bottom, #141008, #0a0806);
-  border-radius: 0 0 8px 8px;
-  padding: 10px 16px 14px;
-  border-top: 1px solid rgba(255,255,255,0.04);
-}
-#vcr-tape-opening {
-  height: 38px;
-  background: #010100;
-  border-radius: 3px;
-  border: 1px solid #1a1408;
-  box-shadow: inset 0 4px 12px rgba(0,0,0,1);
-  position: relative;
-  overflow: hidden;
-}
-#vcr-tape-label {
-  position: absolute;
-  inset: 5px 10px;
-  background: linear-gradient(135deg, #d8cb90, #c4b478);
-  border-radius: 2px;
-  display: flex;
-  align-items: center;
-  padding: 0 10px;
-  overflow: hidden;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.5);
-}
-#vcr-tape-title {
-  font-family: 'VCR', 'Share Tech Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 1.5px;
-  color: #1a1000;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-}
-
-/* ══════════════════════════════════════
-   TIMELINE
-══════════════════════════════════════ */
-#pg-timeline {
-  min-height: 100dvh;
-  padding-bottom: 60px;
-  position: relative; z-index: 1;
-}
-/* Vertical spine */
-#tl-body {
-  position: relative;
-  padding: 0 0 20px 0;
-}
-#tl-body::before {
-  content: '';
-  position: absolute;
-  left: 26px; top: 0; bottom: 0;
-  width: 1px;
-  background: linear-gradient(to bottom, transparent, rgba(242,239,232,0.18) 8%, rgba(242,239,232,0.18) 92%, transparent);
-  pointer-events: none;
-}
-/* Section — starts invisible, reveals on scroll */
-.tl-section {
-  position: relative;
-  padding: 32px 0 8px 56px;
-  opacity: 0;
-  transform: translateY(32px);
-  transition: opacity 0.55s ease, transform 0.55s ease;
-}
-.tl-section.tl-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-/* Glowing dot on the spine */
-.tl-section::before {
-  content: '';
-  position: absolute;
-  left: 20px; top: 40px;
-  width: 12px; height: 12px;
-  border-radius: 50%;
-  background: rgba(242,239,232,0.88);
-  border: 2px solid rgba(8,16,42,1);
-  box-shadow: 0 0 10px rgba(242,239,232,0.45), 0 0 0 1px rgba(242,239,232,0.28);
-}
-/* Large year number */
-.tl-year-num {
-  font-family: 'Bebas Neue', cursive;
-  font-size: clamp(40px, 11vw, 64px);
-  letter-spacing: 6px;
-  color: rgba(242,239,232,1);
-  line-height: 0.88;
-  margin-bottom: 4px;
-}
-.tl-year-count {
-  font-family: 'VCR', monospace;
-  font-size: 10px; letter-spacing: 2px;
-  color: rgba(242,239,232,1);
-  margin-bottom: 14px;
-}
-/* Horizontal scroll strip */
-.tl-strip {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 0 16px 16px 0;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  margin-left: -4px;
-}
-.tl-strip::-webkit-scrollbar { display: none; }
-.tl-thumb {
-  flex: none;
-  width: min(44vw, 220px);
-  scroll-snap-align: start;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.tl-thumb:active { opacity: 0.75; }
-.tl-thumb-img {
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
-  background: #151f2e;
-  position: relative;
-  display: block;
-}
-.tl-thumb-img img {
-  width: 100%; height: 100%; object-fit: cover; display: block;
-}
-.tl-thumb-lbl {
-  padding: 5px 2px 0;
-  font-family: 'VCR', monospace;
-  font-size: 18px; letter-spacing: 0.5px;
-  color: rgba(242,239,232,1);
-  white-space: normal;
-  word-break: break-word;
-  line-height: 1.2;
-}
-.tl-more-tile {
-  flex: none;
-  width: min(44vw, 220px);
-  aspect-ratio: 16 / 9;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: rgba(180,190,220,0.06);
-  border: 1px solid rgba(242,239,232,0.10);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  scroll-snap-align: start;
-  font-family: 'Bebas Neue', cursive;
-  font-size: 28px; letter-spacing: 3px;
-  color: rgba(242,239,232,1);
-  gap: 2px;
-}
-.tl-more-tile span { font-family: 'VCR', monospace; font-size: 10px; letter-spacing: 2px; }
-.tl-more-tile:active { opacity: 0.75; }
-#tl-filter-wrap {
-  padding: 0 16px 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-#tl-cat-filter {
-  flex: 1;
-  background: #0e0c06;
-  border: 1px solid rgba(242,239,232,0.18);
-  border-radius: 4px;
-  color: #f2efe8;
-  font-family: 'VCR', monospace;
-  font-size: 12px;
-  letter-spacing: 1.5px;
-  padding: 8px 10px;
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23f2efe8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  cursor: pointer;
-}
-#tl-cat-filter:focus { outline: none; border-color: rgba(242,239,232,0.4); }
-
-/* ══════════════════════════════════════
-   DETAIL PAGE ENTRY
-══════════════════════════════════════ */
-@keyframes pgFadeUp {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-#pg-detail.active .detail-breadcrumb,
-#pg-detail.active .detail-vgrid {
-  animation: pgFadeUp 0.18s ease both;
-}
-
-/* ══════════════════════════════════════
-   LEAFLET POPUP — DARK THEME
-══════════════════════════════════════ */
-.maplibregl-popup-content {
-  background: rgba(8,16,42,0.96) !important;
-  border: 1px solid rgba(242,239,232,0.22) !important;
-  border-radius: 2px !important;
-  color: rgba(242,239,232,0.90) !important;
-  font-family: 'VCR','Share Tech Mono',monospace !important;
-  font-size: 12px !important;
-  letter-spacing: 1px !important;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.8) !important;
-  padding: 14px !important;
-}
-.maplibregl-popup-tip { border-top-color: rgba(8,16,42,0.96) !important; border-bottom-color: rgba(8,16,42,0.96) !important; }
-.maplibregl-popup-close-button {
-  color: rgba(242,239,232,0.60) !important;
-  font-size: 18px !important;
-  padding: 4px 8px !important;
-}
-.maplibregl-popup-close-button:hover { color: rgba(242,239,232,1) !important; }
-.maplibregl-ctrl-attrib { display: none; }
-.maplibregl-ctrl-logo { display: none !important; }
-
-/* ══════════════════════════════════════
-   MAP
-══════════════════════════════════════ */
-#pg-map {
-  height: 100svh;
-  position: relative; z-index: 1;
-  flex-direction: column;
-  overflow: hidden;
-}
-#pg-map.active { display: flex; }
-#pg-map .cats-header,
-#pg-map .sub-page-title { flex-shrink: 0; }
-.map-hdr {
-  padding: 2px 16px 6px;
-  font-family: 'Bebas Neue', cursive;
-  font-size: 28px; letter-spacing: 5px;
-  color: rgba(242,239,232,1);
-  flex-shrink: 0;
-}
-.map-note {
-  padding: 0 16px 8px;
-  font-size: 10px; letter-spacing: 1px;
-  color: rgba(242,239,232,1);
-}
-#map-container {
-  flex: 1;
-  min-height: 60dvh;
-  position: relative;
-}
-/* Softer navy retint of the otherwise harsh black/white "dark" tile style —
-   grayscale tiles have no hue for hue-rotate alone to grab, so sepia() first
-   pushes them into a tinted (orange) range, then hue-rotate spins that tint
-   around to navy. Only targets the canvas maplibre paints into — markers,
-   popups, and zoom buttons are separate DOM elements and stay unaffected. */
-#map-container canvas.maplibregl-canvas {
-  filter: brightness(1.12) contrast(0.92) sepia(0.55) saturate(2.2) hue-rotate(185deg);
-}
-#map-zoom-btns {
-  position: absolute;
-  bottom: 24px; right: 14px;
-  z-index: 10;
-  display: flex; flex-direction: column; gap: 4px;
-}
-#map-zoom-btns button {
-  width: 36px; height: 36px;
-  background: rgba(8,16,42,0.88);
-  border: 1px solid rgba(242,239,232,0.22);
-  border-radius: 6px;
-  color: var(--white);
-  font-size: 22px; line-height: 1;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s;
-}
-#map-zoom-btns button:active { background: rgba(30,50,100,0.95); }
-
-/* Top-places drawer — slides up from the bottom edge of the map, overlaying
-   it rather than pushing #pg-map's locked 100svh/overflow:hidden height, so
-   the page's existing touch-lock/zoom behavior stays untouched. */
-#map-places-drawer {
-  position: absolute;
-  left: 14px; top: 14px;
-  z-index: 20;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  pointer-events: none;
-  width: min(360px, calc(100% - 28px));
-  /* Promotes this to its own compositing layer so it z-orders correctly
-     against the map canvas, which gets its own layer from the navy-tint
-     `filter` — without this, some browsers/GPU paths stack a plain
-     absolutely-positioned box under a filtered canvas despite z-index. */
-  transform: translateZ(0);
-  will-change: transform;
-}
-#map-places-tab {
-  align-self: flex-start;
-  pointer-events: auto;
-  display: flex; align-items: center; gap: 7px;
-  background: rgba(20,32,68,0.92);
-  border: 1px solid rgba(242,239,232,0.34);
-  border-radius: 999px;
-  padding: 9px 14px;
-  font-family: 'VCR', monospace;
-  font-size: 10px; letter-spacing: 1.6px;
-  color: rgba(242,239,232,0.96);
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 0 0 1px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08);
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s;
-}
-#map-places-tab:active { background: rgba(18,30,66,0.9); }
-.map-places-tab-chevron { font-size: 8px; transition: transform 0.22s ease; opacity: 0.7; }
-#map-places-drawer.open .map-places-tab-chevron { transform: rotate(180deg); }
-.map-places-tab-count {
-  background: rgba(242,239,232,0.16);
-  border-radius: 999px;
-  padding: 1px 7px;
-  font-size: 9px;
-}
-#map-places-list {
-  pointer-events: auto;
-  margin-top: 8px;
-  max-height: 0;
-  overflow: hidden;
-  border-radius: 14px;
-  background: rgba(8,16,42,0.88);
-  border: 1px solid rgba(242,239,232,0.16);
-  box-shadow: 0 12px 28px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.05);
-  transition: max-height 0.26s ease;
-}
-#map-places-drawer.open #map-places-list {
-  max-height: min(42vh, 360px);
-  overflow-y: auto;
-}
-.map-place-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  width: 100%;
-  background: none;
-  border: none;
-  border-bottom: 1px solid rgba(242,239,232,0.08);
-  padding: 11px 14px;
-  font-family: 'VCR', monospace;
-  color: rgba(242,239,232,0.92);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  text-align: left;
-}
-.map-place-row:last-child { border-bottom: none; }
-.map-place-row:active { background: rgba(242,239,232,0.06); }
-.map-place-name { font-size: 11px; letter-spacing: 1.2px; }
-.map-place-count {
-  flex-shrink: 0;
-  background: rgba(242,239,232,0.14);
-  border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 10px;
-}
-.map-place-text {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.map-place-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.map-place-subtitle {
-  font-size: 8px;
-  letter-spacing: 1px;
-  color: rgba(242,239,232,0.48);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Selected map location panel — custom replacement for full MapLibre popups. */
-#map-location-panel {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  bottom: 14px;
-  z-index: 30;
-  width: min(360px, calc(100% - 28px));
-  display: flex;
-  flex-direction: column;
-  pointer-events: auto;
-  background: rgba(8,16,42,0.92);
-  border: 1px solid rgba(242,239,232,0.18);
-  border-radius: 18px;
-  box-shadow: 0 18px 42px rgba(0,0,0,0.46), inset 0 1px 0 rgba(255,255,255,0.06);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  transform: translateX(calc(100% + 22px)) translateZ(0);
-  opacity: 0;
-  transition: transform 0.24s ease, opacity 0.18s ease;
-  overflow: hidden;
-  will-change: transform;
-}
-#map-location-panel.open {
-  transform: translateX(0) translateZ(0);
-  opacity: 1;
-}
-.map-location-panel-hdr {
-  flex-shrink: 0;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px 16px 12px;
-  border-bottom: 1px solid rgba(242,239,232,0.08);
-}
-.map-location-title-wrap { min-width: 0; flex: 1; }
-#map-location-title {
-  font-family: 'Bebas Neue', cursive;
-  font-size: 28px;
-  line-height: 0.95;
-  letter-spacing: 3px;
-  color: rgba(242,239,232,0.96);
-  overflow-wrap: anywhere;
-}
-#map-location-subtitle {
-  margin-top: 6px;
-  font-family: 'VCR', monospace;
-  font-size: 9px;
-  line-height: 1.35;
-  letter-spacing: 1.2px;
-  color: rgba(242,239,232,0.56);
-}
-.map-location-close {
-  flex-shrink: 0;
-  width: 30px;
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(242,239,232,0.18);
-  border-radius: 999px;
-  background: rgba(180,190,220,0.08);
-  color: rgba(242,239,232,0.84);
-  font-family: 'VCR', monospace;
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.map-location-close:active { background: rgba(180,190,220,0.16); color: var(--white); }
-#map-location-list {
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 8px 10px 14px;
-}
-.map-location-video-row {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  min-height: 112px;
-  border: none;
-  border-bottom: 1px solid rgba(242,239,232,0.08);
-  background: transparent;
-  color: rgba(242,239,232,0.92);
-  padding: 18px 8px;
-  text-align: left;
-  font-family: 'VCR', monospace;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.map-location-video-row:last-child { border-bottom: none; }
-.map-location-video-row:active { background: rgba(242,239,232,0.06); }
-.map-location-thumb {
-  flex: 0 0 104px;
-  width: 104px;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  background: rgba(242,239,232,0.08);
-  border: 1px solid rgba(242,239,232,0.10);
-  border-radius: 8px;
-}
-.map-location-video-main {
-  min-width: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-.map-location-video-title {
-  font-size: 15px;
-  line-height: 1.18;
-  letter-spacing: 0.8px;
-  color: rgba(242,239,232,0.95);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.map-location-video-meta {
-  margin-top: 8px;
-  font-size: 10px;
-  line-height: 1.25;
-  letter-spacing: 1px;
-  color: rgba(242,239,232,0.48);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Desktop map overlays: keep the controls/drawer visually inside the map viewport
-   even when the main site breaks the map page out of the legacy capped body width.
-   This avoids the side panel/Top Places control being clipped by the desktop shell
-   without resizing the map or moving the nav/header. */
-@media (min-width: 768px) and (pointer: fine) {
-  body.on-map #map-places-drawer {
-    position: fixed;
-    top: var(--map-overlay-top, 118px);
-    left: max(14px, calc((100vw - min(100vw, 920px)) / 2 + 14px));
-    width: min(360px, calc(100vw - 28px));
-    z-index: 120;
-  }
-  body.on-map #map-location-panel {
-    position: fixed;
-    top: var(--map-overlay-top, 118px);
-    right: max(14px, calc((100vw - min(100vw, 920px)) / 2 + 14px));
-    bottom: var(--map-overlay-bottom, 14px);
-    width: min(360px, calc(100vw - 28px));
-    z-index: 130;
-  }
-}
-
-/* Mobile: stretch the drawer edge-to-edge instead of capping at the
-   desktop 360px width — same top-left anchor, just wider on small screens. */
-@media (max-width: 767px), (pointer: coarse) and (max-width: 1023px) {
-  #map-places-drawer {
-    left: 14px; right: 14px; top: 14px;
-    width: auto;
-  }
-  #map-places-drawer.open #map-places-list {
-    max-height: 45vh;
-  }
-  #map-location-panel {
-    top: auto;
-    left: 10px;
-    right: 10px;
-    bottom: max(35px, env(safe-area-inset-bottom, 0px) + 33px);
-    width: auto;
-    max-height: min(58vh, 430px);
-    border-radius: 18px 18px 16px 16px;
-    transform: translateY(calc(100% + 104px)) translateZ(0);
-  }
-  #map-location-panel.open {
-    transform: translateY(0) translateZ(0);
-  }
-  .map-location-panel-hdr {
-    padding: 14px 14px 10px;
-  }
-  #map-location-title {
-    font-size: 24px;
-  }
-  #map-location-list {
-    padding-bottom: 12px;
-  }
-  .map-location-video-row {
-    gap: 13px;
-    min-height: 102px;
-    padding: 17px 6px;
-  }
-  .map-location-thumb {
-    flex-basis: 94px;
-    width: 94px;
-  }
-  .map-location-video-title {
-    font-size: 14px;
-  }
-  .map-location-video-meta {
-    font-size: 9.5px;
-    margin-top: 7px;
-  }
-  #map-zoom-btns {
-    right: 14px;
-  }
-}
-
-/* ══════════════════════════════════════
-   VHS SHELF
-══════════════════════════════════════ */
-#pg-shelf {
-  min-height: 100dvh;
-  background: #080510;
-  position: relative; z-index: 1;
-  display: none;
-  flex-direction: column;
-  overflow: hidden;
-}
-#pg-shelf.active { display: flex; }
-#shelf-bg {
-  position: absolute;
-  inset: -10%;
-  background-size: cover; background-position: center;
-  filter: blur(16px) brightness(0.32) saturate(0.6);
-  animation: ss-kb 26s ease-in-out infinite alternate;
-  pointer-events: none;
-  z-index: 0;
-}
-.shelf-body {
-  padding: 0 14px 60px;
-  flex: 1;
-  position: relative;
-  z-index: 1;
-}
-.shelf-section { margin-bottom: 0; }
-.shelf-cat-sign {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 28px 0 8px;
-  padding: 10px 14px;
-  background: rgba(10,8,4,0.55);
-  border: 1px solid rgba(242,239,232,0.07);
-  border-left: 4px solid var(--sign-color, #555);
-  border-radius: 0 2px 2px 0;
-}
-.shelf-sign-name {
-  font-family: 'Bebas Neue', cursive;
-  font-size: 20px; letter-spacing: 4px;
-  color: rgba(242,239,232,0.92);
-  flex: 1;
-}
-.shelf-sign-count {
-  font-family: 'VCR', monospace;
-  font-size: 9px; letter-spacing: 2px;
-  color: rgba(242,239,232,0.35);
-  white-space: nowrap;
-}
-.shelf-plank {
-  height: 14px;
-  background: linear-gradient(180deg, #2e1f0a 0%, #1c1205 60%, #0d0902 100%);
-  border-top: 1px solid rgba(255,255,255,0.06);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.7), 0 2px 4px rgba(0,0,0,0.5);
-  margin-bottom: 4px;
-}
-.tape-horiz {
-  position: absolute;
-  height: 58px;
-  background: #111;
-  display: flex;
-  border-radius: 2px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.7), 0 2px 4px rgba(0,0,0,0.5);
-  overflow: hidden;
-  cursor: pointer;
-  z-index: 4;
-}
-.tape-horiz-brand {
-  width: 22px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-}
-.tape-horiz-brand span {
-  font-family: 'Bebas Neue', cursive;
-  font-size: 8px; letter-spacing: 1.5px;
-  white-space: nowrap;
-}
-.tape-horiz-label {
-  flex: 1;
-  display: flex; align-items: center;
-  padding: 4px 8px;
-  overflow: hidden;
-}
-.tape-horiz-label span {
-  font-family: 'VCR', monospace;
-  font-size: 9px; letter-spacing: 0.5px;
-  color: #111; line-height: 1.2;
-  overflow: hidden;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-}
-.tape-horiz-year {
-  width: 20px; flex-shrink: 0; background: #111;
-  display: flex; align-items: center; justify-content: center;
-}
-.tape-horiz-year span {
-  font-family: 'Bebas Neue', cursive;
-  font-size: 7px; letter-spacing: 1px;
-  color: rgba(242,239,232,0.6);
-  writing-mode: vertical-rl;
-}
-.shelf-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-  padding: 10px 10px 0;
-  align-items: flex-end;
-  min-height: 244px;
-  position: relative;
-  border-radius: 2px 2px 0 0;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      transparent 0px, transparent 36px,
-      rgba(0,0,0,0.12) 36px, rgba(0,0,0,0.12) 37px,
-      rgba(255,255,255,0.025) 37px, rgba(255,255,255,0.025) 38px,
-      transparent 38px, transparent 80px,
-      rgba(0,0,0,0.07) 80px, rgba(0,0,0,0.07) 81px
-    ),
-    linear-gradient(180deg, #1e1006 0%, #120a02 100%);
-}
-.shelf-plank {
-  height: 24px;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      transparent 0px, transparent 42px,
-      rgba(0,0,0,0.14) 42px, rgba(0,0,0,0.14) 43px,
-      rgba(255,255,255,0.03) 43px, rgba(255,255,255,0.03) 44px,
-      transparent 44px, transparent 95px,
-      rgba(0,0,0,0.09) 95px, rgba(0,0,0,0.09) 96px,
-      transparent 96px, transparent 150px,
-      rgba(255,255,255,0.04) 150px, rgba(255,255,255,0.04) 151px
-    ),
-    repeating-linear-gradient(
-      0deg,
-      rgba(0,0,0,0.06) 0px, rgba(0,0,0,0.06) 1px,
-      transparent 1px, transparent 6px
-    ),
-    linear-gradient(to bottom,
-      #5c3210 0%, #4a2608 32%, #381c06 62%, #240f02 100%);
-  box-shadow: 0 7px 20px rgba(0,0,0,0.8),
-              inset 0 2px 0 rgba(255,255,255,0.06),
-              inset 0 -1px 0 rgba(0,0,0,0.4);
-  border-radius: 0 0 3px 3px;
-  margin-bottom: 4px;
-}
-
-/* Individual VHS tape spine */
-.vhs-tape {
-  position: relative;
-  width: 64px;
-  height: 224px;
-  background: #111;
-  flex-shrink: 0;
-  cursor: pointer;
-  border-radius: 2px 2px 0 0;
-  box-shadow: 2px 0 4px rgba(0,0,0,0.6), -1px 0 2px rgba(0,0,0,0.4),
-              inset 0 0 0 1px rgba(255,255,255,0.04);
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.15s;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-}
-.vhs-tape:hover  { transform: rotate(var(--tilt,0deg)) translateY(-10px); }
-.vhs-tape:active { transform: rotate(var(--tilt,0deg)) translateY(-6px) scale(0.98); }
-
-/* Top brand band */
-.tape-top-band {
-  height: 40px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 2px 2px 0 0;
-}
-.tape-brand {
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  font-family: 'Bebas Neue', cursive;
-  font-size: 12px; letter-spacing: 2px;
-  line-height: 1;
-}
-
-/* White label area with title */
-.tape-label-area {
-  flex: 1;
-  background: #f4f0e6;
-  margin: 0 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  position: relative;
-}
-.tape-label-inner {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  padding: 4px 2px;
-  overflow: hidden;
-}
-.tape-title-vert {
-  font-family: 'VCR', monospace;
-  font-size: 12px; letter-spacing: 0.5px;
-  color: #111;
-  line-height: 1.2;
-  overflow: hidden;
-  max-height: 80%;
-  text-align: center;
-  word-break: break-all;
-}
-/* Bottom band — always black, shows year */
-.tape-bot-band {
-  height: 32px;
-  flex-shrink: 0;
-  background: #111111;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.tape-year-bot {
-  font-family: 'Bebas Neue', cursive;
-  font-size: 14px; letter-spacing: 2px;
-  color: rgba(242,239,232,0.72);
-}
-.tape-brand-sub {
-  writing-mode: vertical-rl;
-  font-family: 'Bebas Neue', cursive;
-  font-size: 8px; letter-spacing: 1.5px;
-  margin-top: 3px;
-}
-.tape-type-lbl {
-  writing-mode: vertical-rl;
-  font-family: 'VCR', monospace;
-  font-size: 7px; letter-spacing: 1px;
-  opacity: 0.75;
-}
-
-/* ══════════════════════════════════════
-   SPOTLIGHT SEARCH OVERLAY
-══════════════════════════════════════ */
-/* display:none by default; toggled to display:flex via .is-shown (JS-added,
-   independent of the transition), with .open (added a frame later) driving the
-   actual opacity/transform animation. No JS measures or pins anything here —
-   100dvh tracks the keyboard/toolbar natively, and #spot-results (below) is the
-   one actual scroll container, so there's nothing for a keyboard-driven viewport
-   change to desync. */
-#spot-overlay {
-  display: none;
-  position: fixed; inset: 0; z-index: 8500;
-  height: 100dvh;
-  background: rgba(8,16,42,0.90);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  flex-direction: column;
-  align-items: center;
-  padding: env(safe-area-inset-top, 0px) 16px 0;
-  overflow: hidden;
-  opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 0.25s ease, transform 0.25s ease;
-}
-#spot-overlay.is-shown { display: flex; }
-#spot-overlay.open { opacity: 1; transform: translateY(0); }
-/* Normal flow now (not position:fixed) — a plain flex child above #spot-results,
-   which is the actual scroll container, so there's nothing to keep pinned. */
-.spot-top-bar {
-  align-self: stretch;
-  flex-shrink: 0;
-  z-index: 5;
-  display: flex; flex-direction: column; align-items: center;
-  background: rgba(8,16,42,0.92);
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-  padding: 0 16px;
-}
-.spot-close {
-  background: none; border: none;
-  color: rgba(242,239,232,0.65); cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 8px 12px;
-  align-self: center;
-  margin-top: 14px;
-  margin-bottom: 8px;
-  font-family: 'VCR', monospace;
-  font-size: 11px; letter-spacing: 2px;
-  -webkit-tap-highlight-color: transparent;
-  transition: color 0.15s;
-}
-.spot-close:active { color: var(--white); }
-.spot-close svg { width: 13px; height: 13px; flex-shrink: 0; }
-.spot-box {
-  width: 100%; max-width: 580px;
-  display: flex; align-items: center; gap: 10px;
-  background: rgba(180,190,220,0.12);
-  border: 1px solid rgba(242,239,232,0.30);
-  padding: 13px 16px;
-  margin-bottom: 12px;
-  flex-shrink: 0;
-}
-.spot-box input {
-  flex: 1; background: none; border: none; outline: none;
-  font-family: 'VCR', monospace;
-  font-size: 16px; letter-spacing: 2px;
-  color: var(--white);
-}
-.spot-box input::placeholder { color: rgba(242,239,232,0.38); }
-.spot-box input::-webkit-search-cancel-button { display: none; }
-#spot-meta {
-  width: 100%; max-width: 580px;
-  font-size: 10px; letter-spacing: 2px;
-  color: rgba(242,239,232,1);
-  padding: 8px 0 4px;
-  flex-shrink: 0;
-}
-#spot-results {
-  width: 100%; max-width: 580px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  flex: 1;
-  padding-bottom: 32px;
-}
-/* Override responsive breakpoints — always 2 cols in spotlight */
-#spot-results .vgrid {
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  padding: 6px 6px 40px;
-}
-/* Hide title and year — thumbnail speaks for itself */
-#spot-results .vcard-title,
-#spot-results .vcard-year { display: none; }
-
-/* Category detail — no text, so kill the gradient that was only there to protect text */
-#detailGrid .vcard-title,
-#detailGrid .vcard-year { display: none; }
-#detailGrid .vcard-grad  { display: none; }
-#detailGrid .vcard-tint  { opacity: 0.23; }
-
-/* Recommendations — thumbnail only */
-#homeGrid .vcard-title,
-#homeGrid .vcard-year { display: none; }
-#homeGrid .vcard-grad  { display: none; }
-#homeGrid .vcard-tint  { opacity: 0.08; }
-/* No gradient needed without text */
-#spot-results .vcard-grad { display: none; }
-
-/* ── STICKY SUB-PAGE HEADER + SCROLL LOCK (all pointer types) ── */
-/* This used to be gated to (pointer:coarse) on the theory that only touch devices
-   needed it — but desktop browsers get no such protection by default, so any page
-   that's even a pixel taller than the viewport (e.g. body's own reserved bottom
-   padding, see body.on-* below) becomes scrollable on desktop, revealing a stray
-   strip of whatever's behind the page underneath the game UI. Applying this
-   unconditionally costs nothing on desktop (touch-only properties are no-ops there)
-   and removes that whole class of "desktop-only" layout bugs. */
-html, body { height: 100%; overflow: hidden; }
-
-/* Scrollable pages each become their own scroll container. Arcade game screens are
-   excluded because they manage scrolling inside their own panels/lists; letting the
-   page itself scroll exposes Safari's under-page area during rubber-band gestures. */
-#pg-cats.active, #pg-detail.active, #pg-timeline.active, #pg-search.active, #pg-shelf.active {
-  height: 100dvh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-  scrollbar-gutter: stable both-edges;
-}
-/* #pg-lobby.active kept on the legacy var(--app-vh) lock — arcade, untouched. */
-#pg-lobby.active {
-  height: var(--app-vh, 100dvh);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-}
-
-/* Header sticky inside its own scroll container — never jitters */
-.cats-header {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: rgba(8,16,42,0.96);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-#pg-cats .cats-header,
-#pg-detail .cats-header,
-#pg-timeline .cats-header,
-#pg-map .cats-header,
-#pg-home .cats-header,
-#pg-search .cats-header,
-#pg-shelf .cats-header {
-  background: transparent;
-  border-bottom: 0;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-/* Map header stays relative inside map's flex column */
-#pg-map .cats-header {
-  position: relative;
-  z-index: 10;
-  border-bottom: 0;
-}
-/* Scrolled main-site header shield: keep the shared nav glassy at the top,
-   but add a navy windshield only once page content is scrolling beneath it.
-   These page-specific selectors intentionally beat the earlier
-   `#pg-* .cats-header { background: transparent; backdrop-filter: none; }` rule. */
-body.main-scrolled #pg-cats .main-site-header,
-body.main-scrolled #pg-detail .main-site-header,
-body.main-scrolled #pg-timeline .main-site-header,
-body.main-scrolled #pg-search .main-site-header,
-body.main-scrolled #pg-shelf .main-site-header {
-  position: sticky;
-  isolation: isolate;
-  background: rgba(8,16,42,0.94);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.22);
-  transition: background 0.18s ease, box-shadow 0.18s ease, backdrop-filter 0.18s ease;
-}
-body.main-scrolled #pg-cats .main-site-header::before,
-body.main-scrolled #pg-detail .main-site-header::before,
-body.main-scrolled #pg-timeline .main-site-header::before,
-body.main-scrolled #pg-search .main-site-header::before,
-body.main-scrolled #pg-shelf .main-site-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100vw;
-  height: 100%;
-  z-index: -1;
-  pointer-events: none;
-  background: rgba(8,16,42,0.94);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-body.main-scrolled .main-site-header .page-nav-btn.active::before,
-body.main-scrolled .main-site-header .page-nav-btn.active::after {
-  /* Keep the active fog readable on top of the darker scrolled header shield. */
-  opacity: 0.62;
-}
-@media (max-width: 1023px), (max-width: 1400px) and (orientation: landscape) and (pointer: coarse) {
-  /* The plain max-width:1023px alone misses tablet landscape — an iPad's landscape
-     WIDTH (1024-1366px depending on model) clears it even though the layout below
-     is just as needed there as in portrait. The second clause re-applies it up to
-     1366px specifically when also landscape + coarse-pointer, so real desktop
-     windows (pointer: fine) in that width range are unaffected. Width, not height,
-     since iPad Pro 12.9" landscape is ~1024px tall — a height cutoff kept missing it. */
-  #pg-detail.active, #pg-timeline.active, #pg-search.active, #pg-shelf.active {
-    padding-top: 0;
-  }
-  #pg-cats.active { padding-top: 0; }
-  #pg-cats .cats-header,
-  #pg-detail .cats-header,
-  #pg-timeline .cats-header,
-  #pg-map .cats-header,
-  #pg-search .cats-header,
-  #pg-shelf .cats-header {
-    display: none;
-  }
-  .cats-header-nav { display: none; }
-  .cats-logo-wrap { width: auto; max-width: 58vw; transform: translateY(-3px);}
-  .cats-logo-img { display: block; height: 25px; width: auto; }
-  /* Logo height is fixed (not width-driven) at this breakpoint (25px) — the icon's
-     own house shape fills ~91% of its (now tightly-cropped) viewBox, so to match the
-     logo's ~97%-filled glyph height (25×0.972≈24.3px) the box needs to be
-     24.3/0.91 ≈ 26.7px. */
-  .cats-home-icon { width: 26.7px; height: 26.7px; margin-top: 0.4px; }
-  .page-nav-btn { min-height: 32px; padding: 0 9px; font-size: 8px; letter-spacing: 0.8px; }
-  .page-nav-btn svg, .page-nav-btn .nav-icon-img { width: 14px; height: 14px; }
-}
-
-/* ── RECOMMENDATIONS DRAWER (mobile/tablet only) ── */
-/* display:none by default; toggled via .is-shown (JS-added, independent of the
-   transition) with .open (added a frame later) driving the actual animation — same
-   fix as #spot-overlay above. toggleRec()'s JS already decides desktop (inline
-   #memories tuck) vs touch/narrow (this true overlay), so no breakpoint-specific
-   override is needed here either. */
-#rec-drawer {
-  display: none;
-  position: fixed;
-  inset: 0;
-  height: 100dvh;
-  z-index: 8200;
-  background: rgba(8,16,42,0.97);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  flex-direction: column;
-  overflow: hidden;
-  opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 0.25s ease, transform 0.25s ease;
-}
-#rec-drawer.is-shown { display: flex; }
-#rec-drawer.open { opacity: 1; transform: translateY(0); }
-.rec-drawer-hdr {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 16px 12px;
-  flex-shrink: 0;
-  border-bottom: 1px solid rgba(242,239,232,0.08);
-}
-.rec-drawer-title {
-  font-family: 'Bebas Neue', cursive;
-  font-size: 22px; letter-spacing: 4px;
-  color: rgba(242,239,232,0.92);
-}
-.rec-drawer-close {
-  background: none; border: none;
-  font-family: 'VCR', monospace;
-  font-size: 11px; letter-spacing: 2px;
-  color: rgba(242,239,232,0.65);
-  cursor: pointer;
-  display: flex; align-items: center; gap: 6px;
-  -webkit-tap-highlight-color: transparent;
-  padding: 6px 4px;
-  transition: color 0.15s;
-}
-.rec-drawer-close:active { color: var(--white); }
-.rec-drawer-close svg { width: 13px; height: 13px; }
-.rec-drawer-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px 12px 48px;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* ── MAP POPUP: SCROLLABLE WHEN MANY VIDEOS ── */
-.maplibregl-popup-content {
-  max-height: 48vh !important;
-  overflow-y: auto !important;
-}
-
-/* ── SEASONAL THEME OVERLAYS ── */
-body.theme-july4     #collage::after {
-  background: repeating-linear-gradient(
-    -28deg,
-    rgba(68,4,12,0.96) 0px, rgba(68,4,12,0.96) 44px,
-    rgba(4,14,68,0.96) 44px, rgba(4,14,68,0.96) 88px
-  );
-}
-body.theme-halloween #collage::after { background: rgba(52,18,0,0.90); }
-body.theme-xmas      #collage::after { background: rgba(0,52,18,0.88); }
-body.theme-july4.on-detail     #collage::after,
-body.theme-july4.on-timeline   #collage::after {
-  background: repeating-linear-gradient(
-    -28deg,
-    rgba(68,4,12,0.97) 0px, rgba(68,4,12,0.97) 44px,
-    rgba(4,14,68,0.97) 44px, rgba(4,14,68,0.97) 88px
-  );
-}
-body.theme-halloween.on-detail   #collage::after,
-body.theme-halloween.on-timeline #collage::after { background: rgba(52,18,0,0.98); }
-body.theme-xmas.on-detail   #collage::after,
-body.theme-xmas.on-timeline #collage::after { background: rgba(0,52,18,0.98); }
-
-/* Seasonal icon button */
-#seasonBtn { position: relative; overflow: hidden; }
-#seasonBtn.active { color: var(--white); }
-/* border-radius:inherit (=999px pill) + inset:0 so the gold glow fills the whole wide
-   button instead of an inscribed oval; overflow:hidden on the button clips the pulse so
-   it reads as a breathing fill, not a halo spilling past the edge. */
-#seasonBtn .season-glow {
-  position: absolute; inset: 0;
-  border-radius: inherit;
-  animation: season-pulse 2.4s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 0;
-}
-/* Icon sits above the glow and twinkles gold on a slightly different cadence than the
-   glow pulse, so the two don't beat in lockstep — a little life/shimmer. */
-#seasonIcon {
-  position: relative;
-  z-index: 1;
-  color: #ffe6a6;
-  animation: sparkle-shimmer 2.8s ease-in-out infinite;
-}
-@keyframes season-pulse {
-  0%,100% { opacity: 0.35; transform: scale(0.98); }
-  50%      { opacity: 0.6; transform: scale(1.03); }
-}
-@keyframes sparkle-shimmer {
-  0%,100% { opacity: 0.85; filter: drop-shadow(0 0 1px rgba(255,212,112,0.2)); transform: scale(0.96); }
-  50%      { opacity: 1;    filter: drop-shadow(0 0 3px rgba(255,218,134,0.5)); transform: scale(1.04); }
-}
-
-/* Mobile sparkle/surprise floating button — home only, top-right */
-.mobile-sparkle-btn {
-  display: none;
-}
-@media (max-width: 767px), (pointer: coarse) and (max-width: 1023px) {
-  .mobile-sparkle-btn {
-    position: fixed;
-    top: max(12px, env(safe-area-inset-top, 0px) + 8px);
-    right: max(12px, env(safe-area-inset-right, 0px) + 8px);
-    z-index: 7500;
-    width: 44px;
-    height: 44px;
-    border-radius: 999px;
-    border: 1px solid rgba(242,239,232,0.14);
-    background: rgba(8,16,42,0.72);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.04);
-    color: #ffe6a6;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    -webkit-tap-highlight-color: transparent;
-    overflow: hidden;
-    position: fixed;
-  }
-  .mobile-sparkle-btn svg {
-    width: 22px;
-    height: 22px;
-    position: relative;
-    z-index: 1;
-    animation: sparkle-shimmer 2.8s ease-in-out infinite;
-  }
-  .mobile-sparkle-btn .season-glow {
-    position: absolute; inset: 0;
-    border-radius: inherit;
-    animation: season-pulse 2.4s ease-in-out infinite;
-    pointer-events: none;
-    z-index: 0;
-  }
-  body:not(.on-home) .mobile-sparkle-btn { display: none; }
-}
-
-/* ── BODY LOCKED WHILE ON MAP ── */
-body.on-map { overflow: hidden; overscroll-behavior: none; }
-#map-container { touch-action: auto; overscroll-behavior: auto; }
-
-/* ── SEARCH TRIGGER (sub-pages) ── */
-button.cats-search-wrap {
-  -webkit-appearance: none;
-  appearance: none;
-  text-align: left;
-  cursor: pointer;
-  justify-content: space-between;
-}
-.cats-search-ph {
-  flex: 1;
-  font-family: 'VCR', monospace;
-  font-size: 11px; letter-spacing: 1px;
-  color: rgba(242,239,232,0.38);
-  background: none; border: none;
-  pointer-events: none;
-}
-
-/* ── DETAIL BREADCRUMB ── */
-.detail-breadcrumb {
-  padding: 14px 16px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.detail-back-link {
-  background: none; border: none; cursor: pointer; padding: 6px 0 14px;
-  /* Neutral system font on purpose — a contrast to the thematic VCR/Bebas display
-     fonts everywhere else, since this is just a plain utility nav link. */
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 14px; letter-spacing: 0.5px; font-weight: 500;
-  color: rgba(242,239,232,1);
-  display: flex; align-items: center; gap: 8px;
-  -webkit-tap-highlight-color: transparent;
-  transition: color 0.15s;
-  border-bottom: 1px solid rgba(242,239,232,0.14);
-  margin-bottom: -4px;
-}
-.detail-back-link:active { color: rgba(242,239,232,1); }
-.detail-back-link svg { width: 18px; height: 18px; flex-shrink: 0; }
-.detail-cat-title {
-  font-family: 'DuckTape', 'Bebas Neue', cursive;
-  font-size: clamp(22px, 6vw, 36px);
-  letter-spacing: 3px;
-  color: #ffffff;
-  text-shadow: 0 1px 10px rgba(0,0,0,0.5);
-  line-height: 1.1;
-}
-.detail-cat-title:not(:empty)::after {
-  content: '';
-  display: block;
-  height: 2px;
-  margin-top: 10px;
-  background: linear-gradient(to right, rgba(242,239,232,0.9) 0%, rgba(242,239,232,0.28) 45%, rgba(242,239,232,0) 85%);
-}
-.sub-page-title {
-  padding: 14px 16px 10px;
-  font-family: 'DuckTape', 'Bebas Neue', cursive;
-  font-size: 32px; letter-spacing: 5px;
-  color: var(--white);
-  text-align: left;
-  display: block;
-  /* Explicit (non-auto) width sidesteps a flex quirk: in a flex-direction:column
-     container (e.g. #pg-map), setting margin-left/right:auto on a child disables
-     the default cross-axis stretch, so the title shrinks to its own text width
-     and then auto-centers as a small box instead of stretching to the shared
-     920px content column like it does on block-layout pages (Categories,
-     Timeline). Width:100% + border-box sizing gives every page the same
-     capped-and-centered 920px column, with text flush left inside it. */
-  width: 100%;
-  box-sizing: border-box;
-}
-/* Thin cinematic fade-out rule under each page title — solid at the left edge,
-   gone well before the title column's right edge. Lives on the title's own
-   (already 920px-capped) box, so it never reaches full viewport width. */
-.sub-page-title::after {
-  content: '';
-  display: block;
-  height: 2px;
-  margin-top: 10px;
-  background: linear-gradient(to right, rgba(242,239,232,0.9) 0%, rgba(242,239,232,0.28) 45%, rgba(242,239,232,0) 85%);
-}
-
-/* ══════════════════════════════════════
-   RESPONSIVE
-══════════════════════════════════════ */
-@media (max-width: 1400px) and (orientation: landscape) and (pointer: coarse) {
-  /* Was max-height:500px with no pointer check — caught phone landscape only.
-     Switched the gate to max-width (not max-height) — iPad Pro 12.9" landscape is
-     ~1024px tall, which slipped past a height-based cutoff, but every current iPad's
-     landscape WIDTH tops out at 1366px, a much more predictable number to key off.
-     pointer:coarse keeps real desktop windows out of this regardless of width.
-     Stays the same centered, stacked hero as portrait/phone on every device — just
-     scaled down by viewport HEIGHT (not a row layout) so it doesn't eat all the
-     vertical space on a short landscape phone screen, while staying full-size-ish
-     on a tall landscape tablet. */
-  #pg-home { justify-content: center; overflow-y: auto; height: 100dvh; min-height: 100dvh; max-height: 100dvh; padding-top: max(10px, env(safe-area-inset-top, 0px)); }
-  .home-hero {
-    padding: 8px 24px 14px;
-    gap: 10px;
-    /* Short landscape screens: also cap by viewport HEIGHT so the stacked hero never
-       eats the whole screen, while keeping the same comfortable side gutter. */
-    --hero-w: min(56vh, 88vw, 410px);
-  }
-  .hero-logo-wrap { margin-bottom: max(-0.81vh, -1.26vw, -6.2px); }
-  .hero-lower { gap: 6px; }
-  .search-wrap { padding: 8px 12px; }
-  .hero-cta-btn { padding: 9px 6px; font-size: 9px; letter-spacing: 1.2px; }
-  .hero-season-wrap { top: -4px; }
-}
-
-@media (max-width: 599px) {
-  #pg-home {
-    padding-top: max(10px, env(safe-area-inset-top, 0px) + 4px);
-    padding-bottom: max(88px, env(safe-area-inset-bottom, 0px) + 82px);
-  }
-  .cats-header { gap: 10px; align-items: flex-start; }
-  .cats-header-nav { gap: 6px; }
-  .hero-season-btn { width: 38px; height: 38px; }
-  .hero-season-label { display: none; }
-  .cgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .ctile-lbl { font-size: 18px; height: 54px; }
-  .cats-search-wrap { padding: 5px 8px; }
-  .cats-search-ph { font-size: 10px; letter-spacing: 0.5px; }
-  .tl-thumb { width: min(55vw, 220px); }
-  .tl-more-tile { width: min(55vw, 220px); }
-  .cats-dice-btn { width: 44px; }
-  /* Logo/search/buttons all inherit --hero-w (min(88vw,560px) → 88vw on phones), so
-     they line up flush with each other AND keep a real ~6vw gutter on each side
-     instead of running to the edge. Only the logo's own margin-bottom is phone-tuned. */
-  .hero-logo-wrap { margin-bottom: -1.27vw; }
-}
-@media (min-width: 600px) {
-  .vgrid { grid-template-columns: repeat(3, 1fr); }
-  .cgrid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-  .ctile-lbl { font-size: 17px; height: 52px; }
-}
-@media (min-width: 960px) {
-  :root { --desktop-nav-width: 920px; }
-  body { max-width: 920px; margin: 0 auto; }
-  #pg-home {
-    padding-top: 0;
-  }
-  /* Main website pages use one desktop page frame. The body remains capped for legacy
-     sizing, but each active main-site page breaks out to the viewport and then centers
-     its shared shell/content inside that frame. Arcade pages are intentionally excluded. */
-  html, body { overflow-x: clip; }
-  #pg-home.active,
-  #pg-cats.active,
-  #pg-detail.active,
-  #pg-timeline.active,
-  #pg-map.active,
-  #pg-search.active,
-  #pg-shelf.active {
-    width: 100vw;
-    margin-left: calc(50% - 50vw);
-  }
-  #pg-cats.active > *, #pg-detail.active > *,
-  #pg-timeline.active > *, #pg-search.active > *, #pg-shelf.active > *,
-  #pg-home.active > .main-site-header,
-  #pg-map.active > .main-site-header, #pg-map.active > .sub-page-title {
-    max-width: 920px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  #hdr { max-width: 920px; left: 50%; transform: translateX(-50%); right: auto; width: 100%; }
-  .vgrid { grid-template-columns: repeat(4, 1fr); }
-  .cgrid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-  .ctile-lbl { font-size: 19px; height: 56px; }
-  .hero-title { font-size: 80px; }
-  #lb-hdr  { max-width: 820px; }
-  #tv-shell { max-width: 820px; }
-}
-
-/* ── FEATURE 3: Anniversary Vault Strip (inside Recommendations) ── */
-#vault-picks { width: 100%; margin-top: 10px; }
-#vault-picks.hidden { display: none; }
-.vault-strip {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0,1fr));
-  gap: 6px;
-  margin-bottom: 8px;
-}
-@media (max-width: 599px) {
-  .vault-strip { grid-template-columns: repeat(2, minmax(0,1fr)); }
-}
-
-/* ── WOW FEATURE 4: Staggered Card Deal Entrance ── */
-.deal-in {
-  animation: deal-card 0.42s ease-out var(--stagger, 0ms) both;
-}
-@keyframes deal-card {
-  from { opacity: 0; transform: translateY(22px) scale(0.94); }
-  to   { opacity: 1; transform: none; }
-}
-
-/* ── A: SCREENSAVER ── */
-#screensaver {
-  display: none;
-  position: fixed; inset: 0; z-index: 95000;
-  flex-direction: column; align-items: center; justify-content: center;
-  cursor: pointer; overflow: hidden;
-}
-#screensaver.on { display: flex; animation: ss-fadein 1.4s ease-out; }
-@keyframes ss-fadein { from { opacity:0; } to { opacity:1; } }
-#ss-bg {
-  position: absolute; inset: -10%;
-  background-size: cover; background-position: center;
-  filter: blur(10px) brightness(0.28);
-  animation: ss-kb 18s ease-in-out infinite alternate;
-}
-@keyframes ss-kb {
-  from { transform: scale(1.0) translate(0,0); }
-  to   { transform: scale(1.14) translate(-2%, 1.5%); }
-}
-#ss-content {
-  position: relative; z-index: 1;
-  text-align: center; padding: 0 28px;
-  max-width: min(88vw, 600px);
-}
-#ss-tag {
-  font-family: 'VCR', monospace;
-  font-size: 10px; letter-spacing: 6px;
-  color: rgba(0,255,80,0.75);
-  margin-bottom: 22px;
-  animation: ss-blink 1.8s step-end infinite;
-}
-@keyframes ss-blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
-#ss-title {
-  font-family: 'VCR', monospace;
-  font-size: clamp(14px, 4vw, 32px);
-  color: rgba(242,239,232,0.92);
-  line-height: 1.45; min-height: 3em;
-  text-shadow: 0 2px 28px rgba(0,0,0,0.95);
-  word-break: break-word;
-}
-#ss-year {
-  font-family: 'Bebas Neue', cursive;
-  font-size: clamp(70px, 20vw, 130px);
-  color: rgba(242,239,232,0.065);
-  letter-spacing: 6px; line-height: 1;
-  margin-top: -4px; user-select: none;
-}
-#ss-wake {
-  position: absolute; bottom: 38px;
-  font-family: 'VCR', monospace;
-  font-size: 9px; letter-spacing: 5px;
-  color: rgba(242,239,232,0.3);
-  animation: ss-pulse 3s ease-in-out infinite;
-}
-@keyframes ss-pulse { 0%,100%{opacity:.25;} 50%{opacity:.75;} }
-
-/* ── B: DECADE CHIPS ── */
-#decade-bar {
-  display: flex; gap: 8px;
-  padding: 8px 16px 2px;
-  overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap;
-}
-#decade-bar::-webkit-scrollbar { display: none; }
-.decade-chip {
-  flex-shrink: 0;
-  font-family: 'VCR', monospace;
-  font-size: 11px; letter-spacing: 2px;
-  color: rgba(242,239,232,0.5);
-  background: rgba(242,239,232,0.05);
-  border: 1px solid rgba(242,239,232,0.12);
-  border-radius: 3px; padding: 5px 12px;
-  cursor: pointer; transition: all 0.18s; white-space: nowrap;
-}
-.decade-chip:hover, .decade-chip.active {
-  color: rgba(242,239,232,1);
-  background: rgba(242,239,232,0.13);
-  border-color: rgba(242,239,232,0.4);
-}
-.decade-chip .chip-ct { font-size: 8px; opacity: 0.5; margin-left: 4px; }
-
-/* ── C: SHAKE OVERLAY ── */
-#back-top {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 49;
-  background: rgba(18,36,88,0.96);
-  border: none;
-  border-bottom: 1px solid rgba(242,239,232,0.10);
-  color: rgba(242,239,232,0.65);
-  font-family: 'VCR', monospace;
-  font-size: 10px; letter-spacing: 2.5px;
-  text-align: center;
-  padding: 20px 0;
-  cursor: pointer;
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.2s;
-  -webkit-tap-highlight-color: transparent;
-}
-#back-top.visible { opacity: 1; pointer-events: auto; }
-#back-top:active { opacity: 0.7; }
-body.on-home #back-top, body.on-map #back-top,
-body.on-lobby #back-top, body.on-whack #back-top,
-body.on-match #back-top, body.on-space #back-top { display: none; }
-
-#shake-overlay {
-  display: none; position: fixed; inset: 0; z-index: 96000;
-  background: #050202;
-  flex-direction: column; align-items: center; justify-content: center;
-}
-#shake-overlay.on { display: flex; }
-#shake-close {
-  position: absolute; top: max(20px, env(safe-area-inset-top, 0px) + 14px); right: 20px;
-  background: none; border: none; cursor: pointer;
-  color: rgba(242,239,232,0.55); padding: 8px;
-  display: flex; align-items: center; justify-content: center;
-  -webkit-tap-highlight-color: transparent;
-  transition: color 0.15s;
-}
-#shake-close:active { color: var(--white); }
-#shake-close svg { width: 22px; height: 22px; }
-#shake-tape-img {
-  width: 190px; height: auto;
-  border: 2px solid transparent;
-  animation: sh-wobble 0.2s ease-in-out infinite;
-}
-#shake-tape-img.revealed { border-color: rgba(255,255,255,0.92); }
-@keyframes sh-wobble {
-  0%,100% { transform: rotate(-10deg) scale(1.04); }
-  50%     { transform: rotate(10deg) scale(0.97); }
-}
-#shake-msg {
-  font-family: 'VCR', monospace;
-  color: rgba(242,239,232,0.88); font-size: 13px; letter-spacing: 3px;
-  margin-top: 30px; text-align: center; padding: 0 20px;
-  /* No animation set here on purpose — started via JS in triggerShakeTape() at the
-     exact same moment as "TAP TO WATCH"'s, so both begin their cycle in phase.
-     Setting it here unconditionally let it start (and drift out of sync) as soon as
-     "LOADING..." first appeared, well before "TAP TO WATCH" even existed. */
-}
-
-/* ══════════════════════════════════════
-   GAMES
-══════════════════════════════════════ */
-.mobe-face-img { display: block; object-fit: contain; }
-body.on-whack .mobe-face-img,
-body.on-match .mobe-face-img {
-  filter:
-    drop-shadow( 2px  0   0 #fff)
-    drop-shadow(-2px  0   0 #fff)
-    drop-shadow( 0    2px 0 #fff)
-    drop-shadow( 0   -2px 0 #fff)
-    drop-shadow( 1px  1px 0 #fff)
-    drop-shadow(-1px -1px 0 #fff)
-    drop-shadow(0 3px 5px rgba(0,0,0,0.28));
-}
-#pg-lobby { height: var(--app-vh, 100dvh); overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; z-index: 1; }
-.lobby-wrap { padding: 10px 0 48px; display: flex; flex-direction: column; gap: 12px; position: relative; }
-
-/* ── Character Select Screen ── */
-#pg-charselect {
-  background: transparent;
-  align-items: flex-start; justify-content: center;
-  height: var(--app-vh, 100dvh);
-  max-height: var(--app-vh, 100dvh);
-  overflow: hidden;
-  overscroll-behavior: none;
-}
-#pg-charselect.active {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  display: flex;
-  overflow: hidden !important;
-  -webkit-overflow-scrolling: auto;
-}
-#char-select-screen {
-  width: 100%; max-width: 480px;
-  height: 100%;
-  min-height: 0;
-  padding: max(16px, env(safe-area-inset-top, 0px) + 12px) 16px max(18px, env(safe-area-inset-bottom, 0px) + 16px);
-  margin: auto;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
-}
-#char-select-title {
-  font-family: 'Bebas Neue', cursive;
-  font-size: clamp(28px, 8vw, 52px);
-  letter-spacing: 6px; color: #ffe61a;
-  text-shadow: 0 0 20px #ffe61a, 0 0 40px #ffe61a88;
-  text-align: center;
-  animation: neon-pulse 2s ease-in-out infinite;
-}
-#char-select-subtitle { display: none; }
-#char-scroll-wrap {
-  position: relative;
-  width: 100%;
-  height: min(280px, max(190px, calc(var(--app-vh, 100dvh) - 409px)));
-  flex: 0 1 280px;
-  overflow: hidden;
-}
-#char-scroll-wrap::before,
-#char-scroll-wrap::after {
-  content: '';
-  position: absolute;
-  left: 0; right: 0;
-  height: 38%;
-  pointer-events: none;
-  z-index: 3;
-}
-#char-scroll-wrap::before {
-  top: 0;
-  background: linear-gradient(to bottom, #050212 20%, transparent 100%);
-}
-#char-scroll-wrap::after {
-  bottom: 0;
-  background: linear-gradient(to top, #050212 20%, transparent 100%);
-}
-#char-scroll-list {
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  scroll-snap-type: y mandatory;
-  overscroll-behavior: contain;
-  touch-action: pan-y;
-}
-#char-scroll-list::-webkit-scrollbar { display: none; }
-.cs-char-row {
-  height: 56px;
-  flex-shrink: 0;
-  display: flex; align-items: center;
-  padding: 0 24px;
-  font-family: 'Bebas Neue', cursive;
-  font-size: 28px; letter-spacing: 5px;
-  color: rgba(242,239,232,0.82);
-  cursor: pointer;
-  scroll-snap-align: center;
-  user-select: none; -webkit-tap-highlight-color: transparent;
-}
-#char-scroll-bar {
-  position: absolute;
-  top: 50%; transform: translateY(-50%);
-  left: 0; right: 0;
-  height: 56px;
-  pointer-events: none;
-  z-index: 2;
-  border-top: 2px solid rgba(242,239,232,0.35);
-  border-bottom: 2px solid rgba(242,239,232,0.35);
-  transition: background 0.18s, border-color 0.18s;
-}
-#char-select-preview {
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  min-height: 110px; width: 100%;
-}
-#char-preview-face {
-  width: 145px; height: 145px;
-  display: flex; align-items: center; justify-content: center;
-  position: relative;
-  /* Own stacking context so the glow ::before (z-index:-1) tucks behind the photo
-     without falling behind ancestor backgrounds too. */
-  isolation: isolate;
-}
-/* The glow is a radial gradient on a ::before BEHIND the photo (z-index:-1) — brightest
-   at the center (directly behind the character's head) and fading outward, so it reads
-   as a halo emanating from them and bleeding out past the head, not a ring around an
-   empty disc. (A box-shadow only glows at the element's edge, leaving a dark gap
-   between the head and the ring — that was the "dark circle" problem.) The gradient
-   reaches full transparency well inside its own bounds, so it stays soft and circular
-   with no hard square edge to clip. */
-#char-preview-face::before {
-  content: '';
-  position: absolute;
-  inset: -16%;
-  z-index: -1;
-  background: radial-gradient(circle, var(--char-glow, transparent) 0%, var(--char-glow, transparent) 15%, transparent 58%);
-  pointer-events: none;
-}
-#char-preview-name {
-  font-family: 'Bebas Neue', cursive; font-size: 28px;
-  letter-spacing: 5px;
-}
-#char-select-confirm {
-  font-family: 'VCR', monospace; font-size: 14px; letter-spacing: 3px;
-  background: rgba(255,230,26,0.15); border: 2px solid #ffe61a;
-  border-radius: 6px; padding: 14px 40px; color: #ffe61a;
-  cursor: pointer; text-shadow: 0 0 10px #ffe61a88;
-  box-shadow: 0 0 20px rgba(255,230,26,0.25);
-  margin-top: 12px;
-}
-@keyframes gcblink { 0%,100% { opacity:1; } 50% { opacity:0; } }
-
-/* ── Horizontal Game Carousel ── */
-#game-carousel {
-  --carousel-card-w: min(72vw, 320px);
-  display: flex;
-  opacity: 0;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-behavior: smooth;
-  gap: 12px;
-  padding: 8px max(15vw, calc((100% - var(--carousel-card-w)) / 2));
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-#game-carousel.ready {
-  opacity: 1;
-  transition: opacity 0.16s ease-out;
-}
-#game-carousel::-webkit-scrollbar { display: none; }
-/* Arrows + dots are redundant once you can swipe — shown only when a real pointing
-   device (mouse/trackpad) is actually present, regardless of screen size. This is
-   the right test for "desktop vs touch," not a width breakpoint — an iPad is wide
-   enough to look "desktop" in landscape but is still a touch/swipe device. */
-.carousel-nav-row { display: none; }
-@media (hover: hover) and (pointer: fine) {
-  .carousel-nav-row { display: flex; }
-}
-.carousel-item {
-  scroll-snap-align: center;
-  scroll-snap-stop: always;
-  flex: 0 0 var(--carousel-card-w);
-  transition: opacity 0.15s, transform 0.15s;
-  opacity: 0.45;
-  transform: scale(0.92);
-}
-.carousel-item.active-card {
-  opacity: 1;
-  transform: scale(1);
-}
-.carousel-item .game-card-marquee { font-size: 28px; letter-spacing: 5px; }
-.carousel-item .game-card-desc { font-size: 13px; letter-spacing: 1.5px; line-height: 1.5; }
-
-.game-card {
-  position: relative;
-  border-radius: 16px;
-  overflow: hidden;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  min-height: 380px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  border: 2px solid rgba(255,255,255,0.12);
-  transition: border-color 0.2s;
-}
-.game-card:active { transform: scale(0.97); }
-.game-card-art {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  overflow: hidden;
-}
-.game-card-info {
-  position: relative; z-index: 2;
-  padding: 18px 16px 20px;
-  background: linear-gradient(to top, rgba(5,2,18,0.985) 66%, rgba(5,2,18,0.30));
-}
-.game-card-marquee {
-  font-family: 'Bebas Neue', cursive;
-  font-size: 34px; letter-spacing: 6px;
-  line-height: 1; margin-bottom: 6px;
-}
-.game-card-desc {
-  font-family: 'VCR', monospace;
-  font-size: 11px; letter-spacing: 1.5px;
-  line-height: 1.55; opacity: 0.75;
-  color: rgba(242,239,232,0.85);
-}
-.game-card-badge {
-  font-family: 'VCR', monospace; font-size: 8px;
-  letter-spacing: 2px; padding: 3px 8px;
-  border-radius: 3px; display: inline-block;
-  margin-bottom: 8px;
-}
-.game-card-screen { display: none; }
-.game-card-foot { display: none; }
-.game-card-icon { display: none; }
-@keyframes gcblink { 0%,100%{opacity:1} 50%{opacity:0} }
-
-/* ── Arcade cabinet selection wrapper ── */
-.arcade-cabinet {
-  background: rgba(12, 9, 25, 0.94);
-  backdrop-filter: blur(10px) saturate(1.2);
-  -webkit-backdrop-filter: blur(10px) saturate(1.2);
-  border: 3px solid #1e1530;
-  border-radius: 18px 18px 8px 8px;
-  overflow: hidden;
-  width: 100%;
-  max-width: 440px;
-  box-shadow: 0 0 40px rgba(0,0,0,0.85), inset 0 0 0 1px rgba(255,255,255,0.04);
-}
-.arcade-cab-rail {
-  height: 7px;
-  background: linear-gradient(90deg, #0e0b1d 0%, #241a3c 45%, #241a3c 55%, #0e0b1d 100%);
-}
-.arcade-cab-marquee {
-  padding: 11px 16px 10px;
-  font-family: 'Bebas Neue', cursive;
-  font-size: 26px; letter-spacing: 6px;
-  text-align: center;
-  color: #08060f;
-  background: var(--nc, #ff00cc);
-}
-.arcade-cab-screen {
-  background: #050310;
-  margin: 10px;
-  border-radius: 10px;
-  padding: 22px 16px;
-  border: 3px solid #100c20;
-  box-shadow: inset 0 0 60px rgba(0,0,0,0.95), inset 0 0 0 1px rgba(255,255,255,0.03);
-  position: relative; overflow: hidden;
-  font-size: 13px;
-}
-.arcade-cab-screen::after {
-  content: '';
-  position: absolute; inset: 0; z-index: 10;
-  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.1) 3px, rgba(0,0,0,0.1) 4px);
-  pointer-events: none;
-}
-.arcade-cab-foot {
-  padding: 12px 16px 18px;
-  display: flex; gap: 10px; justify-content: center;
-}
-.arcade-cab-foot > button {
-  width: min(100%, 240px) !important;
-  box-sizing: border-box !important;
-}
-.arcade-cab-foot.match-mode-select > button,
-.match-mode-select > button {
-  width: 100% !important;
-}
-
-/* ── Character tilt animation ── */
-@keyframes char-tilt {
-  0%,100% { transform: rotate(-8deg); }
-  50%     { transform: rotate(8deg); }
-}
-.char-tilt {
-  animation: char-tilt 1.4s ease-in-out infinite;
-  display: flex; align-items: center; justify-content: center;
-  width: 100%; height: 100%;
-  font-size: 52px;
-}
-
-/* ── Whack-a-Mole ── */
-#pg-whack { height: var(--app-vh, 100dvh); overflow: hidden; position: relative; z-index: 1; display: none; flex-direction: column; background: transparent; }
-#pg-whack.active { display: flex; }
-.whack-wrap {
-  padding: max(12px, calc(env(safe-area-inset-top, 0px) + 10px)) 12px max(10px, env(safe-area-inset-bottom, 0px));
-  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-  gap: 6px; flex: 1; min-height: 0; overflow: hidden;
-}
-.whack-wrap.mode-select-layout {
-  justify-content: flex-start;
-  padding-top: max(52px, calc(env(safe-area-inset-top, 0px) + 48px));
-  overflow-y: auto;
-}
-.whack-mode-shell {
-  width: 100%;
-  max-width: 440px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 2px;
-}
-.whack-mode-title {
-  font-family: 'Bebas Neue', cursive;
-  font-size: clamp(22px, 3vw, 29px);
-  letter-spacing: 5px;
-  line-height: 1;
-  color: #ffffff;
-  text-shadow: 0 0 9px rgba(242,239,232,0.28);
-  text-align: center;
-}
-.whack-mode-grid {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
-.whack-mode-card {
-  min-height: 216px;
-  border-color: #ff993355;
-  background: rgba(9,5,25,0.74);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.035), 0 14px 34px rgba(0,0,0,0.28);
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
-}
-.whack-mode-card::after {
-  content: "";
-  position: absolute;
-  inset: -40%;
-  pointer-events: none;
-  background: linear-gradient(110deg, transparent 36%, rgba(255,255,255,0.08) 48%, transparent 62%);
-  opacity: 0;
-  transform: translateX(-22%) rotate(8deg);
-  transition: opacity 0.22s ease, transform 0.42s ease;
-  z-index: 3;
-}
-.whack-mode-card:hover {
-  transform: translateY(-1px);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05), 0 18px 40px rgba(0,0,0,0.36);
-}
-.whack-mode-card:hover::after {
-  opacity: 1;
-  transform: translateX(22%) rotate(8deg);
-}
-.whack-mode-card .game-card-art {
-  opacity: 0.74;
-}
-.whack-mode-card .game-card-info {
-  padding: 13px 16px 15px;
-  background: linear-gradient(to top, rgba(5,2,18,0.99) 72%, rgba(5,2,18,0.64) 86%, rgba(5,2,18,0.16));
-}
-.whack-mode-card .game-card-marquee {
-  color: #ff9933;
-  text-shadow: 0 0 16px rgba(255,153,51,0.65);
-  font-size: 16px;
-  letter-spacing: 3px;
-  margin-bottom: 7px;
-}
-.whack-mode-card .game-card-desc {
-  opacity: 0.92;
-  color: rgba(242,239,232,0.9);
-}
-.whack-mode-card .game-card-badge {
-  margin-bottom: 7px;
-  opacity: 0.86;
-}
-.whack-mode-diff {
-  margin-top: 11px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-.whack-mode-diff .whack-btn {
-  width: 100%;
-  min-height: 28px;
-  font-size: 12px;
-  letter-spacing: 2px;
-  padding: 6px 6px;
-  box-shadow: none;
-  transition: transform 0.12s ease, background 0.16s ease, box-shadow 0.16s ease;
-}
-.whack-mode-diff .whack-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 0 16px rgba(255,255,255,0.08);
-}
-@media (max-width: 860px) {
-  .whack-mode-grid { grid-template-columns: 1fr; }
-  .whack-mode-card { min-height: 198px; }
-}
-.whack-hud {
-  display: flex; justify-content: space-between; align-items: center;
-  width: 100%; max-width: 420px; box-sizing: border-box;
-  background: rgba(242,239,232,0.05);
-  border: 1px solid rgba(242,239,232,0.12);
-  border-radius: 6px;
-  padding: 6px 16px;
-}
-@media (max-width: 600px) {
-  .whack-hud { padding-right: 52px !important; }
-}
-.whack-stat-label { font-size: 9px; letter-spacing: 2px; color: rgba(242,239,232,0.45); }
-.whack-stat-val { font-family: 'Bebas Neue', cursive; font-size: 36px; letter-spacing: 2px; line-height: 1; }
-#whack-timer-val.urgent { color: #ff4444; animation: whack-blink 0.5s infinite; }
-@keyframes whack-blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
-.whack-grid {
-  --cols: 3;
-  --rows: 4;
-  --grid-vpad: 180px;
-  --hole-sz: min(calc(90vw / var(--cols)), calc((var(--app-vh, 100dvh) - var(--grid-vpad)) / var(--rows)), 112px);
-  display: grid;
-  grid-template-columns: repeat(var(--cols), var(--hole-sz));
-  grid-template-rows: repeat(var(--rows), var(--hole-sz));
-  gap: 8px;
-  margin: 0 auto;
-}
-@media (max-width: 600px) {
-  .whack-grid { --grid-vpad: 100px; }
-}
-/* Memory round's "look, don't touch yet" cue — a gentle pulsing blue glow around the
-   whole board during the memorize window, so the board itself signals "hold up" rather
-   than relying on the side timer bar alone. */
-.whack-grid.memorize-glow {
-  border-radius: 14px;
-  animation: memorize-glow-pulse 1.6s ease-in-out infinite;
-}
-@keyframes memorize-glow-pulse {
-  0%, 100% { box-shadow: 0 0 18px 4px rgba(0,229,255,0.25); }
-  50% { box-shadow: 0 0 32px 10px rgba(0,229,255,0.55); }
-}
-.whack-hole {
-  aspect-ratio: 1;
-  background: #080514;
-  border: 5px solid #1a1428;
-  border-radius: 10px;
-  position: relative; overflow: hidden;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  box-shadow:
-    inset 0 0 24px rgba(0,0,0,0.95),
-    inset 0 0 0 2px rgba(255,255,255,0.03),
-    0 4px 12px rgba(0,0,0,0.8),
-    0 0 0 2px #0e0b1e;
-}
-.whack-hole::before {
-  content: '';
-  position: absolute; inset: 0; z-index: 5;
-  background: repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(0,0,0,0.08) 4px, rgba(0,0,0,0.08) 5px);
-  pointer-events: none;
-}
-.whack-hole.up    { box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 14px rgba(255,0,204,0.22); }
-.whack-hole.hit   { box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 20px rgba(255,230,26,0.55); }
-/* Correct-mole hit: green outline on the hole itself instead of a full-screen
-   flash — no yellow glow bleeding through behind the sad face either. */
-.whack-hole.hit-success { border-color: rgba(51,255,102,0.9); box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 22px rgba(51,255,102,0.5); }
-/* Clear round failure: highlights the good targets still standing so it's obvious
-   what should have been hit instead. */
-.whack-hole.reveal-correct {
-  box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 22px rgba(51,255,102,0.75) !important;
-  border-color: rgba(51,255,102,0.9) !important;
-}
-@keyframes crack-in {
-  0%   { opacity: 0; transform: scale(0.7); }
-  40%  { opacity: 0.9; transform: scale(1.05); }
-  100% { opacity: 0.6; transform: scale(1); }
-}
-.whack-char {
-  position: absolute; bottom: -100%; left: 50%;
-  transform: translateX(-50%);
-  width: 80%; aspect-ratio: 1;
-  display: flex; align-items: center; justify-content: center;
-  transition: bottom 0.18s cubic-bezier(0.34,1.56,0.64,1);
-  pointer-events: none;
-  user-select: none;
-}
-.whack-hole.up .whack-char { bottom: 4%; }
-.whack-hole.hit .whack-char { bottom: 4%; }
-.whack-hole.wrong-hit .whack-char { bottom: 4%; }
-
-/* Memory round: card-flip reveal, borrowing the Match game's flip language but scoped
-   to Whack's own hole markup so the two games' CSS never collide. */
-.whack-card-flip {
-  position: absolute; inset: 8%;
-  transform-style: preserve-3d;
-  transition: transform 0.3s ease;
-}
-.whack-card-flip.flipped { transform: rotateY(180deg); }
-.whack-card-back, .whack-card-face {
-  position: absolute; inset: 0;
-  backface-visibility: hidden;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 10px;
-}
-.whack-card-back {
-  background: linear-gradient(135deg, #2a1a4a, #1a0f2e);
-  border: 2px solid rgba(255,0,204,0.5);
-  font-family: 'Bebas Neue', cursive; font-size: 22px; color: rgba(255,0,204,0.6);
-}
-.whack-card-face {
-  transform: rotateY(180deg);
-  background: rgba(255,255,255,0.04);
-}
-@keyframes miss-shake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-5px); }
-  40% { transform: translateX(5px); }
-  60% { transform: translateX(-4px); }
-  80% { transform: translateX(4px); }
-}
-@keyframes tap-miss-flash {
-  0% {
-    border-color: rgba(255,60,60,0.95);
-    box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 26px rgba(255,40,40,0.72);
-    transform: scale(0.98);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-.whack-hole.tap-miss {
-  animation: tap-miss-flash 0.2s ease-out;
-}
-/* First-time Clear intro: a standalone demo face sliding back and forth, previewing
-   "pieces can move" before the player has seen it happen on the real board. */
-@keyframes intro-mole-slide {
-  0%, 100% { transform: translateX(-44px); }
-  50% { transform: translateX(44px); }
-}
-/* Memory's reveal-to-hide cover: slides out from hidden ("opens") with a bit of
-   overshoot, then eases back to fully covering ("closes") — a cabinet-door feel
-   rather than a flat linear slide. Deliberately longer than a simple slide. */
-@keyframes cabinet-slide-cover {
-  0%   { transform: translateX(-100%); }
-  62%  { transform: translateX(9%); }
-  100% { transform: translateX(0%); }
-}
-.whack-hole.missed {
-  animation: miss-shake 0.35s ease-in-out;
-  box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 22px rgba(255,40,40,0.65) !important;
-  border-color: rgba(255,60,60,0.9) !important;
-  pointer-events: none; /* already resolved — don't let it look clickable for the next second */
-  cursor: default;
-}
-.whack-hole.missed .whack-char { filter: grayscale(0.85) brightness(0.55); }
-.whack-miss-x {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Bebas Neue', cursive;
-  font-size: 44px; color: #ff4444;
-  text-shadow: 0 0 16px #ff4444, 0 0 5px #000;
-  pointer-events: none;
-  opacity: 0; transform: scale(0.6);
-  transition: opacity 0.15s, transform 0.15s;
-  z-index: 6;
-}
-.whack-miss-x.show { opacity: 1; transform: scale(1); }
-.whack-tint {
-  position: absolute; inset: 0;
-  border-radius: 50%;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s;
-  z-index: 4;
-}
-.whack-tint.show { opacity: 1; }
-.whack-hole.wrong-hit { border-color: rgba(255,60,60,0.9); box-shadow: 0 0 24px rgba(255,0,0,0.55); }
-.whack-hole.teasing {
-  box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 22px rgba(255,220,30,0.6), 0 0 6px rgba(255,180,0,0.35);
-  border-color: rgba(255,200,30,0.55);
-  transition: box-shadow 0.08s, border-color 0.08s;
-}
-.whack-char-placeholder {
-  width: 100%; height: 100%; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: clamp(24px, 10vw, 44px);
-  border: 3px solid rgba(255,255,255,0.25);
-}
-.whack-msg {
-  font-family: 'Bebas Neue', cursive; font-size: 48px; letter-spacing: 4px;
-  text-align: center; opacity: 0.9;
-}
-.whack-sub { font-size: 13px; letter-spacing: 2px; color: rgba(242,239,232,0.55); text-align: center; }
-.whack-btn {
-  font-family: 'VCR', monospace; font-size: 13px; letter-spacing: 3px;
-  background: rgba(242,239,232,0.08);
-  border: 1px solid rgba(242,239,232,0.25);
-  color: var(--white); padding: 12px 32px; border-radius: 4px;
-  cursor: pointer; margin-top: 8px;
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s;
-}
-.whack-btn:active { background: rgba(242,239,232,0.18); }
-.whack-char-select {
-  display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
-  width: 100%; max-width: 420px;
-}
-.whack-char-btn {
-  width: 76px; height: 76px; border-radius: 10px;
-  border: 2px solid rgba(242,239,232,0.15);
-  background: rgba(255,255,255,0.04);
-  cursor: pointer; padding: 0;
-  overflow: visible;
-  transition: border-color 0.15s, transform 0.15s;
-  -webkit-tap-highlight-color: transparent;
-}
-.whack-char-btn.selected { border-color: var(--white); transform: scale(1.14); }
-.whack-score-pop {
-  position: absolute; pointer-events: none;
-  font-family: 'Bebas Neue', cursive; font-size: 22px; color: #ffdd44;
-  animation: score-pop 0.7s ease-out forwards;
-  z-index: 10;
-}
-@keyframes score-pop {
-  0%   { opacity: 1; transform: translateY(0) scale(1); }
-  100% { opacity: 0; transform: translateY(-40px) scale(0.7); }
-}
-@keyframes wave-announce {
-  0%   { opacity:0; transform: scale(0.5); }
-  20%  { opacity:1; transform: scale(1.1); }
-  60%  { opacity:1; transform: scale(1.0); }
-  100% { opacity:0; transform: scale(0.9); }
-}
-
-/* Memory Mobe card-art: gentle drifting/rotating motion so the illustration reads as
-   alive rather than a frozen grid. transform-box/transform-origin keep each card
-   rotating around its own center regardless of its position in the SVG. */
-@keyframes card-drift {
-  0%   { transform: translateY(0) rotate(var(--r0, 0deg)); }
-  50%  { transform: translateY(-4px) rotate(var(--r1, 0deg)); }
-  100% { transform: translateY(0) rotate(var(--r0, 0deg)); }
-}
-.card-drift { transform-box: fill-box; transform-origin: center; animation: card-drift 3.4s ease-in-out infinite; }
-
-/* ── Space Mobe ── */
-/* Locked aspect ratio (not just a max-width) — width alone used to cap how wide the
-   canvas could get on desktop, but left height free to stretch with the viewport, so
-   the SAME fall speed covered a much shorter trip in landscape (where height is
-   short) than in tall portrait (where it's long) — orientation/screen-shape was
-   silently changing difficulty. Locking the ratio fixes the geometry itself instead
-   of recalibrating speed constants: fitSpaceCanvas() (JS) computes the largest box
-   at this ratio that fits the available space and sets it via inline width/height;
-   align/justify-center here just centers whatever size that ends up being. The
-   #030110 page background matches the canvas's own in-game fill so any letterbox
-   space reads as intentional "cabinet" framing, not empty page background. */
-#pg-space { position: relative; z-index: 1; height: var(--app-vh, 100dvh); overflow: hidden; display: none; flex-direction: column; align-items: center; justify-content: center; background: #030110; }
-#pg-space.active { display: flex; }
-/* #pg-space's align-items:center is for letterboxing the canvas (a flex column
-   child, centered horizontally when narrower than the screen) — but the same rule
-   also shrinks .cats-header to its content width and centers it instead of letting
-   it stretch full-width with space-between, squeezing the back/trophy/sound row
-   into a narrow centered block. Whack/Match don't set align-items here, so they
-   were never affected — this overrides just the header back to full width. */
-#pg-space .cats-header { align-self: stretch; width: 100%; }
-#space-canvas { flex: none; display: block; touch-action: none; background: #030110; }
-#space-overlay {
-  position: fixed; left: 0; right: 0; bottom: 0; top: 56px;
-  max-width: 460px; margin: 0 auto;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 16px; z-index: 10;
-  background: rgba(5, 2, 16, 0.88);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-}
-#space-overlay.space-over {
-  align-items: center;
-  justify-content: flex-start;
-  padding: 18px 0 24px;
-  box-sizing: border-box;
-  overflow-y: auto;
-}
-#space-overlay.space-boss-preview {
-  align-items: stretch;
-  justify-content: flex-start;
-  padding: 16px 14px 22px;
-  box-sizing: border-box;
-  overflow-y: auto;
-}
-#space-overlay.hidden { display: none; }
-.space-boss-trigger {
-  width: 38px; height: 38px; flex: 0 0 38px;
-  display: inline-flex; align-items: center; justify-content: center;
-  border: 2px solid rgba(51,255,102,0.48); border-radius: 8px;
-  background: rgba(51,255,102,0.12); color: #33ff66;
-  box-shadow: 0 0 14px rgba(51,255,102,0.18);
-  cursor: pointer; padding: 0;
-}
-.space-boss-trigger:active { transform: translateY(1px); }
-.space-debug-row {
-  display: flex; gap: 8px; align-items: center; justify-content: center;
-  margin-top: 10px; flex-wrap: wrap;
-}
-.space-debug-chip {
-  font-family: 'VCR', monospace; font-size: 9px; letter-spacing: 1px;
-  color: rgba(242,239,232,0.68); border: 1px solid rgba(51,255,102,0.24);
-  background: rgba(51,255,102,0.07); border-radius: 5px;
-  padding: 7px 8px; cursor: pointer;
-}
-.space-debug-chip:active { transform: translateY(1px); }
-.space-boss-gallery {
-  width: 100%; max-width: 432px; margin: 0 auto;
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-.space-boss-card {
-  min-height: 162px; border: 2px solid rgba(51,255,102,0.22); border-radius: 8px;
-  background: linear-gradient(180deg, rgba(18,8,42,0.92), rgba(5,2,18,0.96));
-  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-  padding: 9px 8px 10px; box-sizing: border-box;
-}
-.space-boss-card canvas {
-  width: 92px; height: 92px; display: block;
-}
-.space-boss-name {
-  font-family: 'Bebas Neue', cursive; font-size: 21px; line-height: 1;
-  letter-spacing: 2px; color: #33ff66; text-align: center;
-  text-shadow: 0 0 12px rgba(51,255,102,0.48); margin-top: 3px;
-}
-.space-boss-ability {
-  font-family: 'VCR', monospace; font-size: 9px; line-height: 1.25;
-  letter-spacing: 1px; color: rgba(242,239,232,0.58); text-align: center;
-  margin-top: 5px;
-}
-.space-boss-practice {
-  font-family: 'VCR', monospace; font-size: 8px; letter-spacing: 1.4px;
-  color: #33ff66; border: 1px solid rgba(51,255,102,0.34);
-  background: rgba(51,255,102,0.1); border-radius: 5px;
-  padding: 6px 9px; margin-top: 8px; cursor: pointer;
-}
-.space-boss-practice:active { transform: translateY(1px); }
-@keyframes sp-ring-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-@keyframes sp-brief-rock {
-  0%,100% { transform: translateY(0) rotate(-4deg); }
-  50%     { transform: translateY(-7px) rotate(5deg); }
-}
-@keyframes sp-brief-traitor-pop {
-  0%   { transform: scale(1) rotate(0deg); }
-  45%  { transform: scale(1.22) rotate(-5deg); }
-  100% { transform: scale(1.12) rotate(3deg); }
-}
-@keyframes sp-brief-boss-in {
-  0%   { transform: translateX(-160vw) rotate(-18deg) scale(0.75); opacity: 0; }
-  70%  { transform: translateX(8px) rotate(4deg) scale(1.08); opacity: 1; }
-  100% { transform: translateX(0) rotate(0deg) scale(1); opacity: 1; }
-}
-@keyframes sp-brief-boss-out {
-  0%   { transform: translateX(0) rotate(0deg) scale(1); opacity: 1; }
-  100% { transform: translateX(150vw) rotate(12deg) scale(0.72); opacity: 0; }
-}
-@keyframes sp-brief-captive-out {
-  0%   { transform: translate(0,0) scale(1); opacity: 1; }
-  100% { transform: translate(92px,-52px) scale(0.22); opacity: 0; }
-}
-@keyframes sp-brief-pilot-in {
-  0%   { transform: translateY(120vh) rotate(12deg) scale(0.72); opacity: 0; }
-  72%  { transform: translateY(-10px) rotate(-3deg) scale(1.08); opacity: 1; }
-  100% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
-}
-@keyframes sp-brief-pilot-ship {
-  0%   { transform: translate(-50%, 118vh) rotate(10deg) scale(0.72); opacity: 0; }
-  22%  { transform: translate(-50%, -8px) rotate(-3deg) scale(1.06); opacity: 1; }
-  32%,72% { transform: translate(-50%, 0) rotate(0deg) scale(1); opacity: 1; }
-  100% { transform: translate(160vw, -38vh) rotate(18deg) scale(0.68); opacity: 0; }
-}
-@keyframes sp-brief-star-drift {
-  0%   { transform: translateY(-8px); opacity: 0.15; }
-  50%  { opacity: 0.85; }
-  100% { transform: translateY(44px); opacity: 0.2; }
-}
-@keyframes sp-brief-line-in {
-  0%   { opacity: 0; transform: translateY(8px) scale(0.98); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
-}
-@keyframes sp-brief-dust-away {
-  0%   { opacity: 1; transform: translate3d(0,0,0) scale(1); filter: blur(0px); letter-spacing: 5px; }
-  45%  { opacity: 1; transform: translate3d(12px,-2px,0) scale(1.02); filter: blur(0.3px); letter-spacing: 5.5px; }
-  100% { opacity: 0; transform: translate3d(58px,-10px,0) scale(1.04); filter: blur(8px); letter-spacing: 11px; }
-}
-/* Individual sand grains peeling off the dissolving "VANISHED" line — each one
-   gets its own drift distance via --dx/--dy custom props set inline per grain. */
-@keyframes sp-brief-sand-grain {
-  0%   { opacity: 0; transform: translate(0,0) scale(1); }
-  18%  { opacity: 0.95; }
-  100% { opacity: 0; transform: translate(var(--dx, 50px), var(--dy, -16px)) scale(0.35); }
-}
-@keyframes wave-announce {
-  0%   { opacity:0; transform:scale(0.7) translateY(20px); }
-  20%  { opacity:1; transform:scale(1.08) translateY(-4px); }
-  40%  { transform:scale(1) translateY(0); }
-  80%  { opacity:1; transform:scale(1) translateY(0); }
-  100% { opacity:0; transform:scale(0.95) translateY(-10px); }
-}
-/* ── MATCH GAME ── */
-#pg-match { height: var(--app-vh, 100dvh); overflow: hidden; position: relative; z-index: 1; display: none; flex-direction: column; background: transparent; }
-#pg-match.active { display: flex; }
-.match-wrap {
-  padding: max(12px, calc(env(safe-area-inset-top, 0px) + 10px)) 10px max(10px, env(safe-area-inset-bottom, 0px));
-  flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center;
-  gap: 6px; overflow: hidden;
-}
-.match-wrap.mode-select-layout { overflow-y: auto; padding-top: max(52px, calc(env(safe-area-inset-top, 0px) + 48px)); }
-.match-msg { font-family: 'Bebas Neue', cursive; font-size: 34px; letter-spacing: 6px; text-align: center; }
-.match-sub { font-size: 11px; letter-spacing: 2px; color: rgba(242,239,232,0.55); text-align: center; }
-.match-hud { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 460px; box-sizing: border-box; }
-@media (max-width: 600px) {
-  .match-hud { padding-right: 52px !important; }
-}
-.match-grid {
-  --card: min(
-    calc((min(100vw, 520px) - 36px) / 3),
-    calc((var(--app-vh, 100dvh) - 190px) / 6)
-  );
-  display: grid;
-  grid-template-columns: repeat(3, var(--card));
-  grid-template-rows: repeat(6, var(--card));
-  gap: 6px;
-}
-.match-card-wrap { width: var(--card); height: var(--card); perspective: 700px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.match-mode-btn { width: 100%; box-sizing: border-box; padding: 12px 16px; margin-top: 0; }
-.match-card {
-  width: 100%; height: 100%; position: relative;
-  transform-style: preserve-3d;
-  transition: transform 0.18s cubic-bezier(0.4,0,0.2,1);
-}
-.match-card.flipped { transform: rotateY(180deg); }
-.match-card-front, .match-card-back {
-  position: absolute; inset: 0; border-radius: 10px;
-  backface-visibility: hidden;
-  display: flex; align-items: center; justify-content: center;
-}
-.match-card-front {
-  background-color: #1c1235;
-  background-image:
-    linear-gradient(115deg, rgba(255,255,255,0) 0 24%, rgba(255,255,255,0.16) 34%, rgba(0,229,255,0.12) 42%, rgba(255,0,204,0.12) 52%, rgba(255,230,26,0.10) 62%, rgba(255,255,255,0) 76%),
-    radial-gradient(circle at 28% 18%, rgba(255,255,255,0.18) 0 2px, transparent 3px),
-    radial-gradient(circle at 78% 72%, rgba(0,229,255,0.14) 0 2px, transparent 3px),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cpolyline points='0,22 7,14 14,22 21,14 28,22' stroke='%23ff00ee' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3Cpolyline points='15,58 22,50 29,58 36,50 43,58' stroke='%2300e5ff' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3Cpolyline points='52,38 59,30 66,38 73,30' stroke='%23ffe61a' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='58' cy='12' r='5' fill='%23ffe61a'/%3E%3Ccircle cx='72' cy='55' r='3.5' fill='%230066ff'/%3E%3Ccircle cx='12' cy='70' r='4' fill='%23ff00ee'/%3E%3Ccircle cx='40' cy='75' r='3' fill='none' stroke='%2300e5ff' stroke-width='2'/%3E%3Cline x1='42' y1='5' x2='52' y2='18' stroke='%23ff00ee' stroke-width='3' stroke-linecap='round'/%3E%3Cline x1='62' y1='22' x2='78' y2='26' stroke='%2300e5ff' stroke-width='2.5' stroke-linecap='round'/%3E%3Cline x1='5' y1='40' x2='20' y2='44' stroke='%23ffe61a' stroke-width='2.5' stroke-linecap='round'/%3E%3Cpath d='M50,62 Q55,55 60,62 Q65,69 70,62' stroke='%23ffe61a' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3Cline x1='0' y1='5' x2='12' y2='5' stroke='%23ff00ee' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-size: 150% 150%, 80px 80px, 80px 80px, 80px 80px;
-  border: 1.5px solid rgba(255,255,255,0.28);
-  box-shadow: inset 0 0 18px rgba(255,255,255,0.08), 0 3px 14px rgba(0,0,0,0.9);
-}
-.match-card-back {
-  transform: rotateY(180deg);
-  font-size: 34px; line-height: 1;
-  border: 1.5px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.06);
-  transition: background 0.2s, border-color 0.2s;
-  overflow: hidden;
-}
-.match-card.matched .match-card-back {
-  background:
-    linear-gradient(135deg, rgba(0,220,100,0.18), rgba(0,229,255,0.14) 34%, rgba(255,230,26,0.14) 63%, rgba(255,0,204,0.12)),
-    rgba(0,220,100,0.16);
-  border-color: rgba(190,255,245,0.72);
-  box-shadow: inset 0 0 18px rgba(255,255,255,0.18), 0 0 14px rgba(0,229,255,0.22);
-  animation: matchPop 0.38s ease;
-}
-.match-card.matched .match-card-back .char-face,
-.match-card.matched .match-card-back .char-img,
-.match-card.matched .match-card-back img {
-  filter: drop-shadow(0 0 3px rgba(255,255,255,0.95)) drop-shadow(0 0 10px rgba(0,229,255,0.45));
-}
-.match-card .match-spark-burst {
-  position: absolute;
-  inset: -12px;
-  pointer-events: none;
-  transform: rotateY(180deg);
-  z-index: 5;
-}
-.match-card .match-spark-burst i {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--spark, #fff);
-  box-shadow: 0 0 10px var(--spark, #fff);
-  opacity: 0;
-  animation: matchCornerSpark 0.78s ease-out forwards;
-}
-.match-card .match-spark-burst i:nth-child(1) { --spark:#fff7b7; --dx:-46px; --dy:-46px; }
-.match-card .match-spark-burst i:nth-child(2) { --spark:#7efbff; --dx:46px; --dy:-42px; animation-delay:0.04s; }
-.match-card .match-spark-burst i:nth-child(3) { --spark:#ff7be8; --dx:-42px; --dy:46px; animation-delay:0.08s; }
-.match-card .match-spark-burst i:nth-child(4) { --spark:#ffffff; --dx:44px; --dy:44px; animation-delay:0.12s; }
-.match-card.match-holo .match-card-back::before {
-  content: "";
-  position: absolute;
-  inset: -22%;
-  pointer-events: none;
-  background:
-    linear-gradient(112deg, transparent 18%, rgba(255,255,255,0.92) 34%, rgba(0,229,255,0.48) 43%, rgba(255,0,204,0.38) 52%, rgba(255,230,26,0.34) 61%, transparent 76%);
-  mix-blend-mode: screen;
-  opacity: 0;
-  transform: translateX(-86%) rotate(10deg);
-  animation: matchHoloSweep 1.05s ease-out forwards;
-  z-index: 2;
-}
-.match-card.match-holo .match-card-back::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 24% 28%, rgba(255,255,255,0.9) 0 3px, transparent 4px),
-    radial-gradient(circle at 72% 34%, rgba(0,229,255,0.85) 0 2px, transparent 3px),
-    radial-gradient(circle at 58% 72%, rgba(255,0,204,0.72) 0 2px, transparent 3px),
-    linear-gradient(135deg, rgba(255,255,255,0.18), transparent 42%, rgba(255,255,255,0.14));
-  opacity: 0;
-  mix-blend-mode: screen;
-  animation: matchHoloSparkle 1.05s ease-out forwards;
-  z-index: 3;
-}
-.match-card.miss-flash .match-card-back {
-  background: rgba(220,50,50,0.22);
-  border-color: rgba(220,50,50,0.5);
-}
-@keyframes matchPop {
-  0%,100% { transform: rotateY(180deg) scale(1); }
-  50%      { transform: rotateY(180deg) scale(1.13); }
-}
-@keyframes matchHoloSweep {
-  0%   { opacity: 0; transform: translateX(-86%) rotate(10deg); }
-  16%  { opacity: 0.95; }
-  62%  { opacity: 0.8; }
-  100% { opacity: 0; transform: translateX(86%) rotate(10deg); }
-}
-@keyframes matchHoloSparkle {
-  0%   { opacity: 0; transform: scale(0.96); }
-  24%  { opacity: 0.9; }
-  70%  { opacity: 0.5; }
-  100% { opacity: 0; transform: scale(1.04); }
-}
-@keyframes matchCornerSpark {
-  0%   { opacity: 0; transform: translate(-50%,-50%) scale(0.4); }
-  18%  { opacity: 1; }
-  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.2); }
-}
-</style>
-<script>
-// Locks #pg-home's height to a JS-measured pixel value instead of letting the browser
-// recompute 100svh on every paint. Mobile browsers (especially iOS Safari) recalculate
-// svh/dvh around address-bar show/hide, the on-screen keyboard opening/closing, and
-// bfcache restores — which was making the home hero briefly render at the top of the
-// screen before snapping into its centered position, most noticeably right after
-// closing the spotlight search (its input's keyboard closing resizes the visual
-// viewport just as the home page reappears underneath). Exposed on window so
-// closeSpot() can force a fresh re-lock at exactly that moment. Runs before first
-// paint (head, not body) and again on resize/orientation/visualViewport-resize/
-// pageshow to stay correct.
+// ── STANDALONE ARCADE ROUTER ───────────────────────────────────────────────
 (function() {
-  function lockViewportHeight() {
-    const h = window.innerHeight || document.documentElement.clientHeight || 0;
-    document.documentElement.style.setProperty('--app-vh', h + 'px');
-  }
-  window.lockViewportHeight = lockViewportHeight;
-  lockViewportHeight();
-  // The very first measurement (synchronous, in <head>, before layout/paint) can be
-  // taken before the browser's chrome (address bar collapsed/expanded) has actually
-  // settled, especially on mobile — which on its own caused the hero to render off
-  // the top of the screen on a fresh load until something else (e.g. opening and
-  // closing spotlight) re-measured it correctly. Re-measure again shortly after load
-  // once the browser has had a chance to settle, not just on the listed live events.
-  document.addEventListener('DOMContentLoaded', lockViewportHeight);
-  window.addEventListener('load', lockViewportHeight);
-  setTimeout(lockViewportHeight, 300);
-  window.addEventListener('resize', lockViewportHeight);
-  window.addEventListener('orientationchange', lockViewportHeight);
-  if (window.visualViewport) window.visualViewport.addEventListener('resize', lockViewportHeight);
-  window.addEventListener('pageshow', lockViewportHeight);
-})();
-</script>
-</head>
-<body>
-
-<!-- VHS tracking bands overlay -->
-<div id="vhs-bands"></div>
-
-<!-- SVG filter for duct tape rough edges -->
-<svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
-  <defs>
-    <filter id="tape" x="-4%" y="-8%" width="108%" height="116%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.055 0.05" numOctaves="3" seed="12" result="noise"/>
-      <feDisplacementMap in="SourceGraphic" in2="noise" scale="3.5" xChannelSelector="R" yChannelSelector="G"/>
-    </filter>
-  </defs>
-</svg>
-
-<!-- Header -->
-<div id="hdr">
-  <svg width="28" height="17" viewBox="0 0 100 60" fill="none" opacity="0.75">
-    <rect x="4" y="4" width="92" height="52" rx="5" stroke="white" stroke-width="4"/>
-    <rect x="16" y="11" width="68" height="28" rx="2" stroke="white" stroke-width="3"/>
-    <circle cx="32" cy="44" r="8" stroke="white" stroke-width="3"/>
-    <circle cx="68" cy="44" r="8" stroke="white" stroke-width="3"/>
-    <line x1="40" y1="44" x2="60" y2="44" stroke="white" stroke-width="2"/>
-  </svg>
-  <div id="logo">MOBERINO</div>
-</div>
-
-<!-- Collage lives outside any page so it persists across home + cats -->
-<div id="collage"></div>
-
-<!-- ── HOME ── -->
-<div id="pg-home" class="page active">
-  <button class="mobile-sparkle-btn" id="mobileSeasonBtn" onclick="toggleSeasonTheme()" aria-label="Surprise">
-    <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
-      <path d="M12 2.5 L13.08 10.92 L21.5 12 L13.08 13.08 L12 21.5 L10.92 13.08 L2.5 12 L10.92 10.92 Z" opacity="0.95"/>
-      <path d="M19.5 4 L20.12 7.38 L23.5 8 L20.12 8.62 L19.5 12 L18.88 8.62 L15.5 8 L18.88 7.38 Z" opacity="0.6"/>
-      <circle cx="4.5" cy="18.5" r="1.3" opacity="0.45"/>
-      <circle cx="7" cy="21.5" r="0.85" opacity="0.3"/>
-      <circle cx="2.5" cy="15" r="0.8" opacity="0.28"/>
-    </svg>
-  </button>
-  <div class="cats-header main-site-header">
-    <div class="cats-header-nav">
-      <button class="page-nav-btn nav-sparkle-btn" id="seasonBtn" onclick="toggleSeasonTheme()" aria-label="Surprise">
-        <svg id="seasonIcon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-          <path d="M12 2.5 L13.08 10.92 L21.5 12 L13.08 13.08 L12 21.5 L10.92 13.08 L2.5 12 L10.92 10.92 Z" opacity="0.95"/>
-          <path d="M19.5 4 L20.12 7.38 L23.5 8 L20.12 8.62 L19.5 12 L18.88 8.62 L15.5 8 L18.88 7.38 Z" opacity="0.6"/>
-          <circle cx="4.5" cy="18.5" r="1.3" opacity="0.45"/>
-          <circle cx="7" cy="21.5" r="0.85" opacity="0.3"/>
-          <circle cx="2.5" cy="15" r="0.8" opacity="0.28"/>
-        </svg>
-      </button>
-      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse" data-page="cats">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-        <span>Browse</span>
-      </button>
-      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years" data-page="timeline">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
-        <span>Years</span>
-      </button>
-      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places" data-page="map">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-        <span>Places</span>
-      </button>
-      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search" data-page="search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-        <span>Search</span>
-      </button>
-    </div>
-  </div>
-  <div class="home-hero">
-    <!-- Anchor pattern: hero-above and hero-below both get flex:1, so whatever's left
-         after .hero-search's own (natural) height splits evenly between them. The
-         search bar lands at dead center on any screen size, any logo size, with no
-         per-breakpoint shift to hand-tune — hero-above pins its content to its own
-         bottom edge (flex-end), hero-below pins its content to its own top edge
-         (flex-start), so both sit flush against the search bar with nothing between. -->
-    <div class="hero-above">
-      <div class="hero-logo-wrap">
-        <img src="Title.png" class="hero-logo-text" alt="MOBERINO">
-      </div>
-    </div>
-    <div class="hero-search">
-      <div class="search-row">
-        <div class="search-wrap" id="homeSearchWrap">
-          <input id="homeQ" type="search" placeholder="SEARCH VIDEOS, PLACES..." autocomplete="off" spellcheck="false" class="home-search-input">
-          <button class="search-clear-btn" id="homeQClear" aria-label="Clear" style="display:none" onclick="homeSearchClear()">
-            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="1" y1="1" x2="13" y2="13"/><line x1="13" y1="1" x2="1" y2="13"/></svg>
-          </button>
-          <button class="search-play-btn" id="homeQSubmit" aria-label="Search" onclick="homeSearchSubmit()">
-            <svg viewBox="0 0 10 12" fill="currentColor"><polygon points="0,0 10,6 0,12"/></svg>
-          </button>
-        </div>
-        <button class="inline-shuffle-btn" onclick="enableShake()" aria-label="Shuffle">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><path d="M4 20 21 3"/><polyline points="21 16 21 21 16 21"/><path d="M4 4h3.5c1.8 0 3.1.8 4.1 2.4"/><path d="M14.5 17.8c.9 1.2 2.1 1.8 3.7 1.8H21"/></svg>
-        </button>
-      </div>
-    </div>
-    <div class="hero-below">
-      <div class="hero-lower">
-        <div class="hero-cta-row">
-          <button class="hero-cta-btn" id="recBtn" onclick="toggleRec()">WATCH RECOMMENDED</button>
-          <button class="hero-cta-btn" onclick="navToCats()">BROWSE CATEGORIES</button>
-        </div>
-        <div id="memories">
-          <div class="season-header">
-            <div class="season-label" id="seasonLabel">RECOMMENDED</div>
-          </div>
-          <div class="vgrid" id="homeGrid"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ── CATEGORIES ── -->
-<div id="pg-cats" class="page">
-  <div class="cats-header main-site-header">
-    <div class="cats-header-nav">
-      <button class="page-nav-btn" onclick="navHome()" aria-label="Home" data-page="home">
-        <img src="home.png" class="nav-icon-img" alt="">
-        <span>Home</span>
-      </button>
-      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse" data-page="cats">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-        <span>Browse</span>
-      </button>
-      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years" data-page="timeline">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
-        <span>Years</span>
-      </button>
-      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places" data-page="map">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-        <span>Places</span>
-      </button>
-      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search" data-page="search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-        <span>Search</span>
-      </button>
-    </div>
-  </div>
-  <div class="sub-page-title">CATEGORIES</div>
-  <div class="cgrid" id="cgrid"></div>
-</div>
-
-<!-- ── DETAIL ── -->
-<div id="pg-detail" class="page">
-  <div class="cats-header main-site-header">
-    <div class="cats-header-nav">
-      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home" data-page="home">
-        <img src="home.png" class="nav-icon-img" alt="">
-        <span>Home</span>
-      </button>
-      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse" data-page="cats">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-        <span>Browse</span>
-      </button>
-      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years" data-page="timeline">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
-        <span>Years</span>
-      </button>
-      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places" data-page="map">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-        <span>Places</span>
-      </button>
-      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search" data-page="search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-        <span>Search</span>
-      </button>
-    </div>
-  </div>
-  <div class="detail-breadcrumb">
-    <button class="detail-back-link" id="backBtn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-      BACK TO CATEGORIES
-    </button>
-    <div class="detail-cat-title" id="detailName"></div>
-    <div class="detail-cnt-badge" id="detailCnt"></div>
-  </div>
-  <div class="detail-vgrid">
-    <div class="vgrid" id="detailGrid"></div>
-  </div>
-</div>
-
-<!-- ── TIMELINE ── -->
-<div id="pg-timeline" class="page">
-  <div class="cats-header main-site-header">
-    <div class="cats-header-nav">
-      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home" data-page="home">
-        <img src="home.png" class="nav-icon-img" alt="">
-        <span>Home</span>
-      </button>
-      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse" data-page="cats">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-        <span>Browse</span>
-      </button>
-      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years" data-page="timeline">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
-        <span>Years</span>
-      </button>
-      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places" data-page="map">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-        <span>Places</span>
-      </button>
-      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search" data-page="search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-        <span>Search</span>
-      </button>
-    </div>
-  </div>
-  <div class="sub-page-title">TIMELINE</div>
-  <div id="tl-filter-wrap">
-    <select id="tl-cat-filter">
-      <option value="all">ALL CATEGORIES</option>
-    </select>
-  </div>
-  <div id="decade-bar"></div>
-  <div id="tl-body"></div>
-</div>
-
-<!-- ── MAP ── -->
-<div id="pg-map" class="page">
-  <div class="cats-header main-site-header">
-    <div class="cats-header-nav">
-      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home" data-page="home">
-        <img src="home.png" class="nav-icon-img" alt="">
-        <span>Home</span>
-      </button>
-      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse" data-page="cats">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-        <span>Browse</span>
-      </button>
-      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years" data-page="timeline">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
-        <span>Years</span>
-      </button>
-      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places" data-page="map">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-        <span>Places</span>
-      </button>
-      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search" data-page="search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-        <span>Search</span>
-      </button>
-    </div>
-  </div>
-  <div class="sub-page-title">PLACES</div>
-  <div id="map-container">
-    <div id="map-zoom-btns">
-      <button id="map-zoom-in"  onclick="if(window._map)window._map.zoomIn()"  aria-label="Zoom in">+</button>
-      <button id="map-zoom-out" onclick="if(window._map)window._map.zoomOut()" aria-label="Zoom out">−</button>
-    </div>
-    <div id="map-places-drawer">
-      <button id="map-places-tab" onclick="toggleMapPlacesDrawer()">
-        <span class="map-places-tab-chevron">▼</span>
-        <span>TOP PLACES</span>
-        <span class="map-places-tab-count">0</span>
-      </button>
-      <div id="map-places-list"></div>
-    </div>
-    <aside id="map-location-panel" aria-live="polite" aria-label="Selected place videos">
-      <div class="map-location-panel-hdr">
-        <div class="map-location-title-wrap">
-          <div id="map-location-title">PLACE</div>
-          <div id="map-location-subtitle"></div>
-        </div>
-        <button class="map-location-close" onclick="closeMapLocationPanel()" aria-label="Close selected place">×</button>
-      </div>
-      <div id="map-location-list"></div>
-    </aside>
-  </div>
-  <div style="height:max(20px,env(safe-area-inset-bottom,0px))"></div>
-</div>
-
-<!-- ── VHS SHELF ── -->
-<div id="pg-shelf" class="page">
-  <div id="shelf-bg"></div>
-  <div class="cats-header main-site-header">
-    <div class="cats-header-nav">
-      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home" data-page="home">
-        <img src="home.png" class="nav-icon-img" alt="">
-        <span>Home</span>
-      </button>
-      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse" data-page="cats">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-        <span>Browse</span>
-      </button>
-      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years" data-page="timeline">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
-        <span>Years</span>
-      </button>
-      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places" data-page="map">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-        <span>Places</span>
-      </button>
-      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search" data-page="search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-        <span>Search</span>
-      </button>
-    </div>
-  </div>
-  <div class="shelf-body" id="shelfBody"></div>
-</div>
-
-<!-- ── SEARCH ── -->
-<div id="pg-search" class="page">
-  <div class="cats-header main-site-header">
-    <div class="cats-header-nav">
-      <button class="page-nav-btn" onclick="nav('home')" aria-label="Home" data-page="home">
-        <img src="home.png" class="nav-icon-img" alt="">
-        <span>Home</span>
-      </button>
-      <button class="page-nav-btn" onclick="navToCats()" aria-label="Browse" data-page="cats">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-        <span>Browse</span>
-      </button>
-      <button class="page-nav-btn" onclick="nav('timeline')" aria-label="Years" data-page="timeline">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
-        <span>Years</span>
-      </button>
-      <button class="page-nav-btn" onclick="nav('map')" aria-label="Places" data-page="map">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-        <span>Places</span>
-      </button>
-      <button class="page-nav-btn is-search" onclick="openSpot()" aria-label="Search" data-page="search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-        <span>Search</span>
-      </button>
-    </div>
-  </div>
-  <div class="srch-top">
-    <button class="srch-logo-btn" onclick="nav('home')" aria-label="Home" data-page="home">
-      <img src="Title.png" class="srch-logo-img" alt="MOBERINO">
-    </button>
-    <div class="srch-row">
-      <div class="srch-box">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input id="srchQ" type="search" placeholder="SEARCH FOR PLACES, CATEGORIES, PEOPLE..." autocomplete="off" spellcheck="false">
-        <button class="srch-clear" id="srchClear">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-      <button class="inline-shuffle-btn" onclick="enableShake()" aria-label="Shuffle">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><path d="M4 20 21 3"/><polyline points="21 16 21 21 16 21"/><path d="M4 4h3.5c1.8 0 3.1.8 4.1 2.4"/><path d="M14.5 17.8c.9 1.2 2.1 1.8 3.7 1.8H21"/></svg>
-      </button>
-    </div>
-  </div>
-  <div class="srch-meta" id="srchMeta">TYPE TO SEARCH 258 MEMORIES</div>
-  <div class="srch-body">
-    <div class="vgrid" id="srchGrid"></div>
-    <div class="no-results" id="noRes" style="display:none">NO VIDEOS FOUND</div>
-  </div>
-</div>
-
-<!-- ── TUBE TV LIGHTBOX ── -->
-<div id="lb">
-  <div id="lb-bg"></div>
-  <div id="lb-hdr">
-    <button id="lb-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    <div id="lb-info">
-      <div id="lb-title"></div>
-      <div id="lb-meta"></div>
-    </div>
-  </div>
-
-  <!-- TV/VCR combo shell -->
-  <div id="tv-shell">
-    <div id="tv-screen-bezel">
-      <div id="lb-frame-wrap">
-        <iframe id="lb-frame" allow="autoplay; fullscreen" allowfullscreen></iframe>
-      </div>
-    </div>
-    <!-- Tape inserted below screen — TV/VCR combo slot -->
-    <div id="vcr-unit">
-      <div id="vcr-tape-opening">
-        <div id="vcr-tape-label">
-          <span id="vcr-tape-title">— INSERT TAPE —</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Hidden — needed for swipe/JS nav -->
-  <button id="lb-prev" style="display:none"></button>
-  <button id="lb-next" style="display:none"></button>
-</div>
-
-<!-- ── TAB BAR ── -->
-<nav id="tabs">
-  <button class="tab on" data-p="home" onclick="nav('home')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-    HOME<div class="tab-line"></div>
-  </button>
-  <button class="tab" data-p="cats" onclick="nav('cats')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-    BROWSE<div class="tab-line"></div>
-  </button>
-  <button class="tab" data-p="timeline" onclick="nav('timeline')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 3v18"/><circle cx="7" cy="6" r="1.7"/><circle cx="7" cy="12" r="1.7"/><circle cx="7" cy="18" r="1.7"/><path d="M11 6h7"/><path d="M11 12h9"/><path d="M11 18h6"/></svg>
-    YEARS<div class="tab-line"></div>
-  </button>
-  <button class="tab" data-p="map" onclick="nav('map')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="2 6 2 21 8 18 16 21 22 18 22 3 16 6 8 3 2 6"/><line x1="8" y1="3" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="21"/></svg>
-    PLACES<div class="tab-line"></div>
-  </button>
-  <button class="tab" data-p="search" onclick="nav('search');setTimeout(()=>srchQ.focus(),250)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-    SEARCH<div class="tab-line"></div>
-  </button>
-</nav>
-
-<!-- ── HOME SEARCH DROPDOWN ── -->
-<div id="home-drop">
-  <div id="home-drop-meta"></div>
-  <div id="home-drop-grid"></div>
-</div>
-
-<!-- ── SPOTLIGHT SEARCH OVERLAY ── -->
-<div id="spot-overlay">
-  <div class="spot-top-bar">
-    <button class="spot-close" onclick="closeSpot()" aria-label="Close search">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      CLOSE SEARCH
-    </button>
-    <div class="spot-box">
-      <input id="spotQ" type="search" placeholder="SEARCH 258 MEMORIES..." autocomplete="off" spellcheck="false">
-    </div>
-  </div>
-  <div id="spot-meta"></div>
-  <div id="spot-results"></div>
-</div>
-
-<script src="data.js"></script>
-<script>
-// ── CAT COLORS ──
-const CC = {
-  // Moberg
-  "Moberg Classics":"#2a1a4a","60s Moberg Christmas":"#5a0a00","Moberg Christmas":"#6b0000",
-  "Moberg Family":"#0a3d2e","Moberg Holidays":"#3d1060",
-  // Severino
-  "1960s Sev":"#3d2800","Severino Family":"#0d2e5c","Severino Christmas":"#8B0000",
-  "Christmas Morn Sev":"#0a3220","Severino Holidays":"#5c3200",
-  // Fawcett
-  "Fawcett Family":"#1a3a28","Christmas Morn Faw":"#0a2838",
-  // TDKK
-  "TDKK":"#3d1a6e",
-  // Events
-  "Birthdays":"#7d3000","Halloween":"#5c2800","Christmas Program":"#7a1a1a",
-  "First Day of School":"#0e2645","Florida":"#074d42",
-};
-
-// ── SEASON ──
-function season() {
-  const m = new Date().getMonth()+1;
-  if(m===12||m===1) return {label:"CHRISTMAS MEMORIES",terms:["christmas","xmas"]};
-  if(m===11)        return {label:"THANKSGIVING MEMORIES",terms:["thanksgiving"]};
-  if(m===10)        return {label:"HALLOWEEN MEMORIES",terms:["halloween"]};
-  if(m>=6&&m<=8)    return {label:"SUMMER MEMORIES",terms:["beach","florida","vacation","montauk","disney","epcot","norway","cayman","cypress","williamsburg"]};
-  if(m===4||m===5)  return {label:"SPRING MEMORIES",terms:["easter","mother","memorial"]};
-  if(m===3)         return {label:"ST. PATRICK'S DAY",terms:["patrick"]};
-  return {label:"FAMILY FAVORITES",terms:[]};
-}
-
-// A round-number anniversary (5, 10, 15... years ago) in the current month outranks
-// a plain "also happened this month" — returns the year-count or null.
-function milestoneYearsAgo(v) {
-  if (!v.year) return null;
-  const diff = new Date().getFullYear() - v.year;
-  return diff > 0 && diff % 5 === 0 ? diff : null;
-}
-
-function recommended(n) {
-  const curMonth = new Date().getMonth()+1;
-  const CATEGORY_CAP = 2; // so one event type (e.g. December's many Christmas videos) can't fill every slot
-  const picked = [];
-  const catCount = {};
-  const seen = new Set();
-  function tryAdd(v, reason, respectCap) {
-    if (seen.has(v.video_id)) return;
-    if (respectCap && (catCount[v.category||'']||0) >= CATEGORY_CAP) return;
-    picked.push({...v, _recReason: reason});
-    seen.add(v.video_id);
-    catCount[v.category||''] = (catCount[v.category||'']||0)+1;
-  }
-
-  const anniversaries = VIDEOS.filter(v=>v.month===curMonth && milestoneYearsAgo(v));
-  const thisMonth     = VIDEOS.filter(v=>v.month===curMonth && !milestoneYearsAgo(v));
-
-  // Pass 1: anniversaries first, then this-month, both respecting the per-category cap.
-  [...anniversaries].sort(()=>Math.random()-0.5).forEach(v=>{ if(picked.length<n) tryAdd(v, `${milestoneYearsAgo(v)} YEARS AGO`, true); });
-  [...thisMonth].sort(()=>Math.random()-0.5).forEach(v=>{ if(picked.length<n) tryAdd(v, 'THIS MONTH', true); });
-
-  // Pass 2: a thin month may not have enough variety to fill n while respecting the
-  // cap — relax it rather than leave the section sparse.
-  [...anniversaries, ...thisMonth].sort(()=>Math.random()-0.5).forEach(v=>{
-    if(picked.length<n) tryAdd(v, milestoneYearsAgo(v) ? `${milestoneYearsAgo(v)} YEARS AGO` : 'THIS MONTH', false);
-  });
-
-  // Pass 3/4: old keyword-text fallback, then pure random — only kicks in for
-  // months with almost no dated matches at all.
-  if(picked.length<4){
-    const {terms} = season();
-    if(terms.length){
-      const kw = VIDEOS.filter(v=>{const h=(v.title+' '+v.category+' '+(v.objects||'')).toLowerCase();return terms.some(t=>h.includes(t));});
-      [...kw].sort(()=>Math.random()-0.5).forEach(v=>{ if(picked.length<n) tryAdd(v, null, false); });
-    }
-  }
-  if(picked.length<4){
-    [...VIDEOS].sort(()=>Math.random()-0.5).forEach(v=>{ if(picked.length<n) tryAdd(v, null, false); });
-  }
-
-  return picked.slice(0,n);
-}
-
-// ── SEARCH ──
-// Cardinal direction normalization for address search — "226 W 22nd St" should also
-// turn up for a search of "west", and vice versa. Substring match alone is unsafe for
-// the single-letter abbreviations (h.includes('w') would match "Williamsburg"), so
-// those need a word-boundary check; the spelled-out word is safe as a plain substring.
-const CARDINAL = { n:'north', north:'n', s:'south', south:'s', e:'east', east:'e', w:'west', west:'w' };
-function locationMatches(locationH, t) {
-  const alt = CARDINAL[t];
-  if (!alt) return locationH.includes(t); // not a cardinal term — plain substring is fine
-  // The single-letter form of the pair needs a word-boundary check no matter which
-  // side the user typed (t.includes(t) alone would let 'w' match inside "Williamsburg");
-  // the spelled-out form is safe to match as a plain substring either way.
-  if (t.length === 1) return new RegExp(`\\b${t}\\b`, 'i').test(locationH) || locationH.includes(alt);
-  return locationH.includes(t) || new RegExp(`\\b${alt}\\b`, 'i').test(locationH);
-}
-
-// Relevance tier for a result against the query: title hit outranks an
-// address/location hit, which outranks category, then object tags, then a bare
-// year match — same priority order surfaced to the user as match tags below.
-function matchRank(v, terms) {
-  const titleH = v.title.toLowerCase();
-  if(terms.some(t=>titleH.includes(t))) return 0;
-  const locationH = (v.location||'').toLowerCase();
-  if(terms.some(t=>locationMatches(locationH, t))) return 1;
-  const categoryH = (v.category||'').toLowerCase();
-  if(terms.some(t=>categoryH.includes(t))) return 2;
-  const objectsArr = (v.objects||'').split(',').map(t=>t.trim().toLowerCase());
-  if(terms.some(t=>objectsArr.some(tag=>tag.includes(t)))) return 3;
-  const yearS = v.year ? String(v.year) : '';
-  if(terms.some(t=>t===yearS)) return 4;
-  return 5;
-}
-
-function search(q) {
-  const terms = q.toLowerCase().trim().split(/\s+/).filter(Boolean);
-  if(!terms.length) return [];
-  return VIDEOS.filter(v=>{
-    const h=`${v.title} ${v.category} ${v.year||''} ${v.objects||''}`.toLowerCase();
-    const locationH = (v.location||'').toLowerCase();
-    return terms.every(t=>h.includes(t) || locationMatches(locationH, t));
-  }).sort((a,b)=>matchRank(a,terms)-matchRank(b,terms));
-}
-
-// Structured "why it matched" tags shown below a search result card — one tag per
-// field type that contributed a term the title text *doesn't already show*, so a
-// card never states the obvious. Several can appear together (e.g. a query that
-// hits both the location and an object tag).
-function matchTags(v, q) {
-  const terms = q.toLowerCase().trim().split(/\s+/).filter(Boolean);
-  const titleH = v.title.toLowerCase();
-  const nonObvious = terms.filter(t=>!titleH.includes(t));
-  if(!nonObvious.length) return [];
-
-  const tags = [];
-  const locationH = (v.location||'').toLowerCase();
-  if(v.location && nonObvious.some(t=>locationMatches(locationH, t))) {
-    tags.push({type:'LOCATION', text:v.location});
-  }
-  const categoryH = (v.category||'').toLowerCase();
-  if(v.category && nonObvious.some(t=>categoryH.includes(t))) {
-    tags.push({type:'CATEGORY', text:v.category});
-  }
-  const matchedObjects = (v.objects||'').split(',').map(t=>t.trim())
-    .filter(t=>nonObvious.some(term=>t.toLowerCase().includes(term)))
-    .map(t=>t.replace(/_/g,' '));
-  matchedObjects.slice(0,3).forEach(text=>tags.push({type:'TAG', text}));
-  const yearS = v.year ? String(v.year) : '';
-  if(yearS && nonObvious.some(t=>t===yearS)) tags.push({type:'DATE', text:yearS});
-
-  return tags;
-}
-
-// ── FORMAT TITLE ──
-// Main_title is already clean — just strip the year (shown in the badge) to avoid duplication.
-function fmtTitle(raw, year) {
-  let s = raw.replace(/_/g, ' ').trim();
-  if (year) s = s.replace(new RegExp('\\b' + year + '\\b', 'g'), '').trim();
-  s = s.replace(/^[\s,\-·]+|[\s,\-·]+$/g, '').trim();
-  return s.toUpperCase() || raw.replace(/_/g,' ').trim().toUpperCase();
-}
-
-// ── VIDEO CARD ──
-function vcard(v, playlist, idx, tags) {
-  const el = document.createElement('div');
-  el.className = 'vcard';
-  el.onclick = () => openLB(playlist, idx);
-  const color = CC[v.category]||'#151f2e';
-  const event = fmtTitle(v.title, v.year);
-  el.innerHTML = `
-    <div class="vcard-photo">
-      <div class="vcard-tint" style="background:${color}"></div>
-      <img class="vcard-img" src="${v.thumb}"
-        onerror="this.src='https://img.youtube.com/vi/${v.video_id}/sddefault.jpg';this.onerror=null"
-        loading="lazy" alt="">
-      <div class="vcard-grad"></div>
-      ${v._recReason ? `<div class="vcard-rec-tag">● ${v._recReason}</div>` : ''}
-      <div class="vcard-body">
-        ${v.year ? `<div class="vcard-year">${v.year}</div>` : ''}
-        <div class="vcard-title">${event}</div>
-      </div>
-    </div>
-    <div class="vcard-lbl">${v.year ? v.year + ' · ' : ''}${event}</div>
-    ${tags && tags.length ? `<div class="vcard-tags">${tags.map(t=>`<span class="vcard-tag"><b>${t.type}</b>${t.text.toUpperCase()}</span>`).join('')}</div>` : ''}`;
-  return el;
-}
-
-// 15% upside-down, 10% rotated left, 10% rotated right, 65% normal jitter
-function randomTapeAngle() {
-  const r = Math.random();
-  const j = (Math.random() - 0.5) * 22;
-  if (r < 0.15) return 180 + j;
-  if (r < 0.25) return  90 + j;
-  if (r < 0.35) return -90 + j;
-  return (Math.random() - 0.5) * 38;
-}
-
-// ── PHOTO PILE — dense floor, every pixel covered ──
-function buildCollage() {
-  const c  = document.getElementById('collage');
-  const W  = window.innerWidth;
-  const H  = window.innerHeight;
-  const PW = 338, PH = 253;
-  const step = 220; // tight overlap so no gaps
-
-  let pool = [...VIDEOS].sort(() => Math.random() - 0.5);
-  let pi   = 0;
-
-  for (let y = -PH; y < H + PH; y += step) {
-    for (let x = -PW; x < W + PW; x += step) {
-      const v   = pool[pi % pool.length]; pi++;
-      const img = document.createElement('img');
-      img.className = 'pile-photo';
-      img.src = v.thumb;
-      img.loading = 'lazy';
-      img.alt = '';
-      img.onerror = function(){ this.style.display='none'; };
-
-      const jx  = x + (Math.random() - 0.5) * 55;
-      const jy  = y + (Math.random() - 0.5) * 45;
-      const rot = randomTapeAngle();
-
-      img.style.cssText = `left:${jx}px;top:${jy}px;z-index:${pi};--r:${rot}deg`;
-      c.appendChild(img);
-    }
-  }
-}
-
-// ── CONTINUOUS FALLING — Z-axis drop (tiny → full, like falling toward the camera) ──
-let leafZ = 50000;
-function startLeafFall() {
-  const c = document.getElementById('collage');
-
-  function dropOne() {
-    const W    = window.innerWidth;
-    const H    = window.innerHeight;
-    const v    = VIDEOS[Math.floor(Math.random() * VIDEOS.length)];
-    const leaf = document.createElement('img');
-    leaf.className = 'falling-leaf';
-    leaf.alt = '';
-    leaf.onerror = function(){ this.remove(); };
-
-    const x    = (Math.random() - 0.1) * W;
-    const y    = (Math.random() - 0.05) * H;
-    const rot  = randomTapeAngle();
-    const dur  = 1.8 + Math.random() * 1.2; // 1.8–3.0s — swift but smooth
-    const z    = leafZ++;
-    const sx   = (Math.random() < 0.5 ? -1 : 1) * (30 + Math.random() * 50); // ±30–80px sway
-    const tilt = 6 + Math.random() * 9; // 6–15deg in-flight tilt wobble
-
-    leaf.style.cssText = `left:${x}px;top:${y}px;z-index:${z};--r:${rot}deg;--dur:${dur}s;--sx:${sx}px;--tilt:${tilt}deg`;
-    c.appendChild(leaf);
-    leaf.src = v.thumb; // set src after append so opacity:0 CSS is active before loading starts
-
-    // After landing: freeze as part of the pile
-    setTimeout(() => {
-      leaf.classList.remove('falling-leaf');
-      leaf.classList.add('pile-photo');
-      leaf.style.cssText = `left:${x}px;top:${y}px;z-index:${z};--r:${rot}deg;--sx:0px;--tilt:0deg`;
-    }, dur * 1000 + 50);
-
-    setTimeout(dropOne, 5000);
-  }
-
-  dropOne();
-}
-
-// ── RENDER HOME ──
-function renderHome() {
-  const s = season();
-  const grid = document.getElementById('homeGrid');
-  grid.innerHTML='';
-  recommended(6).forEach((v,i,a)=>grid.appendChild(vcard(v,a,i)));
-}
-
-// ── RENDER CATS ──
-function renderCats() {
-  const videoThumbs = {};
-  for(const v of VIDEOS) if(!videoThumbs[v.category]) videoThumbs[v.category]=v.thumb;
-  const grid = document.getElementById('cgrid');
-  grid.innerHTML='';
-  for(const cat of CATEGORIES) {
-    const tile = document.createElement('div');
-    tile.className='ctile';
-    tile.onclick=()=>openCat(cat);
-    const color = CC[cat]||'#151f2e';
-    const imgSrc = CAT_THUMBS[cat] || videoThumbs[cat] || '';
-    tile.innerHTML=`
-      <div class="ctile-photo">
-        <div class="ctile-color" style="background:${color}"></div>
-        ${imgSrc?`<img class="ctile-img" src="${imgSrc}" loading="lazy" decoding="async" alt="" onerror="this.style.display='none'">`:''}
-      </div>
-      <div class="ctile-lbl">${cat.toUpperCase()}</div>`;
-    grid.appendChild(tile);
-  }
-}
-
-// ── OPEN CATEGORY ──
-function openCat(cat) {
-  const vids = VIDEOS.filter(v=>v.category===cat)
-                     .sort((a,b)=>(a.year||9999)-(b.year||9999));
-  document.getElementById('detailName').textContent = cat.toUpperCase();
-  document.getElementById('detailCnt').textContent = `${vids.length} VIDEOS`;
-  const grid = document.getElementById('detailGrid');
-  grid.innerHTML='';
-  vids.forEach((v, i, a) => {
-    const card = vcard(v, a, i);
-    card.style.setProperty('--stagger', `${Math.min(i * 38, 750)}ms`);
-    card.classList.add('deal-in');
-    grid.appendChild(card);
-  });
-  requestAnimationFrame(() => { nav('detail'); window.scrollTo(0,0); });
-}
-function playRandom() {
-  const v = VIDEOS[Math.floor(Math.random() * VIDEOS.length)];
-  window.open(`https://www.youtube.com/watch?v=${v.video_id}`, '_blank');
-}
-document.getElementById('backBtn').onclick=()=>nav('cats');
-
-// ── TIMELINE ──
-let tlInited = false;
-const tlVidsByYear = {};
-function renderTimeline(catFilter, animate) {
-  const filtered = (!catFilter || catFilter === 'all')
-    ? VIDEOS
-    : VIDEOS.filter(v => v.category === catFilter);
-  const byYear = {};
-  filtered.forEach(v => {
-    const y = String(v.year || 'UNKNOWN');
-    (byYear[y] = byYear[y]||[]).push(v);
-  });
-  Object.keys(tlVidsByYear).forEach(k => delete tlVidsByYear[k]);
-  Object.assign(tlVidsByYear, byYear);
-  const years = Object.keys(byYear).filter(y=>y!=='UNKNOWN').sort((a,b)=>a-b);
-  if(byYear['UNKNOWN']) years.push('UNKNOWN');
-  const body = document.getElementById('tl-body');
-  body.innerHTML = '';
-  years.forEach(yr => {
-    const vids = byYear[yr];
-    const sec = document.createElement('div');
-    sec.className = 'tl-section';
-    sec.id = `tl-yr-${yr}`;
-    const thumbsHtml = vids.slice(0, 10).map((v, i) => `
-      <div class="tl-thumb" onclick="openLB(tlVidsByYear['${yr}'],${i})">
-        <div class="tl-thumb-img">
-          <img src="${v.thumb}" loading="lazy" onerror="this.style.display='none'">
-        </div>
-        <div class="tl-thumb-lbl">${v.title.replace(/_/g,' ')}</div>
-      </div>`).join('');
-    const moreHtml = vids.length > 10
-      ? `<div class="tl-more-tile" onclick="expandTlYear('${yr}',this)">+${vids.length - 10}<br><span>MORE</span></div>`
-      : '';
-    sec.innerHTML = `
-      <div class="tl-year-num">${yr}</div>
-      <div class="tl-year-count">${vids.length} VIDEO${vids.length!==1?'S':''}</div>
-      <div class="tl-strip">${thumbsHtml}${moreHtml}</div>`;
-    body.appendChild(sec);
-  });
-  if(animate) {
-    const tlObs = new IntersectionObserver((entries) => {
-      entries.forEach(e => {
-        if(e.isIntersecting) { e.target.classList.add('tl-visible'); tlObs.unobserve(e.target); }
-      });
-    }, { threshold: 0.06, rootMargin: '0px 0px -40px 0px' });
-    body.querySelectorAll('.tl-section').forEach((s, i) => {
-      if(i < 2) requestAnimationFrame(() => s.classList.add('tl-visible'));
-      else tlObs.observe(s);
-    });
-  } else {
-    body.querySelectorAll('.tl-section').forEach(s => s.classList.add('tl-visible'));
-  }
-}
-function buildTimeline() {
-  if(!tlInited) {
-    tlInited = true;
-    const sel = document.getElementById('tl-cat-filter');
-    CATEGORIES.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c; opt.textContent = c.toUpperCase();
-      sel.appendChild(opt);
-    });
-    sel.addEventListener('change', () => renderTimeline(sel.value, false));
-  }
-  renderTimeline(document.getElementById('tl-cat-filter').value, true);
-}
-function expandTlYear(yr, tile) {
-  const vids = tlVidsByYear[yr];
-  if(!vids) return;
-  const extra = vids.slice(10).map((v, i) => {
-    const idx = 10 + i;
-    return `<div class="tl-thumb" onclick="openLB(tlVidsByYear['${yr}'],${idx})">
-      <div class="tl-thumb-img"><img src="${v.thumb}" loading="lazy" onerror="this.style.display='none'"></div>
-      <div class="tl-thumb-lbl">${v.title.replace(/_/g,' ')}</div>
-    </div>`;
-  }).join('');
-  tile.insertAdjacentHTML('beforebegin', extra);
-  tile.remove();
-}
-
-// ── VHS SHELF ──
-const VHS_STYLES = [
-  // Classic black header with chrome sub-stripe
-  { brand:'MAXELL',    sub:'HGX',    top:'#111111', topC:'#ffffff', accent:'#aaaaaa', labelBg:'#f5f2ea' },
-  // Yellow gold — Kodak
-  { brand:'KODAK',     sub:'GOLD',   top:'#e0aa00', topC:'#000000', accent:null,       labelBg:'#fffdf0' },
-  // Bold red — Sony
-  { brand:'SONY',      sub:'HI·G',   top:'#cc1111', topC:'#ffffff', accent:'#ff3333', labelBg:'#f5f1e8' },
-  // Black with orange — TDK
-  { brand:'TDK',       sub:'E·HG',   top:'#1a1a1a', topC:'#ff6600', accent:'#cc4400', labelBg:'#f5f1e8' },
-  // Deep navy — JVC
-  { brand:'JVC',       sub:'EX',     top:'#001d55', topC:'#ffffff', accent:'#0050aa', labelBg:'#eef2ff' },
-  // Black with neon blue stripe — Memorex
-  { brand:'MEMOREX',   sub:'HI·FI',  top:'#111111', topC:'#44aaff', accent:'#1155dd', labelBg:'#eef3ff' },
-  // Red + navy tricolor stripe — RCA
-  { brand:'RCA',       sub:'VHS',    top:'#cc1111', topC:'#ffffff', accent:'#002288', labelBg:'#f0f5ff' },
-  // Orange — Scotch 3M
-  { brand:'SCOTCH',    sub:'T·120',  top:'#d04d00', topC:'#ffffff', accent:null,       labelBg:'#fff7f0' },
-  // Dark teal — Panasonic
-  { brand:'PANASONIC', sub:'HI·FI',  top:'#003a50', topC:'#ffffff', accent:'#005f7a', labelBg:'#eef8ff' },
-  // Warm copper — Ampex
-  { brand:'AMPEX',     sub:'VHS',    top:'#5c3000', topC:'#ffcc66', accent:null,       labelBg:'#fff8e5' },
-  // Forest green — Fuji
-  { brand:'FUJI',      sub:'HQ',     top:'#004d24', topC:'#aaffc8', accent:null,       labelBg:'#edfff0' },
-  // Blue + red stripe — BASF European
-  { brand:'BASF',      sub:'SUPER',  top:'#001d88', topC:'#ffffff', accent:'#cc0000', labelBg:'#eef0ff' },
-  // Silver metallic — Agfa
-  { brand:'AGFA',      sub:'HD',     top:'#4a4a4a', topC:'#ffffff', accent:'#888888', labelBg:'#f8f8f6' },
-  // Royal blue — Philips
-  { brand:'PHILIPS',   sub:'HQ',     top:'#0044aa', topC:'#ffffff', accent:'#0066cc', labelBg:'#eef4ff' },
-];
-function _hash(s) {
-  let h = 5381;
-  for (let i = 0; i < s.length; i++) h = (h * 33 ^ s.charCodeAt(i)) >>> 0;
-  return h;
-}
-function drawShelfBg() {
-  const v = VIDEOS[Math.floor(Math.random() * VIDEOS.length)];
-  document.getElementById('shelf-bg').style.backgroundImage = `url('${v.thumb}')`;
-}
-
-let shelfInited = false;
-function buildShelf() {
-  if (shelfInited) return;
-  shelfInited = true;
-  const body = document.getElementById('shelfBody');
-  CATEGORIES.forEach(cat => {
-    const vids = VIDEOS.filter(v => v.category === cat)
-                       .sort((a, b) => (a.year||9999) - (b.year||9999));
-    if (!vids.length) return;
-
-    const section = document.createElement('div');
-    section.className = 'shelf-section';
-
-    const sign = document.createElement('div');
-    sign.className = 'shelf-cat-sign';
-    const color = CC[cat] || '#333';
-    sign.style.setProperty('--sign-color', color);
-    sign.innerHTML = `<span class="shelf-sign-name">${cat.toUpperCase()}</span><span class="shelf-sign-count">${vids.length} TITLES</span>`;
-
-    const row = document.createElement('div');
-    row.className = 'shelf-row';
-
-    const plank = document.createElement('div');
-    plank.className = 'shelf-plank';
-
-    vids.forEach((v, i) => {
-      const sty  = VHS_STYLES[_hash(v.video_id) % VHS_STYLES.length];
-      const tape = document.createElement('div');
-      tape.className = 'vhs-tape';
-
-      // Slight natural tilt — no overlap
-      const baseTilt = ((_hash(v.video_id + 'tilt') % 7) - 3);
-      tape.style.setProperty('--tilt', `${baseTilt}deg`);
-      tape.style.transform = `rotate(${baseTilt}deg)`;
-      tape.style.transformOrigin = 'bottom center';
-      tape.dataset.baseTilt = baseTilt;
-
-      tape.onclick = () => {
-        tape.style.transition = 'transform 0.22s cubic-bezier(0.4,0,1,1), opacity 0.22s';
-        tape.style.transform  = 'translateY(-210px) rotate(-3deg) scale(0.9)';
-        tape.style.opacity    = '0';
-        setTimeout(() => {
-          openLB(vids, i);
-          // Snap back silently while lightbox is showing
-          requestAnimationFrame(() => {
-            tape.style.transition = 'none';
-            tape.style.transform  = `rotate(${tape.dataset.baseTilt || 0}deg)`;
-            tape.style.opacity    = '';
-            requestAnimationFrame(() => { tape.style.transition = ''; });
-          });
-        }, 230);
-      };
-      const ttl = fmtTitle(v.title, v.year);
-      const accentBar = sty.accent
-        ? `<div style="height:4px;background:${sty.accent};flex-shrink:0"></div>`
-        : '';
-      tape.innerHTML = `
-        <div class="tape-top-band" style="background:${sty.top}">
-          <span class="tape-brand" style="color:${sty.topC}">${sty.brand}</span>
-          ${sty.sub ? `<span class="tape-brand-sub" style="color:${sty.topC};opacity:0.7">${sty.sub}</span>` : ''}
-        </div>
-        ${accentBar}
-        <div class="tape-label-area" style="background:${sty.labelBg}">
-          <div class="tape-label-inner">
-            <span class="tape-title-vert">${ttl}</span>
-          </div>
-        </div>
-        <div class="tape-bot-band">
-          <span class="tape-year-bot">${v.year || ''}</span>
-        </div>`;
-      row.appendChild(tape);
-    });
-
-    // Add 1-2 horizontal stacked tapes per row
-    const numHoriz = 1 + (_hash(cat + 'hn') % 2);
-    for (let h = 0; h < numHoriz; h++) {
-      const hIdx = _hash(cat + 'hi' + h) % vids.length;
-      const hVid = vids[hIdx];
-      const hSty = VHS_STYLES[_hash(hVid.video_id + 'hs') % VHS_STYLES.length];
-      const horiz = document.createElement('div');
-      horiz.className = 'tape-horiz';
-      const bottomPx = h * 64 + (_hash(cat + 'hb' + h) % 20);
-      const leftPct  = h === 0
-        ? 5  + (_hash(cat + 'hl0') % 28)
-        : 48 + (_hash(cat + 'hl1') % 28);
-      const widthPx = 130 + (_hash(hVid.video_id + 'hw') % 60);
-      const tiltDeg = (_hash(hVid.video_id + 'hd') % 7) - 3;
-      horiz.style.cssText = `bottom:${bottomPx}px;left:${leftPct}%;width:${widthPx}px;transform:rotate(${tiltDeg}deg);`;
-      horiz.innerHTML = `
-        <div class="tape-horiz-brand" style="background:${hSty.top}">
-          <span style="color:${hSty.topC};writing-mode:vertical-rl;transform:rotate(180deg)">${hSty.brand}</span>
-        </div>
-        <div class="tape-horiz-label" style="background:${hSty.labelBg}">
-          <span>${fmtTitle(hVid.title, hVid.year)}</span>
-        </div>
-        <div class="tape-horiz-year">
-          <span>${hVid.year || ''}</span>
-        </div>`;
-      horiz.onclick = () => openLB(vids, hIdx);
-      row.appendChild(horiz);
-    }
-
-    section.appendChild(sign);
-    section.appendChild(row);
-    section.appendChild(plank);
-    body.appendChild(section);
-  });
-}
-
-// ── MAP ──
-let mapInited = false;
-let glMap = null;
-function initMap() {
-  if (mapInited) {
-    // Re-entering the Places page after the container's size changed (e.g. a
-    // window resize or rotation while on another page) — without this the
-    // canvas stays locked to whatever size it had at first init, leaving the
-    // rest of the container blank.
-    if (glMap) requestAnimationFrame(() => glMap.resize());
-    return;
-  }
-  mapInited = true;
-  requestAnimationFrame(() => {
-    window._map = glMap = new maplibregl.Map({
-      container: 'map-container',
-      style: 'https://tiles.openfreemap.org/styles/dark',
-      center: [-73.411011, 40.821365],
-      zoom: 9.5,
-      attributionControl: false
-    });
-
-    // Keeps the canvas matched to its container at all times — covers the
-    // cold-load case where web fonts/layout settle a moment after the map
-    // reads its initial size, plus any later window resize/rotation while
-    // this page is open. Without it the canvas can get stuck rendering at a
-    // stale size with the rest of the container left blank.
-    if (window.ResizeObserver) {
-      new ResizeObserver(() => { if (glMap) glMap.resize(); updateMapOverlayVars(); }).observe(document.getElementById('map-container'));
-      window.addEventListener('resize', updateMapOverlayVars);
-      window.addEventListener('orientationchange', updateMapOverlayVars);
-      updateMapOverlayVars();
-    }
-
-    glMap.on('load', () => {
-      // Group videos by lat/lng
-      const groups = {};
-      VIDEOS.forEach(v => {
-        if (v.lat == null || v.lng == null) return;
-        const key = `${v.lat.toFixed(4)},${v.lng.toFixed(4)}`;
-        if (!groups[key]) groups[key] = { lat: v.lat, lng: v.lng, location: v.location, videos: [] };
-        groups[key].videos.push(v);
-      });
-
-      mapGroups = groups;
-      Object.values(groups).forEach(g => {
-        const count = g.videos.length;
-        const el = document.createElement('button');
-        el.type = 'button';
-        el.setAttribute('aria-label', `${getMapGroupLabel(g)} — ${count} video${count === 1 ? '' : 's'}`);
-        el.title = getMapGroupLabel(g);
-        el.style.cssText = `
-          display:flex;align-items:center;justify-content:center;
-          width:${count > 1 ? 28 : 10}px;height:${count > 1 ? 28 : 10}px;
-          background:rgba(242,239,232,${count > 1 ? '0.15' : '0.9'});
-          border-radius:50%;
-          border:2px solid rgba(242,239,232,${count > 1 ? '0.6' : '0.4'});
-          box-shadow:0 0 8px rgba(242,239,232,0.4);
-          font-family:VCR,monospace;font-size:9px;
-          color:rgba(242,239,232,0.9);
-          cursor:pointer;
-          padding:0;
-        `;
-        if (count > 1) el.textContent = count;
-        el.addEventListener('click', e => {
-          e.preventDefault();
-          e.stopPropagation();
-          flyToMapGroup(g, true);
-        });
-
-        const marker = new maplibregl.Marker({ element: el })
-          .setLngLat([g.lng, g.lat])
-          .addTo(glMap);
-        g.marker = marker;
-      });
-      renderTopPlaces(groups);
-    });
-  });
-}
-
-// ── TOP PLACES + LOCATION PANEL ──
-let mapGroups = {};
-// Raw location strings are full street addresses ("10 Meath Ave, Huntington,
-// NY 11743") — too long for compact labels, so this reduces to "city, state".
-function shortLocation(loc) {
-  const parts = String(loc || '').split(',').map(s => s.trim()).filter(Boolean);
-  if (parts.length < 2) return loc || '';
-  const city = parts[parts.length - 2];
-  const state = (parts[parts.length - 1].split(/\s+/)[0] || '').replace(/\d+/g, '');
-  return state ? `${city}, ${state}` : city;
-}
-function cleanMapText(value) {
-  return String(value || '').replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
-}
-function getVideoSpecificPlaceName(v) {
-  const specificFields = ['placeName', 'place_name', 'place', 'venue', 'name'];
-  for (const field of specificFields) {
-    const val = cleanMapText(v && v[field]);
-    if (val) return val;
-  }
-  return '';
-}
-function getVideoPlaceName(v) {
-  const specific = getVideoSpecificPlaceName(v);
-  if (specific) return specific;
-  const fallbackFields = ['address', 'location'];
-  for (const field of fallbackFields) {
-    const val = cleanMapText(v && v[field]);
-    if (val) return val;
-  }
-  return 'Unknown place';
-}
-function mostCommonMapValue(values) {
-  const counts = new Map();
-  values.map(cleanMapText).filter(Boolean).forEach(value => {
-    const key = value.toLowerCase();
-    const current = counts.get(key) || { value, count: 0 };
-    current.count += 1;
-    counts.set(key, current);
-  });
-  return [...counts.values()].sort((a, b) => b.count - a.count)[0]?.value || '';
-}
-function getMapGroupLabel(g) {
-  const specificNames = (g.videos || []).map(getVideoSpecificPlaceName).filter(Boolean);
-  return mostCommonMapValue(specificNames) || cleanMapText(g.location) || getVideoPlaceName((g.videos || [])[0]) || 'Unknown place';
-}
-function getMapGroupSubtitle(g) {
-  const title = cleanMapText(getMapGroupLabel(g)).toLowerCase();
-  const addresses = (g.videos || []).map(v => v.address || v.location).filter(Boolean);
-  const broader = mostCommonMapValue(addresses) || cleanMapText(g.location);
-  if (!broader || broader.toLowerCase() === title) return '';
-  return broader;
-}
-function renderTopPlaces(groups) {
-  const list = document.getElementById('map-places-list');
-  const tab = document.getElementById('map-places-tab');
-  if (!list || !tab) return;
-  const top = Object.values(groups)
-    .filter(g => g.videos.length >= 5)
-    .sort((a, b) => b.videos.length - a.videos.length);
-  if (!top.length) { tab.style.display = 'none'; return; }
-  tab.style.display = '';
-  tab.querySelector('.map-places-tab-count').textContent = top.length;
-  list.innerHTML = '';
-  top.forEach((g, i) => {
-    const row = document.createElement('button');
-    row.type = 'button';
-    row.className = 'map-place-row';
-    row.onclick = () => flyToPlace(i);
-
-    const text = document.createElement('span');
-    text.className = 'map-place-text';
-    const name = document.createElement('span');
-    name.className = 'map-place-name';
-    name.textContent = getMapGroupLabel(g).toUpperCase();
-    text.appendChild(name);
-    const subtitleText = getMapGroupSubtitle(g);
-    if (subtitleText) {
-      const subtitle = document.createElement('span');
-      subtitle.className = 'map-place-subtitle';
-      subtitle.textContent = shortLocation(subtitleText).toUpperCase();
-      text.appendChild(subtitle);
-    }
-
-    const count = document.createElement('span');
-    count.className = 'map-place-count';
-    count.textContent = g.videos.length;
-    row.append(text, count);
-    list.appendChild(row);
-  });
-  window._topPlaces = top;
-}
-function updateMapOverlayVars() {
-  const mapEl = document.getElementById('map-container');
-  if (!mapEl) return;
-  const r = mapEl.getBoundingClientRect();
-  document.documentElement.style.setProperty('--map-overlay-top', `${Math.max(14, Math.round(r.top + 14))}px`);
-  document.documentElement.style.setProperty('--map-overlay-bottom', `${Math.max(14, Math.round(window.innerHeight - r.bottom + 14))}px`);
-}
-function isMobileMapView() {
-  return window.matchMedia('(max-width: 767px), (pointer: coarse) and (max-width: 1023px)').matches;
-}
-function getMapPanelOffset() {
-  updateMapOverlayVars();
-  const mapEl = document.getElementById('map-container');
-  if (!mapEl) return [0, 0];
-  if (isMobileMapView()) return [0, -Math.round(mapEl.clientHeight * 0.18)];
-  return [-150, 0];
-}
-function flyToMapGroup(g, openPanelAfterMove = true) {
-  if (!g || !glMap) return;
-  document.getElementById('map-places-drawer')?.classList.remove('open');
-  const openPanel = () => openPanelAfterMove && openMapLocationPanel(g);
-  glMap.once('moveend', openPanel);
-  glMap.flyTo({
-    center: [g.lng, g.lat],
-    zoom: isMobileMapView() ? 12.5 : 13,
-    duration: 700,
-    offset: getMapPanelOffset()
-  });
-}
-function flyToPlace(i) {
-  const g = window._topPlaces && window._topPlaces[i];
-  flyToMapGroup(g, true);
-}
-function toggleMapPlacesDrawer() {
-  updateMapOverlayVars();
-  document.getElementById('map-places-drawer')?.classList.toggle('open');
-}
-function renderMapLocationPanel(g) {
-  const titleEl = document.getElementById('map-location-title');
-  const subtitleEl = document.getElementById('map-location-subtitle');
-  const listEl = document.getElementById('map-location-list');
-  if (!titleEl || !subtitleEl || !listEl || !g) return;
-  titleEl.textContent = getMapGroupLabel(g).toUpperCase();
-  const subtitle = getMapGroupSubtitle(g);
-  subtitleEl.textContent = [subtitle, `${g.videos.length} VIDEO${g.videos.length === 1 ? '' : 'S'}`].filter(Boolean).join(' · ').toUpperCase();
-  listEl.innerHTML = '';
-  g.videos.forEach((v, idx) => {
-    const row = document.createElement('button');
-    row.type = 'button';
-    row.className = 'map-location-video-row';
-    row.onclick = () => openLB(g.videos, idx);
-
-    if (v.thumb || v.video_id) {
-      const img = document.createElement('img');
-      img.className = 'map-location-thumb';
-      img.loading = 'lazy';
-      img.alt = '';
-      img.src = v.thumb || `https://img.youtube.com/vi/${v.video_id}/mqdefault.jpg`;
-      if (v.video_id) {
-        img.onerror = () => { img.src = `https://img.youtube.com/vi/${v.video_id}/mqdefault.jpg`; img.onerror = null; };
-      }
-      row.appendChild(img);
-    }
-
-    const main = document.createElement('span');
-    main.className = 'map-location-video-main';
-    const title = document.createElement('span');
-    title.className = 'map-location-video-title';
-    title.textContent = fmtTitle ? fmtTitle(v.title || 'Untitled', v.year) : cleanMapText(v.title || 'Untitled').toUpperCase();
-    const meta = document.createElement('span');
-    meta.className = 'map-location-video-meta';
-    meta.textContent = [v.year, v.category].filter(Boolean).join(' · ').toUpperCase();
-    main.append(title, meta);
-    row.appendChild(main);
-    listEl.appendChild(row);
-  });
-}
-function openMapLocationPanel(g) {
-  updateMapOverlayVars();
-  renderMapLocationPanel(g);
-  document.getElementById('map-location-panel')?.classList.add('open');
-}
-function closeMapLocationPanel() {
-  document.getElementById('map-location-panel')?.classList.remove('open');
-}
-
-// ── LIGHTBOX ──
-let lbList=[], lbIdx=0;
-function vcrStop() {
-  document.getElementById('vcr-tape-title').textContent = '— INSERT TAPE —';
-}
-
-function openLB(list, idx) {
-  const v = list[idx];
-  window.open(`https://www.youtube.com/watch?v=${v.video_id}`, '_blank');
-}
-function drawLB() {
-  const v = lbList[lbIdx];
-  document.getElementById('lb-title').textContent = v.title.replace(/_/g,' ').toUpperCase();
-  document.getElementById('lb-meta').textContent = [v.category, v.year].filter(Boolean).join(' · ');
-  document.getElementById('lb-frame').src = `https://www.youtube.com/embed/${v.video_id}?autoplay=1&rel=0`;
-  document.getElementById('lb-prev').disabled = lbIdx === 0;
-  document.getElementById('lb-next').disabled = lbIdx === lbList.length - 1;
-  document.getElementById('vcr-tape-title').textContent = fmtTitle(v.title, v.year) + (v.year ? '  ' + v.year : '');
-  document.getElementById('lb-bg').style.backgroundImage = `url('${v.thumb}')`;
-}
-
-function closeLB() {
-  document.getElementById('lb').classList.remove('open');
-  document.getElementById('lb-frame').src='';
-  if(!document.getElementById('spot-overlay').classList.contains('open')) {
-    document.body.style.overflow='';
-  }
-  vcrStop();
-}
-document.getElementById('lb-close').onclick = closeLB;
-document.getElementById('lb-prev').onclick = () => { if(lbIdx>0){lbIdx--;drawLB();} };
-document.getElementById('lb-next').onclick = () => { if(lbIdx<lbList.length-1){lbIdx++;drawLB();} };
-
-// Swipe horizontal = prev/next, swipe down = close
-let tx=0, ty=0;
-const fw=document.getElementById('tv-shell');
-fw.addEventListener('touchstart',e=>{tx=e.touches[0].clientX; ty=e.touches[0].clientY;},{passive:true});
-fw.addEventListener('touchend',e=>{
-  const dx=e.changedTouches[0].clientX-tx;
-  const dy=e.changedTouches[0].clientY-ty;
-  if(Math.abs(dy)>90 && dy>0 && Math.abs(dy)>Math.abs(dx)){closeLB();return;}
-  if(Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)){
-    if(dx<0&&lbIdx<lbList.length-1){lbIdx++;drawLB();}
-    if(dx>0&&lbIdx>0){lbIdx--;drawLB();}
-  }
-});
-
-
-// ── MAP SCROLL LOCK ──
-let _mapMoveLock = null;
-function _lockMapTouch() {
-  if (_mapMoveLock) return;
-  _mapMoveLock = e => { if (!e.target.closest('#map-container')) e.preventDefault(); };
-  document.addEventListener('touchmove', _mapMoveLock, { passive: false });
-}
-function _unlockMapTouch() {
-  if (!_mapMoveLock) return;
-  document.removeEventListener('touchmove', _mapMoveLock);
-  _mapMoveLock = null;
-}
-
-// ── NAV ──
-function resetHomeViewport() {
-  if (window.lockViewportHeight) window.lockViewportHeight();
-  window.scrollTo(0, 0);
-  document.documentElement.scrollTop = 0;
-  document.body.scrollTop = 0;
-  // Was hardcoded to #pg-home only — fine if search closes while still on home, but
-  // closeSpot() also runs mid-nav() (tapping a tab while spotlight is open closes it
-  // as part of switching pages), so by the time its delayed retries fire, whichever
-  // page you navigated to is the one left fighting the keyboard's residual viewport
-  // pan. Reset whatever's actually active instead.
-  const activePage = document.querySelector('.page.active');
-  if (activePage) activePage.scrollTop = 0;
-  syncActivePageHeader();
-}
-window.resetHomeViewport = resetHomeViewport;
-
-const HASH_TO_PAGE = {
-  home: 'home',
-  browse: 'cats',
-  years: 'timeline',
-  places: 'map',
-  search: 'search',
-  shelf: 'shelf',
-  arcade: 'lobby'
-};
-const PAGE_TO_HASH = {
-  home: 'home',
-  cats: 'browse',
-  timeline: 'years',
-  map: 'places',
-  search: 'search',
-  shelf: 'shelf',
-  lobby: 'arcade'
-};
-let suppressHashNav = false;
-
-function pageFromHash(hash) {
-  const key = String(hash || '').replace(/^#/, '').trim().toLowerCase();
-  return HASH_TO_PAGE[key] || 'home';
-}
-
-function syncHashForPage(p) {
-  const key = PAGE_TO_HASH[p];
-  if (!key) return;
-  const nextHash = `#${key}`;
-  if (window.location.hash === nextHash) return;
-  suppressHashNav = true;
-  window.location.hash = nextHash;
-  setTimeout(() => { suppressHashNav = false; }, 0);
-}
-
-function handleHashRoute() {
-  if (suppressHashNav) return;
-  nav(pageFromHash(window.location.hash), { skipHash: true });
-}
-
-function nav(p, opts = {}) {
-  if (!document.getElementById(`pg-${p}`)) p = 'home';
-  if (!opts.skipHash) syncHashForPage(p);
-  const targetPageId = `pg-${p}`;
-  const tabKey = p === 'detail' ? 'cats' : p;
-  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('on',el.dataset.p===tabKey));
-  document.querySelectorAll('.page-nav-btn[data-page]').forEach(el=>el.classList.toggle('active', el.dataset.page===tabKey));
-  document.getElementById(targetPageId)?.classList.add('active');
-  window.scrollTo(0,0);
-  if (document.activeElement && typeof document.activeElement.blur === 'function') {
-    const active = document.activeElement;
-    if (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) active.blur();
-  }
-  if (window.visualViewport && typeof window.visualViewport.scrollTo === 'function') {
-    window.visualViewport.scrollTo(0, 0);
-  }
-  if (window.lockViewportHeight) window.lockViewportHeight();
-  document.getElementById(targetPageId)?.scrollTo(0,0);
-  const spot = document.getElementById('spot-overlay');
-  if (spot && spot.classList.contains('open') && p !== 'home') closeSpot();
-  const recDrawer = document.getElementById('rec-drawer');
-  if (recDrawer) recDrawer.classList.remove('open', 'is-shown');
-  const memoriesEl = document.getElementById('memories');
-  if (memoriesEl) memoriesEl.classList.remove('open');
-  document.getElementById('pg-home')?.classList.remove('rec-open');
-  document.body.classList.remove('rec-open');
-  if (p !== 'home') document.body.style.overflow = '';
-  const recBtn = document.getElementById('recBtn');
-  if (recBtn) recBtn.textContent = 'WATCH RECOMMENDED';
-  const onHome   = p === 'home';
-  const onCats   = p === 'cats';
-  const onDetail = p === 'detail';
-  const onTL     = p === 'timeline';
-  const onMap    = p === 'map';
-  const onShelf  = p === 'shelf';
-  const onSearch = p === 'search';
-  const onLobby     = p === 'lobby';
-  const onCharSelect = p === 'charselect';
-  const onWhack  = p === 'whack';
-  const onMatch  = p === 'match';
-  const onSpace  = p === 'space';
-  const isArcade = onLobby || onCharSelect || onWhack || onMatch || onSpace;
-  const showCollage = onHome || onCats || onDetail || onTL || onMap;
-  const hideGlobalHeader = showCollage || onCats || onDetail || onTL || onMap || onSearch || onShelf || isArcade;
-  document.getElementById('collage').classList.toggle('hidden', !showCollage);
-  document.getElementById('hdr').style.display = hideGlobalHeader ? 'none' : 'flex';
-  document.body.classList.toggle('on-home', onHome);
-  document.body.classList.toggle('on-detail', onDetail);
-  document.body.classList.toggle('on-timeline', onTL);
-  document.body.classList.toggle('on-map', onMap);
-  document.body.classList.toggle('on-search', onSearch);
-  document.body.classList.toggle('on-lobby', onLobby);
-  document.body.classList.toggle('on-char', onCharSelect);
-  document.body.classList.toggle('on-whack', onWhack);
-  document.body.classList.toggle('on-match', onMatch);
-  document.body.classList.toggle('on-space', onSpace);
-  document.documentElement.classList.toggle('arcade-root', isArcade);
-  if (onMap) {
-    _lockMapTouch();
-  } else {
-    closeMapLocationPanel?.();
-    document.getElementById('map-places-drawer')?.classList.remove('open');
-    _unlockMapTouch();
-  }
-  if(onTL)    buildTimeline();
-  if(onMap)   initMap();
-  if(onShelf) { buildShelf(); drawShelfBg(); }
-  // Arcade music: start/stop BEFORE any early returns
-  if (isArcade && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
-  if (!isArcade) ArcadeMusic.stop();
-  if (onLobby || onCharSelect) ArcadeMusic.unduck();
-  if (onWhack || onMatch || onSpace) ArcadeMusic.duck();
-
-  if(onLobby) {
-    // Show char select on every fresh page load (session flag, not localStorage)
-    if (!window._arcadeSessionStarted) {
-      window._arcadeSessionStarted = true;
-      if (typeof openCharSelect === 'function') { openCharSelect('lobby'); return; }
-    }
-    if(typeof initArcadeFloat==='function') initArcadeFloat();
-    if(typeof drawPixelIcons==='function') drawPixelIcons();
-    if(typeof initCarousel==='function') initCarousel();
-  }
-  if(onWhack) initWhack();
-  if(onMatch) initMatch();
-  if(onSpace) initSpace();
-  if(!onSpace && typeof spacePause === 'function') spacePause();
-  if(!onWhack && typeof whackBack === 'function') whackBack();
-  if(!onMatch && typeof matchBack === 'function') matchBack();
-  // Defensive cleanup: if anything async re-added 'active' to a page that
-  // isn't the current target, strip it. Class-only (no inline styles) so it
-  // can't override CSS the way a stuck inline display would.
-  document.querySelectorAll('.page.active').forEach(el=>{
-    if (el.id !== targetPageId) el.classList.remove('active');
-  });
-  const settleViewport = () => {
-    resetHomeViewport();
-    const target = document.getElementById(targetPageId);
-    if (target) target.scrollTop = 0;
-    if (window._updateBackTopBar) window._updateBackTopBar();
-  };
-  requestAnimationFrame(settleViewport);
-  setTimeout(settleViewport, 120);
-}
-
-function openRecDrawer() {
-  const grid = document.getElementById('recDrawerGrid');
-  grid.innerHTML = '';
-  recommended(8).forEach((v, i, a) => grid.appendChild(vcard(v, a, i)));
-  const drawer = document.getElementById('rec-drawer');
-  drawer.classList.add('is-shown');
-  document.body.style.overflow = 'hidden';
-  void drawer.offsetHeight; // commit display:flex before starting the transition
-  requestAnimationFrame(() => drawer.classList.add('open'));
-  syncActivePageHeader();
-}
-function closeRecDrawer() {
-  const drawer = document.getElementById('rec-drawer');
-  drawer.classList.remove('open');
-  document.body.style.overflow = '';
-  setTimeout(() => drawer.classList.remove('is-shown'), 260);
-  requestAnimationFrame(syncActivePageHeader);
-}
-
-function confirmExitArcade() {
-  if (!confirm('EXIT GAME?\nReturn to arcade menu?')) return;
-  if (typeof SFX !== 'undefined' && typeof SFX.menuSelect === 'function') SFX.menuSelect();
-  nav('lobby');
-}
-
-function setArcadeExitVisible(show) {
-  const btn = document.getElementById('arcade-game-exit');
-  if (!btn) return;
-  btn.style.display = show ? '' : 'none';
-}
-
-function syncActivePageHeader() {
-  document.querySelectorAll('.cats-header').forEach(el => {
-    el.style.transform = '';
-  });
-}
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', syncActivePageHeader);
-  window.visualViewport.addEventListener('scroll', syncActivePageHeader);
-}
-
-function toggleRec() {
-  const useDrawer = window.innerWidth <= 1023 || (window.matchMedia && window.matchMedia('(pointer: coarse) and (max-width: 1400px)').matches);
-  if (useDrawer) {
-    openRecDrawer();
-    return;
-  }
-  const m    = document.getElementById('memories');
-  m.classList.toggle('open');
-  const open = m.classList.contains('open');
-  document.getElementById('pg-home').classList.toggle('rec-open', open);
-  document.body.classList.toggle('rec-open', open);
-  document.getElementById('recBtn').textContent = open ? 'HIDE ▲' : 'WATCH RECOMMENDED';
-}
-
-// ── CATEGORIES TRANSITION ──
-// Keep this boring and stable: the old same-canvas slide fixed/transformed the home
-// and categories pages by full viewport heights. That looked nice when Safari was
-// settled, but it also made the home hero vulnerable to keyboard/address-bar viewport
-// changes. Categories now uses normal navigation plus a tiny fade.
-function prepHomeForNavigation() {
-  const spot = document.getElementById('spot-overlay');
-  if (spot && spot.classList.contains('open')) closeSpot();
-  if(typeof closeHomeDrop === 'function') closeHomeDrop();
-  document.getElementById('memories').classList.remove('open');
-  document.getElementById('rec-drawer').classList.remove('open', 'is-shown');
-  document.getElementById('pg-home').classList.remove('rec-open');
-  document.body.classList.remove('rec-open');
-  document.body.style.overflow = '';
-  const recBtn = document.getElementById('recBtn');
-  if (recBtn) recBtn.textContent = 'WATCH RECOMMENDED';
-  window.scrollTo(0, 0);
-}
-
-function navToCats() {
-  prepHomeForNavigation();
-  nav('cats');
-  const pgCats = document.getElementById('pg-cats');
-  pgCats.scrollTop = 0;
-  pgCats.animate?.([{ opacity: 0.6 }, { opacity: 1 }], { duration: 140, easing: 'ease-out' });
-}
-
-function navHome() {
-  prepHomeForNavigation();
-  nav('home');
-  const pgHome = document.getElementById('pg-home');
-  pgHome.animate?.([{ opacity: 0.7 }, { opacity: 1 }], { duration: 140, easing: 'ease-out' });
-}
-
-window.addEventListener('hashchange', handleHashRoute);
-if (window.location.hash) handleHashRoute();
-
-// ── SPOTLIGHT SEARCH ──
-// #spot-overlay is height:100dvh, which tracks the keyboard/dynamic toolbar natively —
-// no JS measuring visualViewport or pinning inline styles needed. display:none/flex is
-// toggled via .is-shown (independent of the transition, which runs on .open, added a
-// frame later so the display change commits first).
-function openSpot() {
-  const ov = document.getElementById('spot-overlay');
-  document.querySelectorAll('.page-nav-btn[data-page="search"]').forEach(el=>el.classList.add('active'));
-  // Lock body scroll BEFORE focusing — otherwise iOS can scroll the underlying
-  // home page into a weird position while bringing the focused input into view.
-  document.body.style.overflow = 'hidden';
-  ov.classList.add('is-shown');
-  ov.scrollTop = 0;
-  document.getElementById('spotQ').value = '';
-  document.getElementById('spot-results').innerHTML = '';
-  document.getElementById('spot-meta').textContent = '';
-  void ov.offsetHeight; // commit display:flex before starting the transition
-  requestAnimationFrame(() => ov.classList.add('open'));
-  // Mobile only auto-opens the keyboard if focus() runs synchronously in the tap
-  // handler that opened this — a setTimeout-deferred focus (even a short one) is too late.
-  document.getElementById('spotQ').focus();
-}
-function closeSpot() {
-  document.getElementById('spotQ').blur();
-  document.querySelectorAll('.page-nav-btn[data-page="search"]').forEach(el=>el.classList.remove('active'));
-  const ov = document.getElementById('spot-overlay');
-  ov.classList.remove('open');
-  document.body.style.overflow = '';
-  // Wait for the opacity/transform transition (.25s, see #spot-overlay CSS) before
-  // actually removing it from layout, so it doesn't just vanish mid-animation.
-  setTimeout(() => ov.classList.remove('is-shown'), 260);
-  // iOS can still pan the page slightly to keep a focused input visible above the
-  // keyboard, independent of anything this overlay does — a single delayed re-check
-  // covers that without the repeated polling the old implementation needed.
-  resetHomeViewport();
-  if (window._updateBackTopBar) window._updateBackTopBar();
-  setTimeout(() => {
-    resetHomeViewport();
-    if (window._updateBackTopBar) window._updateBackTopBar();
-  }, 350);
-}
-// Backdrop tap: on mobile just close keyboard; on desktop close overlay
-document.getElementById('spot-overlay').addEventListener('click', e => {
-  if(e.target === document.getElementById('spot-overlay')) {
-    if(window.innerWidth <= 1023) {
-      document.getElementById('spotQ').blur();
-    } else {
-      closeSpot();
-    }
-  }
-});
-document.getElementById('spotQ').addEventListener('input', e => {
-  const q = e.target.value;
-  if (q.trim().toLowerCase() === 'www') {
-    closeSpot();
-    nav('lobby');
-    return;
-  }
-  const meta = document.getElementById('spot-meta');
-  const results = document.getElementById('spot-results');
-  if(!q.trim()) { results.innerHTML = ''; meta.textContent = ''; return; }
-  const vids = search(q).slice(0, 24);
-  meta.textContent = vids.length ? `${vids.length} RESULT${vids.length!==1?'S':''}` : 'NO RESULTS';
-  results.innerHTML = '';
-  const g = document.createElement('div');
-  g.className = 'vgrid';
-  vids.forEach((v,i,a) => g.appendChild(vcard(v,a,i,matchTags(v,q))));
-  results.appendChild(g);
-});
-document.addEventListener('keydown', e => { if(e.key === 'Escape') closeSpot(); });
-
-// ── SEARCH WIRING ──
-const srchQ = document.getElementById('srchQ');
-
-let timer=null;
-srchQ.addEventListener('input',()=>{
-  clearTimeout(timer);
-  timer=setTimeout(()=>doSearch(srchQ.value),180);
-});
-document.getElementById('srchClear').onclick=()=>{
-  srchQ.value=''; doSearch(''); srchQ.focus();
-};
-
-function doSearch(q) {
-  if (q.trim().toLowerCase() === 'www') { nav('lobby'); return; }
-  const meta=document.getElementById('srchMeta');
-  const grid=document.getElementById('srchGrid');
-  const noRes=document.getElementById('noRes');
-  if(!q.trim()){
-    grid.innerHTML=''; noRes.style.display='none';
-    meta.textContent=`TYPE TO SEARCH ${VIDEOS.length} VIDEOS`;
-    return;
-  }
-  const res=search(q);
-  meta.textContent=`${res.length} RESULT${res.length!==1?'S':''} FOR "${q.toUpperCase()}"`;
-  grid.innerHTML='';
-  noRes.style.display=res.length?'none':'block';
-  res.forEach((v,i,a)=>grid.appendChild(vcard(v,a,i,matchTags(v,q))));
-}
-
-// ── HOME SEARCH (submit to show results) ──
-(function() {
-  const homeQ    = document.getElementById('homeQ');
-  const clearBtn = document.getElementById('homeQClear');
-  const drop     = document.getElementById('home-drop');
-  const dropMeta = document.getElementById('home-drop-meta');
-  const dropGrid = document.getElementById('home-drop-grid');
-  const homeWrap = document.getElementById('homeSearchWrap');
-
-  // On mobile/tablet: tapping the search bar opens spotlight instead.
-  // Use pointer-coarse detection so tablets in landscape still get the overlay,
-  // preventing the native keyboard from shifting the underlying hero layout.
-  homeWrap.addEventListener('touchstart', function(e) {
-    if (window.innerWidth <= 1023 || window.matchMedia('(pointer:coarse)').matches) {
-      e.preventDefault();
-      openSpot();
-    }
-  }, { passive: false });
-
-  function positionDrop() {
-    const r = document.getElementById('homeSearchWrap').getBoundingClientRect();
-    drop.style.left  = r.left + 'px';
-    drop.style.width = r.width + 'px';
-    drop.style.top   = r.bottom + 'px';
-  }
-
-  function closeDrop() {
-    drop.classList.remove('open');
-    dropGrid.innerHTML = '';
-    dropMeta.textContent = '';
-    dropMeta.classList.remove('nores');
-    homeQ.value = '';
-    clearBtn.style.display = 'none';
-  }
-  window.closeHomeDrop = closeDrop;
-
-  function runSearch() {
-    const q = homeQ.value.trim();
-    if (!q) return;
-    if (q.toLowerCase() === 'www') { homeQ.value = ''; homeQ.blur(); nav('lobby'); return; }
-    homeQ.blur();
-    requestAnimationFrame(resetHomeViewport);
-    setTimeout(resetHomeViewport, 350);
-    const hits = search(q).slice(0, 20);
-    dropMeta.textContent = hits.length ? `${hits.length} RESULT${hits.length !== 1 ? 'S' : ''}` : 'NO RESULTS';
-    dropMeta.classList.toggle('nores', !hits.length);
-    dropGrid.innerHTML = '';
-    if (hits.length) {
-      const g = document.createElement('div');
-      g.className = 'vgrid';
-      hits.forEach((v, i, a) => g.appendChild(vcard(v, a, i, matchTags(v,q))));
-      dropGrid.appendChild(g);
-    }
-    positionDrop();
-    drop.classList.add('open');
-  }
-  window.homeSearchSubmit = runSearch;
-  window.homeSearchClear  = closeDrop;
-
-  // Show/hide X button as user types
-  homeQ.addEventListener('input', () => {
-    clearBtn.style.display = homeQ.value ? 'flex' : 'none';
-  });
-
-  homeQ.addEventListener('keydown', e => {
-    if (e.key === 'Enter')  { e.preventDefault(); runSearch(); }
-    if (e.key === 'Escape') closeDrop();
-  });
-
-  drop.addEventListener('click', e => {
-    if (e.target.closest('.vcard')) closeDrop();
-  });
-
-  document.addEventListener('click', e => {
-    if (!drop.contains(e.target) && !document.getElementById('homeSearchWrap').contains(e.target)) {
-      drop.classList.remove('open');
-    }
-  });
-
-  window.addEventListener('resize', () => {
-    if (drop.classList.contains('open')) positionDrop();
-  });
-})();
-
-// ── INIT ──
-// Infer missing years from video titles (e.g. "Christmas 1991 ..." → 1991)
-const _yearOverrides = {
-  'Haugesund': 1958, "Sylvia's Graduation": 1957, "Ed's Graduation": 1957,
-  "Christmas -1960s Part 1": 1960, "Christmas -1960s Part 2": 1960,
-};
-VIDEOS.forEach(v => {
-  if (_yearOverrides[v.title]) { v.year = _yearOverrides[v.title]; return; }
-  if (!v.year) {
-    const m = v.title.match(/\b(196\d|197\d|198\d|199\d|200\d|201\d|202\d)(?!\d)/);
-    if (m) v.year = parseInt(m[1], 10);
-  }
-});
-
-document.getElementById('hdr').style.display = 'none';
-document.body.classList.add('on-home');
-renderHome();
-renderCats();
-buildCollage();
-startLeafFall();
-requestAnimationFrame(resetHomeViewport);
-setTimeout(resetHomeViewport, 300);
-setTimeout(resetHomeViewport, 900);
-
-</script>
-
-<!-- ── A: SCREENSAVER ── -->
-<div id="screensaver" onclick="wakeScreensaver()">
-  <div id="ss-bg"></div>
-  <div id="ss-content">
-    <div id="ss-tag">● MOBERINO</div>
-    <div id="ss-title"></div>
-    <div id="ss-year"></div>
-  </div>
-  <div id="ss-wake">TOUCH ANYWHERE TO WAKE</div>
-</div>
-
-<!-- ── RECOMMENDATIONS DRAWER (mobile/tablet) ── -->
-<div id="rec-drawer">
-  <div class="rec-drawer-hdr">
-    <div class="rec-drawer-title">RECOMMENDED</div>
-    <button class="rec-drawer-close" onclick="closeRecDrawer()" aria-label="Close recommendations">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      CLOSE
-    </button>
-  </div>
-  <div class="rec-drawer-body">
-    <div class="vgrid" id="recDrawerGrid"></div>
-  </div>
-</div>
-
-<!-- ── CHARACTER SELECT ── -->
-<div id="pg-charselect" class="page">
-  <div id="char-select-screen">
-    <div id="char-select-title">CHOOSE YOUR CHARACTER</div>
-    <div id="char-scroll-wrap">
-      <div id="char-scroll-list"></div>
-      <div id="char-scroll-bar"></div>
-    </div>
-    <div id="char-select-preview">
-      <div id="char-preview-face"></div>
-      <div id="char-preview-name"></div>
-    </div>
-    <button id="char-select-confirm" onclick="confirmCharSelect()">CONFIRM ▶</button>
-  </div>
-</div>
-
-<!-- ── GAME LOBBY ── -->
-<div id="pg-lobby" class="page">
-  <div class="cats-header">
-    <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('home')">✕ EXIT ARCADE</button>
-    <div style="display:flex;align-items:center;gap:8px">
-      <button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
-      <button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
-    </div>
-  </div>
-  <div class="lobby-wrap">
-    <div style="text-align:center;padding:4px 0 0">
-      <img src="arcade_title.PNG" alt="MOBERINO ARCADE" style="width:67.5%;max-width:450px;height:auto;display:block;margin:0 auto;filter:drop-shadow(0 0 12px rgba(255,0,204,0.5)) drop-shadow(0 0 28px rgba(255,0,204,0.2))">
-      <div style="font-family:'VCR',monospace;font-size:9px;letter-spacing:3px;color:rgba(242,239,232,0.45);margin-top:7px">ARCADE — INSERT COIN TO PLAY</div>
-    </div>
-    <div id="game-carousel">
-      <div class="carousel-item" id="ci-whack">
-        <div class="game-card" style="border-color:#ff993344;cursor:pointer" onclick="SFX.menuSelect();nav('whack')">
-          <div class="game-card-art" style="background:#0d0a1e">
-            <svg viewBox="0 0 200 240" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0">
-              <!-- Background -->
-              <rect width="200" height="240" fill="#0d0a1e"/>
-              <!-- Retro grid -->
-              <line x1="0" y1="40" x2="200" y2="40" stroke="#ff9933" stroke-width="0.4" opacity="0.12"/>
-              <line x1="0" y1="80" x2="200" y2="80" stroke="#ff9933" stroke-width="0.4" opacity="0.12"/>
-              <line x1="0" y1="120" x2="200" y2="120" stroke="#ff9933" stroke-width="0.4" opacity="0.12"/>
-              <line x1="50" y1="0" x2="50" y2="128" stroke="#ff9933" stroke-width="0.4" opacity="0.12"/>
-              <line x1="100" y1="0" x2="100" y2="128" stroke="#ff9933" stroke-width="0.4" opacity="0.12"/>
-              <line x1="150" y1="0" x2="150" y2="128" stroke="#ff9933" stroke-width="0.4" opacity="0.12"/>
-              <!-- Glow behind hammer -->
-              <ellipse cx="92" cy="68" rx="48" ry="34" fill="#ff6600" opacity="0.07"/>
-              <!-- Hammer (large, angled mid-swing) -->
-              <g transform="translate(95, 75) rotate(40)">
-                <!-- Handle -->
-                <rect x="-5" y="4" width="10" height="68" rx="4" fill="#6B3410"/>
-                <rect x="-5" y="4" width="5" height="68" rx="3" fill="#8B4513"/>
-                <line x1="-1" y1="14" x2="-1" y2="66" stroke="#5a2a0c" stroke-width="1" opacity="0.5"/>
-                <!-- Head -->
-                <rect x="-30" y="-18" width="60" height="26" rx="7" fill="#cc7722"/>
-                <rect x="-30" y="-18" width="60" height="11" rx="7" fill="#ff9933"/>
-                <rect x="-28" y="-16" width="56" height="5" rx="3" fill="#ffcc77" opacity="0.45"/>
-                <!-- End caps -->
-                <rect x="-30" y="-18" width="8" height="26" rx="4" fill="#aa6010"/>
-                <rect x="22" y="-18" width="8" height="26" rx="4" fill="#aa6010"/>
-                <!-- Rivets -->
-                <circle cx="-18" cy="-5" r="2.5" fill="#884411"/>
-                <circle cx="18" cy="-5" r="2.5" fill="#884411"/>
-              </g>
-              <!-- Impact burst near hammer head -->
-              <text x="30" y="58" font-size="24" fill="#ffe61a" opacity="0.88">✦</text>
-              <!-- Trailing sparkles -->
-              <text x="148" y="38" font-size="14" fill="#ffe61a" opacity="0.48"/>
-              <text x="152" y="68" font-size="9" fill="#ff9933" opacity="0.4">✦</text>
-              <!-- Motion lines (hammer swinging down-left) -->
-              <line x1="138" y1="18" x2="118" y2="38" stroke="#ff9933" stroke-width="2.5" opacity="0.28" stroke-linecap="round"/>
-              <line x1="148" y1="28" x2="130" y2="46" stroke="#ff9933" stroke-width="1.5" opacity="0.2" stroke-linecap="round"/>
-              <line x1="132" y1="14" x2="114" y2="30" stroke="#ff9933" stroke-width="1" opacity="0.15" stroke-linecap="round"/>
-              <!-- Ground -->
-              <rect x="0" y="133" width="200" height="107" fill="#111800"/>
-              <rect x="0" y="130" width="200" height="7" fill="#253000"/>
-              <!-- Grass tufts -->
-              <ellipse cx="20" cy="132" rx="18" ry="5" fill="#2d5a00" opacity="0.85"/>
-              <ellipse cx="70" cy="131" rx="16" ry="4" fill="#336600" opacity="0.85"/>
-              <ellipse cx="122" cy="132" rx="20" ry="5" fill="#2d5a00" opacity="0.85"/>
-              <ellipse cx="172" cy="131" rx="15" ry="4" fill="#336600" opacity="0.85"/>
-              <!-- Holes (background texture, not focal point) -->
-              <ellipse cx="42" cy="137" rx="20" ry="8" fill="#060800"/>
-              <ellipse cx="100" cy="139" rx="20" ry="8" fill="#060800"/>
-              <ellipse cx="160" cy="137" rx="20" ry="8" fill="#060800"/>
-            </svg>
-          </div>
-          <div class="game-card-info">
-            <div class="game-card-badge" style="background:#ff993322;color:#ff9933;border:1px solid #ff993355">ARCADE</div>
-            <div class="game-card-marquee" style="color:#ff9933;text-shadow:0 0 20px #ff993388">WHACK-A-MOBE</div>
-            <div class="game-card-desc">BOP THE MOBES BEFORE THEY HIDE!</div>
-            <div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#ff933322;border:1.5px solid #ff9933;border-radius:5px;padding:10px 24px;color:#ff9933;width:100%;text-shadow:0 0 8px #ff993366;text-align:center">▶ PLAY</div>
-          </div>
-        </div>
-      </div>
-      <div class="carousel-item" id="ci-match">
-        <div class="game-card" style="border-color:#ffe61a44;cursor:pointer" onclick="SFX.menuSelect();nav('match')">
-          <div class="game-card-art" style="background:linear-gradient(160deg,#0d0022 0%,#1a0044 50%,#000011 100%)">
-            <svg viewBox="0 0 200 240" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0">
-              <g opacity="0.65">
-                <rect x="13" y="9" width="20" height="5" rx="2.5" fill="#ff2db8"/>
-                <circle cx="172" cy="20" r="7" fill="#ffe61a"/>
-                <path d="M150,42 L162,54 L172,44 L183,56" stroke="#00e5ff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M6,128 L18,141 L6,152 L18,166" stroke="#00e5ff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                <line x1="6" y1="48" x2="17" y2="40" stroke="#ffe61a" stroke-width="3" stroke-linecap="round"/>
-                <path d="M128,150 L140,162 L150,152 L161,164" stroke="#ffe61a" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                <circle cx="188" cy="148" r="5" fill="#3355ff"/>
-                <circle cx="13" cy="222" r="6" fill="#ff2db8"/>
-                <circle cx="68" cy="224" r="6" fill="none" stroke="#00e5ff" stroke-width="2.5"/>
-                <polygon points="186,80 194,94 178,94" fill="#ff2db8"/>
-                <path d="M0,200 Q10,190 20,200" stroke="#3355ff" stroke-width="3" fill="none" stroke-linecap="round"/>
-                <circle cx="150" cy="10" r="3.5" fill="#00e5ff"/>
-                <circle cx="160" cy="14" r="2" fill="#ff2db8"/>
-                <line x1="190" y1="190" x2="198" y2="198" stroke="#ffe61a" stroke-width="3" stroke-linecap="round"/>
-                <line x1="198" y1="190" x2="190" y2="198" stroke="#ffe61a" stroke-width="3" stroke-linecap="round"/>
-                <circle cx="96" cy="9" r="4" fill="none" stroke="#ffe61a" stroke-width="2"/>
-                <path d="M185,170 L193,180 L185,189" stroke="#ff2db8" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                <polygon points="4,90 12,98 4,106" fill="#00e5ff"/>
-                <path d="M105,228 Q113,220 121,228 Q129,220 137,228" stroke="#3355ff" stroke-width="2.6" fill="none" stroke-linecap="round"/>
-                <circle cx="130" cy="14" r="2.5" fill="#3355ff"/>
-                <circle cx="6" cy="180" r="3" fill="#ffe61a"/>
-                <line x1="170" y1="200" x2="180" y2="200" stroke="#00e5ff" stroke-width="3" stroke-linecap="round"/>
-                <circle cx="96" cy="232" r="3.5" fill="none" stroke="#ff2db8" stroke-width="2"/>
-              </g>
-              <g class="card-drift" style="--r0:-7deg;--r1:-3deg;animation-delay:0s">
-                <ellipse cx="42" cy="91" rx="26" ry="6" fill="#ffe61a" opacity="0.12"/>
-                <rect x="20" y="30" width="44" height="58" rx="6" fill="#3a2a77" stroke="#ffe61a" stroke-width="2"/>
-                <path d="M31,59 L38,68 L53,48" stroke="#ffe61a" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-              </g>
-              <g opacity="0.5">
-                <g class="card-drift" style="--r0:4deg;--r1:8deg;animation-delay:0.4s"><rect x="78" y="30" width="44" height="58" rx="6" fill="#2a1a55" stroke="#ffe61a" stroke-width="1.5"/><text x="100" y="68" text-anchor="middle" font-size="22" fill="#ffe61a" opacity="0.6">?</text></g>
-                <g class="card-drift" style="--r0:-5deg;--r1:-1deg;animation-delay:0.8s"><rect x="136" y="30" width="44" height="58" rx="6" fill="#2a1a55" stroke="#ffe61a" stroke-width="1.5"/><text x="158" y="68" text-anchor="middle" font-size="22" fill="#ffe61a" opacity="0.6">?</text></g>
-                <g class="card-drift" style="--r0:6deg;--r1:2deg;animation-delay:1.2s"><rect x="20" y="100" width="44" height="58" rx="6" fill="#2a1a55" stroke="#ffe61a55" stroke-width="1"/><text x="42" y="138" text-anchor="middle" font-size="22" fill="#ffe61a" opacity="0.6">?</text></g>
-                <g class="card-drift" style="--r0:-4deg;--r1:-8deg;animation-delay:0.6s"><rect x="136" y="100" width="44" height="58" rx="6" fill="#2a1a55" stroke="#ffe61a55" stroke-width="1"/><text x="158" y="138" text-anchor="middle" font-size="22" fill="#ffe61a" opacity="0.6">?</text></g>
-              </g>
-              <g class="card-drift" style="--r0:0deg;--r1:3deg;animation-delay:0.2s">
-                <ellipse cx="100" cy="161" rx="26" ry="6" fill="#ffe61a" opacity="0.12"/>
-                <rect x="78" y="100" width="44" height="58" rx="6" fill="#3a2a77" stroke="#ffe61a" stroke-width="2"/>
-                <path d="M89,129 L96,138 L111,118" stroke="#ffe61a" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-              </g>
-              <text x="148" y="120" font-size="18" fill="#ffe61a" opacity="0.8">✦</text>
-              <text x="138" y="100" font-size="12" fill="#ffe61a" opacity="0.5">✦</text>
-              <text x="160" y="105" font-size="10" fill="#ffe61a" opacity="0.4">✦</text>
-              <text x="60" y="98" font-size="14" fill="#ff2db8" opacity="0.7">✦</text>
-            </svg>
-          </div>
-          <div class="game-card-info">
-            <div class="game-card-badge" style="background:#ffe61a22;color:#ffe61a;border:1px solid #ffe61a55">MEMORY</div>
-            <div class="game-card-marquee" style="color:#ffe61a;text-shadow:0 0 20px #ffe61a88">MEMORY MOBE</div>
-            <div class="game-card-desc">FLIP CARDS · FIND THE PAIRS</div>
-            <div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#ffe61a22;border:1.5px solid #ffe61a;border-radius:5px;padding:10px 24px;color:#ffe61a;width:100%;text-shadow:0 0 8px #ffe61a66;text-align:center">▶ PLAY</div>
-          </div>
-        </div>
-      </div>
-      <div class="carousel-item" id="ci-space">
-        <div class="game-card" style="border-color:#33ff6644;cursor:pointer" onclick="SFX.menuSelect();nav('space')">
-          <div class="game-card-art" style="background:linear-gradient(160deg,#000008 0%,#00050f 50%,#020010 100%)">
-            <svg viewBox="0 0 200 240" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0">
-              <circle cx="15" cy="20" r="1" fill="white" opacity="0.8"/>
-              <circle cx="55" cy="10" r="1.5" fill="white" opacity="0.6"/>
-              <circle cx="110" cy="25" r="1" fill="white" opacity="0.7"/>
-              <circle cx="160" cy="8" r="2" fill="white" opacity="0.5"/>
-              <circle cx="185" cy="35" r="1" fill="white" opacity="0.6"/>
-              <circle cx="35" cy="50" r="1" fill="white" opacity="0.4"/>
-              <circle cx="140" cy="45" r="1.5" fill="white" opacity="0.5"/>
-              <circle cx="75" cy="70" r="1" fill="white" opacity="0.6"/>
-              <circle cx="170" cy="70" r="1" fill="white" opacity="0.3"/>
-              <polygon points="60,60 75,55 80,65 72,75 58,72" fill="#334433" stroke="#33ff66" stroke-width="1.5" opacity="0.8"/>
-              <polygon points="140,100 158,95 165,108 155,118 138,114" fill="#334433" stroke="#33ff66" stroke-width="1.5" opacity="0.7"/>
-              <polygon points="30,120 42,115 46,126 38,134 26,130" fill="#334433" stroke="#33ff66" stroke-width="1" opacity="0.5"/>
-              <ellipse cx="155" cy="55" rx="18" ry="7" fill="#220011" stroke="#ff00cc" stroke-width="1.5" opacity="0.9"/>
-              <ellipse cx="155" cy="52" rx="9" ry="6" fill="#330022" stroke="#ff00cc" stroke-width="1" opacity="0.8"/>
-              <circle cx="140" cy="57" r="2" fill="#ff00cc" opacity="0.8"/>
-              <circle cx="170" cy="57" r="2" fill="#ff00cc" opacity="0.8"/>
-              <polygon points="100,200 115,225 85,225" fill="#00223a" stroke="#00e5ff" stroke-width="2"/>
-              <ellipse cx="100" cy="204" rx="8" ry="5" fill="#00334d" stroke="#00e5ff" stroke-width="1.5"/>
-              <ellipse cx="100" cy="226" rx="8" ry="4" fill="#33ff66" opacity="0.6"/>
-              <ellipse cx="100" cy="230" rx="5" ry="6" fill="#33ff66" opacity="0.3"/>
-              <line x1="100" y1="200" x2="100" y2="120" stroke="#00e5ff" stroke-width="2" opacity="0.7"/>
-              <line x1="100" y1="200" x2="100" y2="120" stroke="white" stroke-width="0.5" opacity="0.5"/>
-              <circle cx="100" cy="215" r="22" fill="none" stroke="#00e5ff" stroke-width="1" stroke-dasharray="4,3" opacity="0.35"/>
-            </svg>
-          </div>
-          <div class="game-card-info">
-            <div class="game-card-badge" style="background:#33ff6622;color:#33ff66;border:1px solid #33ff6655">SHOOTER</div>
-            <div class="game-card-marquee" style="color:#33ff66;text-shadow:0 0 20px #33ff6688">SPACE MOBE</div>
-            <div class="game-card-desc">BLAST ASTEROIDS · RESCUE HEROES</div>
-            <div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#33ff6622;border:1.5px solid #33ff66;border-radius:5px;padding:10px 24px;color:#33ff66;width:100%;text-shadow:0 0 8px #33ff6666;text-align:center">▶ PLAY</div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="carousel-nav-row" style="justify-content:space-between;align-items:center;padding:6px 14px 0">
-      <button onclick="scrollCarousel(-1)" style="font-size:22px;background:none;border:none;color:rgba(242,239,232,0.4);cursor:pointer;padding:8px">◀</button>
-      <div id="carousel-dots" style="display:flex;gap:6px"></div>
-      <button onclick="scrollCarousel(1)" style="font-size:22px;background:none;border:none;color:rgba(242,239,232,0.4);cursor:pointer;padding:8px">▶</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── WHACK-A-MOBE ── -->
-<div id="pg-whack" class="page">
-  <div class="cats-header">
-    <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE MENU</button>
-    <div style="display:flex;align-items:center;gap:8px">
-      <button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
-      <button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
-    </div>
-  </div>
-  <div class="whack-wrap" id="whack-wrap">
-    <!-- Filled by JS -->
-  </div>
-</div>
-
-<!-- ── MEMORY MOBE ── -->
-<div id="pg-match" class="page">
-  <div class="cats-header">
-    <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE MENU</button>
-    <div style="display:flex;align-items:center;gap:8px">
-      <button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
-      <button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
-    </div>
-  </div>
-  <div id="match-wrap" class="match-wrap">
-    <!-- Filled by JS -->
-  </div>
-</div>
-
-<!-- ── SPACE MOBE ── -->
-<div id="pg-space" class="page">
-  <div class="cats-header">
-    <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE MENU</button>
-    <div style="display:flex;align-items:center;gap:8px">
-      <button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
-      <button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
-    </div>
-  </div>
-  <canvas id="space-canvas"></canvas>
-  <div id="space-overlay" class="hidden">
-    <!-- filled by JS -->
-  </div>
-</div>
-
-<!-- ── ARCADE: floating ambient elements (coins, tickets, pizza) ── -->
-<div id="arcade-float"></div>
-<button id="arcade-game-exit" class="arcade-exit-btn" onclick="confirmExitArcade()" aria-label="Exit game">✕</button>
-
-
-<!-- ── LEADERBOARD OVERLAY ── -->
-<div id="lb-overlay" style="display:none;position:fixed;inset:0;z-index:9800;align-items:flex-start;justify-content:center;overflow-y:auto;background:rgba(5,2,18,0.92);backdrop-filter:blur(10px);padding:20px 16px 40px">
-  <div style="width:100%;max-width:440px;margin:0 auto">
-    <div style="margin-bottom:16px">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-        <button onclick="closeLbOverlay()" style="font-family:'VCR',monospace;font-size:14px;letter-spacing:2px;background:none;border:1px solid rgba(242,239,232,0.2);border-radius:4px;padding:8px 16px;color:rgba(242,239,232,0.6);cursor:pointer">✕ CLOSE</button>
-      </div>
-      <div style="font-family:'Bebas Neue',cursive;font-size:52px;letter-spacing:6px;color:#ffe61a;text-shadow:0 0 16px #ffe61a88;line-height:1">HALL OF FAME</div>
-    </div>
-    <div id="lb-tabs" style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap"></div>
-    <div id="lb-tab-content"></div>
-  </div>
-</div>
-
-<!-- ── C: SHAKE OVERLAY ── -->
-<button id="back-top" aria-label="Back to top">BACK TO TOP</button>
-
-<div id="shake-overlay">
-  <button id="shake-close" onclick="closeShakeOverlay()" aria-label="Close">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-  </button>
-  <img id="shake-tape-img" src="Untitled_Artwork.png" alt="">
-  <div id="shake-msg">LOADING MYSTERY TAPE...</div>
-</div>
-
-<script>
-// ── BACK TO TOP ──
-(function() {
-  const bar = document.getElementById('back-top');
-
-  function getScrollTop() {
-    const active = document.querySelector('.page.active');
-    return (active && active.scrollTop > 0) ? active.scrollTop : window.scrollY;
-  }
-
-  function shouldShieldMainHeader(active, scrollTop) {
-    if (!active || scrollTop <= 8) return false;
-    return ['pg-cats', 'pg-detail', 'pg-timeline', 'pg-search', 'pg-shelf'].includes(active.id);
-  }
-
-  function updateBar() {
-    const active = document.querySelector('.page.active');
-    const scrollTop = getScrollTop();
-    const show = scrollTop > 80;
-    document.body.classList.toggle('main-scrolled', shouldShieldMainHeader(active, scrollTop));
-    if (show) {
-      const hdr = active ? active.querySelector('.cats-header') : null;
-      const bottom = hdr ? hdr.getBoundingClientRect().bottom : 0;
-      bar.style.top = Math.max(0, bottom) + 'px';
-    }
-    bar.classList.toggle('visible', show);
-  }
-  // Exposed so closeSpot() can force a fresh recalculation once the keyboard-close
-  // viewport transition has actually settled, instead of waiting for the next scroll
-  // event (which may not come if the user isn't actively scrolling right then).
-  window._updateBackTopBar = updateBar;
-
-  window.addEventListener('scroll', updateBar, { passive: true });
-  document.addEventListener('scroll', updateBar, { passive: true, capture: true });
-  // Covers the general case (not just spotlight closing) — any keyboard open/close or
-  // address-bar show/hide resizes the visual viewport without necessarily firing scroll.
-  if (window.visualViewport) window.visualViewport.addEventListener('resize', updateBar);
-  updateBar();
-
-  bar.onclick = function() {
-    const active = document.querySelector('.page.active');
-    if (active && active.scrollTop > 0) {
-      active.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  window.addEventListener('resize', () => {
-    const hdr = document.querySelector('.page.active .cats-header');
-    if (hdr) bar.style.top = hdr.getBoundingClientRect().bottom + 'px';
-  });
-})();
-
-// ── A: SCREENSAVER ──
-(function() {
-  let ssTimer, ssCycleTimer, ssOn = false;
-
-  function pickVideo() { return VIDEOS[Math.floor(Math.random() * VIDEOS.length)]; }
-
-  function ssShowNext() {
-    const v = pickVideo();
-    document.getElementById('ss-bg').style.backgroundImage = `url('${v.thumb || ''}')`;
-    document.getElementById('ss-year').textContent = v.year || '';
-    const titleEl = document.getElementById('ss-title');
-    titleEl.textContent = '';
-    const text = (v.year ? v.year + '  ·  ' : '') + fmtTitle(v.title, v.year);
-    let i = 0;
-    const tw = setInterval(() => {
-      if (i >= text.length) { clearInterval(tw); return; }
-      titleEl.textContent += text[i++];
-    }, 55);
-    clearTimeout(ssCycleTimer);
-    ssCycleTimer = setTimeout(ssShowNext, 9000);
-  }
-
-  function startScreensaver() {
-    return; // Disabled site-wide — remove this line to re-enable.
-    if (ssOn || document.getElementById('lb').classList.contains('open')) return;
-    // Never kick in on an arcade page — mid-game pauses (reading an intro screen,
-    // waiting for the next mole) are long enough to hit the old 60s timer, and having
-    // a video slideshow take over while someone's mid-game would be disruptive.
-    if (document.body.matches('.on-lobby,.on-whack,.on-match,.on-space,.on-char')) return;
-    ssOn = true;
-    document.getElementById('screensaver').classList.add('on');
-    ssShowNext();
-  }
-
-  window.wakeScreensaver = function() {
-    if (!ssOn) return;
-    ssOn = false;
-    clearTimeout(ssCycleTimer);
-    document.getElementById('screensaver').classList.remove('on');
-    resetSsTimer();
-  };
-
-  function resetSsTimer() {
-    clearTimeout(ssTimer);
-    ssTimer = setTimeout(startScreensaver, 60000);
-  }
-  window.resetSsTimer = resetSsTimer;
-
-  ['click','touchstart','keydown','scroll'].forEach(ev =>
-    window.addEventListener(ev, () => { if (ssOn) wakeScreensaver(); else resetSsTimer(); }, { passive: true })
-  );
-  resetSsTimer();
-})();
-
-// ── B: DECADE CHIPS ──
-function buildDecadeBar() {
-  const bar = document.getElementById('decade-bar');
-  if (!bar) return;
-  bar.innerHTML = '';
-  const counts = {};
-  VIDEOS.forEach(v => {
-    if (!v.year) return;
-    const d = Math.floor(v.year / 10) * 10;
-    counts[d] = (counts[d] || 0) + 1;
-  });
-  Object.keys(counts).sort().forEach(d => {
-    const btn = document.createElement('button');
-    btn.className = 'decade-chip';
-    const label = d >= 2000 ? `${d}s` : `${String(d).slice(-2)}s`;
-    btn.innerHTML = `${label}<span class="chip-ct">${counts[d]}</span>`;
-    btn.dataset.decade = d;
-    btn.onclick = () => {
-      document.querySelectorAll('.decade-chip').forEach(c => c.classList.remove('active'));
-      btn.classList.add('active');
-      const firstYr = Object.keys(tlVidsByYear)
-        .filter(y => Math.floor(Number(y) / 10) * 10 == d)
-        .sort((a, b) => a - b)[0];
-      if (firstYr) {
-        const el = document.getElementById(`tl-yr-${firstYr}`);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    };
-    bar.appendChild(btn);
-  });
-}
-// Build on page load (data is ready); timeline will use it when navigated to
-buildDecadeBar();
-
-// ── SEASONAL THEME ──
-(function() {
-  // Surprise/sparkle button glow — a soft golden radial that fades to transparent at
-  // the edges, so it fills the (pill-shaped) button without a hard rim. Always gold
-  // regardless of which season is active (the button's own "magic" identity).
-  const SPARKLE_GLOW = 'radial-gradient(ellipse at center, rgba(255,208,92,0.32) 0%, rgba(255,176,48,0.14) 55%, rgba(255,150,30,0) 100%)';
-
-  function getSeasonOverride() {
-    const value = new URLSearchParams(window.location.search).get('season');
-    if (value === 'july4' || value === 'halloween' || value === 'xmas') return value;
-    if (value === 'off') return null;
-    return undefined;
-  }
-
-  function getSeasonTheme() {
-    const override = getSeasonOverride();
-    if (override !== undefined) return override;
-
-    const now = new Date(), m = now.getMonth() + 1, d = now.getDate();
-    if (m === 12) return 'xmas';
-    if (m === 10) return 'halloween';
-    if (m === 6 || (m === 7 && d <= 4)) return 'july4';
-    return null;
-  }
-
-  const currentSeason = getSeasonTheme();
-  [document.getElementById('seasonBtn'), document.getElementById('mobileSeasonBtn')].forEach(btn => {
+  function setArcadeExitVisible(show) {
+    const btn = document.getElementById('arcade-game-exit');
     if (!btn) return;
-    btn.style.display = '';
-    const glow = document.createElement('div');
-    glow.className = 'season-glow';
-    glow.style.background = SPARKLE_GLOW;
-    btn.appendChild(glow);
-  });
-
-  let seasonOn = false, particleStop = null;
-
-  function startParticles() {
-    if (particleStop) particleStop();
-    const c = document.createElement('canvas');
-    c.id = 'season-canvas';
-    // Above #collage::after's seasonal tint, but still inside the non-interactive
-    // collage layer so fireworks/stars stay behind site UI.
-    c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1000000;';
-    document.getElementById('collage').appendChild(c);
-    const ctx = c.getContext('2d');
-    let W, H, raf, burstTimer, clearSeedBursts = null;
-    function resize() { W = c.width = window.innerWidth; H = c.height = window.innerHeight; }
-    resize();
-    const ro = new ResizeObserver(resize);
-    ro.observe(document.documentElement);
-
-    if (currentSeason === 'xmas') {
-      const flakes = Array.from({length: 110}, () => ({
-        x: Math.random() * innerWidth, y: Math.random() * innerHeight,
-        r: 1 + Math.random() * 2.8, vx: (Math.random() - 0.5) * 0.35,
-        vy: 0.4 + Math.random() * 1.2, a: 0.3 + Math.random() * 0.5, t: Math.random() * 100,
-      }));
-      (function tick() {
-        ctx.clearRect(0, 0, W, H);
-        flakes.forEach(f => {
-          f.t += 0.012; f.x += f.vx + Math.sin(f.t) * 0.22; f.y += f.vy;
-          if (f.y > H + 10) { f.y = -10; f.x = Math.random() * W; }
-          ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255,255,255,${f.a})`; ctx.fill();
-        });
-        raf = requestAnimationFrame(tick);
-      })();
-
-    } else if (currentSeason === 'halloween') {
-      const pumpkins = Array.from({length: 22}, () => ({
-        x: Math.random() * innerWidth, y: -50 - Math.random() * innerHeight,
-        s: 16 + Math.random() * 22, vx: (Math.random() - 0.5) * 0.55,
-        vy: 0.45 + Math.random() * 0.85, rot: Math.random() * Math.PI * 2,
-        rotV: (Math.random() - 0.5) * 0.025, a: 0.55 + Math.random() * 0.4,
-      }));
-      function drawPumpkin(x, y, s, rot, alpha) {
-        ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.globalAlpha = alpha;
-        ctx.beginPath(); ctx.ellipse(0, 2, s * 0.48, s * 0.38, 0, 0, Math.PI * 2);
-        ctx.fillStyle = '#c85800'; ctx.fill();
-        for (let i = -1; i <= 1; i++) {
-          ctx.beginPath(); ctx.ellipse(i * s * 0.18, 2, s * 0.13, s * 0.35, 0, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.fill();
-        }
-        ctx.fillStyle = '#3a1c00'; ctx.fillRect(-s * 0.05, -s * 0.38, s * 0.1, s * 0.2);
-        ctx.fillStyle = 'rgba(0,0,0,0.65)';
-        ctx.beginPath(); ctx.arc(-s * 0.16, s * 0.02, s * 0.075, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(s * 0.16, s * 0.02, s * 0.075, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(-s * 0.22, s * 0.16); ctx.quadraticCurveTo(0, s * 0.3, s * 0.22, s * 0.16);
-        ctx.fill(); ctx.globalAlpha = 1; ctx.restore();
-      }
-      (function tick() {
-        ctx.clearRect(0, 0, W, H);
-        pumpkins.forEach(p => {
-          p.x += p.vx; p.y += p.vy; p.rot += p.rotV;
-          if (p.y > H + 70) { p.y = -70; p.x = Math.random() * W; }
-          drawPumpkin(p.x, p.y, p.s, p.rot, p.a);
-        });
-        raf = requestAnimationFrame(tick);
-      })();
-
-    } else if (currentSeason === 'july4') {
-      // Palette: red, white, blue
-      const PALETTES = [
-        ['#ff1a2e','#ff1a2e','#ffffff','#ffffff','#2255ff'],
-        ['#ffffff','#ffffff','#ff1a2e','#2255ff','#2255ff'],
-        ['#ff3344','#ffffff','#ffffff','#1144ee','#ffd700'],
-        ['#ffd700','#ffd700','#ff1a2e','#ffffff','#3366ff'],
-      ];
-
-      // Stars that slowly drift and twinkle
-      function drawStar(x, y, r, a) {
-        ctx.save(); ctx.translate(x, y); ctx.globalAlpha = a;
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        for (let i = 0; i < 5; i++) {
-          const outer = (i * Math.PI * 2) / 5 - Math.PI / 2;
-          const inner = outer + Math.PI / 5;
-          if (i === 0) ctx.moveTo(Math.cos(outer) * r, Math.sin(outer) * r);
-          else ctx.lineTo(Math.cos(outer) * r, Math.sin(outer) * r);
-          ctx.lineTo(Math.cos(inner) * r * 0.42, Math.sin(inner) * r * 0.42);
-        }
-        ctx.closePath(); ctx.fill(); ctx.restore();
-      }
-      const stars = Array.from({length: 52}, () => ({
-        x: Math.random() * innerWidth, y: Math.random() * innerHeight,
-        r: 5 + Math.random() * 7,
-        vx: (Math.random() - 0.5) * 0.15, vy: -0.1 - Math.random() * 0.25,
-        t: Math.random() * Math.PI * 2, // phase for twinkle
-        baseA: 0.28 + Math.random() * 0.34,
-      }));
-
-      const bursts = [];
-      function addBurst() {
-        const pal = PALETTES[Math.floor(Math.random() * PALETTES.length)];
-        const N = 58 + Math.floor(Math.random() * 24);
-        const cx = W * (0.08 + Math.random() * 0.84);
-        const cy = H * (0.05 + Math.random() * 0.55);
-        const baseSpd = 3.1 + Math.random() * 2.8;
-        bursts.push({
-          cx, cy,
-          particles: Array.from({length: N}, (_, i) => {
-            const angle = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
-            const spd = baseSpd * (0.6 + Math.random() * 0.8);
-            return {
-              x: 0, y: 0, px: 0, py: 0,
-              vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd,
-              color: pal[Math.floor(Math.random() * pal.length)],
-              size: 1.5 + Math.random() * 2.2,
-              life: 1, decay: 0.012 + Math.random() * 0.006,
-            };
-          }),
-          life: 1,
-        });
-        burstTimer = setTimeout(addBurst, 400 + Math.random() * 500);
-      }
-      addBurst();
-      const _s1 = setTimeout(addBurst, 200);
-      const _s2 = setTimeout(addBurst, 450);
-      clearSeedBursts = () => { clearTimeout(_s1); clearTimeout(_s2); };
-
-      (function tick() {
-        // Keep the seasonal canvas transparent so the July 4 stripe overlay
-        // remains visible underneath the stars/fireworks.
-        ctx.clearRect(0, 0, W, H);
-
-        // Draw twinkling stars
-        stars.forEach(s => {
-          s.t += 0.04; s.x += s.vx; s.y += s.vy;
-          if (s.y < -10) { s.y = H + 10; s.x = Math.random() * W; }
-          if (s.x < -10) s.x = W + 10; if (s.x > W + 10) s.x = -10;
-          const a = s.baseA * (0.5 + 0.5 * Math.sin(s.t));
-          drawStar(s.x, s.y, s.r, a);
-        });
-
-        // Firework bursts
-        for (let bi = bursts.length - 1; bi >= 0; bi--) {
-          const b = bursts[bi];
-          b.life -= 0.008;
-          if (b.life <= 0) { bursts.splice(bi, 1); continue; }
-          b.particles.forEach(p => {
-            p.px = p.x; p.py = p.y;
-            p.vx *= 0.968; p.vy = p.vy * 0.968 + 0.055;
-            p.x += p.vx; p.y += p.vy;
-            p.life -= p.decay;
-            if (p.life <= 0) return;
-            const alpha = Math.max(0, p.life * 0.88);
-            ctx.beginPath();
-            ctx.moveTo(b.cx + p.px, b.cy + p.py);
-            ctx.lineTo(b.cx + p.x, b.cy + p.y);
-            ctx.strokeStyle = p.color;
-            ctx.lineWidth = p.size * 0.7;
-            ctx.globalAlpha = alpha * 0.42;
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(b.cx + p.x, b.cy + p.y, p.size, 0, Math.PI * 2);
-            ctx.fillStyle = p.color;
-            ctx.globalAlpha = alpha * 0.72;
-            ctx.fill();
-          });
-        }
-        ctx.globalAlpha = 1;
-        raf = requestAnimationFrame(tick);
-      })();
-    }
-
-    particleStop = () => {
-      cancelAnimationFrame(raf); ro.disconnect();
-      clearTimeout(burstTimer);
-      if (clearSeedBursts) clearSeedBursts();
-      c.remove(); particleStop = null;
-    };
+    btn.style.display = show ? '' : 'none';
   }
+  window.setArcadeExitVisible = setArcadeExitVisible;
 
-  window.toggleSeasonTheme = function() {
-    if (!currentSeason) return;
-    seasonOn = !seasonOn;
-    document.body.classList.toggle(`theme-${currentSeason}`, seasonOn);
-    [document.getElementById('seasonBtn'), document.getElementById('mobileSeasonBtn')].forEach(btn => {
-      if (btn) btn.classList.toggle('active', seasonOn);
-    });
-    if (seasonOn) startParticles(); else if (particleStop) particleStop();
+  window.confirmExitArcade = function() {
+    if (!confirm('EXIT GAME?\nReturn to arcade menu?')) return;
+    if (typeof SFX !== 'undefined' && typeof SFX.menuSelect === 'function') SFX.menuSelect();
+    nav('lobby');
   };
+
+  window.nav = function(p) {
+    if (!document.getElementById(`pg-${p}`)) p = 'lobby';
+    const targetPageId = `pg-${p}`;
+    document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+    document.getElementById(targetPageId)?.classList.add('active');
+    window.scrollTo(0, 0);
+    if (window.lockViewportHeight) window.lockViewportHeight();
+    document.getElementById(targetPageId)?.scrollTo(0, 0);
+
+    const onLobby = p === 'lobby';
+    const onCharSelect = p === 'charselect';
+    const onWhack = p === 'whack';
+    const onMatch = p === 'match';
+    const onSpace = p === 'space';
+    document.body.classList.toggle('on-lobby', onLobby);
+    document.body.classList.toggle('on-char', onCharSelect);
+    document.body.classList.toggle('on-whack', onWhack);
+    document.body.classList.toggle('on-match', onMatch);
+    document.body.classList.toggle('on-space', onSpace);
+    document.documentElement.classList.add('arcade-root');
+
+    try {
+      if ((onLobby || onCharSelect || onWhack || onMatch || onSpace) && typeof ArcadeMusic !== 'undefined' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
+      if (typeof ArcadeMusic !== 'undefined') {
+        if (onLobby || onCharSelect) ArcadeMusic.unduck();
+        if (onWhack || onMatch || onSpace) ArcadeMusic.duck();
+      }
+    } catch(e) {}
+
+    if (onLobby) {
+      if (!window._arcadeSessionStarted) {
+        window._arcadeSessionStarted = true;
+        if (typeof openCharSelect === 'function') { openCharSelect('lobby'); return; }
+      }
+      if (typeof initArcadeFloat === 'function') initArcadeFloat();
+      if (typeof drawPixelIcons === 'function') drawPixelIcons();
+      if (typeof initCarousel === 'function') initCarousel();
+    }
+    if (onWhack && typeof initWhack === 'function') initWhack();
+    if (onMatch && typeof initMatch === 'function') initMatch();
+    if (onSpace && typeof initSpace === 'function') initSpace();
+    if (!onSpace && typeof spacePause === 'function') spacePause();
+    if (!onWhack && typeof whackBack === 'function') whackBack();
+    if (!onMatch && typeof matchBack === 'function') matchBack();
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.documentElement.classList.add('arcade-root');
+    nav('lobby');
+  });
 })();
-
-// ── C: MYSTERY TAPE SHUFFLE ──
-// Was also triggerable by physically shaking the device (devicemotion + an iOS
-// motion-permission prompt) — removed since nobody was actually using the shake
-// gesture. The button just triggers the reveal directly now.
-window.closeShakeOverlay = function() {
-  const ov = document.getElementById('shake-overlay');
-  ov.classList.remove('on');
-  ov.onclick = null;
-  // Remove any "TAP TO WATCH" hint added dynamically
-  Array.from(ov.children).forEach(el => {
-    if (el.id !== 'shake-close' && el.id !== 'shake-tape-img' && el.id !== 'shake-msg') el.remove();
-  });
-  const tapeImg = document.getElementById('shake-tape-img');
-  tapeImg.style.animation = 'sh-wobble 0.2s ease-in-out infinite';
-  tapeImg.src = 'Untitled_Artwork.png'; // reset back to the tape icon for next time
-  tapeImg.classList.remove('revealed');
-  const shakeMsgEl = document.getElementById('shake-msg');
-  shakeMsgEl.textContent = 'LOADING MYSTERY TAPE...';
-  shakeMsgEl.style.animation = 'none';
-  nav('home');
-};
-
-function triggerShakeTape() {
-  const ov  = document.getElementById('shake-overlay');
-  const msg = document.getElementById('shake-msg');
-  const img = document.getElementById('shake-tape-img');
-  if (!ov) return;
-  // Clear any previous reveal's dynamic bits (tap hint / shuffle-again button) —
-  // matters when re-triggered via "SHUFFLE AGAIN" while already open, so they don't
-  // stack on top of the new ones.
-  Array.from(ov.children).forEach(el => {
-    if (el.id !== 'shake-close' && el.id !== 'shake-tape-img' && el.id !== 'shake-msg') el.remove();
-  });
-
-  const v = VIDEOS[Math.floor(Math.random() * VIDEOS.length)];
-  msg.textContent = 'LOADING MYSTERY TAPE...';
-  msg.style.animation = 'none';
-  img.src = 'Untitled_Artwork.png';
-  img.classList.remove('revealed');
-  img.style.animation = 'sh-wobble 0.2s ease-in-out infinite';
-  ov.onclick = null;
-  ov.classList.add('on');
-
-  setTimeout(() => {
-    // Tape icon morphs into the actual thumbnail once it's "chosen" — outline only
-    // applies once revealed, not during the loading wobble.
-    img.style.animation = 'none';
-    img.src = v.thumb;
-    img.classList.add('revealed');
-    img.onerror = () => { img.src = `https://img.youtube.com/vi/${v.video_id}/sddefault.jpg`; img.onerror = null; };
-    msg.textContent = fmtTitle(v.title, v.year) + (v.year ? '  ·  ' + v.year : '');
-    // Both lines' blink animations are started here, in the same tick, with the same
-    // duration — that's what actually keeps them in phase. Setting #shake-msg's blink
-    // via CSS alone let it start (and drift out of phase) back when "LOADING..." first
-    // showed, well before this "TAP TO WATCH" line even existed.
-    msg.style.animation = 'ss-blink 2s step-end infinite';
-    const tap = document.createElement('div');
-    tap.style.cssText = 'font-family:VCR,monospace;font-size:15px;letter-spacing:3px;color:rgba(242,239,232,0.45);margin-top:14px;animation:ss-blink 2s step-end infinite';
-    tap.textContent = 'TAP TO WATCH';
-    ov.appendChild(tap);
-    const again = document.createElement('button');
-    again.style.cssText = 'margin-top:22px;background:none;border:1px solid rgba(242,239,232,0.3);border-radius:20px;padding:8px 18px;font-family:VCR,monospace;font-size:12px;letter-spacing:2px;color:rgba(242,239,232,0.65);cursor:pointer;-webkit-tap-highlight-color:transparent';
-    again.textContent = '↻ SHUFFLE AGAIN';
-    // Stop the click from bubbling to the overlay's own onclick (which opens the video).
-    again.onclick = (e) => { e.stopPropagation(); triggerShakeTape(); };
-    ov.appendChild(again);
-    ov.onclick = () => {
-      ov.classList.remove('on');
-      ov.onclick = null;
-      if (tap.parentNode) tap.parentNode.removeChild(tap);
-      if (again.parentNode) again.parentNode.removeChild(again);
-      window.open(`https://www.youtube.com/watch?v=${v.video_id}`, '_blank');
-    };
-  }, 1400);
-}
-
-window.enableShake = function() {
-  triggerShakeTape();
-};
 
 // ══════════════════════════════════════
 //  SHARED AUDIO CONTEXT
@@ -6673,6 +228,12 @@ hit() {
       tone(220,'triangle',0.18,0.68,0.045,130);
       tone(55,'sine',0.42,0.5,0.05,42);
     },
+    gizmoBark() {
+      // Short two-part bark for Gizmo's shots: chunky low snap + tiny yip overtone.
+      tone(190,'square',0,0.09,0.10,115);
+      tone(360,'sawtooth',0.035,0.08,0.08,180);
+      tone(760,'triangle',0.085,0.055,0.05,520);
+    },
     missionCaptor() {
       tone(130,'sawtooth',0,0.28,0.10,55);
       tone(260,'square',0.03,0.18,0.07,95);
@@ -6695,6 +256,13 @@ hit() {
       tone(140,'square',0,0.18,0.11,70);
       tone(90,'triangle',0.10,0.34,0.10,42);
       tone(760,'square',0.05,0.05,0.055,280);
+    },
+    scaryLaugh() {
+      [220,280,220,310,200,340,190].forEach((f,i) => {
+        tone(f,'sawtooth',i*0.18,0.22,0.09,f*0.6);
+        tone(f*1.5,'triangle',i*0.18+0.04,0.16,0.04,f*0.9);
+      });
+      tone(120,'square',1.3,0.5,0.07,55);
     },
     missionHero() {
       [392,523,659,784,1047].forEach((f,i)=>tone(f,'square',i*0.08,0.16,0.065));
@@ -7455,7 +1023,7 @@ const GAME_CHARS = [
   { name: 'POPPY',   color: '#66cc33', emoji: '😜', happy: '🤪', sad: '😬', img: 'characters/poppy.png', imgWhack: 'characters/poppy_whack.png', imgHappy: 'characters/poppy_happy.png',   imgSad: 'characters/poppy_sad.png',   tilt: 0 },
   { name: 'SHE-SHE', color: '#ff66dd', emoji: '💅', happy: '🥰', sad: '😤', img: 'characters/she-she.png', imgWhack: 'characters/she-she_whack.png', imgHappy: 'characters/she-she_happy.png', imgSad: 'characters/she-she_sad.png', tilt: 0 },
   { name: 'ROSIE',   color: '#ff4466', emoji: '🌹', happy: '🥳', sad: '😢', img: 'characters/rosie.png', imgWhack: 'characters/rosie_whack.png', imgHappy: 'characters/rosie_happy.png',   imgSad: 'characters/rosie_sad.png',   tilt: 0 },
-  { name: 'KEVIN',   color: '#e05533', emoji: '🙂', happy: '😄', sad: '😢', img: 'characters/kevin.png', imgWhack: 'characters/kevin_whack.png', imgHappy: 'characters/kevin_happy.png',   imgSad: 'characters/kevin_sad.png',   tilt: 0 },
+  { name: 'KEVIN',   color: '#102a66', emoji: '🙂', happy: '😄', sad: '😢', img: 'characters/kevin.png', imgWhack: 'characters/kevin_whack.png', imgHappy: 'characters/kevin_happy.png',   imgSad: 'characters/kevin_sad.png',   tilt: 0 },
   { name: 'GRANT',   color: '#aacc22', emoji: '🤨', happy: '😁', sad: '😤', img: 'characters/grant.png', imgWhack: 'characters/grant_whack.png', imgHappy: 'characters/grant_happy.png',   imgSad: 'characters/grant_sad.png',   tilt: 0 },
   { name: 'LUKE',    color: '#5588cc', emoji: '😏', happy: '😄', sad: '😔', img: 'characters/luke.png', imgWhack: 'characters/luke_whack.png', imgHappy: 'characters/luke_happy.png',    imgSad: 'characters/luke_sad.png',    tilt: 0 },
   { name: 'LEANNE',  color: '#ff5588', emoji: '😍', happy: '🥰', sad: '😢', img: 'characters/leanne.png', imgWhack: 'characters/leanne_whack.png', imgHappy: 'characters/leanne_happy.png',  imgSad: 'characters/leanne_sad.png',  tilt: 0 },
@@ -7803,7 +1371,7 @@ window.confirmCharSelect = function() {
         if (faceEl) faceEl.innerHTML = `<div style="position:relative;width:100%;height:100%">${charHTML(moleChar, 'normal')}<div style="position:absolute;bottom:2px;right:2px;width:18px;height:18px;border-radius:50%;background:#33ff66;color:#0a1f10;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;box-shadow:0 0 6px rgba(51,255,102,0.7)">✓</div></div>`;
       }
     }
-    setTimeout(() => { onDone(); }, 900); // keep the revealed board visible briefly, then move on automatically
+    setTimeout(() => { onDone(); }, 550); // keep the revealed board visible briefly, then move on automatically
   }
 
   function render() {
@@ -8826,7 +2394,7 @@ window.confirmCharSelect = function() {
     return Math.min(8, 5 + patternSteps);
   }
 
-  const MEMORY_INTRO_MS = 900; // "MEMORIZE" flash plays solo, board still blank, before anything is revealed
+  const MEMORY_INTRO_MS = 0; // Reveal memorize targets immediately after the wave title; no blank-board pause
   function startMemoryRound() {
     memoryAppearances++;
     // Same difficulty for the first few appearances, then scales up gradually: more
@@ -9043,9 +2611,8 @@ window.confirmCharSelect = function() {
     return { dont: "DON'T WHACK", verb: 'WHACK' };
   }
 
-  // Next-wave intro — deliberately has no wave number on it now (that lives in the
-  // "WAVE X CLEARED" moment that precedes it instead). The mode phrase is the whole
-  // point of this screen, so it's the big bold text.
+  // Next-wave intro — now includes the upcoming wave number above the mode label
+  // so players can track the Adventure sequence at a glance.
   function showWaveStartOverlay() {
     const ann = document.createElement('div');
     ann.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none';
@@ -9058,7 +2625,7 @@ window.confirmCharSelect = function() {
       ? `<span style="font-size:22px;color:#ffe61a">${(getMemorizeMs(memoryAppearances + 1) / 1000).toFixed(1)} SECONDS</span>`
       : '';
     ann.innerHTML = `<div style="text-align:center;animation:wave-announce 2.2s ease-out forwards">
-      ${stageTitleHTML(currentRoundType, roundTypePhrase(), meta.color, 50)}
+      ${stageAnnouncementHTML(currentRoundType, roundTypePhrase(), meta.color, 46)}
       ${subLine ? `<div style="font-family:'VCR',monospace;font-size:13px;letter-spacing:2px;color:rgba(242,239,232,0.7);margin-top:10px;line-height:1.8">${subLine}</div>` : ''}
     </div>`;
     document.body.appendChild(ann);
@@ -9137,9 +2704,20 @@ window.confirmCharSelect = function() {
   function stageTitleHTML(type, label, color, size) {
     const meta = stageMeta(type);
     const c = color || meta.color;
-    return `<div style="display:flex;align-items:center;justify-content:center;gap:12px">
+    return `<div style="display:flex;align-items:center;justify-content:center;gap:12px;line-height:1">
       ${stageIconHTML(meta.icon, c, Math.max(34, (size || 58) * 0.72))}
       ${introHeadline(label || meta.label, c, size || 58)}
+    </div>`;
+  }
+  function stageAnnouncementHTML(type, label, color, size) {
+    const meta = stageMeta(type);
+    const c = color || meta.color;
+    const waveHTML = gameMode === 'frenzy'
+      ? `<div style="font-family:'VCR',monospace;font-size:15px;letter-spacing:4px;color:rgba(242,239,232,0.72);text-shadow:0 0 10px ${c}55;text-transform:uppercase;margin-bottom:8px">WAVE ${wave}</div>`
+      : '';
+    return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
+      ${waveHTML}
+      ${stageTitleHTML(type, label, c, size)}
     </div>`;
   }
   function whackWaveHeaderHTML(label) {
@@ -9224,9 +2802,9 @@ window.confirmCharSelect = function() {
       onDone();
     };
     ctrl = playIntroSteps([
-      { duration: isFirst ? 2500 : 2000, show: () => {
+      { duration: isFirst ? 1800 : 1200, show: () => {
         const meta = stageMeta(type);
-        ann.innerHTML = `<div style="position:absolute;top:50%;left:50%;width:100%;transform:translate(-50%,-50%)">${stageTitleHTML(type, titleText, meta.color, 58)}</div>`;
+        ann.innerHTML = `<div style="position:absolute;top:50%;left:50%;width:100%;transform:translate(-50%,-50%)">${stageAnnouncementHTML(type, titleText, meta.color, 54)}</div>`;
       } },
     ], () => {
       if (!isFirst) { ann.remove(); onDone(); return; }
@@ -9237,7 +2815,7 @@ window.confirmCharSelect = function() {
       ctrl = playIntroSteps(extraSteps, () => { ann.remove(); onDone(); }, ann, skipIntro);
       function whackIntroExtraSteps() {
         return [
-          { duration: 3000, show: () => {
+          { duration: 1500, show: () => {
             ann.innerHTML = introObjectiveHTML('THIS IS THE MOLE', '#00e5ff',
               `<div style="width:130px;height:130px;margin:16px auto 0;border-radius:16px;overflow:hidden;border:3px solid #ff4444;background:#ff444422;box-shadow:0 0 26px #ff444466;display:flex;align-items:center;justify-content:center">
                 <div id="intro-mole-face" style="width:104px;height:104px;position:relative">${charFace(GAME_CHARS[moleChar],'normal')}</div>
@@ -9252,17 +2830,17 @@ window.confirmCharSelect = function() {
               SFX.whack(); SFX.hit();
             }, 1000);
           }},
-          { duration: 3000, show: () => {
+          { duration: 1500, show: () => {
             ann.innerHTML = introObjectiveHTML("DON'T WHACK YOURSELF", '#00e5ff', introFace(activeChar, '#33ff66', 130, 104));
           }},
         ];
       }
       function clearIntroExtraSteps() {
         return [
-          { duration: 1000, show: () => { ann.innerHTML = ''; } }, // blank beat
-          { duration: 1000, show: () => { ann.innerHTML = introObjectiveHTML('BE CAREFUL', '#00e5ff', ''); } }, // ominous, alone
-          { duration: 3000, show: () => {
-            // Text comes up immediately; the sliding image follows 1s later, so the
+          { duration: 800, show: () => { ann.innerHTML = ''; } }, // brief blank beat
+          { duration: 1200, show: () => { ann.innerHTML = introObjectiveHTML('BE CAREFUL', '#00e5ff', ''); } }, // ominous, alone
+          { duration: 2200, show: () => {
+            // Text comes up immediately; the sliding image follows shortly after, so the
             // warning reads before the motion that's being warned about.
             ann.innerHTML = introObjectiveHTML('BE CAREFUL', '#00e5ff',
               `<div id="intro-clear-slide-slot" style="min-height:84px;display:flex;align-items:center;justify-content:center"></div>` +
@@ -9270,10 +2848,10 @@ window.confirmCharSelect = function() {
             setTimeout(() => {
               if (state !== 'playing') return;
               const slot = document.getElementById('intro-clear-slide-slot');
-              if (slot) slot.innerHTML = `<div style="width:84px;height:84px;border-radius:16px;overflow:hidden;border:3px solid #ff4444;background:#ff444422;animation:intro-mole-slide 1.1s ease-in-out infinite">${charFace(GAME_CHARS[moleChar],'normal')}</div>`;
-            }, 1000);
+              if (slot) slot.innerHTML = `<div style="width:84px;height:84px;border-radius:16px;overflow:hidden;border:3px solid #ff4444;background:#ff444422;animation:intro-mole-slide 0.9s ease-in-out infinite">${charFace(GAME_CHARS[moleChar],'normal')}</div>`;
+            }, 450);
           }},
-          { duration: 2000, show: () => {
+          { duration: 1800, show: () => {
             ann.innerHTML = introObjectiveHTML('WATCH THE TIMER', '#00e5ff', introTimerDemoHTML());
             startIntroTimerDrain();
           }},
@@ -9281,12 +2859,9 @@ window.confirmCharSelect = function() {
       }
       function memoryIntroExtraSteps() {
         return [
-          { duration: 3000, show: () => { ann.innerHTML = introObjectiveHTML('UNCOVER THE MOLES', '#00e5ff', ''); } },
-          { duration: 5500, show: () => {
-            // Mirrors the real round's full loop, not just the cover-slide: a 3x3
-            // board reveals a few moles among empty holes, covers slide over
-            // everything (cabinet-style), then the correct cells pop open and closed
-            // again to reveal a checkmark — demonstrating recall, not just concealment.
+          { duration: 3800, show: () => {
+            // Bring the instruction and demo board up together so there is no dead
+            // beat between the title and the thing the player needs to watch.
             const SIZE = 9, MOLE_COUNT = 3;
             // Never let the 3 moles land on a tic-tac-toe line (row/column/diagonal) —
             // a "winning" pattern reads as deliberate, not like real random spots.
@@ -9296,9 +2871,7 @@ window.confirmCharSelect = function() {
               moleSet = new Set();
               while (moleSet.size < MOLE_COUNT) moleSet.add(Math.floor(Math.random() * SIZE));
             } while (LINES.some(line => line.every(i => moleSet.has(i))));
-            // Keep UNCOVER THE MOLES up through this beat too, instead of the headline
-            // disappearing the moment the demo board appears.
-            let html = introObjectiveHTML('UNCOVER THE MOLES', '#00e5ff', '') +
+            let html = introObjectiveHTML('MEMORIZE THE BOARD', '#00e5ff', '') +
               `<div style="position:absolute;top:${introTopRowY() + 56}px;left:50%;transform:translateX(-50%);display:grid;grid-template-columns:repeat(3,46px);gap:6px">`;
             for (let k = 0; k < SIZE; k++) {
               const isMole = moleSet.has(k);
@@ -9317,9 +2890,9 @@ window.confirmCharSelect = function() {
                   requestAnimationFrame(() => {
                     el.style.animation = 'cabinet-slide-cover 0.65s cubic-bezier(0.32,1.2,0.66,1) forwards';
                   });
-                }, idx * 50);
+                }, idx * 35);
               });
-            }, 900);
+            }, 650);
             // The correct cells pop open (briefly revealing the mole again), then
             // close back over a green checkmark — recall, demonstrated.
             setTimeout(() => {
@@ -9330,22 +2903,22 @@ window.confirmCharSelect = function() {
                   const cell = document.querySelector(`.intro-mem-cell[data-i="${k}"]`);
                   const cover = cell && cell.querySelector('.intro-mem-cover');
                   if (!cover) return;
-                  cover.style.transition = 'transform 0.5s ease-in';
+                  cover.style.transition = 'transform 0.45s ease-in';
                   cover.style.transform = 'translateX(-100%)';
                   setTimeout(() => {
                     cover.innerHTML = '✓';
                     cover.style.color = '#33ff66';
                     cover.style.borderColor = 'rgba(51,255,102,0.7)';
                     cover.style.background = 'rgba(51,255,102,0.15)';
-                    cover.style.transition = 'transform 0.5s ease-out';
+                    cover.style.transition = 'transform 0.45s ease-out';
                     cover.style.transform = 'translateX(0)';
-                  }, 500);
-                }, mi * 300);
+                  }, 450);
+                }, mi * 190);
                 mi++;
               });
-            }, 2400);
+            }, 1550);
           }},
-          { duration: 2000, show: () => {
+          { duration: 1800, show: () => {
             ann.innerHTML = introObjectiveHTML('WATCH THE TIMER', '#00e5ff', introTimerDemoHTML());
             startIntroTimerDrain();
           }},
@@ -9372,10 +2945,10 @@ window.confirmCharSelect = function() {
       </div>`;
     };
     ctrl = playIntroSteps([
-      { duration: 1000, show: () => showIntroWord('THIS ADVENTURE HAS THREE WAVES', '#f2efe8', 34) },
-      { duration: 1000, show: () => showIntroWord('WHACK', '#ff00cc', 64, 'whack') },
-      { duration: 1000, show: () => showIntroWord('CLEAR', '#ffe61a', 64, 'clear') },
-      { duration: 1000, show: () => showIntroWord('MEMORIZE', '#00e5ff', 64, 'memory') },
+      { duration: 1700, show: () => showIntroWord('THIS ADVENTURE HAS THREE WAVES', '#f2efe8', 34) },
+      { duration: 1400, show: () => showIntroWord('WHACK', '#ff00cc', 64, 'whack') },
+      { duration: 1400, show: () => showIntroWord('CLEAR', '#ffe61a', 64, 'clear') },
+      { duration: 1400, show: () => showIntroWord('MEMORIZE', '#00e5ff', 64, 'memory') },
     ], () => { ann.remove(); onDone(); }, ann, skipIntro);
   }
 
@@ -9393,7 +2966,7 @@ window.confirmCharSelect = function() {
       onDone();
     };
     ctrl = playIntroSteps([
-      { duration: 3000, show: () => {
+      { duration: 1500, show: () => {
         ann.innerHTML = introObjectiveHTML('THIS IS THE MOLE', '#00e5ff',
           `<div style="width:130px;height:130px;margin:16px auto 0;border-radius:16px;overflow:hidden;border:3px solid #ff4444;background:#ff444422;box-shadow:0 0 26px #ff444466;display:flex;align-items:center;justify-content:center">
             <div id="intro-mole-face" style="width:104px;height:104px;position:relative">${charFace(GAME_CHARS[moleChar],'normal')}</div>
@@ -9535,7 +3108,7 @@ window.confirmCharSelect = function() {
   // plus a generous time limit so move-efficiency, not the clock, is the real challenge.
   const MODE_CONFIG = {
     hard:       { pairs: 12, time: 60, targetMoves: null },
-    challenge:  { pairs: 15, time: 60, targetMoves: null },
+    challenge:  { pairs: 16, time: 60, targetMoves: null },
     impossible: { pairs: 21, time: 20, targetMoves: null },
   };
 
@@ -9549,9 +3122,9 @@ window.confirmCharSelect = function() {
 
   function gridLayout(pairs) {
     // Named modes use explicit clean grids so mobile never gets a ragged row or a
-    // too-wide square-ish board. Pair counts stay unchanged.
+    // too-wide square-ish board. Challenge uses 16 pairs to fit 4x8 cleanly.
     if (matchMode === 'hard') return { cols: 4, rows: 6 };       // 24 cards
-    if (matchMode === 'challenge') return { cols: 5, rows: 6 };  // 30 cards
+    if (matchMode === 'challenge') return { cols: 4, rows: 8 };  // 32 cards
     if (matchMode === 'impossible') return { cols: 6, rows: 7 }; // 42 cards
     const n = pairs * 2;
     const cols = Math.max(2, Math.min(7, Math.round(Math.sqrt(n))));
@@ -9612,7 +3185,7 @@ window.confirmCharSelect = function() {
             </button>
             <button class="whack-btn match-mode-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.1);padding:10px 16px;text-align:left" onclick="matchPlay('challenge')">
               <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;line-height:1.1">CHALLENGE</div>
-              <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:0.5px;opacity:0.9;margin-top:4px;white-space:nowrap">15 PAIRS · UNLIMITED MOVES · 60 SECONDS</div>
+              <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:0.5px;opacity:0.9;margin-top:4px;white-space:nowrap">16 PAIRS · UNLIMITED MOVES · 60 SECONDS</div>
             </button>
             <button class="whack-btn match-mode-btn" style="border-color:#ff4444;background:rgba(255,68,68,0.1);padding:10px 16px;text-align:left" onclick="matchPlay('impossible')">
               <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;line-height:1.1">IMPOSSIBLE</div>
@@ -9653,9 +3226,14 @@ window.confirmCharSelect = function() {
 
     if (state === 'preview') {
       const _gl = gridLayout(PAIRS);
-      const _ghp = (_gl.cols - 1) * 6 + 24;
-      const _vPad = window.innerWidth <= 600 ? 70 : 180;
-      const _gStyle = `--card:min(calc((min(100vw,520px) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - ${_vPad}px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card))`;
+      const _gap = matchMode === 'challenge' ? 4 : 6;
+      // Timed modes draw a vertical countdown bar to the right of the board.
+      // Reserve that gutter in the mobile card-size math so the bar sits BESIDE
+      // the cards instead of being clamped back on top of the last column.
+      const _sideBarReserve = (window.innerWidth <= 600 && (matchMode === 'hard' || matchMode === 'challenge')) ? 28 : 0;
+      const _ghp = (_gl.cols - 1) * _gap + 24 + _sideBarReserve;
+      const _vPad = window.innerWidth <= 600 ? (matchMode === 'challenge' ? 58 : 70) : 180;
+      const _gStyle = `--card:min(calc((min(100vw,520px) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - ${_vPad}px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card));gap:${_gap}px`;
       wrap.innerHTML = `
         <div class="match-hud" style="padding:6px 16px">
           <div style="font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:5px;color:#ffe61a;text-shadow:0 0 14px #ffe61a88" id="match-preview-cd">MEMORIZE!  ${matchMode === 'impossible' ? 7 : matchMode === 'challenge' ? 4 : 3}</div>
@@ -9676,9 +3254,14 @@ window.confirmCharSelect = function() {
 
     if (state === 'playing') {
       const _gl = gridLayout(PAIRS);
-      const _ghp = (_gl.cols - 1) * 6 + 24;
-      const _vPad = window.innerWidth <= 600 ? 70 : 180;
-      const _gStyle = `--card:min(calc((min(100vw,520px) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - ${_vPad}px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card))`;
+      const _gap = matchMode === 'challenge' ? 4 : 6;
+      // Timed modes draw a vertical countdown bar to the right of the board.
+      // Reserve that gutter in the mobile card-size math so the bar sits BESIDE
+      // the cards instead of being clamped back on top of the last column.
+      const _sideBarReserve = (window.innerWidth <= 600 && (matchMode === 'hard' || matchMode === 'challenge')) ? 28 : 0;
+      const _ghp = (_gl.cols - 1) * _gap + 24 + _sideBarReserve;
+      const _vPad = window.innerWidth <= 600 ? (matchMode === 'challenge' ? 58 : 70) : 180;
+      const _gStyle = `--card:min(calc((min(100vw,520px) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - ${_vPad}px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card));gap:${_gap}px`;
       wrap.innerHTML = `
         <div class="match-hud" style="padding:6px 16px">
           <div style="display:none"><div class="whack-stat-label">SCORE</div><div class="whack-stat-val" id="ms" style="font-size:24px">${matchScore}</div></div>
@@ -9930,8 +3513,14 @@ window.confirmCharSelect = function() {
     const grid = document.querySelector('.match-grid');
     if (!grid) return;
     const rect = grid.getBoundingClientRect();
+    const barW = 12;
+    const barGap = 8;
+    const safeRight = 8;
+    // The grid sizing reserves a mobile gutter for this bar. Keep this clamp only
+    // as a last-resort safety so the bar never leaves the viewport.
+    const barLeft = Math.min(rect.right + barGap, window.innerWidth - barW - safeRight);
     matchSideBarEl = document.createElement('div');
-    matchSideBarEl.style.cssText = `position:fixed;top:${rect.top}px;left:${rect.right + 10}px;width:12px;height:${rect.height}px;z-index:9400;pointer-events:none;background:rgba(0,0,0,0.35);border:1px solid rgba(255,230,26,0.25);border-radius:6px;overflow:hidden`;
+    matchSideBarEl.style.cssText = `position:fixed;top:${rect.top}px;left:${barLeft}px;width:${barW}px;height:${rect.height}px;z-index:9400;pointer-events:none;background:rgba(0,0,0,0.35);border:1px solid rgba(255,230,26,0.25);border-radius:6px;overflow:hidden`;
     matchSideBarEl.innerHTML = `<div id="match-sidebar-fill" style="position:absolute;bottom:0;left:0;width:100%;height:100%;background:rgba(255,230,26,0.5);box-shadow:0 0 8px rgba(255,230,26,0.35);transition:height 1s linear,background 0.3s"></div>`;
     document.body.appendChild(matchSideBarEl);
   }
@@ -9996,7 +3585,7 @@ window.confirmCharSelect = function() {
       items = ['12 PAIRS', 'UNLIMITED MOVES', '60 SECONDS'];
       watchTimer = true;
     } else if (mode === 'challenge') {
-      items = ['15 PAIRS', 'UNLIMITED MOVES', '60 SECONDS'];
+      items = ['16 PAIRS', 'UNLIMITED MOVES', '60 SECONDS'];
       watchTimer = true;
     } else {
       items = ['21 PAIRS', `${IMPOSSIBLE_MOVE_CUTOFF} MOVE LIMIT`, '20 SECONDS'];
@@ -10671,8 +4260,11 @@ window.confirmCharSelect = function() {
       const jitter = waveTheme !== 'asteroids';
       obstacles.push({ type:'asteroid', x:rand(r,W-r), y:-r-10, vx: jitter ? rand(-0.4,0.4)*cfg.speed : rand(-0.08,0.08)*cfg.speed, vy: jitter ? cfg.speed*(0.8+Math.random()*0.4) : cfg.speed*0.82, r, verts, rot:0, rotSpeed:rand(-0.02,0.02), hp:1, shadeSeed: Math.random() * 1000, rockStyle: Math.floor(Math.random() * 3) });
     } else {
-      const canRandomRescue = waveTheme !== 'captive' && waveCaptivesSeen.size === 0 && unrescuedMissionCaptives().some(ci => !obstacles.some(o => o.isTrapped && o.ci === ci));
-      let isTrapped = canRandomRescue && Math.random() < Math.max(0.025, 0.07 - wave * 0.004);
+      // Random trapped heroes in regular waves are disabled. The campaign already
+      // has one rescue target per boss/chapter beat, so surprise hero spawns made the
+      // rescue count feel noisy instead of intentional.
+      const canRandomRescue = false;
+      let isTrapped = false;
       let ci = isTrapped ? nextMissionCaptiveIndex(waveCaptivesSeen) : nextMissionEnemyIndex();
       if (isTrapped && ci < 0) { isTrapped = false; ci = nextMissionEnemyIndex(); }
       if (isTrapped) waveCaptivesSeen.add(ci);
@@ -10728,7 +4320,7 @@ window.confirmCharSelect = function() {
     const hp = hpBase + tier * (captive ? 5 : gizmoFinal ? 12 : 8) + Math.min(captive ? 16 : gizmoFinal ? 36 : 24, Math.floor(wave * (captive ? 1.0 : gizmoFinal ? 1.9 : 1.35)));
     const attackType = captive ? 'lockpulse' : bossAttackTypeFor(creature);
     boss = {
-      creature, x: W / 2, y: 160, vx: (Math.random() < 0.5 ? -1 : 1) * (captive ? 0.72 : 1.1),
+      creature, x: W / 2, y: 185, vx: (Math.random() < 0.5 ? -1 : 1) * (captive ? 0.72 : 1.1),
       r: BOSS_R, hp, maxHp: hp,
       attackType,
       nextAttack: Date.now() + (captive ? 2200 : 1800),
@@ -10995,18 +4587,18 @@ window.confirmCharSelect = function() {
       ctx.save();
       ctx.rotate(t2);
       const ringPulse = 1 + Math.sin(Date.now() * 0.008 + p.bob) * 0.05;
-      ctx.beginPath(); ctx.arc(0, 0, s * 1.14 * ringPulse, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(255,120,220,0.26)'; ctx.lineWidth = 8; ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, s * 1.37 * ringPulse, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,120,220,0.26)'; ctx.lineWidth = 9; ctx.stroke();
       const ringGrad = ctx.createLinearGradient(-s, -s, s, s);
       ringGrad.addColorStop(0, '#ff76d2');
       ringGrad.addColorStop(0.5, '#cc66ff');
       ringGrad.addColorStop(1, '#5ab1ff');
-      ctx.beginPath(); ctx.arc(0, 0, s * 1.02 * ringPulse, 0, Math.PI * 2);
-      ctx.strokeStyle = ringGrad; ctx.lineWidth = 2.8; ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, s * 1.22 * ringPulse, 0, Math.PI * 2);
+      ctx.strokeStyle = ringGrad; ctx.lineWidth = 3.2; ctx.stroke();
       for (let d = 0; d < 4; d++) {
         const a = (d / 4) * Math.PI * 2 + t2;
         ctx.fillStyle = d % 2 ? '#fff' : '#ff9be3';
-        ctx.beginPath(); ctx.arc(Math.cos(a) * s * 1.02 * ringPulse, Math.sin(a) * s * 1.02 * ringPulse, 3.2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(Math.cos(a) * s * 1.22 * ringPulse, Math.sin(a) * s * 1.22 * ringPulse, 3.6, 0, Math.PI * 2); ctx.fill();
       }
       ctx.restore();
     }
@@ -11129,16 +4721,16 @@ window.confirmCharSelect = function() {
     const b = parseInt(h.slice(4, 6), 16) || 255;
     return `rgba(${r},${g},${b},${alpha})`;
   }
-  function drawProjectileImage(type, x, y, size, rotation, glowColor, staticIcon) {
+  function drawProjectileImage(type, x, y, size, rotation, glowColor, staticIcon, mutedIcon) {
     const src = projectileImageForType(type);
     if (!src) return false;
     const img = _getImg(src);
     if (!img.complete || !img.naturalWidth) return false;
     const fx = PROJECTILE_FX[type] || {};
     const t = Date.now();
-    const activeGlow = glowColor || (fx.glow ? rgbaFromHex(fx.glow, 0.78) : null);
-    const pulse = 1 + Math.sin(t * 0.006 + x * 0.01 + y * 0.01) * (fx.pulse || 0.035);
-    const wobble = Math.sin(t * 0.005 + x * 0.02) * (fx.wobble || 0);
+    const activeGlow = mutedIcon ? null : (glowColor || (fx.glow ? rgbaFromHex(fx.glow, 0.78) : null));
+    const pulse = mutedIcon ? 1 : 1 + Math.sin(t * 0.006 + x * 0.01 + y * 0.01) * (fx.pulse || 0.035);
+    const wobble = mutedIcon ? 0 : Math.sin(t * 0.005 + x * 0.02) * (fx.wobble || 0);
     ctx.save();
     ctx.translate(x, y);
     if (rotation) ctx.rotate(rotation);
@@ -11147,7 +4739,7 @@ window.confirmCharSelect = function() {
     // the bomb (fuse pointing up) could land sideways at any given instant and read wrong.
     if (fx.spin && !staticIcon) ctx.rotate(t * fx.spin);
     if (wobble) ctx.rotate(wobble);
-    if (fx.trail) {
+    if (!mutedIcon && fx.trail) {
       ctx.save();
       ctx.globalAlpha = 0.55;
       ctx.fillStyle = rgbaFromHex(fx.trail, 0.2);
@@ -11156,7 +4748,7 @@ window.confirmCharSelect = function() {
       ctx.fill();
       ctx.restore();
     }
-    if (fx.fumes) {
+    if (!mutedIcon && fx.fumes) {
       ctx.save();
       ctx.globalAlpha = 0.5;
       ctx.fillStyle = rgbaFromHex(fx.fumes, 0.32);
@@ -11168,7 +4760,7 @@ window.confirmCharSelect = function() {
       }
       ctx.restore();
     }
-    if (fx.orbit) {
+    if (!mutedIcon && fx.orbit) {
       ctx.save();
       ctx.rotate(t * 0.003);
       ctx.strokeStyle = rgbaFromHex(fx.orbit, 0.38);
@@ -11182,7 +4774,7 @@ window.confirmCharSelect = function() {
       ctx.fill();
       ctx.restore();
     }
-    if (fx.sparks) {
+    if (!mutedIcon && fx.sparks) {
       ctx.save();
       ctx.fillStyle = rgbaFromHex(fx.sparks, 0.82);
       for (let i = 0; i < 2; i++) {
@@ -11197,6 +4789,10 @@ window.confirmCharSelect = function() {
     if (activeGlow) {
       ctx.shadowColor = activeGlow;
       ctx.shadowBlur = size * 0.3;
+    }
+    if (mutedIcon) {
+      ctx.globalAlpha *= 0.55;
+      ctx.filter = 'grayscale(1) saturate(0.25) brightness(0.75)';
     }
     ctx.drawImage(img, -size * pulse / 2, -size * pulse / 2, size * pulse, size * pulse);
     ctx.restore();
@@ -11599,21 +5195,108 @@ window.confirmCharSelect = function() {
 
   function showGizmoEscapeBeat(rescuedCi, onDone) {
     waveTransitioning = true;
+    const isEarlyWave = (wave <= 2 || wave === 10 || wave === 11);
+    const holdMs = isEarlyWave ? 7800 : 3300;
+    const flyDur = isEarlyWave ? 1.8 : 1.45;
+    const flyDelay = isEarlyWave ? 5.2 : 0.25;
     const el = document.createElement('div');
     el.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(3,1,16,0.9);opacity:0;transition:opacity 0.25s ease;pointer-events:none';
     const rescueLine = rescuedCi >= 0 ? `BUT ${GAME_CHARS[rescuedCi].name.toUpperCase()} IS FREE` : 'BUT A MOBE IS FREE';
+    const hahaHTML = isEarlyWave ? `
+      <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden">
+        <div style="position:absolute;top:12%;left:8%;font-family:'Bebas Neue',cursive;font-size:28px;color:#cc66ff;text-shadow:0 0 14px #cc66ff88;opacity:0;animation:sp-haha-float 0.4s ease-out 0.5s forwards">HA</div>
+        <div style="position:absolute;top:22%;right:12%;font-family:'Bebas Neue',cursive;font-size:34px;color:#cc66ff;text-shadow:0 0 14px #cc66ff88;opacity:0;animation:sp-haha-float 0.4s ease-out 0.9s forwards">HA HA</div>
+        <div style="position:absolute;top:8%;left:42%;font-family:'Bebas Neue',cursive;font-size:22px;color:#cc66ff;text-shadow:0 0 14px #cc66ff88;opacity:0;animation:sp-haha-float 0.4s ease-out 1.3s forwards">HA</div>
+        <div style="position:absolute;top:32%;left:18%;font-family:'Bebas Neue',cursive;font-size:30px;color:#cc66ff;text-shadow:0 0 14px #cc66ff88;opacity:0;animation:sp-haha-float 0.4s ease-out 1.7s forwards">HA HA</div>
+        <div style="position:absolute;top:16%;right:28%;font-family:'Bebas Neue',cursive;font-size:26px;color:#cc66ff;text-shadow:0 0 14px #cc66ff88;opacity:0;animation:sp-haha-float 0.4s ease-out 2.0s forwards">HA</div>
+        <div style="position:absolute;top:38%;right:8%;font-family:'Bebas Neue',cursive;font-size:32px;color:#cc66ff;text-shadow:0 0 14px #cc66ff88;opacity:0;animation:sp-haha-float 0.4s ease-out 2.3s forwards">HA HA HA</div>
+        <div style="position:absolute;top:5%;left:22%;font-family:'Bebas Neue',cursive;font-size:20px;color:#cc66ff;text-shadow:0 0 14px #cc66ff88;opacity:0;animation:sp-haha-float 0.4s ease-out 2.6s forwards">HA</div>
+        <div style="position:absolute;top:28%;left:52%;font-family:'Bebas Neue',cursive;font-size:24px;color:#cc66ff;text-shadow:0 0 14px #cc66ff88;opacity:0;animation:sp-haha-float 0.4s ease-out 2.9s forwards">HA HA</div>
+        <div style="position:absolute;top:42%;left:6%;font-family:'Bebas Neue',cursive;font-size:27px;color:#cc66ff;text-shadow:0 0 14px #cc66ff88;opacity:0;animation:sp-haha-float 0.4s ease-out 3.2s forwards">HA</div>
+        <div style="position:absolute;top:18%;left:62%;font-family:'Bebas Neue',cursive;font-size:30px;color:#cc66ff;text-shadow:0 0 14px #cc66ff88;opacity:0;animation:sp-haha-float 0.4s ease-out 3.5s forwards">HA HA</div>
+      </div>` : '';
     el.innerHTML = `
-      <div style="width:min(92vw,390px);text-align:center">
-        <div style="transform:translateX(0);animation:sp-brief-boss-out 1.45s ease-in 0.25s both">${spaceBriefingBoss('out')}</div>
-        <div style="font-family:'Bebas Neue',cursive;font-size:48px;letter-spacing:5px;line-height:1;color:#cc66ff;text-shadow:0 0 18px #cc66ff88;margin-top:12px">GIZMO ESCAPED!</div>
+      ${hahaHTML}
+      <div style="position:absolute;left:50%;top:50%;width:118px;text-align:center;animation:sp-gizmo-centered-out ${flyDur}s ease-in ${flyDelay}s both">
+        <div style="animation:sp-gizmo-laugh-rock 0.92s ease-in-out infinite">${spaceBriefingBoss('hold')}</div>
+      </div>
+      <div style="position:absolute;left:50%;top:calc(50% + 88px);width:min(92vw,390px);transform:translateX(-50%);text-align:center">
+        <div style="font-family:'Bebas Neue',cursive;font-size:48px;letter-spacing:5px;line-height:1;color:#cc66ff;text-shadow:0 0 18px #cc66ff88">GIZMO ESCAPED!</div>
         <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:#00e5ff;text-shadow:0 0 10px #00e5ff;margin-top:12px">${rescueLine}</div>
       </div>`;
     document.body.appendChild(el);
     requestAnimationFrame(() => { el.style.opacity = '1'; });
+    if (isEarlyWave) SFX.scaryLaugh();
     setTimeout(() => {
       el.style.opacity = '0';
       setTimeout(() => { el.remove(); waveTransitioning = false; if (onDone) onDone(); }, 260);
-    }, 3300);
+    }, holdMs);
+  }
+
+  function showMissionFailedBeat(onDone) {
+    const gc = GAME_CHARS[activeChar];
+    const rescued = rescuedChars.size;
+    const total = missionTrappedChars.length || SPACE_RESCUE_TARGET_COUNT;
+    const allSaved = rescued >= total;
+    const captiveGrid = missionTrappedChars.length ? missionTrappedChars.map(ci => {
+      const g = GAME_CHARS[ci];
+      const freed = rescuedChars.has(ci);
+      return `<div style="width:42px;text-align:center">
+        <div style="position:relative;width:42px;height:42px;border-radius:50%;overflow:visible;filter:${freed ? 'none' : 'grayscale(0.9) brightness(0.55)'}">
+          ${charFace(g, freed ? 'happy' : 'sad')}
+          ${freed ? `<div style="position:absolute;right:-2px;bottom:-2px;width:14px;height:14px;border-radius:50%;background:#0c1a12;border:1.5px solid #33ff66;display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1;color:#33ff66;box-shadow:0 0 6px rgba(51,255,102,0.65)">&#10003;</div>` : ''}
+        </div>
+        <div style="font-family:'VCR',monospace;font-size:6px;letter-spacing:0.5px;color:${freed ? 'rgba(242,239,232,0.7)' : 'rgba(242,239,232,0.3)'};margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${g.name}</div>
+      </div>`;
+    }).join('') : '';
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(3,1,16,0);opacity:1;transition:background 0.35s ease;pointer-events:none';
+    el.innerHTML = `
+      <div style="width:min(94vw,410px);text-align:center;opacity:0;transform:scale(0.96);transition:opacity 0.35s ease,transform 0.35s ease">
+        <div style="font-family:'Bebas Neue',cursive;font-size:52px;letter-spacing:6px;line-height:0.95;color:#ff4444;text-shadow:0 0 22px #ff444488;margin-bottom:18px">MISSION FAILED</div>
+        <div style="width:110px;height:110px;margin:0 auto 14px;border-radius:18px;overflow:hidden;border:3px solid ${gc.color}66;background:${gc.color}11;box-shadow:0 0 18px ${gc.color}33">${charFace(gc, 'sad')}</div>
+        <div style="font-family:'VCR',monospace;font-size:12px;letter-spacing:3px;color:rgba(242,239,232,0.5);margin-bottom:6px">${gc.name}</div>
+        <div style="font-family:'Bebas Neue',cursive;font-size:36px;letter-spacing:4px;line-height:1;color:${allSaved ? '#33ff66' : '#00e5ff'};text-shadow:0 0 14px ${allSaved ? '#33ff66' : '#00e5ff'}88;margin-bottom:6px">${rescued}/${total} HEROES SAVED</div>
+        <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.45);margin-bottom:18px">WAVE ${wave} · SCORE ${score}</div>
+        ${captiveGrid ? `<div style="display:grid;grid-template-columns:repeat(5,42px);justify-content:center;gap:10px 14px;margin:0 auto 20px">${captiveGrid}</div>` : ''}
+        <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.4)">THEY STILL NEED YOU</div>
+      </div>`;
+    document.body.appendChild(el);
+    const card = el.firstElementChild;
+    requestAnimationFrame(() => {
+      el.style.background = 'rgba(3,1,16,0.94)';
+      card.style.opacity = '1';
+      card.style.transform = 'scale(1)';
+    });
+    setTimeout(() => {
+      // Build the leaderboard/result overlay BEFORE the mission-failed card fades out,
+      // so the player never sees the stale launch menu underneath during the handoff.
+      if (onDone) onDone();
+      requestAnimationFrame(() => {
+        el.style.background = 'rgba(3,1,16,0)';
+        card.style.opacity = '0';
+        card.style.transform = 'scale(1.04)';
+        setTimeout(() => { el.remove(); }, 350);
+      });
+    }, 4800);
+  }
+
+  function showBossDefeatedBeat(bossName, x, y, onDone) {
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;inset:0;z-index:9997;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity 0.2s ease';
+    el.innerHTML = `
+      <div style="text-align:center">
+        <div style="font-family:'Bebas Neue',cursive;font-size:clamp(36px,8vw,58px);letter-spacing:5px;line-height:1;color:#ffe61a;text-shadow:0 0 22px #ffe61a88,0 0 44px #ffe61a44;transform:scale(0.85);transition:transform 0.35s cubic-bezier(.2,1.15,.35,1)">${(bossName || 'BOSS').toUpperCase()} DEFEATED!</div>
+      </div>`;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => {
+      el.style.opacity = '1';
+      el.querySelector('div > div').style.transform = 'scale(1)';
+    });
+    setTimeout(() => {
+      el.style.opacity = '0';
+      setTimeout(() => { el.remove(); if (onDone) onDone(); }, 220);
+    }, 1800);
   }
 
   function showBossRescueUnlockBeat(rescuedCi, bossName, onDone) {
@@ -11633,17 +5316,18 @@ window.confirmCharSelect = function() {
           <div style="position:absolute;inset:22px;border-radius:50%;background:${gc.color || '#33d4e0'};box-shadow:0 0 22px ${gc.color || '#33d4e0'}88;overflow:hidden">
             ${img ? `<img src="${img}" alt="" style="width:100%;height:100%;object-fit:contain;filter:saturate(1.15)">` : `<div style="font-size:62px;line-height:110px">${gc.happy || gc.emoji || ''}</div>`}
           </div>
-          <div style="position:absolute;left:50%;top:50%;width:190px;height:5px;background:#eaffff;box-shadow:0 0 18px #00e5ff;transform:translate(-50%,-50%) rotate(-16deg);animation:sp-brief-line-in 0.35s ease-out 0.2s both"></div>
         </div>
-        <div style="font-family:'Bebas Neue',cursive;font-size:54px;letter-spacing:6px;line-height:0.95;color:#33ff66;text-shadow:0 0 22px #33ff6688">${gc.name.toUpperCase()} UNLOCKED!</div>
+        <div style="font-family:'Bebas Neue',cursive;font-size:54px;letter-spacing:6px;line-height:0.95;color:#33ff66;text-shadow:0 0 22px #33ff6688">${gc.name.toUpperCase()} IS FREE!</div>
         <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:#b9f7ff;text-shadow:0 0 10px #00e5ff;margin-top:12px">RESCUED ${rescuedChars.size}/${missionTrappedChars.length || SPACE_RESCUE_TARGET_COUNT}</div>
       </div>`;
     document.body.appendChild(el);
     requestAnimationFrame(() => { el.style.opacity = '1'; });
+    SFX.missionHero();
+    ticketConfetti(true);
     setTimeout(() => {
       el.style.opacity = '0';
       setTimeout(() => { el.remove(); waveTransitioning = false; if (onDone) onDone(); }, 260);
-    }, 2950);
+    }, 4800);
   }
 
   function freeAllRemainingMobes() {
@@ -11699,7 +5383,7 @@ function nextWave() {
     currentCfg = waveConfig(wave);
     waveTheme = pickWaveTheme(wave, previousTheme);
     pendingBossCreature = (waveTheme === 'boss' || waveTheme === 'gizmo') ? pickBossCreature() : null;
-    const announceMs = 5200; // a bit more breathing room on top of the spin+hold
+    const announceMs = 7000;
     showWaveClearedBeat(clearedWave, () => {
       themeEffectsAt = Date.now() + announceMs;
       // Nothing for the new wave spawns until the announcement is actually gone —
@@ -11761,13 +5445,13 @@ function nextWave() {
   function waveCaptiveFace(ci) {
     const gc = GAME_CHARS[ci];
     const freed = rescuedChars.has(ci);
-    const size = 38;
-    return `<div style="width:${size}px;text-align:center;font-family:'VCR',monospace;font-size:6.5px;letter-spacing:0.5px;color:${freed ? 'rgba(242,239,232,0.7)' : 'rgba(242,239,232,0.38)'}">
+    const size = 54;
+    return `<div style="width:${size}px;text-align:center;font-family:'VCR',monospace;font-size:7.5px;letter-spacing:0.5px;color:${freed ? 'rgba(242,239,232,0.7)' : 'rgba(242,239,232,0.38)'}">
       <div style="position:relative;width:${size}px;height:${size}px;border-radius:50%;overflow:visible;filter:${freed ? 'none' : 'grayscale(0.9) brightness(0.55)'}">
         ${charFace(gc, freed ? 'happy' : 'normal')}
-        ${freed ? `<div style="position:absolute;right:-2px;bottom:-2px;width:14px;height:14px;border-radius:50%;background:#0c1a12;border:1.5px solid #33ff66;display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1;color:#33ff66;box-shadow:0 0 6px rgba(51,255,102,0.65)">&#10003;</div>` : ''}
+        ${freed ? `<div style="position:absolute;right:-2px;bottom:-2px;width:16px;height:16px;border-radius:50%;background:#0c1a12;border:1.5px solid #33ff66;display:flex;align-items:center;justify-content:center;font-size:10px;line-height:1;color:#33ff66;box-shadow:0 0 6px rgba(51,255,102,0.65)">&#10003;</div>` : ''}
       </div>
-      <div style="margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${gc.name}</div>
+      <div style="margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${gc.name}</div>
     </div>`;
   }
 
@@ -11782,7 +5466,7 @@ function nextWave() {
     // Folding the captive grid into the same centered, animated block naturally pulls
     // the slot-machine text up a bit too — the taller block still centers as a whole.
     const captiveGridHTML = missionTrappedChars.length ? `
-      <div style="margin-top:22px;display:flex;flex-wrap:wrap;justify-content:center;gap:10px;max-width:300px">${missionTrappedChars.map(waveCaptiveFace).join('')}</div>` : '';
+      <div style="margin-top:22px;display:flex;flex-wrap:wrap;justify-content:center;gap:12px 16px;max-width:380px">${missionTrappedChars.map(waveCaptiveFace).join('')}</div>` : '';
     ann.innerHTML=`<div style="text-align:center;animation:wave-announce ${ds}s ease-out forwards">
       <div id="sp-wave-incoming" style="font-family:'VCR',monospace;font-size:11px;letter-spacing:5px;color:#33ff66">INCOMING</div>
       <div id="sp-wave-type" style="font-family:'Bebas Neue',cursive;font-size:clamp(30px, 8vh, 60px);letter-spacing:6px;color:#33ff66;text-shadow:0 0 20px #33ff66,0 0 40px #33ff6688;line-height:1;transition:transform 0.3s ease-out">SURVIVE</div>
@@ -12591,7 +6275,7 @@ function nextWave() {
             const spread = count === 1 ? 0 : (k - (count - 1) / 2) / ((count - 1) / 2);
             const vx = spread * speed * 0.55;
             const vy = speed * (0.92 + Math.abs(spread) * 0.12);
-            enemyBullets.push({ x: boss.x + spread * boss.r * 0.55, y: boss.y + boss.r * 0.72, vx, vy, r: 5.5, isLock: true });
+            enemyBullets.push({ x: boss.x + spread * boss.r * 0.55, y: boss.y + boss.r * 0.72, vx, vy, r: 6.6, isLock: true });
           }
           addFloatText('LOCK PULSE!', boss.x, boss.y + boss.r + 18, '#00e5ff', 16);
           SFX.neonOn && SFX.neonOn();
@@ -12601,7 +6285,7 @@ function nextWave() {
           const speed = 2.25 + bt * 0.16 + Math.max(0, wave - 18) * 0.06;
           for (let k = 0; k < count; k++) {
             const spread = (k - (count - 1) / 2) * 0.28;
-            enemyBullets.push({ x: boss.x + (k - (count - 1) / 2) * boss.r * 0.34, y: boss.y + boss.r * 0.48, vx: spread * speed, vy: speed * 0.72, r: 7.5, theme: 'donkey', gravity: 0.055, born: Date.now() });
+            enemyBullets.push({ x: boss.x + (k - (count - 1) / 2) * boss.r * 0.34, y: boss.y + boss.r * 0.48, vx: spread * speed, vy: speed * 0.72, r: 9, theme: 'donkey', gravity: 0.055, born: Date.now() });
           }
           addFloatText('DONKEY STOMP!', boss.x, boss.y + boss.r + 18, '#c7a16b', 16);
           SFX.bomberDive && SFX.bomberDive();
@@ -12612,7 +6296,7 @@ function nextWave() {
           const speed = 3.0 + bt * 0.22 + Math.max(0, wave - 18) * 0.08;
           for (let k = 0; k < count; k++) {
             const ang = base + (k - (count - 1) / 2) * 0.16;
-            enemyBullets.push({ x: boss.x, y: boss.y + boss.r * 0.48, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, r: 6.4, theme: 'fire', splitAt: 520, splitTheme: 'fire', splitSpeed: 2.35, born: Date.now() });
+            enemyBullets.push({ x: boss.x, y: boss.y + boss.r * 0.48, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, r: 7.7, theme: 'fire', splitAt: 520, splitTheme: 'fire', splitSpeed: 2.35, born: Date.now() });
           }
           addFloatText('FIRE BREATH!', boss.x, boss.y + boss.r + 18, '#ff6600', 16);
           SFX.tone && SFX.tone(160,'sawtooth',0,0.18,0.09,80);
@@ -12622,7 +6306,7 @@ function nextWave() {
           addFloatText('SHIELD UP!', boss.x, boss.y + boss.r + 18, '#c8d4ff', 16);
           for (let k = 0; k < 3; k++) {
             const spread = (k - 1) * 0.42;
-            enemyBullets.push({ x: boss.x + spread * boss.r * 0.46, y: boss.y + boss.r * 0.5, vx: spread * 2.8, vy: 2.8, r: 5.8, theme: 'shield', born: Date.now() });
+            enemyBullets.push({ x: boss.x + spread * boss.r * 0.46, y: boss.y + boss.r * 0.5, vx: spread * 2.8, vy: 2.8, r: 7, theme: 'shield', born: Date.now() });
           }
           SFX.neonOn && SFX.neonOn();
           boss.nextAttack = Date.now() + (boss.attackDelay || 2400);
@@ -12631,7 +6315,7 @@ function nextWave() {
           const speed = 2.65 + bt * 0.16 + Math.max(0, wave - 18) * 0.06;
           for (let k = 0; k < count; k++) {
             const spread = (k - (count - 1) / 2) * 0.24;
-            enemyBullets.push({ x: boss.x + spread * boss.r, y: boss.y + boss.r * 0.45, vx: spread * speed, vy: speed, r: 6.2, theme: 'greenOrb', homing: 0.018, maxSpeed: speed + 0.85, born: Date.now() });
+            enemyBullets.push({ x: boss.x + spread * boss.r, y: boss.y + boss.r * 0.45, vx: spread * speed, vy: speed, r: 7.4, theme: 'greenOrb', homing: 0.018, maxSpeed: speed + 0.85, born: Date.now() });
           }
           addFloatText('HOMING ORBS!', boss.x, boss.y + boss.r + 18, '#33ff66', 16);
           SFX.emp && SFX.emp();
@@ -12642,7 +6326,7 @@ function nextWave() {
           for (let k = 0; k < count; k++) {
             const left = k % 2 === 0;
             const lane = Math.floor(k / 2);
-            enemyBullets.push({ x: left ? -10 : W + 10, y: boss.y + boss.r * (0.72 + lane * 0.28), vx: (left ? 1 : -1) * (speed * 0.82), vy: speed * 0.68, r: 6.4, theme: 'fish', waveAmp: 0.9 + lane * 0.15, waveFreq: 0.015, phase: k, born: Date.now() });
+            enemyBullets.push({ x: left ? -10 : W + 10, y: boss.y + boss.r * (0.72 + lane * 0.28), vx: (left ? 1 : -1) * (speed * 0.82), vy: speed * 0.68, r: 7.7, theme: 'fish', waveAmp: 0.9 + lane * 0.15, waveFreq: 0.015, phase: k, born: Date.now() });
           }
           addFloatText('TEETH PINCER!', boss.x, boss.y + boss.r + 18, '#5ab1ff', 16);
           SFX.bomberDive && SFX.bomberDive();
@@ -12653,7 +6337,7 @@ function nextWave() {
           const speed = 3.05 + bt * 0.18 + Math.max(0, wave - 18) * 0.06;
           for (let k = 0; k < count; k++) {
             const ang = base + (k - (count - 1) / 2) * 0.28;
-            enemyBullets.push({ x: boss.x, y: boss.y + boss.r * 0.55, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, r: 6.4, theme: 'sombrero', boomerang: 0.012, born: Date.now() });
+            enemyBullets.push({ x: boss.x, y: boss.y + boss.r * 0.55, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, r: 7.7, theme: 'sombrero', boomerang: 0.012, born: Date.now() });
           }
           addFloatText('BOOMERANG HATS!', boss.x, boss.y + boss.r + 18, '#d99a2b', 16);
           SFX.tone && SFX.tone(420,'square',0,0.06,0.08,260);
@@ -12663,7 +6347,7 @@ function nextWave() {
           const speed = 2.75 + bt * 0.22 + Math.max(0, wave - 18) * 0.08;
           for (let k = 0; k < count; k++) {
             const ang = Math.PI * 0.15 + (k / (count - 1)) * Math.PI * 0.7;
-            enemyBullets.push({ x: boss.x, y: boss.y + boss.r * 0.35, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, r: 6.2, theme: 'ink', splat: true, born: Date.now() });
+            enemyBullets.push({ x: boss.x, y: boss.y + boss.r * 0.35, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, r: 7.4, theme: 'ink', splat: true, born: Date.now() });
           }
           addFloatText('INK BURST!', boss.x, boss.y + boss.r + 18, '#7040b8', 16);
           SFX.neonOn && SFX.neonOn();
@@ -12673,10 +6357,10 @@ function nextWave() {
           const speed = 2.9 + bt * 0.24 + Math.max(0, wave - 18) * 0.08;
           for (let k = 0; k < count; k++) {
             const spread = count === 1 ? 0 : (k - (count - 1) / 2) / ((count - 1) / 2);
-            enemyBullets.push({ x: boss.x + spread * boss.r * 0.58, y: boss.y + boss.r * 0.5, vx: spread * speed * 0.45, vy: speed, r: 5.2, isLock: true, homing: boss.isFinalGizmo ? 0.012 : 0.007, maxSpeed: speed + 0.55, born: Date.now() });
+            enemyBullets.push({ x: boss.x + spread * boss.r * 0.58, y: boss.y + boss.r * 0.5, vx: spread * speed * 0.45, vy: speed, r: 7.8, isLock: true, visualScale: 4.1, homing: boss.isFinalGizmo ? 0.012 : 0.007, maxSpeed: speed + 0.55, born: Date.now() });
           }
           addFloatText('GIZMO GLOW!', boss.x, boss.y + boss.r + 18, '#8e55d8', 16);
-          SFX.missionOminous && SFX.missionOminous();
+          SFX.gizmoBark ? SFX.gizmoBark() : (SFX.missionOminous && SFX.missionOminous());
           boss.nextAttack = Date.now() + (boss.attackDelay || 2200);
         } else if (boss.attackType === 'laser') {
           boss.laserPhase = 'charging';
@@ -12688,7 +6372,7 @@ function nextWave() {
             const dx = player.x - boss.x, dy = player.y - boss.y;
             const ang = Math.atan2(dy, dx) + (k - (count - 1) / 2) * 0.12;
             const bulletSpeed = 4 + wave * 0.15;
-            enemyBullets.push({ x: boss.x, y: boss.y + boss.r*0.6, vx: Math.cos(ang)*bulletSpeed, vy: Math.sin(ang)*bulletSpeed, r: 5 });
+            enemyBullets.push({ x: boss.x, y: boss.y + boss.r*0.6, vx: Math.cos(ang)*bulletSpeed, vy: Math.sin(ang)*bulletSpeed, r: 6 });
           }
           SFX.tone && SFX.tone(300,'square',0,0.04,0.08,200);
           boss.nextAttack = Date.now() + (boss.attackDelay || 2200);
@@ -13009,7 +6693,8 @@ function nextWave() {
             let rescuedCi = -1;
             if ((defeatedBoss.isCaptive || defeatedBoss.guardedRescue) && defeatedBoss.captiveCi >= 0) {
               rescuedCi = defeatedBoss.captiveCi;
-              rescueMissionChar(defeatedBoss.captiveCi, defeatedBoss.x, defeatedBoss.y, 'HERO FREED! +500');
+              rescueMissionChar(defeatedBoss.captiveCi, defeatedBoss.x, defeatedBoss.y, ' ');
+              rescueBanner = null;
             }
             triggerShake(14);
             bigExplosion(defeatedBoss.x, defeatedBoss.y, '#ff4444');
@@ -13027,7 +6712,12 @@ function nextWave() {
               freeAllRemainingMobes();
               showSpaceVictoryBriefing(() => { if (state === 'playing') nextWave(); });
             } else if (rescuedCi >= 0) {
-              showBossRescueUnlockBeat(rescuedCi, defeatedBoss.creature.name, () => { if (state === 'playing') nextWave(); });
+              showBossDefeatedBeat(defeatedBoss.creature.name, defeatedBoss.x, defeatedBoss.y, () => {
+                if (state !== 'playing') return;
+                showBossRescueUnlockBeat(rescuedCi, defeatedBoss.creature.name, () => { if (state === 'playing') nextWave(); });
+              });
+            } else if (!defeatedBoss.isCaptive) {
+              showBossDefeatedBeat(defeatedBoss.creature.name, defeatedBoss.x, defeatedBoss.y);
             }
             break;
           } else {
@@ -13250,7 +6940,7 @@ function nextWave() {
         if (specialType) {
           const rot = Math.atan2(b.vy, b.vx || 0) + Math.PI / 2;
           const glow = b.isLock ? 'rgba(0,229,255,0.75)' : b.isIce ? 'rgba(160,220,255,0.75)' : 'rgba(204,153,255,0.72)';
-          drawProjectileImage(specialType, b.x, b.y, (b.r || 5) * 3.4, rot, glow);
+          drawProjectileImage(specialType, b.x, b.y, (b.r || 5) * (b.visualScale || 3.4), rot, glow);
         } else {
           // Longer, thinner streak — reads as a directional bullet rather than a round
           // drifting rock. Halo + core kept small so it doesn't puff back out into
@@ -13426,9 +7116,9 @@ function nextWave() {
       ctx.strokeStyle = held ? SOCKET_COLOR[type] : 'rgba(150,150,160,0.35)';
       ctx.lineWidth = held ? 2.5 : 2;
       ctx.stroke();
-      if (!held) ctx.globalAlpha = 0.3;
+      if (!held) ctx.globalAlpha = 0.45;
       const socketImgType = type === 'shield' ? 'powerShield' : type === 'gun' ? 'gun' : type === 'bomb' ? 'bomb' : null;
-      if (socketImgType && drawProjectileImage(socketImgType, 0, 0, rad * 1.35, 0, held ? SOCKET_COLOR[type] : null, true)) {
+      if (socketImgType && drawProjectileImage(socketImgType, 0, 0, rad * 1.35, 0, held ? SOCKET_COLOR[type] : null, true, !held)) {
         // PNG icon handled.
       } else if (type === 'shield') {
         const hr = rad * 0.6;
@@ -13882,7 +7572,7 @@ function nextWave() {
       const cv = document.getElementById(`space-boss-cv-${i}`);
       if (!cv) return;
       const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
-      const css = 92;
+      const css = 112; // larger drawing surface prevents the boss aura/ring from clipping at the canvas edge
       cv.width = Math.round(css * dpr);
       cv.height = Math.round(css * dpr);
       cv.style.width = `${css}px`;
@@ -14033,10 +7723,6 @@ function nextWave() {
         const br = boss.r * 0.42;
         ctx.save();
         ctx.globalAlpha = 0.96;
-        ctx.strokeStyle = 'rgba(185,135,255,0.72)';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath(); ctx.moveTo(boss.r * 0.08, boss.r * 0.08); ctx.lineTo(bx - br * 0.55, by - br * 0.52); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(boss.r * 0.3, boss.r * 0.18); ctx.lineTo(bx + br * 0.55, by - br * 0.46); ctx.stroke();
         ctx.translate(bx, by);
         ctx.beginPath(); ctx.arc(0, 0, br * 1.15, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(0,229,255,0.12)'; ctx.fill();
@@ -14436,32 +8122,38 @@ function nextWave() {
       startSpaceBossPreviewAnimation();
     } else if(mode==='over'){
       setArcadeExitVisible(false);
+      // Clear stale launch/select markup immediately; otherwise it can flash between
+      // the in-game mission-failed beat and the leaderboard game-over card.
+      ov.innerHTML = '';
+      ov.classList.remove('hidden');
       const isNew=score>=parseInt(localStorage.getItem('space-best')||'0');
       const boardKey = getSpaceLeaderboardKey();
       const uid = 'space';
-      ov.innerHTML = buildArcadeResultCard({
-        uid,
-        boardKey,
-        artGame: 'space',
-        color: '#33ff66',
-        marquee: isNew && score > 0 ? 'GAME OVER' : 'GAME OVER',
-        marqueeEnd: '#006622',
-        scoreLabel: 'YOUR SCORE',
-        scoreValue: score,
-        saveValue: score,
-	        field: 'score',
-	        extra: `RESCUED ${rescuedChars.size}/${missionTrappedChars.length || SPACE_RESCUE_TARGET_COUNT} / WAVE ${wave}`,
-	        ascending: false,
-	        maxWidth: 410,
-	        minHeight: 330,
-	        saveMarginTop: 18,
-	        buttons: `
-          <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY AGAIN</button>
-          <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="nav('lobby')">BACK TO ARCADE</button>
-        `,
+      showMissionFailedBeat(() => {
+        ov.innerHTML = buildArcadeResultCard({
+          uid,
+          boardKey,
+          artGame: 'space',
+          color: '#33ff66',
+          marquee: isNew && score > 0 ? 'GAME OVER' : 'GAME OVER',
+          marqueeEnd: '#006622',
+          scoreLabel: 'YOUR SCORE',
+          scoreValue: score,
+          saveValue: score,
+          field: 'score',
+          extra: `RESCUED ${rescuedChars.size}/${missionTrappedChars.length || SPACE_RESCUE_TARGET_COUNT} / WAVE ${wave}`,
+          ascending: false,
+          maxWidth: 410,
+          minHeight: 330,
+          saveMarginTop: 18,
+          buttons: `
+            <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY AGAIN</button>
+            <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="nav('lobby')">BACK TO ARCADE</button>
+          `,
+        });
+        loadRemoteBoard(boardKey, `${uid}-board`, '#33ff66', 'score');
+        mountSelectionArt(`${uid}-art`, 'space');
       });
-      loadRemoteBoard(boardKey, `${uid}-board`, '#33ff66', 'score');
-      mountSelectionArt(`${uid}-art`, 'space');
     }
     ov.classList.remove('hidden');
   }
@@ -14806,7 +8498,7 @@ function nextWave() {
   }
 
   function spaceBriefingBoss(mode) {
-    const anim = mode === 'out' ? 'sp-brief-boss-out 1.6s ease-in both' : 'sp-brief-boss-in 0.9s cubic-bezier(.2,1.15,.35,1) both';
+    const anim = mode === 'out' ? 'sp-brief-boss-out 1.6s ease-in both' : (mode === 'hold' ? 'none' : 'sp-brief-boss-in 0.9s cubic-bezier(.2,1.15,.35,1) both');
     return `<div style="width:118px;text-align:center;font-family:'VCR',monospace;font-size:9px;letter-spacing:2px;color:#cc66ff;animation:${anim}">
       <div style="position:relative;width:118px;height:118px;margin:0 auto;border-radius:50%;background:radial-gradient(circle,rgba(185,135,255,0.24) 0 48%,rgba(185,135,255,0.06) 64%,rgba(25,4,46,0) 76%);border:3px solid #8e55d8;box-shadow:0 0 30px rgba(142,85,216,0.72), inset 0 -14px 20px rgba(0,0,0,0.3)">
         <div style="position:absolute;inset:-12px;border-radius:50%;border:2px solid rgba(142,85,216,0.68);box-shadow:0 0 24px rgba(142,85,216,0.48);animation:sp-ring-spin 3s linear infinite"></div>
@@ -15139,11 +8831,14 @@ function nextWave() {
 
     const pizzaSVG = `<svg viewBox="0 0 44 44" width="44" height="44"><path d="M22,4 L38,37 Q22,45 6,37 Z" fill="#ff660018" stroke="#ff6600" stroke-width="1.8" stroke-linejoin="round"/><path d="M6,37 Q22,47 38,37" fill="none" stroke="#ff9933" stroke-width="4" stroke-linecap="round"/><path d="M22,8 L36,36 Q22,42 8,36 Z" fill="#cc110018" stroke="#cc1100" stroke-width="1.2" opacity="0.85"/><ellipse cx="21" cy="22" rx="4.5" ry="3.5" fill="#ffe61a" opacity="0.82"/><ellipse cx="26" cy="30" rx="3.5" ry="3" fill="#ffe61a" opacity="0.72"/><ellipse cx="16" cy="30" rx="3" ry="2.5" fill="#ffe61a" opacity="0.72"/><circle cx="23" cy="16" r="2.5" fill="#cc0000" opacity="0.9"/><circle cx="17" cy="26" r="2" fill="#cc0000" opacity="0.85"/><circle cx="26" cy="25" r="2" fill="#cc0000" opacity="0.85"/></svg>`;
 
-    // True repeating wallpaper grid: 4 cols × 5 rows = 20 fixed positions
-    // Sequence repeats: coin, ticket, pizza, coin across each row
+    // Responsive repeating wallpaper grid. The old fixed 4×6 grid looked sparse on
+    // desktop because those same columns stretched across the wider viewport.
     const sequence = ['af-coin','af-ticket','af-pizza','af-coin','af-ticket','af-coin','af-pizza','af-ticket','af-coin','af-pizza','af-ticket','af-coin','af-pizza','af-ticket','af-coin','af-pizza','af-coin','af-ticket','af-pizza','af-coin'];
     const svgMap = { 'af-coin': coinSVG, 'af-ticket': ticketSVG, 'af-pizza': pizzaSVG };
-    const COLS = 4, ROWS = 6;
+    const vw = window.innerWidth || document.documentElement.clientWidth || 390;
+    const vh = window.innerHeight || document.documentElement.clientHeight || 700;
+    const COLS = Math.max(4, Math.ceil(vw / 145));
+    const ROWS = Math.max(6, Math.ceil(vh / 180));
     let idx = 0;
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
@@ -15160,9 +8855,28 @@ function nextWave() {
       }
     }
   }
+  function arcadeFloatPageActive() {
+    const b = document.body;
+    return !!b && (
+      b.classList.contains('on-lobby') ||
+      b.classList.contains('on-char') ||
+      b.classList.contains('on-whack') ||
+      b.classList.contains('arcade-selection-open')
+    );
+  }
+
+  let arcadeFloatResizeTimer = null;
+  function scheduleArcadeFloatRebuild() {
+    if (!arcadeFloatPageActive()) return;
+    clearTimeout(arcadeFloatResizeTimer);
+    arcadeFloatResizeTimer = setTimeout(() => buildArcadeFloat(true), 160);
+  }
+
   // Build immediately (element now lives at body level, persists across all arcade pages)
   buildArcadeFloat(); // DOM already loaded at script parse time
   window.initArcadeFloat = buildArcadeFloat;
+  window.addEventListener('resize', scheduleArcadeFloatRebuild);
+  window.addEventListener('orientationchange', scheduleArcadeFloatRebuild);
 })();
 
 // ── PIXEL ART GAME ICONS ─────────────────────────────────────────────────────
@@ -15274,6 +8988,3 @@ function nextWave() {
     });
   };
 })();
-</script>
-</body>
-</html>

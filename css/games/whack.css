@@ -1,0 +1,351 @@
+/* Whack-A-Mobe styles only. Shared arcade shell styles stay in ../arcade.css. */
+/* ── Whack-a-Mole ── */
+#pg-whack { height: var(--app-vh, 100dvh); overflow: hidden; position: relative; z-index: 1; display: none; flex-direction: column; background: transparent; }
+#pg-whack.active { display: flex; }
+.whack-wrap {
+  padding: max(12px, calc(env(safe-area-inset-top, 0px) + 10px)) 12px max(10px, env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  gap: 6px; flex: 1; min-height: 0; overflow: hidden;
+}
+.whack-wrap.mode-select-layout {
+  justify-content: flex-start;
+  padding-top: max(52px, calc(env(safe-area-inset-top, 0px) + 48px));
+  overflow-y: auto;
+}
+.whack-mode-shell {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 2px;
+}
+.whack-mode-title {
+  font-family: 'Bebas Neue', cursive;
+  font-size: clamp(22px, 3vw, 29px);
+  letter-spacing: 5px;
+  line-height: 1;
+  color: #ffffff;
+  text-shadow: 0 0 9px rgba(242,239,232,0.28);
+  text-align: center;
+}
+.whack-mode-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.whack-mode-card {
+  min-height: 216px;
+  border-color: #ff993355;
+  background: rgba(9,5,25,0.74);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.035), 0 14px 34px rgba(0,0,0,0.28);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+.whack-mode-card::after {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 36%, rgba(255,255,255,0.08) 48%, transparent 62%);
+  opacity: 0;
+  transform: translateX(-22%) rotate(8deg);
+  transition: opacity 0.22s ease, transform 0.42s ease;
+  z-index: 3;
+}
+.whack-mode-card:hover {
+  transform: translateY(-1px);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05), 0 18px 40px rgba(0,0,0,0.36);
+}
+.whack-mode-card:hover::after {
+  opacity: 1;
+  transform: translateX(22%) rotate(8deg);
+}
+.whack-mode-card .game-card-art {
+  opacity: 0.74;
+}
+.whack-mode-card .game-card-info {
+  padding: 13px 16px 15px;
+  background: linear-gradient(to top, rgba(5,2,18,0.99) 72%, rgba(5,2,18,0.64) 86%, rgba(5,2,18,0.16));
+}
+.whack-mode-card .game-card-marquee {
+  color: #ff9933;
+  text-shadow: 0 0 16px rgba(255,153,51,0.65);
+  font-size: 16px;
+  letter-spacing: 3px;
+  margin-bottom: 7px;
+}
+.whack-mode-card .game-card-desc {
+  opacity: 0.92;
+  color: rgba(242,239,232,0.9);
+}
+.whack-mode-card .game-card-badge {
+  margin-bottom: 7px;
+  opacity: 0.86;
+}
+.whack-mode-diff {
+  margin-top: 11px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.whack-mode-diff .whack-btn {
+  width: 100%;
+  min-height: 28px;
+  font-size: 12px;
+  letter-spacing: 2px;
+  padding: 6px 6px;
+  box-shadow: none;
+  transition: transform 0.12s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+.whack-mode-diff .whack-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 16px rgba(255,255,255,0.08);
+}
+@media (max-width: 860px) {
+  .whack-mode-grid { grid-template-columns: 1fr; }
+  .whack-mode-card { min-height: 198px; }
+}
+.whack-hud {
+  display: flex; justify-content: space-between; align-items: center;
+  width: 100%; max-width: 420px; box-sizing: border-box;
+  background: rgba(242,239,232,0.05);
+  border: 1px solid rgba(242,239,232,0.12);
+  border-radius: 6px;
+  padding: 6px 16px;
+}
+@media (max-width: 600px) {
+  .whack-hud { padding-right: 52px !important; }
+}
+.whack-stat-label { font-size: 9px; letter-spacing: 2px; color: rgba(242,239,232,0.45); }
+.whack-stat-val { font-family: 'Bebas Neue', cursive; font-size: 36px; letter-spacing: 2px; line-height: 1; }
+#whack-timer-val.urgent { color: #ff4444; animation: whack-blink 0.5s infinite; }
+@keyframes whack-blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.whack-grid {
+  --cols: 3;
+  --rows: 4;
+  --grid-vpad: 180px;
+  --hole-sz: min(calc(90vw / var(--cols)), calc((var(--app-vh, 100dvh) - var(--grid-vpad)) / var(--rows)), 112px);
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--hole-sz));
+  grid-template-rows: repeat(var(--rows), var(--hole-sz));
+  gap: 8px;
+  margin: 0 auto;
+}
+@media (max-width: 600px) {
+  .whack-grid { --grid-vpad: 100px; }
+}
+/* Memory round's "look, don't touch yet" cue — a gentle pulsing blue glow around the
+   whole board during the memorize window, so the board itself signals "hold up" rather
+   than relying on the side timer bar alone. */
+.whack-grid.memorize-glow {
+  border-radius: 14px;
+  animation: memorize-glow-pulse 1.6s ease-in-out infinite;
+}
+@keyframes memorize-glow-pulse {
+  0%, 100% { box-shadow: 0 0 18px 4px rgba(0,229,255,0.25); }
+  50% { box-shadow: 0 0 32px 10px rgba(0,229,255,0.55); }
+}
+.whack-hole {
+  aspect-ratio: 1;
+  background: #080514;
+  border: 5px solid #1a1428;
+  border-radius: 10px;
+  position: relative; overflow: hidden;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow:
+    inset 0 0 24px rgba(0,0,0,0.95),
+    inset 0 0 0 2px rgba(255,255,255,0.03),
+    0 4px 12px rgba(0,0,0,0.8),
+    0 0 0 2px #0e0b1e;
+}
+.whack-hole::before {
+  content: '';
+  position: absolute; inset: 0; z-index: 5;
+  background: repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(0,0,0,0.08) 4px, rgba(0,0,0,0.08) 5px);
+  pointer-events: none;
+}
+.whack-hole.up    { box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 14px rgba(255,0,204,0.22); }
+.whack-hole.hit   { box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 20px rgba(255,230,26,0.55); }
+/* Correct-mole hit: green outline on the hole itself instead of a full-screen
+   flash — no yellow glow bleeding through behind the sad face either. */
+.whack-hole.hit-success { border-color: rgba(51,255,102,0.9); box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 22px rgba(51,255,102,0.5); }
+/* Clear round failure: highlights the good targets still standing so it's obvious
+   what should have been hit instead. */
+.whack-hole.reveal-correct {
+  box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 22px rgba(51,255,102,0.75) !important;
+  border-color: rgba(51,255,102,0.9) !important;
+}
+@keyframes crack-in {
+  0%   { opacity: 0; transform: scale(0.7); }
+  40%  { opacity: 0.9; transform: scale(1.05); }
+  100% { opacity: 0.6; transform: scale(1); }
+}
+.whack-char {
+  position: absolute; bottom: -100%; left: 50%;
+  transform: translateX(-50%);
+  width: 80%; aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: bottom 0.18s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events: none;
+  user-select: none;
+}
+.whack-hole.up .whack-char { bottom: 4%; }
+.whack-hole.hit .whack-char { bottom: 4%; }
+.whack-hole.wrong-hit .whack-char { bottom: 4%; }
+
+/* Memory round: card-flip reveal, borrowing the Match game's flip language but scoped
+   to Whack's own hole markup so the two games' CSS never collide. */
+.whack-card-flip {
+  position: absolute; inset: 8%;
+  transform-style: preserve-3d;
+  transition: transform 0.3s ease;
+}
+.whack-card-flip.flipped { transform: rotateY(180deg); }
+.whack-card-back, .whack-card-face {
+  position: absolute; inset: 0;
+  backface-visibility: hidden;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 10px;
+}
+.whack-card-back {
+  background: linear-gradient(135deg, #2a1a4a, #1a0f2e);
+  border: 2px solid rgba(255,0,204,0.5);
+  font-family: 'Bebas Neue', cursive; font-size: 22px; color: rgba(255,0,204,0.6);
+}
+.whack-card-face {
+  transform: rotateY(180deg);
+  background: rgba(255,255,255,0.04);
+}
+@keyframes miss-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+@keyframes tap-miss-flash {
+  0% {
+    border-color: rgba(255,60,60,0.95);
+    box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 26px rgba(255,40,40,0.72);
+    transform: scale(0.98);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.whack-hole.tap-miss {
+  animation: tap-miss-flash 0.2s ease-out;
+}
+/* First-time Clear intro: a standalone demo face sliding back and forth, previewing
+   "pieces can move" before the player has seen it happen on the real board. */
+@keyframes intro-mole-slide {
+  0%, 100% { transform: translateX(-44px); }
+  50% { transform: translateX(44px); }
+}
+/* Memory's reveal-to-hide cover: slides out from hidden ("opens") with a bit of
+   overshoot, then eases back to fully covering ("closes") — a cabinet-door feel
+   rather than a flat linear slide. Deliberately longer than a simple slide. */
+@keyframes cabinet-slide-cover {
+  0%   { transform: translateX(-100%); }
+  62%  { transform: translateX(9%); }
+  100% { transform: translateX(0%); }
+}
+.whack-hole.missed {
+  animation: miss-shake 0.35s ease-in-out;
+  box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 22px rgba(255,40,40,0.65) !important;
+  border-color: rgba(255,60,60,0.9) !important;
+  pointer-events: none; /* already resolved — don't let it look clickable for the next second */
+  cursor: default;
+}
+.whack-hole.missed .whack-char { filter: grayscale(0.85) brightness(0.55); }
+.whack-miss-x {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Bebas Neue', cursive;
+  font-size: 44px; color: #ff4444;
+  text-shadow: 0 0 16px #ff4444, 0 0 5px #000;
+  pointer-events: none;
+  opacity: 0; transform: scale(0.6);
+  transition: opacity 0.15s, transform 0.15s;
+  z-index: 6;
+}
+.whack-miss-x.show { opacity: 1; transform: scale(1); }
+.whack-tint {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 4;
+}
+.whack-tint.show { opacity: 1; }
+.whack-hole.wrong-hit { border-color: rgba(255,60,60,0.9); box-shadow: 0 0 24px rgba(255,0,0,0.55); }
+.whack-hole.teasing {
+  box-shadow: inset 0 0 24px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.8), 0 0 0 2px #0e0b1e, 0 0 22px rgba(255,220,30,0.6), 0 0 6px rgba(255,180,0,0.35);
+  border-color: rgba(255,200,30,0.55);
+  transition: box-shadow 0.08s, border-color 0.08s;
+}
+.whack-char-placeholder {
+  width: 100%; height: 100%; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(24px, 10vw, 44px);
+  border: 3px solid rgba(255,255,255,0.25);
+}
+.whack-msg {
+  font-family: 'Bebas Neue', cursive; font-size: 48px; letter-spacing: 4px;
+  text-align: center; opacity: 0.9;
+}
+.whack-sub { font-size: 13px; letter-spacing: 2px; color: rgba(242,239,232,0.55); text-align: center; }
+.whack-btn {
+  font-family: 'VCR', monospace; font-size: 13px; letter-spacing: 3px;
+  background: rgba(242,239,232,0.08);
+  border: 1px solid rgba(242,239,232,0.25);
+  color: var(--white); padding: 12px 32px; border-radius: 4px;
+  cursor: pointer; margin-top: 8px;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+.whack-btn:active { background: rgba(242,239,232,0.18); }
+.whack-char-select {
+  display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+  width: 100%; max-width: 420px;
+}
+.whack-char-btn {
+  width: 76px; height: 76px; border-radius: 10px;
+  border: 2px solid rgba(242,239,232,0.15);
+  background: rgba(255,255,255,0.04);
+  cursor: pointer; padding: 0;
+  overflow: visible;
+  transition: border-color 0.15s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.whack-char-btn.selected { border-color: var(--white); transform: scale(1.14); }
+.whack-score-pop {
+  position: absolute; pointer-events: none;
+  font-family: 'Bebas Neue', cursive; font-size: 22px; color: #ffdd44;
+  animation: score-pop 0.7s ease-out forwards;
+  z-index: 10;
+}
+@keyframes score-pop {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-40px) scale(0.7); }
+}
+@keyframes wave-announce {
+  0%   { opacity:0; transform: scale(0.5); }
+  20%  { opacity:1; transform: scale(1.1); }
+  60%  { opacity:1; transform: scale(1.0); }
+  100% { opacity:0; transform: scale(0.9); }
+}
+
+/* Memory Mobe card-art: gentle drifting/rotating motion so the illustration reads as
+   alive rather than a frozen grid. transform-box/transform-origin keep each card
+   rotating around its own center regardless of its position in the SVG. */
+@keyframes card-drift {
+  0%   { transform: translateY(0) rotate(var(--r0, 0deg)); }
+  50%  { transform: translateY(-4px) rotate(var(--r1, 0deg)); }
+  100% { transform: translateY(0) rotate(var(--r0, 0deg)); }
+}
+.card-drift { transform-box: fill-box; transform-origin: center; animation: card-drift 3.4s ease-in-out infinite; }
+
