@@ -3312,10 +3312,15 @@ body.on-match .mobe-face-img {
 /* ── Whack-a-Mole ── */
 #pg-whack { height: var(--app-vh, 100dvh); overflow: hidden; position: relative; z-index: 1; display: none; flex-direction: column; background: transparent; }
 #pg-whack.active { display: flex; }
-.whack-wrap { padding: 8px 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; flex: 1; min-height: 0; overflow-y: auto; }
+.whack-wrap {
+  padding: max(52px, calc(env(safe-area-inset-top, 0px) + 48px)) 12px max(10px, env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  gap: 8px; flex: 1; min-height: 0; overflow: hidden;
+}
 .whack-wrap.mode-select-layout {
   justify-content: flex-start;
-  padding-top: 14px;
+  padding-top: max(52px, calc(env(safe-area-inset-top, 0px) + 48px));
+  overflow-y: auto;
 }
 .whack-mode-shell {
   width: 100%;
@@ -3426,12 +3431,11 @@ body.on-match .mobe-face-img {
 .whack-grid {
   /* --cols/--rows are overridden inline from GRID_COLS/GRID_ROWS in the Whack IIFE —
      that's the single place to change to resize the board, this CSS adapts automatically.
-     Bumped the reserved-space estimate up (was 235px) — the HUD's actual rendered
-     height grew with the VS-bar row, and the grid was overflowing .whack-wrap's
-     overflow-y:auto, producing a visible internal scrollbar. */
+     Uses wrapper top padding for the floating exit button, then lets the board claim
+     more of the remaining viewport without introducing an internal scrollbar. */
   --cols: 3;
   --rows: 4;
-  --hole-sz: min(calc(78vw / var(--cols)), calc((100dvh - 280px) / var(--rows)), 100px);
+  --hole-sz: min(calc(92vw / var(--cols)), calc((var(--app-vh, 100dvh) - 190px) / var(--rows)), 112px);
   display: grid;
   grid-template-columns: repeat(var(--cols), var(--hole-sz));
   grid-template-rows: repeat(var(--rows), var(--hole-sz));
@@ -3815,14 +3819,19 @@ body.on-match .mobe-face-img {
 /* ── MATCH GAME ── */
 #pg-match { height: var(--app-vh, 100dvh); overflow: hidden; position: relative; z-index: 1; display: none; flex-direction: column; background: transparent; }
 #pg-match.active { display: flex; }
-.match-wrap { padding: 44px 12px 8px; flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; overflow-y: auto; }
+.match-wrap {
+  padding: max(52px, calc(env(safe-area-inset-top, 0px) + 48px)) 10px max(10px, env(safe-area-inset-bottom, 0px));
+  flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center;
+  gap: 8px; overflow: hidden;
+}
+.match-wrap.mode-select-layout { overflow-y: auto; }
 .match-msg { font-family: 'Bebas Neue', cursive; font-size: 34px; letter-spacing: 6px; text-align: center; }
 .match-sub { font-size: 11px; letter-spacing: 2px; color: rgba(242,239,232,0.55); text-align: center; }
 .match-hud { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 460px; }
 .match-grid {
   --card: min(
-    calc((min(100vw, 460px) - 36px) / 3),
-    calc((100dvh - 236px) / 6)
+    calc((min(100vw, 520px) - 36px) / 3),
+    calc((var(--app-vh, 100dvh) - 190px) / 6)
   );
   display: grid;
   grid-template-columns: repeat(3, var(--card));
@@ -9547,6 +9556,7 @@ window.confirmCharSelect = function() {
     const wrap = document.getElementById('match-wrap');
     if (!wrap) return;
     setArcadeExitVisible(state !== 'over');
+    wrap.classList.toggle('mode-select-layout', state === 'idle' || state === 'free-setup');
     document.body.classList.toggle('arcade-selection-open', state === 'idle' || state === 'free-setup' || state === 'preview');
     if (state === 'idle' || state === 'free-setup' || state === 'preview') {
       if (typeof window.initArcadeFloat === 'function') window.initArcadeFloat(true);
@@ -9627,7 +9637,7 @@ window.confirmCharSelect = function() {
     if (state === 'preview') {
       const _gl = gridLayout(PAIRS);
       const _ghp = (_gl.cols - 1) * 6 + 24;
-      const _gStyle = `--card:min(calc((min(100vw,460px) - ${_ghp}px) / ${_gl.cols}),calc((100dvh - 236px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card))`;
+      const _gStyle = `--card:min(calc((min(100vw,520px) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - 190px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card))`;
       wrap.innerHTML = `
         <div class="match-hud" style="padding:8px 16px">
           <div style="font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:5px;color:#ffe61a;text-shadow:0 0 14px #ffe61a88" id="match-preview-cd">MEMORIZE!  ${matchMode === 'impossible' ? 7 : matchMode === 'challenge' ? 4 : 3}</div>
@@ -9649,7 +9659,7 @@ window.confirmCharSelect = function() {
     if (state === 'playing') {
       const _gl = gridLayout(PAIRS);
       const _ghp = (_gl.cols - 1) * 6 + 24;
-      const _gStyle = `--card:min(calc((min(100vw,460px) - ${_ghp}px) / ${_gl.cols}),calc((100dvh - 236px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card))`;
+      const _gStyle = `--card:min(calc((min(100vw,520px) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - 190px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card))`;
       wrap.innerHTML = `
         <div class="match-hud">
           <div><div class="whack-stat-label">SCORE</div><div class="whack-stat-val" id="ms" style="font-size:24px">${matchScore}</div></div>
