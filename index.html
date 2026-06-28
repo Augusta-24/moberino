@@ -210,6 +210,19 @@ body.on-match .cats-header button, body.on-space .cats-header button {
   justify-content: center !important;
 }
 
+/* Arcade-only lobby/header ordering: keep LB + sound on the left and push Exit to the right.
+   This avoids touching the shared main-site .cats-header/nav system. */
+body.on-lobby #pg-lobby .cats-header {
+  width: 100%;
+}
+body.on-lobby #pg-lobby .arcade-header-actions {
+  order: 1;
+}
+body.on-lobby #pg-lobby .arcade-exit-btn {
+  order: 2;
+  margin-left: auto;
+}
+
 /* ── Arcade floating elements (all arcade pages) ── */
 #arcade-float {
   display: none;
@@ -5819,7 +5832,7 @@ setTimeout(resetHomeViewport, 900);
 <div id="pg-lobby" class="page">
   <div class="cats-header">
     <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('home')">✕ EXIT ARCADE</button>
-    <div style="display:flex;align-items:center;gap:8px">
+    <div class="arcade-header-actions" style="display:flex;align-items:center;gap:8px">
       <button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
       <button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
     </div>
@@ -6002,7 +6015,7 @@ setTimeout(resetHomeViewport, 900);
 <div id="pg-whack" class="page">
   <div class="cats-header">
     <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE MENU</button>
-    <div style="display:flex;align-items:center;gap:8px">
+    <div class="arcade-header-actions" style="display:flex;align-items:center;gap:8px">
       <button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
       <button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
     </div>
@@ -6016,7 +6029,7 @@ setTimeout(resetHomeViewport, 900);
 <div id="pg-match" class="page">
   <div class="cats-header">
     <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE MENU</button>
-    <div style="display:flex;align-items:center;gap:8px">
+    <div class="arcade-header-actions" style="display:flex;align-items:center;gap:8px">
       <button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
       <button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
     </div>
@@ -6030,7 +6043,7 @@ setTimeout(resetHomeViewport, 900);
 <div id="pg-space" class="page">
   <div class="cats-header">
     <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE MENU</button>
-    <div style="display:flex;align-items:center;gap:8px">
+    <div class="arcade-header-actions" style="display:flex;align-items:center;gap:8px">
       <button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
       <button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
     </div>
@@ -11658,7 +11671,7 @@ window.confirmCharSelect = function() {
     el.innerHTML = `
       ${hahaHTML}
       <div style="width:min(92vw,390px);text-align:center">
-        <div style="transform:translateX(0);animation:sp-brief-boss-out ${flyDur}s ease-in ${flyDelay}s both">${spaceBriefingBoss('out')}</div>
+        <div style="transform:translateX(0);animation:sp-brief-boss-out ${flyDur}s ease-in ${flyDelay}s both">${spaceBriefingBoss('hold')}</div>
         <div style="font-family:'Bebas Neue',cursive;font-size:48px;letter-spacing:5px;line-height:1;color:#cc66ff;text-shadow:0 0 18px #cc66ff88;margin-top:12px">GIZMO ESCAPED!</div>
         <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:#00e5ff;text-shadow:0 0 10px #00e5ff;margin-top:12px">${rescueLine}</div>
       </div>`;
@@ -14927,7 +14940,7 @@ function nextWave() {
   }
 
   function spaceBriefingBoss(mode) {
-    const anim = mode === 'out' ? 'sp-brief-boss-out 1.6s ease-in both' : 'sp-brief-boss-in 0.9s cubic-bezier(.2,1.15,.35,1) both';
+    const anim = mode === 'out' ? 'sp-brief-boss-out 1.6s ease-in both' : (mode === 'hold' ? 'none' : 'sp-brief-boss-in 0.9s cubic-bezier(.2,1.15,.35,1) both');
     return `<div style="width:118px;text-align:center;font-family:'VCR',monospace;font-size:9px;letter-spacing:2px;color:#cc66ff;animation:${anim}">
       <div style="position:relative;width:118px;height:118px;margin:0 auto;border-radius:50%;background:radial-gradient(circle,rgba(185,135,255,0.24) 0 48%,rgba(185,135,255,0.06) 64%,rgba(25,4,46,0) 76%);border:3px solid #8e55d8;box-shadow:0 0 30px rgba(142,85,216,0.72), inset 0 -14px 20px rgba(0,0,0,0.3)">
         <div style="position:absolute;inset:-12px;border-radius:50%;border:2px solid rgba(142,85,216,0.68);box-shadow:0 0 24px rgba(142,85,216,0.48);animation:sp-ring-spin 3s linear infinite"></div>
@@ -15260,11 +15273,14 @@ function nextWave() {
 
     const pizzaSVG = `<svg viewBox="0 0 44 44" width="44" height="44"><path d="M22,4 L38,37 Q22,45 6,37 Z" fill="#ff660018" stroke="#ff6600" stroke-width="1.8" stroke-linejoin="round"/><path d="M6,37 Q22,47 38,37" fill="none" stroke="#ff9933" stroke-width="4" stroke-linecap="round"/><path d="M22,8 L36,36 Q22,42 8,36 Z" fill="#cc110018" stroke="#cc1100" stroke-width="1.2" opacity="0.85"/><ellipse cx="21" cy="22" rx="4.5" ry="3.5" fill="#ffe61a" opacity="0.82"/><ellipse cx="26" cy="30" rx="3.5" ry="3" fill="#ffe61a" opacity="0.72"/><ellipse cx="16" cy="30" rx="3" ry="2.5" fill="#ffe61a" opacity="0.72"/><circle cx="23" cy="16" r="2.5" fill="#cc0000" opacity="0.9"/><circle cx="17" cy="26" r="2" fill="#cc0000" opacity="0.85"/><circle cx="26" cy="25" r="2" fill="#cc0000" opacity="0.85"/></svg>`;
 
-    // True repeating wallpaper grid: 4 cols × 5 rows = 20 fixed positions
-    // Sequence repeats: coin, ticket, pizza, coin across each row
+    // Responsive repeating wallpaper grid. The old fixed 4×6 grid looked sparse on
+    // desktop because those same columns stretched across the wider viewport.
     const sequence = ['af-coin','af-ticket','af-pizza','af-coin','af-ticket','af-coin','af-pizza','af-ticket','af-coin','af-pizza','af-ticket','af-coin','af-pizza','af-ticket','af-coin','af-pizza','af-coin','af-ticket','af-pizza','af-coin'];
     const svgMap = { 'af-coin': coinSVG, 'af-ticket': ticketSVG, 'af-pizza': pizzaSVG };
-    const COLS = 4, ROWS = 6;
+    const vw = window.innerWidth || document.documentElement.clientWidth || 390;
+    const vh = window.innerHeight || document.documentElement.clientHeight || 700;
+    const COLS = Math.max(4, Math.ceil(vw / 220));
+    const ROWS = Math.max(6, Math.ceil(vh / 180));
     let idx = 0;
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
@@ -15281,9 +15297,28 @@ function nextWave() {
       }
     }
   }
+  function arcadeFloatPageActive() {
+    const b = document.body;
+    return !!b && (
+      b.classList.contains('on-lobby') ||
+      b.classList.contains('on-char') ||
+      b.classList.contains('on-whack') ||
+      b.classList.contains('arcade-selection-open')
+    );
+  }
+
+  let arcadeFloatResizeTimer = null;
+  function scheduleArcadeFloatRebuild() {
+    if (!arcadeFloatPageActive()) return;
+    clearTimeout(arcadeFloatResizeTimer);
+    arcadeFloatResizeTimer = setTimeout(() => buildArcadeFloat(true), 160);
+  }
+
   // Build immediately (element now lives at body level, persists across all arcade pages)
   buildArcadeFloat(); // DOM already loaded at script parse time
   window.initArcadeFloat = buildArcadeFloat;
+  window.addEventListener('resize', scheduleArcadeFloatRebuild);
+  window.addEventListener('orientationchange', scheduleArcadeFloatRebuild);
 })();
 
 // ── PIXEL ART GAME ICONS ─────────────────────────────────────────────────────
