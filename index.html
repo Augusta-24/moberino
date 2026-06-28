@@ -6702,6 +6702,12 @@ hit() {
       tone(220,'triangle',0.18,0.68,0.045,130);
       tone(55,'sine',0.42,0.5,0.05,42);
     },
+    gizmoBark() {
+      // Short two-part bark for Gizmo's shots: chunky low snap + tiny yip overtone.
+      tone(190,'square',0,0.09,0.10,115);
+      tone(360,'sawtooth',0.035,0.08,0.08,180);
+      tone(760,'triangle',0.085,0.055,0.05,520);
+    },
     missionCaptor() {
       tone(130,'sawtooth',0,0.28,0.10,55);
       tone(260,'square',0.03,0.18,0.07,95);
@@ -7491,7 +7497,7 @@ const GAME_CHARS = [
   { name: 'POPPY',   color: '#66cc33', emoji: '😜', happy: '🤪', sad: '😬', img: 'characters/poppy.png', imgWhack: 'characters/poppy_whack.png', imgHappy: 'characters/poppy_happy.png',   imgSad: 'characters/poppy_sad.png',   tilt: 0 },
   { name: 'SHE-SHE', color: '#ff66dd', emoji: '💅', happy: '🥰', sad: '😤', img: 'characters/she-she.png', imgWhack: 'characters/she-she_whack.png', imgHappy: 'characters/she-she_happy.png', imgSad: 'characters/she-she_sad.png', tilt: 0 },
   { name: 'ROSIE',   color: '#ff4466', emoji: '🌹', happy: '🥳', sad: '😢', img: 'characters/rosie.png', imgWhack: 'characters/rosie_whack.png', imgHappy: 'characters/rosie_happy.png',   imgSad: 'characters/rosie_sad.png',   tilt: 0 },
-  { name: 'KEVIN',   color: '#e05533', emoji: '🙂', happy: '😄', sad: '😢', img: 'characters/kevin.png', imgWhack: 'characters/kevin_whack.png', imgHappy: 'characters/kevin_happy.png',   imgSad: 'characters/kevin_sad.png',   tilt: 0 },
+  { name: 'KEVIN',   color: '#102a66', emoji: '🙂', happy: '😄', sad: '😢', img: 'characters/kevin.png', imgWhack: 'characters/kevin_whack.png', imgHappy: 'characters/kevin_happy.png',   imgSad: 'characters/kevin_sad.png',   tilt: 0 },
   { name: 'GRANT',   color: '#aacc22', emoji: '🤨', happy: '😁', sad: '😤', img: 'characters/grant.png', imgWhack: 'characters/grant_whack.png', imgHappy: 'characters/grant_happy.png',   imgSad: 'characters/grant_sad.png',   tilt: 0 },
   { name: 'LUKE',    color: '#5588cc', emoji: '😏', happy: '😄', sad: '😔', img: 'characters/luke.png', imgWhack: 'characters/luke_whack.png', imgHappy: 'characters/luke_happy.png',    imgSad: 'characters/luke_sad.png',    tilt: 0 },
   { name: 'LEANNE',  color: '#ff5588', emoji: '😍', happy: '🥰', sad: '😢', img: 'characters/leanne.png', imgWhack: 'characters/leanne_whack.png', imgHappy: 'characters/leanne_happy.png',  imgSad: 'characters/leanne_sad.png',  tilt: 0 },
@@ -10728,8 +10734,11 @@ window.confirmCharSelect = function() {
       const jitter = waveTheme !== 'asteroids';
       obstacles.push({ type:'asteroid', x:rand(r,W-r), y:-r-10, vx: jitter ? rand(-0.4,0.4)*cfg.speed : rand(-0.08,0.08)*cfg.speed, vy: jitter ? cfg.speed*(0.8+Math.random()*0.4) : cfg.speed*0.82, r, verts, rot:0, rotSpeed:rand(-0.02,0.02), hp:1, shadeSeed: Math.random() * 1000, rockStyle: Math.floor(Math.random() * 3) });
     } else {
-      const canRandomRescue = waveTheme !== 'captive' && waveCaptivesSeen.size === 0 && unrescuedMissionCaptives().some(ci => !obstacles.some(o => o.isTrapped && o.ci === ci));
-      let isTrapped = canRandomRescue && Math.random() < Math.max(0.025, 0.07 - wave * 0.004);
+      // Random trapped heroes in regular waves are disabled. The campaign already
+      // has one rescue target per boss/chapter beat, so surprise hero spawns made the
+      // rescue count feel noisy instead of intentional.
+      const canRandomRescue = false;
+      let isTrapped = false;
       let ci = isTrapped ? nextMissionCaptiveIndex(waveCaptivesSeen) : nextMissionEnemyIndex();
       if (isTrapped && ci < 0) { isTrapped = false; ci = nextMissionEnemyIndex(); }
       if (isTrapped) waveCaptivesSeen.add(ci);
@@ -11186,16 +11195,16 @@ window.confirmCharSelect = function() {
     const b = parseInt(h.slice(4, 6), 16) || 255;
     return `rgba(${r},${g},${b},${alpha})`;
   }
-  function drawProjectileImage(type, x, y, size, rotation, glowColor, staticIcon) {
+  function drawProjectileImage(type, x, y, size, rotation, glowColor, staticIcon, mutedIcon) {
     const src = projectileImageForType(type);
     if (!src) return false;
     const img = _getImg(src);
     if (!img.complete || !img.naturalWidth) return false;
     const fx = PROJECTILE_FX[type] || {};
     const t = Date.now();
-    const activeGlow = glowColor || (fx.glow ? rgbaFromHex(fx.glow, 0.78) : null);
-    const pulse = 1 + Math.sin(t * 0.006 + x * 0.01 + y * 0.01) * (fx.pulse || 0.035);
-    const wobble = Math.sin(t * 0.005 + x * 0.02) * (fx.wobble || 0);
+    const activeGlow = mutedIcon ? null : (glowColor || (fx.glow ? rgbaFromHex(fx.glow, 0.78) : null));
+    const pulse = mutedIcon ? 1 : 1 + Math.sin(t * 0.006 + x * 0.01 + y * 0.01) * (fx.pulse || 0.035);
+    const wobble = mutedIcon ? 0 : Math.sin(t * 0.005 + x * 0.02) * (fx.wobble || 0);
     ctx.save();
     ctx.translate(x, y);
     if (rotation) ctx.rotate(rotation);
@@ -11204,7 +11213,7 @@ window.confirmCharSelect = function() {
     // the bomb (fuse pointing up) could land sideways at any given instant and read wrong.
     if (fx.spin && !staticIcon) ctx.rotate(t * fx.spin);
     if (wobble) ctx.rotate(wobble);
-    if (fx.trail) {
+    if (!mutedIcon && fx.trail) {
       ctx.save();
       ctx.globalAlpha = 0.55;
       ctx.fillStyle = rgbaFromHex(fx.trail, 0.2);
@@ -11213,7 +11222,7 @@ window.confirmCharSelect = function() {
       ctx.fill();
       ctx.restore();
     }
-    if (fx.fumes) {
+    if (!mutedIcon && fx.fumes) {
       ctx.save();
       ctx.globalAlpha = 0.5;
       ctx.fillStyle = rgbaFromHex(fx.fumes, 0.32);
@@ -11225,7 +11234,7 @@ window.confirmCharSelect = function() {
       }
       ctx.restore();
     }
-    if (fx.orbit) {
+    if (!mutedIcon && fx.orbit) {
       ctx.save();
       ctx.rotate(t * 0.003);
       ctx.strokeStyle = rgbaFromHex(fx.orbit, 0.38);
@@ -11239,7 +11248,7 @@ window.confirmCharSelect = function() {
       ctx.fill();
       ctx.restore();
     }
-    if (fx.sparks) {
+    if (!mutedIcon && fx.sparks) {
       ctx.save();
       ctx.fillStyle = rgbaFromHex(fx.sparks, 0.82);
       for (let i = 0; i < 2; i++) {
@@ -11254,6 +11263,10 @@ window.confirmCharSelect = function() {
     if (activeGlow) {
       ctx.shadowColor = activeGlow;
       ctx.shadowBlur = size * 0.3;
+    }
+    if (mutedIcon) {
+      ctx.globalAlpha *= 0.55;
+      ctx.filter = 'grayscale(1) saturate(0.25) brightness(0.75)';
     }
     ctx.drawImage(img, -size * pulse / 2, -size * pulse / 2, size * pulse, size * pulse);
     ctx.restore();
@@ -12813,10 +12826,10 @@ function nextWave() {
           const speed = 2.9 + bt * 0.24 + Math.max(0, wave - 18) * 0.08;
           for (let k = 0; k < count; k++) {
             const spread = count === 1 ? 0 : (k - (count - 1) / 2) / ((count - 1) / 2);
-            enemyBullets.push({ x: boss.x + spread * boss.r * 0.58, y: boss.y + boss.r * 0.5, vx: spread * speed * 0.45, vy: speed, r: 6.2, isLock: true, homing: boss.isFinalGizmo ? 0.012 : 0.007, maxSpeed: speed + 0.55, born: Date.now() });
+            enemyBullets.push({ x: boss.x + spread * boss.r * 0.58, y: boss.y + boss.r * 0.5, vx: spread * speed * 0.45, vy: speed, r: 7.8, isLock: true, visualScale: 4.1, homing: boss.isFinalGizmo ? 0.012 : 0.007, maxSpeed: speed + 0.55, born: Date.now() });
           }
           addFloatText('GIZMO GLOW!', boss.x, boss.y + boss.r + 18, '#8e55d8', 16);
-          SFX.missionOminous && SFX.missionOminous();
+          SFX.gizmoBark ? SFX.gizmoBark() : (SFX.missionOminous && SFX.missionOminous());
           boss.nextAttack = Date.now() + (boss.attackDelay || 2200);
         } else if (boss.attackType === 'laser') {
           boss.laserPhase = 'charging';
@@ -13396,7 +13409,7 @@ function nextWave() {
         if (specialType) {
           const rot = Math.atan2(b.vy, b.vx || 0) + Math.PI / 2;
           const glow = b.isLock ? 'rgba(0,229,255,0.75)' : b.isIce ? 'rgba(160,220,255,0.75)' : 'rgba(204,153,255,0.72)';
-          drawProjectileImage(specialType, b.x, b.y, (b.r || 5) * 3.4, rot, glow);
+          drawProjectileImage(specialType, b.x, b.y, (b.r || 5) * (b.visualScale || 3.4), rot, glow);
         } else {
           // Longer, thinner streak — reads as a directional bullet rather than a round
           // drifting rock. Halo + core kept small so it doesn't puff back out into
@@ -13572,9 +13585,9 @@ function nextWave() {
       ctx.strokeStyle = held ? SOCKET_COLOR[type] : 'rgba(150,150,160,0.35)';
       ctx.lineWidth = held ? 2.5 : 2;
       ctx.stroke();
-      if (!held) ctx.globalAlpha = 0.3;
+      if (!held) ctx.globalAlpha = 0.45;
       const socketImgType = type === 'shield' ? 'powerShield' : type === 'gun' ? 'gun' : type === 'bomb' ? 'bomb' : null;
-      if (socketImgType && drawProjectileImage(socketImgType, 0, 0, rad * 1.35, 0, held ? SOCKET_COLOR[type] : null, true)) {
+      if (socketImgType && drawProjectileImage(socketImgType, 0, 0, rad * 1.35, 0, held ? SOCKET_COLOR[type] : null, true, !held)) {
         // PNG icon handled.
       } else if (type === 'shield') {
         const hr = rad * 0.6;
@@ -15289,7 +15302,7 @@ function nextWave() {
     const svgMap = { 'af-coin': coinSVG, 'af-ticket': ticketSVG, 'af-pizza': pizzaSVG };
     const vw = window.innerWidth || document.documentElement.clientWidth || 390;
     const vh = window.innerHeight || document.documentElement.clientHeight || 700;
-    const COLS = Math.max(4, Math.ceil(vw / 180));
+    const COLS = Math.max(4, Math.ceil(vw / 145));
     const ROWS = Math.max(6, Math.ceil(vh / 180));
     let idx = 0;
     for (let r = 0; r < ROWS; r++) {
