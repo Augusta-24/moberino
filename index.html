@@ -4150,6 +4150,9 @@ function resetHomeViewport() {
 }
 window.resetHomeViewport = resetHomeViewport;
 
+const ARCADE_URL = 'arcade.html';
+function openArcade() { window.location.href = ARCADE_URL; }
+
 const HASH_TO_PAGE = {
   home: 'home',
   browse: 'cats',
@@ -4157,7 +4160,7 @@ const HASH_TO_PAGE = {
   places: 'map',
   search: 'search',
   shelf: 'shelf',
-  arcade: 'lobby'
+  arcade: 'arcade'
 };
 const PAGE_TO_HASH = {
   home: 'home',
@@ -4165,8 +4168,7 @@ const PAGE_TO_HASH = {
   timeline: 'years',
   map: 'places',
   search: 'search',
-  shelf: 'shelf',
-  lobby: 'arcade'
+  shelf: 'shelf'
 };
 let suppressHashNav = false;
 
@@ -4187,12 +4189,12 @@ function syncHashForPage(p) {
 
 function handleHashRoute() {
   if (suppressHashNav) return;
-  if (pageFromHash(window.location.hash) === 'lobby') { window.location.href = 'arcade.html'; return; }
+  if (pageFromHash(window.location.hash) === 'arcade') { openArcade(); return; }
   nav(pageFromHash(window.location.hash), { skipHash: true });
 }
 
 function nav(p, opts = {}) {
-  if (['lobby','charselect','whack','match','space'].includes(p)) { window.location.href = 'arcade.html'; return; }
+  if (['arcade','lobby','charselect','whack','match','space'].includes(p)) { openArcade(); return; }
   if (!document.getElementById(`pg-${p}`)) p = 'home';
   if (!opts.skipHash) syncHashForPage(p);
   const targetPageId = `pg-${p}`;
@@ -4400,7 +4402,7 @@ document.getElementById('spotQ').addEventListener('input', e => {
   const q = e.target.value;
   if (q.trim().toLowerCase() === 'www') {
     closeSpot();
-    nav('lobby');
+    openArcade();
     return;
   }
   const meta = document.getElementById('spot-meta');
@@ -4429,7 +4431,7 @@ document.getElementById('srchClear').onclick=()=>{
 };
 
 function doSearch(q) {
-  if (q.trim().toLowerCase() === 'www') { nav('lobby'); return; }
+  if (q.trim().toLowerCase() === 'www') { openArcade(); return; }
   const meta=document.getElementById('srchMeta');
   const grid=document.getElementById('srchGrid');
   const noRes=document.getElementById('noRes');
@@ -4484,7 +4486,7 @@ function doSearch(q) {
   function runSearch() {
     const q = homeQ.value.trim();
     if (!q) return;
-    if (q.toLowerCase() === 'www') { homeQ.value = ''; homeQ.blur(); nav('lobby'); return; }
+    if (q.toLowerCase() === 'www') { homeQ.value = ''; homeQ.blur(); openArcade(); return; }
     homeQ.blur();
     requestAnimationFrame(resetHomeViewport);
     setTimeout(resetHomeViewport, 350);
