@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+  <rect width="1440" height="900" fill="#315aa8"/>
+
+  <g opacity="0.10" stroke="#111318" stroke-width="2">
+    <path d="M0 64h1440M0 128h1440M0 192h1440M0 256h1440M0 320h1440M0 384h1440M0 448h1440M0 512h1440M0 576h1440M0 640h1440M0 704h1440M0 768h1440M0 832h1440"/>
+    <path d="M92 0v900M236 0v900M380 0v900M524 0v900M668 0v900M812 0v900M956 0v900M1100 0v900M1244 0v900M1388 0v900"/>
+  </g>
+
+  <g opacity="0.13" fill="none" stroke="#111318" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M93 170c24-18 42-16 54 4 11 18 30 18 44 0"/>
+    <path d="M1195 142c30 17 49 12 63-13 10-19 29-25 54-18"/>
+    <path d="M110 646l42-36 38 40 44-42"/>
+    <path d="M1142 682h58m-29-29v58"/>
+    <circle cx="1012" cy="524" r="28"/>
+    <circle cx="1012" cy="524" r="14"/>
+    <path d="M536 702l22 0 0 22-22 0z"/>
+    <path d="M1288 448l24 24-24 24-24-24z"/>
+  </g>
+
+  <g font-family="VCR, Share Tech Mono, monospace" font-weight="700" letter-spacing="3" fill="#111318">
+    <g transform="translate(92 82) rotate(-12)" opacity="0.26">
+      <rect x="0" y="0" width="238" height="72" rx="3" fill="#f4f0e6" stroke="#111318" stroke-width="5"/>
+      <rect x="12" y="12" width="8" height="48" fill="#c94a44"/><rect x="22" y="12" width="8" height="48" fill="#f3c94b"/><rect x="32" y="12" width="8" height="48" fill="#315aa8"/>
+      <text x="56" y="32" font-size="18">MARCH 1990</text><text x="56" y="54" font-size="10" opacity="0.72">MOBERG HOME VIDEO</text>
+    </g>
+    <g transform="translate(368 42) rotate(7)" opacity="0.19">
+      <rect x="0" y="0" width="270" height="76" rx="3" fill="#f4f0e6" stroke="#111318" stroke-width="5"/>
+      <text x="18" y="32" font-size="18">FEBRUARY 2002</text><text x="18" y="56" font-size="10" opacity="0.72">GRAND CAYMAN</text>
+    </g>
+    <g transform="translate(735 62) rotate(14)" opacity="0.25">
+      <rect x="0" y="0" width="286" height="80" rx="3" fill="#f4f0e6" stroke="#111318" stroke-width="5"/>
+      <rect x="16" y="15" width="8" height="50" fill="#c94a44"/><rect x="26" y="15" width="8" height="50" fill="#f3c94b"/><rect x="36" y="15" width="8" height="50" fill="#315aa8"/>
+      <text x="64" y="35" font-size="19">JUNE 2002</text><text x="64" y="59" font-size="10" opacity="0.72">SEVERINO FAMILY</text>
+    </g>
+    <g transform="translate(1110 92) rotate(-8)" opacity="0.22">
+      <rect x="0" y="0" width="238" height="72" rx="3" fill="#f4f0e6" stroke="#111318" stroke-width="5"/>
+      <text x="18" y="32" font-size="18">JULY 1993</text><text x="18" y="54" font-size="10" opacity="0.72">LONIAL PA</text>
+    </g>
+    <g transform="translate(178 218) rotate(12)" opacity="0.22">
+      <rect x="0" y="0" width="282" height="76" rx="3" fill="#f4f0e6" stroke="#111318" stroke-width="5"/>
+      <text x="18" y="32" font-size="18">APRIL 1991</text><text x="18" y="56" font-size="10" opacity="0.72">TOMMY'S BIRTHDAY</text>
+    </g>
+    <g transform="translate(520 178) rotate(-9)" opacity="0.20">
+      <rect x="0" y="0" width="250" height="74" rx="3" fill="#f4f0e6" stroke="#111318" stroke-width="5"/>
+      <rect x="14" y="14" width="8" height="46" fill="#c94a44"/><rect x="24" y="14" width="8" height="46" fill="#f3c94b"/><rect x="34" y="14" width="8" height="46" fill="#315aa8"/>
+      <text x="58" y="33" font-size="18">MAY 1997</text><text x="58" y="56" font-size="10" opacity="0.72">MEMORIAL DAY</text>
+    </g>
+    <g transform="translate(920 218) rotate(-12)" opacity="0.25">
+      <rect x="0" y="0" width="270" height="78" rx="3" fill="#f4f0e6" stroke="#111318" stroke-width="5"/>
+      <text x="18" y="34" font-size="18">CHRISTMAS</text><text x="18" y="58" font-size="17">2009</text>
+    </g>
+    <g transform="translate(1198 258) rotate(11)" opacity="0.19">
+      <rect x="0" y="0" width="252" height="74" rx="3" fill="#f4f0e6" stroke="#111318" stroke-width="5"/>
+      <text x="18" y="32" font-size="17">SPRING 2004</text><text x="18" y="55" font-size="10" opacity="0.72">BABY VHS</text>
+    </g>
+    <g transform="translate(36 374) rotate(-5)" opacity="0.20">
+      <rect x="0" y="0" width="260" height="74" rx="3" fill="#f4f0e6" stroke="#111318" stroke-width="5"/>
+      <rect x="14" y="14" width="8" height="46" fill="#c94a44"/><rect x="24" y="14" width="8" height="46" fill="#f3c94b"/><rect x="34" y="14" width="8" height="46" fill="#315aa8"/>
+      <text x="58" y="33" font-size="17">DISNEY WORLD</text><text x="58" y="56" font-size="10" opacity="0.72">LANCETTS</text>
+    </g>
+    <g transform="translate(344 380) rotate(9)" opacity="0.24">
+      <rect x="0" y="0" width="292" height="78" rx="3" fill="#f4f0e6" stroke="#111318" stroke-width="5"/>
+      <text x="18" y="34" font-size="18">AUGUST 2001</text><text x="18" y="58" font-size="10" opacity="0.72">KRISTEN LUAU BIRTHDAY</text>
+    </g>
+    <g transform="translate(704 354) rotate(-14)" opacity="0.22">
+      <rect x="0" y="0" width="288" height="78" rx="3" fill="#f4f0e6" stroke="#111318" stroke-width="5"/>
+      <rect x="16" y="15" width="8" height="48" fill="#c94a44"/><rect x="26" y="15" width="8" height="48" fill="#f3c94b"/><rect x="36" y="15" width="8" height="48" fill="#315aa8"/>
+      <text x="64" y="34" font-size="18">JANUARY 1997</text><text x="64" y="58" font-size="10" opacity="0.72">GRANDMA SEVERINO</text>
+    </g>
+    <g transform="translate(1056 410) rotate(6)" opacity="0.21">
+      <rect x="0" y="0" width="266" height="74" rx="3" fill="#f4f0e6" stroke="#111318" stroke-width="5"/>
+      <text x="18" y="32" font-size="17">SEPTEMBER 1998</text><text x="18" y="55" font-size="10" opacity="0.72">FIRST DAY SCHOOL</text>
+    </g>
+    <g transform="translate(126 560) rotate(14)" opacity="0.21">
+      <rect x="0" y="0" width="274" height="76" rx="3" fill="#f4f0e6" stroke="#111318" stroke-width="5"/>
+      <text x="18" y="33" font-size="18">HALLOWEEN</text><text x="18" y="56" font-size="10" opacity="0.72">COSTUME ARCHIVE</text>
+    </g>
+    <g transform="translate(486 552) rotate(-7)" opacity="0.20">
+      <rect x="0" y="0" width="252" height="74" rx="3" fill="#f4f0e6" stroke="#111318" stroke-width="5"/>
+      <rect x="14" y="14" width="8" height="46" fill="#c94a44"/><rect x="24" y="14" width="8" height="46" fill="#f3c94b"/><rect x="34" y="14" width="8" height="46" fill="#315aa8"/>
+      <text x="58" y="33" font-size="17">FAMILY REUNION</text><text x="58" y="56" font-size="10" opacity="0.72">ARCHIVE COPY 03</text>
+    </g>
+    <g transform="translate(826 572) rotate(12)" opacity="0.24">
+      <rect x="0" y="0" width="280" height="76" rx="3" fill="#f4f0e6" stroke="#111318" stroke-width="5"/>
+      <text x="18" y="33" font-size="18">FLORIDA 2000</text><text x="18" y="56" font-size="10" opacity="0.72">BEACH TAPE</text>
+    </g>
+    <g transform="translate(1168 612) rotate(-11)" opacity="0.20">
+      <rect x="0" y="0" width="246" height="72" rx="3" fill="#f4f0e6" stroke="#111318" stroke-width="5"/>
+      <text x="18" y="32" font-size="17">BIRTHDAY</text><text x="18" y="54" font-size="10" opacity="0.72">CAKE CAMERA 02</text>
+    </g>
+    <g transform="translate(54 756) rotate(-9)" opacity="0.20">
+      <rect x="0" y="0" width="260" height="74" rx="3" fill="#f4f0e6" stroke="#111318" stroke-width="5"/>
+      <text x="18" y="32" font-size="17">CHRISTENING</text><text x="18" y="55" font-size="10" opacity="0.72">FAMILY COPY</text>
+    </g>
+    <g transform="translate(374 734) rotate(5)" opacity="0.18">
+      <rect x="0" y="0" width="254" height="72" rx="3" fill="#f4f0e6" stroke="#111318" stroke-width="5"/>
+      <text x="18" y="32" font-size="17">SUMMER 1996</text><text x="18" y="54" font-size="10" opacity="0.72">BACKYARD</text>
+    </g>
+    <g transform="translate(696 756) rotate(-6)" opacity="0.20">
+      <rect x="0" y="0" width="270" height="74" rx="3" fill="#f4f0e6" stroke="#111318" stroke-width="5"/>
+      <rect x="14" y="14" width="8" height="46" fill="#c94a44"/><rect x="24" y="14" width="8" height="46" fill="#f3c94b"/><rect x="34" y="14" width="8" height="46" fill="#315aa8"/>
+      <text x="58" y="33" font-size="17">HOLIDAYS</text><text x="58" y="56" font-size="10" opacity="0.72">SEVERINO / MOBERG</text>
+    </g>
+    <g transform="translate(1034 768) rotate(10)" opacity="0.19">
+      <rect x="0" y="0" width="276" height="74" rx="3" fill="#f4f0e6" stroke="#111318" stroke-width="5"/>
+      <text x="18" y="32" font-size="17">TAPE INDEX</text><text x="18" y="55" font-size="10" opacity="0.72">CABINET B - ROW 4</text>
+    </g>
+  </g>
+</svg>

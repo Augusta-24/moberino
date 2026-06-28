@@ -109,7 +109,14 @@
       "Bash(python3 arcade_baseline.py before)",
       "Bash(python3 -c \"from PIL import Image; print\\('PIL ok'\\)\")",
       "Bash(awk 'NR>=1790 && NR<=1815 && \\(/@media/ || /cats-home-icon/ || /cats-logo-img/ || /cats-header/\\)' /Users/kevinseverino/Documents/moberino/index.html)",
-      "Bash(awk -F: '$1>1780 && $1<1810')"
+      "Bash(awk -F: '$1>1780 && $1<1810')",
+      "Bash(perl -i -pe 's/\"lat\": null/\"lat\": 40.8443/ if $. >= 2224 && $. <= 2527; s/\"lng\": null/\"lng\": -73.1492/ if $. >= 2224 && $. <= 2527;' data.js)",
+      "Bash(node -e \"$\\(cat data.js\\); console.log\\('OK, videos:', VIDEOS.length\\); const w=VIDEOS.filter\\(v=>v.location && v.location.includes\\('Woodview'\\)\\); console.log\\('Woodview entries:', w.length, '| sample coords:', w[0].lat, w[0].lng\\); const b=VIDEOS.filter\\(v=>v.location && v.location.includes\\('Bethel'\\)\\); b.forEach\\(v=>console.log\\('Bethel-ish:', v.location, v.lat, v.lng\\)\\);\")",
+      "Bash(grep -iE \"\\\\.py$|\\\\.sh$|generate|build|geocode|scrape|fetch\")",
+      "Bash(kill 39275)",
+      "Bash(chromium-cli --help)",
+      "Bash(python3 -c \"import playwright\")",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/check_nav.py)"
     ],
     "additionalDirectories": [
       "/tmp"

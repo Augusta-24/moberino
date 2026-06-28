@@ -59,8 +59,10 @@ html.site-theme-classic {
   --theme-panel-bg-soft: rgba(180,190,220,0.08);
   --theme-panel-bg-mid: rgba(180,190,220,0.13);
   --theme-panel-bg-strong: rgba(180,190,220,0.16);
+  --theme-panel-bg-active: rgba(180,190,220,0.18);
   --theme-panel-bg-hover: rgba(180,190,220,0.20);
   --theme-panel-bg-focus: rgba(180,190,220,0.22);
+  --theme-panel-bg-overlay-input: rgba(180,190,220,0.12);
 
   --theme-nav-bg: rgba(8,16,42,0.94);
   --theme-nav-mobile-bg: rgba(8,16,42,0.78);
@@ -70,10 +72,43 @@ html.site-theme-classic {
   --theme-photo-overlay: rgba(8,16,42,0.93);
   --theme-photo-overlay-strong: rgba(8,16,42,0.98);
   --theme-card-overlay: rgba(8,16,42,0.78);
+  --theme-overlay-bg: rgba(8,16,42,0.90);
+  --theme-lightbox-bg: #06080f;
+  --theme-shelf-bg: #080510;
+  --theme-shake-bg: #050202;
+  --theme-map-control-bg: rgba(20,32,68,0.92);
+  --theme-map-control-bg-active: rgba(18,30,66,0.9);
+  --theme-map-zoom-bg-active: rgba(30,50,100,0.95);
+  --theme-back-top-bg: rgba(18,36,88,0.96);
+  --theme-mobile-action-bg: rgba(8,16,42,0.72);
+  --theme-focus-line: rgba(242,239,232,0.42);
+  --theme-active-line: rgba(242,239,232,0.44);
+  --theme-fade-transparent: rgba(242,239,232,0);
+  --theme-video-grad-mid: rgba(8,16,42,0.45);
+  --theme-video-grad-soft: rgba(8,16,42,0.08);
+  --theme-marker-bg-many: rgba(242,239,232,0.15);
+  --theme-marker-bg-single: rgba(242,239,232,0.9);
+  --theme-marker-border-many: rgba(242,239,232,0.6);
+  --theme-marker-border-single: rgba(242,239,232,0.4);
+  --theme-marker-glow: rgba(242,239,232,0.4);
+  --theme-marker-text: rgba(242,239,232,0.9);
 
   --theme-shadow-strong: rgba(0,0,0,0.90);
   --theme-shadow-mid: rgba(0,0,0,0.70);
   --theme-shadow-soft: rgba(0,0,0,0.55);
+  --theme-shadow-faint: rgba(0,0,0,0.28);
+  --theme-shadow-ui: rgba(0,0,0,0.22);
+  --theme-highlight-soft: rgba(255,255,255,0.08);
+  --theme-highlight-mid: rgba(255,255,255,0.06);
+  --theme-highlight-low: rgba(255,255,255,0.05);
+  --theme-highlight-faint: rgba(255,255,255,0.04);
+  --theme-tab-active-bg: rgba(255,255,255,0.08);
+  --theme-video-year: rgba(255,255,255,0.65);
+  --theme-rec-tag-text: rgba(120,255,140,0.95);
+  --theme-rec-tag-bg: rgba(0,0,0,0.82);
+  --theme-rec-tag-glow: rgba(0,255,80,0.5);
+  --theme-screensaver-accent: rgba(0,255,80,0.75);
+  --theme-sparkle: #ffe6a6;
 
   --theme-white: #ffffff;
   --theme-polaroid-paper: #f7f4ee;
@@ -85,6 +120,481 @@ html.site-theme-classic {
   --theme-font-title: 'Bebas Neue', cursive;
   --theme-font-brand: 'Russo One', sans-serif;
   --theme-font-marker: 'Permanent Marker', cursive;
+}
+
+html.site-theme-retro {
+  /* Severance-ish corporate archive meets aged camcorder VHS packaging. */
+  --theme-site-bg: #315aa8;
+  --theme-site-bg-2: #274b8f;
+  --theme-site-text: #f4f0e6;
+  --theme-site-muted: rgba(244,240,230,0.94);
+  --theme-site-line: rgba(17,19,24,0.22);
+
+  --navy: var(--theme-site-bg);
+  --navy2: var(--theme-site-bg-2);
+  --white: var(--theme-site-text);
+  --dim: var(--theme-site-muted);
+  --line: var(--theme-site-line);
+
+  --theme-text-96: rgba(244,240,230,0.96);
+  --theme-text-92: rgba(244,240,230,0.92);
+  --theme-text-90: rgba(244,240,230,0.90);
+  --theme-text-88: rgba(244,240,230,0.88);
+  --theme-text-70: rgba(244,240,230,0.70);
+  --theme-text-65: rgba(244,240,230,0.65);
+  --theme-text-58: rgba(244,240,230,0.58);
+  --theme-text-55: rgba(244,240,230,0.55);
+  --theme-text-52: rgba(244,240,230,0.52);
+  --theme-text-48: rgba(244,240,230,0.48);
+  --theme-text-45: rgba(244,240,230,0.45);
+  --theme-text-40: rgba(244,240,230,0.40);
+
+  --theme-line-34: rgba(17,19,24,0.34);
+  --theme-line-30: rgba(17,19,24,0.30);
+  --theme-line-28: rgba(17,19,24,0.28);
+  --theme-line-22: rgba(17,19,24,0.22);
+  --theme-line-18: rgba(17,19,24,0.18);
+  --theme-line-16: rgba(17,19,24,0.16);
+  --theme-line-14: rgba(17,19,24,0.14);
+  --theme-line-12: rgba(17,19,24,0.12);
+  --theme-line-10: rgba(17,19,24,0.10);
+  --theme-line-08: rgba(17,19,24,0.08);
+  --theme-line-06: rgba(17,19,24,0.06);
+
+  --theme-panel-bg: rgba(244,240,230,0.88);
+  --theme-panel-bg-soft: rgba(244,240,230,0.82);
+  --theme-panel-bg-mid: rgba(244,240,230,0.90);
+  --theme-panel-bg-strong: rgba(244,240,230,0.96);
+  --theme-panel-bg-active: rgba(243,201,75,0.92);
+  --theme-panel-bg-hover: rgba(243,201,75,0.24);
+  --theme-panel-bg-focus: rgba(244,240,230,0.98);
+  --theme-panel-bg-overlay-input: rgba(244,240,230,0.92);
+
+  --theme-nav-bg: rgba(49,90,168,0.94);
+  --theme-nav-mobile-bg: rgba(49,90,168,0.88);
+  --theme-dropdown-bg: rgba(244,240,230,0.97);
+  --theme-dark-panel-bg: rgba(244,240,230,0.97);
+  --theme-deep-panel-bg: rgba(244,240,230,0.94);
+  --theme-photo-overlay: rgba(49,90,168,0.82);
+  --theme-photo-overlay-strong: rgba(49,90,168,0.90);
+  --theme-card-overlay: rgba(24,35,61,0.70);
+  --theme-overlay-bg: rgba(49,90,168,0.90);
+  --theme-lightbox-bg: #18233d;
+  --theme-shelf-bg: #294a89;
+  --theme-shake-bg: #18233d;
+  --theme-map-control-bg: rgba(244,240,230,0.95);
+  --theme-map-control-bg-active: rgba(243,201,75,0.92);
+  --theme-map-zoom-bg-active: rgba(201,74,68,0.88);
+  --theme-back-top-bg: rgba(244,240,230,0.96);
+  --theme-mobile-action-bg: rgba(244,240,230,0.94);
+  --theme-focus-line: rgba(17,19,24,0.82);
+  --theme-active-line: rgba(201,74,68,0.86);
+  --theme-fade-transparent: rgba(244,240,230,0);
+  --theme-video-grad-mid: rgba(24,35,61,0.48);
+  --theme-video-grad-soft: rgba(49,90,168,0.12);
+  --theme-marker-bg-many: rgba(243,201,75,0.95);
+  --theme-marker-bg-single: rgba(244,240,230,0.96);
+  --theme-marker-border-many: rgba(17,19,24,0.86);
+  --theme-marker-border-single: rgba(201,74,68,0.86);
+  --theme-marker-glow: rgba(243,201,75,0.36);
+  --theme-marker-text: #111318;
+
+  --theme-shadow-strong: rgba(17,19,24,0.74);
+  --theme-shadow-mid: rgba(17,19,24,0.54);
+  --theme-shadow-soft: rgba(17,19,24,0.36);
+  --theme-shadow-faint: rgba(17,19,24,0.28);
+  --theme-shadow-ui: rgba(17,19,24,0.22);
+  --theme-highlight-soft: rgba(243,201,75,0.22);
+  --theme-highlight-mid: rgba(244,240,230,0.38);
+  --theme-highlight-low: rgba(244,240,230,0.26);
+  --theme-highlight-faint: rgba(244,240,230,0.18);
+  --theme-tab-active-bg: rgba(243,201,75,0.26);
+  --theme-video-year: rgba(244,240,230,0.74);
+  --theme-rec-tag-text: #111318;
+  --theme-rec-tag-bg: rgba(243,201,75,0.94);
+  --theme-rec-tag-glow: rgba(201,74,68,0.35);
+  --theme-screensaver-accent: rgba(243,201,75,0.92);
+  --theme-sparkle: #111318;
+
+  --theme-white: #f4f0e6;
+  --theme-polaroid-paper: #f4f0e6;
+  --theme-polaroid-border: #111318;
+  --theme-polaroid-text: #111318;
+
+  --theme-font-body: 'VCR', 'Share Tech Mono', monospace;
+  --theme-font-body-alt: 'VCR', 'Share Tech Mono', monospace;
+  --theme-font-title: 'Russo One', sans-serif;
+  --theme-font-brand: 'Russo One', sans-serif;
+  --theme-font-marker: 'Russo One', sans-serif;
+}
+
+.site-theme-toggle {
+  cursor: pointer;
+  text-transform: uppercase;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.site-theme-toggle:active {
+  transform: scale(0.96);
+}
+
+.site-theme-mobile-toggle {
+  display: none;
+}
+
+html.site-theme-retro body::before {
+  content: '';
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 0;
+  width: 78px;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg,
+      rgba(201,74,68,0.72) 0 38px,
+      rgba(243,201,75,0.74) 38px 78px);
+  mix-blend-mode: normal;
+}
+
+html.site-theme-retro #collage::after {
+  background:
+    linear-gradient(rgba(244,240,230,0.15), rgba(244,240,230,0.15)),
+    linear-gradient(90deg, rgba(49,90,168,0.18), rgba(49,90,168,0.50)),
+    rgba(49,90,168,0.42);
+}
+
+html.site-theme-retro #collage .pile-photo,
+html.site-theme-retro #collage .falling-leaf {
+  display: none;
+}
+
+html.site-theme-retro #collage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.94;
+  background: url('../retro-archive-bg.svg') center / cover no-repeat;
+}
+
+html.site-theme-retro #vhs-bands,
+html.site-theme-retro body::after {
+  display: none;
+}
+
+html.site-theme-retro .hero-logo-text,
+html.site-theme-retro .srch-logo-img {
+  content: url('../Title-retro.png');
+  filter: none;
+}
+
+html.site-theme-retro #pg-home,
+html.site-theme-retro #pg-cats,
+html.site-theme-retro #pg-detail,
+html.site-theme-retro #pg-timeline,
+html.site-theme-retro #pg-search,
+html.site-theme-retro #pg-map,
+html.site-theme-retro #pg-shelf {
+  background:
+    linear-gradient(120deg, rgba(244,240,230,0.05), transparent 34%),
+    linear-gradient(300deg, rgba(17,19,24,0.06), transparent 38%);
+}
+
+html.site-theme-retro .main-site-header,
+html.site-theme-retro .search-wrap,
+html.site-theme-retro .srch-box,
+html.site-theme-retro .spot-box,
+html.site-theme-retro .hero-cta-btn,
+html.site-theme-retro .inline-shuffle-btn,
+html.site-theme-retro #map-places-tab,
+html.site-theme-retro .map-location-close,
+html.site-theme-retro .decade-chip,
+html.site-theme-retro #back-top {
+  border-color: #111318;
+  border-radius: 2px;
+  box-shadow: 4px 5px 0 rgba(17,19,24,0.32);
+}
+
+html.site-theme-retro .main-site-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -8px;
+  height: 3px;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg,
+      transparent 0 1%,
+      rgba(17,19,24,0.90) 1% 18%,
+      rgba(17,19,24,0.68) 18% 19%,
+      rgba(17,19,24,0.94) 19% 46%,
+      rgba(17,19,24,0.70) 46% 47%,
+      rgba(17,19,24,0.90) 47% 76%,
+      rgba(17,19,24,0.72) 76% 77%,
+      rgba(17,19,24,0.92) 77% 100%);
+  filter: none;
+  box-shadow: none;
+}
+
+html.site-theme-retro .search-wrap,
+html.site-theme-retro .srch-box,
+html.site-theme-retro .spot-box,
+html.site-theme-retro .hero-cta-btn,
+html.site-theme-retro .inline-shuffle-btn {
+  color: #111318;
+}
+
+html.site-theme-retro .home-search-input,
+html.site-theme-retro .search-wrap input,
+html.site-theme-retro .srch-box input,
+html.site-theme-retro .spot-box input {
+  color: #111318;
+}
+
+html.site-theme-retro .home-search-input::placeholder,
+html.site-theme-retro .search-wrap input::placeholder,
+html.site-theme-retro .srch-box input::placeholder,
+html.site-theme-retro .spot-box input::placeholder {
+  color: #111318;
+}
+
+html.site-theme-retro .hero-cta-btn,
+html.site-theme-retro .inline-shuffle-btn,
+html.site-theme-retro .search-wrap,
+html.site-theme-retro .srch-box {
+  position: relative;
+}
+
+html.site-theme-retro .hero-cta-btn::before,
+html.site-theme-retro .search-wrap::before,
+html.site-theme-retro .srch-box::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 28px;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg,
+      #c94a44 0 9px,
+      #f3c94b 9px 18px,
+      #315aa8 18px 28px);
+}
+
+html.site-theme-retro .search-wrap > *,
+html.site-theme-retro .srch-box > *,
+html.site-theme-retro .inline-shuffle-btn > *,
+html.site-theme-retro .hero-cta-btn > * {
+  position: relative;
+  z-index: 1;
+}
+
+html.site-theme-retro .search-wrap,
+html.site-theme-retro .srch-box {
+  padding-left: 42px;
+}
+
+html.site-theme-retro .hero-cta-btn {
+  padding-left: 42px;
+  text-align: left;
+}
+
+html.site-theme-retro .page-nav-btn,
+html.site-theme-retro .tab,
+html.site-theme-retro .site-theme-toggle {
+  color: #111318;
+}
+
+html.site-theme-retro #map-places-tab,
+html.site-theme-retro #map-places-tab .map-places-tab-chevron,
+html.site-theme-retro #map-places-tab .map-places-tab-count {
+  color: #111318;
+}
+
+html.site-theme-retro #map-places-tab .map-places-tab-count {
+  background: rgba(17,19,24,0.12);
+}
+
+html.site-theme-retro .page-nav-btn {
+  background: var(--theme-panel-bg-strong);
+  border: 2px solid #111318;
+  border-radius: 2px;
+  box-shadow: 3px 4px 0 rgba(17,19,24,0.26);
+}
+
+html.site-theme-retro .page-nav-btn svg,
+html.site-theme-retro .inline-shuffle-btn svg,
+html.site-theme-retro .search-play-btn svg,
+html.site-theme-retro .search-clear-btn svg,
+html.site-theme-retro .srch-box svg,
+html.site-theme-retro .spot-close svg,
+html.site-theme-retro #seasonIcon,
+html.site-theme-retro .mobile-sparkle-btn svg {
+  filter: none;
+  stroke-width: 2.25px;
+}
+
+html.site-theme-retro .page-nav-btn .nav-icon-img {
+  filter: brightness(0) saturate(100%);
+  opacity: 1;
+}
+
+html.site-theme-retro .search-play-btn,
+html.site-theme-retro .search-clear-btn {
+  color: #111318;
+}
+
+html.site-theme-retro .page-nav-btn:hover,
+html.site-theme-retro .page-nav-btn.active,
+html.site-theme-retro .page-nav-btn.nav-sparkle-btn.active {
+  background: #f3c94b;
+  border-color: #111318;
+  color: #111318;
+}
+
+html.site-theme-retro .page-nav-btn.active::before,
+html.site-theme-retro .page-nav-btn.active::after {
+  display: none;
+}
+
+html.site-theme-retro .vcard-photo {
+  border-color: #111318;
+  box-shadow: 4px 5px 0 rgba(17,19,24,0.42);
+}
+
+html.site-theme-retro .ctile {
+  border: 2px solid #111318;
+  box-shadow: 4px 5px 0 rgba(17,19,24,0.34);
+}
+
+html.site-theme-retro .ctile-lbl,
+html.site-theme-retro .vcard-lbl {
+  color: #111318;
+}
+
+html.site-theme-retro .sub-page-title,
+html.site-theme-retro .detail-cat-title,
+html.site-theme-retro .season-label,
+html.site-theme-retro .rec-drawer-title,
+html.site-theme-retro #map-location-title {
+  text-shadow: 2px 2px 0 rgba(17,19,24,0.28);
+}
+
+html.site-theme-retro #home-drop,
+html.site-theme-retro #rec-drawer,
+html.site-theme-retro .maplibregl-popup-content,
+html.site-theme-retro #map-location-panel,
+html.site-theme-retro .spot-top-bar {
+  color: #111318 !important;
+  border-color: #111318 !important;
+  box-shadow: 5px 6px 0 rgba(17,19,24,0.28);
+}
+
+html.site-theme-retro #home-drop-meta,
+html.site-theme-retro .map-place-row,
+html.site-theme-retro .map-location-video-row,
+html.site-theme-retro #map-location-title,
+html.site-theme-retro #map-location-subtitle,
+html.site-theme-retro .rec-drawer-title,
+html.site-theme-retro .rec-drawer-close,
+html.site-theme-retro .spot-close,
+html.site-theme-retro #spot-meta {
+  color: #111318;
+}
+
+html.site-theme-retro #tabs {
+  background: var(--theme-panel-bg-strong);
+  border: 2px solid #111318;
+  border-radius: 2px;
+  box-shadow: 0 0 0 4px rgba(49,90,168,0.22), 4px 5px 0 rgba(17,19,24,0.30);
+}
+
+html.site-theme-retro .tab.on {
+  color: #111318;
+}
+
+html.site-theme-retro .tab-line {
+  background: #c94a44;
+  height: 2px;
+}
+
+html.site-theme-retro #seasonBtn .season-glow,
+html.site-theme-retro .mobile-sparkle-btn .season-glow {
+  display: none;
+}
+
+html.site-theme-retro #seasonBtn,
+html.site-theme-retro .mobile-sparkle-btn {
+  color: #111318;
+}
+
+html.site-theme-retro #seasonBtn.active {
+  color: #111318;
+}
+
+html.site-theme-retro #seasonIcon,
+html.site-theme-retro .mobile-sparkle-btn svg {
+  color: #111318;
+  animation: retro-pixie-twitch 2.6s steps(2, end) infinite;
+}
+
+@keyframes retro-pixie-twitch {
+  0%, 100% {
+    opacity: 0.82;
+    transform: rotate(-4deg) scale(0.96);
+  }
+  48% {
+    opacity: 1;
+    transform: rotate(5deg) scale(1.04);
+  }
+}
+
+@media (max-width: 767px), (pointer: coarse) and (max-width: 1023px) {
+  html.site-theme-retro body::before {
+    width: 42px;
+    background:
+      linear-gradient(90deg,
+        rgba(201,74,68,0.70) 0 18px,
+        rgba(243,201,75,0.72) 18px 42px);
+  }
+
+  .site-theme-nav-toggle {
+    display: none;
+  }
+
+  .site-theme-mobile-toggle {
+    position: fixed;
+    top: max(64px, env(safe-area-inset-top, 0px) + 60px);
+    right: max(10px, env(safe-area-inset-right, 0px) + 8px);
+    z-index: 7500;
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    border: 1px solid var(--theme-line-14);
+    background: var(--theme-mobile-action-bg);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 6px 18px var(--theme-shadow-ui), inset 0 1px 0 var(--theme-highlight-faint);
+    color: var(--theme-sparkle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .site-theme-mobile-toggle svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  body:not(.on-home) .site-theme-mobile-toggle { display: none; }
+
+  html.site-theme-retro .site-theme-mobile-toggle {
+    color: #111318;
+    border-color: #111318;
+    background: var(--theme-panel-bg-strong);
+    box-shadow: 3px 4px 0 rgba(17,19,24,0.26);
+  }
 }
 
 /* Keep this file intentionally low-specificity. Theme-specific paint should be layered
