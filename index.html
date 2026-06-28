@@ -32,7 +32,11 @@ html{
   scroll-behavior:smooth;
 }
 html.arcade-root {
-  background: #02040e;
+  background:
+    linear-gradient(180deg, rgba(3,6,18,1) 0%, rgba(2,4,14,1) 100%),
+    repeating-linear-gradient(45deg, rgba(255,0,204,0.035) 0px, rgba(255,0,204,0.035) 1px, transparent 1px, transparent 31px),
+    repeating-linear-gradient(-45deg, rgba(0,229,255,0.035) 0px, rgba(0,229,255,0.035) 1px, transparent 1px, transparent 31px);
+  background-size: auto, 44px 44px, 44px 44px;
 }
 
 body {
