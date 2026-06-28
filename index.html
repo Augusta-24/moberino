@@ -3751,7 +3751,7 @@ body.on-match .mobe-face-img {
   padding: 9px 8px 10px; box-sizing: border-box;
 }
 .space-boss-card canvas {
-  width: 92px; height: 92px; display: block;
+  width: 112px; height: 112px; display: block;
 }
 .space-boss-name {
   font-family: 'Bebas Neue', cursive; font-size: 21px; line-height: 1;
@@ -3791,6 +3791,14 @@ body.on-match .mobe-face-img {
 @keyframes sp-brief-boss-out {
   0%   { transform: translateX(0) rotate(0deg) scale(1); opacity: 1; }
   100% { transform: translateX(150vw) rotate(12deg) scale(0.72); opacity: 0; }
+}
+@keyframes sp-gizmo-centered-out {
+  0%   { transform: translate(-50%,-58%) translateX(0) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translate(-50%,-58%) translateX(150vw) rotate(12deg) scale(0.72); opacity: 0; }
+}
+@keyframes sp-gizmo-laugh-rock {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50%      { transform: translateY(-10px) rotate(1.5deg); }
 }
 @keyframes sp-haha-float {
   0%   { opacity: 0; transform: scale(0.6) translateY(10px); }
@@ -11649,9 +11657,9 @@ window.confirmCharSelect = function() {
   function showGizmoEscapeBeat(rescuedCi, onDone) {
     waveTransitioning = true;
     const isEarlyWave = (wave <= 2 || wave === 10 || wave === 11);
-    const holdMs = isEarlyWave ? 8800 : 3300;
+    const holdMs = isEarlyWave ? 7800 : 3300;
     const flyDur = isEarlyWave ? 1.8 : 1.45;
-    const flyDelay = isEarlyWave ? 6.2 : 0.25;
+    const flyDelay = isEarlyWave ? 5.2 : 0.25;
     const el = document.createElement('div');
     el.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(3,1,16,0.9);opacity:0;transition:opacity 0.25s ease;pointer-events:none';
     const rescueLine = rescuedCi >= 0 ? `BUT ${GAME_CHARS[rescuedCi].name.toUpperCase()} IS FREE` : 'BUT A MOBE IS FREE';
@@ -11670,9 +11678,11 @@ window.confirmCharSelect = function() {
       </div>` : '';
     el.innerHTML = `
       ${hahaHTML}
-      <div style="width:min(92vw,390px);text-align:center">
-        <div style="transform:translateX(0);animation:sp-brief-boss-out ${flyDur}s ease-in ${flyDelay}s both">${spaceBriefingBoss('hold')}</div>
-        <div style="font-family:'Bebas Neue',cursive;font-size:48px;letter-spacing:5px;line-height:1;color:#cc66ff;text-shadow:0 0 18px #cc66ff88;margin-top:12px">GIZMO ESCAPED!</div>
+      <div style="position:absolute;left:50%;top:50%;width:118px;text-align:center;animation:sp-gizmo-centered-out ${flyDur}s ease-in ${flyDelay}s both">
+        <div style="animation:sp-gizmo-laugh-rock 0.92s ease-in-out infinite">${spaceBriefingBoss('hold')}</div>
+      </div>
+      <div style="position:absolute;left:50%;top:calc(50% + 88px);width:min(92vw,390px);transform:translateX(-50%);text-align:center">
+        <div style="font-family:'Bebas Neue',cursive;font-size:48px;letter-spacing:5px;line-height:1;color:#cc66ff;text-shadow:0 0 18px #cc66ff88">GIZMO ESCAPED!</div>
         <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:#00e5ff;text-shadow:0 0 10px #00e5ff;margin-top:12px">${rescueLine}</div>
       </div>`;
     document.body.appendChild(el);
@@ -14018,7 +14028,7 @@ function nextWave() {
       const cv = document.getElementById(`space-boss-cv-${i}`);
       if (!cv) return;
       const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
-      const css = 92;
+      const css = 112; // larger drawing surface prevents the boss aura/ring from clipping at the canvas edge
       cv.width = Math.round(css * dpr);
       cv.height = Math.round(css * dpr);
       cv.style.width = `${css}px`;
@@ -15279,7 +15289,7 @@ function nextWave() {
     const svgMap = { 'af-coin': coinSVG, 'af-ticket': ticketSVG, 'af-pizza': pizzaSVG };
     const vw = window.innerWidth || document.documentElement.clientWidth || 390;
     const vh = window.innerHeight || document.documentElement.clientHeight || 700;
-    const COLS = Math.max(4, Math.ceil(vw / 220));
+    const COLS = Math.max(4, Math.ceil(vw / 180));
     const ROWS = Math.max(6, Math.ceil(vh / 180));
     let idx = 0;
     for (let r = 0; r < ROWS; r++) {
