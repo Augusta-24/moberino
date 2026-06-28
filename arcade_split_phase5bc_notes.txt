@@ -1,0 +1,35 @@
+Arcade split Phase 5B/C notes
+
+Purpose:
+- Combined Match and Space extraction into one test phase.
+- Kept Match and Space as separate files, not one combined dependent file.
+
+Files to replace/add:
+- arcade.html
+- js/arcade.js
+- js/games/whack.js
+- js/games/match.js
+- js/games/space.js
+
+What changed:
+- Match/MEMORY MOBE code moved from js/arcade.js to js/games/match.js.
+- Space Mobe code moved from js/arcade.js to js/games/space.js.
+- Whack remains external in js/games/whack.js.
+- js/arcade.js now contains the arcade shell/shared helpers and no game bodies.
+- arcade.html now loads arcade.js, then whack.js, match.js, and space.js in that order.
+
+What did not change:
+- No gameplay changes.
+- No CSS changes.
+- No icon density changes.
+- No asset path changes.
+- No main-site/index.html changes.
+
+Test checklist:
+1. Open index.html and navigate to Arcade.
+2. Confirm lobby loads.
+3. Launch Whack and play briefly.
+4. Launch Match and play/preview a round.
+5. Launch Space and play through launch, active gameplay, and game over if possible.
+6. Confirm leaderboard/result screens still appear.
+7. Exit Arcade back to main site.
