@@ -3,9 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
-<meta name="theme-color" content="#02040e">
-<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#02040e">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>MOBERINO</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Russo+One&family=Permanent+Marker&display=swap" rel="stylesheet">
@@ -9538,7 +9535,7 @@ window.confirmCharSelect = function() {
   // plus a generous time limit so move-efficiency, not the clock, is the real challenge.
   const MODE_CONFIG = {
     hard:       { pairs: 12, time: 60, targetMoves: null },
-    challenge:  { pairs: 16, time: 60, targetMoves: null },
+    challenge:  { pairs: 15, time: 60, targetMoves: null },
     impossible: { pairs: 21, time: 20, targetMoves: null },
   };
 
@@ -9552,9 +9549,9 @@ window.confirmCharSelect = function() {
 
   function gridLayout(pairs) {
     // Named modes use explicit clean grids so mobile never gets a ragged row or a
-    // too-wide square-ish board. Challenge uses 16 pairs to fit 4x8 cleanly.
+    // too-wide square-ish board. Pair counts stay unchanged.
     if (matchMode === 'hard') return { cols: 4, rows: 6 };       // 24 cards
-    if (matchMode === 'challenge') return { cols: 4, rows: 8 };  // 32 cards
+    if (matchMode === 'challenge') return { cols: 5, rows: 6 };  // 30 cards
     if (matchMode === 'impossible') return { cols: 6, rows: 7 }; // 42 cards
     const n = pairs * 2;
     const cols = Math.max(2, Math.min(7, Math.round(Math.sqrt(n))));
@@ -9615,7 +9612,7 @@ window.confirmCharSelect = function() {
             </button>
             <button class="whack-btn match-mode-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.1);padding:10px 16px;text-align:left" onclick="matchPlay('challenge')">
               <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;line-height:1.1">CHALLENGE</div>
-              <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:0.5px;opacity:0.9;margin-top:4px;white-space:nowrap">16 PAIRS · UNLIMITED MOVES · 60 SECONDS</div>
+              <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:0.5px;opacity:0.9;margin-top:4px;white-space:nowrap">15 PAIRS · UNLIMITED MOVES · 60 SECONDS</div>
             </button>
             <button class="whack-btn match-mode-btn" style="border-color:#ff4444;background:rgba(255,68,68,0.1);padding:10px 16px;text-align:left" onclick="matchPlay('impossible')">
               <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;line-height:1.1">IMPOSSIBLE</div>
@@ -9656,14 +9653,9 @@ window.confirmCharSelect = function() {
 
     if (state === 'preview') {
       const _gl = gridLayout(PAIRS);
-      const _gap = matchMode === 'challenge' ? 4 : 6;
-      // Timed modes draw a vertical countdown bar to the right of the board.
-      // Reserve that gutter in the mobile card-size math so the bar sits BESIDE
-      // the cards instead of being clamped back on top of the last column.
-      const _sideBarReserve = (window.innerWidth <= 600 && (matchMode === 'hard' || matchMode === 'challenge')) ? 28 : 0;
-      const _ghp = (_gl.cols - 1) * _gap + 24 + _sideBarReserve;
-      const _vPad = window.innerWidth <= 600 ? (matchMode === 'challenge' ? 58 : 70) : 180;
-      const _gStyle = `--card:min(calc((min(100vw,520px) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - ${_vPad}px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card));gap:${_gap}px`;
+      const _ghp = (_gl.cols - 1) * 6 + 24;
+      const _vPad = window.innerWidth <= 600 ? 70 : 180;
+      const _gStyle = `--card:min(calc((min(100vw,520px) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - ${_vPad}px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card))`;
       wrap.innerHTML = `
         <div class="match-hud" style="padding:6px 16px">
           <div style="font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:5px;color:#ffe61a;text-shadow:0 0 14px #ffe61a88" id="match-preview-cd">MEMORIZE!  ${matchMode === 'impossible' ? 7 : matchMode === 'challenge' ? 4 : 3}</div>
@@ -9684,14 +9676,9 @@ window.confirmCharSelect = function() {
 
     if (state === 'playing') {
       const _gl = gridLayout(PAIRS);
-      const _gap = matchMode === 'challenge' ? 4 : 6;
-      // Timed modes draw a vertical countdown bar to the right of the board.
-      // Reserve that gutter in the mobile card-size math so the bar sits BESIDE
-      // the cards instead of being clamped back on top of the last column.
-      const _sideBarReserve = (window.innerWidth <= 600 && (matchMode === 'hard' || matchMode === 'challenge')) ? 28 : 0;
-      const _ghp = (_gl.cols - 1) * _gap + 24 + _sideBarReserve;
-      const _vPad = window.innerWidth <= 600 ? (matchMode === 'challenge' ? 58 : 70) : 180;
-      const _gStyle = `--card:min(calc((min(100vw,520px) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - ${_vPad}px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card));gap:${_gap}px`;
+      const _ghp = (_gl.cols - 1) * 6 + 24;
+      const _vPad = window.innerWidth <= 600 ? 70 : 180;
+      const _gStyle = `--card:min(calc((min(100vw,520px) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - ${_vPad}px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card))`;
       wrap.innerHTML = `
         <div class="match-hud" style="padding:6px 16px">
           <div style="display:none"><div class="whack-stat-label">SCORE</div><div class="whack-stat-val" id="ms" style="font-size:24px">${matchScore}</div></div>
@@ -9943,14 +9930,8 @@ window.confirmCharSelect = function() {
     const grid = document.querySelector('.match-grid');
     if (!grid) return;
     const rect = grid.getBoundingClientRect();
-    const barW = 12;
-    const barGap = 8;
-    const safeRight = 8;
-    // The grid sizing reserves a mobile gutter for this bar. Keep this clamp only
-    // as a last-resort safety so the bar never leaves the viewport.
-    const barLeft = Math.min(rect.right + barGap, window.innerWidth - barW - safeRight);
     matchSideBarEl = document.createElement('div');
-    matchSideBarEl.style.cssText = `position:fixed;top:${rect.top}px;left:${barLeft}px;width:${barW}px;height:${rect.height}px;z-index:9400;pointer-events:none;background:rgba(0,0,0,0.35);border:1px solid rgba(255,230,26,0.25);border-radius:6px;overflow:hidden`;
+    matchSideBarEl.style.cssText = `position:fixed;top:${rect.top}px;left:${rect.right + 10}px;width:12px;height:${rect.height}px;z-index:9400;pointer-events:none;background:rgba(0,0,0,0.35);border:1px solid rgba(255,230,26,0.25);border-radius:6px;overflow:hidden`;
     matchSideBarEl.innerHTML = `<div id="match-sidebar-fill" style="position:absolute;bottom:0;left:0;width:100%;height:100%;background:rgba(255,230,26,0.5);box-shadow:0 0 8px rgba(255,230,26,0.35);transition:height 1s linear,background 0.3s"></div>`;
     document.body.appendChild(matchSideBarEl);
   }
@@ -10015,7 +9996,7 @@ window.confirmCharSelect = function() {
       items = ['12 PAIRS', 'UNLIMITED MOVES', '60 SECONDS'];
       watchTimer = true;
     } else if (mode === 'challenge') {
-      items = ['16 PAIRS', 'UNLIMITED MOVES', '60 SECONDS'];
+      items = ['15 PAIRS', 'UNLIMITED MOVES', '60 SECONDS'];
       watchTimer = true;
     } else {
       items = ['21 PAIRS', `${IMPOSSIBLE_MOVE_CUTOFF} MOVE LIMIT`, '20 SECONDS'];
