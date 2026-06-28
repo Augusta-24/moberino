@@ -2799,6 +2799,26 @@ body.on-home #back-top, body.on-map #back-top,
 /* Arcade/game styles moved to arcade.html. */
 </style>
 <script>
+// Main-site theme boot: applies the saved visual skin before first paint.
+// Keep this separate from seasonal body.theme-* classes, which are temporary overlays.
+(function() {
+  const STORAGE_KEY = 'moberinoSiteTheme';
+  const DEFAULT_THEME = 'classic';
+  const ALLOWED = ['classic'];
+  let saved = DEFAULT_THEME;
+  try {
+    saved = localStorage.getItem(STORAGE_KEY) || DEFAULT_THEME;
+  } catch (e) {
+    saved = DEFAULT_THEME;
+  }
+  if (!ALLOWED.includes(saved)) saved = DEFAULT_THEME;
+  const root = document.documentElement;
+  root.dataset.siteTheme = saved;
+  root.classList.add('site-theme-' + saved);
+})();
+</script>
+<link rel="stylesheet" href="css/site-themes.css">
+<script>
 // Locks #pg-home's height to a JS-measured pixel value instead of letting the browser
 // recompute 100svh on every paint. Mobile browsers (especially iOS Safari) recalculate
 // svh/dvh around address-bar show/hide, the on-screen keyboard opening/closing, and
@@ -5039,5 +5059,6 @@ window.enableShake = function() {
 
 // Arcade/game scripts moved to arcade.html.
 </script>
+<script src="js/site-theme.js"></script>
 </body>
 </html>

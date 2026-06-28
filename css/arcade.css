@@ -196,17 +196,39 @@ body.on-match .cats-header button, body.on-space .cats-header button {
   justify-content: center !important;
 }
 
-/* Arcade-only lobby/header ordering: keep LB + sound on the left and push Exit to the right.
-   This avoids touching the shared main-site .cats-header/nav system. */
+/* Arcade-only lobby/header ordering: keep LB + sound grouped on the left and
+   push Exit Arcade to the far right. This is intentionally scoped to the
+   standalone arcade lobby so shared/main-site header rules stay untouched. */
 body.on-lobby #pg-lobby .cats-header {
   width: 100%;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
 }
 body.on-lobby #pg-lobby .arcade-header-actions {
-  order: 1;
+  order: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-right: auto !important;
 }
 body.on-lobby #pg-lobby .arcade-exit-btn {
-  order: 2;
-  margin-left: auto;
+  order: 1 !important;
+  margin-left: auto !important;
+  flex: 0 0 auto !important;
+}
+@media (max-width: 380px) {
+  body.on-lobby #pg-lobby .cats-header {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    gap: 10px !important;
+  }
+  body.on-lobby #pg-lobby .arcade-exit-btn {
+    font-size: 10px !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
 }
 
 /* ── Arcade floating elements (all arcade pages) ── */

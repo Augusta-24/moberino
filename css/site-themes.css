@@ -1,0 +1,47 @@
+/*
+  Moberino main-site visual theme layer.
+
+  Purpose:
+  - Theme = coat of paint on the same house.
+  - Seasonal classes/effects remain separate body.theme-* overlays.
+  - Keep layout, spacing, behavior, Map, Search, nav, and video rendering untouched.
+
+  Current shipped theme:
+  - classic: mirrors the existing Moberino look by overriding the original :root tokens
+    with the same values. This creates the infrastructure without visual change.
+
+  Future themes should add a new html.site-theme-<name> block and override variables
+  only. Do not duplicate pages or edit layout selectors for a theme.
+*/
+
+html.site-theme-classic {
+  /* Core colors mapped to the site's existing tokens. */
+  --theme-site-bg: #08102a;
+  --theme-site-bg-2: #0c1836;
+  --theme-site-text: #f2efe8;
+  --theme-site-muted: rgba(242,239,232,1);
+  --theme-site-line: rgba(242,239,232,0.07);
+
+  --navy: var(--theme-site-bg);
+  --navy2: var(--theme-site-bg-2);
+  --white: var(--theme-site-text);
+  --dim: var(--theme-site-muted);
+  --line: var(--theme-site-line);
+
+  /* Future paint-only tokens. Existing CSS can be migrated to these gradually. */
+  --theme-panel-bg: rgba(180,190,220,0.10);
+  --theme-panel-bg-strong: rgba(180,190,220,0.16);
+  --theme-panel-border: rgba(242,239,232,0.16);
+  --theme-panel-border-strong: rgba(242,239,232,0.34);
+  --theme-nav-bg: rgba(8,16,42,0.94);
+  --theme-glass-bg: rgba(180,190,220,0.10);
+  --theme-search-bg: rgba(180,190,220,0.10);
+  --theme-photo-overlay: rgba(8,16,42,0.93);
+
+  --theme-font-body: 'VCR', monospace;
+  --theme-font-title: 'Bebas Neue', cursive;
+  --theme-font-brand: 'Russo One', sans-serif;
+}
+
+/* Keep this file intentionally low-specificity. Theme-specific paint should be layered
+   through variables first, not by changing dimensions or page structure. */
