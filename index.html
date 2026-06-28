@@ -11743,10 +11743,15 @@ window.confirmCharSelect = function() {
       card.style.transform = 'scale(1)';
     });
     setTimeout(() => {
-      el.style.background = 'rgba(3,1,16,0)';
-      card.style.opacity = '0';
-      card.style.transform = 'scale(1.04)';
-      setTimeout(() => { el.remove(); if (onDone) onDone(); }, 350);
+      // Build the leaderboard/result overlay BEFORE the mission-failed card fades out,
+      // so the player never sees the stale launch menu underneath during the handoff.
+      if (onDone) onDone();
+      requestAnimationFrame(() => {
+        el.style.background = 'rgba(3,1,16,0)';
+        card.style.opacity = '0';
+        card.style.transform = 'scale(1.04)';
+        setTimeout(() => { el.remove(); }, 350);
+      });
     }, 4800);
   }
 
@@ -14591,6 +14596,10 @@ function nextWave() {
       startSpaceBossPreviewAnimation();
     } else if(mode==='over'){
       setArcadeExitVisible(false);
+      // Clear stale launch/select markup immediately; otherwise it can flash between
+      // the in-game mission-failed beat and the leaderboard game-over card.
+      ov.innerHTML = '';
+      ov.classList.remove('hidden');
       const isNew=score>=parseInt(localStorage.getItem('space-best')||'0');
       const boardKey = getSpaceLeaderboardKey();
       const uid = 'space';
