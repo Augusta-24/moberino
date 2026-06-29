@@ -630,10 +630,13 @@ body.on-timeline #collage::after {
   gap: 8px;
   width: 100%;
 }
-@media (min-width: 768px) and (pointer: fine) {
+@media (min-width: 768px) and (pointer: fine), (min-width: 1024px) and (pointer: coarse) {
   /* One desktop header ruler for the whole main website. Home/Search used to have
      their own header patterns, while Browse/Years/Map used page headers; that made
-     nav buttons appear to jump between different coordinate systems. */
+     nav buttons appear to jump between different coordinate systems. The coarse-pointer
+     alternative picks up tablet landscape (iPad landscape width is 1024px+) — without it,
+     landscape tablets fell into a gap between this desktop query (pointer:fine only) and
+     the bottom-tab mobile query (capped at max-width:1023px), showing no nav at all. */
   .main-site-header {
     width: var(--desktop-nav-width);
     max-width: none;
@@ -884,7 +887,7 @@ body.rec-open { overflow-y: auto; }
 .main-site-header {
   display: none;
 }
-@media (min-width: 768px) and (pointer: fine) {
+@media (min-width: 768px) and (pointer: fine), (min-width: 1024px) and (pointer: coarse) {
   .main-site-header {
     display: flex;
   }
@@ -2387,13 +2390,13 @@ body.main-scrolled .main-site-header .page-nav-btn.active::after {
   /* Keep the active fog readable on top of the darker scrolled header shield. */
   opacity: 0.62;
 }
-@media (max-width: 1023px), (max-width: 1400px) and (orientation: landscape) and (pointer: coarse) {
-  /* The plain max-width:1023px alone misses tablet landscape — an iPad's landscape
-     WIDTH (1024-1366px depending on model) clears it even though the layout below
-     is just as needed there as in portrait. The second clause re-applies it up to
-     1366px specifically when also landscape + coarse-pointer, so real desktop
-     windows (pointer: fine) in that width range are unaffected. Width, not height,
-     since iPad Pro 12.9" landscape is ~1024px tall — a height cutoff kept missing it. */
+@media (max-width: 1023px) {
+  /* Below 1024px the bottom-tab nav is in charge (see #tabs media query above), so
+     the per-page header/nav is hidden here. At 1024px+ the desktop header now shows
+     for coarse-pointer tablets too (see .main-site-header query above), so this no
+     longer needs a separate landscape-coarse clause reaching up to 1400px — that used
+     to hide the header in the 1024-1400px tablet-landscape range with nothing left to
+     replace it, which is exactly the "no nav visible" bug. */
   #pg-detail.active, #pg-timeline.active, #pg-search.active, #pg-shelf.active {
     padding-top: 0;
   }
