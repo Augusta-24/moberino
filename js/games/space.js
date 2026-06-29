@@ -11,6 +11,14 @@
   let leftHeld = false, rightHeld = false, lastAutoFire = 0, lastPizzaFire = 0, activeChar = getGlobalChar();
   let enemyBullets = [], lastEnemyFire = 0;
   let blackoutHitFlashes = []; // short-lived full-color snapshots shown above BLACKOUT darkness
+  let lastDamageCause = '';
+  let lastDamageAmount = 0;
+  let lastDamageAt = 0;
+  let lastDamageWave = 0;
+  let deathCause = '';
+  let deathDamageAmount = 0;
+  let deathWave = 0;
+  let deathWaveTheme = '';
   let blackoutShooterIndex = 0;
   let dangerY = 0, socketAnchorY = 0, lineFlashA = 0;
   const SPACE_SHIP_BOTTOM_OFFSET = 40;
@@ -22,6 +30,9 @@
   const REVERSE_LINE_Y = 92;
   let floatTexts = []; // {text, x, y, color, a, vy, size}
   let currentCfg = null;
+  let spaceRunMode = 'campaign'; // campaign | academy | bossrun | endless | debug
+  let bossRunQueue = [];
+  let bossRunIndex = 0;
   let powerups = []; // {type:'speed'|'gun'|'bomb'|'shield'|'hp'|'mystery', x, y, vy, r}
   let buffSpeedUntil = 0, buffGunUntil = 0, buffShieldUntil = 0;
   // Frozen (movement x0.5, bullets render as snowflakes — cosmetic only) and zapped
@@ -117,6 +128,7 @@
   let academyStepArmed = false;
   let academyTimers = [];
   let academyMysteryIndex = 0;
+  let academyShieldNoticeAt = 0; // Space Tutorial safety net: lessons teach without causing campaign/game-over state
   // 'flip' (not 'reverse') for the wave theme key — the mystery outcome list below
   // already uses 'reverse' for reversed controls, an unrelated effect; same string
   // in both would be confusing to read even though they're different variables.
@@ -747,14 +759,14 @@
     return base;
   }
 
-  function enemyFireAt(shooter, speedMult) {
+  function enemyFireAt(shooter, speedMult, cause) {
     const dx = player.x - shooter.x;
     const dy = player.y - shooter.y;
     const dist = Math.sqrt(dx*dx+dy*dy) || 1;
     const tier = currentCfg ? currentCfg.tier : campaignTier(wave);
     const balanceMult = currentCfg && currentCfg.enemyFireMult != null ? currentCfg.enemyFireMult : 1;
     const bulletSpeed = (3.0 + tier * 0.45 + Math.min(wave, 12) * 0.16 + Math.max(0, wave - 18) * 0.18) * (speedMult || 1) * balanceMult;
-    enemyBullets.push({ x: shooter.x, y: shooter.y + shooter.r, vx: (dx/dist)*bulletSpeed, vy: (dy/dist)*bulletSpeed, r: 4 });
+    enemyBullets.push({ x: shooter.x, y: shooter.y + shooter.r, vx: (dx/dist)*bulletSpeed, vy: (dy/dist)*bulletSpeed, r: 4, damageCause: cause || 'ENEMY SHOT' });
   }
 
   function warnAndFireBlackoutEnemy(shooter) {
@@ -764,7 +776,7 @@
     shooter.blackoutHoldUntil = now + 420;
     setTimeout(() => {
       if (state !== 'playing' || waveTheme !== 'blackout' || shooter.alive === false || shooter._crossed) return;
-      enemyFireAt(shooter, 1);
+      enemyFireAt(shooter, 1, 'BLACKOUT SHOT');
     }, 280);
   }
 
@@ -2101,6 +2113,7 @@
     academyMode = false;
     player = { x:W/2, y:H-SPACE_SHIP_BOTTOM_OFFSET, r:18 };
     bullets=[]; obstacles=[]; score=0; health=100; wave=1; waveKills=0; campaignRebootUsed=false;
+    lastDamageCause=''; lastDamageAmount=0; lastDamageAt=0; lastDamageWave=0; deathCause=''; deathDamageAmount=0; deathWave=0; deathWaveTheme='';
     enemyBullets=[]; lastEnemyFire=0; floatTexts=[]; blackoutHitFlashes=[]; blackoutShooterIndex=0; lineFlashA=0;
     powerups=[]; buffSpeedUntil=0; buffGunUntil=0; buffShieldUntil=0; escort=null; shakeMag=0;
     boss=null; rescuedChars.clear(); rescueBanner = null; missionRetryCaptives.splice(0, missionRetryCaptives.length); campaignSeenBossNames.clear(); waveCaptivesSeen.clear();
@@ -2164,10 +2177,10 @@
   const SPACE_ACADEMY_LESSONS = [
     { title: 'DRAG TO MOVE', detail: 'STAY BELOW THE DANGER LINE' },
     { title: 'AUTO-FIRE IS ON', detail: 'LINE UP YOUR SHOTS' },
-    { title: 'CATCH POWERUPS', detail: 'STORE THEM IN SOCKETS' },
-    { title: 'TAP A SOCKET', detail: 'USE THE BOMB' },
+    { title: 'CATCH POWERUPS', detail: 'LEFT SOCKETS STORE GUN / SHIELD / BOMB' },
+    { title: 'TAP A SOCKET', detail: 'BOMB SOCKET CLEARS DANGER' },
     { title: 'SHOOT THE ? CRATE', detail: 'IT CAN HELP OR HURT' },
-    { title: 'BREAK THE LOCK', detail: 'SAVE THE MOBE' },
+    { title: 'BREAK THE BLUE LOCK', detail: 'SHOOT THE RING, NOT THE MOBE' },
     { title: 'BOSS WARNINGS', detail: 'READ THE ATTACK CUE' },
     { title: 'BLACKOUT', detail: 'SLOW DOWN. WATCH THE LINE.' },
   ];
@@ -2184,6 +2197,14 @@
     academyTimer(() => {
       if (academyMode && state === 'playing') addFloatText(lesson.detail, W / 2, H * 0.32, '#ffe61a', 20, { vy: -0.12, fade: 0.006 });
     }, 620);
+  }
+
+  function academySafeTimeoutMs(index) {
+    // Checkpoint E: every Academy lesson has a deterministic escape hatch. The
+    // player can finish by doing the mechanic, but missed pickups/crates/targets
+    // never strand the tutorial or bleed into campaign state.
+    const lessonTimeouts = [10000, 10000, 11500, 10000, 11500, 10500, 8200, 9000];
+    return lessonTimeouts[index] || 10000;
   }
 
   function spawnAcademyAsteroid(x, y, speed) {
@@ -2242,16 +2263,19 @@
     } else if (index === 1) {
       [0.28, 0.5, 0.72].forEach((xp, i) => spawnAcademyEnemy(W * xp, -40 - i * 90, 1));
     } else if (index === 2) {
+      academyTimer(() => academyMode && addFloatText('WATCH THE LEFT SOCKETS', SOCKET_X + SOCKET_SIZE + 74, socketRect(1).y + SOCKET_SIZE / 2, '#00e5ff', 16, { vy: -0.08, fade: 0.006 }), 1250);
       spawnAcademyPowerup('gun', W * 0.28, 500);
       spawnAcademyPowerup('shield', W * 0.5, 1650);
       spawnAcademyPowerup('bomb', W * 0.72, 2800);
     } else if (index === 3) {
       inventory.bomb = true;
+      academyTimer(() => academyMode && addFloatText('TAP THE ORANGE BOMB SOCKET', SOCKET_X + SOCKET_SIZE + 112, socketRect(2).y + SOCKET_SIZE / 2, '#ff8800', 16, { vy: -0.08, fade: 0.006 }), 650);
       for (let i = 0; i < 5; i++) spawnAcademyEnemy(W * (0.2 + i * 0.15), -35 - i * 42, 1);
     } else if (index === 4) {
       spawnAcademyMystery(W * 0.38, 0);
       spawnAcademyMystery(W * 0.62, 2600);
     } else if (index === 5) {
+      academyTimer(() => academyMode && addFloatText('BLUE RING = RESCUE LOCK', W / 2, Math.max(150, H * 0.25), '#00e5ff', 16, { vy: -0.08, fade: 0.006 }), 900);
       spawnAcademyRescueLock();
     } else if (index === 6) {
       academyTimer(() => academyMode && showTopBanner('OGRE: HEE HAW MEANS CHARGE', 'bad'), 900);
@@ -2267,6 +2291,7 @@
   function completeSpaceAcademy() {
     clearSpaceAcademyTimers();
     academyMode = false;
+    academyShieldNoticeAt = 0;
     clearSpaceRuntimeTimers();
     clearSpaceBonusObjects();
     obstacles = [];
@@ -2287,7 +2312,7 @@
     else if (academyStep === 4) done = elapsed > 4200 && academyMysteryIndex >= 2 && powerups.length === 0;
     else if (academyStep === 6) done = elapsed > 7200;
     else if (academyStep === 7) done = elapsed > 8000;
-    if (!done && elapsed > 12000) done = true;
+    if (!done && elapsed > academySafeTimeoutMs(academyStep)) done = true;
     if (!done) return;
     academyStepArmed = true;
     academyTimer(() => {
@@ -2303,6 +2328,7 @@
     clearSpaceCinematicOverlays();
     bullets = []; obstacles = []; enemyBullets = []; powerups = []; floatTexts = []; blackoutHitFlashes = []; blackoutShooterIndex = 0;
     boss = null; miniBoss = null; rescueBanner = null; waveCaptivesSeen.clear();
+    lastDamageCause=''; lastDamageAmount=0; lastDamageAt=0; lastDamageWave=0; deathCause=''; deathDamageAmount=0; deathWave=0; deathWaveTheme='';
     wave = startWave;
     waveKills = 0;
     health = 100;
@@ -2565,7 +2591,7 @@
     ov.className = 'space-rescue-briefing';
     ov.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(3,1,16,0);transition:background 0.35s ease;pointer-events:none';
     const allMobes = [...missionEnemyChars, ...missionTrappedChars];
-    const gridStyle = "display:grid;grid-template-columns:repeat(4,58px);justify-content:center;gap:12px 14px";
+    const gridStyle = "display:grid;grid-template-columns:repeat(4,72px);justify-content:center;align-items:start;gap:16px 18px";
     ov.innerHTML = `
       <div style="width:min(94vw,430px);text-align:center;opacity:0;transform:scale(0.96);transition:opacity 0.35s ease,transform 0.35s ease">
         <div style="font-family:'Bebas Neue',cursive;font-size:54px;letter-spacing:6px;line-height:0.96;color:#33ff66;text-shadow:0 0 22px #33ff6688;margin-bottom:14px">GIZMO DEFEATED!</div>
@@ -2752,6 +2778,62 @@ function nextWave() {
   }
 
 
+  function prettyDamageCause(cause) {
+    return String(cause || 'UNKNOWN HAZARD').toUpperCase();
+  }
+
+  function waveNameForDeath() {
+    if (boss && boss.creature && boss.creature.name) return boss.creature.name;
+    if (miniBoss && miniBoss.kind === 'ghost') return 'GHOST ATTACK';
+    if (miniBoss && miniBoss.kind === 'emp') return 'EMP WARNING';
+    return THEME_LABEL[waveTheme] || 'SPACE MOBE';
+  }
+
+  function recordDamageCause(amount, cause) {
+    lastDamageCause = prettyDamageCause(cause);
+    lastDamageAmount = amount || 0;
+    lastDamageAt = Date.now();
+    lastDamageWave = wave || 0;
+  }
+
+  function lockDeathCause(amount, cause) {
+    deathCause = prettyDamageCause(cause || lastDamageCause || 'UNKNOWN HAZARD');
+    deathDamageAmount = amount || lastDamageAmount || 0;
+    deathWave = wave || lastDamageWave || 0;
+    deathWaveTheme = waveNameForDeath();
+  }
+
+  function projectileDamageCause(b) {
+    if (!b) return 'ENEMY SHOT';
+    if (b.damageCause) return b.damageCause;
+    if (b.isLock) return 'SHOTGUN BONES';
+    if (b.tennis || b.theme === 'tennis') return 'TENNIS BALL';
+    if (b.theme === 'donkey') return 'DONKEY CHARGE';
+    if (b.theme === 'sword') return 'KNIGHT SWORD';
+    if (b.splat || b.theme === 'ink') return 'OCTO INK';
+    if (b.theme === 'fire') return 'DRAGON FIRE';
+    if (b.theme === 'fish') return 'SHARK TOOTH';
+    if (b.theme === 'sombrero') return 'SOMBRERO HIT';
+    if (b.theme === 'portalOrb') return 'TRACKING ORB';
+    if (b.theme === 'shield') return 'SHIELD BURST';
+    if (b.theme === 'rebound') return 'REBOUND SHOT';
+    if (b.isIce) return 'ICE SHOT';
+    if (b.isZap) return 'EMP SHOT';
+    return 'ENEMY SHOT';
+  }
+
+  function gameOverCauseHTML() {
+    const cause = prettyDamageCause(deathCause || lastDamageCause || 'UNKNOWN HAZARD');
+    const dmg = deathDamageAmount || lastDamageAmount || 0;
+    const w = deathWave || wave || 0;
+    const theme = deathWaveTheme || waveNameForDeath();
+    return `<div style="margin-top:10px;padding:10px 12px;border:1px solid rgba(255,68,68,0.42);background:rgba(255,68,68,0.10);border-radius:12px;text-align:left;font-family:'VCR',monospace;line-height:1.35">
+      <div style="font-size:10px;letter-spacing:2px;color:rgba(242,239,232,0.55);margin-bottom:4px">CAUSE OF DEFEAT</div>
+      <div style="font-family:'Bebas Neue',cursive;font-size:26px;letter-spacing:3px;line-height:1;color:#ff6666;text-shadow:0 0 10px rgba(255,68,68,0.55)">${cause}</div>
+      <div style="font-size:11px;letter-spacing:1.5px;color:rgba(242,239,232,0.72);margin-top:6px">WAVE ${w} — ${theme}${dmg ? ` / -${dmg} HP` : ''}</div>
+    </div>`;
+  }
+
   function triggerCampaignReboot() {
     if (campaignRebootUsed) return false;
     campaignRebootUsed = true;
@@ -2805,13 +2887,23 @@ function nextWave() {
     return true;
   }
 
-  function takeDamage(amount) {
+  function takeDamage(amount, cause) {
     if (spaceDamageSuppressed()) return;
+    if (academyMode) {
+      const now = Date.now();
+      if (now - academyShieldNoticeAt > 850) {
+        academyShieldNoticeAt = now;
+        addFloatText('TRAINING SHIELD', player.x, player.y - 44, '#00e5ff', 16, { vy: -0.9, fade: 0.035 });
+        miniExplosion(player.x, player.y, '#00e5ff');
+      }
+      return;
+    }
     if (Date.now() < buffShieldUntil) {
       addFloatText('BLOCKED!', player.x, player.y - 40, '#00e5ff', 18);
       miniExplosion(player.x, player.y, '#00e5ff');
       return; // shield fully absorbs the hit — no health loss
     }
+    recordDamageCause(amount, cause);
     health = Math.max(0, health - amount);
     addFloatText(`-${amount}`, player.x, player.y - 40, '#ff4444', 20);
     miniExplosion(player.x, player.y, '#ff4444');
@@ -2823,6 +2915,7 @@ function nextWave() {
       buffFrozenUntil = Math.max(buffFrozenUntil, Date.now() + 2000);
       addFloatText('FROZEN!', player.x, player.y - 60, '#66ddff', 16);
     }
+    if (health <= 0 && state === 'playing') lockDeathCause(amount, cause);
     if (health <= 0 && state === 'playing' && wave <= SPACE_CAMPAIGN_FINAL_WAVE && !campaignRebootUsed) {
       if (triggerCampaignReboot()) return;
     }
@@ -3540,7 +3633,7 @@ function nextWave() {
         }
       }
       if (Math.hypot(rebound.x - player.x, rebound.y - player.y) < rebound.r + player.r * 0.8) {
-        takeDamage(15);
+        takeDamage(15, 'REBOUND HIT');
         miniExplosion(rebound.x, rebound.y, '#ff4444');
         rebound = null;
       } else if (Date.now() > rebound.expiresAt) {
@@ -3551,7 +3644,7 @@ function nextWave() {
         // rather than aiming at the player.
         const spinAngle = Date.now() * 0.006;
         const fireSpeed = 4;
-        enemyBullets.push({ x: rebound.x, y: rebound.y, vx: Math.cos(spinAngle) * fireSpeed, vy: Math.sin(spinAngle) * fireSpeed, r: 4 });
+        enemyBullets.push({ x: rebound.x, y: rebound.y, vx: Math.cos(spinAngle) * fireSpeed, vy: Math.sin(spinAngle) * fireSpeed, r: 4, theme: 'rebound', damageCause: 'REBOUND SHOT' });
         rebound.nextFire = Date.now() + 130;
       }
     }
@@ -3841,7 +3934,7 @@ function nextWave() {
             const dx = player.x - boss.x, dy = player.y - boss.y;
             const ang = Math.atan2(dy, dx) + (k - (count - 1) / 2) * 0.12;
             const bulletSpeed = 4 + wave * 0.15;
-            enemyBullets.push({ x: boss.x, y: boss.y + boss.r*0.6, vx: Math.cos(ang)*bulletSpeed, vy: Math.sin(ang)*bulletSpeed, r: 6 });
+            enemyBullets.push({ x: boss.x, y: boss.y + boss.r*0.6, vx: Math.cos(ang)*bulletSpeed, vy: Math.sin(ang)*bulletSpeed, r: 6, damageCause: 'BOSS BULLET' });
           }
           SFX.tone && SFX.tone(300,'square',0,0.04,0.08,200);
           boss.nextAttack = Date.now() + (boss.attackDelay || 2200);
@@ -3853,7 +3946,7 @@ function nextWave() {
         boss.laserHasHit = false;
       } else if (boss.laserPhase === 'firing') {
         if (!boss.laserHasHit && Math.abs(player.x - boss.laserX) < player.r + 14) {
-          takeDamage(bossDamage(boss, 20));
+          takeDamage(bossDamage(boss, 20), 'BOSS LASER');
           boss.laserHasHit = true;
         }
         if (Date.now() - boss.laserFireStart > 220) {
@@ -3899,7 +3992,7 @@ function nextWave() {
         const dx = player.x - mb.x, dy = player.y - mb.y;
         const dist = Math.sqrt(dx*dx + dy*dy) || 1;
         const bulletSpeed = 3.2 + wave * 0.3;
-        enemyBullets.push({ x: mb.x, y: mb.y + mb.r, vx: (dx/dist)*bulletSpeed, vy: (dy/dist)*bulletSpeed, r: 5, isIce: mb.kind === 'ghost', isZap: mb.kind === 'emp' });
+        enemyBullets.push({ x: mb.x, y: mb.y + mb.r, vx: (dx/dist)*bulletSpeed, vy: (dy/dist)*bulletSpeed, r: 5, isIce: mb.kind === 'ghost', isZap: mb.kind === 'emp', damageCause: mb.kind === 'ghost' ? 'ICE SHOT' : 'EMP SHOT' });
         mb.nextAttack = Date.now() + 1400;
       }
     }
@@ -4071,7 +4164,7 @@ function nextWave() {
             o.paused = false; o.pausedBurstDone = true;
           } else {
             if (o.burstShotsLeft > 0 && Date.now() - o.lastBurstShot > 320) {
-              enemyFireAt(o, 1.15);
+              enemyFireAt(o, 1.15, 'ENEMY BURST');
               o.burstShotsLeft--; o.lastBurstShot = Date.now();
             }
             continue; // hold position while paused
@@ -4095,13 +4188,13 @@ function nextWave() {
         lineFlashA = 1.0;
         if(o.type==='asteroid'){
           const rockDamage = o.r < 22 ? 5 : 10;
-          takeDamage(rockDamage);
+          takeDamage(rockDamage, waveTheme === 'flip' ? 'REVERSE ASTEROID ESCAPE' : 'ASTEROID REACHED LINE');
           bigExplosion(o.x, _lineY, '#aa8855');
           SFX.whack && SFX.whack(); // thud sound
           waveKills++;
         } else if(!o.isTrapped){
           // enemy crosses line — big damage
-          takeDamage(30);
+          takeDamage(30, 'ENEMY REACHED LINE');
           bigExplosion(o.x, _lineY, GAME_CHARS[o.ci].color);
           if (!o.blackoutHiddenEnemy) faceFlash(o.ci, 'sad', o.x, _lineY - 30);
           SFX.miss();
@@ -4215,7 +4308,7 @@ function nextWave() {
           }
           if (boss.attackType === 'shield' && Date.now() < (boss.shieldUntil || 0)) {
             b.vy = 999;
-            enemyBullets.push({ x: b.x, y: b.y, vx: (b.vx || 0) * 0.35, vy: 5.4 + wave * 0.08, r: 5.5, theme: 'shield' });
+            enemyBullets.push({ x: b.x, y: b.y, vx: (b.vx || 0) * 0.35, vy: 5.4 + wave * 0.08, r: 5.5, theme: 'shield', damageCause: 'SHIELD BURST' });
             addFloatText('DEFLECTED!', boss.x, boss.y - boss.r - 20, '#c8d4ff', 16);
             miniExplosion(b.x, b.y, '#c8d4ff');
             SFX.powerupCollect && SFX.powerupCollect();
@@ -4275,7 +4368,11 @@ function nextWave() {
             // to have enemies on screen behind the next scene (most visible on Gizmo).
             // The loop fires this once obstacles.length === 0 (see pendingBossWin).
             pendingBossWin = () => {
-              if (defeatedBoss.isGizmoEscape) {
+              if (spaceRunMode === 'bossrun') {
+                showBossDefeatedBeat(defeatedBoss.creature.name, defeatedBoss.x, defeatedBoss.y, () => {
+                  if (state === 'playing') advanceBossRun();
+                });
+              } else if (defeatedBoss.isGizmoEscape) {
                 showGizmoEscapeBeat(rescuedCi, () => {
                   if (state !== 'playing') return;
                   if (rescuedCi >= 0) showBossRescueUnlockBeat(rescuedCi, defeatedBoss.creature.name, () => { if (state === 'playing') nextWave(); });
@@ -4358,7 +4455,7 @@ function nextWave() {
               addFloatText('OOPS!', o.x, o.y, '#ff4444', 24);
               miniExplosion(o.x, o.y, '#ff4444');
               faceFlash(o.ci,'sad',o.x,o.y);
-              takeDamage(30);
+              takeDamage(30, 'CAPTIVE FACE HIT');
               if(state==='over') return;
             } else {
               // Normal enemy face — takes 3 hits to clear
@@ -4426,7 +4523,7 @@ function nextWave() {
             continue;
           }
           o.alive=false; SFX.miss();
-          takeDamage(o.type==='face' ? 30 : 15);
+          takeDamage(o.type==='face' ? 30 : 15, o.type==='face' ? 'ENEMY COLLISION' : 'ASTEROID COLLISION');
           if(state==='over') return;
         }
       }
@@ -4442,7 +4539,7 @@ function nextWave() {
     if (pendingBossWin && obstacles.length === 0 && !boss && !miniBoss && state === 'playing') {
       const runWin = pendingBossWin; pendingBossWin = null; runWin();
     }
-    if (!academyMode && spawnsRemaining <= 0 && obstacles.length === 0 && !boss && !miniBoss && !mirrorSequenceActive && !pendingBossWin && state === 'playing') {
+    if (!academyMode && spaceRunMode !== 'bossrun' && spawnsRemaining <= 0 && obstacles.length === 0 && !boss && !miniBoss && !mirrorSequenceActive && !pendingBossWin && state === 'playing') {
       nextWave();
     }
     updateSpaceAcademy();
@@ -4463,7 +4560,7 @@ function nextWave() {
           const numShots = Math.min(shooters.length, 1 + Math.floor(fireTier / 2) + Math.floor(Math.max(0, wave - 14) / 7));
           chosen = shooters.map(s => [Math.random(), s]).sort((a,b) => a[0]-b[0]).slice(0, numShots).map(p => p[1]);
         }
-        chosen.forEach(shooter => waveTheme === 'blackout' && shooter.blackoutHiddenEnemy ? warnAndFireBlackoutEnemy(shooter) : enemyFireAt(shooter, 1));
+        chosen.forEach(shooter => waveTheme === 'blackout' && shooter.blackoutHiddenEnemy ? warnAndFireBlackoutEnemy(shooter) : enemyFireAt(shooter, 1, 'ENEMY SHOT'));
         lastEnemyFire = Date.now();
         SFX.tone && SFX.tone(420, 'square', 0, 0.03, 0.08, 280);
       }
@@ -4814,28 +4911,28 @@ function nextWave() {
         } else if (b.isLock) {
           addFloatText('LOCK HIT!', player.x, player.y - 40, '#00e5ff', 16);
           SFX.miss();
-          takeDamage(b.damage || 7);
+          takeDamage(b.damage || 7, projectileDamageCause(b));
         } else if (b.tennis) {
           addFloatText('SMASH! -20', player.x, player.y - 40, '#c6ff3a', 18);
           SFX.miss();
-          takeDamage(b.damage || 20);
+          takeDamage(b.damage || 20, projectileDamageCause(b));
         } else if (b.theme === 'donkey') {
           addFloatText('HEE HAW! -20', player.x, player.y - 40, '#c7a16b', 18);
           SFX.whack && SFX.whack();
-          takeDamage(b.damage || 20);
+          takeDamage(b.damage || 20, projectileDamageCause(b));
         } else if (b.theme === 'sword') {
           addFloatText('SWORD! -35', player.x, player.y - 40, '#c8d4ff', 18);
           SFX.miss();
-          takeDamage(b.damage || 35);
+          takeDamage(b.damage || 35, projectileDamageCause(b));
         } else if (b.splat || b.theme === 'ink') {
           bossInkBlindUntil = Date.now() + 2400;
           blasterDisabledUntil = Date.now() + 2600;
           addFloatText('BLASTER JAMMED!', player.x, player.y - 40, '#ff76d2', 18);
           SFX.neonOn && SFX.neonOn();
-          takeDamage(b.damage || 5);
+          takeDamage(b.damage || 5, projectileDamageCause(b));
         } else {
           SFX.miss();
-          takeDamage(b.damage || 5);
+          takeDamage(b.damage || 5, projectileDamageCause(b));
         }
       }
     });
@@ -5687,14 +5784,14 @@ function nextWave() {
   }
 
   const BOSS_PREVIEW_META = {
-    'STAR OGRE': 'SHOOTS DONKEYS',
-    'SKY DRAGON': 'FIRE BREATHER',
+    'STAR OGRE': 'DONKEY CHARGE',
+    'SKY DRAGON': 'SPLIT FIRE',
     'DARK KNIGHT': 'SWORD DART',
-    'GRAY VISITOR': 'PORTAL ORBS',
-    'SPACE SHARK': 'SHARK TEETH',
-    'MEAN TACO': 'SOMBREROS',
-    'COSMIC OCTO': 'INK BURST',
-    'GIZMO': 'TENNIS BALLS',
+    'GRAY VISITOR': 'TRACKING ORBS',
+    'SPACE SHARK': 'ZIG-ZAG TEETH',
+    'MEAN TACO': 'SOMBRERO SHIELDS',
+    'COSMIC OCTO': 'BLASTER INK',
+    'GIZMO': 'TENNIS + BONES',
   };
   function bossPreviewList() {
     return [...BOSS_CREATURES, { name: 'GIZMO', isGizmo: true }];
@@ -6177,7 +6274,70 @@ function nextWave() {
     requestAnimationFrame(tick);
   }
 
+  function spaceModeButtonHTML(label, detail, onclick, color, glyph) {
+    return `<button class="whack-btn" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;border-color:${color};background:${color}24;font-size:15px;letter-spacing:3px;padding:12px 14px;text-align:left" onclick="${onclick}">
+      <span style="display:flex;align-items:center;gap:10px"><span style="font-size:18px;line-height:1">${glyph || '▶'}</span><span>${label}</span></span>
+      <span style="font-family:'VCR',monospace;font-size:9px;letter-spacing:1.2px;color:rgba(242,239,232,0.48);line-height:1.25;text-align:right">${detail}</span>
+    </button>`;
+  }
+
+  function spaceInfoRowHTML(glyph, title, detail, color) {
+    return `<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid rgba(242,239,232,0.07)">
+      <div style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid ${color}66;border-radius:8px;background:${color}18;color:${color};font-size:18px;flex-shrink:0">${glyph}</div>
+      <div style="text-align:left"><div style="font-family:'Bebas Neue',cursive;font-size:19px;letter-spacing:2.4px;color:${color};line-height:1">${title}</div><div style="font-family:'VCR',monospace;font-size:10px;letter-spacing:1px;color:rgba(242,239,232,0.55);line-height:1.35;margin-top:3px">${detail}</div></div>
+    </div>`;
+  }
+
+  function spaceHowToPlayHTML() {
+    return `<div class="whack-mode-shell" style="max-width:430px;margin-top:18px;text-align:center">
+      <div class="whack-mode-title" style="color:#00e5ff;text-shadow:0 0 16px #00e5ff88">HOW TO PLAY</div>
+      <div class="game-card whack-mode-card" style="border-color:#00e5ff77;cursor:default;min-height:0;padding:18px;background:rgba(5,2,18,0.94)">
+        ${spaceInfoRowHTML('⚡', 'LIGHTNING', 'Stores rapid fire in the left socket.', '#ffe61a')}
+        ${spaceInfoRowHTML('🛡', 'SHIELD', 'Blocks damage when deployed.', '#00e5ff')}
+        ${spaceInfoRowHTML('💣', 'BOMB', 'Clears danger around the ship.', '#ff8800')}
+        ${spaceInfoRowHTML('?', 'MYSTERY CRATE', 'Shoot it open. It can help or hurt.', '#cc66ff')}
+        ${spaceInfoRowHTML('🔒', 'CAPTIVE LOCK', 'Break the blue ring to rescue the Mobe.', '#5ab1ff')}
+        <button class="whack-btn" style="width:100%;border-color:#00e5ff;background:rgba(0,229,255,0.16);margin-top:14px" onclick="showSpaceOverlay('select')">BACK</button>
+      </div>
+    </div>`;
+  }
+
+  function spaceDebugHTML() {
+    return `<div class="whack-mode-shell" style="max-width:440px;margin-top:18px;text-align:center">
+      <div class="whack-mode-title" style="color:#ffe61a;text-shadow:0 0 16px #ffe61a88">DEBUG</div>
+      <div class="game-card whack-mode-card" style="border-color:#ffe61a77;cursor:default;min-height:0;padding:16px;background:rgba(5,2,18,0.94)">
+        <div style="font-family:'VCR',monospace;font-size:10px;letter-spacing:1.5px;color:rgba(242,239,232,0.5);margin-bottom:12px">TEMPORARY TEST JUMPS</div>
+        <div class="space-debug-row" aria-label="Space campaign wave debug jumps 1 through 7">
+          <button class="space-debug-chip" onclick="spaceDebugJump(1)">W1 AST</button><button class="space-debug-chip" onclick="spaceDebugJump(2)">W2 ENEMY</button><button class="space-debug-chip" onclick="spaceDebugJump(3)">W3 SWARM</button><button class="space-debug-chip" onclick="spaceDebugJump(4)">W4 OGRE</button><button class="space-debug-chip" onclick="spaceDebugJump(5)">W5 RECOVER</button><button class="space-debug-chip" onclick="spaceDebugJump(6)">W6 RESCUE</button><button class="space-debug-chip" onclick="spaceDebugJump(7)">W7 KNIGHT</button>
+        </div>
+        <div class="space-debug-row" aria-label="Space campaign wave debug jumps 8 through 13">
+          <button class="space-debug-chip" onclick="spaceDebugJump(8)">W8 BLACKOUT</button><button class="space-debug-chip" onclick="spaceDebugJump(9)">W9 BOSS</button><button class="space-debug-chip" onclick="spaceDebugJump(10)">W10 MUSIC</button><button class="space-debug-chip" onclick="spaceDebugJump(11)">W11 BOSS</button><button class="space-debug-chip" onclick="spaceDebugJump(12)">W12 PREP</button><button class="space-debug-chip" onclick="spaceDebugJump(13)">W13 FINAL</button>
+        </div>
+        <div class="space-debug-row" aria-label="Space boss playtests">
+          <button class="space-debug-chip" onclick="spaceDebugBoss('STAR OGRE')">OGRE</button><button class="space-debug-chip" onclick="spaceDebugBoss('SKY DRAGON')">DRAGON</button><button class="space-debug-chip" onclick="spaceDebugBoss('DARK KNIGHT')">KNIGHT</button><button class="space-debug-chip" onclick="spaceDebugBoss('GRAY VISITOR')">VISITOR</button><button class="space-debug-chip" onclick="spaceDebugBoss('SPACE SHARK')">SHARK</button><button class="space-debug-chip" onclick="spaceDebugBoss('MEAN TACO')">TACO</button><button class="space-debug-chip" onclick="spaceDebugBoss('COSMIC OCTO')">OCTO</button><button class="space-debug-chip" onclick="spaceDebugBoss('GIZMO')">GIZMO</button>
+        </div>
+        <button class="whack-btn" style="width:100%;border-color:#ffe61a;background:rgba(255,230,26,0.16);margin-top:14px" onclick="showSpaceOverlay('select')">BACK</button>
+      </div>
+    </div>`;
+  }
+
+  function spaceModeCompleteHTML(title, detail, color) {
+    return `<div class="whack-mode-shell" style="max-width:430px;margin-top:22px;text-align:center">
+      <div class="whack-mode-title" style="color:${color};text-shadow:0 0 18px ${color}88">${title}</div>
+      <div class="game-card whack-mode-card" style="border-color:${color}77;cursor:default;min-height:0;padding:20px 18px;background:rgba(5,2,18,0.92)">
+        <div style="font-family:'Bebas Neue',cursive;font-size:38px;letter-spacing:5px;line-height:1;color:#f2efe8;margin-bottom:10px">${detail}</div>
+        <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.45);margin-bottom:18px">SCORE ${score}</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN</button>
+          <button class="whack-btn" style="border-color:#00e5ff;background:rgba(0,229,255,0.22)" onclick="spaceBossRunStart()">BOSS RUN</button>
+          <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="nav('lobby')">BACK TO ARCADE</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
   function completeSpaceCampaign() {
+    spaceRunMode = 'campaign';
     state = 'complete';
     clearSpaceRuntimeTimers();
     cancelAnimationFrame(raf);
@@ -6200,7 +6360,10 @@ function nextWave() {
           <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.45);margin-bottom:18px">SCORE ${score}</div>
           <div style="display:flex;flex-direction:column;gap:10px">
             <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN AGAIN</button>
-            <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="nav('lobby')">BACK TO ARCADE</button>
+            <button class="whack-btn" style="border-color:#00e5ff;background:rgba(0,229,255,0.22)" onclick="spaceAcademyStart()">SPACE TUTORIAL</button>
+            <button class="whack-btn" style="border-color:#ffe61a;background:rgba(255,230,26,0.20)" onclick="spaceBossRunStart()">BOSS RUN</button>
+            <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="spaceEndlessStart()">ENDLESS</button>
+            <button class="whack-btn" style="border-color:rgba(242,239,232,0.35);background:rgba(242,239,232,0.08)" onclick="nav('lobby')">BACK TO ARCADE</button>
           </div>
         </div>
       </div>`;
@@ -6208,156 +6371,51 @@ function nextWave() {
 
   function showSpaceOverlay(mode) {
     try { if (mode === 'select' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start(); } catch(e){}
-    document.body.classList.toggle('arcade-selection-open', mode === 'select' || mode === 'boss-preview');
-    if (mode === 'select' || mode === 'boss-preview') {
+    document.body.classList.toggle('arcade-selection-open', mode === 'select' || mode === 'boss-preview' || mode === 'how-to-play' || mode === 'debug' || mode === 'mode-complete');
+    if (mode === 'select' || mode === 'boss-preview' || mode === 'how-to-play' || mode === 'debug' || mode === 'mode-complete') {
       if (typeof window.initArcadeFloat === 'function') window.initArcadeFloat(true);
     }
     const ov=document.getElementById('space-overlay');
     if(!ov) return;
-    if (mode === 'select' || mode === 'boss-preview') ov.classList.remove('hidden');
+    if (mode === 'select' || mode === 'boss-preview' || mode === 'how-to-play' || mode === 'debug' || mode === 'mode-complete') ov.classList.remove('hidden');
     ov.classList.toggle('space-over', mode === 'over');
     ov.classList.toggle('space-boss-preview', mode === 'boss-preview');
-    ov.style.justifyContent = mode === 'select' || mode === 'boss-preview' ? 'flex-start' : '';
-    ov.style.paddingTop = mode === 'select' ? '16px' : '';
+    ov.style.justifyContent = (mode === 'select' || mode === 'boss-preview' || mode === 'how-to-play' || mode === 'debug' || mode === 'mode-complete') ? 'flex-start' : '';
+    ov.style.paddingTop = (mode === 'select' || mode === 'how-to-play' || mode === 'debug' || mode === 'mode-complete') ? '16px' : '';
     setArcadeExitVisible(mode !== 'over');
     if(mode==='select'){
       const gc=GAME_CHARS[activeChar];
       ov.innerHTML=`
         <div class="whack-mode-shell" style="max-width:440px;margin-top:16px">
-          <div class="whack-mode-title">GET READY</div>
+          <div class="whack-mode-title">SPACE MOBE</div>
           <div class="game-card whack-mode-card" style="border-color:#33ff6677;cursor:default;min-height:0">
-            <div class="game-card-art" style="background:#0d0a1e">
-              <div id="space-select-art" style="position:absolute;inset:0;z-index:0;opacity:0.40;transform:scale(1.26) translateY(10px);filter:saturate(1.18) brightness(1.02);pointer-events:none;mix-blend-mode:screen"></div>
+            <div class="game-card-art" style="background:#0d0a1e;min-height:118px">
+              <div id="space-select-art" style="position:absolute;inset:0;z-index:0;opacity:0.42;transform:scale(1.26) translateY(10px);filter:saturate(1.18) brightness(1.02);pointer-events:none;mix-blend-mode:screen"></div>
             </div>
-            <div class="game-card-info" style="position:relative;z-index:2;padding:14px 16px 16px;background:linear-gradient(to top, rgba(5,2,18,0.96) 74%, rgba(5,2,18,0.14) 100%)">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px">
-                <div style="font-family:'Bebas Neue',cursive;font-size:34px;letter-spacing:5px;line-height:1;color:#33ff66;text-shadow:0 0 14px #33ff6688">SPACE MOBE</div>
-                <button class="space-boss-trigger" onclick="showSpaceOverlay('boss-preview')" aria-label="Preview bosses" title="Preview bosses">
-                  <svg width="23" height="23" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M5 13.2c0-4.2 3-7.2 7-7.2s7 3 7 7.2c0 3.5-2 5.8-4.8 6.6v-2.3h-1.4v2.6h-1.6v-2.6H9.8v2.3C7 19 5 16.7 5 13.2Z" fill="currentColor" opacity="0.95"/>
-                    <circle cx="9.2" cy="13.1" r="1.6" fill="#030110"/>
-                    <circle cx="14.8" cy="13.1" r="1.6" fill="#030110"/>
-                    <path d="M9.1 9.2 7.2 7.6M14.9 9.2l1.9-1.6" stroke="#030110" stroke-width="1.8" stroke-linecap="round"/>
-                  </svg>
-                </button>
-              </div>
-              <div style="display:flex;align-items:center;gap:14px;width:100%">
-                <div style="width:68px;height:68px;flex-shrink:0;border-radius:50%;background:${gc.color}33;display:flex;align-items:center;justify-content:center;border:2px solid ${gc.color}88;box-shadow:0 0 16px ${gc.color}44">
-                  <div class="char-tilt" style="width:54px;height:54px">${charFace(gc,'normal')}</div>
-                </div>
-                <div style="text-align:left">
-                  <div style="font-size:12px;letter-spacing:2px;color:rgba(242,239,232,0.5);font-family:'VCR',monospace">YOUR PILOT</div>
-                  <div style="font-family:'Bebas Neue',cursive;font-size:30px;letter-spacing:4px;color:${gc.color};text-shadow:0 0 10px ${gc.color}88;line-height:1.1">${gc.name}</div>
-                  <div style="font-size:11px;letter-spacing:1px;color:rgba(242,239,232,0.35);font-family:'VCR',monospace;margin-top:3px">CHANGE IN ARCADE MENU</div>
-                </div>
-              </div>
-              <div style="width:100%;height:1px;background:rgba(242,239,232,0.1);margin:12px 0"></div>
-              <div style="width:100%;display:flex;flex-direction:column;gap:14px;font-family:'VCR',monospace">
-                <div style="display:flex;align-items:center;gap:14px">
-                  <div style="font-size:14px;letter-spacing:2px;color:rgba(242,239,232,0.85);width:78px;flex-shrink:0">SHOOT</div>
-                  <div style="display:flex;align-items:center;gap:10px">
-                    <svg width="30" height="30" viewBox="0 0 30 30" style="flex-shrink:0">
-                      <polygon points="15,3 22,8 27,15 22,24 14,27 7,22 3,14 9,5" fill="#5c526c" stroke="#7a6a90" stroke-width="1.5"/>
-                    </svg>
-                    <svg width="30" height="30" viewBox="0 0 30 30" style="flex-shrink:0">
-                      <circle cx="15" cy="15" r="11" fill="#cc44ff"/>
-                      <polyline points="6.5,1.5 1.5,1.5 1.5,6.5" fill="none" stroke="#ff4444" stroke-width="2.5" stroke-linecap="round"/>
-                      <polyline points="23.5,1.5 28.5,1.5 28.5,6.5" fill="none" stroke="#ff4444" stroke-width="2.5" stroke-linecap="round"/>
-                      <polyline points="1.5,23.5 1.5,28.5 6.5,28.5" fill="none" stroke="#ff4444" stroke-width="2.5" stroke-linecap="round"/>
-                      <polyline points="28.5,23.5 28.5,28.5 23.5,28.5" fill="none" stroke="#ff4444" stroke-width="2.5" stroke-linecap="round"/>
-                    </svg>
-                    <svg width="30" height="30" viewBox="0 0 30 30" style="flex-shrink:0">
-                      <defs>
-                        <linearGradient id="spSelectMysteryGrad" x1="3" y1="3" x2="27" y2="27">
-                          <stop offset="0" stop-color="#ff76d2"/>
-                          <stop offset="0.5" stop-color="#cc66ff"/>
-                          <stop offset="1" stop-color="#5ab1ff"/>
-                        </linearGradient>
-                        <linearGradient id="spSelectMysteryCrateGrad" x1="8" y1="7" x2="23" y2="23">
-                          <stop offset="0" stop-color="#f7b45c"/>
-                          <stop offset="0.48" stop-color="#9a5a2a"/>
-                          <stop offset="1" stop-color="#5b2e7f"/>
-                        </linearGradient>
-                      </defs>
-                      <circle cx="15" cy="15" r="13.5" fill="rgba(255,118,210,0.13)"/>
-                      <rect x="7" y="7" width="16" height="16" rx="2.2" fill="url(#spSelectMysteryCrateGrad)" stroke="#ffe0a3" stroke-width="1.8"/>
-                      <path d="M8.5 11.5 H21.5 M8.5 16 H21.5 M11.5 7.5 V22.5 M18.5 7.5 V22.5" stroke="rgba(47,24,42,0.45)" stroke-width="1"/>
-                      <path d="M8.5 8.5 H13 M8.5 8.5 V13 M21.5 8.5 H17 M21.5 8.5 V13 M8.5 21.5 H13 M8.5 21.5 V17 M21.5 21.5 H17 M21.5 21.5 V17" fill="none" stroke="#ffd27a" stroke-width="1.5" stroke-linecap="round"/>
-                      <text x="15" y="19.6" text-anchor="middle" font-family="'Bebas Neue', cursive" font-size="14" font-weight="bold" fill="#fff06a" stroke="#24103e" stroke-width="1.2">?</text>
-                      <circle cx="15" cy="15" r="13" fill="none" stroke="rgba(255,120,220,0.34)" stroke-width="5.5"/>
-                      <circle cx="15" cy="15" r="12" fill="none" stroke="url(#spSelectMysteryGrad)" stroke-width="3"/>
-                      <circle cx="15" cy="3" r="2.1" fill="#fff"/>
-                      <circle cx="27" cy="15" r="2.1" fill="#ff9be3"/>
-                      <circle cx="15" cy="27" r="2.1" fill="#fff"/>
-                      <circle cx="3" cy="15" r="2.1" fill="#ff9be3"/>
-                    </svg>
+            <div class="game-card-info" style="position:relative;z-index:2;padding:14px 16px 16px;background:linear-gradient(to top, rgba(5,2,18,0.96) 78%, rgba(5,2,18,0.14) 100%)">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
+                <div style="display:flex;align-items:center;gap:12px;min-width:0">
+                  <div style="width:58px;height:58px;flex-shrink:0;border-radius:50%;background:${gc.color}33;display:flex;align-items:center;justify-content:center;border:2px solid ${gc.color}88;box-shadow:0 0 16px ${gc.color}44">
+                    <div class="char-tilt" style="width:46px;height:46px">${charFace(gc,'normal')}</div>
+                  </div>
+                  <div style="text-align:left;min-width:0">
+                    <div style="font-size:10px;letter-spacing:2px;color:rgba(242,239,232,0.5);font-family:'VCR',monospace">YOUR PILOT</div>
+                    <div style="font-family:'Bebas Neue',cursive;font-size:27px;letter-spacing:3px;color:${gc.color};text-shadow:0 0 10px ${gc.color}88;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${gc.name}</div>
                   </div>
                 </div>
-                <div style="display:flex;align-items:center;gap:14px">
-                  <div style="font-size:14px;letter-spacing:2px;color:rgba(242,239,232,0.85);width:78px;flex-shrink:0">RESCUE</div>
-                  <div style="display:flex;align-items:center;gap:10px">
-                    <svg width="34" height="34" viewBox="0 0 34 34" style="flex-shrink:0;overflow:visible">
-                      <defs>
-                        <linearGradient id="spSelectRescueGrad2" x1="2" y1="2" x2="32" y2="32">
-                          <stop offset="0" stop-color="#5ab1ff"/>
-                          <stop offset="0.48" stop-color="#00e5ff"/>
-                          <stop offset="1" stop-color="#b9f7ff"/>
-                        </linearGradient>
-                      </defs>
-                      <rect x="7" y="7" width="20" height="20" rx="2" fill="rgba(0,229,255,0.12)" stroke="#00e5ff" stroke-width="2"/>
-                      <line x1="13" y1="7" x2="13" y2="27" stroke="rgba(234,255,255,0.78)" stroke-width="1.5"/>
-                      <line x1="21" y1="7" x2="21" y2="27" stroke="rgba(234,255,255,0.78)" stroke-width="1.5"/>
-                      <circle cx="17" cy="17" r="8.5" fill="#33d4e0"/>
-                      <rect x="8.5" y="8.5" width="17" height="17" fill="rgba(0,229,255,0.24)"/>
-                      <circle cx="17" cy="17" r="15" fill="none" stroke="rgba(90,190,255,0.26)" stroke-width="7"/>
-                      <circle cx="17" cy="17" r="13.2" fill="none" stroke="url(#spSelectRescueGrad2)" stroke-width="2.8"/>
-                      <circle cx="17" cy="3.8" r="2.3" fill="#eaffff"/>
-                      <circle cx="30.2" cy="17" r="2.3" fill="#5ab1ff"/>
-                      <circle cx="17" cy="30.2" r="2.3" fill="#eaffff"/>
-                      <circle cx="3.8" cy="17" r="2.3" fill="#5ab1ff"/>
-                    </svg>
-                    <div style="font-size:11px;letter-spacing:1.5px;color:rgba(242,239,232,0.55);line-height:1.25">BREAK BLUE RINGS</div>
-                  </div>
-                </div>
-                <div style="display:flex;align-items:center;gap:14px">
-                  <div style="font-size:14px;letter-spacing:2px;color:rgba(242,239,232,0.85);width:78px;flex-shrink:0">CATCH</div>
-                  <div style="display:flex;align-items:center;gap:10px">
-                    <img src="projectiles/hp_icon.png" alt="" style="width:30px;height:30px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 0 6px rgba(51,255,102,0.45))">
-                    <img src="projectiles/shield.png" alt="" style="width:30px;height:30px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 0 6px rgba(0,229,255,0.45))">
-                    <img src="projectiles/lightning.png" alt="" style="width:30px;height:30px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 0 6px rgba(255,230,26,0.45))">
-                    <img src="projectiles/bomb.png" alt="" style="width:30px;height:30px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 0 6px rgba(255,136,0,0.45))">
-                  </div>
+                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+                  <button class="space-boss-trigger" onclick="showSpaceOverlay('how-to-play')" aria-label="How to play" title="How to play" style="color:#00e5ff;border-color:rgba(0,229,255,0.45);background:rgba(0,229,255,0.10)">ⓘ</button>
+                  <button class="space-boss-trigger" onclick="showSpaceOverlay('boss-preview')" aria-label="Bosses" title="Bosses">☠</button>
+                  <button class="space-boss-trigger" onclick="showSpaceOverlay('debug')" aria-label="Debug" title="Debug" style="color:#ffe61a;border-color:rgba(255,230,26,0.38);background:rgba(255,230,26,0.09)">⚙</button>
                 </div>
               </div>
-              <button class="whack-btn" style="width:100%;border-color:#33ff66;background:rgba(51,255,102,0.18);font-size:16px;letter-spacing:4px;padding:14px 40px;margin-top:12px" onclick="spaceStart()">PLAY CAMPAIGN</button>
-              <button class="whack-btn" style="width:100%;border-color:#00e5ff;background:rgba(0,229,255,0.14);font-size:14px;letter-spacing:3px;padding:12px 40px;margin-top:10px" onclick="spaceTutorialStart()">SPACE TUTORIAL</button>
-              <div class="space-debug-row" aria-label="Space campaign wave debug jumps 1 through 7">
-                <button class="space-debug-chip" onclick="spaceDebugJump(1)">W1 AST</button>
-                <button class="space-debug-chip" onclick="spaceDebugJump(2)">W2 ENEMY</button>
-                <button class="space-debug-chip" onclick="spaceDebugJump(3)">W3 SWARM</button>
-                <button class="space-debug-chip" onclick="spaceDebugJump(4)">W4 OGRE</button>
-                <button class="space-debug-chip" onclick="spaceDebugJump(5)">W5 RECOVER</button>
-                <button class="space-debug-chip" onclick="spaceDebugJump(6)">W6 RESCUE</button>
-                <button class="space-debug-chip" onclick="spaceDebugJump(7)">W7 KNIGHT</button>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                ${spaceModeButtonHTML('PLAY CAMPAIGN', '13 WAVES / 6 RESCUES', 'spaceStart()', '#33ff66', '▶')}
+                ${spaceModeButtonHTML('SPACE TUTORIAL', 'SAFE LESSONS', 'spaceAcademyStart()', '#00e5ff', '★')}
+                ${spaceModeButtonHTML('BOSS RUN', 'BOSSES ONLY', 'spaceBossRunStart()', '#ffe61a', '☠')}
+                ${spaceModeButtonHTML('ENDLESS', 'CHAOS MODE', 'spaceEndlessStart()', '#ff00cc', '∞')}
               </div>
-              <div class="space-debug-row" aria-label="Space campaign wave debug jumps 8 through 13">
-                <button class="space-debug-chip" onclick="spaceDebugJump(8)">W8 BLACKOUT</button>
-                <button class="space-debug-chip" onclick="spaceDebugJump(9)">W9 BOSS</button>
-                <button class="space-debug-chip" onclick="spaceDebugJump(10)">W10 MUSIC</button>
-                <button class="space-debug-chip" onclick="spaceDebugJump(11)">W11 BOSS</button>
-                <button class="space-debug-chip" onclick="spaceDebugJump(12)">W12 PREP</button>
-                <button class="space-debug-chip" onclick="spaceDebugJump(13)">W13 FINAL</button>
-              </div>
-              <div class="space-debug-row" aria-label="Space boss playtests">
-                <button class="space-debug-chip" onclick="spaceDebugBoss('STAR OGRE')">OGRE</button>
-                <button class="space-debug-chip" onclick="spaceDebugBoss('SKY DRAGON')">DRAGON</button>
-                <button class="space-debug-chip" onclick="spaceDebugBoss('DARK KNIGHT')">KNIGHT</button>
-                <button class="space-debug-chip" onclick="spaceDebugBoss('GRAY VISITOR')">VISITOR</button>
-                <button class="space-debug-chip" onclick="spaceDebugBoss('SPACE SHARK')">SHARK</button>
-                <button class="space-debug-chip" onclick="spaceDebugBoss('MEAN TACO')">TACO</button>
-                <button class="space-debug-chip" onclick="spaceDebugBoss('COSMIC OCTO')">OCTO</button>
-                <button class="space-debug-chip" onclick="spaceDebugBoss('GIZMO')">GIZMO</button>
-              </div>
+              <div style="font-family:'VCR',monospace;font-size:9px;letter-spacing:1.3px;color:rgba(242,239,232,0.34);line-height:1.45;text-align:center;margin-top:12px">INFO, BOSSES, AND DEBUG ARE NOW BEHIND THE TOP ICONS</div>
             </div>
           </div>
         </div>`;
@@ -6365,6 +6423,12 @@ function nextWave() {
     } else if(mode==='boss-preview'){
       ov.innerHTML = bossPreviewHTML();
       startSpaceBossPreviewAnimation();
+    } else if(mode==='how-to-play'){
+      ov.innerHTML = spaceHowToPlayHTML();
+    } else if(mode==='debug'){
+      ov.innerHTML = spaceDebugHTML();
+    } else if(mode==='mode-complete'){
+      ov.innerHTML = spaceModeCompleteHTML('BOSS RUN COMPLETE!', 'GIZMO DEFEATED', '#ffe61a');
     } else if(mode==='over'){
       setArcadeExitVisible(false);
       // Clear stale launch/select markup immediately; otherwise it can flash between
@@ -6386,7 +6450,7 @@ function nextWave() {
           scoreValue: score,
           saveValue: score,
           field: 'score',
-          extra: `RESCUED ${rescuedChars.size}/${missionTrappedChars.length || SPACE_RESCUE_TARGET_COUNT} / WAVE ${wave}`,
+          extra: `RESCUED ${rescuedChars.size}/${missionTrappedChars.length || SPACE_RESCUE_TARGET_COUNT} / WAVE ${wave}${gameOverCauseHTML()}`,
           ascending: false,
           maxWidth: 410,
           minHeight: 330,
@@ -6732,7 +6796,8 @@ function nextWave() {
     const label = isCaptor ? 'TRAITOR' : '';
     const faceExpr = (isZapped || isCarried) ? 'sad' : mode === 'happy' ? 'happy' : 'normal';
     const boxSize = isCaptor || isZapped || isCarried ? 68 : 62;
-    return `<div class="sp-brief-face" style="width:${boxSize}px;text-align:center;font-family:'VCR',monospace;font-size:7.5px;letter-spacing:1px;color:${isCaptor ? border : 'rgba(242,239,232,0.68)'};transition:transform 0.35s ease,opacity 0.35s ease;animation:${anim};animation-delay:${(ci % 6) * 0.08}s">
+    const cellWidth = isCaptor || isZapped || isCarried ? 74 : 70;
+    return `<div class="sp-brief-face" style="width:${cellWidth}px;text-align:center;font-family:'VCR',monospace;font-size:7.5px;letter-spacing:1px;color:${isCaptor ? border : 'rgba(242,239,232,0.68)'};transition:transform 0.35s ease,opacity 0.35s ease;animation:${anim};animation-delay:${(ci % 6) * 0.08}s">
       <div style="position:relative;width:${boxSize}px;height:${boxSize}px;border-radius:${isCaptor || isZapped || isCarried ? '13px' : '50%'};overflow:visible;border:${isCaptor || isZapped || isCarried ? `2px solid ${border}` : `1.5px solid ${border}`};background:${bg};box-shadow:0 0 ${isCaptor || isZapped || isCarried ? '15px' : '11px'} ${glow};${isCaptor ? 'filter:saturate(1.28) contrast(1.06)' : ''}">
         ${ring}
         <div style="position:absolute;inset:-5px">${charFace(gc, faceExpr)}</div>
@@ -6741,6 +6806,25 @@ function nextWave() {
       <div style="margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:rgba(242,239,232,0.68)">${gc.name}</div>
       ${label ? `<div style="margin-top:2px;color:${border}">${label}</div>` : ''}
     </div>`;
+  }
+
+
+
+  function spaceBriefingLineupHTML(options) {
+    options = options || {};
+    const captorMode = options.captorMode || 'normal';
+    const captiveMode = options.captiveMode || 'normal';
+    const showCaptors = options.showCaptors !== false;
+    const showCaptives = options.showCaptives !== false;
+    const caption = options.caption || '';
+    const captorHTML = showCaptors && missionEnemyChars.length
+      ? `<div style="display:flex;justify-content:center;align-items:flex-start;gap:18px;margin:${caption ? '8px' : '0'} auto 14px">${missionEnemyChars.map(ci => spaceBriefingFace(ci, captorMode)).join('')}</div>`
+      : '';
+    const captiveHTML = showCaptives && missionTrappedChars.length
+      ? `<div style="display:grid;grid-template-columns:repeat(3,74px);justify-content:center;align-items:start;gap:15px 20px;margin:0 auto">${missionTrappedChars.map(ci => spaceBriefingFace(ci, captiveMode)).join('')}</div>`
+      : '';
+    const cap = caption ? `<div style="font-family:'VCR',monospace;font-size:9px;letter-spacing:2px;color:rgba(242,239,232,0.48);margin:0 0 10px">${caption}</div>` : '';
+    return `<div style="width:min(94vw,390px);margin:0 auto">${cap}${captorHTML}${captiveHTML}</div>`;
   }
 
   function spaceBriefingBoss(mode) {
@@ -6812,40 +6896,53 @@ function nextWave() {
       }, 230);
       spaceBriefingTimers.push(t);
     }
-    const gridStyle = "display:grid;grid-template-columns:repeat(4,58px);justify-content:center;gap:12px 14px";
+    const gridStyle = "display:grid;grid-template-columns:repeat(4,72px);justify-content:center;align-items:start;gap:16px 18px";
+    // Pre-reveal should not imply the later traitor/captive split. Show all 8 as
+    // equal innocent Mobes in a clean 2x4 group; only the next beats separate the
+    // two traitors from the six captives. Interleave the hidden traitors so the
+    // layout does not visually foreshadow "two captors up front" before the reveal.
+    const preRevealCast = missionTrappedChars.length >= 6 && missionEnemyChars.length >= 2
+      ? [missionTrappedChars[0], missionEnemyChars[0], missionTrappedChars[1], missionTrappedChars[2], missionTrappedChars[3], missionTrappedChars[4], missionEnemyChars[1], missionTrappedChars[5]]
+      : cast;
+    const preRevealCastGrid = preRevealCast.map(ci => spaceBriefingFace(ci, 'normal')).join('');
     const normalDayStage = `
       <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:4px;color:#ffe61a;text-shadow:0 0 12px #ffe61a;animation:sp-brief-line-in 0.35s ease-out both">ON A NORMAL MOBE DAY</div>`;
     const castStage = `
       <div style="font-family:'Bebas Neue',cursive;font-size:40px;letter-spacing:5px;line-height:1;color:#ffe61a;text-shadow:0 0 18px #ffe61a88;margin-bottom:14px;animation:sp-brief-line-in 0.35s ease-out both">8 MOBES WERE FROLICKING</div>
-      <div style="${gridStyle}">${castGrid('normal', 'normal')}</div>`;
+      <div style="width:min(94vw,390px);margin:0 auto">
+        <div style="font-family:'VCR',monospace;font-size:9px;letter-spacing:2px;color:rgba(242,239,232,0.48);margin:0 0 10px">ALL TOGETHER</div>
+        <div style="${gridStyle}">${preRevealCastGrid}</div>
+      </div>`;
     const traitorLineStage = `
       <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:4px;color:#ff4444;text-shadow:0 0 12px #ff4444;animation:sp-brief-line-in 0.35s ease-out both">BUT TWO OF THEM WERE TRAITORS</div>`;
     const captorStage = `
-      <div style="display:flex;justify-content:center;gap:18px;margin-bottom:10px">${missionEnemyChars.map(ci => spaceBriefingFace(ci, 'captor')).join('')}</div>
-      <div style="font-family:'Bebas Neue',cursive;font-size:52px;letter-spacing:5px;line-height:0.96;color:#ff4444;text-shadow:0 0 20px #ff444488;margin-bottom:14px;animation:sp-brief-line-in 0.35s ease-out both">"COME HERE, GIZMO"</div>
-      <div style="${gridStyle}">${castGrid('captor', 'normal', true)}</div>`;
+      ${spaceBriefingLineupHTML({ captorMode: 'captor', captiveMode: 'normal', caption: 'THE TWO TRAITORS STEP OUT' })}
+      <div style="font-family:'Bebas Neue',cursive;font-size:52px;letter-spacing:5px;line-height:0.96;color:#ff4444;text-shadow:0 0 20px #ff444488;margin:16px 0 0;animation:sp-brief-line-in 0.35s ease-out both">"COME HERE, GIZMO"</div>`;
     const bossLineStage = `
       <div style="font-family:'Bebas Neue',cursive;font-size:48px;letter-spacing:5px;line-height:0.96;color:#cc66ff;text-shadow:0 0 18px #cc66ff88;animation:sp-brief-line-in 0.35s ease-out both">EVIL GIZMO TOOK THE MOBES CAPTIVE</div>`;
     const bossCaptureStage = `
-      <div style="display:flex;justify-content:center;gap:16px;margin-bottom:8px">${missionEnemyChars.map(ci => `<div style="transform:scale(0.82);transform-origin:center bottom">${spaceBriefingFace(ci, 'captor')}</div>`).join('')}</div>
+      <div style="display:flex;justify-content:center;gap:14px;margin-bottom:6px">${missionEnemyChars.map(ci => `<div style="transform:scale(0.78);transform-origin:center bottom">${spaceBriefingFace(ci, 'captor')}</div>`).join('')}</div>
       <div style="display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:12px">${spaceBriefingBoss('in')}</div>
-      <div style="font-family:'Bebas Neue',cursive;font-size:44px;letter-spacing:5px;line-height:1;color:#00e5ff;text-shadow:0 0 18px #00e5ff88;margin-bottom:10px;opacity:0;animation:sp-brief-line-in 0.42s ease-out 1.1s both">CAPTIVE RINGS LOCKED!</div>
-      <div style="${gridStyle};opacity:0;animation:sp-brief-line-in 0.42s ease-out 1.18s both">${castGrid('captor', 'zapped', true)}</div>`;
+      <div style="font-family:'Bebas Neue',cursive;font-size:44px;letter-spacing:5px;line-height:1;color:#00e5ff;text-shadow:0 0 18px #00e5ff88;margin-bottom:12px;opacity:0;animation:sp-brief-line-in 0.42s ease-out 1.1s both">CAPTIVE RINGS LOCKED!</div>
+      <div style="opacity:0;animation:sp-brief-line-in 0.42s ease-out 1.18s both">${spaceBriefingLineupHTML({ captorMode: 'captor', captiveMode: 'zapped', showCaptors: false })}</div>`;
     // Sand grains scattered over the line's footprint, each drifting off in roughly
     // the same direction the text itself blurs/slides toward (sp-brief-dust-away),
     // so the line reads as crumbling into sand and blowing away rather than just fading.
-    const sandGrainsHTML = Array.from({ length: 22 }, () => {
-      const x = Math.round(Math.random() * 1000) / 10;
-      const y = Math.round(40 + Math.random() * 20);
-      const dx = Math.round(40 + Math.random() * 70);
-      const dy = Math.round(-26 + Math.random() * 30);
-      const size = Math.round((1.4 + Math.random() * 2.6) * 10) / 10;
-      const delay = (2.05 + Math.random() * 0.55).toFixed(2);
-      const dur = (0.7 + Math.random() * 0.5).toFixed(2);
-      return `<i style="position:absolute;left:${x}%;top:${y}%;width:${size}px;height:${size}px;border-radius:50%;background:#ff9ad6;box-shadow:0 0 ${size * 2}px rgba(255,154,214,0.7);--dx:${dx}px;--dy:${dy}px;animation:sp-brief-sand-grain ${dur}s ease-out ${delay}s forwards"></i>`;
+    const sandGrainsHTML = Array.from({ length: 34 }, (_, i) => {
+      const band = i % 3;
+      const x = Math.round((4 + Math.random() * 92) * 10) / 10;
+      const y = Math.round((band === 0 ? 31 + Math.random() * 10 : band === 1 ? 45 + Math.random() * 12 : 59 + Math.random() * 10) * 10) / 10;
+      const dx = Math.round((55 + Math.random() * 120) * (Math.random() < 0.18 ? -0.35 : 1));
+      const dy = Math.round(-48 + Math.random() * 88);
+      const size = Math.round((1.1 + Math.random() * 3.1) * 10) / 10;
+      const delay = (2.02 + Math.random() * 1.18).toFixed(2);
+      const dur = (0.95 + Math.random() * 0.85).toFixed(2);
+      const color = i % 5 === 0 ? '#9ff6ff' : i % 4 === 0 ? '#fff0a8' : '#ff9ad6';
+      const glow = i % 5 === 0 ? 'rgba(159,246,255,0.7)' : i % 4 === 0 ? 'rgba(255,240,168,0.66)' : 'rgba(255,154,214,0.64)';
+      return `<i style="position:absolute;left:${x}%;top:${y}%;width:${size}px;height:${size}px;border-radius:50%;background:${color};box-shadow:0 0 ${size * 2.8}px ${glow};--dx:${dx}px;--dy:${dy}px;animation:sp-brief-sand-grain ${dur}s ease-out ${delay}s forwards"></i>`;
     }).join('');
     const abductStage = `
-      <div style="min-height:232px;display:flex;align-items:center;justify-content:center;position:relative">
+      <div style="min-height:260px;display:flex;align-items:center;justify-content:center;position:relative;overflow:visible">
         <div style="font-family:'Bebas Neue',cursive;font-size:38px;letter-spacing:5px;line-height:0.98;color:#ff76d2;text-shadow:0 0 18px #ff76d288;opacity:0;animation:sp-brief-line-in 0.34s ease-out 0.14s both, sp-brief-dust-away 0.9s ease-in 2.1s forwards;text-align:center;max-width:100%">THEY VANISHED INTO SPACE</div>
         <div aria-hidden="true" style="position:absolute;inset:0;pointer-events:none">${sandGrainsHTML}</div>
       </div>`;
@@ -6891,15 +6988,7 @@ function nextWave() {
     spaceBriefingTimers.push(finishTimer);
   }
 
-  window.spaceStart=function(){
-    ArcadeMusic.stop();
-    clearSpaceRuntimeTimers();
-    clearSpaceCinematicOverlays();
-    clearSpaceAcademyTimers();
-    spaceBriefingTimers.forEach(clearTimeout);
-    spaceBriefingTimers=[];
-    activeChar=getGlobalChar();
-    prepareSpaceMission();
+  function hideSpaceOverlayForRun() {
     const ov=document.getElementById('space-overlay');
     document.body.classList.remove('arcade-selection-open');
     if(ov) {
@@ -6908,8 +6997,103 @@ function nextWave() {
     }
     cancelAnimationFrame(bossPreviewRaf);
     bossPreviewRaf = null;
+  }
+
+  function prepareSpaceModeRun(mode) {
+    ArcadeMusic.stop();
+    clearSpaceRuntimeTimers();
+    clearSpaceCinematicOverlays();
+    clearSpaceAcademyTimers();
+    spaceBriefingTimers.forEach(clearTimeout);
+    spaceBriefingTimers=[];
+    activeChar=getGlobalChar();
+    prepareSpaceMission();
+    hideSpaceOverlayForRun();
     cancelAnimationFrame(raf);
+    spaceRunMode = mode || 'campaign';
     state = 'idle';
+  }
+
+  function beginBossRunWave() {
+    clearSpaceRuntimeTimers();
+    clearSpaceCinematicOverlays();
+    clearSpaceAcademyTimers();
+    bullets = []; obstacles = []; enemyBullets = []; powerups = []; floatTexts = []; blackoutHitFlashes = []; blackoutShooterIndex = 0;
+    boss = null; miniBoss = null; rescueBanner = null; pendingBossWin = null; mirrorSequenceActive = false;
+    waveCaptivesSeen.clear();
+    blasterDisabledUntil = 0;
+    wave = bossRunIndex + 1;
+    waveKills = 0;
+    currentCfg = Object.assign(waveConfig(Math.min(13, Math.max(4, wave))), { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: false, enemyFireMult: 0 });
+    const creature = bossRunQueue[bossRunIndex] || { name: 'GIZMO', isGizmo: true };
+    waveTheme = creature.isGizmo ? 'gizmo' : 'boss';
+    pendingBossCreature = creature;
+    spawnsRemaining = 0;
+    themeEffectsAt = 0;
+    waveTransitioning = false;
+    spawnBoss(false, { guardedRescue: false, final: !!creature.isGizmo, bossRun: true });
+    showTopBanner(creature.isGizmo ? 'BOSS RUN FINAL: GIZMO' : `BOSS RUN ${bossRunIndex + 1}/${bossRunQueue.length}`, 'bad');
+    addFloatText(creature.name, W / 2, H * 0.24, creature.isGizmo ? '#ffe61a' : '#ff4444', 26, { vy: -0.15, fade: 0.006 });
+  }
+
+  function advanceBossRun() {
+    bossRunIndex++;
+    if (bossRunIndex >= bossRunQueue.length) {
+      state = 'complete';
+      clearSpaceRuntimeTimers();
+      cancelAnimationFrame(raf);
+      const ov=document.getElementById('space-overlay');
+      if (ov) {
+        document.body.classList.add('arcade-selection-open');
+        ov.classList.remove('hidden','space-over','space-boss-preview');
+        ov.style.justifyContent = 'flex-start';
+        ov.style.paddingTop = '16px';
+      }
+      setArcadeExitVisible(true);
+      showSpaceOverlay('mode-complete');
+      return;
+    }
+    const socket = SOCKET_TYPES[Math.floor(Math.random() * SOCKET_TYPES.length)];
+    inventory[socket] = true;
+    health = Math.min(100, health + 15);
+    showTopBanner(`NEXT BOSS: +15 HP + ${socket.toUpperCase()}`, 'good');
+    addFloatText('+15 HP', player.x, player.y - 56, '#33ff66', 22);
+    addFloatText(`${socket.toUpperCase()} SOCKET READY`, SOCKET_X + SOCKET_SIZE + 92, socketRect(SOCKET_TYPES.indexOf(socket)).y + SOCKET_SIZE / 2, SOCKET_COLOR[socket] || '#ffe61a', 16, { vy: -0.08, fade: 0.006 });
+    const flowToken = spaceFlowToken;
+    setTimeout(() => {
+      if (flowToken !== spaceFlowToken || state !== 'playing' || spaceRunMode !== 'bossrun') return;
+      beginBossRunWave();
+    }, 1500);
+  }
+
+  function beginEndlessRun() {
+    reset();
+    clearSpaceRuntimeTimers();
+    clearSpaceCinematicOverlays();
+    clearSpaceAcademyTimers();
+    bullets = []; obstacles = []; enemyBullets = []; powerups = []; floatTexts = []; blackoutHitFlashes = []; blackoutShooterIndex = 0;
+    boss = null; miniBoss = null; pendingBossWin = null; rescueBanner = null; mirrorSequenceActive = false;
+    rescuedChars.clear(); missionRetryCaptives.splice(0, missionRetryCaptives.length); waveCaptivesSeen.clear();
+    wave = SPACE_CAMPAIGN_FINAL_WAVE + 1;
+    waveKills = 0;
+    currentCfg = waveConfig(wave);
+    waveTheme = pickWaveTheme(wave, null);
+    pendingBossCreature = (waveTheme === 'boss' || waveTheme === 'gizmo') ? pickBossCreature() : null;
+    spawnsRemaining = 0;
+    themeEffectsAt = waveTheme === 'blackout' ? Date.now() + 1400 : 0;
+    startWaveSpawn(currentCfg);
+    if (waveTheme === 'blackout') spawnBlackoutHiddenEnemies();
+    if (waveTheme === 'boss') spawnBoss(false, { guardedRescue: false });
+    if (waveTheme === 'gizmo') spawnBoss(false, { guardedRescue: false, escape: false, final: false });
+    if (waveTheme === 'ghost' || waveTheme === 'emp') spawnMiniBoss(waveTheme);
+    if (waveTheme === 'mirror') spawnMirrorEnemy();
+    if (waveTheme === 'rave') SFX.neonOn();
+    showTopBanner('ENDLESS MODE', 'good');
+    showSkillCalloutForWave();
+  }
+
+  window.spaceStart=function(){
+    prepareSpaceModeRun('campaign');
     const beginRun = () => {
       reset(); state='playing'; raf=requestAnimationFrame(loop);
     };
@@ -6922,6 +7106,7 @@ function nextWave() {
     briefThenBegin();
   };
   window.spaceTutorialStart=function(){
+    spaceRunMode = 'academy';
     ArcadeMusic.stop();
     clearSpaceCinematicOverlays();
     clearSpaceRuntimeTimers();
@@ -6945,6 +7130,7 @@ function nextWave() {
     bullets = []; obstacles = []; enemyBullets = []; powerups = []; floatTexts = []; blackoutHitFlashes = [];
     boss = null; miniBoss = null; pendingBossWin = null; rescueBanner = null; mirrorSequenceActive = false;
     score = 0; health = 100; wave = 0; waveKills = 0; spawnsRemaining = 0; lastEnemyFire = 0; lineFlashA = 0;
+    lastDamageCause=''; lastDamageAmount=0; lastDamageAt=0; lastDamageWave=0; deathCause=''; deathDamageAmount=0; deathWave=0; deathWaveTheme='';
     buffSpeedUntil = 0; buffGunUntil = 0; buffShieldUntil = 0; buffFrozenUntil = 0; buffZappedUntil = 0; blasterDisabledUntil = 0; buffPizzaUntil = 0; snowingUntil = 0;
     controlsReversedUntil = 0; twin = null; rebound = null; escort = null; shakeMag = 0;
     inventory = { gun: false, shield: false, bomb: false };
@@ -6953,6 +7139,7 @@ function nextWave() {
     mkStars();
     currentCfg = Object.assign(waveConfig(1), { speed: 1.65, tier: 0, enemyFireMult: 0 });
     academyMode = true;
+    academyShieldNoticeAt = 0;
     academyStep = 0;
     academyStepArmed = false;
     academyMysteryIndex = 0;
@@ -6961,7 +7148,32 @@ function nextWave() {
     raf=requestAnimationFrame(loop);
   };
   window.spaceAcademyStart = window.spaceTutorialStart;
+  window.spaceBossRunStart=function(){
+    prepareSpaceModeRun('bossrun');
+    reset();
+    clearSpaceRuntimeTimers();
+    clearSpaceCinematicOverlays();
+    clearSpaceAcademyTimers();
+    bossRunQueue = shuffleList(BOSS_CREATURES.filter(c => c.name !== 'GIZMO')).concat([{ name: 'GIZMO', isGizmo: true }]);
+    bossRunIndex = 0;
+    rescuedChars.clear();
+    missionRetryCaptives.splice(0, missionRetryCaptives.length);
+    campaignSeenBossNames.clear();
+    waveCaptivesSeen.clear();
+    score = 0;
+    health = 100;
+    state='playing';
+    beginBossRunWave();
+    raf=requestAnimationFrame(loop);
+  };
+  window.spaceEndlessStart=function(){
+    prepareSpaceModeRun('endless');
+    beginEndlessRun();
+    state='playing';
+    raf=requestAnimationFrame(loop);
+  };
   window.spaceDebugJump=function(startWave){
+    spaceRunMode = 'debug';
     ArcadeMusic.stop();
     clearSpaceCinematicOverlays();
     clearSpaceAcademyTimers();
@@ -6983,6 +7195,7 @@ function nextWave() {
     raf=requestAnimationFrame(loop);
   };
   window.spaceDebugBoss=function(bossName){
+    spaceRunMode = 'debug';
     ArcadeMusic.stop();
     clearSpaceCinematicOverlays();
     clearSpaceAcademyTimers();
