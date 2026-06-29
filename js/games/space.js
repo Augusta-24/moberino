@@ -86,9 +86,16 @@
   const missionEnemyChars = [];
   const missionRetryCaptives = [];
   const waveCaptivesSeen = new Set();
-  const SPACE_MISSION_CAST_COUNT = 12;
+  // Phase 2 campaign structure: 8-character mission cast = 2 captors + 6 captured Mobes.
+  // The authored campaign ends at Wave 13; Endless/Boss Run will branch from the menu later.
+  const SPACE_MISSION_CAST_COUNT = 8;
   const SPACE_MISSION_CAPTOR_COUNT = 2;
-  const SPACE_RESCUE_TARGET_COUNT = SPACE_MISSION_CAST_COUNT - SPACE_MISSION_CAPTOR_COUNT;
+  const SPACE_RESCUE_TARGET_COUNT = 6;
+  const SPACE_CAMPAIGN_FINAL_WAVE = 13;
+  const SPACE_FINAL_GIZMO_WAVE = SPACE_CAMPAIGN_FINAL_WAVE;
+  // Final campaign-pacing checklist for the campaign-order pass:
+  // audit wave-cleared beat duration, announcement hold, boss-rescue unlock, Gizmo escape,
+  // victory handoff, and whether any overlay appears over live hazards.
   // Themed waves run on a light chapter cadence instead of pure randomness.
   // Regular waves still exist as breathers, but boss/captive fights are chapter
   // gates and the wave immediately after them is always a special "new tier" wave.
@@ -101,9 +108,9 @@
   // 'flip' (not 'reverse') for the wave theme key — the mystery outcome list below
   // already uses 'reverse' for reversed controls, an unrelated effect; same string
   // in both would be confusing to read even though they're different variables.
-  const WAVE_THEMES = ['asteroids','ghost','captive','rave','swarm','blackout','mirror','bomber','emp','goldrush','boss','gizmo','music','flip'];
+  const WAVE_THEMES = ['asteroids','enemies','ghost','captive','rave','swarm','blackout','mirror','bomber','emp','goldrush','boss','gizmo','music','flip'];
   const THEME_LABEL = {
-    asteroids: 'ALL ASTEROIDS', ghost: 'GHOST ATTACK', captive: 'RESCUE MISSION',
+    asteroids: 'ASTEROID FIELD', enemies: 'ENEMY ATTACK', ghost: 'GHOST ATTACK', captive: 'RESCUE MISSION',
     rave: 'PARTY RAVE MODE', swarm: 'SWARM', blackout: 'BLACKOUT', mirror: 'MIRROR ENEMY',
     bomber: 'BOMBER RUN', emp: 'EMP WARNING', goldrush: 'GOLD RUSH', boss: 'BOSS',
     gizmo: 'GIZMO',
@@ -119,36 +126,37 @@
     return list[(Math.floor(w / 5) + (offset || 0)) % list.length];
   }
   function pickWaveTheme(w, previousTheme) {
+    // Phase 2 authored campaign: shorter, clearer, and rescue beats are intentional.
+    // Random/chaos modes move later into Endless/Boss Run instead of appearing in the
+    // first campaign pass. Six captives are tied to Waves 4, 6, 7, 9, 11, and 13.
     const campaign = {
-      1: null,
-      2: 'gizmo',
-      3: 'swarm',
-      4: 'boss',
-      5: 'asteroids',
-      6: 'boss',
-      7: 'captive',
-      8: 'boss',
-      9: 'bomber',
-      10: 'gizmo',
-      11: 'boss',
-      12: 'mirror',
-      13: 'boss',
-      14: 'boss',
-      15: 'boss',
-      16: 'blackout',
-      17: 'gizmo',
+      1: 'asteroids', // movement / dodge basics
+      2: 'enemies',   // shooting faces, no asteroid mix
+      3: 'swarm',     // first pressure wave / bomb lesson
+      4: 'boss',      // Star Ogre + captive 1
+      5: 'asteroids', // recovery / powerups / light rocks
+      6: 'captive',   // captive 2 lock rescue
+      7: 'boss',      // Dark Knight + captive 3
+      8: 'blackout',  // authored special event, isolated
+      9: 'boss',      // random mid boss + captive 4
+      10: 'music',    // fun/reward wave
+      11: 'boss',     // random late boss + captive 5
+      12: 'goldrush', // final prep: stock sockets / HP
+      13: 'gizmo',    // final Gizmo + captive 6
     };
     if (Object.prototype.hasOwnProperty.call(campaign, w)) return campaign[w];
-    if (previousTheme === 'gizmo') return 'rave';
-    if (previousTheme === 'boss' || previousTheme === 'captive') return chapterPick(POST_BOSS_SPECIALS, w, previousTheme, 0);
-    if (w % 3 === 0 && unrescuedMissionCaptives().length) return 'captive';
+
+    // Post-campaign / debug endless fallback keeps the old variety available after
+    // the authored rescue run. This is intentionally separate from the campaign.
+    if (previousTheme === 'boss' || previousTheme === 'captive' || previousTheme === 'gizmo') return chapterPick(POST_BOSS_SPECIALS, w, previousTheme, 0);
     if (w % 9 === 0) return 'boss';
     const pos = ((w - 1) % 5) + 1;
+    if (pos === 2) return chapterPick(LATE_SPECIALS, w, previousTheme, 2);
     if (pos === 3) return chapterPick(EARLY_SPECIALS, w, previousTheme, 0);
     if (pos === 4) return chapterPick(MID_SPECIALS, w, previousTheme, 1);
-    if (w >= 8 && pos === 2) return chapterPick(LATE_SPECIALS, w, previousTheme, 2);
     return null;
   }
+
   // Lighter-weight boss-style encounter for GHOST/ICE/EMP — deliberately separate
   // from `boss` so the "pause all normal spawning" behavior tied to a real boss
   // fight doesn't also apply here; mini-bosses are a wave feature, not a takeover.
@@ -330,11 +338,25 @@
     return Math.random() < 0.5 ? 'laser' : 'machinegun';
   }
 
+  function campaignBossForWave(w) {
+    // Fixed teaching bosses first, then swapped bosses for replay. Gizmo is handled
+    // by the gizmo theme/final wave, not picked from this list.
+    if (w === 4) return BOSS_CREATURES.find(c => c.name === 'STAR OGRE');
+    if (w === 7) return BOSS_CREATURES.find(c => c.name === 'DARK KNIGHT');
+    const pool9 = ['SKY DRAGON', 'SPACE SHARK', 'GRAY VISITOR'];
+    const pool11 = ['MEAN TACO', 'SKY DRAGON', 'SPACE SHARK', 'GRAY VISITOR', 'COSMIC OCTO'];
+    const names = w === 9 ? pool9 : w === 11 ? pool11 : null;
+    if (names) {
+      const choices = BOSS_CREATURES.filter(c => names.includes(c.name));
+      return choices[Math.floor(Math.random() * choices.length)] || choices[0];
+    }
+    return null;
+  }
+
   function pickBossCreature() {
     if (waveTheme === 'gizmo') return { name: 'GIZMO', isGizmo: true };
-    const campaignBossWaves = [4, 6, 8, 11, 13, 14, 15];
-    const campaignIdx = campaignBossWaves.indexOf(wave);
-    if (campaignIdx >= 0) return BOSS_CREATURES[campaignIdx % BOSS_CREATURES.length];
+    const campaignBoss = campaignBossForWave(wave);
+    if (campaignBoss) return campaignBoss;
     return BOSS_CREATURES[Math.floor(Math.random() * BOSS_CREATURES.length)];
   }
 
@@ -486,7 +508,7 @@
     const pool = shuffledSpaceCharIndexes(activeChar);
     const cast = pool.slice(0, Math.min(SPACE_MISSION_CAST_COUNT, pool.length));
     missionEnemyChars.splice(0, missionEnemyChars.length, ...cast.slice(0, SPACE_MISSION_CAPTOR_COUNT));
-    missionTrappedChars.splice(0, missionTrappedChars.length, ...cast.slice(SPACE_MISSION_CAPTOR_COUNT));
+    missionTrappedChars.splice(0, missionTrappedChars.length, ...cast.slice(SPACE_MISSION_CAPTOR_COUNT, SPACE_MISSION_CAPTOR_COUNT + SPACE_RESCUE_TARGET_COUNT));
     missionRetryCaptives.splice(0, missionRetryCaptives.length);
     rescuedChars.clear();
   }
@@ -547,27 +569,63 @@
   }
 
   function campaignTier(w) {
-    if (w < 4) return 0;      // establish controls + Gizmo connection
-    if (w < 9) return 1;      // first boss/rescue loop
-    if (w < 13) return 2;     // patterns get sharper
-    if (w < 17) return 3;     // late campaign pressure
-    if (w === 17) return 4;   // final Gizmo
-    return 5;                 // victory lap endless ramp
+    if (w < 4) return 0;                          // basics: asteroids, enemies, swarm
+    if (w < 8) return 1;                          // first boss/rescue loop
+    if (w < SPACE_CAMPAIGN_FINAL_WAVE) return 2;  // mid/late campaign pressure
+    if (w === SPACE_CAMPAIGN_FINAL_WAVE) return 3; // final Gizmo
+    return 4;                                     // post-campaign endless/debug ramp
+  }
+
+  function campaignWaveTuning(w) {
+    // Phase 2B: explicit campaign balance layer. The authored 13-wave campaign
+    // should teach one main threat at a time; Endless can keep the chaotic mixes.
+    // spawnsRemaining is exact for these campaign waves so startWaveSpawn() does
+    // not re-inflate them with the older theme multipliers.
+    const tuning = {
+      1: { spawnsRemaining: 14, speedOverride: 2.02, spawnMsOverride: 1120, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: false, spawnCadenceMult: 1.08 },
+      2: { spawnsRemaining: 10, speedOverride: 2.04, spawnMsOverride: 1180, asteroidRatioOverride: 0, enemyHpOverride: 2, enemyFireMult: 0.28, allowMystery: false, allowPowerups: true, allowHp: true, powerupDelayRange: [5200, 8200], hpDelayRange: [5200, 9000], spawnCadenceMult: 1.08 },
+      3: { spawnsRemaining: 18, speedOverride: 2.24, spawnMsOverride: 720, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.18, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', powerupDelayRange: [2200, 3600], hpDelayRange: [5200, 8200], swarmCap: 5, spawnCadenceMult: 0.98 },
+      4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [7600, 11600], enemyFireMult: 0.75 },
+      5: { spawnsRemaining: 14, speedOverride: 2.14, spawnMsOverride: 1040, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: true, allowPowerups: true, allowHp: true, powerupDelayRange: [3200, 6200], hpDelayRange: [3600, 6800], spawnCadenceMult: 1.05 },
+      6: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', powerupDelayRange: [3600, 6200], hpDelayRange: [5200, 8500], enemyFireMult: 0.55 },
+      7: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [8000, 12000], enemyFireMult: 0.85 },
+      8: { spawnsRemaining: 12, speedOverride: 2.18, spawnMsOverride: 1100, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [5600, 9000], spawnCadenceMult: 1.12 },
+      9: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, powerupDelayRange: [6400, 9800], hpDelayRange: [7000, 11000], enemyFireMult: 0.9 },
+      10: { spawnsRemaining: 12, speedOverride: 2.18, spawnMsOverride: 1220, asteroidRatioOverride: 0.35, enemyHpOverride: 2, enemyFireMult: 0.22, allowMystery: false, allowPowerups: true, allowHp: true, powerupDelayRange: [3600, 6200], hpDelayRange: [4200, 7600], spawnCadenceMult: 1.18 },
+      11: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, powerupDelayRange: [7200, 10400], hpDelayRange: [7600, 11200], enemyFireMult: 1.0 },
+      12: { spawnsRemaining: 14, speedOverride: 2.25, spawnMsOverride: 960, asteroidRatioOverride: 0.55, enemyHpOverride: 2, enemyFireMult: 0.35, allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', powerupDelayRange: [900, 1500], hpDelayRange: [2600, 4800], spawnCadenceMult: 0.95 },
+      13: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [8500, 12500], enemyFireMult: 1.0 },
+    };
+    return tuning[w] || null;
+  }
+
+  function campaignAllows(kind) {
+    if (!currentCfg || currentCfg[kind] == null) return true;
+    return !!currentCfg[kind];
   }
 
   function waveConfig(w) {
     const tier = campaignTier(w);
-    const endless = Math.max(0, w - 18);
-    // Difficulty now rises by campaign tier first, wave number second. That keeps
-    // the campaign legible on mobile: fewer unreadable floods, more deliberate
-    // pressure windows and tighter recovery timing.
-    return {
+    const endless = Math.max(0, w - SPACE_CAMPAIGN_FINAL_WAVE);
+    // Difficulty now rises by campaign tier first, wave number second. Campaign
+    // waves are then overlaid with explicit tuning so early waves teach one skill
+    // at a time instead of mixing every threat immediately.
+    const base = {
       poolSize: 10 + w * 3 + tier * 3 + endless * 2,
       speed: O_SPEED_BASE + Math.min(w, 10) * 0.13 + tier * 0.22 + endless * 0.18,
       spawnMs: Math.max(390, 1760 - Math.min(w, 12) * 62 - tier * 70 - endless * 34),
       asteroidRatio: Math.max(0.2, 0.64 - tier * 0.055 - endless * 0.012),
       tier,
+      allowMystery: true,
+      allowPowerups: true,
+      allowHp: true,
     };
+    const tuned = campaignWaveTuning(w);
+    if (tuned) Object.assign(base, tuned);
+    if (base.speedOverride != null) base.speed = base.speedOverride;
+    if (base.spawnMsOverride != null) base.spawnMs = base.spawnMsOverride;
+    if (base.asteroidRatioOverride != null) base.asteroidRatio = base.asteroidRatioOverride;
+    return base;
   }
 
   function enemyFireAt(shooter, speedMult) {
@@ -575,7 +633,8 @@
     const dy = player.y - shooter.y;
     const dist = Math.sqrt(dx*dx+dy*dy) || 1;
     const tier = currentCfg ? currentCfg.tier : campaignTier(wave);
-    const bulletSpeed = (3.0 + tier * 0.45 + Math.min(wave, 12) * 0.16 + Math.max(0, wave - 18) * 0.18) * (speedMult || 1);
+    const balanceMult = currentCfg && currentCfg.enemyFireMult != null ? currentCfg.enemyFireMult : 1;
+    const bulletSpeed = (3.0 + tier * 0.45 + Math.min(wave, 12) * 0.16 + Math.max(0, wave - 18) * 0.18) * (speedMult || 1) * balanceMult;
     enemyBullets.push({ x: shooter.x, y: shooter.y + shooter.r, vx: (dx/dist)*bulletSpeed, vy: (dy/dist)*bulletSpeed, r: 4 });
   }
 
@@ -601,6 +660,7 @@
     // touching waveConfig(cfg) itself — purely a local override of this one roll.
     let ratio = cfg.asteroidRatio;
     if (waveTheme === 'asteroids' || waveTheme === 'ghost' || waveTheme === 'emp') ratio = 1;
+    else if (waveTheme === 'enemies') ratio = 0;
     else if (waveTheme === 'swarm') ratio = 0.1;
     else if (waveTheme === 'goldrush') ratio = 0.85;
     else if (waveTheme === 'mirror') ratio = 1;
@@ -617,7 +677,8 @@
       // slightly slower than normal rock speed, and tiny lane drift so it feels alive
       // without creating impossible diagonal clumps.
       const jitter = waveTheme !== 'asteroids';
-      obstacles.push({ type:'asteroid', x:rand(r,W-r), y:-r-10, vx: jitter ? rand(-0.4,0.4)*cfg.speed : rand(-0.08,0.08)*cfg.speed, vy: jitter ? cfg.speed*(0.8+Math.random()*0.4) : cfg.speed*0.82, r, verts, rot:0, rotSpeed:rand(-0.02,0.02), hp:1, shadeSeed: Math.random() * 1000, rockStyle: Math.floor(Math.random() * 3) });
+      const rockSpeedMult = cfg.asteroidSpeedMult == null ? 1 : cfg.asteroidSpeedMult;
+      obstacles.push({ type:'asteroid', x:rand(r,W-r), y:-r-10, vx: jitter ? rand(-0.4,0.4)*cfg.speed*rockSpeedMult : rand(-0.08,0.08)*cfg.speed*rockSpeedMult, vy: (jitter ? cfg.speed*(0.8+Math.random()*0.4) : cfg.speed*0.82) * rockSpeedMult, r, verts, rot:0, rotSpeed:rand(-0.02,0.02), hp:1, shadeSeed: Math.random() * 1000, rockStyle: Math.floor(Math.random() * 3) });
     } else {
       // Random trapped heroes in regular waves are disabled. The campaign already
       // has one rescue target per boss/chapter beat, so surprise hero spawns made the
@@ -636,7 +697,7 @@
         // that powerups are banked, not lost if you can't immediately catch one —
         // there's more of a safety net to draw on, so this can push harder.
         const r = FACE_R * 0.6;
-        obstacles.push({ type:'face', x:rand(r,W-r), y:-r-10, vx:rand(-0.8,0.8)*cfg.speed, vy:cfg.speed*2.0, r, ci: nextMissionEnemyIndex(), hp:1, isTrapped:false, ringHp:0, pausedBurstDone:true, paused:false, pauseUntil:0, burstShotsLeft:0, lastBurstShot:0 });
+        obstacles.push({ type:'face', x:rand(r,W-r), y:-r-10, vx:rand(-0.8,0.8)*cfg.speed, vy:cfg.speed*1.72, r, ci: nextMissionEnemyIndex(), hp:cfg.enemyHpOverride || 1, isTrapped:false, ringHp:0, pausedBurstDone:true, paused:false, pauseUntil:0, burstShotsLeft:0, lastBurstShot:0 });
         return;
       }
       if (waveTheme === 'bomber') {
@@ -652,7 +713,9 @@
           return;
         }
       }
-      obstacles.push({ type:'face', x:rand(FACE_R,W-FACE_R), y:-FACE_R-10, vx:rand(-0.6,0.6)*cfg.speed, vy:cfg.speed*(0.7+Math.random()*0.5)*(isTrapped?0.82:0.6), r:FACE_R, ci, hp: isTrapped ? 1 : 3, isTrapped, ringHp: isTrapped ? CAPTIVE_RING_HP : 0, maxRingHp: isTrapped ? CAPTIVE_RING_HP : 0, pausedBurstDone: isTrapped, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0 });
+      const faceVyMult = cfg.enemyVyMult == null ? 1 : cfg.enemyVyMult;
+      const faceHp = isTrapped ? 1 : (cfg.enemyHpOverride || 3);
+      obstacles.push({ type:'face', x:rand(FACE_R,W-FACE_R), y:-FACE_R-10, vx:rand(-0.6,0.6)*cfg.speed, vy:cfg.speed*(0.7+Math.random()*0.5)*(isTrapped?0.82:0.6)*faceVyMult, r:FACE_R, ci, hp: faceHp, isTrapped, ringHp: isTrapped ? CAPTIVE_RING_HP : 0, maxRingHp: isTrapped ? CAPTIVE_RING_HP : 0, pausedBurstDone: isTrapped, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0 });
     }
   }
 
@@ -768,15 +831,20 @@
   }
 
   const POWERUP_R = 18;
-  // Both pickups scale off the same base (2x a regular asteroid's speed) — power-ups
-  // fall 20% faster than HP. They're the bigger reward (speed/gun/bomb/shield vs. a
-  // flat HP top-up), so catching one should take a little more urgency/skill, not less.
-  function hpFallSpeed() { return (currentCfg ? currentCfg.speed : O_SPEED_BASE) * 2; }
-  function powerupFallSpeed() { return hpFallSpeed() * 1.7; }
+  // Phase 1 tuning: banked socket pickups should be readable/catchable, not frantic.
+  // They already fall straight down (vy only, no vx); keep the motion simple and slow
+  // enough that the player can make a real socket-inventory decision.
+  function hpFallSpeed() { return (currentCfg ? currentCfg.speed : O_SPEED_BASE) * 1.35; }
+  function powerupFallSpeed() { return hpFallSpeed() * 1.05; }
 
-  function spawnPowerup() {
+  function spawnPowerup(forcedType) {
     const types = ['gun', 'bomb', 'shield'];
-    const type = types[Math.floor(Math.random() * types.length)];
+    let type = forcedType;
+    if (!type && currentCfg && currentCfg.forcePowerupType && !currentCfg._forcedPowerupSpawned) {
+      type = currentCfg.forcePowerupType;
+      currentCfg._forcedPowerupSpawned = true;
+    }
+    if (!type || !types.includes(type)) type = types[Math.floor(Math.random() * types.length)];
     powerups.push({ type, x: rand(POWERUP_R, W - POWERUP_R), y: -POWERUP_R - 10, vy: powerupFallSpeed(), r: POWERUP_R, bob: Math.random() * Math.PI * 2 });
   }
 
@@ -792,7 +860,7 @@
     clearTimeout(mysteryTimer);
     mysteryTimer = setTimeout(() => {
       if (state !== 'playing') return;
-      if (!boss && !waveTransitioning) spawnMysteryBox();
+      if (campaignAllows('allowMystery') && !boss && !waveTransitioning) spawnMysteryBox();
       scheduleMysteryBox();
     }, 14000 + Math.random() * 9000);
   }
@@ -823,10 +891,12 @@
     // using it instantly — no longer "use it now or it's wasted," so it can afford
     // to be rarer and feel more deliberate.
     const tier = campaignTier(wave);
-    const range = waveTheme === 'goldrush' ? [600, 1500] : [Math.max(8200, 10400 - tier * 420), Math.max(15000, 19500 - tier * 750)];
+    const range = currentCfg && currentCfg.powerupDelayRange
+      ? currentCfg.powerupDelayRange
+      : waveTheme === 'goldrush' ? [600, 1500] : [Math.max(8200, 10400 - tier * 420), Math.max(15000, 19500 - tier * 750)];
     powerupTimer = setTimeout(() => {
       if (state !== 'playing') return;
-      if (!boss && !waveTransitioning) spawnPowerup();
+      if (campaignAllows('allowPowerups') && !boss && !waveTransitioning) spawnPowerup();
       schedulePowerup();
     }, range[0] + Math.random() * (range[1] - range[0]));
   }
@@ -845,11 +915,12 @@
   function scheduleHpPowerup() {
     clearTimeout(hpPowerupTimer);
     const tier = campaignTier(wave);
-    const minDelay = 3150 + Math.min(1800, tier * 360);
-    const maxDelay = 6300 + Math.min(2600, tier * 520);
+    const hpRange = currentCfg && currentCfg.hpDelayRange ? currentCfg.hpDelayRange : null;
+    const minDelay = hpRange ? hpRange[0] : 3150 + Math.min(1800, tier * 360);
+    const maxDelay = hpRange ? hpRange[1] : 6300 + Math.min(2600, tier * 520);
     hpPowerupTimer = setTimeout(() => {
       if (state !== 'playing') return;
-      if (!boss && !waveTransitioning) spawnHpPowerup();
+      if (campaignAllows('allowHp') && !boss && !waveTransitioning) spawnHpPowerup();
       scheduleHpPowerup();
     }, minDelay + Math.random() * (maxDelay - minDelay));
   }
@@ -860,7 +931,7 @@
   // worth a beat to notice" silhouette even before it's close enough to read the "?".
   function drawMysteryBox(p) {
     ctx.save(); ctx.translate(p.x, p.y);
-    const sway = Math.sin(Date.now() * 0.0025 + p.bob) * 7;
+    const sway = 0; // Phase 2: mystery crate falls visually straight; ring may pulse, but crate does not drift.
     // Canopy — semi-transparent, not a flat solid fill. Shrunk smaller now that the
     // ring is the main visual signal, not the parachute.
     ctx.save(); ctx.rotate(sway * 0.01);
@@ -888,7 +959,7 @@
     halo.addColorStop(1, 'rgba(70,170,255,0)');
     ctx.beginPath(); ctx.arc(0, 0, haloR, 0, Math.PI * 2);
     ctx.fillStyle = halo; ctx.fill();
-    if (!drawProjectileImage('mystery', 0, 0, p.r * 1.7, Math.sin(Date.now() * 0.002 + p.bob) * 0.1, '#cc66ff')) {
+    if (!drawProjectileImage('mystery', 0, 0, p.r * 1.7, 0, '#cc66ff', true)) {
       const glow = ctx.createLinearGradient(-s, -s, s, s);
       glow.addColorStop(0, 'rgba(255,105,210,0.26)');
       glow.addColorStop(0.5, 'rgba(170,80,255,0.16)');
@@ -1168,7 +1239,8 @@
     const pulse = 0.85 + Math.sin(Date.now() * 0.006 + p.bob) * 0.15;
     ctx.save();
     ctx.translate(p.x, p.y);
-    ctx.rotate(Date.now() * 0.0015 + p.bob * 0.12);
+    // Keep pickup icons visually upright while falling. The halo can pulse, but the
+    // icon itself should not spin/wobble or it reads like the pickup is drifting.
     ctx.beginPath();
     const haloR = p.r * pulse + 7;
     for (let k = 0; k < 10; k++) {
@@ -1181,7 +1253,7 @@
     ctx.fillStyle = glowColor || 'rgba(255,230,26,0.18)';
     ctx.fill();
     ctx.restore();
-    return drawProjectileImage(type, p.x, p.y, size, Math.sin(Date.now() * 0.003 + p.bob) * 0.12, glowColor ? glowColor.replace(/0\.\d+\)/, '0.8)') : null);
+    return drawProjectileImage(type, p.x, p.y, size, 0, glowColor ? glowColor.replace(/0\.\d+\)/, '0.8)') : null, true);
   }
 
   // MUSIC theme instrument pickups. One hit to "play" and clear.
@@ -1307,6 +1379,49 @@
       vy: Math.sin(ang) * speed,
       r: 15, expiresAt: Date.now() + 9000, nextFire: 0,
     };
+  }
+
+  function handleDuplicatePowerup(type, source) {
+    // Phase 1: duplicates are no longer a silent "already held" miss. Keep the bonus
+    // small and very explicit so it feels like "not wasted" instead of a new strategy
+    // that encourages hoarding full sockets.
+    const sx = source && typeof source.x === 'number' ? source.x : player.x;
+    const sy = source && typeof source.y === 'number' ? source.y : player.y;
+    if (type === 'bomb') {
+      const radius = 92;
+      let cleared = 0;
+      obstacles.forEach(o => {
+        if (o.isTrapped || o.alive === false) return;
+        const dist = Math.hypot(o.x - player.x, o.y - player.y);
+        if (dist <= radius + (o.r || 0)) {
+          miniExplosion(o.x, o.y, o.type === 'asteroid' ? '#7a6a90' : GAME_CHARS[o.ci].color);
+          score += o.type === 'asteroid' ? 12 : 25;
+          waveKills++;
+          cleared++;
+          o.alive = false;
+        }
+      });
+      obstacles = obstacles.filter(o => o.alive !== false);
+      enemyBullets = enemyBullets.filter(b => Math.hypot(b.x - player.x, b.y - player.y) > radius + (b.r || 0));
+      triggerShake(4);
+      miniExplosion(player.x, player.y, '#ff8800');
+      addFloatText(`EXTRA BOMB POP! +${cleared}`, W / 2, H * 0.38, '#ff8800', 24);
+      showTopBanner('SOCKET FULL — MINI POP', 'good');
+      if (SFX.over) SFX.over();
+      else if (SFX.powerupCollect) SFX.powerupCollect();
+    } else if (type === 'shield') {
+      health = Math.min(100, health + 5);
+      miniExplosion(sx, sy, '#00e5ff');
+      addFloatText('SOCKET FULL +5 HP', W / 2, H * 0.38, '#00e5ff', 22);
+      showTopBanner('SOCKET FULL — +5 HP', 'good');
+      SFX.powerupCollect();
+    } else if (type === 'gun') {
+      score += 250;
+      miniExplosion(sx, sy, '#ffe61a');
+      addFloatText('SOCKET FULL +250', W / 2, H * 0.38, '#ffe61a', 22);
+      showTopBanner('SOCKET FULL — +250', 'good');
+      SFX.powerupCollect();
+    }
   }
 
   function applyPowerup(type) {
@@ -1455,13 +1570,14 @@
     leftHeld=false; rightHeld=false; lastAutoFire=0; lastPizzaFire=0;
     mkStars();
     currentCfg = waveConfig(wave);
+    waveTheme = pickWaveTheme(wave, null);
     startWaveSpawn(currentCfg);
     scheduleHpPowerup();
     schedulePowerup();
     scheduleMysteryBox();
     scheduleInstrument();
     setTimeout(() => {
-      if (state === 'playing' && wave === 1) showTopBanner('PICK TARGETS. DODGE CLEAN.', 'good');
+      if (state === 'playing' && wave === 1) showTopBanner('WEAVE THROUGH THE ROCKS', 'good');
     }, 900);
   }
 
@@ -1503,8 +1619,8 @@
     schedulePowerup();
     scheduleMysteryBox();
     scheduleInstrument();
-    if (waveTheme === 'boss') spawnBoss(false, { guardedRescue: wave <= 15 && hasUnrescuedMissionCaptive() });
-    if (waveTheme === 'gizmo') spawnBoss(false, { guardedRescue: wave !== 17 && hasUnrescuedMissionCaptive(), escape: !forcedBossName && wave !== 17, final: !forcedBossName && wave === 17 });
+    if (waveTheme === 'boss') spawnBoss(false, { guardedRescue: [4,7,9,11].includes(wave) && hasUnrescuedMissionCaptive() });
+    if (waveTheme === 'gizmo') spawnBoss(false, { guardedRescue: hasUnrescuedMissionCaptive(), escape: !forcedBossName && wave !== SPACE_FINAL_GIZMO_WAVE, final: !forcedBossName && wave === SPACE_FINAL_GIZMO_WAVE });
     if (waveTheme === 'captive') spawnBoss(true);
     if (waveTheme === 'ghost' || waveTheme === 'emp') spawnMiniBoss(waveTheme);
     if (waveTheme === 'mirror') spawnMirrorEnemy();
@@ -1519,7 +1635,9 @@
     // Boss/captive waves are true encounter waves now: beat the boss, then advance
     // into the next chapter beat instead of resuming a hidden regular spawn pool.
     if (waveTheme === 'boss' || waveTheme === 'captive' || waveTheme === 'gizmo') spawnsRemaining = 0;
-    else if (waveTheme === 'asteroids') spawnsRemaining = Math.max(1, Math.ceil(cfg.poolSize * 1.55));
+    else if (cfg.spawnsRemaining != null) spawnsRemaining = cfg.spawnsRemaining;
+    else if (waveTheme === 'asteroids') spawnsRemaining = Math.max(1, Math.ceil(cfg.poolSize * (wave === 5 ? 0.9 : 1.35)));
+    else if (waveTheme === 'enemies') spawnsRemaining = Math.max(8, Math.ceil(cfg.poolSize * 0.72));
     else if (waveTheme === 'mirror') spawnsRemaining = Math.max(4, Math.ceil(cfg.poolSize * 0.34));
     else if (waveTheme === 'bomber') spawnsRemaining = Math.max(4, Math.ceil(cfg.poolSize * 0.48));
     else spawnsRemaining = cfg.poolSize;
@@ -1533,17 +1651,25 @@
       // SWARM: cap how many enemies are falling at once. Same total pool over the
       // wave (we re-queue rather than consume a spawn), just fewer on screen
       // simultaneously so it reads as a steady stream, not a flood.
-      if (waveTheme === 'swarm' && obstacles.length >= 5) { spawnTimer = setTimeout(doSpawn, 280); return; }
+      if (waveTheme === 'swarm' && obstacles.length >= (cfg.swarmCap || 5)) { spawnTimer = setTimeout(doSpawn, 280); return; }
       spawnObstacle(cfg);
       spawnsRemaining--;
       // SWARM speeds up by cadence, not by screen-flooding. ALL ASTEROIDS now works
       // the same way: more total rocks across the wave, but no triple-dumps that
       // make one bomb erase the whole mode or create impossible clumps.
       const themeSpeedup = waveTheme === 'swarm' ? 0.65 : waveTheme === 'goldrush' ? 0.6 : waveTheme === 'asteroids' ? 0.95 : waveTheme === 'mirror' ? 1.25 : waveTheme === 'bomber' ? 1.18 : 1;
-      spawnTimer = setTimeout(doSpawn, cfg.spawnMs * 0.8 * themeSpeedup * (0.7 + Math.random()*0.6));
+      const balanceCadence = cfg.spawnCadenceMult == null ? 1 : cfg.spawnCadenceMult;
+      spawnTimer = setTimeout(doSpawn, cfg.spawnMs * 0.8 * themeSpeedup * balanceCadence * (0.7 + Math.random()*0.6));
     }
     spawnTimer = setTimeout(doSpawn, 1500);
   }
+
+  // Phase 2B transition/pacing audit note:
+  // After campaign balance changes, re-check that these full-screen beats never
+  // appear over live hazards: wave-cleared beat, announceWave(), boss rescue unlock,
+  // Gizmo victory briefing, campaign complete overlay, Blackout start/end, Music
+  // start/end, and debug jumps. Large overlays should either pause damage or wait
+  // for the board to clear first.
 
   // Brief "WAVE N CLEARED" checkmark beat, same language as the equivalent moment
   // in Whack-a-Mobe — a clean confirmation that the wave is actually done, shown
@@ -1764,8 +1890,8 @@ function nextWave() {
         waveTransitioning = false;
         if (state !== 'playing') return;
         startWaveSpawn(currentCfg);
-        if (waveTheme === 'boss') spawnBoss(false, { guardedRescue: wave <= 15 && hasUnrescuedMissionCaptive() });
-        if (waveTheme === 'gizmo') spawnBoss(false, { guardedRescue: wave !== 17 && hasUnrescuedMissionCaptive(), escape: wave !== 17, final: wave === 17 });
+        if (waveTheme === 'boss') spawnBoss(false, { guardedRescue: [4,7,9,11].includes(wave) && hasUnrescuedMissionCaptive() });
+        if (waveTheme === 'gizmo') spawnBoss(false, { guardedRescue: hasUnrescuedMissionCaptive(), escape: wave !== SPACE_FINAL_GIZMO_WAVE, final: wave === SPACE_FINAL_GIZMO_WAVE });
         if (waveTheme === 'captive') spawnBoss(true);
         if (waveTheme === 'ghost' || waveTheme === 'emp') spawnMiniBoss(waveTheme);
         if (waveTheme === 'mirror') spawnMirrorEnemy();
@@ -1776,9 +1902,14 @@ function nextWave() {
   }
 
   function skillCalloutForWave() {
-    if (wave === 2) return 'HURT GIZMO. SAVE A MOBE.';
-    if (wave === 10) return 'YOU CAN HURT HIM MORE NOW.';
-    if (wave === 17) return 'FINAL GIZMO. USE EVERYTHING.';
+    if (wave === 1) return 'WEAVE THROUGH THE ROCKS';
+    if (wave === 2) return 'LINE UP YOUR SHOTS';
+    if (wave === 4) return 'FIRST CAPTIVE. BEAT THE BOSS.';
+    if (wave === 5) return 'BREATHE. STOCK UP.';
+    if (wave === 8) return 'BLACKOUT. STAY CALM.';
+    if (wave === 10) return 'JAM SESSION. HAVE FUN.';
+    if (wave === 12) return 'FINAL PREP. FILL SOCKETS.';
+    if (wave === SPACE_FINAL_GIZMO_WAVE) return 'FINAL GIZMO. USE EVERYTHING.';
     if (waveTheme === 'boss' && boss && boss.creature && boss.creature.name === 'DARK KNIGHT') return 'WATCH THE SWORD GLOW';
     if (waveTheme === 'boss') return 'SAVE RAPID FIRE FOR BOSS';
     if (waveTheme === 'captive') return 'BREAK THE LOCK FIRST';
@@ -1786,6 +1917,7 @@ function nextWave() {
     if (waveTheme === 'bomber') return 'KILL BOMBERS EARLY';
     if (waveTheme === 'mirror') return 'FIND THE TRIANGLE GAP';
     if (waveTheme === 'asteroids') return 'WEAVE. SAVE THE BOMB.';
+    if (waveTheme === 'enemies') return 'SHOOT FACES. DODGE SHOTS.';
     if (waveTheme === 'blackout') return 'STAY CALM. WATCH THE LINE.';
     if (waveTheme === 'emp') return 'DODGE THE ZAPS';
     if (waveTheme === 'ghost') return 'TRACK THE GHOST';
@@ -2853,9 +2985,7 @@ function nextWave() {
     powerups = powerups.filter(p => p.y < H + 40);
     for (const p of powerups) {
       if (!waveTransitioning) p.y += p.vy;
-      // Mystery box drifts under its parachute — a gentle vertical waver on top of
-      // the steady fall, not a literal pendulum swing (kept subtle on purpose).
-      if (!waveTransitioning && p.type === 'mystery') p.y += Math.sin(Date.now() * 0.003 + p.bob) * 0.4;
+      // Mystery boxes now fall straight like other pickups; the pulsing ring/crate art is the tell.
       if (!waveTransitioning && p.rotSpeed) p.rot += p.rotSpeed;
       drawPowerup(p);
       if (waveTransitioning) continue;
@@ -2906,8 +3036,7 @@ function nextWave() {
           // Banked, not applied — deployed later by tapping its socket. HP and
           // mystery boxes aren't bankable and keep applying instantly below.
           if (inventory[p.type]) {
-            showTopBanner('ALREADY HELD', 'bad');
-            SFX.miss();
+            handleDuplicatePowerup(p.type, p);
           } else {
             inventory[p.type] = true;
             showTopBanner(p.type.toUpperCase() + ' ADDED', 'good');
@@ -3106,7 +3235,7 @@ function nextWave() {
                 });
               } else if (defeatedBoss.isFinalGizmo) {
                 freeAllRemainingMobes();
-                showSpaceVictoryBriefing(() => { if (state === 'playing') nextWave(); });
+                showSpaceVictoryBriefing(() => { if (state === 'playing') completeSpaceCampaign(); });
               } else if (rescuedCi >= 0) {
                 showBossDefeatedBeat(defeatedBoss.creature.name, defeatedBoss.x, defeatedBoss.y, () => {
                   if (state !== 'playing') return;
@@ -4014,7 +4143,7 @@ function nextWave() {
     'SPACE SHARK': 'SHARK TEETH',
     'MEAN TACO': 'SOMBREROS',
     'COSMIC OCTO': 'INK BURST',
-    'GIZMO': 'LOCK GLOW',
+    'GIZMO': 'TENNIS BALLS',
   };
   function bossPreviewList() {
     return [...BOSS_CREATURES, { name: 'GIZMO', isGizmo: true }];
@@ -4429,6 +4558,35 @@ function nextWave() {
     requestAnimationFrame(tick);
   }
 
+  function completeSpaceCampaign() {
+    state = 'complete';
+    clearSpaceRuntimeTimers();
+    cancelAnimationFrame(raf);
+    const ov = document.getElementById('space-overlay');
+    if (!ov) return;
+    document.body.classList.add('arcade-selection-open');
+    ov.classList.remove('hidden', 'space-over', 'space-boss-preview');
+    ov.style.justifyContent = '';
+    ov.style.paddingTop = '';
+    setArcadeExitVisible(true);
+    const total = missionTrappedChars.length || SPACE_RESCUE_TARGET_COUNT;
+    const rescued = Math.min(total, rescuedChars.size);
+    ov.innerHTML = `
+      <div class="whack-mode-shell" style="max-width:430px;margin-top:22px;text-align:center">
+        <div class="whack-mode-title" style="color:#33ff66;text-shadow:0 0 18px #33ff6688">MISSION COMPLETE!</div>
+        <div class="game-card whack-mode-card" style="border-color:#33ff6677;cursor:default;min-height:0;padding:20px 18px;background:rgba(5,2,18,0.92)">
+          <div style="font-family:'Bebas Neue',cursive;font-size:40px;letter-spacing:5px;line-height:1;color:#f2efe8;margin-bottom:8px">GIZMO DEFEATED</div>
+          <div style="font-family:'VCR',monospace;font-size:12px;letter-spacing:2px;color:rgba(242,239,232,0.65);margin-bottom:14px">MOBES RESCUED</div>
+          <div style="font-family:'Bebas Neue',cursive;font-size:58px;letter-spacing:6px;line-height:1;color:#33ff66;text-shadow:0 0 18px #33ff6688;margin-bottom:16px">${rescued}/${total}</div>
+          <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.45);margin-bottom:18px">SCORE ${score}</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN AGAIN</button>
+            <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="nav('lobby')">BACK TO ARCADE</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
   function showSpaceOverlay(mode) {
     try { if (mode === 'select' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start(); } catch(e){}
     document.body.classList.toggle('arcade-selection-open', mode === 'select' || mode === 'boss-preview');
@@ -4552,11 +4710,22 @@ function nextWave() {
                 </div>
               </div>
               <button class="whack-btn" style="width:100%;border-color:#33ff66;background:rgba(51,255,102,0.18);font-size:16px;letter-spacing:4px;padding:14px 40px;margin-top:12px" onclick="spaceStart()">LAUNCH!</button>
-              <div class="space-debug-row" aria-label="Space debug jumps">
-                <button class="space-debug-chip" onclick="spaceDebugJump(2)">W2 GIZMO</button>
-                <button class="space-debug-chip" onclick="spaceDebugJump(4)">W4 BOSS</button>
-                <button class="space-debug-chip" onclick="spaceDebugJump(10)">W10 GIZMO</button>
-                <button class="space-debug-chip" onclick="spaceDebugJump(17)">FINAL</button>
+              <div class="space-debug-row" aria-label="Space campaign wave debug jumps 1 through 7">
+                <button class="space-debug-chip" onclick="spaceDebugJump(1)">W1 AST</button>
+                <button class="space-debug-chip" onclick="spaceDebugJump(2)">W2 ENEMY</button>
+                <button class="space-debug-chip" onclick="spaceDebugJump(3)">W3 SWARM</button>
+                <button class="space-debug-chip" onclick="spaceDebugJump(4)">W4 OGRE</button>
+                <button class="space-debug-chip" onclick="spaceDebugJump(5)">W5 RECOVER</button>
+                <button class="space-debug-chip" onclick="spaceDebugJump(6)">W6 RESCUE</button>
+                <button class="space-debug-chip" onclick="spaceDebugJump(7)">W7 KNIGHT</button>
+              </div>
+              <div class="space-debug-row" aria-label="Space campaign wave debug jumps 8 through 13">
+                <button class="space-debug-chip" onclick="spaceDebugJump(8)">W8 BLACKOUT</button>
+                <button class="space-debug-chip" onclick="spaceDebugJump(9)">W9 BOSS</button>
+                <button class="space-debug-chip" onclick="spaceDebugJump(10)">W10 MUSIC</button>
+                <button class="space-debug-chip" onclick="spaceDebugJump(11)">W11 BOSS</button>
+                <button class="space-debug-chip" onclick="spaceDebugJump(12)">W12 PREP</button>
+                <button class="space-debug-chip" onclick="spaceDebugJump(13)">W13 FINAL</button>
               </div>
               <div class="space-debug-row" aria-label="Space boss playtests">
                 <button class="space-debug-chip" onclick="spaceDebugBoss('STAR OGRE')">OGRE</button>
@@ -5025,7 +5194,7 @@ function nextWave() {
     const normalDayStage = `
       <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:4px;color:#ffe61a;text-shadow:0 0 12px #ffe61a;animation:sp-brief-line-in 0.35s ease-out both">ON A NORMAL MOBE DAY</div>`;
     const castStage = `
-      <div style="font-family:'Bebas Neue',cursive;font-size:40px;letter-spacing:5px;line-height:1;color:#ffe61a;text-shadow:0 0 18px #ffe61a88;margin-bottom:14px;animation:sp-brief-line-in 0.35s ease-out both">12 MOBES WERE FROLICKING</div>
+      <div style="font-family:'Bebas Neue',cursive;font-size:40px;letter-spacing:5px;line-height:1;color:#ffe61a;text-shadow:0 0 18px #ffe61a88;margin-bottom:14px;animation:sp-brief-line-in 0.35s ease-out both">8 MOBES WERE FROLICKING</div>
       <div style="${gridStyle}">${castGrid('normal', 'normal')}</div>`;
     const traitorLineStage = `
       <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:4px;color:#ff4444;text-shadow:0 0 12px #ff4444;animation:sp-brief-line-in 0.35s ease-out both">BUT TWO OF THEM WERE TRAITORS</div>`;
