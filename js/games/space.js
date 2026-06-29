@@ -95,6 +95,7 @@
   let waveTheme = null; // null = normal wave, else one of WAVE_THEMES
   let themeEffectsAt = 0; // BLACKOUT's vignette waits until this time so it doesn't visually swallow the wave/theme announcement
   let waveTransitioning = false; // true from nextWave() until its announcement clears — guards against the per-frame wave-cleared check re-firing nextWave()
+  let pendingBossWin = null; // boss defeated, but the victory cinematic is held until the board (minions/asteroids) is clear
   let mirrorSequenceActive = false, mirrorStageTimers = [];
   let spaceBriefingTimers = [];
   // 'flip' (not 'reverse') for the wave theme key — the mystery outcome list below
@@ -254,7 +255,7 @@
   const BOSS_STYLE = {
     'STAR OGRE': 'donkey',
     'SKY DRAGON': 'fire',
-    'DARK KNIGHT': 'shield',
+    'DARK KNIGHT': 'sword',
     'GRAY VISITOR': 'orb',
     'SPACE SHARK': 'fish',
     'MEAN TACO': 'sombrero',
@@ -307,6 +308,7 @@
     ink: 'projectiles/ink_burst.png',
     shield: 'projectiles/shield.png',
     lock: 'projectiles/blue_bone.png',
+    tennis: 'projectiles/tennisball.png',
     ice: 'projectiles/snowflake.png',
     zap: 'projectiles/fart_cloud.png',
     pizza: 'projectiles/pizza.png',
@@ -318,6 +320,7 @@
     guitar: 'projectiles/guitar.png',
     piano: 'projectiles/piano.png',
     saxophone: 'projectiles/saxophone.png',
+    sword: 'projectiles/sword.png',
   };
   Object.values(PROJECTILE_IMAGE_SRC).forEach(src => _getImg(src));
 
@@ -337,6 +340,118 @@
 
   function addFloatText(text, x, y, color, size) {
     floatTexts.push({text, x, y, color, a: 1, vy: -1.5, size: size || 20});
+  }
+
+  function playDonkeyHeeHaw() {
+    try {
+      if (typeof getAudioCtx === 'function') {
+        const c = getAudioCtx();
+        const now = c.currentTime + 0.01;
+        const notes = [
+          { f: 260, start: 0, dur: 0.18, end: 155, type: 'sawtooth', vol: 0.09 },
+          { f: 420, start: 0.08, dur: 0.12, end: 310, type: 'triangle', vol: 0.05 },
+          { f: 185, start: 0.24, dur: 0.28, end: 92, type: 'sawtooth', vol: 0.1 },
+          { f: 122, start: 0.34, dur: 0.22, end: 70, type: 'square', vol: 0.055 },
+        ];
+        notes.forEach(n => {
+          const osc = c.createOscillator();
+          const gain = c.createGain();
+          osc.type = n.type;
+          osc.frequency.setValueAtTime(n.f, now + n.start);
+          osc.frequency.exponentialRampToValueAtTime(Math.max(1, n.end), now + n.start + n.dur);
+          gain.gain.setValueAtTime(n.vol, now + n.start);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + n.start + n.dur);
+          osc.connect(gain); gain.connect(c.destination);
+          osc.start(now + n.start); osc.stop(now + n.start + n.dur + 0.02);
+        });
+        return;
+      }
+    } catch(e) {}
+    if (SFX.gizmoBark) SFX.gizmoBark();
+    else if (SFX.bomberDive) SFX.bomberDive();
+  }
+
+  function shuffleList(list) {
+    const out = list.slice();
+    for (let i = out.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = out[i]; out[i] = out[j]; out[j] = tmp;
+    }
+    return out;
+  }
+
+  function beginOgreDonkeyWave() {
+    if (!boss || boss.attackType !== 'donkey') return;
+    const now = Date.now();
+    const count = 4;
+    const targetY = Math.min(H * 0.53, Math.max(boss.y + boss.r * 1.25, H * 0.42));
+    const donkeys = [];
+    for (let k = 0; k < count; k++) {
+      const x = W * ((k + 1) / (count + 1));
+      const d = {
+        x, y: boss.y + boss.r * 0.68,
+        targetX: x, targetY,
+        vx: 0, vy: 0, r: 10.4,
+        theme: 'donkey',
+        damage: 20,
+        visualScale: 4.0,
+        donkeyLine: true,
+        donkeyState: 'deploy',
+        born: now,
+        readyAt: now + 540,
+      };
+      donkeys.push(d);
+      enemyBullets.push(d);
+    }
+    boss.ogreLine = {
+      donkeys,
+      order: shuffleList(donkeys),
+      nextIndex: 0,
+      waveNo: (boss.ogreWaveNo || 0) + 1,
+      nextChargeAt: now + 780,
+    };
+    boss.ogreWaveNo = boss.ogreLine.waveNo;
+    addFloatText(`DONKEY WAVE ${boss.ogreWaveNo}/4`, boss.x, boss.y + boss.r + 18, '#c7a16b', 16);
+  }
+
+  function updateOgreDonkeyLine() {
+    if (!boss || !boss.ogreLine) return;
+    const line = boss.ogreLine;
+    const now = Date.now();
+    let charging = false;
+    for (const d of line.donkeys) {
+      if (d._hit || d._gone) continue;
+      if (d.donkeyState === 'deploy') {
+        d.x += (d.targetX - d.x) * 0.24;
+        d.y += (d.targetY - d.y) * 0.24;
+        if (Math.abs(d.y - d.targetY) < 1.5 || now > d.readyAt) {
+          d.x = d.targetX; d.y = d.targetY; d.donkeyState = 'hold';
+        }
+      } else if (d.donkeyState === 'charge') {
+        charging = true;
+      }
+    }
+    const allReady = line.donkeys.every(d => d._hit || d._gone || d.donkeyState !== 'deploy');
+    if (allReady && !charging && line.nextIndex < line.order.length && now > line.nextChargeAt) {
+      const d = line.order[line.nextIndex++];
+      if (d && !d._hit && !d._gone) {
+        const dx = player.x - d.x;
+        const dy = player.y - d.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        const speed = 8.1 + Math.min(1.65, campaignTier(wave) * 0.3);
+        d.vx = (dx / dist) * speed;
+        d.vy = (dy / dist) * speed;
+        d.donkeyState = 'charge';
+        d.chargeBorn = now;
+        playDonkeyHeeHaw();
+      }
+    }
+    const allDone = line.donkeys.every(d => d._hit || d._gone);
+    if (allDone) {
+      boss.ogreLine = null;
+      boss.nextAttack = now + (boss.ogreWaveNo >= 4 ? 2200 : 850);
+      if (boss.ogreWaveNo >= 4) boss.ogreWaveNo = 0;
+    }
   }
 
 
@@ -560,7 +675,7 @@
     const gizmoEscape = !!(creature.isGizmo && options.escape);
     const gizmoFinal = !!(creature.isGizmo && options.final);
     const tier = campaignTier(wave);
-    const hpBase = gizmoEscape ? Math.round(BOSS_HP * (wave === 2 ? 0.62 : 1.06)) : gizmoFinal ? Math.round(BOSS_HP * 1.48) : BOSS_HP;
+    const hpBase = gizmoEscape ? Math.round(BOSS_HP * (wave === 2 ? 0.82 : 1.06)) : gizmoFinal ? Math.round(BOSS_HP * 1.48) : BOSS_HP;
     const hp = hpBase + tier * (captive ? 5 : gizmoFinal ? 12 : 8) + Math.min(captive ? 16 : gizmoFinal ? 36 : 24, Math.floor(wave * (captive ? 1.0 : gizmoFinal ? 1.9 : 1.35)));
     const attackType = captive ? 'lockpulse' : bossAttackTypeFor(creature);
     boss = {
@@ -568,7 +683,9 @@
       r: BOSS_R, hp, maxHp: hp,
       attackType,
       nextAttack: Date.now() + (captive ? 2200 : 1800),
-      attackDelay: captive ? Math.max(1650, 2450 - tier * 150 - wave * 12) : Math.max(gizmoFinal ? 1250 : 1450, 2380 - tier * 155 - wave * 14),
+      attackDelay: attackType === 'sword'
+        ? 3900
+        : captive ? Math.max(1650, 2450 - tier * 150 - wave * 12) : Math.max(gizmoFinal ? 1250 : 1450, 2380 - tier * 155 - wave * 14),
       burstCount: Math.min(gizmoFinal ? 8 : 6, 3 + tier + Math.floor(Math.max(0, wave - 10) / 8)),
       laserPhase: null, laserChargeStart: 0, laserX: 0,
       hitFlash: 0,
@@ -578,6 +695,8 @@
       isFinalGizmo: gizmoFinal,
       guardedRescue,
       captiveCi,
+      ogreLine: null,
+      ogreWaveNo: 0,
     };
     bossDeployTimer = Date.now() + 3500; // first reinforcement a little after the fight starts
     addFloatText(captive ? `FREE ${GAME_CHARS[captiveCi].name}!` : `${creature.name} INCOMING`, W / 2, 140, captive ? '#00e5ff' : '#ff4444', 22);
@@ -831,18 +950,19 @@
       ctx.save();
       ctx.rotate(t2);
       const ringPulse = 1 + Math.sin(Date.now() * 0.008 + p.bob) * 0.05;
-      ctx.beginPath(); ctx.arc(0, 0, s * 1.37 * ringPulse, 0, Math.PI * 2);
+      // Ring radii enlarged 25% (1.37→1.7125, 1.22→1.525) — bigger "shoot this" target.
+      ctx.beginPath(); ctx.arc(0, 0, s * 1.7125 * ringPulse, 0, Math.PI * 2);
       ctx.strokeStyle = 'rgba(255,120,220,0.26)'; ctx.lineWidth = 9; ctx.stroke();
       const ringGrad = ctx.createLinearGradient(-s, -s, s, s);
       ringGrad.addColorStop(0, '#ff76d2');
       ringGrad.addColorStop(0.5, '#cc66ff');
       ringGrad.addColorStop(1, '#5ab1ff');
-      ctx.beginPath(); ctx.arc(0, 0, s * 1.22 * ringPulse, 0, Math.PI * 2);
+      ctx.beginPath(); ctx.arc(0, 0, s * 1.525 * ringPulse, 0, Math.PI * 2);
       ctx.strokeStyle = ringGrad; ctx.lineWidth = 3.2; ctx.stroke();
       for (let d = 0; d < 4; d++) {
         const a = (d / 4) * Math.PI * 2 + t2;
         ctx.fillStyle = d % 2 ? '#fff' : '#ff9be3';
-        ctx.beginPath(); ctx.arc(Math.cos(a) * s * 1.22 * ringPulse, Math.sin(a) * s * 1.22 * ringPulse, 3.6, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(Math.cos(a) * s * 1.525 * ringPulse, Math.sin(a) * s * 1.525 * ringPulse, 3.6, 0, Math.PI * 2); ctx.fill();
       }
       ctx.restore();
     }
@@ -855,7 +975,7 @@
     if (rotation) ctx.rotate(rotation);
     if (glowColor) {
       ctx.shadowColor = glowColor;
-      ctx.shadowBlur = size * 0.32;
+      ctx.shadowBlur = size * 0.256; // glow dialed back ~20%
     }
     ctx.beginPath();
     ctx.moveTo(-size * 0.06, -size * 0.5);
@@ -890,7 +1010,7 @@
     if (rotation) ctx.rotate(rotation);
     if (glowColor) {
       ctx.shadowColor = glowColor;
-      ctx.shadowBlur = size * 0.28;
+      ctx.shadowBlur = size * 0.224; // glow dialed back ~20%
     }
     ctx.beginPath();
     ctx.moveTo(0, -size * 0.58);
@@ -920,7 +1040,7 @@
   function drawSnowflake(x, y, R, color, glowColor) {
     ctx.save();
     ctx.translate(x, y);
-    if (glowColor) { ctx.shadowColor = glowColor; ctx.shadowBlur = R * 0.85; }
+    if (glowColor) { ctx.shadowColor = glowColor; ctx.shadowBlur = R * 0.68; } // glow dialed back ~20%
     ctx.strokeStyle = color; ctx.lineWidth = Math.max(1, R * 0.21); ctx.lineCap = 'round';
     const branch = R * 0.35;
     for (let k = 0; k < 6; k++) {
@@ -942,6 +1062,7 @@
     greenOrb: { glow: '#6dff24', spin: 0.0018, wobble: 0.09, pulse: 0.1, orbit: '#d8ff78' },
     ink: { glow: '#bd35ff', spin: -0.0016, wobble: 0.08, splat: '#ff70e8' },
     lock: { glow: '#3db8ff', spin: 0.0013, wobble: 0.06, orbit: '#b9f7ff' },
+    tennis: { glow: '#c6ff3a', spin: 0.0016, wobble: 0.05 },
     ice: { glow: '#73e6ff', spin: 0.0022, wobble: 0.05, orbit: '#eaffff' },
     zap: { glow: '#aaff33', spin: -0.001, wobble: 0.08, fumes: '#baff3b' },
     shield: { glow: '#20dfff', spin: 0.001, wobble: 0.04, orbit: '#eaffff' },
@@ -957,6 +1078,7 @@
     guitar: { glow: '#ff7133', spin: 0.001, wobble: 0.08, sparks: '#ffe6a0' },
     piano: { glow: '#78b7ff', spin: -0.0008, wobble: 0.05, sparks: '#f5f3ec' },
     saxophone: { glow: '#ffd34a', spin: 0.0011, wobble: 0.08, sparks: '#ffe48a' },
+    sword: { glow: '#c8d4ff', spin: 0, wobble: 0.02, sparks: '#ffffff' },
   };
   function rgbaFromHex(hex, alpha) {
     const h = (hex || '#ffffff').replace('#', '');
@@ -1032,7 +1154,7 @@
     }
     if (activeGlow) {
       ctx.shadowColor = activeGlow;
-      ctx.shadowBlur = size * 0.3;
+      ctx.shadowBlur = size * 0.24; // glow dialed back ~20%
     }
     if (mutedIcon) {
       ctx.globalAlpha *= 0.55;
@@ -1322,7 +1444,7 @@
     enemyBullets=[]; lastEnemyFire=0; floatTexts=[]; lineFlashA=0;
     powerups=[]; buffSpeedUntil=0; buffGunUntil=0; buffShieldUntil=0; escort=null; shakeMag=0;
     boss=null; rescuedChars.clear(); rescueBanner = null; missionRetryCaptives.splice(0, missionRetryCaptives.length); waveCaptivesSeen.clear();
-    waveTheme = null; miniBoss = null; themeEffectsAt = 0; waveTransitioning = false;
+    waveTheme = null; miniBoss = null; themeEffectsAt = 0; waveTransitioning = false; pendingBossWin = null;
     mirrorSequenceActive = false; mirrorStageTimers.forEach(clearTimeout); mirrorStageTimers = [];
     buffFrozenUntil = 0; buffZappedUntil = 0; controlsReversedUntil = 0; twin = null; rebound = null; buffPizzaUntil = 0; snowingUntil = 0; snowParticles = [];
     inventory = { gun: false, shield: false, bomb: false };
@@ -1375,6 +1497,7 @@
     spawnsRemaining = 0;
     themeEffectsAt = 0;
     waveTransitioning = false;
+    pendingBossWin = null;
     startWaveSpawn(currentCfg);
     scheduleHpPowerup();
     schedulePowerup();
@@ -1407,6 +1530,10 @@
       // full pause because it is meant to read as a real encounter.
       if (boss || (miniBoss && miniBoss.kind === 'ghost')) { spawnTimer = setTimeout(doSpawn, 500); return; }
       if (spawnsRemaining <= 0) return; // pool exhausted — let the board clear naturally, no forced wipe
+      // SWARM: cap how many enemies are falling at once. Same total pool over the
+      // wave (we re-queue rather than consume a spawn), just fewer on screen
+      // simultaneously so it reads as a steady stream, not a flood.
+      if (waveTheme === 'swarm' && obstacles.length >= 5) { spawnTimer = setTimeout(doSpawn, 280); return; }
       spawnObstacle(cfg);
       spawnsRemaining--;
       // SWARM speeds up by cadence, not by screen-flooding. ALL ASTEROIDS now works
@@ -1652,7 +1779,7 @@ function nextWave() {
     if (wave === 2) return 'HURT GIZMO. SAVE A MOBE.';
     if (wave === 10) return 'YOU CAN HURT HIM MORE NOW.';
     if (wave === 17) return 'FINAL GIZMO. USE EVERYTHING.';
-    if (waveTheme === 'boss' && boss && boss.creature && boss.creature.name === 'DARK KNIGHT') return "DON'T SHOOT THE SHIELD";
+    if (waveTheme === 'boss' && boss && boss.creature && boss.creature.name === 'DARK KNIGHT') return 'WATCH THE SWORD GLOW';
     if (waveTheme === 'boss') return 'SAVE RAPID FIRE FOR BOSS';
     if (waveTheme === 'captive') return 'BREAK THE LOCK FIRST';
     if (waveTheme === 'swarm') return 'BOMB NOW OR DODGE CLEAN';
@@ -2502,7 +2629,7 @@ function nextWave() {
 
       // A jail cell shouldn't be dispatching reinforcements — captive fights are just
       // rescue + dodge attacks, no minions.
-      if (!boss.isCaptive && Date.now() > bossDeployTimer) {
+      if (!boss.isCaptive && boss.attackType !== 'donkey' && Date.now() > bossDeployTimer) {
         // Spawns from right behind the boss, not a random spot at the top — reads as
         // the boss actually deploying it rather than an unrelated arrival.
         const side = Math.random() < 0.5 ? -1 : 1;
@@ -2510,7 +2637,9 @@ function nextWave() {
         bossDeployTimer = Date.now() + 4000 + Math.random()*1500;
       }
 
-      if (Date.now() > boss.nextAttack && !boss.laserPhase) {
+      updateOgreDonkeyLine();
+
+      if (Date.now() > boss.nextAttack && !boss.laserPhase && !(boss.attackType === 'donkey' && boss.ogreLine)) {
         const bt = campaignTier(wave);
         if (boss.isCaptive) {
           const count = Math.min(7, 4 + Math.floor(bt / 2));
@@ -2525,15 +2654,8 @@ function nextWave() {
           SFX.neonOn && SFX.neonOn();
           boss.nextAttack = Date.now() + (boss.attackDelay || 2200);
         } else if (boss.attackType === 'donkey') {
-          const count = bt >= 3 ? 5 : 4;
-          const speed = 2.25 + bt * 0.16 + Math.max(0, wave - 18) * 0.06;
-          for (let k = 0; k < count; k++) {
-            const spread = (k - (count - 1) / 2) * 0.28;
-            enemyBullets.push({ x: boss.x + (k - (count - 1) / 2) * boss.r * 0.34, y: boss.y + boss.r * 0.48, vx: spread * speed, vy: speed * 0.72, r: 9, theme: 'donkey', gravity: 0.055, born: Date.now() });
-          }
-          addFloatText('DONKEY STOMP!', boss.x, boss.y + boss.r + 18, '#c7a16b', 16);
-          SFX.bomberDive && SFX.bomberDive();
-          boss.nextAttack = Date.now() + (boss.attackDelay || 2200);
+          beginOgreDonkeyWave();
+          boss.nextAttack = Date.now() + 999999;
         } else if (boss.attackType === 'fire') {
           const count = bt >= 3 ? 5 : 4;
           const base = Math.atan2(player.y - boss.y, player.x - boss.x);
@@ -2545,15 +2667,24 @@ function nextWave() {
           addFloatText('FIRE BREATH!', boss.x, boss.y + boss.r + 18, '#ff6600', 16);
           SFX.tone && SFX.tone(160,'sawtooth',0,0.18,0.09,80);
           boss.nextAttack = Date.now() + (boss.attackDelay || 2200);
-        } else if (boss.attackType === 'shield') {
-          boss.shieldUntil = Date.now() + 1400;
-          addFloatText('SHIELD UP!', boss.x, boss.y + boss.r + 18, '#c8d4ff', 16);
-          for (let k = 0; k < 3; k++) {
-            const spread = (k - 1) * 0.42;
-            enemyBullets.push({ x: boss.x + spread * boss.r * 0.46, y: boss.y + boss.r * 0.5, vx: spread * 2.8, vy: 2.8, r: 7, theme: 'shield', born: Date.now() });
-          }
-          SFX.neonOn && SFX.neonOn();
-          boss.nextAttack = Date.now() + (boss.attackDelay || 2400);
+        } else if (boss.attackType === 'sword') {
+          const telegraphMs = 820;
+          const now = Date.now();
+          enemyBullets.push({
+            x: boss.x, y: boss.y + boss.r * 0.93,
+            vx: 0, vy: 0, r: 8.5,
+            theme: 'sword',
+            damage: 35,
+            visualScale: 5.55,
+            telegraph: true,
+            telegraphStart: now,
+            launchAt: now + telegraphMs,
+            displayRotation: Math.PI * 0.18,
+            born: now,
+          });
+          addFloatText('SWORD READY!', boss.x, boss.y + boss.r + 18, '#c8d4ff', 16);
+          SFX.missionBossCharge ? SFX.missionBossCharge() : (SFX.neonOn && SFX.neonOn());
+          boss.nextAttack = now + (boss.attackDelay || 3900);
         } else if (boss.attackType === 'orb') {
           const count = bt >= 2 ? 5 : 4;
           const speed = 2.65 + bt * 0.16 + Math.max(0, wave - 18) * 0.06;
@@ -2597,14 +2728,30 @@ function nextWave() {
           SFX.neonOn && SFX.neonOn();
           boss.nextAttack = Date.now() + (boss.attackDelay || 2200);
         } else if (boss.attackType === 'gizmo') {
-          const count = boss.isFinalGizmo ? 9 : wave >= 10 ? 7 : 5;
-          const speed = 2.9 + bt * 0.24 + Math.max(0, wave - 18) * 0.08;
-          for (let k = 0; k < count; k++) {
-            const spread = count === 1 ? 0 : (k - (count - 1) / 2) / ((count - 1) / 2);
-            enemyBullets.push({ x: boss.x + spread * boss.r * 0.58, y: boss.y + boss.r * 0.5, vx: spread * speed * 0.45, vy: speed, r: 7.8, isLock: true, visualScale: 4.1, homing: boss.isFinalGizmo ? 0.012 : 0.007, maxSpeed: speed + 0.55, born: Date.now() });
+          // Gizmo lobs tennis balls that ricochet off the side walls and rain back
+          // down on you — each ball is a single 20 HP hit (consumed on contact). He
+          // barks on every deploy. Wave 10+ adds a ball and a touch more speed.
+          const ballCount = (boss.isFinalGizmo || wave >= 10) ? 3 : 2;
+          const ballSpeed = (wave >= 10 ? 3.9 : 3.4) + Math.max(0, wave - 18) * 0.06; // medium-fast
+          for (let k = 0; k < ballCount; k++) {
+            // Aim each ball toward a side wall (alternating) on a downward angle, so
+            // it bounces off the wall and comes back down into the play field.
+            const toRight = (k % 2 === 0);
+            const vx = (toRight ? 1 : -1) * ballSpeed * (0.8 + Math.random() * 0.15);
+            const vy = ballSpeed * (0.62 + Math.random() * 0.12);
+            enemyBullets.push({ x: boss.x, y: boss.y + boss.r * 0.5, vx, vy, r: 9, theme: 'tennis', tennis: true, bounce: true, visualScale: 3.2, born: Date.now() });
           }
-          addFloatText('GIZMO GLOW!', boss.x, boss.y + boss.r + 18, '#8e55d8', 16);
+          addFloatText('TENNIS SMASH!', boss.x, boss.y + boss.r + 18, '#c6ff3a', 16);
           SFX.gizmoBark ? SFX.gizmoBark() : (SFX.missionOminous && SFX.missionOminous());
+          if (boss.isFinalGizmo) {
+            // FINAL GIZMO: the tennis barrage AND the classic bone shotgun together.
+            const boneCount = 7;
+            const boneSpeed = 2.9 + bt * 0.24 + Math.max(0, wave - 18) * 0.08;
+            for (let k = 0; k < boneCount; k++) {
+              const spread = (k - (boneCount - 1) / 2) / ((boneCount - 1) / 2);
+              enemyBullets.push({ x: boss.x + spread * boss.r * 0.58, y: boss.y + boss.r * 0.5, vx: spread * boneSpeed * 0.45, vy: boneSpeed, r: 7.8, isLock: true, visualScale: 4.1, homing: 0.012, maxSpeed: boneSpeed + 0.55, born: Date.now() });
+            }
+          }
           boss.nextAttack = Date.now() + (boss.attackDelay || 2200);
         } else if (boss.attackType === 'laser') {
           boss.laserPhase = 'charging';
@@ -2946,23 +3093,29 @@ function nextWave() {
             if (hpGain > 0) addFloatText(`+${hpGain} HP`, defeatedBoss.x, defeatedBoss.y - 30, '#33ff66', 16);
             SFX.win();
             boss = null;
-            if (defeatedBoss.isGizmoEscape) {
-              showGizmoEscapeBeat(rescuedCi, () => {
-                if (state !== 'playing') return;
-                if (rescuedCi >= 0) showBossRescueUnlockBeat(rescuedCi, defeatedBoss.creature.name, () => { if (state === 'playing') nextWave(); });
-                else nextWave();
-              });
-            } else if (defeatedBoss.isFinalGizmo) {
-              freeAllRemainingMobes();
-              showSpaceVictoryBriefing(() => { if (state === 'playing') nextWave(); });
-            } else if (rescuedCi >= 0) {
-              showBossDefeatedBeat(defeatedBoss.creature.name, defeatedBoss.x, defeatedBoss.y, () => {
-                if (state !== 'playing') return;
-                showBossRescueUnlockBeat(rescuedCi, defeatedBoss.creature.name, () => { if (state === 'playing') nextWave(); });
-              });
-            } else if (!defeatedBoss.isCaptive) {
-              showBossDefeatedBeat(defeatedBoss.creature.name, defeatedBoss.x, defeatedBoss.y);
-            }
+            // Hold the victory cinematic until the board is actually clear — the
+            // boss's minions/asteroids can still be falling, and it reads as confusing
+            // to have enemies on screen behind the next scene (most visible on Gizmo).
+            // The loop fires this once obstacles.length === 0 (see pendingBossWin).
+            pendingBossWin = () => {
+              if (defeatedBoss.isGizmoEscape) {
+                showGizmoEscapeBeat(rescuedCi, () => {
+                  if (state !== 'playing') return;
+                  if (rescuedCi >= 0) showBossRescueUnlockBeat(rescuedCi, defeatedBoss.creature.name, () => { if (state === 'playing') nextWave(); });
+                  else nextWave();
+                });
+              } else if (defeatedBoss.isFinalGizmo) {
+                freeAllRemainingMobes();
+                showSpaceVictoryBriefing(() => { if (state === 'playing') nextWave(); });
+              } else if (rescuedCi >= 0) {
+                showBossDefeatedBeat(defeatedBoss.creature.name, defeatedBoss.x, defeatedBoss.y, () => {
+                  if (state !== 'playing') return;
+                  showBossRescueUnlockBeat(rescuedCi, defeatedBoss.creature.name, () => { if (state === 'playing') nextWave(); });
+                });
+              } else if (!defeatedBoss.isCaptive) {
+                showBossDefeatedBeat(defeatedBoss.creature.name, defeatedBoss.x, defeatedBoss.y);
+              }
+            };
             break;
           } else {
             SFX.hit();
@@ -3099,7 +3252,12 @@ function nextWave() {
     // AND every falling powerup has resolved (caught, broken, or fallen off-screen)
     // — no forced wipe, and nothing is still visibly falling once the wave-transition
     // announcement covers the screen.
-    if (spawnsRemaining <= 0 && obstacles.length === 0 && powerups.length === 0 && !boss && !miniBoss && !mirrorSequenceActive && state === 'playing') {
+    // Boss beaten: play the held victory cinematic only once every enemy and
+    // asteroid is gone, so the next scene never appears over a populated board.
+    if (pendingBossWin && obstacles.length === 0 && !boss && !miniBoss && state === 'playing') {
+      const runWin = pendingBossWin; pendingBossWin = null; runWin();
+    }
+    if (spawnsRemaining <= 0 && obstacles.length === 0 && powerups.length === 0 && !boss && !miniBoss && !mirrorSequenceActive && !pendingBossWin && state === 'playing') {
       nextWave();
     }
 
@@ -3120,8 +3278,19 @@ function nextWave() {
       const now = Date.now();
       if (!b.born) b.born = now;
       const age = now - b.born;
-      if (b.gravity) b.vy += b.gravity;
-      if (b.homing && player) {
+      if (b.telegraph && now >= b.launchAt) {
+        const dxs = player.x - b.x, dys = player.y - b.y;
+        const dist = Math.hypot(dxs, dys) || 1;
+        const speed = 17.6 + Math.min(2.4, campaignTier(wave) * 0.44);
+        b.vx = (dxs / dist) * speed;
+        b.vy = (dys / dist) * speed;
+        b.telegraph = false;
+        b.displayRotation = null;
+        b.born = now;
+        SFX.missionZap ? SFX.missionZap() : (SFX.blaster && SFX.blaster());
+      }
+      if (!b.donkeyLine && b.gravity) b.vy += b.gravity;
+      if (!b.telegraph && b.homing && player) {
         const dxh = player.x - b.x, dyh = player.y - b.y;
         const dist = Math.hypot(dxh, dyh) || 1;
         b.vx += (dxh / dist) * b.homing;
@@ -3145,14 +3314,38 @@ function nextWave() {
           enemyBullets.push({ x: b.x, y: b.y, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, r: Math.max(4.2, (b.r || 6) * 0.72), theme: b.splitTheme || b.theme, born: now });
         });
       }
-      b.x += b.vx; b.y += b.vy;
+      if (!b.telegraph && !(b.donkeyLine && b.donkeyState !== 'charge')) {
+        b.x += b.vx; b.y += b.vy;
+      }
+      if (b.donkeyLine && b.donkeyState === 'charge' && (b.y > H + 18 || b.y < -18 || b.x < -18 || b.x > W + 18)) {
+        b._gone = true;
+      }
+      if (b.bounce) {
+        // Ricochet off the side walls only — keeps the ball in the play field so it
+        // re-aims back down at the player instead of sailing off-screen.
+        const br = b.r || 6;
+        if (b.x < br) { b.x = br; b.vx = Math.abs(b.vx); }
+        else if (b.x > W - br) { b.x = W - br; b.vx = -Math.abs(b.vx); }
+      }
       if (b.theme) {
         ctx.save();
         ctx.translate(b.x, b.y);
-        const rot = Math.atan2(b.vy, b.vx || 0) + Math.PI / 2;
+        const rot = b.displayRotation != null ? b.displayRotation : Math.atan2(b.vy, b.vx || 0) + Math.PI / 2;
         ctx.rotate(rot);
         const rr = b.r || 5;
-        if (drawProjectileImage(b.theme, 0, 0, rr * (b.theme === 'donkey' ? 4.1 : b.theme === 'sombrero' ? 4.4 : b.theme === 'fish' ? 3.7 : 3.5), 0, null)) {
+      if (b.telegraph) {
+        const charge = Math.max(0, Math.min(1, (now - (b.telegraphStart || now)) / Math.max(1, (b.launchAt || now + 1) - (b.telegraphStart || now))));
+        const pulse = 1 + Math.sin(now * 0.02) * (0.07 + charge * 0.16);
+        ctx.save();
+        ctx.globalAlpha = 0.18 + charge * 0.56;
+        ctx.strokeStyle = `rgba(200,212,255,${0.48 + charge * 0.42})`;
+        ctx.lineWidth = 2.2 + charge * 2.8;
+        ctx.beginPath(); ctx.arc(0, 0, rr * (3.15 + charge * 1.25) * pulse, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, rr * (1.95 + charge * 0.92) * pulse, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
+      }
+        const themedScale = b.visualScale || (b.theme === 'donkey' ? 4.1 : b.theme === 'sombrero' ? 4.4 : b.theme === 'fish' ? 3.7 : 3.5);
+        if (drawProjectileImage(b.theme, 0, 0, rr * themedScale, 0, b.theme === 'sword' ? 'rgba(200,212,255,0.92)' : null)) {
           // PNG projectile handled.
         } else if (b.theme === 'donkey') {
           ctx.fillStyle = '#9a7a55'; ctx.fillRect(-rr*0.9, -rr*0.35, rr*1.8, rr*0.95);
@@ -3177,6 +3370,11 @@ function nextWave() {
           for (const [ix,iy,ir] of [[0,0,1.15],[-0.6,0.35,0.72],[0.65,0.25,0.62],[0.1,-0.55,0.55]]) { ctx.beginPath(); ctx.arc(ix*rr,iy*rr,ir*rr,0,Math.PI*2); ctx.fill(); }
         } else if (b.theme === 'shield') {
           ctx.beginPath(); ctx.moveTo(0,-rr*1.35); ctx.lineTo(rr, -rr*0.45); ctx.lineTo(rr*0.72, rr*1.1); ctx.lineTo(0, rr*1.45); ctx.lineTo(-rr*0.72, rr*1.1); ctx.lineTo(-rr, -rr*0.45); ctx.closePath(); ctx.fillStyle='#c8d4ff'; ctx.fill(); ctx.strokeStyle='#4d5f99'; ctx.lineWidth=1.5; ctx.stroke();
+        } else if (b.theme === 'tennis') {
+          ctx.beginPath(); ctx.arc(0,0,rr*1.15,0,Math.PI*2); ctx.fillStyle='#c6ff3a'; ctx.fill();
+          ctx.strokeStyle='#f4ffe0'; ctx.lineWidth=1.4;
+          ctx.beginPath(); ctx.arc(-rr*0.7,0,rr*1.5,-0.7,0.7); ctx.stroke();
+          ctx.beginPath(); ctx.arc(rr*0.7,0,rr*1.5,Math.PI-0.7,Math.PI+0.7); ctx.stroke();
         }
         ctx.restore();
       } else {
@@ -3206,6 +3404,7 @@ function nextWave() {
           ctx.fillStyle='rgba(255,255,255,0.43)'; ctx.fill();
         }
       }
+      if (b.telegraph) return;
       const dx=b.x-player.x, dy=b.y-player.y;
       if(Math.sqrt(dx*dx+dy*dy) < (b.r||4) + player.r*0.8){
         b._hit=true;
@@ -3221,6 +3420,18 @@ function nextWave() {
           addFloatText('LOCK HIT!', player.x, player.y - 40, '#00e5ff', 16);
           SFX.miss();
           takeDamage(7);
+        } else if (b.tennis) {
+          addFloatText('SMASH! -20', player.x, player.y - 40, '#c6ff3a', 18);
+          SFX.miss();
+          takeDamage(20);
+        } else if (b.theme === 'donkey') {
+          addFloatText('HEE HAW! -20', player.x, player.y - 40, '#c7a16b', 18);
+          SFX.whack && SFX.whack();
+          takeDamage(20);
+        } else if (b.theme === 'sword') {
+          addFloatText('SWORD! -35', player.x, player.y - 40, '#c8d4ff', 18);
+          SFX.miss();
+          takeDamage(35);
         } else if (b.splat || b.theme === 'ink') {
           bossInkBlindUntil = Date.now() + 2400;
           addFloatText('INKED!', player.x, player.y - 40, '#ff76d2', 18);
@@ -3232,7 +3443,7 @@ function nextWave() {
         }
       }
     });
-    enemyBullets = enemyBullets.filter(b => !b._hit && b.y < H + 20 && b.y > -20 && b.x > -20 && b.x < W + 20);
+    enemyBullets = enemyBullets.filter(b => !b._hit && !b._gone && b.y < H + 20 && b.y > -20 && b.x > -20 && b.x < W + 20);
     if(state==='over') return;
 
     // Float texts
@@ -3798,7 +4009,7 @@ function nextWave() {
   const BOSS_PREVIEW_META = {
     'STAR OGRE': 'SHOOTS DONKEYS',
     'SKY DRAGON': 'FIRE BREATHER',
-    'DARK KNIGHT': 'SHIELD DEFLECT',
+    'DARK KNIGHT': 'SWORD DART',
     'GRAY VISITOR': 'GREEN ORBS',
     'SPACE SHARK': 'SHARK TEETH',
     'MEAN TACO': 'SOMBREROS',
@@ -3829,7 +4040,7 @@ function nextWave() {
         creature,
         attackType: bossAttackTypeFor(creature),
         nextAttack: Date.now() + 420,
-        shieldUntil: creature.name === 'DARK KNIGHT' ? Date.now() + 100000 : 0,
+        shieldUntil: 0,
       };
       ctx.save();
       ctx.translate(css / 2, css / 2 + 4);

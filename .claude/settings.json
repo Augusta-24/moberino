@@ -147,7 +147,12 @@
       "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/tune5.py)",
       "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/check_final2.py)",
       "Bash(grep -n \"^html\\\\b\\\\|^body\\\\b\\\\|^html,\\\\|^body,\\\\|^html {\\\\|^body {\\\\|html, body\\\\|html,body\" index.html)",
-      "Bash(grep -rn \"^html\\\\b\\\\|^body\\\\b\\\\|html, body\\\\|html,body\\\\|^html{\\\\|^body{\" css/arcade.css)"
+      "Bash(grep -rn \"^html\\\\b\\\\|^body\\\\b\\\\|html, body\\\\|html,body\\\\|^html{\\\\|^body{\" css/arcade.css)",
+      "Bash(awk 'NR>=2500 && NR<=2520 && /bt/' js/games/space.js)",
+      "Bash(timeout 70 python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/force_kill.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/force_kill.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/force_kill2.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/catch_mystery.py)"
     ],
     "additionalDirectories": [
       "/tmp"

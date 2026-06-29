@@ -554,10 +554,10 @@ function getLeaderboardKey(game, options) {
 
 function getLeaderboardBoards() {
   return [
-    { key: 'whack-classic-easy', label: 'FRENZY · MEDIUM', color: '#00e5ff', field: 'score' },
+    { key: 'whack-classic-easy', label: 'FRENZY · NORMAL', color: '#00e5ff', field: 'score' },
     { key: 'whack-classic-hard', label: 'FRENZY · HARD', color: '#00e5ff', field: 'score' },
-    { key: 'whack-frenzy-easy', label: 'ADVENTURE · MEDIUM', color: '#ff00cc', field: 'score' },
-    { key: 'whack-frenzy-hard', label: 'ADVENTURE · HARD', color: '#ff00cc', field: 'score' },
+    { key: 'whack-frenzy-easy', label: 'SURVIVAL · NORMAL', color: '#ff00cc', field: 'score' },
+    { key: 'whack-frenzy-hard', label: 'SURVIVAL · HARD', color: '#ff00cc', field: 'score' },
     { key: 'match-hard', label: 'MATCH · HARD', color: '#ffe61a', field: 'seconds' },
     { key: 'match-challenge', label: 'MATCH · CHALLENGE', color: '#ff9933', field: 'seconds' },
     { key: 'match-impossible', label: 'MATCH · IMPOSSIBLE', color: '#ff4444', field: 'score' },

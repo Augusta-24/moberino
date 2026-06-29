@@ -11,41 +11,31 @@
     GRID_ROWS = difficulty === 'easy' ? 4 : 5;
     HOLES = GRID_COLS * GRID_ROWS;
   }
-  const CRACK_SVG = `<svg viewBox="0 0 100 100" style="position:absolute;inset:0;pointer-events:none;animation:crack-in 0.3s ease-out forwards;filter:drop-shadow(0 1px 1px rgba(0,0,0,0.45))">
-    <g stroke="rgba(0,0,0,0.58)" stroke-width="1" opacity="0.48" fill="none" stroke-linecap="butt" stroke-linejoin="miter">
-      <path d="M47,45 L38,31 L31,23 L18,12"/>
-      <path d="M48,45 L59,34 L68,20 L84,5"/>
-      <path d="M49,46 L64,48 L80,53 L96,66"/>
-      <path d="M47,47 L42,61 L35,77 L20,96"/>
-      <path d="M46,46 L31,49 L17,57 L5,75"/>
+  const CRACK_SVG = `<svg class="whack-glass-smash" viewBox="0 0 100 100" aria-hidden="true">
+    <circle class="glass-impact-ring" cx="50" cy="50" r="10"/>
+    <circle class="glass-impact-core" cx="50" cy="50" r="4.8"/>
+    <g class="glass-cracks" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M50 50 L45 27 L32 8"/>
+      <path d="M50 50 L57 28 L71 10"/>
+      <path d="M50 50 L76 43 L96 35"/>
+      <path d="M50 50 L72 69 L88 93"/>
+      <path d="M50 50 L43 76 L35 96"/>
+      <path d="M50 50 L27 63 L7 76"/>
+      <path d="M50 50 L25 43 L5 34"/>
+      <path d="M50 50 L37 35 L22 25"/>
+      <path d="M50 50 L64 55 L84 56"/>
+      <path d="M50 50 L57 72 L61 94"/>
     </g>
-    <g stroke="#fff" stroke-width="2" opacity="0.86" fill="none" stroke-linecap="butt" stroke-linejoin="miter">
-      <path d="M47,45 L38,31 L31,23 L18,12"/>
-      <path d="M48,45 L59,34 L68,20 L84,5"/>
-      <path d="M49,46 L64,48 L80,53 L96,66"/>
-      <path d="M47,47 L42,61 L35,77 L20,96"/>
-      <path d="M46,46 L31,49 L17,57 L5,75"/>
-      <path d="M47,46 L55,61 L63,75 L70,94"/>
-      <path d="M48,45 L63,42 L78,39 L92,30"/>
-    </g>
-    <g stroke="#fff" stroke-width="1.05" opacity="0.62" fill="none" stroke-linecap="butt" stroke-linejoin="miter">
-      <path d="M31,23 L43,18"/>
-      <path d="M38,31 L27,40"/>
-      <path d="M59,34 L57,18"/>
-      <path d="M68,20 L79,22"/>
-      <path d="M64,48 L75,44"/>
-      <path d="M80,53 L75,68"/>
-      <path d="M55,61 L47,72"/>
-      <path d="M35,77 L44,88"/>
-      <path d="M31,49 L22,42"/>
-      <path d="M17,57 L31,65"/>
-      <path d="M48,45 L39,58"/>
-      <path d="M63,42 L67,55"/>
-      <path d="M42,61 L29,65"/>
-    </g>
-    <g fill="none" stroke="#fff" opacity="0.72" stroke-linecap="butt" stroke-linejoin="miter">
-      <path d="M38,38 L45,34 L54,39 L57,48 L51,56 L42,57 L35,50 L34,42 Z" stroke-width="1.35"/>
-      <path d="M42,41 L48,39 L53,44 L52,50 L47,53 L40,50 L38,45 Z" stroke-width="0.8" opacity="0.55"/>
+    <g class="glass-branch-cracks" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M45 27 L54 20"/>
+      <path d="M57 28 L50 19"/>
+      <path d="M76 43 L82 52"/>
+      <path d="M72 69 L62 70"/>
+      <path d="M43 76 L51 82"/>
+      <path d="M27 63 L29 74"/>
+      <path d="M25 43 L17 50"/>
+      <path d="M37 35 L33 24"/>
+      <path d="M64 55 L72 64"/>
     </g>
   </svg>`;
   let state = 'mode-select'; // mode-select | mole-select | playing | over
@@ -77,6 +67,7 @@
   // Reset alongside the rest of the run's state in whackPlay()/initWhack().
   let introShownFor = { whack: false, clear: false, memory: false };
   let adventureIntroShown = false;
+  let skipWhackTutorial = localStorage.getItem('whack-skip-tutorial') === '1';
   function getClearRoundSeconds() {
     return difficulty === 'easy' ? 12 : 8;
   }
@@ -114,6 +105,16 @@
     clearTimeout(el._t);
     el._t = setTimeout(() => { el.style.opacity = '0'; }, 1800);
   }
+
+  window.whackToggleTutorialSkip = function() {
+    skipWhackTutorial = !skipWhackTutorial;
+    localStorage.setItem('whack-skip-tutorial', skipWhackTutorial ? '1' : '0');
+    const btn = document.getElementById('whack-skip-tutorial-btn');
+    if (btn) {
+      btn.textContent = skipWhackTutorial ? 'TUTORIAL: OFF' : 'TUTORIAL: ON';
+      btn.classList.toggle('off', skipWhackTutorial);
+    }
+  };
 
   function startSlotMachine() {
     const face = document.getElementById('whack-slot-face');
@@ -230,8 +231,8 @@
                   <line x1="50" y1="0" x2="50" y2="120" stroke="#ff9933" stroke-width="0.4" opacity="0.075"/>
                   <line x1="100" y1="0" x2="100" y2="120" stroke="#ff9933" stroke-width="0.4" opacity="0.075"/>
                   <line x1="150" y1="0" x2="150" y2="120" stroke="#ff9933" stroke-width="0.4" opacity="0.075"/>
-                  <ellipse cx="145" cy="40" rx="46" ry="29" fill="#ff6600" opacity="0.055"/>
-                  <g transform="translate(151, 45) rotate(40) scale(0.78)" opacity="0.9">
+                  <ellipse cx="145" cy="40" rx="46" ry="29" fill="#ff6600" opacity="0.12"/>
+                  <g transform="translate(151, 45) rotate(40) scale(0.82)" opacity="1">
                     <rect x="-5" y="4" width="10" height="64" rx="4" fill="#6B3410"/>
                     <rect x="-5" y="4" width="5" height="64" rx="3" fill="#8B4513"/>
                     <line x1="-1" y1="12" x2="-1" y2="60" stroke="#5a2a0c" stroke-width="1" opacity="0.5"/>
@@ -251,14 +252,13 @@
                   <line x1="186" y1="14" x2="172" y2="26" stroke="#ff9933" stroke-width="1.4" opacity="0.14" stroke-linecap="round"/>
                   <line x1="162" y1="4" x2="150" y2="14" stroke="#ff9933" stroke-width="1" opacity="0.1" stroke-linecap="round"/>
                 </svg>
-                <div style="position:absolute;top:12px;left:12px;font-family:'Bebas Neue',cursive;font-size:30px;letter-spacing:3px;color:#ffffff;text-shadow:0 0 8px rgba(136,72,214,0.62)">FRENZY</div>
+                <div class="whack-mode-name" style="text-shadow:0 0 8px rgba(136,72,214,0.62)">FRENZY</div>
               </div>
               <div class="game-card-info">
-                <div class="game-card-badge" style="background:#b884ff1a;color:#d8b8ff;border:1px solid #b884ff55">SCORE ATTACK</div>
                 <div class="game-card-marquee" style="color:#b178ff;text-shadow:0 0 16px rgba(143,77,224,0.74)">30 SECOND RUSH</div>
                 <div class="game-card-desc">WHACK AGAINST TIME.</div>
                 <div class="whack-mode-diff">
-                  <button class="whack-btn" style="border-color:#caa5ff;background:rgba(202,165,255,0.24);color:#f4eaff" onclick="whackSelectModeDifficulty('classic','easy')">MEDIUM</button>
+                  <button class="whack-btn" style="border-color:#caa5ff;background:rgba(202,165,255,0.24);color:#f4eaff" onclick="whackSelectModeDifficulty('classic','easy')">NORMAL</button>
                   <button class="whack-btn" style="border-color:#8f4de0;background:rgba(124,67,201,0.28);color:#ead4ff" onclick="whackSelectModeDifficulty('classic','hard')">HARD</button>
                 </div>
               </div>
@@ -268,33 +268,33 @@
               <div class="game-card-art" style="background:#0d0a1e">
                 <svg viewBox="0 0 200 120" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0">
                   <rect width="200" height="120" fill="#0d0a1e"/>
-                  <g opacity="0.66" transform="translate(0 10)">
-                    <rect x="0" y="44" width="200" height="76" fill="#111800"/>
-                    <rect x="0" y="41" width="200" height="6" fill="#253000"/>
-                    <ellipse cx="20" cy="43" rx="22" ry="7" fill="#2d5a00" opacity="0.76"/>
-                    <ellipse cx="68" cy="42" rx="20" ry="6" fill="#336600" opacity="0.76"/>
-                    <ellipse cx="118" cy="43" rx="24" ry="7" fill="#2d5a00" opacity="0.76"/>
-                    <ellipse cx="170" cy="42" rx="20" ry="6" fill="#336600" opacity="0.76"/>
-                    <ellipse cx="44" cy="52" rx="22" ry="10" fill="#060800"/>
-                    <ellipse cx="100" cy="54" rx="22" ry="10" fill="#060800"/>
-                    <ellipse cx="158" cy="52" rx="22" ry="10" fill="#060800"/>
-                  </g>
                   <line x1="0" y1="30" x2="200" y2="30" stroke="#ff9933" stroke-width="0.4" opacity="0.18"/>
                   <line x1="0" y1="48" x2="200" y2="48" stroke="#ff9933" stroke-width="0.4" opacity="0.18"/>
                   <line x1="50" y1="0" x2="50" y2="56" stroke="#ff9933" stroke-width="0.4" opacity="0.18"/>
                   <line x1="100" y1="0" x2="100" y2="56" stroke="#ff9933" stroke-width="0.4" opacity="0.18"/>
                   <line x1="150" y1="0" x2="150" y2="56" stroke="#ff9933" stroke-width="0.4" opacity="0.18"/>
+                  <g transform="translate(144, 39) rotate(-8) scale(0.88)" opacity="0.88">
+                    <path d="M-42 -28 C-20 -38 -4 -30 14 -36 C24 -39 35 -34 44 -25 L37 28 C22 19 5 28 -10 22 C-24 17 -34 24 -45 31 Z" fill="#f4d37c"/>
+                    <path d="M-42 -28 C-24 -18 -15 -6 -10 22" fill="none" stroke="#b76b24" stroke-width="4" opacity="0.65"/>
+                    <path d="M14 -36 C9 -18 12 3 37 28" fill="none" stroke="#b76b24" stroke-width="4" opacity="0.62"/>
+                    <path d="M-35 3 C-18 -7 -1 -1 15 -9 C26 -14 34 -9 41 -2" fill="none" stroke="#ff9b30" stroke-width="5" opacity="0.82"/>
+                    <path d="M-27 -21 C-14 -14 -8 -3 -6 9" fill="none" stroke="#fff1b5" stroke-width="3" opacity="0.7"/>
+                    <path d="M18 -26 C17 -12 22 1 34 12" fill="none" stroke="#fff1b5" stroke-width="3" opacity="0.6"/>
+                    <circle cx="-23" cy="-7" r="3.6" fill="#a8511b"/>
+                    <circle cx="11" cy="-18" r="3.2" fill="#a8511b"/>
+                    <circle cx="25" cy="7" r="3.6" fill="#a8511b"/>
+                    <path d="M-42 -28 C-20 -38 -4 -30 14 -36 C24 -39 35 -34 44 -25 L37 28 C22 19 5 28 -10 22 C-24 17 -34 24 -45 31 Z" fill="none" stroke="#3a2514" stroke-width="4.5" opacity="0.72"/>
+                  </g>
                   <text x="22" y="22" font-size="12" fill="#ffe61a" opacity="0.65">✦</text>
                   <text x="164" y="18" font-size="9" fill="#ffe61a" opacity="0.45">✦</text>
                 </svg>
-                <div style="position:absolute;top:12px;left:12px;font-family:'Bebas Neue',cursive;font-size:30px;letter-spacing:3px;color:#ffffff;text-shadow:0 0 8px rgba(255,153,51,0.48)">ADVENTURE</div>
+                <div class="whack-mode-name" style="text-shadow:0 0 8px rgba(255,153,51,0.48)">SURVIVAL</div>
               </div>
               <div class="game-card-info">
-                <div class="game-card-badge" style="background:#ff99331a;color:#ffad4d;border:1px solid #ffb04a55">JOURNEY</div>
                 <div class="game-card-marquee" style="color:#ff9933;text-shadow:0 0 15px rgba(255,153,51,0.62)">WAVE SURVIVAL</div>
                 <div class="game-card-desc">3 MODES TO EXPLORE.</div>
                 <div class="whack-mode-diff">
-                  <button class="whack-btn" style="border-color:#ffc27a;background:rgba(255,194,122,0.22);color:#fff5e8" onclick="whackSelectModeDifficulty('frenzy','easy')">MEDIUM</button>
+                  <button class="whack-btn" style="border-color:#ffc27a;background:rgba(255,194,122,0.22);color:#fff5e8" onclick="whackSelectModeDifficulty('frenzy','easy')">NORMAL</button>
                   <button class="whack-btn" style="border-color:#e07b25;background:rgba(201,106,31,0.25);color:#ffe8d0" onclick="whackSelectModeDifficulty('frenzy','hard')">HARD</button>
                 </div>
               </div>
@@ -307,7 +307,7 @@
     if (state === 'mole-select') {
       const isClassic = gameMode === 'classic';
       wrap.innerHTML = `
-        <div class="arcade-cabinet" style="--nc:#ff00cc;max-width:390px;width:92vw;position:relative">
+        <div class="arcade-cabinet whack-ready-cabinet" style="--nc:#ff00cc;max-width:390px;width:92vw;position:relative">
           <div class="arcade-cab-rail"></div>
           <div class="arcade-cab-marquee" style="background:linear-gradient(135deg,#ff00cc,#990066);opacity:0.9;font-size:30px;letter-spacing:6px">GET READY</div>
           <div class="arcade-cab-screen" style="position:relative;z-index:2;overflow:hidden;padding:14px 14px 4px;min-height:0;background:rgba(5,3,16,0.78)">
@@ -324,7 +324,8 @@
               </div>
             </div>
           </div>
-          <div class="arcade-cab-foot" style="position:relative;z-index:2;flex-direction:column;align-items:center;gap:8px;background:rgba(5,3,16,0.78);padding:22px 16px 18px;border-top:1px solid rgba(242,239,232,0.12)">
+          <div class="arcade-cab-foot" style="position:relative;z-index:2;flex-direction:column;align-items:center;gap:11px;background:rgba(5,3,16,0.78);padding:22px 16px 18px;border-top:1px solid rgba(242,239,232,0.12)">
+            <button id="whack-skip-tutorial-btn" class="whack-btn whack-tutorial-toggle ${skipWhackTutorial ? 'off' : ''}" onclick="whackToggleTutorialSkip()" style="width:100%;margin-top:0">${skipWhackTutorial ? 'TUTORIAL: OFF' : 'TUTORIAL: ON'}</button>
             <button id="whack-ready-btn" class="whack-btn" onclick="whackBegin()" style="width:100%;border-color:#ff00cc;background:rgba(255,0,204,0.20);padding:16px 48px;font-size:20px;letter-spacing:5px;text-shadow:0 0 10px #ff00cc88;box-shadow:0 0 18px rgba(255,0,204,0.3);opacity:0.35;pointer-events:none">READY!</button>
           </div>
         </div>`;
@@ -1638,7 +1639,12 @@
         ann.innerHTML = `<div style="position:absolute;top:50%;left:50%;width:100%;transform:translate(-50%,-50%)">${stageAnnouncementHTML(type, titleText, meta.color, 54)}</div>`;
       } },
     ], () => {
-      if (!isFirst) { ann.remove(); onDone(); return; }
+      if (!isFirst || skipWhackTutorial) {
+        introShownFor[type] = true;
+        ann.remove();
+        onDone();
+        return;
+      }
       introShownFor[type] = true;
       const extraSteps = type === 'whack' ? whackIntroExtraSteps()
         : type === 'clear' ? clearIntroExtraSteps()
@@ -1759,6 +1765,7 @@
   }
 
   function playAdventureOverviewIntro(onDone) {
+    if (skipWhackTutorial) { onDone(); return; }
     if (adventureIntroShown || gameMode !== 'frenzy') { onDone(); return; }
     adventureIntroShown = true;
     const ann = makeIntroOverlay(true);
@@ -1776,7 +1783,7 @@
       </div>`;
     };
     ctrl = playIntroSteps([
-      { duration: 1700, show: () => showIntroWord('THIS ADVENTURE HAS THREE WAVES', '#f2efe8', 34) },
+      { duration: 1700, show: () => showIntroWord('SURVIVAL HAS THREE WAVES', '#f2efe8', 34) },
       { duration: 1400, show: () => showIntroWord('WHACK', '#ff00cc', 64, 'whack') },
       { duration: 1400, show: () => showIntroWord('CLEAR', '#ffe61a', 64, 'clear') },
       { duration: 1400, show: () => showIntroWord('MEMORIZE', '#00e5ff', 64, 'memory') },
@@ -1789,6 +1796,7 @@
   // intro) followed by Clear's full BE CAREFUL sequence verbatim, since Classic's
   // movement mechanic is the same hole-to-hole sliding Clear introduces.
   function classicIntroSteps(onDone) {
+    if (skipWhackTutorial) { onDone(); return; }
     const ann = makeIntroOverlay(true); // plays in full every session — always the opaque treatment
     let ctrl = null;
     const skipIntro = () => {
