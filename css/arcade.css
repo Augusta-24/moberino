@@ -20,6 +20,14 @@
 html{
   scroll-behavior:smooth;
 }
+/* Mobile gesture guard — suppress double-tap/pinch zoom without altering layout.
+   touch-action/overscroll-behavior do not inherit, so per-element opt-outs
+   (e.g. #space-canvas's touch-action:none) keep their own values. */
+html,
+body {
+  touch-action: manipulation;
+  overscroll-behavior: none;
+}
 html.arcade-root {
   background:
     linear-gradient(180deg, rgba(3,6,18,1) 0%, rgba(2,4,14,1) 100%),

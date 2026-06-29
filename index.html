@@ -124,6 +124,14 @@
 html{
   scroll-behavior:smooth;
 }
+/* Mobile gesture guard — suppress double-tap/pinch zoom without altering layout.
+   touch-action/overscroll-behavior do not inherit, so per-element opt-outs
+   (e.g. #map-container's touch-action:auto) keep their own values. */
+html,
+body {
+  touch-action: manipulation;
+  overscroll-behavior: none;
+}
 body {
   background: var(--navy);
   color: var(--white);
@@ -647,9 +655,15 @@ body.on-timeline #collage::after {
      same column — right next to Search. Columns 1-4 (Home/Sparkle, Browse,
      Years, Places) and Search itself are untouched. */
   .cats-header-nav .page-nav-btn.site-theme-nav-toggle {
-    width: auto;
+    width: 40px;
     justify-self: end;
-    padding: 0 14px;
+    padding: 0;
+    justify-content: center;
+  }
+  /* Icon-only on desktop now too — the brush icon alone communicates the
+     toggle; aria-label still carries the accessible name. */
+  .cats-header-nav .page-nav-btn.site-theme-nav-toggle [data-site-theme-label] {
+    display: none;
   }
 }
 
@@ -2951,6 +2965,20 @@ body.on-home #back-top, body.on-map #back-top,
   window.addEventListener('orientationchange', lockViewportHeight);
   if (window.visualViewport) window.visualViewport.addEventListener('resize', lockViewportHeight);
   window.addEventListener('pageshow', lockViewportHeight);
+})();
+
+// Mobile gesture guard — blocks accidental double-tap-to-zoom and iOS pinch
+// zoom only. Single taps are untouched (no preventDefault on first touchend);
+// only a second touchend within 300ms — the double-tap zoom trigger — is
+// cancelled. No layout, nav, scroll, or transform behavior is affected.
+(function() {
+  var lastTouchEnd = 0;
+  document.addEventListener('touchend', function(e) {
+    var now = Date.now();
+    if (now - lastTouchEnd <= 300) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive: false });
+  document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
 })();
 </script>
 </head>
