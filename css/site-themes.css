@@ -301,7 +301,6 @@ html.site-theme-retro #pg-shelf {
     linear-gradient(300deg, rgba(17,19,24,0.06), transparent 38%);
 }
 
-html.site-theme-retro .main-site-header,
 html.site-theme-retro .search-wrap,
 html.site-theme-retro .srch-box,
 html.site-theme-retro .spot-box,
@@ -314,6 +313,15 @@ html.site-theme-retro #back-top {
   border-color: #111318;
   border-radius: 2px;
   box-shadow: 4px 5px 0 rgba(17,19,24,0.32);
+}
+
+/* Header bar itself keeps the dark border but drops the hard comic-offset
+   shadow — it was bleeding down past the ruled ::after line below, reading
+   as an unwanted shadow on the line itself. */
+html.site-theme-retro .main-site-header {
+  border-color: #111318;
+  border-radius: 2px;
+  box-shadow: none;
 }
 
 html.site-theme-retro .main-site-header::after {
@@ -420,7 +428,9 @@ html.site-theme-retro .page-nav-btn {
   background: var(--theme-panel-bg-strong);
   border: 2px solid #111318;
   border-radius: 2px;
-  box-shadow: 3px 4px 0 rgba(17,19,24,0.26);
+  /* Soft floating-card shadow instead of the hard comic-offset look — blurred,
+     no offset duplicate silhouette, reads as the button lifting off the page. */
+  box-shadow: 0 4px 10px rgba(17,19,24,0.22);
 }
 
 html.site-theme-retro .page-nav-btn svg,
@@ -485,21 +495,56 @@ html.site-theme-retro #home-drop,
 html.site-theme-retro #rec-drawer,
 html.site-theme-retro .maplibregl-popup-content,
 html.site-theme-retro #map-location-panel,
+html.site-theme-retro #map-places-list,
 html.site-theme-retro .spot-top-bar {
   color: #111318 !important;
   border-color: #111318 !important;
   box-shadow: 5px 6px 0 rgba(17,19,24,0.28);
 }
 
+/* #map-places-list (Top Places drawer/list) is the one paper-panel whose base
+   CSS points at --theme-card-overlay instead of a panel-bg var that's already
+   light in retro — reuse the same --theme-deep-panel-bg the right-side
+   #map-location-panel drawer uses, so the two match exactly. */
+html.site-theme-retro #map-places-list {
+  background: var(--theme-deep-panel-bg);
+}
+
+/* Count pill inside each Top Places row — keep it visibly a pill (not just
+   near-invisible dark-on-dark) now that the row sits on a light paper bg. */
+html.site-theme-retro .map-place-count {
+  background: rgba(17,19,24,0.12);
+  border: 1px solid rgba(17,19,24,0.18);
+}
+
+/* Retro-only map canvas retint — warmer/lighter "paper map" feel instead of
+   the classic theme's navy retint above (index.html). The source tiles are
+   near-black (dark style) with BRIGHT roads/labels (the opposite of what we
+   want), so invert() flips that relationship — but the source contrast is
+   narrow, so contrast() > 1 here pushes roads/labels lighter, not darker.
+   Going the other way (contrast < 1, brightness boosted to compensate) is
+   what actually pulls roads toward a darker, more legible tone while keeping
+   the base a light cream. Selector is a strict superset of the classic one so
+   it wins on specificity regardless of load order, and only the canvas paints
+   into this filter — markers, popups, the places drawer, and zoom buttons are
+   separate DOM elements, unaffected. */
+html.site-theme-retro #map-container canvas.maplibregl-canvas {
+  filter: invert(0.95) sepia(0.5) saturate(1.3) hue-rotate(345deg) brightness(1.08) contrast(0.6);
+}
+
 html.site-theme-retro #home-drop-meta,
 html.site-theme-retro .map-place-row,
 html.site-theme-retro .map-location-video-row,
+html.site-theme-retro .map-location-video-title,
+html.site-theme-retro .map-location-video-meta,
+html.site-theme-retro .map-location-close,
 html.site-theme-retro #map-location-title,
 html.site-theme-retro #map-location-subtitle,
 html.site-theme-retro .rec-drawer-title,
 html.site-theme-retro .rec-drawer-close,
 html.site-theme-retro .spot-close,
-html.site-theme-retro #spot-meta {
+html.site-theme-retro #spot-meta,
+html.site-theme-retro #back-top {
   color: #111318;
 }
 
@@ -582,9 +627,11 @@ html.site-theme-retro .mobile-sparkle-btn svg {
     justify-content: center;
   }
 
-  .site-theme-mobile-toggle svg {
+  .site-theme-mobile-toggle svg,
+  .site-theme-mobile-toggle img {
     width: 21px;
     height: 21px;
+    object-fit: contain;
   }
 
   body:not(.on-home) .site-theme-mobile-toggle { display: none; }

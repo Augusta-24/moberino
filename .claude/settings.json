@@ -133,7 +133,21 @@
       "Bash(awk 'NR==1169||NR==1170||NR==3091||NR==3092||NR==3756||NR==3757||NR==8818||NR==8819||NR==8820{print NR\": \"$0}' js/arcade.js)",
       "Bash(awk 'NR==1167||NR==1168||NR==1169{print NR\": \"$0}' js/arcade.js)",
       "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/check_all_games.py)",
-      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/check_interactive.py)"
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/check_interactive.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/check_map_retro.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/check_map_detail.py)",
+      "Bash(grep -n \"maplibregl-canvas\\\\|map-place-row,$\" css/site-themes.css)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/try_filters2.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/tune_filter.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/tune_filter2.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/tune_isolated.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/tune_iso2.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/tune3.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/tune4.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/tune5.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/c35e3e47-d40b-4e1a-86dc-2d7cc346a970/scratchpad/check_final2.py)",
+      "Bash(grep -n \"^html\\\\b\\\\|^body\\\\b\\\\|^html,\\\\|^body,\\\\|^html {\\\\|^body {\\\\|html, body\\\\|html,body\" index.html)",
+      "Bash(grep -rn \"^html\\\\b\\\\|^body\\\\b\\\\|html, body\\\\|html,body\\\\|^html{\\\\|^body{\" css/arcade.css)"
     ],
     "additionalDirectories": [
       "/tmp"
