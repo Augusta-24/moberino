@@ -47,6 +47,20 @@
   window.addEventListener('pageshow', lockViewportHeight);
 })();
 
+// Mobile gesture guard — blocks accidental double-tap-to-zoom and iOS pinch
+// zoom only. Single taps are untouched (no preventDefault on first touchend);
+// only a second touchend within 300ms — the double-tap zoom trigger — is
+// cancelled. No layout, nav, game logic, or sizing behavior is affected.
+(function() {
+  var lastTouchEnd = 0;
+  document.addEventListener('touchend', function(e) {
+    var now = Date.now();
+    if (now - lastTouchEnd <= 300) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive: false });
+  document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
+})();
+
 </script>
 </head>
 <body class="on-lobby">
