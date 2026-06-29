@@ -7,8 +7,11 @@
   let canvas, ctx, W, H, raf, state = 'idle';
   let spaceIntroShown = false; // first-time-only objective intro, before the real run starts
   let player, bullets, obstacles, stars, score, health, wave, waveKills, highScore, spawnsRemaining;
+  let campaignRebootUsed = false; // one campaign continue: SYSTEM BACK ONLINE
   let leftHeld = false, rightHeld = false, lastAutoFire = 0, lastPizzaFire = 0, activeChar = getGlobalChar();
   let enemyBullets = [], lastEnemyFire = 0;
+  let blackoutHitFlashes = []; // short-lived full-color snapshots shown above BLACKOUT darkness
+  let blackoutShooterIndex = 0;
   let dangerY = 0, socketAnchorY = 0, lineFlashA = 0;
   const SPACE_SHIP_BOTTOM_OFFSET = 40;
   const SPACE_SOCKET_ANCHOR_BOTTOM_OFFSET = 94;
@@ -26,6 +29,7 @@
   // the two "disabled state" debuffs shared by the ICE/EMP mini-bosses and the
   // mystery box's bad outcomes — one timer each, regardless of source.
   let buffFrozenUntil = 0, buffZappedUntil = 0;
+  let blasterDisabledUntil = 0;
   let buffPizzaUntil = 0; // mystery "pizza blast" — fires a shotgun spread of pizza-slice bullets instead of one straight shot
   let snowingUntil = 0; // mystery "negative one" — ambient snow; any hit taken while it's active also freezes for 2s
   let bossInkBlindUntil = 0; // Cosmic Octo ink hit: brief screen-ink vignette during boss fights
@@ -80,6 +84,7 @@
   let boss = null;
   let bossDeployTimer = 0;
   let pendingBossCreature = null;
+  const campaignSeenBossNames = new Set();
   const rescuedChars = new Set();
   let rescueBanner = null;
   const missionTrappedChars = [];
@@ -105,6 +110,13 @@
   let pendingBossWin = null; // boss defeated, but the victory cinematic is held until the board (minions/asteroids) is clear
   let mirrorSequenceActive = false, mirrorStageTimers = [];
   let spaceBriefingTimers = [];
+  let spaceFlowToken = 0;
+  let academyMode = false;
+  let academyStep = 0;
+  let academyStepStarted = 0;
+  let academyStepArmed = false;
+  let academyTimers = [];
+  let academyMysteryIndex = 0;
   // 'flip' (not 'reverse') for the wave theme key — the mystery outcome list below
   // already uses 'reverse' for reversed controls, an unrelated effect; same string
   // in both would be confusing to read even though they're different variables.
@@ -264,12 +276,49 @@
     'STAR OGRE': 'donkey',
     'SKY DRAGON': 'fire',
     'DARK KNIGHT': 'sword',
-    'GRAY VISITOR': 'orb',
+    'GRAY VISITOR': 'portal',
     'SPACE SHARK': 'fish',
     'MEAN TACO': 'sombrero',
     'COSMIC OCTO': 'ink',
     'GIZMO': 'gizmo',
   };
+  // Phase 2D: single tuning table for boss feel. Boss patterns say what the
+  // boss does; these values say how demanding that fight should feel.
+  const BOSS_TUNING = {
+    'STAR OGRE':    { rMult: 1.10, hpMult: 1.24, attackDelayMult: 0.64, projectileSpeedMult: 1.10, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Large commander. Donkey dodging is the fight.' },
+    'SKY DRAGON':   { rMult: 1.12, hpMult: 1.02, attackDelayMult: 0.52, projectileSpeedMult: 1.44, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Big readable target while reading fire split.' },
+    'DARK KNIGHT':  { rMult: 0.84, hpMult: 0.92, attackDelayMult: 0.76, projectileSpeedMult: 1.0, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Precise sword fight, not an HP sponge.' },
+    'GRAY VISITOR': { rMult: 0.58, hpMult: 0.68, attackDelayMult: 0.92, projectileSpeedMult: 1.04, damageMult: 1.0, vulnerabilityWindowMult: 1.15, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Small glitch boss. Player bullets route through portals; Gray attacks stay simple.' },
+    'SPACE SHARK':  { rMult: 0.95, hpMult: 0.92, attackDelayMult: 0.55, projectileSpeedMult: 1.08, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Aggressive pattern boss.' },
+    'MEAN TACO':    { rMult: 1.12, hpMult: 1.08, attackDelayMult: 1.0, projectileSpeedMult: 1.0, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Large target, but defense windows justify some extra HP.' },
+    'COSMIC OCTO':  { rMult: 1.10, hpMult: 0.98, attackDelayMult: 1.0, projectileSpeedMult: 1.0, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Large target, but ink can steal player attack time.' },
+    'GIZMO':        { rMult: 0.94, hpMult: 1.00, attackDelayMult: 1.0, projectileSpeedMult: 1.0, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Normal Gizmo baseline.' },
+  };
+  function bossTuningFor(creature, options) {
+    const base = Object.assign({ rMult: 1, hpMult: 1, attackDelayMult: 1, projectileSpeedMult: 1, damageMult: 1, vulnerabilityWindowMult: 1, spawnClutterAllowed: false, signatureClutterAllowed: false }, BOSS_TUNING[creature && creature.name] || {});
+    if (creature && creature.isGizmo && options && options.final) return Object.assign({}, base, { rMult: 1.00, hpMult: 1.62, attackDelayMult: 0.95, notes: 'Final Gizmo should feel bigger and tougher, not endless.' });
+    if (creature && creature.isGizmo && options && options.escape) return Object.assign({}, base, { rMult: 0.95, hpMult: 0.85, notes: 'Early/escape Gizmo should not be the real finale.' });
+    return base;
+  }
+
+  // Phase 3A: small boss-system helpers so pattern code can read tuning values
+  // without scattering multiplier math through every attack branch.
+  function bossTuneValue(b, key, fallback) {
+    return (b && b.tuning && typeof b.tuning[key] === 'number') ? b.tuning[key] : fallback;
+  }
+  function bossDamage(b, base) {
+    return Math.max(1, Math.round(base * bossTuneValue(b, 'damageMult', 1)));
+  }
+  function bossProjectileSpeed(b, base) {
+    return base * bossTuneValue(b, 'projectileSpeedMult', 1);
+  }
+  function bossWindowMs(b, base) {
+    return Math.max(120, Math.round(base * bossTuneValue(b, 'vulnerabilityWindowMult', 1)));
+  }
+  function bossAllowsClutter(b, signature) {
+    if (!b || !b.tuning) return false;
+    return signature ? !!b.tuning.signatureClutterAllowed : !!b.tuning.spawnClutterAllowed;
+  }
   const BOSS_IMAGE_SRC = {
     'STAR OGRE': 'bosses/boss_ogre.png',
     'SKY DRAGON': 'bosses/boss_dragon.png',
@@ -348,7 +397,9 @@
     const names = w === 9 ? pool9 : w === 11 ? pool11 : null;
     if (names) {
       const choices = BOSS_CREATURES.filter(c => names.includes(c.name));
-      return choices[Math.floor(Math.random() * choices.length)] || choices[0];
+      const fresh = choices.filter(c => !campaignSeenBossNames.has(c.name));
+      const pool = fresh.length ? fresh : choices;
+      return pool[Math.floor(Math.random() * pool.length)] || pool[0];
     }
     return null;
   }
@@ -360,8 +411,14 @@
     return BOSS_CREATURES[Math.floor(Math.random() * BOSS_CREATURES.length)];
   }
 
-  function addFloatText(text, x, y, color, size) {
-    floatTexts.push({text, x, y, color, a: 1, vy: -1.5, size: size || 20});
+  function addFloatText(text, x, y, color, size, opts) {
+    opts = opts || {};
+    floatTexts.push({
+      text, x, y, color, a: 1,
+      vy: opts.vy != null ? opts.vy : -1.5,
+      fade: opts.fade != null ? opts.fade : 0.02,
+      size: size || 20
+    });
   }
 
   function playDonkeyHeeHaw() {
@@ -402,10 +459,37 @@
     return out;
   }
 
+  function spawnOgreAsteroidSprinkle(count = 2) {
+    if (!currentCfg) return;
+    for (let k = 0; k < count; k++) {
+      const r = rand(ASTEROID_R_MIN, ASTEROID_R_MAX * 0.9);
+      const sides = 7 + Math.floor(Math.random() * 5);
+      const verts = Array.from({ length: sides }, (_, i) => {
+        const a = (i / sides) * Math.PI * 2;
+        const rr = r * (0.7 + Math.random() * 0.3);
+        return [Math.cos(a) * rr, Math.sin(a) * rr];
+      });
+      obstacles.push({
+        type: 'asteroid',
+        x: rand(r, W - r),
+        y: -r - 20 - k * 54,
+        vx: rand(-0.12, 0.12) * currentCfg.speed,
+        vy: currentCfg.speed * rand(0.58, 0.78),
+        r, verts, rot: 0,
+        rotSpeed: rand(-0.018, 0.018),
+        hp: 1,
+        shadeSeed: Math.random() * 1000,
+        rockStyle: Math.floor(Math.random() * 3),
+        bossSprinkle: true,
+      });
+    }
+  }
+
   function beginOgreDonkeyWave() {
     if (!boss || boss.attackType !== 'donkey') return;
     const now = Date.now();
-    const count = 4;
+    const count = 5;
+    const ogreSpeedMult = bossProjectileSpeed(boss, 1);
     const targetY = Math.min(H * 0.53, Math.max(boss.y + boss.r * 1.25, H * 0.42));
     const donkeys = [];
     for (let k = 0; k < count; k++) {
@@ -420,7 +504,7 @@
         donkeyLine: true,
         donkeyState: 'deploy',
         born: now,
-        readyAt: now + 540,
+        readyAt: now + 420,
       };
       donkeys.push(d);
       enemyBullets.push(d);
@@ -430,9 +514,10 @@
       order: shuffleList(donkeys),
       nextIndex: 0,
       waveNo: (boss.ogreWaveNo || 0) + 1,
-      nextChargeAt: now + 780,
+      nextChargeAt: now + 560,
     };
     boss.ogreWaveNo = boss.ogreLine.waveNo;
+    spawnOgreAsteroidSprinkle(boss.ogreWaveNo === 1 ? 2 : 1);
     addFloatText(`DONKEY WAVE ${boss.ogreWaveNo}/4`, boss.x, boss.y + boss.r + 18, '#c7a16b', 16);
   }
 
@@ -440,7 +525,7 @@
     if (!boss || !boss.ogreLine) return;
     const line = boss.ogreLine;
     const now = Date.now();
-    let charging = false;
+    let activeCharges = 0;
     for (const d of line.donkeys) {
       if (d._hit || d._gone) continue;
       if (d.donkeyState === 'deploy') {
@@ -450,28 +535,29 @@
           d.x = d.targetX; d.y = d.targetY; d.donkeyState = 'hold';
         }
       } else if (d.donkeyState === 'charge') {
-        charging = true;
+        activeCharges++;
       }
     }
     const allReady = line.donkeys.every(d => d._hit || d._gone || d.donkeyState !== 'deploy');
-    if (allReady && !charging && line.nextIndex < line.order.length && now > line.nextChargeAt) {
+    if (allReady && activeCharges < 2 && line.nextIndex < line.order.length && now > line.nextChargeAt) {
       const d = line.order[line.nextIndex++];
       if (d && !d._hit && !d._gone) {
         const dx = player.x - d.x;
         const dy = player.y - d.y;
         const dist = Math.hypot(dx, dy) || 1;
-        const speed = 8.1 + Math.min(1.65, campaignTier(wave) * 0.3);
+        const speed = (9.1 + Math.min(1.9, campaignTier(wave) * 0.34)) * bossProjectileSpeed(boss, 1);
         d.vx = (dx / dist) * speed;
         d.vy = (dy / dist) * speed;
         d.donkeyState = 'charge';
         d.chargeBorn = now;
+        line.nextChargeAt = now + 390;
         playDonkeyHeeHaw();
       }
     }
     const allDone = line.donkeys.every(d => d._hit || d._gone);
     if (allDone) {
       boss.ogreLine = null;
-      boss.nextAttack = now + (boss.ogreWaveNo >= 4 ? 2200 : 850);
+      boss.nextAttack = now + bossWindowMs(boss, boss.ogreWaveNo >= 4 ? 1300 : 420);
       if (boss.ogreWaveNo >= 4) boss.ogreWaveNo = 0;
     }
   }
@@ -494,6 +580,38 @@
   function C(hex) { return waveTheme === 'rave' ? (NEON_PALETTE[hex] || hex) : hex; }
 
   function rand(a,b){ return a + Math.random()*(b-a); }
+  function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+  function blackoutHeadlightGeometry() {
+    if (!player) return null;
+    const coneTopY = Math.max(115, player.y - Math.min(H * 0.36, 255));
+    const coneHalfW = Math.min(W * 0.24, 76 + H * 0.036);
+    const beamBaseY = player.y - player.r * 0.8;
+    return { coneTopY, coneHalfW, beamBaseY };
+  }
+
+  function isPointInBlackoutHeadlight(x, y, radius) {
+    const g = blackoutHeadlightGeometry();
+    if (!g) return false;
+    radius = radius || 0;
+    const denom = Math.max(1, g.beamBaseY - g.coneTopY);
+    const t = (g.beamBaseY - y) / denom;
+    if (t < -0.08 || t > 1.08) return false;
+    const halfAtY = g.coneHalfW * (0.16 + 0.84 * clamp(t, 0, 1));
+    return Math.abs(x - player.x) <= halfAtY + radius;
+  }
+
+  function clipToBlackoutHeadlight() {
+    const g = blackoutHeadlightGeometry();
+    if (!g) return null;
+    ctx.beginPath();
+    ctx.moveTo(player.x, g.beamBaseY);
+    ctx.lineTo(Math.max(0, player.x - g.coneHalfW * 0.9), g.coneTopY);
+    ctx.lineTo(Math.min(W, player.x + g.coneHalfW * 0.9), g.coneTopY);
+    ctx.closePath();
+    ctx.clip();
+    return g;
+  }
 
   function shuffledSpaceCharIndexes(excludeIdx) {
     const arr = GAME_CHARS.map((_, i) => i).filter(i => i !== excludeIdx);
@@ -510,6 +628,7 @@
     missionEnemyChars.splice(0, missionEnemyChars.length, ...cast.slice(0, SPACE_MISSION_CAPTOR_COUNT));
     missionTrappedChars.splice(0, missionTrappedChars.length, ...cast.slice(SPACE_MISSION_CAPTOR_COUNT, SPACE_MISSION_CAPTOR_COUNT + SPACE_RESCUE_TARGET_COUNT));
     missionRetryCaptives.splice(0, missionRetryCaptives.length);
+    campaignSeenBossNames.clear();
     rescuedChars.clear();
   }
 
@@ -582,19 +701,19 @@
     // spawnsRemaining is exact for these campaign waves so startWaveSpawn() does
     // not re-inflate them with the older theme multipliers.
     const tuning = {
-      1: { spawnsRemaining: 14, speedOverride: 2.02, spawnMsOverride: 1120, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: false, spawnCadenceMult: 1.08 },
-      2: { spawnsRemaining: 10, speedOverride: 2.04, spawnMsOverride: 1180, asteroidRatioOverride: 0, enemyHpOverride: 2, enemyFireMult: 0.28, allowMystery: false, allowPowerups: true, allowHp: true, powerupDelayRange: [5200, 8200], hpDelayRange: [5200, 9000], spawnCadenceMult: 1.08 },
-      3: { spawnsRemaining: 18, speedOverride: 2.24, spawnMsOverride: 720, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.18, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', powerupDelayRange: [2200, 3600], hpDelayRange: [5200, 8200], swarmCap: 5, spawnCadenceMult: 0.98 },
+      1: { spawnsRemaining: 40, speedOverride: 2.86, spawnMsOverride: 780, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [2600, 5200], spawnCadenceMult: 0.9, activeObstacleCap: 6, notes: 'Intro is dangerous: small rocks cost 5 HP and big rocks cost 10 HP, with early HP drops teaching recovery.' },
+      2: { spawnsRemaining: 32, speedOverride: 2.62, spawnMsOverride: 790, asteroidRatioOverride: 0, enemyHpOverride: 2, enemyFireMult: 1.20, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [5200, 8200], hpDelayRange: [5200, 9000], spawnCadenceMult: 0.94, activeObstacleCap: 5 },
+      3: { spawnsRemaining: 26, speedOverride: 2.72, spawnMsOverride: 710, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.34, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 1, powerupDelayRange: [900, 1300], hpDelayRange: [6200, 9200], swarmCap: 5, activeObstacleCap: 5, spawnCadenceMult: 1.02 },
       4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [7600, 11600], enemyFireMult: 0.75 },
-      5: { spawnsRemaining: 14, speedOverride: 2.14, spawnMsOverride: 1040, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: true, allowPowerups: true, allowHp: true, powerupDelayRange: [3200, 6200], hpDelayRange: [3600, 6800], spawnCadenceMult: 1.05 },
-      6: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', powerupDelayRange: [3600, 6200], hpDelayRange: [5200, 8500], enemyFireMult: 0.55 },
+      5: { spawnsRemaining: 30, speedOverride: 2.86, spawnMsOverride: 700, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: true, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [3600, 6200], hpDelayRange: [3600, 6800], spawnCadenceMult: 0.9, activeObstacleCap: 7 },
+      6: { spawnsRemaining: 20, speedOverride: 2.72, spawnMsOverride: 700, asteroidRatioOverride: 0.28, enemyHpOverride: 2, enemyFireMult: 0.78, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, rescueRingHp: 30, powerupDelayRange: [3600, 6200], hpDelayRange: [4800, 7800], spawnCadenceMult: 0.86, activeObstacleCap: 6 },
       7: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [8000, 12000], enemyFireMult: 0.85 },
-      8: { spawnsRemaining: 12, speedOverride: 2.18, spawnMsOverride: 1100, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [5600, 9000], spawnCadenceMult: 1.12 },
-      9: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, powerupDelayRange: [6400, 9800], hpDelayRange: [7000, 11000], enemyFireMult: 0.9 },
-      10: { spawnsRemaining: 12, speedOverride: 2.18, spawnMsOverride: 1220, asteroidRatioOverride: 0.35, enemyHpOverride: 2, enemyFireMult: 0.22, allowMystery: false, allowPowerups: true, allowHp: true, powerupDelayRange: [3600, 6200], hpDelayRange: [4200, 7600], spawnCadenceMult: 1.18 },
-      11: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, powerupDelayRange: [7200, 10400], hpDelayRange: [7600, 11200], enemyFireMult: 1.0 },
-      12: { spawnsRemaining: 14, speedOverride: 2.25, spawnMsOverride: 960, asteroidRatioOverride: 0.55, enemyHpOverride: 2, enemyFireMult: 0.35, allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', powerupDelayRange: [900, 1500], hpDelayRange: [2600, 4800], spawnCadenceMult: 0.95 },
-      13: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [8500, 12500], enemyFireMult: 1.0 },
+      8: { spawnsRemaining: 16, speedOverride: 2.76, spawnMsOverride: 820, asteroidRatioOverride: 1, enemyFireMult: 0.82, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [5600, 9000], spawnCadenceMult: 1.0, activeObstacleCap: 8 },
+      9: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [6400, 9800], hpDelayRange: [7000, 11000], enemyFireMult: 0.9 },
+      10: { spawnsRemaining: 37, speedOverride: 3.08, spawnMsOverride: 620, asteroidRatioOverride: 0.22, enemyHpOverride: 2, enemyFireMult: 1.08, allowMystery: true, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, maxInstruments: 9, instrumentDelayRange: [650, 980], powerupDelayRange: [4100, 6600], hpDelayRange: [4800, 8000], mysteryDelayRange: [6500, 10500], spawnCadenceMult: 0.82, activeObstacleCap: 7 },
+      11: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [7200, 10400], hpDelayRange: [7600, 11200], enemyFireMult: 1.0 },
+      12: { spawnsRemaining: 44, speedOverride: 3.06, spawnMsOverride: 640, asteroidRatioOverride: 0.52, enemyHpOverride: 2, enemyFireMult: 1.02, allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 4, powerupDelayRange: [3000, 5000], hpDelayRange: [3600, 6000], mysteryDelayRange: [5200, 8800], spawnCadenceMult: 0.84, activeObstacleCap: 7, notes: 'Hard final prep. Keep for now pending full 1-13 playthrough.' },
+      13: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [8500, 12500], enemyFireMult: 1.0, finalBossHpNote: 'Final Gizmo HP is tuned through BOSS_TUNING final override.' },
     };
     return tuning[w] || null;
   }
@@ -636,6 +755,17 @@
     const balanceMult = currentCfg && currentCfg.enemyFireMult != null ? currentCfg.enemyFireMult : 1;
     const bulletSpeed = (3.0 + tier * 0.45 + Math.min(wave, 12) * 0.16 + Math.max(0, wave - 18) * 0.18) * (speedMult || 1) * balanceMult;
     enemyBullets.push({ x: shooter.x, y: shooter.y + shooter.r, vx: (dx/dist)*bulletSpeed, vy: (dy/dist)*bulletSpeed, r: 4 });
+  }
+
+  function warnAndFireBlackoutEnemy(shooter) {
+    if (!shooter || shooter.alive === false) return;
+    const now = Date.now();
+    shooter.blackoutMuzzleUntil = now + 360;
+    shooter.blackoutHoldUntil = now + 420;
+    setTimeout(() => {
+      if (state !== 'playing' || waveTheme !== 'blackout' || shooter.alive === false || shooter._crossed) return;
+      enemyFireAt(shooter, 1);
+    }, 280);
   }
 
   // REVERSE theme: spawns from the bottom moving upward instead of the normal
@@ -719,6 +849,268 @@
     }
   }
 
+  function spawnBlackoutHiddenEnemies() {
+    if (waveTheme !== 'blackout' || !currentCfg || obstacles.some(o => o.blackoutHiddenEnemy)) return;
+    [0.16, 0.33, 0.5, 0.67, 0.84].forEach((xp, i) => {
+      obstacles.push({
+        type: 'face',
+        x: clamp(W * xp, FACE_R, W - FACE_R),
+        y: -FACE_R - 60 - i * 90,
+        vx: 0,
+        vy: currentCfg.speed * 0.44,
+        r: FACE_R,
+        ci: nextMissionEnemyIndex(),
+        hp: 3,
+        isTrapped: false,
+        ringHp: 0,
+        pausedBurstDone: true,
+        paused: false,
+        pauseUntil: 0,
+        burstShotsLeft: 0,
+        lastBurstShot: 0,
+        blackoutHiddenEnemy: true
+      });
+    });
+  }
+
+  function grayPortalTemplate(index) {
+    const safeTop = Math.max(96, Math.min(150, H * 0.16));
+    const templates = [
+      { gray: { x: W * 0.24, y: safeTop }, entry: { x: W * 0.78, y: H * 0.62 }, exit: { x: W * 0.42, y: H * 0.42 }, decoyEntry: { x: W * 0.18, y: H * 0.40 }, decoyExit: { x: W * 0.86, y: H * 0.46 }, label: 'CROSS LEFT' },
+      { gray: { x: W * 0.76, y: safeTop + 8 }, entry: { x: W * 0.22, y: H * 0.62 }, exit: { x: W * 0.58, y: H * 0.42 }, decoyEntry: { x: W * 0.82, y: H * 0.40 }, decoyExit: { x: W * 0.14, y: H * 0.46 }, label: 'CROSS RIGHT' },
+      { gray: { x: W * 0.50, y: safeTop - 2 }, entry: { x: W * 0.20, y: H * 0.58 }, exit: { x: W * 0.74, y: H * 0.46 }, decoyEntry: { x: W * 0.82, y: H * 0.68 }, decoyExit: { x: W * 0.28, y: H * 0.36 }, label: 'BANK CENTER' },
+      { gray: { x: W * 0.34, y: safeTop + 12 }, entry: { x: W * 0.84, y: H * 0.57 }, exit: { x: W * 0.62, y: H * 0.39 }, decoyEntry: { x: W * 0.18, y: H * 0.66 }, decoyExit: { x: W * 0.78, y: H * 0.36 }, label: 'BACK SHOT' }
+    ];
+    const t = templates[index % templates.length];
+    const bossR = boss ? boss.r : BOSS_R;
+    const clampPoint = p => ({
+      x: clamp(p.x, bossR + 30, W - bossR - 30),
+      y: clamp(p.y, 82, Math.min(H - 120, H * 0.72))
+    });
+    return { gray: clampPoint(t.gray), entry: clampPoint(t.entry), exit: clampPoint(t.exit), decoyEntry: clampPoint(t.decoyEntry), decoyExit: clampPoint(t.decoyExit), label: t.label };
+  }
+
+  function graySetPhase(b, phase, duration, now) {
+    b.grayState.phase = phase;
+    b.grayState.phaseStarted = now;
+    b.grayState.phaseUntil = now + duration;
+  }
+
+  function initGrayVisitorState(b, now) {
+    if (!b || b.attackType !== 'portal') return;
+    const firstTemplate = grayPortalTemplate(0);
+    b.x = firstTemplate.gray.x;
+    b.y = firstTemplate.gray.y;
+    b.vx = 0;
+    b.nextAttack = now + 999999;
+    b.grayState = {
+      phase: 'appear',
+      phaseStarted: now,
+      phaseUntil: now + 850,
+      templateIndex: 0,
+      cycle: 0,
+      shotDone: false,
+      portalsSpawned: false
+    };
+    b.ghostUntil = now + 620;
+    b.phaseAlphaUntil = now + 720;
+    b.invisibleUntil = 0;
+    b.portalShieldUntil = now + 999999;
+    b.grayTeleport = null;
+  }
+
+  function grayFireAlienOrbs(b, now) {
+    const bt = campaignTier(wave);
+    const count = bt >= 2 ? 4 : 3;
+    const speed = bossProjectileSpeed(b, 3.75 + bt * 0.18);
+    for (let k = 0; k < count; k++) {
+      const spread = count === 1 ? 0 : (k - (count - 1) / 2) * 0.18;
+      const aim = Math.atan2((player ? player.y : H * 0.78) - b.y, (player ? player.x : W / 2) - b.x) + spread;
+      enemyBullets.push({
+        x: b.x, y: b.y + b.r * 0.56,
+        vx: Math.cos(aim) * speed, vy: Math.sin(aim) * speed,
+        r: 5.8, theme: 'portalOrb', damage: bossDamage(b, 12), born: now,
+        homing: 0.018,
+        maxSpeed: speed + 0.28,
+        visualScale: 0.92
+      });
+    }
+    addFloatText('ORB SHOTS', b.x, b.y + b.r + 18, '#65f0ff', 14);
+  }
+
+  function graySpawnPortalPuzzle(b, now) {
+    const st = b.grayState;
+    const t = grayPortalTemplate(st.templateIndex);
+    enemyBullets.forEach(e => { if (e.bulletPortal) e._gone = true; });
+    b.portalShieldUntil = now + 999999;
+    const minPortalSpacing = clamp(Math.min(W, H) * 0.2, 64, 88);
+    const placed = [];
+    const clampPortalPoint = p => ({
+      x: clamp(p.x, b.r + 30, W - b.r - 30),
+      y: clamp(p.y, 92, Math.min(H - 92, H * 0.72))
+    });
+    const canPlacePortal = p => Math.hypot(p.x - t.gray.x, p.y - t.gray.y) > b.r + 66
+      && placed.every(other => Math.hypot(p.x - other.x, p.y - other.y) > minPortalSpacing);
+    const reservePortal = p => {
+      const pt = clampPortalPoint(p);
+      placed.push(pt);
+      return pt;
+    };
+    const choosePortalPoint = (preferred, fallbackIndex) => {
+      const baseCandidates = [
+        preferred,
+        { x: W * 0.16, y: H * 0.38 },
+        { x: W * 0.84, y: H * 0.38 },
+        { x: W * 0.18, y: H * 0.68 },
+        { x: W * 0.82, y: H * 0.68 },
+        { x: W * 0.50, y: H * 0.54 },
+        { x: W * 0.32, y: H * 0.70 },
+        { x: W * 0.68, y: H * 0.70 },
+      ];
+      const gridCandidates = [];
+      [0.14, 0.26, 0.38, 0.50, 0.62, 0.74, 0.86].forEach(xp => {
+        [0.34, 0.46, 0.58, 0.70].forEach(yp => gridCandidates.push({ x: W * xp, y: H * yp }));
+      });
+      const candidates = baseCandidates.concat(gridCandidates).map(clampPortalPoint);
+      const start = fallbackIndex % candidates.length;
+      for (let i = 0; i < candidates.length; i++) {
+        const p = candidates[(start + i) % candidates.length];
+        if (canPlacePortal(p)) return reservePortal(p);
+      }
+      const farthest = candidates
+        .map(p => ({
+          p,
+          score: Math.min(
+            Math.hypot(p.x - t.gray.x, p.y - t.gray.y) - b.r - 66,
+            ...placed.map(other => Math.hypot(p.x - other.x, p.y - other.y) - minPortalSpacing)
+          )
+        }))
+        .sort((a, b) => b.score - a.score)[0].p;
+      return reservePortal(farthest);
+    };
+    const usable = Math.hypot(t.entry.x - t.gray.x, t.entry.y - t.gray.y) > b.r + 64
+      && Math.hypot(t.exit.x - t.gray.x, t.exit.y - t.gray.y) > b.r + 64
+      && Math.hypot(t.entry.x - t.exit.x, t.entry.y - t.exit.y) > 90;
+    const entry = reservePortal(usable ? t.entry : { x: t.gray.x < W * 0.5 ? W * 0.80 : W * 0.20, y: H * 0.62 });
+    const exit = choosePortalPoint(usable ? t.exit : { x: t.gray.x < W * 0.5 ? W * 0.54 : W * 0.46, y: H * 0.42 }, 0);
+    const decoyEntry = choosePortalPoint(t.decoyEntry, 2);
+    const decoyExit = choosePortalPoint(t.decoyExit, 4);
+    const aimFromEntry = Math.atan2(t.gray.y - entry.y, t.gray.x - entry.x);
+    const aimFromExit = Math.atan2(t.gray.y - exit.y, t.gray.x - exit.x);
+    const lifeMs = 9000;
+    const addPortal = (p, index, linkedIndex, aimAngle, pairId, colors) => {
+      enemyBullets.push({
+        x: p.x, y: p.y, vx: 0, vy: 0, r: 17,
+        theme: 'bulletPortal',
+        bulletPortal: true,
+        portalPairId: pairId,
+        portalIndex: index,
+        linkedIndex,
+        portalAngle: clamp(aimAngle + Math.PI / 2, -0.95, 0.95),
+        portalAimAngle: aimAngle,
+        portalActive: true,
+        portalColorA: colors.a,
+        portalColorB: colors.b,
+        telegraph: true,
+        born: now,
+        expiresAt: now + lifeMs
+      });
+    };
+    const solveId = `gray-${now}-${st.cycle}-solve`;
+    addPortal(entry, 0, 1, aimFromEntry, solveId, { a: '#b36bff', b: '#65f0ff' });
+    addPortal(exit, 1, 0, aimFromExit, solveId, { a: '#b36bff', b: '#65f0ff' });
+
+    const decoyTarget = {
+      x: t.gray.x < W * 0.5 ? W - 24 : 24,
+      y: Math.min(H - 38, H * 0.78)
+    };
+    const decoyAimFromEntry = Math.atan2(decoyTarget.y - decoyEntry.y, decoyTarget.x - decoyEntry.x);
+    const decoyAimFromExit = Math.atan2(decoyTarget.y - decoyExit.y, decoyTarget.x - decoyExit.x);
+    const decoyId = `gray-${now}-${st.cycle}-decoy`;
+    addPortal(decoyEntry, 0, 1, decoyAimFromEntry, decoyId, { a: '#ff5bd6', b: '#ffe66d' });
+    addPortal(decoyExit, 1, 0, decoyAimFromExit, decoyId, { a: '#ff5bd6', b: '#ffe66d' });
+
+    addFloatText(t.label, (entry.x + exit.x) / 2, Math.min(entry.y, exit.y) - 24, '#b36bff', 14);
+    addFloatText('FORCEFIELD: USE PORTALS!', b.x, b.y + b.r + 18, '#b36bff', 16);
+    SFX.emp && SFX.emp();
+  }
+
+  function updateGrayVisitorBoss(b, now) {
+    if (!b || b.attackType !== 'portal') return;
+    if (!b.grayState) initGrayVisitorState(b, now);
+    const st = b.grayState;
+    b.vx = 0;
+    if (st.phase === 'appear' && now >= st.phaseUntil) {
+      st.shotDone = false;
+      graySetPhase(b, 'holdShoot', 1450, now);
+    } else if (st.phase === 'holdShoot') {
+      if (!st.shotDone && now - st.phaseStarted > 360) {
+        grayFireAlienOrbs(b, now);
+        st.shotDone = true;
+      }
+      if (now >= st.phaseUntil) {
+        graySetPhase(b, 'dissolve', 620, now);
+        b.ghostUntil = now + 2100;
+        b.invisibleUntil = now + 720;
+        b.phaseAlphaUntil = now + 2100;
+        b._glitchAt = now;
+        addFloatText('DISSOLVE...', b.x, b.y + b.r + 18, '#b36bff', 14);
+      }
+    } else if (st.phase === 'dissolve' && now >= st.phaseUntil) {
+      const nextTemplate = grayPortalTemplate(st.templateIndex + 1);
+      b.grayTeleport = {
+        fromX: b.x, fromY: b.y,
+        toX: nextTemplate.gray.x, toY: nextTemplate.gray.y,
+        start: now,
+        departAt: now,
+        reappearAt: now + 980,
+        end: now + 1280,
+        arrived: false
+      };
+      st.templateIndex++;
+      graySetPhase(b, 'ghostMove', 980, now);
+    } else if (st.phase === 'ghostMove' && now >= st.phaseUntil) {
+      const current = grayPortalTemplate(st.templateIndex);
+      b.x = current.gray.x;
+      b.y = current.gray.y;
+      b.grayTeleport = null;
+      b.invisibleUntil = 0;
+      b.ghostUntil = now + 620;
+      b.phaseAlphaUntil = now + 620;
+      miniExplosion(b.x, b.y, '#65f0ff');
+      addFloatText('REAPPEAR!', b.x, b.y + b.r + 18, '#65f0ff', 14);
+      grayFireAlienOrbs(b, now);
+      graySetPhase(b, 'reappear', 680, now);
+    } else if (st.phase === 'reappear' && now >= st.phaseUntil) {
+      st.portalsSpawned = false;
+      graySetPhase(b, 'portalPuzzle', 9200, now);
+    } else if (st.phase === 'portalPuzzle') {
+      if (!st.portalsSpawned) {
+        graySpawnPortalPuzzle(b, now);
+        st.portalsSpawned = true;
+      }
+      if (now >= st.phaseUntil) {
+        st.cycle++;
+        graySetPhase(b, 'holdShoot', 1300, now);
+        st.shotDone = false;
+        st.portalsSpawned = false;
+      }
+    }
+  }
+
+  function grayVisitorTookPortalHit(b, now) {
+    if (!b || b.attackType !== 'portal' || !b.grayState) return;
+    enemyBullets.forEach(e => { if (e.bulletPortal) e._gone = true; });
+    b.grayState.shotDone = true;
+    b.grayState.portalsSpawned = false;
+    graySetPhase(b, 'dissolve', 560, now);
+    b.ghostUntil = now + 2050;
+    b.invisibleUntil = now + 680;
+    b.phaseAlphaUntil = now + 2050;
+    b._glitchAt = now;
+    addFloatText('SHIFTING!', b.x, b.y + b.r + 18, '#ff5bd6', 14);
+  }
+
   // captive=true reskins this exact fight as "free the hero from the jail cell" —
   // same HP/attack pattern/minion-deploy/defeat-reward underneath (those only ever
   // reference boss.x/y/r/hp/..., never the creature directly outside drawBoss()'s
@@ -735,20 +1127,26 @@
     }
     const creature = captive ? BOSS_CREATURES[Math.floor(Math.random() * BOSS_CREATURES.length)] : (pendingBossCreature || pickBossCreature());
     pendingBossCreature = null;
+    if (!captive && creature && creature.name && !creature.isGizmo && [9,11].includes(wave)) campaignSeenBossNames.add(creature.name);
     const gizmoEscape = !!(creature.isGizmo && options.escape);
     const gizmoFinal = !!(creature.isGizmo && options.final);
     const tier = campaignTier(wave);
+    const tuning = captive ? { rMult: 1, hpMult: 1, attackDelayMult: 1 } : bossTuningFor(creature, options);
     const hpBase = gizmoEscape ? Math.round(BOSS_HP * (wave === 2 ? 0.82 : 1.06)) : gizmoFinal ? Math.round(BOSS_HP * 1.48) : BOSS_HP;
-    const hp = hpBase + tier * (captive ? 5 : gizmoFinal ? 12 : 8) + Math.min(captive ? 16 : gizmoFinal ? 36 : 24, Math.floor(wave * (captive ? 1.0 : gizmoFinal ? 1.9 : 1.35)));
+    const hpUntuned = hpBase + tier * (captive ? 5 : gizmoFinal ? 12 : 8) + Math.min(captive ? 16 : gizmoFinal ? 36 : 24, Math.floor(wave * (captive ? 1.0 : gizmoFinal ? 1.9 : 1.35)));
+    const hp = Math.max(1, Math.round(hpUntuned * (tuning.hpMult || 1)));
+    const bossR = BOSS_R * (tuning.rMult || 1);
     const attackType = captive ? 'lockpulse' : bossAttackTypeFor(creature);
+    const rawAttackDelay = attackType === 'sword'
+      ? 3900
+      : captive ? Math.max(1650, 2450 - tier * 150 - wave * 12) : Math.max(gizmoFinal ? 1250 : 1450, 2380 - tier * 155 - wave * 14);
     boss = {
       creature, x: W / 2, y: 185, vx: (Math.random() < 0.5 ? -1 : 1) * (captive ? 0.72 : 1.1),
-      r: BOSS_R, hp, maxHp: hp,
+      r: bossR, hp, maxHp: hp,
+      tuning,
       attackType,
       nextAttack: Date.now() + (captive ? 2200 : 1800),
-      attackDelay: attackType === 'sword'
-        ? 3900
-        : captive ? Math.max(1650, 2450 - tier * 150 - wave * 12) : Math.max(gizmoFinal ? 1250 : 1450, 2380 - tier * 155 - wave * 14),
+      attackDelay: Math.max(900, Math.round(rawAttackDelay * (tuning.attackDelayMult || 1))),
       burstCount: Math.min(gizmoFinal ? 8 : 6, 3 + tier + Math.floor(Math.max(0, wave - 10) / 8)),
       laserPhase: null, laserChargeStart: 0, laserX: 0,
       hitFlash: 0,
@@ -760,7 +1158,27 @@
       captiveCi,
       ogreLine: null,
       ogreWaveNo: 0,
+      patternData: {},
+      signatureActive: false,
+      vulnerable: true,
+      support: null,
+      tacoGuardUntil: 0,
+      tacoOpenUntil: 0,
+      tacoGuardFlashUntil: 0,
+      octoGuardUntil: 0,
+      octoDescendUntil: 0,
+      octoSpinUntil: 0,
+      octoRecoverUntil: 0,
+      octoHomeY: 0,
+      octoTargetY: 0,
     };
+    if (attackType === 'fire') {
+      // Phase 3C.5: Dragon breath reads well now; make the boss sweep
+      // side-to-side faster so the breath chain snakes across the arena.
+      boss.vx *= 2.15;
+    } else if (attackType === 'portal') {
+      initGrayVisitorState(boss, Date.now());
+    }
     bossDeployTimer = Date.now() + 3500; // first reinforcement a little after the fight starts
     addFloatText(captive ? `FREE ${GAME_CHARS[captiveCi].name}!` : `${creature.name} INCOMING`, W / 2, 140, captive ? '#00e5ff' : '#ff4444', 22);
     if (captive) showTopBanner(`FREE ${GAME_CHARS[captiveCi].name}`, 'good');
@@ -830,7 +1248,27 @@
     });
   }
 
-  const POWERUP_R = 18;
+  function spawnCampaignRescueLock() {
+    if (!player || wave !== 6 || waveCaptivesSeen.has('campaign-lock')) return;
+    const ci = nextMissionCaptiveIndex(waveCaptivesSeen);
+    if (ci < 0) return;
+    waveCaptivesSeen.add('campaign-lock');
+    waveCaptivesSeen.add(ci);
+    const r = FACE_R * 1.08;
+    const ringHp = currentCfg && currentCfg.rescueRingHp ? currentCfg.rescueRingHp : 24;
+    obstacles.push({
+      type:'face', x: W / 2, y: Math.max(92, H * 0.18), vx: 0, vy: (currentCfg ? currentCfg.speed : O_SPEED_BASE) * 0.12,
+      r, ci, hp: 1, isTrapped: true, ringHp, maxRingHp: ringHp,
+      pausedBurstDone: true, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0,
+      campaignRescueLock: true
+    });
+    const rescueName = GAME_CHARS[ci] && GAME_CHARS[ci].name ? GAME_CHARS[ci].name.toUpperCase() : 'THE MOBE';
+    addFloatText(`HELP FREE ${rescueName}!`, W / 2, H * 0.31, '#00e5ff', 44, { vy: -0.18, fade: 0.0038 });
+    showTopBanner(`HELP FREE ${rescueName}`, 'good');
+  }
+
+
+  const POWERUP_R = 16; // Phase 2C.1: 10% smaller pickups reduce visual clutter
   // Phase 1 tuning: banked socket pickups should be readable/catchable, not frantic.
   // They already fall straight down (vy only, no vx); keep the motion simple and slow
   // enough that the player can make a real socket-inventory decision.
@@ -838,6 +1276,10 @@
   function powerupFallSpeed() { return hpFallSpeed() * 1.05; }
 
   function spawnPowerup(forcedType) {
+    if (currentCfg && currentCfg.maxSocketPowerups != null) {
+      currentCfg._socketPowerupsSpawned = currentCfg._socketPowerupsSpawned || 0;
+      if (currentCfg._socketPowerupsSpawned >= currentCfg.maxSocketPowerups) return false;
+    }
     const types = ['gun', 'bomb', 'shield'];
     let type = forcedType;
     if (!type && currentCfg && currentCfg.forcePowerupType && !currentCfg._forcedPowerupSpawned) {
@@ -846,6 +1288,8 @@
     }
     if (!type || !types.includes(type)) type = types[Math.floor(Math.random() * types.length)];
     powerups.push({ type, x: rand(POWERUP_R, W - POWERUP_R), y: -POWERUP_R - 10, vy: powerupFallSpeed(), r: POWERUP_R, bob: Math.random() * Math.PI * 2 });
+    if (currentCfg) currentCfg._socketPowerupsSpawned = (currentCfg._socketPowerupsSpawned || 0) + 1;
+    return true;
   }
 
   // Rare, risky pickup — could be great or could backfire. "Just enough to be
@@ -858,11 +1302,12 @@
   }
   function scheduleMysteryBox() {
     clearTimeout(mysteryTimer);
+    const range = currentCfg && currentCfg.mysteryDelayRange ? currentCfg.mysteryDelayRange : [9000, 15000];
     mysteryTimer = setTimeout(() => {
       if (state !== 'playing') return;
       if (campaignAllows('allowMystery') && !boss && !waveTransitioning) spawnMysteryBox();
       scheduleMysteryBox();
-    }, 14000 + Math.random() * 9000);
+    }, range[0] + Math.random() * (range[1] - range[0]));
   }
 
   // MUSIC ("JAM SESSION") theme — purely fun, no extra danger: asteroids/enemies
@@ -870,17 +1315,24 @@
   // — same shoot-target language as the mystery ring) for its own note/sound and points.
   const INSTRUMENT_KINDS = ['guitar', 'piano', 'saxophone'];
   function spawnInstrument() {
+    if (currentCfg && currentCfg.maxInstruments != null) {
+      currentCfg._instrumentsSpawned = currentCfg._instrumentsSpawned || 0;
+      if (currentCfg._instrumentsSpawned >= currentCfg.maxInstruments) return false;
+    }
     const kind = INSTRUMENT_KINDS[Math.floor(Math.random() * INSTRUMENT_KINDS.length)];
     powerups.push({ type: 'instrument', kind, x: rand(POWERUP_R, W - POWERUP_R), y: -POWERUP_R - 10, vy: powerupFallSpeed() * 0.55, r: POWERUP_R, bob: Math.random() * Math.PI * 2 });
+    if (currentCfg) currentCfg._instrumentsSpawned = (currentCfg._instrumentsSpawned || 0) + 1;
+    return true;
   }
   let instrumentTimer = null;
   function scheduleInstrument() {
     clearTimeout(instrumentTimer);
+    const range = currentCfg && currentCfg.instrumentDelayRange ? currentCfg.instrumentDelayRange : [520, 860];
     instrumentTimer = setTimeout(() => {
       if (state !== 'playing') return;
       if (waveTheme === 'music' && !boss && !waveTransitioning) spawnInstrument();
       scheduleInstrument();
-    }, 230 + Math.random() * 230);
+    }, range[0] + Math.random() * (range[1] - range[0]));
   }
 
   let powerupTimer = null;
@@ -909,6 +1361,60 @@
     const hpValue = roll < 0.15 ? 5 : roll < 0.5 ? 3 : 2;
     const r = hpValue === 5 ? 18 : hpValue === 3 ? 13.5 : 11;
     powerups.push({ type:'hp', hpValue, x: rand(r, W-r), y: -r-10, vy: hpFallSpeed(), r, bob: Math.random() * Math.PI * 2 });
+  }
+
+  function spawnBossHpDrop(b) {
+    const r = 13.5;
+    const x = rand(r + 18, W - r - 18);
+    powerups.push({ type:'hp', hpValue: 3, x, y: -r-10, vy: hpFallSpeed() * 0.94, r, bob: Math.random() * Math.PI * 2, bossSupport: true });
+    return true;
+  }
+
+  function spawnBossSocketDrop(b) {
+    const types = ['shield', 'bomb', 'gun'];
+    let type = b && b.attackType === 'sword' ? 'shield' : types[Math.floor(Math.random() * types.length)];
+    powerups.push({ type, x: rand(POWERUP_R, W - POWERUP_R), y: -POWERUP_R - 10, vy: powerupFallSpeed() * 0.96, r: POWERUP_R, bob: Math.random() * Math.PI * 2, bossSupport: true });
+    return true;
+  }
+
+  function bossSupportQuietWindow(b) {
+    if (!b || b.isCaptive || waveTransitioning) return false;
+    if (b.ogreLine) return false;
+    const activeSignature = enemyBullets.some(x => x.donkeyLine || x.knightLaneSword || x.portalExit || x.portalEnter || x.tennis || x.bone || x.theme === 'sword');
+    if (activeSignature && b.attackType !== 'gizmo') return false;
+    // Drops should usually show up in the tense beat before the next pattern,
+    // not while the strike is already active. That creates the tradeoff: go for
+    // HP/powerup now, or stay positioned for the incoming attack?
+    const untilNext = (b.nextAttack || 0) - Date.now();
+    return untilNext < 1450 || untilNext > 99999;
+  }
+
+  function updateBossSupportDrops() {
+    if (!boss || boss.isCaptive || waveTransitioning || state !== 'playing') return;
+    const now = Date.now();
+    if (!boss.support) {
+      boss.support = {
+        hpDrops: 0,
+        powerupDrops: 0,
+        maxHp: boss.isFinalGizmo ? 3 : boss.attackType === 'sword' ? 3 : 2,
+        maxPowerups: 1,
+        nextHpAt: now + (boss.isFinalGizmo ? 5200 : 3600),
+        nextPowerupAt: now + (boss.isFinalGizmo ? 7200 : 5400),
+      };
+    }
+    const sup = boss.support;
+    if (!bossSupportQuietWindow(boss)) return;
+    if (sup.powerupDrops < sup.maxPowerups && now >= sup.nextPowerupAt) {
+      spawnBossSocketDrop(boss);
+      sup.powerupDrops++;
+      sup.nextPowerupAt = Infinity;
+      addFloatText('BOSS DROP!', W / 2, H * 0.28, '#ffe61a', 18);
+    }
+    if (sup.hpDrops < sup.maxHp && now >= sup.nextHpAt) {
+      spawnBossHpDrop(boss);
+      sup.hpDrops++;
+      sup.nextHpAt = now + (boss.isFinalGizmo ? 5400 : 4300);
+    }
   }
 
   let hpPowerupTimer = null;
@@ -1139,7 +1645,7 @@
     shield: { glow: '#20dfff', spin: 0.001, wobble: 0.04, orbit: '#eaffff' },
     sombrero: { glow: '#ffd34a', spin: 0.0027, wobble: 0.1 },
     donkey: { glow: '#c7a16b', spin: 0.0007, wobble: 0.08 },
-    fish: { glow: '#6bd7ff', spin: 0.0005, wobble: 0.05, trail: '#7fe3ff' },
+    fish: { glow: '#6bd7ff', spin: 0, wobble: 0, trail: '#7fe3ff' },
     gun: { glow: '#ffe928', spin: 0.001, wobble: 0.07, sparks: '#fff7a6' },
     bomb: { glow: '#8b55ff', spin: -0.0007, wobble: 0.05 },
     hp: { glow: '#33ff66', spin: 0.0012, wobble: 0.05, orbit: '#eaffd8' },
@@ -1295,6 +1801,23 @@
     ctx.restore();
   }
 
+
+  function queueBlackoutHitFlash(o, duration, killed) {
+    if (waveTheme !== 'blackout' || !o) return;
+    const now = Date.now();
+    const snap = {
+      ...o,
+      alive: true,
+      isDeflected: false,
+      litUntil: now + (duration || 320),
+      flashBorn: now,
+      blackoutKillFlash: !!killed,
+      verts: Array.isArray(o.verts) ? o.verts.map(v => [v[0], v[1]]) : o.verts,
+    };
+    blackoutHitFlashes.push(snap);
+    if (blackoutHitFlashes.length > 14) blackoutHitFlashes.shift();
+  }
+
   function drawPowerup(p) {
     if (p.type === 'mystery') { drawMysteryBox(p); return; }
     if (p.type === 'instrument') { drawInstrument(p); return; }
@@ -1440,6 +1963,13 @@
         o.alive = false;
       });
       obstacles = obstacles.filter(o => o.alive !== false);
+      if (boss && !boss.isCaptive) {
+        const bossBombDamage = boss.isFinalGizmo ? 7 : 6;
+        boss.hp = Math.max(1, boss.hp - bossBombDamage);
+        boss.hitFlash = 1;
+        miniExplosion(boss.x, boss.y, '#ff8800');
+        addFloatText(`BOMB HIT -${bossBombDamage}`, boss.x, boss.y - boss.r - 20, '#ff8800', 18);
+      }
       addFloatText(`BOMB! +${cleared}`, player.x, player.y - 50, '#ff8800', 22);
       showTopBanner(`BOMB +${cleared}`, 'good');
       SFX.over();
@@ -1456,6 +1986,20 @@
       SFX.powerupCollect();
     } else if (type === 'mystery') {
       SFX.boxOpen();
+      if (academyMode) {
+        academyMysteryIndex++;
+        if (academyMysteryIndex === 1) {
+          twin = { x: player.x + 40, y: player.y, lastFire: 0, expiresAt: Date.now() + 6000 };
+          addFloatText('MYSTERY: TWIN SHIP!', player.x, player.y - 50, '#ffe61a', 20);
+          showTopBanner('MYSTERY: TWIN SHIP', 'good');
+        } else {
+          buffPizzaUntil = Date.now() + 6000;
+          addFloatText('MYSTERY: PIZZA BLAST!', player.x, player.y - 50, '#ffcc44', 20);
+          showTopBanner('MYSTERY: PIZZA BLAST', 'good');
+        }
+        SFX.mysteryGood();
+        return;
+      }
       // No plain "bomb" here — that's already a normal pickup with no twist on it.
       // Every outcome below is either not a regular powerup at all, or a clear
       // escalation of one (tripleBuff stacks all 3 AND extends on top of whatever's
@@ -1554,14 +2098,15 @@
 
   function reset() {
     fitSpaceCanvas();
+    academyMode = false;
     player = { x:W/2, y:H-SPACE_SHIP_BOTTOM_OFFSET, r:18 };
-    bullets=[]; obstacles=[]; score=0; health=100; wave=1; waveKills=0;
-    enemyBullets=[]; lastEnemyFire=0; floatTexts=[]; lineFlashA=0;
+    bullets=[]; obstacles=[]; score=0; health=100; wave=1; waveKills=0; campaignRebootUsed=false;
+    enemyBullets=[]; lastEnemyFire=0; floatTexts=[]; blackoutHitFlashes=[]; blackoutShooterIndex=0; lineFlashA=0;
     powerups=[]; buffSpeedUntil=0; buffGunUntil=0; buffShieldUntil=0; escort=null; shakeMag=0;
-    boss=null; rescuedChars.clear(); rescueBanner = null; missionRetryCaptives.splice(0, missionRetryCaptives.length); waveCaptivesSeen.clear();
+    boss=null; rescuedChars.clear(); rescueBanner = null; missionRetryCaptives.splice(0, missionRetryCaptives.length); campaignSeenBossNames.clear(); waveCaptivesSeen.clear();
     waveTheme = null; miniBoss = null; themeEffectsAt = 0; waveTransitioning = false; pendingBossWin = null;
     mirrorSequenceActive = false; mirrorStageTimers.forEach(clearTimeout); mirrorStageTimers = [];
-    buffFrozenUntil = 0; buffZappedUntil = 0; controlsReversedUntil = 0; twin = null; rebound = null; buffPizzaUntil = 0; snowingUntil = 0; snowParticles = [];
+    buffFrozenUntil = 0; buffZappedUntil = 0; blasterDisabledUntil = 0; controlsReversedUntil = 0; twin = null; rebound = null; buffPizzaUntil = 0; snowingUntil = 0; snowParticles = [];
     inventory = { gun: false, shield: false, bomb: false };
     socketAnchorY = H - SPACE_SOCKET_ANCHOR_BOTTOM_OFFSET;
     dangerY = socketAnchorY + (H - socketAnchorY) * 0.5;
@@ -1572,16 +2117,20 @@
     currentCfg = waveConfig(wave);
     waveTheme = pickWaveTheme(wave, null);
     startWaveSpawn(currentCfg);
+    if (waveTheme === 'blackout') spawnBlackoutHiddenEnemies();
+    if (waveTheme === 'captive' && wave === 6) spawnCampaignRescueLock();
     scheduleHpPowerup();
     schedulePowerup();
     scheduleMysteryBox();
     scheduleInstrument();
+    const flowToken = spaceFlowToken;
     setTimeout(() => {
-      if (state === 'playing' && wave === 1) showTopBanner('WEAVE THROUGH THE ROCKS', 'good');
+      if (flowToken === spaceFlowToken && state === 'playing' && wave === 1) showTopBanner('CLEAR THE ROCKS', 'good');
     }, 900);
   }
 
   function clearSpaceRuntimeTimers() {
+    spaceFlowToken++;
     clearTimeout(spawnTimer);
     clearTimeout(hpPowerupTimer);
     clearTimeout(powerupTimer);
@@ -1592,13 +2141,172 @@
     mirrorSequenceActive = false;
   }
 
-  function beginConfiguredWave(startWave, forcedBossName) {
+  function clearSpaceBonusObjects() {
+    // Optional rewards should never keep a wave alive or fall behind intermission cards.
+    powerups = [];
+    bullets = [];
+    enemyBullets = [];
+  }
+
+  function clearSpaceCinematicOverlays() {
+    document.querySelectorAll('.space-rescue-briefing,.space-intro-overlay,.space-wave-cleared,.space-wave-announce,.space-reboot-overlay').forEach(el => el.remove());
+  }
+
+  function spaceDamageSuppressed() {
+    return state !== 'playing' || waveTransitioning || !!document.querySelector('.space-rescue-briefing,.space-intro-overlay,.space-wave-cleared,.space-wave-announce,.space-reboot-overlay');
+  }
+
+  function clearSpaceAcademyTimers() {
+    academyTimers.forEach(clearTimeout);
+    academyTimers = [];
+  }
+
+  const SPACE_ACADEMY_LESSONS = [
+    { title: 'DRAG TO MOVE', detail: 'STAY BELOW THE DANGER LINE' },
+    { title: 'AUTO-FIRE IS ON', detail: 'LINE UP YOUR SHOTS' },
+    { title: 'CATCH POWERUPS', detail: 'STORE THEM IN SOCKETS' },
+    { title: 'TAP A SOCKET', detail: 'USE THE BOMB' },
+    { title: 'SHOOT THE ? CRATE', detail: 'IT CAN HELP OR HURT' },
+    { title: 'BREAK THE LOCK', detail: 'SAVE THE MOBE' },
+    { title: 'BOSS WARNINGS', detail: 'READ THE ATTACK CUE' },
+    { title: 'BLACKOUT', detail: 'SLOW DOWN. WATCH THE LINE.' },
+  ];
+
+  function academyTimer(fn, delay) {
+    const t = setTimeout(fn, delay);
+    academyTimers.push(t);
+    return t;
+  }
+
+  function academyMessage(lesson) {
+    showTopBanner(lesson.title, 'good');
+    addFloatText(lesson.title, W / 2, H * 0.24, '#33ff66', 28, { vy: -0.16, fade: 0.006 });
+    academyTimer(() => {
+      if (academyMode && state === 'playing') addFloatText(lesson.detail, W / 2, H * 0.32, '#ffe61a', 20, { vy: -0.12, fade: 0.006 });
+    }, 620);
+  }
+
+  function spawnAcademyAsteroid(x, y, speed) {
+    const r = 20;
+    const verts = Array.from({ length: 8 }, (_, i) => {
+      const a = (i / 8) * Math.PI * 2;
+      const rr = r * (0.74 + (i % 3) * 0.08);
+      return [Math.cos(a) * rr, Math.sin(a) * rr];
+    });
+    obstacles.push({ type: 'asteroid', x, y, vx: 0, vy: speed, r, verts, rot: 0, rotSpeed: 0.01, hp: 1, shadeSeed: 0, rockStyle: 1, academyObstacle: true });
+  }
+
+  function spawnAcademyEnemy(x, y, hp) {
+    obstacles.push({ type: 'face', x, y, vx: 0, vy: 0.42, r: FACE_R, ci: nextMissionEnemyIndex(), hp: hp || 1, isTrapped: false, ringHp: 0, pausedBurstDone: true, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0, academyObstacle: true });
+  }
+
+  function spawnAcademyPowerup(type, x, delay) {
+    academyTimer(() => {
+      if (!academyMode || state !== 'playing') return;
+      powerups.push({ type, x, y: -POWERUP_R - 10, vy: 1.25, r: POWERUP_R, bob: Math.random() * Math.PI * 2, academyPowerup: true });
+    }, delay || 0);
+  }
+
+  function spawnAcademyMystery(x, delay) {
+    academyTimer(() => {
+      if (!academyMode || state !== 'playing') return;
+      powerups.push({ type: 'mystery', x, y: -POWERUP_R - 10, vy: 0.72, r: POWERUP_R, bob: 0, ringHp: 2, academyMystery: true });
+    }, delay || 0);
+  }
+
+  function spawnAcademyRescueLock() {
+    const ci = missionTrappedChars[0] != null ? missionTrappedChars[0] : nextMissionEnemyIndex();
+    const r = FACE_R * 1.08;
+    obstacles.push({ type: 'face', x: W / 2, y: Math.max(100, H * 0.18), vx: 0, vy: 0.18, r, ci, hp: 1, isTrapped: true, ringHp: 5, maxRingHp: 5, pausedBurstDone: true, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0, academyObstacle: true });
+  }
+
+  function enterSpaceAcademyLesson(index) {
+    clearSpaceAcademyTimers();
+    academyStep = index;
+    academyStepStarted = Date.now();
+    academyStepArmed = false;
+    if (index === 4) academyMysteryIndex = 0;
+    bullets = [];
+    enemyBullets = [];
+    obstacles = [];
+    powerups = [];
+    blackoutHitFlashes = [];
+    waveTheme = null;
+    themeEffectsAt = 0;
+    currentCfg = Object.assign(waveConfig(1), { speed: 1.65, tier: 0, enemyFireMult: 0, allowHp: false, allowPowerups: false, allowMystery: false });
+    const lesson = SPACE_ACADEMY_LESSONS[index];
+    if (!lesson) { completeSpaceAcademy(); return; }
+    academyMessage(lesson);
+    if (index === 0) {
+      [0.28, 0.5, 0.72].forEach((xp, i) => spawnAcademyAsteroid(W * xp, -40 - i * 120, 1.08));
+    } else if (index === 1) {
+      [0.28, 0.5, 0.72].forEach((xp, i) => spawnAcademyEnemy(W * xp, -40 - i * 90, 1));
+    } else if (index === 2) {
+      spawnAcademyPowerup('gun', W * 0.28, 500);
+      spawnAcademyPowerup('shield', W * 0.5, 1650);
+      spawnAcademyPowerup('bomb', W * 0.72, 2800);
+    } else if (index === 3) {
+      inventory.bomb = true;
+      for (let i = 0; i < 5; i++) spawnAcademyEnemy(W * (0.2 + i * 0.15), -35 - i * 42, 1);
+    } else if (index === 4) {
+      spawnAcademyMystery(W * 0.38, 0);
+      spawnAcademyMystery(W * 0.62, 2600);
+    } else if (index === 5) {
+      spawnAcademyRescueLock();
+    } else if (index === 6) {
+      academyTimer(() => academyMode && showTopBanner('OGRE: HEE HAW MEANS CHARGE', 'bad'), 900);
+      academyTimer(() => academyMode && showTopBanner('KNIGHT: WHEN SWORD GLOWS, MOVE', 'bad'), 3000);
+      academyTimer(() => academyMode && showTopBanner('GIZMO: READ THE BOUNCE', 'bad'), 5100);
+    } else if (index === 7) {
+      waveTheme = 'blackout';
+      themeEffectsAt = Date.now();
+      [0.34, 0.66].forEach((xp, i) => spawnAcademyAsteroid(W * xp, -35 - i * 150, 0.92));
+    }
+  }
+
+  function completeSpaceAcademy() {
+    clearSpaceAcademyTimers();
+    academyMode = false;
     clearSpaceRuntimeTimers();
-    bullets = []; obstacles = []; enemyBullets = []; powerups = []; floatTexts = [];
+    clearSpaceBonusObjects();
+    obstacles = [];
+    blackoutHitFlashes = [];
+    waveTheme = null;
+    state = 'idle';
+    cancelAnimationFrame(raf);
+    showTopBanner('SPACE TUTORIAL COMPLETE', 'good');
+    showSpaceOverlay('select');
+  }
+
+  function updateSpaceAcademy() {
+    if (!academyMode || state !== 'playing' || academyStepArmed) return;
+    const elapsed = Date.now() - academyStepStarted;
+    let done = false;
+    if (academyStep === 0 || academyStep === 1 || academyStep === 3 || academyStep === 5) done = elapsed > 2200 && obstacles.length === 0;
+    else if (academyStep === 2) done = elapsed > 3500 && inventory.gun && inventory.shield && inventory.bomb;
+    else if (academyStep === 4) done = elapsed > 4200 && academyMysteryIndex >= 2 && powerups.length === 0;
+    else if (academyStep === 6) done = elapsed > 7200;
+    else if (academyStep === 7) done = elapsed > 8000;
+    if (!done && elapsed > 12000) done = true;
+    if (!done) return;
+    academyStepArmed = true;
+    academyTimer(() => {
+      if (!academyMode || state !== 'playing') return;
+      enterSpaceAcademyLesson(academyStep + 1);
+    }, 900);
+  }
+
+  function beginConfiguredWave(startWave, forcedBossName) {
+    academyMode = false;
+    clearSpaceAcademyTimers();
+    clearSpaceRuntimeTimers();
+    clearSpaceCinematicOverlays();
+    bullets = []; obstacles = []; enemyBullets = []; powerups = []; floatTexts = []; blackoutHitFlashes = []; blackoutShooterIndex = 0;
     boss = null; miniBoss = null; rescueBanner = null; waveCaptivesSeen.clear();
     wave = startWave;
     waveKills = 0;
     health = 100;
+    blasterDisabledUntil = 0;
     score = Math.max(score || 0, (startWave - 1) * 100);
     currentCfg = waveConfig(wave);
     waveTheme = pickWaveTheme(wave, null);
@@ -1611,17 +2319,19 @@
       pendingBossCreature = (waveTheme === 'boss' || waveTheme === 'gizmo') ? pickBossCreature() : null;
     }
     spawnsRemaining = 0;
-    themeEffectsAt = 0;
+    themeEffectsAt = waveTheme === 'blackout' ? Date.now() + 1400 : 0;
     waveTransitioning = false;
     pendingBossWin = null;
     startWaveSpawn(currentCfg);
+    if (waveTheme === 'blackout') spawnBlackoutHiddenEnemies();
+    if (waveTheme === 'captive' && wave === 6) spawnCampaignRescueLock();
     scheduleHpPowerup();
     schedulePowerup();
     scheduleMysteryBox();
     scheduleInstrument();
     if (waveTheme === 'boss') spawnBoss(false, { guardedRescue: [4,7,9,11].includes(wave) && hasUnrescuedMissionCaptive() });
     if (waveTheme === 'gizmo') spawnBoss(false, { guardedRescue: hasUnrescuedMissionCaptive(), escape: !forcedBossName && wave !== SPACE_FINAL_GIZMO_WAVE, final: !forcedBossName && wave === SPACE_FINAL_GIZMO_WAVE });
-    if (waveTheme === 'captive') spawnBoss(true);
+    if (waveTheme === 'captive' && wave !== 6) spawnBoss(true);
     if (waveTheme === 'ghost' || waveTheme === 'emp') spawnMiniBoss(waveTheme);
     if (waveTheme === 'mirror') spawnMirrorEnemy();
     if (waveTheme === 'rave') SFX.neonOn();
@@ -1634,7 +2344,7 @@
     clearTimeout(spawnTimer);
     // Boss/captive waves are true encounter waves now: beat the boss, then advance
     // into the next chapter beat instead of resuming a hidden regular spawn pool.
-    if (waveTheme === 'boss' || waveTheme === 'captive' || waveTheme === 'gizmo') spawnsRemaining = 0;
+    if (waveTheme === 'boss' || (waveTheme === 'captive' && wave !== 6) || waveTheme === 'gizmo') spawnsRemaining = 0;
     else if (cfg.spawnsRemaining != null) spawnsRemaining = cfg.spawnsRemaining;
     else if (waveTheme === 'asteroids') spawnsRemaining = Math.max(1, Math.ceil(cfg.poolSize * (wave === 5 ? 0.9 : 1.35)));
     else if (waveTheme === 'enemies') spawnsRemaining = Math.max(8, Math.ceil(cfg.poolSize * 0.72));
@@ -1651,7 +2361,9 @@
       // SWARM: cap how many enemies are falling at once. Same total pool over the
       // wave (we re-queue rather than consume a spawn), just fewer on screen
       // simultaneously so it reads as a steady stream, not a flood.
-      if (waveTheme === 'swarm' && obstacles.length >= (cfg.swarmCap || 5)) { spawnTimer = setTimeout(doSpawn, 280); return; }
+      const activeCap = cfg.activeObstacleCap || (waveTheme === 'swarm' ? (cfg.swarmCap || 5) : 0);
+      const activeThreats = obstacles.filter(o => o.alive !== false && !o.isTrapped).length;
+      if (activeCap && activeThreats >= activeCap) { spawnTimer = setTimeout(doSpawn, 260); return; }
       spawnObstacle(cfg);
       spawnsRemaining--;
       // SWARM speeds up by cadence, not by screen-flooding. ALL ASTEROIDS now works
@@ -1675,8 +2387,10 @@
   // in Whack-a-Mobe — a clean confirmation that the wave is actually done, shown
   // for ~1s before the slot-machine announcement for the next wave begins.
   function showWaveClearedBeat(clearedWave, onDone) {
+    const flowToken = spaceFlowToken;
     SFX.win();
     const el = document.createElement('div');
+    el.className = 'space-wave-cleared';
     el.style.cssText = 'position:fixed;inset:0;z-index:9997;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity 0.2s ease-in-out;background:rgba(3,1,16,0.7)';
     el.innerHTML = `
       <div style="font-size:min(30vw,120px);color:#33ff66;text-shadow:0 0 30px #33ff66,0 0 60px #33ff6688;line-height:1">✓</div>
@@ -1685,18 +2399,21 @@
     document.body.appendChild(el);
     requestAnimationFrame(() => { el.style.opacity = '1'; });
     setTimeout(() => {
+      if (flowToken !== spaceFlowToken || state !== 'playing') { el.remove(); return; }
       el.style.opacity = '0';
-      setTimeout(() => { el.remove(); onDone(); }, 200);
+      setTimeout(() => { if (flowToken !== spaceFlowToken || state !== 'playing') { el.remove(); return; } el.remove(); onDone(); }, 200);
     }, 1000);
   }
 
   function showGizmoEscapeBeat(rescuedCi, onDone) {
+    const flowToken = spaceFlowToken;
     waveTransitioning = true;
     const isEarlyWave = (wave <= 2 || wave === 10 || wave === 11);
     const holdMs = isEarlyWave ? 7800 : 3300;
     const flyDur = isEarlyWave ? 1.8 : 1.45;
     const flyDelay = isEarlyWave ? 5.2 : 0.25;
     const el = document.createElement('div');
+    el.className = 'space-wave-cleared';
     el.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(3,1,16,0.9);opacity:0;transition:opacity 0.25s ease;pointer-events:none';
     const rescueLine = rescuedCi >= 0 ? `BUT ${GAME_CHARS[rescuedCi].name.toUpperCase()} IS FREE` : 'BUT A MOBE IS FREE';
     const hahaHTML = isEarlyWave ? `
@@ -1725,8 +2442,9 @@
     requestAnimationFrame(() => { el.style.opacity = '1'; });
     if (isEarlyWave) SFX.scaryLaugh();
     setTimeout(() => {
+      if (flowToken !== spaceFlowToken || state !== 'playing') { el.remove(); return; }
       el.style.opacity = '0';
-      setTimeout(() => { el.remove(); waveTransitioning = false; if (onDone) onDone(); }, 260);
+      setTimeout(() => { if (flowToken !== spaceFlowToken || state !== 'playing') { el.remove(); return; } el.remove(); waveTransitioning = false; if (onDone) onDone(); }, 260);
     }, holdMs);
   }
 
@@ -1747,6 +2465,7 @@
       </div>`;
     }).join('') : '';
     const el = document.createElement('div');
+    el.className = 'space-wave-cleared';
     el.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(3,1,16,0);opacity:1;transition:background 0.35s ease;pointer-events:none';
     el.innerHTML = `
       <div style="width:min(94vw,410px);text-align:center;opacity:0;transform:scale(0.96);transition:opacity 0.35s ease,transform 0.35s ease">
@@ -1780,6 +2499,7 @@
 
   function showBossDefeatedBeat(bossName, x, y, onDone) {
     const el = document.createElement('div');
+    el.className = 'space-wave-cleared';
     el.style.cssText = 'position:fixed;inset:0;z-index:9997;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity 0.2s ease';
     el.innerHTML = `
       <div style="text-align:center">
@@ -1797,10 +2517,12 @@
   }
 
   function showBossRescueUnlockBeat(rescuedCi, bossName, onDone) {
+    const flowToken = spaceFlowToken;
     if (rescuedCi == null || rescuedCi < 0) { if (onDone) onDone(); return; }
     waveTransitioning = true;
     const gc = GAME_CHARS[rescuedCi];
     const el = document.createElement('div');
+    el.className = 'space-wave-cleared';
     el.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 42%,rgba(0,229,255,0.34),rgba(6,30,72,0.96) 48%,rgba(3,1,16,0.98) 100%);opacity:0;transition:opacity 0.25s ease;pointer-events:none;overflow:hidden';
     const img = gc.imgHappy || gc.img;
     el.innerHTML = `
@@ -1822,8 +2544,12 @@
     SFX.missionHero();
     ticketConfetti(true);
     setTimeout(() => {
+      if (flowToken !== spaceFlowToken) { el.remove(); return; }
       el.style.opacity = '0';
-      setTimeout(() => { el.remove(); waveTransitioning = false; if (onDone) onDone(); }, 260);
+      setTimeout(() => {
+        if (flowToken !== spaceFlowToken) { el.remove(); return; }
+        el.remove(); rescueBanner = null; clearSpaceCinematicOverlays(); waveTransitioning = false; if (onDone) onDone();
+      }, 260);
     }, 4800);
   }
 
@@ -1866,6 +2592,10 @@ function nextWave() {
     if (waveTransitioning) return;
 
     waveTransitioning = true;
+    clearSpaceRuntimeTimers();
+    clearSpaceBonusObjects();
+    blackoutHitFlashes = [];
+    themeEffectsAt = 0;
 
     // Reward player for clearing a wave
     health = Math.min(100, health + 5);
@@ -1876,11 +2606,14 @@ function nextWave() {
     const previousTheme = waveTheme;
     wave++;
     waveKills=0;
+    blackoutShooterIndex = 0;
     waveCaptivesSeen.clear();
     currentCfg = waveConfig(wave);
     waveTheme = pickWaveTheme(wave, previousTheme);
     pendingBossCreature = (waveTheme === 'boss' || waveTheme === 'gizmo') ? pickBossCreature() : null;
     const announceMs = 7000;
+    clearSpaceCinematicOverlays();
+    rescueBanner = null;
     showWaveClearedBeat(clearedWave, () => {
       themeEffectsAt = Date.now() + announceMs;
       // Nothing for the new wave spawns until the announcement is actually gone —
@@ -1889,10 +2622,13 @@ function nextWave() {
       announceWave(wave, announceMs, () => {
         waveTransitioning = false;
         if (state !== 'playing') return;
+        themeEffectsAt = waveTheme === 'blackout' ? Date.now() + 1400 : 0;
         startWaveSpawn(currentCfg);
+        if (waveTheme === 'blackout') spawnBlackoutHiddenEnemies();
+        if (waveTheme === 'captive' && wave === 6) spawnCampaignRescueLock();
         if (waveTheme === 'boss') spawnBoss(false, { guardedRescue: [4,7,9,11].includes(wave) && hasUnrescuedMissionCaptive() });
         if (waveTheme === 'gizmo') spawnBoss(false, { guardedRescue: hasUnrescuedMissionCaptive(), escape: wave !== SPACE_FINAL_GIZMO_WAVE, final: wave === SPACE_FINAL_GIZMO_WAVE });
-        if (waveTheme === 'captive') spawnBoss(true);
+        if (waveTheme === 'captive' && wave !== 6) spawnBoss(true);
         if (waveTheme === 'ghost' || waveTheme === 'emp') spawnMiniBoss(waveTheme);
         if (waveTheme === 'mirror') spawnMirrorEnemy();
         if (waveTheme === 'rave') SFX.neonOn();
@@ -1902,11 +2638,11 @@ function nextWave() {
   }
 
   function skillCalloutForWave() {
-    if (wave === 1) return 'WEAVE THROUGH THE ROCKS';
+    if (wave === 1) return 'CLEAR THE ROCKS';
     if (wave === 2) return 'LINE UP YOUR SHOTS';
     if (wave === 4) return 'FIRST CAPTIVE. BEAT THE BOSS.';
     if (wave === 5) return 'BREATHE. STOCK UP.';
-    if (wave === 8) return 'BLACKOUT. STAY CALM.';
+    if (wave === 8) return 'BLACKOUT. FIND THE SHOOTERS.';
     if (wave === 10) return 'JAM SESSION. HAVE FUN.';
     if (wave === 12) return 'FINAL PREP. FILL SOCKETS.';
     if (wave === SPACE_FINAL_GIZMO_WAVE) return 'FINAL GIZMO. USE EVERYTHING.';
@@ -1916,9 +2652,9 @@ function nextWave() {
     if (waveTheme === 'swarm') return 'BOMB NOW OR DODGE CLEAN';
     if (waveTheme === 'bomber') return 'KILL BOMBERS EARLY';
     if (waveTheme === 'mirror') return 'FIND THE TRIANGLE GAP';
-    if (waveTheme === 'asteroids') return 'WEAVE. SAVE THE BOMB.';
+    if (waveTheme === 'asteroids') return 'CLEAR THE ROCKS';
     if (waveTheme === 'enemies') return 'SHOOT FACES. DODGE SHOTS.';
-    if (waveTheme === 'blackout') return 'STAY CALM. WATCH THE LINE.';
+    if (waveTheme === 'blackout') return 'FIND THE SHOOTERS';
     if (waveTheme === 'emp') return 'DODGE THE ZAPS';
     if (waveTheme === 'ghost') return 'TRACK THE GHOST';
     return null;
@@ -1927,9 +2663,15 @@ function nextWave() {
   function showSkillCalloutForWave() {
     const text = skillCalloutForWave();
     if (!text) return;
+    const flowToken = spaceFlowToken;
     setTimeout(() => {
-      if (state !== 'playing' || waveTransitioning) return;
-      showTopBanner(text, waveTheme === 'boss' || waveTheme === 'gizmo' || waveTheme === 'captive' ? 'bad' : 'good');
+      if (flowToken !== spaceFlowToken || state !== 'playing' || waveTransitioning) return;
+      if (waveTheme === 'blackout') {
+        addFloatText('BLACKOUT!', W / 2, H * 0.35, '#ffe61a', 32);
+        addFloatText('STAY IN THE LIGHT', W / 2, H * 0.35 + 30, '#33ff66', 20);
+      } else {
+        showTopBanner(text, waveTheme === 'boss' || waveTheme === 'gizmo' || waveTheme === 'captive' ? 'bad' : 'good');
+      }
     }, 420);
   }
 
@@ -1959,7 +2701,9 @@ function nextWave() {
   }
 
   function announceWave(w, duration, onDone) {
+    const flowToken = spaceFlowToken;
     const ann = document.createElement('div');
+    ann.className = 'space-wave-announce';
     // A real dark "intermission" backdrop, not just text floating over still-visible
     // gameplay — this isn't a rush game, a clear break between waves is fine. Fades
     // in/out on its own short transition rather than riding the text's scale/opacity
@@ -1978,7 +2722,7 @@ function nextWave() {
     </div>`;
     document.body.appendChild(ann);
     requestAnimationFrame(() => { ann.style.background = 'rgba(3,1,16,0.88)'; });
-    setTimeout(() => { ann.style.background = 'rgba(3,1,16,0)'; }, Math.max(0, duration - 450));
+    setTimeout(() => { if (flowToken === spaceFlowToken && state === 'playing') ann.style.background = 'rgba(3,1,16,0)'; }, Math.max(0, duration - 450));
     const typeEl = ann.querySelector('#sp-wave-type'), incomingEl = ann.querySelector('#sp-wave-incoming');
     // BOSS is now just another theme entry, with its own THEME_LABEL — no more
     // separate wave-number-based fallback needed.
@@ -2004,10 +2748,65 @@ function nextWave() {
       setTimeout(spin, spinDelays[i++]);
     }
     spin();
-    setTimeout(() => { ann.remove(); if (onDone) onDone(); }, duration);
+    setTimeout(() => { if (flowToken !== spaceFlowToken || state !== 'playing') { ann.remove(); return; } ann.remove(); if (onDone) onDone(); }, duration);
+  }
+
+
+  function triggerCampaignReboot() {
+    if (campaignRebootUsed) return false;
+    campaignRebootUsed = true;
+    const rebootWave = wave;
+    state = 'rebooting';
+    waveTransitioning = true;
+    clearSpaceRuntimeTimers();
+    clearSpaceBonusObjects();
+    obstacles = [];
+    boss = null; miniBoss = null; pendingBossWin = null; mirrorSequenceActive = false;
+    cancelAnimationFrame(raf);
+    const ov = document.createElement('div');
+    ov.className = 'space-reboot-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(3,1,16,0.94);opacity:0;transition:opacity 0.22s ease;pointer-events:none;text-align:center;padding:18px;overflow:hidden';
+    const renderRebootCard = (failed) => {
+      ov.innerHTML = failed ? `<div style="font-family:'Bebas Neue',cursive;color:#ff4444;text-shadow:0 0 22px #ff4444,0 0 44px #ff444488;letter-spacing:5px;line-height:1;transform:translateY(-18px);animation:sp-reboot-drop 0.55s cubic-bezier(.2,1.15,.35,1) forwards">
+        <div style="font-size:clamp(38px,12vw,78px)">YOU FAILED</div>
+        <div style="font-family:'VCR',monospace;font-size:clamp(18px,5vw,32px);letter-spacing:3px;color:#ffe61a;text-shadow:0 0 16px #ffe61a;margin-top:18px">REBOOT SIGNAL FOUND</div>
+      </div>` : `<div style="font-family:'Bebas Neue',cursive;color:#33ff66;text-shadow:0 0 22px #33ff66,0 0 44px #33ff6688;letter-spacing:5px;line-height:1;transform:translateY(24px);animation:sp-reboot-rise 0.55s cubic-bezier(.2,1.15,.35,1) forwards">
+        <div style="font-size:clamp(36px,12vw,76px)">SYSTEM BACK ONLINE</div>
+        <div style="font-family:'VCR',monospace;font-size:clamp(14px,3.8vw,22px);letter-spacing:3px;color:#ffe61a;text-shadow:0 0 12px #ffe61a;margin-top:14px">REBOOTING AT WAVE ${rebootWave}</div>
+      </div>`;
+    };
+    if (!document.getElementById('space-reboot-keyframes')) {
+      const style = document.createElement('style');
+      style.id = 'space-reboot-keyframes';
+      style.textContent = `@keyframes sp-reboot-drop{from{opacity:0;transform:translateY(-34px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes sp-reboot-rise{from{opacity:0;transform:translateY(34px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}`;
+      document.head.appendChild(style);
+    }
+    renderRebootCard(true);
+    document.body.appendChild(ov);
+    requestAnimationFrame(() => { ov.style.opacity = '1'; });
+    SFX.over && SFX.over();
+    setTimeout(() => {
+      renderRebootCard(false);
+      SFX.win && SFX.win();
+    }, 1150);
+    setTimeout(() => {
+      ov.style.opacity = '0';
+      setTimeout(() => {
+        ov.remove();
+        if (!document.body.classList.contains('on-space')) { state = 'idle'; waveTransitioning = false; return; }
+        state = 'playing';
+        beginConfiguredWave(rebootWave);
+        health = 60;
+        waveTransitioning = false;
+        showTopBanner('SYSTEM BACK ONLINE', 'good');
+        raf = requestAnimationFrame(loop);
+      }, 240);
+    }, 2950);
+    return true;
   }
 
   function takeDamage(amount) {
+    if (spaceDamageSuppressed()) return;
     if (Date.now() < buffShieldUntil) {
       addFloatText('BLOCKED!', player.x, player.y - 40, '#00e5ff', 18);
       miniExplosion(player.x, player.y, '#00e5ff');
@@ -2023,6 +2822,9 @@ function nextWave() {
     if (Date.now() < snowingUntil) {
       buffFrozenUntil = Math.max(buffFrozenUntil, Date.now() + 2000);
       addFloatText('FROZEN!', player.x, player.y - 60, '#66ddff', 16);
+    }
+    if (health <= 0 && state === 'playing' && wave <= SPACE_CAMPAIGN_FINAL_WAVE && !campaignRebootUsed) {
+      if (triggerCampaignReboot()) return;
     }
     if (health <= 0) {
       // 'dying' (not 'over' yet) — loop() keeps redrawing a frozen frame (background,
@@ -2431,6 +3233,10 @@ function nextWave() {
       drawBuffIconLine('zap', `FART ${Math.ceil((buffZappedUntil - now) / 1000)}s`, buffY, '#cc99ff', 13);
       buffY += 18;
     }
+    if (now < blasterDisabledUntil) {
+      drawBuffLine(`BLASTER JAM ${Math.ceil((blasterDisabledUntil - now) / 1000)}s`, buffY, '#ff76d2', 13);
+      buffY += 18;
+    }
     if (now < controlsReversedUntil) {
       drawBuffLine(`🔀 REVERSED ${Math.ceil((controlsReversedUntil - now) / 1000)}s`, buffY, '#ff5500', 13);
       buffY += 18;
@@ -2646,10 +3452,10 @@ function nextWave() {
     }
 
     const _now = Date.now();
-    const _frozen = _now < buffFrozenUntil, _zapped = _now < buffZappedUntil;
+    const _frozen = _now < buffFrozenUntil, _zapped = _now < buffZappedUntil, _blasterJammed = _now < blasterDisabledUntil;
     const _pizza = _now < buffPizzaUntil;
     const curFireMs = _now < buffGunUntil ? AUTO_FIRE_MS * 0.4 : AUTO_FIRE_MS;
-    if (!waveTransitioning && _pizza) {
+    if (!waveTransitioning && !_blasterJammed && _pizza) {
       // Its own much slower, separate cadence — a deliberate pump-shotgun rhythm,
       // not rapid fire — plus slower bullets so each blast reads as heavy rather
       // than just "more bullets at the normal speed."
@@ -2661,7 +3467,7 @@ function nextWave() {
         SFX.bomberDive();
         lastPizzaFire = ts;
       }
-    } else if(!waveTransitioning && ts-lastAutoFire>curFireMs){
+    } else if(!waveTransitioning && !_blasterJammed && ts-lastAutoFire>curFireMs){
       bullets.push({x:player.x,y:player.y-player.r*1.2,vy:-B_SPEED});
       if (_zapped) SFX.fart(); else SFX.blaster();
       lastAutoFire=ts;
@@ -2687,7 +3493,7 @@ function nextWave() {
         if (Date.now() > escort.expiresAt) {
           escort.state = 'leaving';
           addFloatText('THANKS!', escort.x, escort.y - 20, '#33ff66', 16);
-        } else if (!waveTransitioning && ts - escort.lastFire > AUTO_FIRE_MS * 1.6) {
+        } else if (!waveTransitioning && !_blasterJammed && ts - escort.lastFire > AUTO_FIRE_MS * 1.6) {
           bullets.push({x:escort.x, y:escort.y-14, vy:-B_SPEED});
           escort.lastFire = ts;
         }
@@ -2703,7 +3509,7 @@ function nextWave() {
     if (twin) {
       twin.x = player.x + 40; twin.y = player.y;
       if (Date.now() > twin.expiresAt) { twin = null; }
-      else if (!waveTransitioning && ts - twin.lastFire > AUTO_FIRE_MS) {
+      else if (!waveTransitioning && !_blasterJammed && ts - twin.lastFire > AUTO_FIRE_MS) {
         bullets.push({x:twin.x, y:twin.y-player.r*1.2, vy:-B_SPEED});
         twin.lastFire = ts;
       }
@@ -2756,12 +3562,66 @@ function nextWave() {
     // during the fight, since the regular wave queue is paused for its duration.
     if (boss) {
       boss.x += boss.vx;
+      if (boss.attackType === 'portal' && boss.grayTeleport && !boss.grayTeleport.arrived) {
+        const gtNow = Date.now();
+        const g = boss.grayTeleport;
+        boss.vx = 0;
+        if (gtNow < g.departAt) {
+          boss.x = g.fromX;
+          boss.y = g.fromY;
+        } else if (gtNow < g.reappearAt) {
+          // Make Gray read as a ghost glide, not a tiny in-place glitch: during the
+          // dissolve/travel beat his actual collision/body position eases across
+          // the board along the same path the visual afterimage uses.
+          const t = Math.max(0, Math.min(1, (gtNow - g.departAt) / Math.max(1, g.reappearAt - g.departAt)));
+          const e = t * t * (3 - 2 * t);
+          boss.x = g.fromX + (g.toX - g.fromX) * e;
+          boss.y = g.fromY + (g.toY - g.fromY) * e + Math.sin(t * Math.PI) * -18;
+        } else {
+          boss.x = g.toX;
+          boss.y = g.toY;
+          boss.grayTeleport.arrived = true;
+          boss.ghostUntil = gtNow + 480;
+          boss.invisibleUntil = 0;
+          boss.phaseAlphaUntil = gtNow + 520;
+          boss.vx = boss.grayState ? 0 : (Math.random() < 0.5 ? -1 : 1) * 0.38;
+          if (!boss.grayState) {
+            miniExplosion(boss.x, boss.y, '#65f0ff');
+            addFloatText('REAPPEAR!', boss.x, boss.y + boss.r + 18, '#65f0ff', 14);
+          }
+        }
+      }
+      if (boss.attackType === 'fire' && Date.now() < (boss.dragonBreathUntil || 0)) {
+        // During a breath chain the Dragon sweeps harder so the moving mouth
+        // paints the lane edges/corners instead of leaving a safe wall pocket.
+        const dir = boss.vx >= 0 ? 1 : -1;
+        const minSweep = 2.35 + campaignTier(wave) * 0.14;
+        if (Math.abs(boss.vx) < minSweep) boss.vx = dir * minSweep;
+      }
+      if (boss.attackType === 'ink') {
+        const now = Date.now();
+        if (now < (boss.octoRecoverUntil || 0)) {
+          const homeY = boss.octoHomeY || 185;
+          const targetY = boss.octoTargetY || Math.min(H * 0.42, homeY + 112);
+          if (now < (boss.octoDescendUntil || 0)) {
+            const t = 1 - Math.max(0, (boss.octoDescendUntil - now) / 760);
+            boss.y = homeY + (targetY - homeY) * (t * t * (3 - 2 * t));
+            boss.vx *= 0.94;
+          } else if (now < (boss.octoSpinUntil || 0)) {
+            boss.y = targetY + Math.sin(now * 0.012) * 5;
+            boss.vx *= 0.90;
+          } else {
+            const t = 1 - Math.max(0, (boss.octoRecoverUntil - now) / 720);
+            boss.y = targetY + (homeY - targetY) * (t * t * (3 - 2 * t));
+          }
+        }
+      }
       if (boss.x < boss.r + 20 || boss.x > W - boss.r - 20) boss.vx *= -1;
       boss.hitFlash = Math.max(0, boss.hitFlash - 0.05);
 
       // A jail cell shouldn't be dispatching reinforcements — captive fights are just
       // rescue + dodge attacks, no minions.
-      if (!boss.isCaptive && boss.attackType !== 'donkey' && Date.now() > bossDeployTimer) {
+      if (!boss.isCaptive && bossAllowsClutter(boss, false) && boss.attackType !== 'donkey' && Date.now() > bossDeployTimer) {
         // Spawns from right behind the boss, not a random spot at the top — reads as
         // the boss actually deploying it rather than an unrelated arrival.
         const side = Math.random() < 0.5 ? -1 : 1;
@@ -2770,8 +3630,10 @@ function nextWave() {
       }
 
       updateOgreDonkeyLine();
+      updateBossSupportDrops();
+      if (boss.attackType === 'portal') updateGrayVisitorBoss(boss, Date.now());
 
-      if (Date.now() > boss.nextAttack && !boss.laserPhase && !(boss.attackType === 'donkey' && boss.ogreLine)) {
+      if (Date.now() > boss.nextAttack && boss.attackType !== 'portal' && !boss.laserPhase && !(boss.attackType === 'donkey' && boss.ogreLine)) {
         const bt = campaignTier(wave);
         if (boss.isCaptive) {
           const count = Math.min(7, 4 + Math.floor(bt / 2));
@@ -2789,99 +3651,183 @@ function nextWave() {
           beginOgreDonkeyWave();
           boss.nextAttack = Date.now() + 999999;
         } else if (boss.attackType === 'fire') {
-          const count = bt >= 3 ? 5 : 4;
-          const base = Math.atan2(player.y - boss.y, player.x - boss.x);
-          const speed = 3.0 + bt * 0.22 + Math.max(0, wave - 18) * 0.08;
-          for (let k = 0; k < count; k++) {
-            const ang = base + (k - (count - 1) / 2) * 0.16;
-            enemyBullets.push({ x: boss.x, y: boss.y + boss.r * 0.48, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, r: 7.7, theme: 'fire', splitAt: 520, splitTheme: 'fire', splitSpeed: 2.35, born: Date.now() });
-          }
-          addFloatText('FIRE BREATH!', boss.x, boss.y + boss.r + 18, '#ff6600', 16);
-          SFX.tone && SFX.tone(160,'sawtooth',0,0.18,0.09,80);
-          boss.nextAttack = Date.now() + (boss.attackDelay || 2200);
-        } else if (boss.attackType === 'sword') {
-          const telegraphMs = 820;
+          // Phase 3C.7 Dragon: restore the clean breath-chain mechanic.
+          // Fireballs release one-by-one from the moving/swaying head, not as a
+          // dumped spread. The head sway is wide enough to reach wall lanes.
           const now = Date.now();
-          enemyBullets.push({
-            x: boss.x, y: boss.y + boss.r * 0.93,
-            vx: 0, vy: 0, r: 8.5,
-            theme: 'sword',
-            damage: 35,
-            visualScale: 5.55,
-            telegraph: true,
-            telegraphStart: now,
-            launchAt: now + telegraphMs,
-            displayRotation: Math.PI * 0.18,
-            born: now,
+          const breathCount = bt >= 2 ? 21 : 18;
+          const interval = bt >= 2 ? 82 : 92;
+          const baseSpeed = bossProjectileSpeed(boss, 4.16 + bt * 0.12 + Math.max(0, wave - 18) * 0.05);
+          const seed = Math.random() * Math.PI * 2;
+          boss.dragonBreathUntil = now + breathCount * interval + 420;
+          boss.dragonBreathSeed = seed;
+          const targetX = player ? player.x : W / 2;
+          const cornerBias = targetX < W * 0.24 ? -1 : targetX > W * 0.76 ? 1 : 0;
+          for (let k = 0; k < breathCount; k++) {
+            enemyBullets.push({
+              x: boss.x,
+              y: boss.y + boss.r * 0.62,
+              vx: 0,
+              vy: baseSpeed,
+              r: 8.6 + Math.min(1.2, bt * 0.35),
+              theme: 'fire',
+              damage: bossDamage(boss, 17),
+              glowColor: '#ff2d00', glowAlt: '#ffd21a',
+              dragonBreath: true,
+              dragonSeq: k,
+              dragonSeed: seed,
+              cornerBias,
+              releaseSpeed: baseSpeed,
+              delayUntil: now + k * interval,
+              waveAmp: 0.42 + bt * 0.05,
+              waveFreq: 0.014,
+              hideBeforeRelease: true,
+              born: now
+            });
+          }
+          addFloatText('DRAGON BREATH!', boss.x, boss.y + boss.r + 18, '#ff6600', 16);
+          SFX.tone && SFX.tone(130,'sawtooth',0,0.20,0.11,70);
+          boss.nextAttack = now + Math.max(2950, Math.round((breathCount * interval + 1320) * bossTuneValue(boss, 'attackDelayMult', 1)));
+        } else if (boss.attackType === 'sword') {
+          // Phase 3B.2 Knight: seven lane swords line up like Ogre's donkey row.
+          // They fire straight down, one after another, in a shuffled lane order.
+          // This creates a cat-and-mouse lane dodge instead of a targeted shot.
+          const now = Date.now();
+          const laneCount = 7;
+          const swordY = Math.min(H * 0.36, boss.y + boss.r * 1.58);
+          const left = W * 0.14, right = W * 0.86;
+          const lanes = Array.from({ length: laneCount }, (_, i) => left + (right - left) * (i / (laneCount - 1)));
+          const order = shuffleList(lanes.map((_, i) => i));
+          const telegraphMs = bossWindowMs(boss, 760);
+          const stepMs = Math.max(205, Math.round(310 * bossTuneValue(boss, 'attackDelayMult', 1)));
+          order.forEach((laneIndex, seq) => {
+            const launchAt = now + telegraphMs + seq * stepMs;
+            enemyBullets.push({
+              x: lanes[laneIndex], y: swordY,
+              vx: 0, vy: 0, r: 8.0,
+              theme: 'sword',
+              damage: bossDamage(boss, 35),
+              visualScale: 5.0,
+              telegraph: true,
+              knightLaneSword: true,
+              knightSeq: seq,
+              telegraphStart: now,
+              launchAt,
+              expiresAt: launchAt + 2100,
+              displayRotation: Math.PI,
+              born: now,
+            });
           });
-          addFloatText('SWORD READY!', boss.x, boss.y + boss.r + 18, '#c8d4ff', 16);
+          addFloatText('SWORD LANES!', boss.x, boss.y + boss.r + 18, '#c8d4ff', 16);
           SFX.missionBossCharge ? SFX.missionBossCharge() : (SFX.neonOn && SFX.neonOn());
-          boss.nextAttack = now + (boss.attackDelay || 3900);
-        } else if (boss.attackType === 'orb') {
-          const count = bt >= 2 ? 5 : 4;
-          const speed = 2.65 + bt * 0.16 + Math.max(0, wave - 18) * 0.06;
-          for (let k = 0; k < count; k++) {
-            const spread = (k - (count - 1) / 2) * 0.24;
-            enemyBullets.push({ x: boss.x + spread * boss.r, y: boss.y + boss.r * 0.45, vx: spread * speed, vy: speed, r: 7.4, theme: 'greenOrb', homing: 0.018, maxSpeed: speed + 0.85, born: Date.now() });
-          }
-          addFloatText('HOMING ORBS!', boss.x, boss.y + boss.r + 18, '#33ff66', 16);
-          SFX.emp && SFX.emp();
-          boss.nextAttack = Date.now() + (boss.attackDelay || 2200);
+          boss.nextAttack = now + Math.max(2450, (boss.attackDelay || 3900) + 150);
         } else if (boss.attackType === 'fish') {
-          const count = bt >= 3 ? 6 : 4;
-          const speed = 2.95 + bt * 0.2 + Math.max(0, wave - 18) * 0.07;
-          for (let k = 0; k < count; k++) {
-            const left = k % 2 === 0;
-            const lane = Math.floor(k / 2);
-            enemyBullets.push({ x: left ? -10 : W + 10, y: boss.y + boss.r * (0.72 + lane * 0.28), vx: (left ? 1 : -1) * (speed * 0.82), vy: speed * 0.68, r: 7.7, theme: 'fish', waveAmp: 0.9 + lane * 0.15, waveFreq: 0.015, phase: k, born: Date.now() });
+          // Phase 3C.1 Shark: continuous tooth deployment, not a single wave.
+          // Each attack tick adds a few teeth, then the reload is short so the
+          // player reads a steady stream.
+          const count = bt >= 2 ? 3 : 2;
+          const lanes = 6;
+          const speed = bossProjectileSpeed(boss, 3.75 + bt * 0.2 + Math.max(0, wave - 18) * 0.06);
+          const left = W * 0.14, right = W * 0.86;
+          const order = shuffleList(Array.from({ length: lanes }, (_, i) => i)).slice(0, count);
+          order.forEach((laneIndex, seq) => {
+            const x = left + (right - left) * (laneIndex / Math.max(1, lanes - 1));
+            enemyBullets.push({
+              x, y: boss.y + boss.r * 0.62 - seq * 20,
+              vx: (seq % 2 ? -1 : 1) * speed * 0.36, vy: speed,
+              r: 7.9, theme: 'fish', damage: bossDamage(boss, 22), displayRotation: 0, fixedRotation: true,
+              zigZagTooth: true, nextZigAt: Date.now() + 300 + seq * 45, zigMs: 300,
+              laneMin: Math.max(20, x - W * 0.12), laneMax: Math.min(W - 20, x + W * 0.12),
+              born: Date.now()
+            });
+          });
+          if (!boss._sharkWarnAt || Date.now() - boss._sharkWarnAt > 2400) {
+            addFloatText('ZIG-ZAG TEETH!', boss.x, boss.y + boss.r + 18, '#5ab1ff', 16);
+            boss._sharkWarnAt = Date.now();
           }
-          addFloatText('TEETH PINCER!', boss.x, boss.y + boss.r + 18, '#5ab1ff', 16);
           SFX.bomberDive && SFX.bomberDive();
-          boss.nextAttack = Date.now() + (boss.attackDelay || 2200);
+          boss.nextAttack = Date.now() + Math.max(680, Math.round((boss.attackDelay || 1200) * bossTuneValue(boss, 'attackDelayMult', 1)));
         } else if (boss.attackType === 'sombrero') {
+          const now = Date.now();
+          const shieldMs = 1700;
+          const openMs = 2600;
+          boss.tacoGuardUntil = now + shieldMs;
+          boss.tacoOpenUntil = now + shieldMs + openMs;
+          boss.tacoGuardFlashUntil = now + shieldMs;
+          [0.3, 0.5, 0.7].forEach((xp, i) => {
+            const side = xp < 0.5 ? -1 : xp > 0.5 ? 1 : 0;
+            enemyBullets.push({
+              x: W * xp, y: boss.y + boss.r * (0.96 + (i % 2) * 0.12),
+              vx: 0, vy: 0, r: 8.6, theme: 'sombrero', damage: 0,
+              tacoGuard: true, tacoDropAt: now + shieldMs, tacoSide: side,
+              telegraph: true, telegraphStart: now, launchAt: now + shieldMs,
+              expiresAt: now + 4200, born: now, visualScale: 5.2,
+            });
+          });
           const count = bt >= 3 ? 5 : 4;
           const base = Math.atan2(player.y - boss.y, player.x - boss.x);
-          const speed = 3.05 + bt * 0.18 + Math.max(0, wave - 18) * 0.06;
+          const speed = bossProjectileSpeed(boss, 3.05 + bt * 0.18 + Math.max(0, wave - 18) * 0.06);
           for (let k = 0; k < count; k++) {
             const ang = base + (k - (count - 1) / 2) * 0.28;
-            enemyBullets.push({ x: boss.x, y: boss.y + boss.r * 0.55, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, r: 7.7, theme: 'sombrero', boomerang: 0.012, born: Date.now() });
+            enemyBullets.push({ x: boss.x, y: boss.y + boss.r * 0.55, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, r: 7.7, theme: 'sombrero', damage: bossDamage(boss, 16), boomerang: 0.012, born: Date.now() });
           }
-          addFloatText('BOOMERANG HATS!', boss.x, boss.y + boss.r + 18, '#d99a2b', 16);
+          addFloatText('SOMBRERO GUARD!', boss.x, boss.y + boss.r + 18, '#d99a2b', 16);
+          setTimeout(() => {
+            if (state === 'playing' && boss && boss.attackType === 'sombrero' && Date.now() < (boss.tacoOpenUntil || 0)) addFloatText('OPEN!', boss.x, boss.y - boss.r - 20, '#33ff66', 18);
+          }, shieldMs);
           SFX.tone && SFX.tone(420,'square',0,0.06,0.08,260);
-          boss.nextAttack = Date.now() + (boss.attackDelay || 2200);
+          boss.nextAttack = now + shieldMs + openMs + 650;
         } else if (boss.attackType === 'ink') {
-          const count = Math.min(12, 7 + bt);
-          const speed = 2.75 + bt * 0.22 + Math.max(0, wave - 18) * 0.08;
+          const now = Date.now();
+          boss.octoHomeY = boss.octoHomeY || boss.y;
+          boss.octoTargetY = Math.min(H * 0.43, Math.max(boss.y + 108, H * 0.32));
+          boss.octoGuardUntil = now + 1180;
+          boss.octoDescendUntil = now + 1860;
+          boss.octoSpinUntil = now + 3850;
+          boss.octoRecoverUntil = now + 4580;
+          const count = Math.min(13, 8 + bt);
+          const speed = bossProjectileSpeed(boss, 4.05 + bt * 0.24 + Math.max(0, wave - 18) * 0.08);
           for (let k = 0; k < count; k++) {
             const ang = Math.PI * 0.15 + (k / (count - 1)) * Math.PI * 0.7;
-            enemyBullets.push({ x: boss.x, y: boss.y + boss.r * 0.35, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, r: 7.4, theme: 'ink', splat: true, born: Date.now() });
+            enemyBullets.push({ x: boss.x, y: boss.y + boss.r * 0.35, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, r: 7.4, theme: 'ink', damage: bossDamage(boss, 5), splat: true, born: Date.now() });
           }
-          addFloatText('INK BURST!', boss.x, boss.y + boss.r + 18, '#7040b8', 16);
+          const spinShots = 22 + bt * 2;
+          const spinStart = now + 1280;
+          for (let k = 0; k < spinShots; k++) {
+            enemyBullets.push({
+              x: boss.x, y: boss.y + boss.r * 0.35, vx: 0, vy: 0, r: 6.3,
+              theme: 'purpleOrb', damage: bossDamage(boss, 9),
+              octoSpinShot: true, spinStart, spinSeq: k,
+              delayUntil: spinStart + k * 78, expiresAt: now + 5600,
+              born: now,
+            });
+          }
+          addFloatText('INK GUARD!', boss.x, boss.y + boss.r + 18, '#7040b8', 16);
           SFX.neonOn && SFX.neonOn();
-          boss.nextAttack = Date.now() + (boss.attackDelay || 2200);
+          boss.nextAttack = now + 5000;
         } else if (boss.attackType === 'gizmo') {
           // Gizmo lobs tennis balls that ricochet off the side walls and rain back
           // down on you — each ball is a single 20 HP hit (consumed on contact). He
           // barks on every deploy. Wave 10+ adds a ball and a touch more speed.
           const ballCount = (boss.isFinalGizmo || wave >= 10) ? 3 : 2;
-          const ballSpeed = (wave >= 10 ? 3.9 : 3.4) + Math.max(0, wave - 18) * 0.06; // medium-fast
+          const ballSpeed = bossProjectileSpeed(boss, (wave >= 10 ? 3.9 : 3.4) + Math.max(0, wave - 18) * 0.06); // medium-fast
           for (let k = 0; k < ballCount; k++) {
             // Aim each ball toward a side wall (alternating) on a downward angle, so
             // it bounces off the wall and comes back down into the play field.
             const toRight = (k % 2 === 0);
             const vx = (toRight ? 1 : -1) * ballSpeed * (0.8 + Math.random() * 0.15);
             const vy = ballSpeed * (0.62 + Math.random() * 0.12);
-            enemyBullets.push({ x: boss.x, y: boss.y + boss.r * 0.5, vx, vy, r: 9, theme: 'tennis', tennis: true, bounce: true, visualScale: 3.2, born: Date.now() });
+            enemyBullets.push({ x: boss.x, y: boss.y + boss.r * 0.5, vx, vy, r: 9, theme: 'tennis', damage: bossDamage(boss, 20), tennis: true, bounce: true, visualScale: 3.2, born: Date.now() });
           }
           addFloatText('TENNIS SMASH!', boss.x, boss.y + boss.r + 18, '#c6ff3a', 16);
           SFX.gizmoBark ? SFX.gizmoBark() : (SFX.missionOminous && SFX.missionOminous());
           if (boss.isFinalGizmo) {
             // FINAL GIZMO: the tennis barrage AND the classic bone shotgun together.
-            const boneCount = 7;
-            const boneSpeed = 2.9 + bt * 0.24 + Math.max(0, wave - 18) * 0.08;
+            const boneCount = 6;
+            const boneSpeed = bossProjectileSpeed(boss, 2.9 + bt * 0.24 + Math.max(0, wave - 18) * 0.08);
             for (let k = 0; k < boneCount; k++) {
               const spread = (k - (boneCount - 1) / 2) / ((boneCount - 1) / 2);
-              enemyBullets.push({ x: boss.x + spread * boss.r * 0.58, y: boss.y + boss.r * 0.5, vx: spread * boneSpeed * 0.45, vy: boneSpeed, r: 7.8, isLock: true, visualScale: 4.1, homing: 0.012, maxSpeed: boneSpeed + 0.55, born: Date.now() });
+              enemyBullets.push({ x: boss.x + spread * boss.r * 0.58, y: boss.y + boss.r * 0.5, vx: spread * boneSpeed * 0.45, vy: boneSpeed, r: 7.8, isLock: true, damage: bossDamage(boss, 14), visualScale: 4.1, homing: 0.012, maxSpeed: boneSpeed + 0.55, born: Date.now() });
             }
           }
           boss.nextAttack = Date.now() + (boss.attackDelay || 2200);
@@ -2907,7 +3853,7 @@ function nextWave() {
         boss.laserHasHit = false;
       } else if (boss.laserPhase === 'firing') {
         if (!boss.laserHasHit && Math.abs(player.x - boss.laserX) < player.r + 14) {
-          takeDamage(20);
+          takeDamage(bossDamage(boss, 20));
           boss.laserHasHit = true;
         }
         if (Date.now() - boss.laserFireStart > 220) {
@@ -2977,6 +3923,41 @@ function nextWave() {
       }
     });
 
+
+    // Phase 3C.7 Gray Visitor: bullet-routing portals. These only affect the
+    // hero's bullets, never the player ship. Matching-color portals are linked;
+    // dim/inactive portals let shots go straight through.
+    const activeBulletPortals = enemyBullets.filter(e => e.bulletPortal && !e._gone);
+    if (activeBulletPortals.length) {
+      for (const hb of bullets) {
+        if (hb.vy === 999 || Date.now() < (hb.portalCooldownUntil || 0)) continue;
+        for (const gate of activeBulletPortals) {
+          if (Math.hypot(hb.x - gate.x, hb.y - gate.y) < (gate.r || 14) * 1.25) {
+            if (!gate.portalActive) {
+              hb.portalCooldownUntil = Date.now() + 180;
+              gate.litUntil = Date.now() + 220;
+              break;
+            }
+            const exit = activeBulletPortals.find(e => e.portalPairId === gate.portalPairId && e.portalIndex === gate.linkedIndex && !e._gone);
+            if (!exit) break;
+            const speed = Math.max(7.4, Math.hypot(hb.vx || 0, hb.vy || -8));
+            // Exit shots are aimed at Gray's current/reappear coordinate. The portal
+            // art still tilts, but the actual route is guaranteed solvable.
+            const ang = exit.portalAimAngle != null ? exit.portalAimAngle : (-Math.PI / 2 + (exit.portalAngle || 0));
+            hb.x = exit.x + Math.cos(ang) * (exit.r + 5);
+            hb.y = exit.y + Math.sin(ang) * (exit.r + 5);
+            hb.vx = Math.cos(ang) * speed;
+            hb.vy = Math.sin(ang) * speed;
+            hb.portalCooldownUntil = Date.now() + 260;
+            hb.portalRoutedUntil = Date.now() + 1850;
+            gate.litUntil = exit.litUntil = Date.now() + 360;
+            miniExplosion(exit.x, exit.y, exit.portalColorA || '#b36bff');
+            break;
+          }
+        }
+      }
+    }
+
     // Power-ups: drift down, draw, collect by touch only — bullets pass straight
     // through them. SHOOT is for hostiles, CATCH is for pickups; letting bullets
     // also collect them blurred that distinction. Mystery is the one deliberate
@@ -2994,6 +3975,7 @@ function nextWave() {
           if (b.vy === 999) continue; // already spent on something else this frame
           if (Math.hypot(b.x - p.x, b.y - p.y) < p.r * 1.1) {
             b.vy = 999;
+            p.litUntil = Date.now() + 320;
             p.ringHp--;
             if (p.ringHp <= 0) {
               miniExplosion(p.x, p.y, '#cc66ff');
@@ -3013,6 +3995,7 @@ function nextWave() {
           if (b.vy === 999) continue;
           if (Math.hypot(b.x - p.x, b.y - p.y) < p.r * 1.1) {
             b.vy = 999;
+            p.litUntil = Date.now() + 320;
             score += 20;
             addFloatText('♪ +20', p.x, p.y - 10, '#ffe61a', 18);
             miniExplosion(p.x, p.y, p.kind === 'guitar' ? '#c47a32' : p.kind === 'piano' ? '#f5f3ec' : '#e6ad2e');
@@ -3075,6 +4058,7 @@ function nextWave() {
       o.x+=o.vx;
       if(o.x<o.r&&o.vx<0) o.vx*=-1;
       if(o.x>W-o.r&&o.vx>0) o.vx*=-1;
+      if (o.blackoutHiddenEnemy && Date.now() < (o.blackoutHoldUntil || 0)) continue;
 
       // Non-hero enemies pause once, partway down, for a quick burst of fire before
       // resuming their descent — see the note in spawnObstacle() for why.
@@ -3110,7 +4094,8 @@ function nextWave() {
         o.alive = false;
         lineFlashA = 1.0;
         if(o.type==='asteroid'){
-          takeDamage(10);
+          const rockDamage = o.r < 22 ? 5 : 10;
+          takeDamage(rockDamage);
           bigExplosion(o.x, _lineY, '#aa8855');
           SFX.whack && SFX.whack(); // thud sound
           waveKills++;
@@ -3118,7 +4103,7 @@ function nextWave() {
           // enemy crosses line — big damage
           takeDamage(30);
           bigExplosion(o.x, _lineY, GAME_CHARS[o.ci].color);
-          faceFlash(o.ci, 'sad', o.x, _lineY - 30);
+          if (!o.blackoutHiddenEnemy) faceFlash(o.ci, 'sad', o.x, _lineY - 30);
           SFX.miss();
           waveKills++;
         } else {
@@ -3134,7 +4119,7 @@ function nextWave() {
     }
     obstacles=obstacles.filter(o=>!o._crossed);
 
-    obstacles.forEach(drawObstacle);
+    obstacles.forEach(o => { if (!o.blackoutHiddenEnemy) drawObstacle(o); });
 
     // Draw all bullets in one batch (no per-bullet ctx.save/restore or shadowBlur).
     // FROZEN/ZAPPED are purely cosmetic reskins of the SAME bullets, except zapped
@@ -3188,11 +4173,46 @@ function nextWave() {
       }
     }
 
+    const activeTacoGuards = boss && boss.attackType === 'sombrero'
+      ? enemyBullets.filter(g => g.tacoGuard && g.telegraph && !g._gone)
+      : [];
+    if (activeTacoGuards.length) {
+      for (const b of bullets) {
+        if (b.vy === 999 || b.tacoDeflected || b.octoDeflected) continue;
+        for (const g of activeTacoGuards) {
+          const blockR = (g.r || 8) * 5.4;
+          if (Math.hypot(b.x - g.x, b.y - g.y) < blockR) {
+            const side = g.tacoSide || (b.x < g.x ? -1 : 1);
+            b.x += side * 6;
+            b.vx = side * (4.7 + Math.random() * 1.3);
+            b.vy = 4.4 + Math.random() * 1.1;
+            b.tacoDeflected = true;
+            b.portalCooldownUntil = Date.now() + 999;
+            g.litUntil = Date.now() + 260;
+            boss.tacoGuardFlashUntil = Date.now() + 260;
+            miniExplosion(b.x, b.y, '#d99a2b');
+            SFX.powerupCollect && SFX.powerupCollect();
+            break;
+          }
+        }
+      }
+    }
+
     // Bullet vs boss — skipped entirely while zapped, so "deals 0 damage" is literal.
     if (boss && !_zapped) {
       for (const b of bullets) {
-        if (b.vy === 999) continue;
+        if (b.vy === 999 || b.tacoDeflected || b.octoDeflected) continue;
         if (Math.hypot(b.x - boss.x, b.y - boss.y) < boss.r + 3) {
+          if (boss.attackType === 'portal' && Date.now() > (b.portalRoutedUntil || 0)) {
+            b.vy = 999;
+            boss.forcefieldFlashUntil = Date.now() + 320;
+            boss.forcefieldShakeUntil = Date.now() + 260;
+            boss.forcefieldShakeSeed = Math.random() * Math.PI * 2;
+            addFloatText('ROUTE IT!', boss.x, boss.y - boss.r - 20, '#b36bff', 14);
+            miniExplosion(b.x, b.y, '#b36bff');
+            SFX.emp && SFX.emp();
+            continue;
+          }
           if (boss.attackType === 'shield' && Date.now() < (boss.shieldUntil || 0)) {
             b.vy = 999;
             enemyBullets.push({ x: b.x, y: b.y, vx: (b.vx || 0) * 0.35, vy: 5.4 + wave * 0.08, r: 5.5, theme: 'shield' });
@@ -3201,9 +4221,34 @@ function nextWave() {
             SFX.powerupCollect && SFX.powerupCollect();
             continue;
           }
+          if (boss.attackType === 'sombrero' && Date.now() < (boss.tacoGuardUntil || 0)) {
+            const side = b.x < boss.x ? -1 : 1;
+            b.x += side * 6;
+            b.vx = side * 5.4;
+            b.vy = 4.8;
+            b.tacoDeflected = true;
+            boss.tacoGuardFlashUntil = Date.now() + 260;
+            addFloatText('GUARDED!', boss.x, boss.y - boss.r - 20, '#d99a2b', 16);
+            miniExplosion(b.x, b.y, '#d99a2b');
+            SFX.powerupCollect && SFX.powerupCollect();
+            continue;
+          }
+          if (boss.attackType === 'ink' && Date.now() < (boss.octoGuardUntil || 0)) {
+            const side = b.x < boss.x ? -1 : 1;
+            b.x += side * 5;
+            b.vx = side * 4.8;
+            b.vy = 4.3;
+            b.octoDeflected = true;
+            boss.octoGuardFlashUntil = Date.now() + 260;
+            addFloatText('INK GUARD!', boss.x, boss.y - boss.r - 20, '#ff76d2', 16);
+            miniExplosion(b.x, b.y, '#ff76d2');
+            SFX.neonOn && SFX.neonOn();
+            continue;
+          }
           b.vy = 999;
           boss.hp--; boss.hitFlash = 1;
           miniExplosion(b.x, b.y, boss.isCaptive ? '#00e5ff' : '#ff8888');
+          const wasGrayPortalHit = boss.attackType === 'portal' && Date.now() <= (b.portalRoutedUntil || 0);
           if (boss.isCaptive && boss.hp > 0 && boss.hp % 10 === 0) addFloatText('LOCK CRACKING!', boss.x, boss.y - boss.r - 24, '#00e5ff', 16);
           if (boss.hp <= 0) {
             const defeatedBoss = boss;
@@ -3222,6 +4267,9 @@ function nextWave() {
             if (hpGain > 0) addFloatText(`+${hpGain} HP`, defeatedBoss.x, defeatedBoss.y - 30, '#33ff66', 16);
             SFX.win();
             boss = null;
+            bullets = [];
+            enemyBullets = [];
+            powerups = [];
             // Hold the victory cinematic until the board is actually clear — the
             // boss's minions/asteroids can still be falling, and it reads as confusing
             // to have enemies on screen behind the next scene (most visible on Gizmo).
@@ -3247,6 +4295,7 @@ function nextWave() {
             };
             break;
           } else {
+            if (wasGrayPortalHit) grayVisitorTookPortalHit(boss, Date.now());
             SFX.hit();
           }
         }
@@ -3281,6 +4330,8 @@ function nextWave() {
         const hitRadius = (o.type==='face' && o.isTrapped && o.ringHp > 0) ? o.r+12 : o.r+3;
         if(Math.hypot(b.x-o.x,b.y-o.y)<hitRadius){
           b.vy=999;
+          o.litUntil = Date.now() + 320;
+          queueBlackoutHitFlash(o);
           if(o.type==='face'){
             if(o.isTrapped && o.ringHp > 0){
               // Hit the rescue ring
@@ -3319,9 +4370,14 @@ function nextWave() {
               } else {
                 const pts = 25+(wave*5);
                 score+=pts; SFX.score();
-                miniExplosion(o.x,o.y,GAME_CHARS[o.ci].color);
-                faceFlash(o.ci,'sad',o.x,o.y);
-                addFloatText('+'+pts, o.x, o.y, GAME_CHARS[o.ci].color, 18);
+                if (!o.blackoutHiddenEnemy) {
+                  miniExplosion(o.x,o.y,GAME_CHARS[o.ci].color);
+                  faceFlash(o.ci,'sad',o.x,o.y);
+                  addFloatText('+'+pts, o.x, o.y, GAME_CHARS[o.ci].color, 18);
+                } else {
+                  queueBlackoutHitFlash(o, 520, true);
+                  miniExplosion(o.x, o.y, 'rgba(255,90,90,0.55)');
+                }
                 waveKills++;
                 o.alive=false;
               }
@@ -3386,19 +4442,28 @@ function nextWave() {
     if (pendingBossWin && obstacles.length === 0 && !boss && !miniBoss && state === 'playing') {
       const runWin = pendingBossWin; pendingBossWin = null; runWin();
     }
-    if (spawnsRemaining <= 0 && obstacles.length === 0 && powerups.length === 0 && !boss && !miniBoss && !mirrorSequenceActive && !pendingBossWin && state === 'playing') {
+    if (!academyMode && spawnsRemaining <= 0 && obstacles.length === 0 && !boss && !miniBoss && !mirrorSequenceActive && !pendingBossWin && state === 'playing') {
       nextWave();
     }
+    updateSpaceAcademy();
 
     // Enemy fire ramps by campaign tier, not raw wave flood. Later chapters ask for
     // better dodging and target priority, but keep a readable cadence on mobile.
     const fireTier = currentCfg ? currentCfg.tier : campaignTier(wave);
-    if(Date.now() - lastEnemyFire > Math.max(420, 1280 - fireTier * 125 - Math.min(wave, 12) * 28 - Math.max(0, wave - 18) * 35)){
+    if(!academyMode && Date.now() - lastEnemyFire > Math.max(420, 1280 - fireTier * 125 - Math.min(wave, 12) * 28 - Math.max(0, wave - 18) * 35)){
       const shooters = obstacles.filter(o => o.type==='face' && !o.isTrapped && o.y > 0);
       if(shooters.length > 0){
-        const numShots = Math.min(shooters.length, 1 + Math.floor(fireTier / 2) + Math.floor(Math.max(0, wave - 14) / 7));
-        const chosen = shooters.map(s => [Math.random(), s]).sort((a,b) => a[0]-b[0]).slice(0, numShots).map(p => p[1]);
-        chosen.forEach(shooter => enemyFireAt(shooter, 1));
+        let chosen;
+        if (waveTheme === 'blackout') {
+          const hiddenShooters = shooters.filter(s => s.blackoutHiddenEnemy).sort((a, b) => a.x - b.x);
+          const pool = hiddenShooters.length ? hiddenShooters : shooters.sort((a, b) => a.x - b.x);
+          chosen = [pool[blackoutShooterIndex % pool.length]];
+          blackoutShooterIndex++;
+        } else {
+          const numShots = Math.min(shooters.length, 1 + Math.floor(fireTier / 2) + Math.floor(Math.max(0, wave - 14) / 7));
+          chosen = shooters.map(s => [Math.random(), s]).sort((a,b) => a[0]-b[0]).slice(0, numShots).map(p => p[1]);
+        }
+        chosen.forEach(shooter => waveTheme === 'blackout' && shooter.blackoutHiddenEnemy ? warnAndFireBlackoutEnemy(shooter) : enemyFireAt(shooter, 1));
         lastEnemyFire = Date.now();
         SFX.tone && SFX.tone(420, 'square', 0, 0.03, 0.08, 280);
       }
@@ -3407,12 +4472,89 @@ function nextWave() {
       const now = Date.now();
       if (!b.born) b.born = now;
       const age = now - b.born;
-      if (b.telegraph && now >= b.launchAt) {
-        const dxs = player.x - b.x, dys = player.y - b.y;
-        const dist = Math.hypot(dxs, dys) || 1;
-        const speed = 17.6 + Math.min(2.4, campaignTier(wave) * 0.44);
-        b.vx = (dxs / dist) * speed;
-        b.vy = (dys / dist) * speed;
+      if (b.delayUntil) {
+        if (b.dragonBreath && boss) {
+          const seq = b.dragonSeq || 0;
+          const seed = b.dragonSeed || 0;
+          // While waiting to release, each fireball stays attached to the
+          // Dragon's mouth/head. The source moves smoothly over time, so the
+          // released shots form a chain instead of a dumped spread.
+          const t = now * 0.0065 + seed;
+          const headSway = Math.sin(t) * W * 0.26 + Math.sin(t * 1.7 + seq * 0.05) * W * 0.09;
+          const bias = (b.cornerBias || 0) * Math.min(W * 0.14, 18 + seq * 3.0);
+          b.x = Math.max(8, Math.min(W - 8, boss.x + headSway + bias));
+          b.y = boss.y + boss.r * 0.60;
+        }
+        if (b.octoSpinShot && boss && boss.attackType === 'ink') {
+          b.x = boss.x;
+          b.y = boss.y + boss.r * 0.42;
+        }
+        if (now < b.delayUntil) return;
+        b.delayUntil = 0;
+        b.born = now;
+        if (b.dragonBreath) {
+          const pull = player ? Math.max(-0.42, Math.min(0.42, (player.x - b.x) * 0.0016)) : 0;
+          b.vx = (b.vx || 0) + pull;
+          b.vy = b.releaseSpeed || b.vy || bossProjectileSpeed(boss, 4.1);
+        } else if (b.octoSpinShot) {
+          const spinT = now - (b.spinStart || now);
+          const phase = ((spinT * 0.0019) + (b.spinSeq || 0) * 0.135) % 1;
+          const angle = Math.PI * (0.12 + phase * 0.76);
+          const speed = bossProjectileSpeed(boss, 3.35 + campaignTier(wave) * 0.12);
+          b.vx = Math.cos(angle) * speed;
+          b.vy = Math.sin(angle) * speed;
+          b.theme = 'purpleOrb';
+          b.maxSpeed = speed;
+          SFX.tone && SFX.tone(300 + ((b.spinSeq || 0) % 5) * 34, 'triangle', 0, 0.025, 0.05, 80);
+        }
+      }
+      if (b.bulletPortal && now >= (b.expiresAt || now + 1)) { b._gone = true; return; }
+      if ((b.portalEnter || b.portalSeed) && now >= (b.expiresAt || now + 1)) { b._gone = true; return; }
+      if (b.tacoGuard && now >= (b.expiresAt || now + 1)) { b._gone = true; return; }
+      if (b.octoSpinShot && now >= (b.expiresAt || now + 1)) { b._gone = true; return; }
+      if (b.portalExit && b.telegraph && now >= b.launchAt) {
+        if (b.chosenPortal) {
+          b.telegraph = false;
+          b.portalExit = false;
+          b.theme = 'portalOrb';
+          const aim = player ? Math.max(-0.95, Math.min(0.95, (player.x - b.x) * 0.008)) : 0;
+          b.vx = aim * 1.15;
+          b.vy = bossProjectileSpeed(boss, 6.35 + campaignTier(wave) * 0.22);
+          b.r = 10.4;
+          b.homing = 0;
+          b.maxSpeed = Math.hypot(b.vx, b.vy) + 0.5;
+          b.portalBurst = true;
+          b.born = now;
+          SFX.missionZap ? SFX.missionZap() : (SFX.emp && SFX.emp());
+        } else {
+          b._gone = true; return;
+        }
+      }
+      if (b.decoySword && now >= (b.expiresAt || b.launchAt || now + 1)) {
+        b._gone = true;
+        return;
+      }
+      if (b.tacoGuard) {
+        b.displayRotation = now * 0.018 * (b.tacoSide || 1);
+        if (b.telegraph && now >= (b.tacoDropAt || b.launchAt || now + 1)) {
+          b.telegraph = false;
+          b.damage = bossDamage(boss, 14);
+          b.vx = (b.tacoSide || 0) * 1.6;
+          b.vy = 4.25 + campaignTier(wave) * 0.12;
+          b.born = now;
+        }
+      }
+      if (b.telegraph && !b.decoySword && now >= b.launchAt) {
+        const speed = bossProjectileSpeed(boss, 20.5 + Math.min(2.8, campaignTier(wave) * 0.5));
+        if (b.knightLaneSword) {
+          b.vx = 0;
+          b.vy = speed;
+        } else {
+          const dxs = player.x - b.x, dys = player.y - b.y;
+          const dist = Math.hypot(dxs, dys) || 1;
+          b.vx = (dxs / dist) * speed;
+          b.vy = (dys / dist) * speed;
+        }
         b.telegraph = false;
         b.displayRotation = null;
         b.born = now;
@@ -3431,19 +4573,39 @@ function nextWave() {
       if (b.boomerang && age > 360 && boss) {
         b.vx += Math.max(-0.08, Math.min(0.08, (boss.x - b.x) * b.boomerang));
       }
+      if (b.zigZagTooth) {
+        if (now >= (b.nextZigAt || 0)) {
+          b.vx *= -1;
+          b.nextZigAt = now + (b.zigMs || 330);
+        }
+        if (b.x < (b.laneMin || 10)) { b.x = b.laneMin || 10; b.vx = Math.abs(b.vx); }
+        if (b.x > (b.laneMax || W - 10)) { b.x = b.laneMax || W - 10; b.vx = -Math.abs(b.vx); }
+      }
       if (b.waveAmp) {
         b.x += Math.sin(age * (b.waveFreq || 0.012) + (b.phase || 0)) * b.waveAmp;
       }
-      if (b.splitAt && !b.splitDone && age > b.splitAt) {
+      if (!b.splitDone && ((b.splitAt && age > b.splitAt) || (b.splitAtY && b.y >= b.splitAtY))) {
         b.splitDone = true;
         const base = Math.atan2(b.vy, b.vx || 0);
         const speed = b.splitSpeed || 2.4;
-        [-0.34, 0.34].forEach(off => {
+        const offsets = b.splitOffsets || [-0.34, 0.34];
+        offsets.forEach(off => {
           const ang = base + off;
-          enemyBullets.push({ x: b.x, y: b.y, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, r: Math.max(4.2, (b.r || 6) * 0.72), theme: b.splitTheme || b.theme, born: now });
+          enemyBullets.push({ x: b.x, y: b.y, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, r: Math.max(4.2, (b.r || 6) * 0.62), theme: b.splitTheme || b.theme, damage: b.splitDamage || b.damage || 12, glowColor: b.glowColor, glowAlt: b.glowAlt, born: now });
         });
+        if (b.dragonTwist) {
+          // Twist: after the big split, two side embers cut inward so the
+          // player reads both the fan and a crossing lane, not just a simple spread.
+          const sideSpeed = speed * 0.82;
+          enemyBullets.push({ x: Math.max(18, b.x - W * 0.26), y: b.y - 8, vx: sideSpeed * 0.58, vy: sideSpeed * 0.92, r: Math.max(5.2, (b.r || 6) * 0.5), theme: b.splitTheme || b.theme, damage: b.splitDamage || b.damage || 12, glowColor: b.glowColor, glowAlt: b.glowAlt, born: now });
+          enemyBullets.push({ x: Math.min(W - 18, b.x + W * 0.26), y: b.y - 8, vx: -sideSpeed * 0.58, vy: sideSpeed * 0.92, r: Math.max(5.2, (b.r || 6) * 0.5), theme: b.splitTheme || b.theme, damage: b.splitDamage || b.damage || 12, glowColor: b.glowColor, glowAlt: b.glowAlt, born: now });
+          addFloatText('FIRE CROSS!', b.x, b.y, '#ff8a00', 14);
+        }
+        b._gone = true;
       }
-      if (!b.telegraph && !(b.donkeyLine && b.donkeyState !== 'charge')) {
+      if (b.delayUntil && now < b.delayUntil) {
+        // Staged boss shots stay parked and hidden until the visual cue finishes.
+      } else if (!b.telegraph && !(b.donkeyLine && b.donkeyState !== 'charge')) {
         b.x += b.vx; b.y += b.vy;
       }
       if (b.donkeyLine && b.donkeyState === 'charge' && (b.y > H + 18 || b.y < -18 || b.x < -18 || b.x > W + 18)) {
@@ -3456,17 +4618,23 @@ function nextWave() {
         if (b.x < br) { b.x = br; b.vx = Math.abs(b.vx); }
         else if (b.x > W - br) { b.x = W - br; b.vx = -Math.abs(b.vx); }
       }
+      if (b.hideBeforeRelease && b.delayUntil && now < b.delayUntil) return;
       if (b.theme) {
         ctx.save();
         ctx.translate(b.x, b.y);
-        const rot = b.displayRotation != null ? b.displayRotation : Math.atan2(b.vy, b.vx || 0) + Math.PI / 2;
+        const rot = b.displayRotation != null ? b.displayRotation : Math.atan2(b.vy, b.vx || 0) + Math.PI / 2 + (b.rotationOffset || 0);
         ctx.rotate(rot);
         const rr = b.r || 5;
       if (b.telegraph) {
         const charge = Math.max(0, Math.min(1, (now - (b.telegraphStart || now)) / Math.max(1, (b.launchAt || now + 1) - (b.telegraphStart || now))));
+        let decoyAlpha = b.decoySword ? 0.52 : 1;
+        if (b.knightLaneSword) {
+          const untilLaunch = (b.launchAt || now) - now;
+          decoyAlpha = untilLaunch < 520 ? 1 : 0.44;
+        }
         const pulse = 1 + Math.sin(now * 0.02) * (0.07 + charge * 0.16);
         ctx.save();
-        ctx.globalAlpha = 0.18 + charge * 0.56;
+        ctx.globalAlpha = (0.18 + charge * 0.56) * decoyAlpha;
         ctx.strokeStyle = `rgba(200,212,255,${0.48 + charge * 0.42})`;
         ctx.lineWidth = 2.2 + charge * 2.8;
         ctx.beginPath(); ctx.arc(0, 0, rr * (3.15 + charge * 1.25) * pulse, 0, Math.PI * 2); ctx.stroke();
@@ -3474,18 +4642,116 @@ function nextWave() {
         ctx.restore();
       }
         const themedScale = b.visualScale || (b.theme === 'donkey' ? 4.1 : b.theme === 'sombrero' ? 4.4 : b.theme === 'fish' ? 3.7 : 3.5);
-        if (drawProjectileImage(b.theme, 0, 0, rr * themedScale, 0, b.theme === 'sword' ? 'rgba(200,212,255,0.92)' : null)) {
+        if (drawProjectileImage(b.theme, 0, 0, rr * themedScale, 0, b.theme === 'sword' ? 'rgba(200,212,255,0.92)' : null, !!b.fixedRotation)) {
           // PNG projectile handled.
         } else if (b.theme === 'donkey') {
           ctx.fillStyle = '#9a7a55'; ctx.fillRect(-rr*0.9, -rr*0.35, rr*1.8, rr*0.95);
           ctx.beginPath(); ctx.moveTo(-rr*0.9,-rr*0.3); ctx.lineTo(-rr*1.45,-rr*0.95); ctx.lineTo(-rr*0.3,-rr*0.55); ctx.fill();
           ctx.fillStyle = '#2a1a10'; ctx.fillRect(-rr*0.35, rr*0.05, rr*0.22, rr*0.85); ctx.fillRect(rr*0.35, rr*0.05, rr*0.22, rr*0.85);
+        } else if (b.theme === 'bulletPortal') {
+          ctx.save();
+          const pulse = 1 + Math.sin(now * 0.012) * 0.055;
+          const hot = now < (b.litUntil || 0);
+          const active = b.portalActive;
+          ctx.rotate(b.portalAngle || 0);
+          ctx.globalAlpha = active ? 0.92 : 0.34;
+          ctx.shadowColor = b.portalColorA || '#b36bff';
+          ctx.shadowBlur = hot ? rr * 2.6 : rr * 1.2;
+          ctx.strokeStyle = b.portalColorA || '#b36bff';
+          ctx.lineWidth = active ? 4.2 : 2.2;
+          ctx.beginPath(); ctx.ellipse(0, 0, rr * 1.32 * pulse, rr * 0.78 * pulse, 0, 0, Math.PI * 2); ctx.stroke();
+          ctx.strokeStyle = b.portalColorB || '#65f0ff';
+          ctx.lineWidth = active ? 2.1 : 1.2;
+          ctx.beginPath(); ctx.ellipse(0, 0, rr * 0.86 * pulse, rr * 0.50 * pulse, 0, 0, Math.PI * 2); ctx.stroke();
+          if (hot) {
+            ctx.fillStyle = 'rgba(255,255,255,0.16)';
+            ctx.beginPath(); ctx.ellipse(0, 0, rr * 1.55, rr * 0.92, 0, 0, Math.PI * 2); ctx.fill();
+          }
+          if (!active) {
+            ctx.strokeStyle = 'rgba(234,255,255,0.32)';
+            ctx.lineWidth = 1.6;
+            ctx.beginPath(); ctx.moveTo(-rr * 1.1, -rr * 0.7); ctx.lineTo(rr * 1.1, rr * 0.7); ctx.stroke();
+          }
+          ctx.restore();
+        } else if (b.theme === 'portalSeed') {
+          ctx.save();
+          // The seed is the slow visible thing Gray drops into the entrance portal.
+          // It is white/purple and larger than before so it does not read as HP.
+          const speed = Math.hypot(b.vx || 0, b.vy || 0) || 1;
+          const tx = -(b.vx || 0) / speed * rr * 3.4;
+          const ty = -(b.vy || 0) / speed * rr * 3.4;
+          const g = ctx.createLinearGradient(tx, ty, 0, 0);
+          g.addColorStop(0, 'rgba(179,107,255,0)');
+          g.addColorStop(1, 'rgba(246,233,255,0.75)');
+          ctx.strokeStyle = g; ctx.lineWidth = rr * 0.7; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(0, 0); ctx.stroke();
+          ctx.shadowColor = '#f1d2ff';
+          ctx.shadowBlur = rr * 2.2;
+          ctx.beginPath(); ctx.arc(0,0,rr*1.18,0,Math.PI*2); ctx.fillStyle='rgba(179,107,255,0.36)'; ctx.fill();
+          ctx.beginPath(); ctx.arc(0,0,rr*0.58,0,Math.PI*2); ctx.fillStyle='#f6e9ff'; ctx.fill();
+          ctx.restore();
+        } else if (b.theme === 'portalExit' || b.theme === 'portalEnter') {
+          const charge = Math.max(0, Math.min(1, (now - (b.telegraphStart || now)) / Math.max(1, (b.launchAt || now + 1) - (b.telegraphStart || now))));
+          const chosen = b.chosenPortal || b.portalEnter;
+          const alpha = chosen ? (0.56 + charge * 0.40) : 0.20;
+          ctx.rotate(now * 0.006);
+          ctx.strokeStyle = `rgba(179,107,255,${alpha})`;
+          ctx.lineWidth = chosen ? 5 : 2;
+          ctx.beginPath(); ctx.arc(0,0,rr*(1.35+charge*0.42),0,Math.PI*2); ctx.stroke();
+          ctx.strokeStyle = `rgba(101,240,255,${alpha*0.85})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(0,0,rr*(0.80+charge*0.25),0,Math.PI*2); ctx.stroke();
+          if (chosen) { ctx.shadowColor = '#b36bff'; ctx.shadowBlur = rr * (1.3 + charge); ctx.fillStyle = `rgba(179,107,255,${0.11+charge*0.16})`; ctx.beginPath(); ctx.arc(0,0,rr*(1.24+charge*0.36),0,Math.PI*2); ctx.fill(); ctx.shadowBlur = 0; ctx.strokeStyle = `rgba(234,255,255,${0.34+charge*0.44})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-rr*1.7,0); ctx.lineTo(rr*1.7,0); ctx.moveTo(0,-rr*1.7); ctx.lineTo(0,rr*1.7); ctx.stroke(); }
         } else if (b.theme === 'fire') {
+          ctx.save();
+          ctx.shadowColor = b.glowColor || '#ff4b12';
+          ctx.shadowBlur = rr * 2.2;
+          ctx.beginPath(); ctx.arc(0,0,rr*1.55,0,Math.PI*2); ctx.fillStyle = 'rgba(255,75,18,0.20)'; ctx.fill();
           ctx.beginPath(); ctx.moveTo(0,-rr*1.7); ctx.bezierCurveTo(rr*1.2,-rr*0.5,rr*0.6,rr*1.1,0,rr*1.4); ctx.bezierCurveTo(-rr*0.9,rr*0.7,-rr*1.1,-rr*0.4,0,-rr*1.7); ctx.fillStyle = '#ff5a00'; ctx.fill();
+          ctx.shadowColor = b.glowAlt || '#ffb000'; ctx.shadowBlur = rr * 1.5;
           ctx.beginPath(); ctx.moveTo(0,-rr); ctx.bezierCurveTo(rr*0.5,-rr*0.2,rr*0.25,rr*0.6,0,rr*0.85); ctx.bezierCurveTo(-rr*0.45,rr*0.35,-rr*0.5,-rr*0.2,0,-rr); ctx.fillStyle = '#ffe61a'; ctx.fill();
+          ctx.restore();
+        } else if (b.theme === 'portalOrb') {
+          ctx.save();
+          const speed = Math.hypot(b.vx || 0, b.vy || 0) || 1;
+          const tx = -(b.vx || 0) / speed * rr * 4.2;
+          const ty = -(b.vy || 0) / speed * rr * 4.2;
+          const tail = ctx.createLinearGradient(tx, ty, 0, 0);
+          tail.addColorStop(0, 'rgba(101,240,255,0)');
+          tail.addColorStop(1, 'rgba(179,107,255,0.78)');
+          ctx.strokeStyle = tail; ctx.lineWidth = rr * 0.9; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(0, 0); ctx.stroke();
+          ctx.shadowColor = '#b36bff';
+          ctx.shadowBlur = rr * 2.8;
+          ctx.beginPath(); ctx.arc(0,0,rr*1.52,0,Math.PI*2); ctx.fillStyle='rgba(179,107,255,0.26)'; ctx.fill();
+          ctx.beginPath(); ctx.arc(0,0,rr*0.95,0,Math.PI*2); ctx.fillStyle='#140024'; ctx.fill();
+          ctx.strokeStyle='rgba(101,240,255,0.9)'; ctx.lineWidth=2.6; ctx.beginPath(); ctx.arc(0,0,rr*0.95,0,Math.PI*2); ctx.stroke();
+          ctx.strokeStyle='rgba(255,255,255,0.66)'; ctx.lineWidth=1.2; ctx.beginPath(); ctx.arc(0,0,rr*0.42,0,Math.PI*2); ctx.stroke();
+          ctx.restore();
         } else if (b.theme === 'greenOrb') {
-          ctx.beginPath(); ctx.arc(0,0,rr*1.25,0,Math.PI*2); ctx.fillStyle='rgba(51,255,102,0.25)'; ctx.fill();
+          ctx.save();
+          ctx.shadowColor = b.portalBurst ? '#33ff66' : 'transparent';
+          ctx.shadowBlur = b.portalBurst ? rr * 2.2 : 0;
+          ctx.beginPath(); ctx.arc(0,0,rr*(b.portalBurst?1.75:1.25),0,Math.PI*2); ctx.fillStyle='rgba(51,255,102,0.25)'; ctx.fill();
           ctx.beginPath(); ctx.arc(0,0,rr,0,Math.PI*2); ctx.fillStyle='#33ff66'; ctx.fill();
+          if (b.portalBurst) { ctx.strokeStyle='rgba(234,255,255,0.72)'; ctx.lineWidth=1.8; ctx.beginPath(); ctx.arc(0,0,rr*1.35,0,Math.PI*2); ctx.stroke(); }
+          ctx.restore();
+        } else if (b.theme === 'purpleOrb') {
+          ctx.save();
+          const speed = Math.hypot(b.vx || 0, b.vy || 0) || 1;
+          const tx = -(b.vx || 0) / speed * rr * 3.8;
+          const ty = -(b.vy || 0) / speed * rr * 3.8;
+          const tail = ctx.createLinearGradient(tx, ty, 0, 0);
+          tail.addColorStop(0, 'rgba(255,118,210,0)');
+          tail.addColorStop(1, 'rgba(190,78,255,0.78)');
+          ctx.strokeStyle = tail; ctx.lineWidth = rr * 0.8; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(0, 0); ctx.stroke();
+          ctx.shadowColor = '#cc66ff';
+          ctx.shadowBlur = rr * 2.2;
+          ctx.beginPath(); ctx.arc(0,0,rr*1.35,0,Math.PI*2); ctx.fillStyle='rgba(204,102,255,0.26)'; ctx.fill();
+          ctx.beginPath(); ctx.arc(0,0,rr*0.9,0,Math.PI*2); ctx.fillStyle='#8d32ff'; ctx.fill();
+          ctx.beginPath(); ctx.arc(-rr*0.22,-rr*0.26,rr*0.28,0,Math.PI*2); ctx.fillStyle='rgba(255,235,255,0.72)'; ctx.fill();
+          ctx.restore();
         } else if (b.theme === 'fish') {
           ctx.beginPath(); ctx.ellipse(0,0,rr*1.25,rr*0.62,0,0,Math.PI*2); ctx.fillStyle='#5ab1ff'; ctx.fill();
           ctx.beginPath(); ctx.moveTo(0,rr*0.35); ctx.lineTo(-rr*0.9,rr*1.0); ctx.lineTo(-rr*0.45,0); ctx.lineTo(-rr*0.9,-rr*1.0); ctx.closePath(); ctx.fillStyle='#2f8fb8'; ctx.fill();
@@ -3548,27 +4814,28 @@ function nextWave() {
         } else if (b.isLock) {
           addFloatText('LOCK HIT!', player.x, player.y - 40, '#00e5ff', 16);
           SFX.miss();
-          takeDamage(7);
+          takeDamage(b.damage || 7);
         } else if (b.tennis) {
           addFloatText('SMASH! -20', player.x, player.y - 40, '#c6ff3a', 18);
           SFX.miss();
-          takeDamage(20);
+          takeDamage(b.damage || 20);
         } else if (b.theme === 'donkey') {
           addFloatText('HEE HAW! -20', player.x, player.y - 40, '#c7a16b', 18);
           SFX.whack && SFX.whack();
-          takeDamage(20);
+          takeDamage(b.damage || 20);
         } else if (b.theme === 'sword') {
           addFloatText('SWORD! -35', player.x, player.y - 40, '#c8d4ff', 18);
           SFX.miss();
-          takeDamage(35);
+          takeDamage(b.damage || 35);
         } else if (b.splat || b.theme === 'ink') {
           bossInkBlindUntil = Date.now() + 2400;
-          addFloatText('INKED!', player.x, player.y - 40, '#ff76d2', 18);
+          blasterDisabledUntil = Date.now() + 2600;
+          addFloatText('BLASTER JAMMED!', player.x, player.y - 40, '#ff76d2', 18);
           SFX.neonOn && SFX.neonOn();
-          takeDamage(5);
+          takeDamage(b.damage || 5);
         } else {
           SFX.miss();
-          takeDamage(5);
+          takeDamage(b.damage || 5);
         }
       }
     });
@@ -3578,7 +4845,7 @@ function nextWave() {
     // Float texts
     floatTexts = floatTexts.filter(t => t.a > 0.02);
     floatTexts.forEach(t => {
-      t.y += t.vy; t.a -= 0.02;
+      t.y += t.vy; t.a -= (t.fade || 0.02);
       ctx.save();
       ctx.globalAlpha = t.a;
       ctx.font = `bold ${t.size}px 'Bebas Neue', cursive`;
@@ -3615,15 +4882,220 @@ function nextWave() {
     if (twin) drawTwin();
     if (rebound) drawRebound();
     if (escort) drawEscort();
-    // BLACKOUT: a radial-gradient vignette drawn over everything — nearly opaque
-    // dark except a small clear radius around the ship, so vision is the actual
-    // gameplay constraint rather than a new spawn/damage rule.
+    // BLACKOUT: ship-headlight cone with feathered edges. Draw a dark layer, then
+    // softly erase nested V-shapes so the beam fades at the sides instead of cutting
+    // a hard triangle into the darkness.
     if (waveTheme === 'blackout' && Date.now() > themeEffectsAt) {
-      const grad = ctx.createRadialGradient(player.x, player.y, player.r*3, player.x, player.y, player.r*8.4); // spotlight enlarged 20%
-      grad.addColorStop(0, 'rgba(3,1,16,0)');
-      grad.addColorStop(1, 'rgba(3,1,16,0.96)');
-      ctx.fillStyle = grad;
+      const headlight = blackoutHeadlightGeometry();
+      const { coneTopY, coneHalfW, beamBaseY } = headlight;
+      ctx.save();
+      ctx.fillStyle = 'rgba(3,1,16,0.965)';
       ctx.fillRect(0, 0, W, H);
+      ctx.globalCompositeOperation = 'destination-out';
+      for (let i = 0; i < 9; i++) {
+        const t = i / 8;
+        const half = coneHalfW * (1 - t * 0.55);
+        const alpha = 0.035 + t * 0.075;
+        const erase = ctx.createLinearGradient(player.x, beamBaseY, player.x, coneTopY);
+        erase.addColorStop(0, `rgba(255,255,255,${alpha * 1.35})`);
+        erase.addColorStop(0.58, `rgba(255,255,255,${alpha * 0.82})`);
+        erase.addColorStop(1, `rgba(255,255,255,${alpha * 0.02})`);
+        ctx.beginPath();
+        ctx.moveTo(player.x, beamBaseY);
+        ctx.lineTo(Math.max(0, player.x - half), coneTopY);
+        ctx.lineTo(Math.min(W, player.x + half), coneTopY);
+        ctx.closePath();
+        ctx.fillStyle = erase;
+        ctx.fill();
+      }
+      ctx.globalCompositeOperation = 'source-over';
+      const beam = ctx.createLinearGradient(player.x, beamBaseY, player.x, coneTopY);
+      beam.addColorStop(0, 'rgba(255,246,180,0.16)');
+      beam.addColorStop(0.62, 'rgba(255,246,180,0.042)');
+      beam.addColorStop(1, 'rgba(255,246,180,0)');
+      ctx.beginPath();
+      ctx.moveTo(player.x, beamBaseY);
+      ctx.lineTo(Math.max(0, player.x - coneHalfW * 0.82), coneTopY);
+      ctx.lineTo(Math.min(W, player.x + coneHalfW * 0.82), coneTopY);
+      ctx.closePath();
+      ctx.fillStyle = beam;
+      ctx.fill();
+      // Keep the damage line visible during BLACKOUT. The darkness layer is drawn
+      // after the normal line, so redraw a softer version here as a survival cue.
+      ctx.save();
+      ctx.globalAlpha = 0.72;
+      ctx.setLineDash([10, 7]);
+      ctx.beginPath();
+      ctx.moveTo(0, _renderLineY);
+      ctx.lineTo(W, _renderLineY);
+      ctx.strokeStyle = 'rgba(51,255,100,0.78)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+
+      // The darkness hole is only half of BLACKOUT: normal sprites also need to be
+      // redrawn above the dark layer, clipped to the cone, or they stay dimmed by
+      // the global overlay even when the beam geometry is correct.
+      const drawBlackoutLitHeroBullet = b => {
+        ctx.fillStyle = C('#ffe61a');
+        ctx.fillRect(b.x - 2, b.y - 12, 4, 14);
+        ctx.fillStyle = 'rgba(255,230,26,0.35)';
+        ctx.fillRect(b.x - 4, b.y - 14, 8, 18);
+      };
+      const drawBlackoutLitEnemyBullet = b => {
+        if (b.theme === 'bulletPortal') return;
+        const rr = b.r || 5;
+        const sp = Math.hypot(b.vx || 0, b.vy || 0) || 1;
+        const tx = b.x - ((b.vx || 0) / sp) * rr * 5;
+        const ty = b.y - ((b.vy || 0) / sp) * rr * 5;
+        const grad = ctx.createLinearGradient(b.x, b.y, tx, ty);
+        const c1 = b.theme === 'portalOrb' ? 'rgba(179,107,255,0.86)' : 'rgba(255,80,80,0.82)';
+        const c2 = b.theme === 'portalOrb' ? 'rgba(101,240,255,0)' : 'rgba(255,68,68,0)';
+        grad.addColorStop(0, c1);
+        grad.addColorStop(1, c2);
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = rr * 0.9;
+        ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(tx, ty); ctx.stroke();
+        ctx.beginPath(); ctx.arc(b.x, b.y, rr + 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = b.theme === 'portalOrb' ? 'rgba(179,107,255,0.36)' : 'rgba(255,80,80,0.42)';
+        ctx.fill();
+        ctx.beginPath(); ctx.arc(b.x, b.y, rr * 0.85, 0, Math.PI * 2);
+        ctx.fillStyle = b.theme === 'portalOrb' ? '#b36bff' : '#ff6666';
+        ctx.fill();
+      };
+      ctx.save();
+      clipToBlackoutHeadlight();
+      for (const o of obstacles) {
+        if (!o.blackoutHiddenEnemy && isPointInBlackoutHeadlight(o.x, o.y, o.r || 18)) drawObstacle(o);
+      }
+      for (const p of powerups) {
+        if (isPointInBlackoutHeadlight(p.x, p.y, p.r || 16)) drawPowerup(p);
+      }
+      for (const b of bullets) {
+        if (b.vy !== 999 && isPointInBlackoutHeadlight(b.x, b.y, 8)) drawBlackoutLitHeroBullet(b);
+      }
+      for (const b of enemyBullets) {
+        if (!b._gone && !b._hit && isPointInBlackoutHeadlight(b.x, b.y, (b.r || 5) + 4)) drawBlackoutLitEnemyBullet(b);
+      }
+      ctx.restore();
+
+      // During BLACKOUT, redraw player blaster shots through the same headlight
+      // cone so they visibly fade into darkness instead of disappearing abruptly.
+      for (const b of bullets) {
+        if (b.vy === 999) continue;
+        const denom = Math.max(1, beamBaseY - coneTopY);
+        const t = Math.max(0, Math.min(1, (beamBaseY - b.y) / denom));
+        if (t < 0 || t > 1) continue;
+        const halfAtY = coneHalfW * (0.16 + 0.84 * t);
+        const edge = Math.max(0, 1 - Math.abs(b.x - player.x) / Math.max(1, halfAtY));
+        const alpha = Math.max(0, Math.min(1, edge * edge * (0.72 - 0.68 * t))); 
+        if (alpha <= 0.02) continue;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = C('#ffe61a');
+        ctx.fillRect(b.x - 2, b.y - 12, 4, 14);
+        ctx.fillStyle = 'rgba(255,230,26,0.35)';
+        ctx.fillRect(b.x - 4, b.y - 14, 8, 18);
+        ctx.restore();
+      }
+      // BLACKOUT feedback: when a shot hits an object in the dark, briefly flash
+      // the contact point so the player gets readable confirmation without seeing
+      // the whole lane forever.
+      const litNow = Date.now();
+      const drawBlackoutHitGlow = (x, y, rr, color, litUntil) => {
+        ctx.save();
+        const a = Math.max(0, Math.min(1, (litUntil - litNow) / 260));
+        ctx.globalAlpha = 0.12 + a * 0.50;
+        ctx.beginPath();
+        ctx.arc(x, y, rr * (1.08 + a * 0.34), 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 8 + a * 14;
+        ctx.fill();
+        ctx.restore();
+        return a;
+      };
+      const drawBlackoutHiddenEnemyFlash = (o, a) => {
+        const rr = o.r || 18;
+        ctx.save();
+        ctx.translate(o.x, o.y);
+        ctx.globalAlpha = Math.max(0.18, Math.min(0.92, 0.22 + a * 0.7));
+        ctx.strokeStyle = o.blackoutKillFlash ? 'rgba(255,230,26,0.92)' : 'rgba(255,90,90,0.88)';
+        ctx.fillStyle = o.blackoutKillFlash ? 'rgba(255,230,26,0.10)' : 'rgba(255,90,90,0.10)';
+        ctx.lineWidth = o.blackoutKillFlash ? 3.2 : 2.4;
+        ctx.setLineDash(o.blackoutKillFlash ? [] : [5, 4]);
+        ctx.beginPath();
+        ctx.arc(0, 0, rr * (1.05 + a * 0.22), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = o.blackoutKillFlash ? 'rgba(255,255,255,0.86)' : 'rgba(255,210,210,0.82)';
+        ctx.beginPath(); ctx.arc(-rr * 0.32, -rr * 0.12, rr * 0.12, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(rr * 0.32, -rr * 0.12, rr * 0.12, 0, Math.PI * 2); ctx.fill();
+        if (o.blackoutKillFlash) {
+          ctx.strokeStyle = 'rgba(255,230,26,0.88)';
+          ctx.lineWidth = 2.4;
+          ctx.beginPath(); ctx.moveTo(-rr * 0.58, -rr * 0.58); ctx.lineTo(rr * 0.58, rr * 0.58); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(rr * 0.58, -rr * 0.58); ctx.lineTo(-rr * 0.58, rr * 0.58); ctx.stroke();
+        }
+        ctx.restore();
+      };
+      const drawBlackoutMuzzleSpark = (o) => {
+        const left = Math.max(0, (o.blackoutMuzzleUntil || 0) - litNow);
+        if (left <= 0) return;
+        const a = Math.max(0, Math.min(1, left / 360));
+        const rr = o.r || 18;
+        ctx.save();
+        ctx.translate(o.x, o.y + rr * 0.85);
+        ctx.globalAlpha = 0.26 + a * 0.58;
+        ctx.strokeStyle = 'rgba(255,230,26,0.92)';
+        ctx.fillStyle = 'rgba(255,230,26,0.18)';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.arc(0, 0, rr * (0.36 + (1 - a) * 0.28), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,0.78)';
+        ctx.beginPath(); ctx.moveTo(-rr * 0.42, 0); ctx.lineTo(rr * 0.42, 0); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, -rr * 0.42); ctx.lineTo(0, rr * 0.42); ctx.stroke();
+        ctx.restore();
+      };
+      for (const o of obstacles) {
+        if (o.blackoutHiddenEnemy && o.blackoutMuzzleUntil && o.blackoutMuzzleUntil > litNow) drawBlackoutMuzzleSpark(o);
+      }
+      blackoutHitFlashes = blackoutHitFlashes.filter(o => o.litUntil && o.litUntil > litNow);
+      for (const o of blackoutHitFlashes) {
+        const a = drawBlackoutHitGlow(o.x, o.y, o.r || 18, o.type === 'asteroid' ? 'rgba(190,170,220,0.46)' : 'rgba(255,90,90,0.48)', o.litUntil);
+        if (o.blackoutHiddenEnemy) {
+          drawBlackoutHiddenEnemyFlash(o, a);
+        } else {
+          ctx.save();
+          ctx.globalAlpha = Math.max(0.22, Math.min(0.88, 0.20 + a * 0.68));
+          drawObstacle(o);
+          ctx.restore();
+        }
+      }
+      for (const o of obstacles) {
+        if (!o.blackoutHiddenEnemy && o.litUntil && o.litUntil > litNow) {
+          const a = drawBlackoutHitGlow(o.x, o.y, o.r || 18, o.type === 'asteroid' ? 'rgba(190,170,220,0.42)' : 'rgba(255,90,90,0.42)', o.litUntil);
+          ctx.save();
+          ctx.globalAlpha = Math.max(0.22, Math.min(0.82, 0.18 + a * 0.64));
+          drawObstacle(o);
+          ctx.restore();
+        }
+      }
+      for (const p of powerups) {
+        if (p.litUntil && p.litUntil > litNow) {
+          const a = drawBlackoutHitGlow(p.x, p.y, p.r || 16, p.type === 'mystery' ? 'rgba(204,102,255,0.48)' : 'rgba(255,230,26,0.44)', p.litUntil);
+          ctx.save();
+          ctx.globalAlpha = Math.max(0.20, Math.min(0.78, 0.16 + a * 0.58));
+          drawPowerup(p);
+          ctx.restore();
+        }
+      }
+      ctx.restore();
     }
     if (Date.now() < bossInkBlindUntil) {
       const a = Math.min(0.82, (bossInkBlindUntil - Date.now()) / 2400 * 0.72);
@@ -3633,6 +5105,29 @@ function nextWave() {
       inkGrad.addColorStop(1, `rgba(6,1,14,${a})`);
       ctx.fillStyle = inkGrad;
       ctx.fillRect(0, 0, W, H);
+    }
+    if (Date.now() < blasterDisabledUntil) {
+      const left = Math.max(0, blasterDisabledUntil - Date.now());
+      const a = Math.min(1, left / 2600);
+      ctx.save();
+      ctx.globalAlpha = 0.28 + a * 0.34;
+      ctx.translate(W / 2, H * 0.42);
+      ctx.fillStyle = 'rgba(35,8,58,0.88)';
+      for (const [x, y, r] of [[0,0,92],[-62,20,48],[55,-18,42],[22,56,36],[-30,-54,34]]) {
+        ctx.beginPath(); ctx.arc(x, y, r * (0.92 + Math.sin(Date.now() * 0.009 + r) * 0.04), 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.strokeStyle = 'rgba(255,118,210,0.78)';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([10, 8]);
+      ctx.lineDashOffset = -Date.now() * 0.05;
+      ctx.beginPath(); ctx.arc(0, 0, 108, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 0.86;
+      ctx.font = `bold 34px 'Bebas Neue', cursive`;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ff76d2';
+      ctx.fillText('BLASTER JAMMED', 0, 10);
+      ctx.restore();
     }
     ctx.restore(); // undo shake before HUD — text should stay stable/readable
     drawHUD();
@@ -3766,6 +5261,25 @@ function nextWave() {
 
     ctx.save();
     ctx.translate(0, bob);
+    if (name === 'GRAY VISITOR' && activeBoss) {
+      const now = Date.now();
+      if (now < (boss.ghostUntil || 0)) {
+        const hidden = now < (boss.invisibleUntil || 0);
+        const flicker = hidden ? 0.015 : (0.26 + Math.abs(Math.sin(now * 0.034)) * 0.48);
+        ctx.globalAlpha *= flicker;
+        // afterimages make the phase jump visible even when using PNG bosses
+        ctx.save();
+        ctx.globalAlpha *= hidden ? 0.95 : 0.32;
+        ctx.translate(-size * 0.18, size * 0.04);
+        ctx.beginPath(); ctx.arc(0, 0, size * 0.34, 0, Math.PI * 2); ctx.fillStyle = 'rgba(179,107,255,0.26)'; ctx.fill();
+        ctx.restore();
+        ctx.save();
+        ctx.globalAlpha *= hidden ? 0.75 : 0.24;
+        ctx.translate(size * 0.16, -size * 0.03);
+        ctx.beginPath(); ctx.arc(0, 0, size * 0.28, 0, Math.PI * 2); ctx.fillStyle = 'rgba(101,240,255,0.22)'; ctx.fill();
+        ctx.restore();
+      }
+    }
     ctx.scale(breathe, breathe);
     ctx.rotate(Math.sin(t * 1.25) * (attacking ? 0.035 : 0.014));
 
@@ -4055,6 +5569,16 @@ function nextWave() {
       orbitGlow('rgba(200,212,255,0.32)');
     } else if (name === 'GRAY VISITOR') {
       const wob = Math.sin(t * 10) * 3;
+      const ghosting = boss && boss.creature && boss.creature.name === 'GRAY VISITOR' && Date.now() < (boss.ghostUntil || 0);
+      if (ghosting) {
+        const flicker = 0.33 + Math.abs(Math.sin(t * 18)) * 0.38;
+        ctx.globalAlpha *= flicker;
+        ctx.save();
+        ctx.translate(-18, 3);
+        ctx.globalAlpha *= 0.35;
+        bossAura('#33ff66', '#06361b');
+        ctx.restore();
+      }
       ctx.translate(wob, Math.cos(t * 8) * 1.5);
       bossAura('#d8ded8', '#4e5854');
       poly([[0,-55],[31,-37],[43,-8],[34,31],[8,54],[-25,42],[-40,6],[-29,-34]], ctx.fillStyle, '#170025', 5);
@@ -4101,9 +5625,24 @@ function nextWave() {
       });
       meanEyes('#ff442f', 2);
       ctx.strokeStyle = '#2a1400'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(-25,18); ctx.quadraticCurveTo(0,33,28,18); ctx.stroke();
+      if (boss && boss.attackType === 'sombrero' && (Date.now() < (boss.tacoGuardUntil || 0) || Date.now() < (boss.tacoOpenUntil || 0))) {
+        const guarded = Date.now() < (boss.tacoGuardUntil || 0);
+        const flash = Date.now() < (boss.tacoGuardFlashUntil || 0);
+        ctx.save();
+        ctx.setLineDash(guarded ? [5, 5] : [12, 8]);
+        ctx.strokeStyle = guarded ? (flash ? '#fff4c8' : '#d99a2b') : '#33ff66';
+        ctx.lineWidth = guarded ? 3.4 : 2.4;
+        ctx.globalAlpha = guarded ? 0.84 : 0.52;
+        ctx.beginPath(); ctx.arc(0, 4, 70 + Math.sin(t * 7) * (guarded ? 3 : 1.2), 0, Math.PI * 2); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
       orbitGlow('rgba(255,228,140,0.35)');
     } else if (name === 'COSMIC OCTO') {
-      const spin = t * (attacking ? 2.2 : 0.55);
+      const now = Date.now();
+      const spinning = boss && boss.attackType === 'ink' && now < (boss.octoSpinUntil || 0) && now > (boss.octoDescendUntil || 0);
+      const guarded = boss && boss.attackType === 'ink' && now < (boss.octoGuardUntil || 0);
+      const spin = t * (spinning ? 8.2 : attacking ? 2.2 : 0.55);
       ctx.save(); ctx.rotate(spin);
       for (let i = 0; i < 8; i++) {
         ctx.save(); ctx.rotate(i * Math.PI / 4);
@@ -4129,6 +5668,18 @@ function nextWave() {
       meanEyes('#5ab1ff', -10);
       ctx.strokeStyle = '#170025'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(-19,15); ctx.quadraticCurveTo(0,24,21,15); ctx.stroke();
       orbitGlow('rgba(255,80,216,0.45)');
+      if (guarded || spinning) {
+        const flash = boss && now < (boss.octoGuardFlashUntil || 0);
+        ctx.save();
+        ctx.setLineDash(guarded ? [4, 5] : [10, 8]);
+        ctx.strokeStyle = guarded ? (flash ? '#fff4ff' : '#ff76d2') : '#cc66ff';
+        ctx.lineWidth = guarded ? 3.5 : 2.4;
+        ctx.globalAlpha = guarded ? 0.82 : 0.42;
+        ctx.rotate(spinning ? -spin * 0.35 : 0);
+        ctx.beginPath(); ctx.arc(0, 2, 72 + Math.sin(t * 10) * (guarded ? 3 : 1.5), 0, Math.PI * 2); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
     } else {
       drawPixelSprite(creature.sprite, creature.palette, 0, 0, size / s);
     }
@@ -4139,7 +5690,7 @@ function nextWave() {
     'STAR OGRE': 'SHOOTS DONKEYS',
     'SKY DRAGON': 'FIRE BREATHER',
     'DARK KNIGHT': 'SWORD DART',
-    'GRAY VISITOR': 'GREEN ORBS',
+    'GRAY VISITOR': 'PORTAL ORBS',
     'SPACE SHARK': 'SHARK TEETH',
     'MEAN TACO': 'SOMBREROS',
     'COSMIC OCTO': 'INK BURST',
@@ -4294,10 +5845,78 @@ function nextWave() {
     } else {
       // No red ring here — unlike a small enemy face, the boss is already unmistakably
       // a threat (its size, name label, and health bar), so the ring was redundant.
-      if (boss.isGizmo) {
-        drawGizmoOrb(boss.r * 2.1);
-      } else {
-        drawThemedBoss(boss.creature, boss.r * 2.05);
+      let skipPortalMainDraw = false;
+      if (boss.attackType === 'portal') {
+        const now = Date.now();
+        const portalBaseAlpha = ctx.globalAlpha;
+        const ghosting = now < (boss.ghostUntil || 0);
+        skipPortalMainDraw = now < (boss.invisibleUntil || 0);
+        if (ghosting) {
+          const vanishPhase = boss.grayTeleport && !boss.grayTeleport.arrived;
+          const g = boss.grayTeleport;
+          const travelT = (vanishPhase && g) ? Math.max(0, Math.min(1, (now - g.start) / Math.max(1, g.reappearAt - g.start))) : 1;
+          const flick = vanishPhase ? (0.18 + Math.abs(Math.sin(now * 0.075)) * 0.32) : (0.52 + Math.abs(Math.sin(now * 0.045)) * 0.34);
+          ctx.globalAlpha *= skipPortalMainDraw ? 0.06 : flick;
+          if (vanishPhase && g) {
+            // Cyan/purple afterimages along the real travel path, so the movement
+            // reads as a ghost crossing the arena rather than a local jitter.
+            for (let i = 1; i <= 3; i++) {
+              const back = Math.max(0, travelT - i * 0.11);
+              const e = back * back * (3 - 2 * back);
+              const tx = (g.fromX + (g.toX - g.fromX) * e) - boss.x;
+              const ty = (g.fromY + (g.toY - g.fromY) * e + Math.sin(back * Math.PI) * -18) - boss.y;
+              ctx.save();
+              ctx.globalAlpha *= 0.12 * (4 - i);
+              ctx.translate(tx, ty);
+              drawThemedBoss(boss.creature, boss.r * 2.05);
+              ctx.restore();
+            }
+          }
+          ctx.save();
+          ctx.globalAlpha *= vanishPhase ? 0.42 : 0.22;
+          ctx.translate(Math.sin(now * 0.07) * 5, Math.cos(now * 0.052) * 3);
+          drawThemedBoss(boss.creature, boss.r * 2.05);
+          ctx.restore();
+          ctx.save();
+          ctx.globalAlpha = vanishPhase ? 0.50 : 0.34;
+          ctx.strokeStyle = 'rgba(101,240,255,0.55)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(0, 0, boss.r * (1.0 + Math.sin(now * 0.02) * 0.08), 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.globalAlpha = portalBaseAlpha;
+      }
+      if (!skipPortalMainDraw) {
+        if (boss.isGizmo) {
+          drawGizmoOrb(boss.r * 2.1);
+        } else {
+          drawThemedBoss(boss.creature, boss.r * 2.05);
+        }
+      }
+      if (boss.attackType === 'portal') {
+        const now = Date.now();
+        const flash = now < (boss.forcefieldFlashUntil || 0) ? 1 : 0;
+        const shaking = now < (boss.forcefieldShakeUntil || 0);
+        const shakeT = shaking ? (boss.forcefieldShakeUntil - now) / 260 : 0;
+        const shakeSeed = boss.forcefieldShakeSeed || 0;
+        const pulse = 1 + Math.sin(now * 0.012) * 0.035;
+        ctx.save();
+        if (shaking) {
+          ctx.translate(Math.sin(now * 0.13 + shakeSeed) * 6 * shakeT, Math.cos(now * 0.17 + shakeSeed) * 4 * shakeT);
+        }
+        ctx.globalAlpha = 0.44 + flash * 0.34 + shakeT * 0.12;
+        ctx.strokeStyle = flash ? 'rgba(234,255,255,0.92)' : 'rgba(179,107,255,0.78)';
+        ctx.lineWidth = flash || shaking ? 4.2 : 2.6;
+        ctx.setLineDash([8, 7]);
+        ctx.lineDashOffset = -((now / 65) % 15);
+        ctx.beginPath(); ctx.arc(0, 0, boss.r * 1.24 * pulse, 0, Math.PI * 2); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 0.16 + flash * 0.14 + shakeT * 0.08;
+        ctx.fillStyle = 'rgba(101,240,255,0.28)';
+        ctx.beginPath(); ctx.arc(0, 0, boss.r * 1.18 * pulse, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
       }
       if (boss.guardedRescue && boss.captiveCi >= 0) {
         const gc = GAME_CHARS[boss.captiveCi];
@@ -4595,6 +6214,7 @@ function nextWave() {
     }
     const ov=document.getElementById('space-overlay');
     if(!ov) return;
+    if (mode === 'select' || mode === 'boss-preview') ov.classList.remove('hidden');
     ov.classList.toggle('space-over', mode === 'over');
     ov.classList.toggle('space-boss-preview', mode === 'boss-preview');
     ov.style.justifyContent = mode === 'select' || mode === 'boss-preview' ? 'flex-start' : '';
@@ -4709,7 +6329,8 @@ function nextWave() {
                   </div>
                 </div>
               </div>
-              <button class="whack-btn" style="width:100%;border-color:#33ff66;background:rgba(51,255,102,0.18);font-size:16px;letter-spacing:4px;padding:14px 40px;margin-top:12px" onclick="spaceStart()">LAUNCH!</button>
+              <button class="whack-btn" style="width:100%;border-color:#33ff66;background:rgba(51,255,102,0.18);font-size:16px;letter-spacing:4px;padding:14px 40px;margin-top:12px" onclick="spaceStart()">PLAY CAMPAIGN</button>
+              <button class="whack-btn" style="width:100%;border-color:#00e5ff;background:rgba(0,229,255,0.14);font-size:14px;letter-spacing:3px;padding:12px 40px;margin-top:10px" onclick="spaceTutorialStart()">SPACE TUTORIAL</button>
               <div class="space-debug-row" aria-label="Space campaign wave debug jumps 1 through 7">
                 <button class="space-debug-chip" onclick="spaceDebugJump(1)">W1 AST</button>
                 <button class="space-debug-chip" onclick="spaceDebugJump(2)">W2 ENEMY</button>
@@ -4816,6 +6437,7 @@ function nextWave() {
   }
   function spMakeIntroOverlay() {
     const ann = document.createElement('div');
+    ann.className = 'space-intro-overlay';
     ann.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;pointer-events:none;background:rgba(5,2,18,0.92)';
     document.body.appendChild(ann);
     return ann;
@@ -5271,6 +6893,11 @@ function nextWave() {
 
   window.spaceStart=function(){
     ArcadeMusic.stop();
+    clearSpaceRuntimeTimers();
+    clearSpaceCinematicOverlays();
+    clearSpaceAcademyTimers();
+    spaceBriefingTimers.forEach(clearTimeout);
+    spaceBriefingTimers=[];
     activeChar=getGlobalChar();
     prepareSpaceMission();
     const ov=document.getElementById('space-overlay');
@@ -5281,6 +6908,8 @@ function nextWave() {
     }
     cancelAnimationFrame(bossPreviewRaf);
     bossPreviewRaf = null;
+    cancelAnimationFrame(raf);
+    state = 'idle';
     const beginRun = () => {
       reset(); state='playing'; raf=requestAnimationFrame(loop);
     };
@@ -5292,8 +6921,50 @@ function nextWave() {
     }
     briefThenBegin();
   };
+  window.spaceTutorialStart=function(){
+    ArcadeMusic.stop();
+    clearSpaceCinematicOverlays();
+    clearSpaceRuntimeTimers();
+    clearSpaceAcademyTimers();
+    activeChar=getGlobalChar();
+    prepareSpaceMission();
+    const ov=document.getElementById('space-overlay');
+    document.body.classList.remove('arcade-selection-open');
+    if(ov) {
+      ov.classList.add('hidden');
+      ov.classList.remove('space-boss-preview');
+    }
+    cancelAnimationFrame(bossPreviewRaf);
+    bossPreviewRaf = null;
+    cancelAnimationFrame(raf);
+    fitSpaceCanvas();
+    player = { x: W / 2, y: H - SPACE_SHIP_BOTTOM_OFFSET, r: 18 };
+    socketAnchorY = H - SPACE_SOCKET_ANCHOR_BOTTOM_OFFSET;
+    dangerY = socketAnchorY + (H - socketAnchorY) * 0.5;
+    player.y = dangerY + player.r * 1.1;
+    bullets = []; obstacles = []; enemyBullets = []; powerups = []; floatTexts = []; blackoutHitFlashes = [];
+    boss = null; miniBoss = null; pendingBossWin = null; rescueBanner = null; mirrorSequenceActive = false;
+    score = 0; health = 100; wave = 0; waveKills = 0; spawnsRemaining = 0; lastEnemyFire = 0; lineFlashA = 0;
+    buffSpeedUntil = 0; buffGunUntil = 0; buffShieldUntil = 0; buffFrozenUntil = 0; buffZappedUntil = 0; blasterDisabledUntil = 0; buffPizzaUntil = 0; snowingUntil = 0;
+    controlsReversedUntil = 0; twin = null; rebound = null; escort = null; shakeMag = 0;
+    inventory = { gun: false, shield: false, bomb: false };
+    leftHeld = false; rightHeld = false; lastAutoFire = 0; lastPizzaFire = 0;
+    waveCaptivesSeen.clear();
+    mkStars();
+    currentCfg = Object.assign(waveConfig(1), { speed: 1.65, tier: 0, enemyFireMult: 0 });
+    academyMode = true;
+    academyStep = 0;
+    academyStepArmed = false;
+    academyMysteryIndex = 0;
+    state = 'playing';
+    enterSpaceAcademyLesson(0);
+    raf=requestAnimationFrame(loop);
+  };
+  window.spaceAcademyStart = window.spaceTutorialStart;
   window.spaceDebugJump=function(startWave){
     ArcadeMusic.stop();
+    clearSpaceCinematicOverlays();
+    clearSpaceAcademyTimers();
     activeChar=getGlobalChar();
     prepareSpaceMission();
     const ov=document.getElementById('space-overlay');
@@ -5313,6 +6984,8 @@ function nextWave() {
   };
   window.spaceDebugBoss=function(bossName){
     ArcadeMusic.stop();
+    clearSpaceCinematicOverlays();
+    clearSpaceAcademyTimers();
     activeChar=getGlobalChar();
     prepareSpaceMission();
     const ov=document.getElementById('space-overlay');
@@ -5332,7 +7005,8 @@ function nextWave() {
   };
   window.spacePause=function(){
     clearSpaceRuntimeTimers();spaceBriefingTimers.forEach(clearTimeout);spaceBriefingTimers=[];cancelAnimationFrame(raf);state='idle';
-    document.querySelectorAll('.space-rescue-briefing').forEach(el => el.remove());
+    clearSpaceAcademyTimers(); academyMode = false;
+    clearSpaceCinematicOverlays();
     const _ov=document.getElementById('space-overlay');
     if(_ov) _ov.classList.add('hidden');
   };
@@ -5340,6 +7014,17 @@ function nextWave() {
     activeChar=getGlobalChar();
     canvas=document.getElementById('space-canvas');
     if(!canvas)return;
+    clearSpaceRuntimeTimers();
+    clearSpaceAcademyTimers();
+    spaceBriefingTimers.forEach(clearTimeout);
+    spaceBriefingTimers=[];
+    clearSpaceCinematicOverlays();
+    cancelAnimationFrame(raf);
+    cancelAnimationFrame(bossPreviewRaf);
+    bossPreviewRaf = null;
+    waveTransitioning = false;
+    pendingBossWin = null;
+    academyMode = false;
     // Always unhide the overlay when entering the space page
     const _ov=document.getElementById('space-overlay');
     if(_ov) _ov.classList.remove('hidden');
@@ -5389,7 +7074,7 @@ function nextWave() {
       canvas.addEventListener('touchcancel',e=>{
         for(const touch of e.changedTouches) _touchOnSocket.delete(touch.identifier);
       },{passive:true});
-      // Desktop: click a socket to deploy it, or number keys 1-4 as a shortcut.
+      // Desktop: click a socket to deploy it, or number keys 1-3 as a shortcut.
       canvas.addEventListener('click',e=>{
         if(state!=='playing') return;
         const rect=canvas.getBoundingClientRect();
