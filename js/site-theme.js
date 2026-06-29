@@ -58,6 +58,10 @@
     return applyTheme(ids[(index + 1) % ids.length]);
   }
 
+  // Pre-made brush art (not generated SVG) — white reads against the classic
+  // theme's navy buttons, black against retro's cream/paper buttons.
+  const BRUSH_ICON = { classic: 'paint_white.png', retro: 'paint_black.png' };
+
   function syncToggle(toggle) {
     const theme = getTheme();
     const info = THEMES[theme];
@@ -70,19 +74,16 @@
     }
     toggle.setAttribute('aria-label', 'Switch site theme. Current theme: ' + info.label);
     toggle.title = 'Theme: ' + info.label;
+    const brush = toggle.querySelector('.site-theme-brush-icon');
+    if (brush) brush.src = BRUSH_ICON[theme];
   }
 
   function createBrushIcon() {
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('viewBox', '0 0 24 24');
-    svg.setAttribute('fill', 'none');
-    svg.setAttribute('stroke', 'currentColor');
-    svg.setAttribute('stroke-width', '2');
-    svg.setAttribute('stroke-linecap', 'round');
-    svg.setAttribute('stroke-linejoin', 'round');
-    svg.setAttribute('aria-hidden', 'true');
-    svg.innerHTML = '<path d="M18 3l3 3-9.5 9.5-3-3L18 3z"/><path d="M7.5 13.5c-2.8.7-4.1 2.4-4.1 5.1 1.8-.9 3.1-.7 4.4-2 1-1 .9-2.1-.3-3.1z"/>';
-    return svg;
+    const img = document.createElement('img');
+    img.className = 'nav-icon-img site-theme-brush-icon';
+    img.alt = '';
+    img.src = BRUSH_ICON[getTheme()];
+    return img;
   }
 
   function createToggle(className) {
@@ -100,6 +101,7 @@
       const searchBtn = nav.querySelector('.page-nav-btn.is-search');
       if (!searchBtn) return;
       const toggle = createToggle('page-nav-btn site-theme-toggle site-theme-nav-toggle');
+      toggle.appendChild(createBrushIcon());
       const label = document.createElement('span');
       label.dataset.siteThemeLabel = 'true';
       toggle.appendChild(label);
@@ -110,6 +112,15 @@
       const mobileToggle = createToggle('site-theme-toggle site-theme-mobile-toggle');
       mobileToggle.id = 'mobileSiteThemeToggle';
       mobileToggle.appendChild(createBrushIcon());
+      // syncToggle() falls back to `toggle.textContent = label` when it can't find a
+      // [data-site-theme-label] child — which replaces ALL children, silently deleting
+      // the brush icon above on the very first sync. A visually-hidden label span gives
+      // it somewhere to write the text instead, so the icon (the only visible content
+      // in this round icon-only button) survives.
+      const mobileLabel = document.createElement('span');
+      mobileLabel.dataset.siteThemeLabel = 'true';
+      mobileLabel.style.cssText = 'position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap';
+      mobileToggle.appendChild(mobileLabel);
       document.body.appendChild(mobileToggle);
     }
 

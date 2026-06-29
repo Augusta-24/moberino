@@ -655,9 +655,15 @@ body.on-timeline #collage::after {
      same column — right next to Search. Columns 1-4 (Home/Sparkle, Browse,
      Years, Places) and Search itself are untouched. */
   .cats-header-nav .page-nav-btn.site-theme-nav-toggle {
-    width: auto;
+    width: 40px;
     justify-self: end;
-    padding: 0 14px;
+    padding: 0;
+    justify-content: center;
+  }
+  /* Icon-only on desktop now too — the brush icon alone communicates the
+     toggle; aria-label still carries the accessible name. */
+  .cats-header-nav .page-nav-btn.site-theme-nav-toggle [data-site-theme-label] {
+    display: none;
   }
 }
 
