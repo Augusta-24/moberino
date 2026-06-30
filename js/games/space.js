@@ -886,28 +886,20 @@
   }
 
   function grayPortalTemplate(index) {
-    // Gray Visitor shield-relay templates. Keep the internal "portal" attackType
-    // to avoid rippling through boss registration, but the gameplay is now one
-    // readable alien relay: shoot the tethered node twice to zap Gray.
     const safeTop = Math.max(96, Math.min(150, H * 0.16));
-    const relayY = clamp(H * 0.70, 260, H - 110);
     const templates = [
-      { gray: { x: W * 0.24, y: safeTop }, relay: { x: W * 0.72, y: relayY }, label: 'SHOOT THE RELAY' },
-      { gray: { x: W * 0.76, y: safeTop + 8 }, relay: { x: W * 0.28, y: relayY }, label: 'SHIELD RELAY' },
-      { gray: { x: W * 0.50, y: safeTop - 2 }, relay: { x: W * 0.50, y: relayY + 8 }, label: 'HIT RELAY TWICE' },
-      { gray: { x: W * 0.34, y: safeTop + 12 }, relay: { x: W * 0.66, y: relayY - 18 }, label: 'CRACK THE SHIELD' }
+      { gray: { x: W * 0.24, y: safeTop }, entry: { x: W * 0.78, y: H * 0.74 }, exit: { x: W * 0.42, y: H * 0.42 }, decoyEntry: { x: W * 0.18, y: H * 0.68 }, decoyExit: { x: W * 0.86, y: H * 0.46 }, label: 'CROSS LEFT' },
+      { gray: { x: W * 0.76, y: safeTop + 8 }, entry: { x: W * 0.22, y: H * 0.74 }, exit: { x: W * 0.58, y: H * 0.42 }, decoyEntry: { x: W * 0.82, y: H * 0.68 }, decoyExit: { x: W * 0.14, y: H * 0.46 }, label: 'CROSS RIGHT' },
+      { gray: { x: W * 0.50, y: safeTop - 2 }, entry: { x: W * 0.20, y: H * 0.72 }, exit: { x: W * 0.74, y: H * 0.46 }, decoyEntry: { x: W * 0.82, y: H * 0.76 }, decoyExit: { x: W * 0.28, y: H * 0.36 }, label: 'BANK CENTER' },
+      { gray: { x: W * 0.34, y: safeTop + 12 }, entry: { x: W * 0.84, y: H * 0.72 }, exit: { x: W * 0.62, y: H * 0.39 }, decoyEntry: { x: W * 0.18, y: H * 0.76 }, decoyExit: { x: W * 0.78, y: H * 0.36 }, label: 'BACK SHOT' }
     ];
     const t = templates[index % templates.length];
     const bossR = boss ? boss.r : BOSS_R;
-    const clampGray = p => ({
+    const clampPoint = p => ({
       x: clamp(p.x, bossR + 30, W - bossR - 30),
       y: clamp(p.y, 82, Math.min(H - 92, H * 0.80))
     });
-    const clampRelay = p => ({
-      x: clamp(p.x, 42, W - 42),
-      y: clamp(p.y, Math.max(190, H * 0.42), Math.min(H - 96, H * 0.80))
-    });
-    return { gray: clampGray(t.gray), relay: clampRelay(t.relay), label: t.label };
+    return { gray: clampPoint(t.gray), entry: clampPoint(t.entry), exit: clampPoint(t.exit), decoyEntry: clampPoint(t.decoyEntry), decoyExit: clampPoint(t.decoyExit), label: t.label };
   }
 
   function graySetPhase(b, phase, duration, now) {
@@ -961,23 +953,110 @@
   function graySpawnPortalPuzzle(b, now) {
     const st = b.grayState;
     const t = grayPortalTemplate(st.templateIndex);
-    enemyBullets.forEach(e => { if (e.bulletPortal || e.grayRelay) e._gone = true; });
+    enemyBullets.forEach(e => { if (e.bulletPortal) e._gone = true; });
     b.portalShieldUntil = now + 999999;
-    b.grayRelayHits = 0;
-    const relay = t.relay;
-    enemyBullets.push({
-      x: relay.x, y: relay.y, vx: 0, vy: 0, r: 21,
-      theme: 'grayRelay', grayRelay: true,
-      relayHits: 0,
-      relayTargetX: b.x,
-      relayTargetY: b.y,
-      born: now,
-      expiresAt: now + 5600,
-      litUntil: 0,
-      crackUntil: 0
+    const minPortalSpacing = clamp(Math.min(W, H) * 0.2, 64, 88);
+    const placed = [];
+    const clampPortalPoint = p => ({
+      x: clamp(p.x, b.r + 30, W - b.r - 30),
+      y: clamp(p.y, 92, Math.min(H - 82, H * 0.80))
     });
-    addFloatText(t.label, relay.x, relay.y - 34, '#33ff66', 15);
-    addFloatText('DIRECT SHOTS BLOCKED', b.x, b.y + b.r + 18, '#b36bff', 14);
+    const canPlacePortal = p => Math.hypot(p.x - t.gray.x, p.y - t.gray.y) > b.r + 66
+      && placed.every(other => Math.hypot(p.x - other.x, p.y - other.y) > minPortalSpacing);
+    const reservePortal = p => {
+      const pt = clampPortalPoint(p);
+      placed.push(pt);
+      return pt;
+    };
+    const choosePortalPoint = (preferred, fallbackIndex) => {
+      const baseCandidates = [
+        preferred,
+        { x: W * 0.16, y: H * 0.38 },
+        { x: W * 0.84, y: H * 0.38 },
+        { x: W * 0.18, y: H * 0.74 },
+        { x: W * 0.82, y: H * 0.74 },
+        { x: W * 0.50, y: H * 0.54 },
+        { x: W * 0.32, y: H * 0.70 },
+        { x: W * 0.68, y: H * 0.70 },
+      ];
+      const gridCandidates = [];
+      [0.14, 0.26, 0.38, 0.50, 0.62, 0.74, 0.86].forEach(xp => {
+        [0.38, 0.50, 0.64, 0.78].forEach(yp => gridCandidates.push({ x: W * xp, y: H * yp }));
+      });
+      const candidates = baseCandidates.concat(gridCandidates).map(clampPortalPoint);
+      const start = fallbackIndex % candidates.length;
+      for (let i = 0; i < candidates.length; i++) {
+        const p = candidates[(start + i) % candidates.length];
+        if (canPlacePortal(p)) return reservePortal(p);
+      }
+      const farthest = candidates
+        .map(p => ({
+          p,
+          score: Math.min(
+            Math.hypot(p.x - t.gray.x, p.y - t.gray.y) - b.r - 66,
+            ...placed.map(other => Math.hypot(p.x - other.x, p.y - other.y) - minPortalSpacing)
+          )
+        }))
+        .sort((a, b) => b.score - a.score)[0].p;
+      return reservePortal(farthest);
+    };
+    const usable = Math.hypot(t.entry.x - t.gray.x, t.entry.y - t.gray.y) > b.r + 64
+      && Math.hypot(t.exit.x - t.gray.x, t.exit.y - t.gray.y) > b.r + 64
+      && Math.hypot(t.entry.x - t.exit.x, t.entry.y - t.exit.y) > 90;
+    const entry = reservePortal(usable ? t.entry : { x: t.gray.x < W * 0.5 ? W * 0.80 : W * 0.20, y: H * 0.62 });
+    const exit = choosePortalPoint(usable ? t.exit : { x: t.gray.x < W * 0.5 ? W * 0.54 : W * 0.46, y: H * 0.42 }, 0);
+    const decoyEntry = choosePortalPoint(t.decoyEntry, 2);
+    const decoyExit = choosePortalPoint(t.decoyExit, 4);
+    const aimFromEntry = Math.atan2(t.gray.y - entry.y, t.gray.x - entry.x);
+    const aimFromExit = Math.atan2(t.gray.y - exit.y, t.gray.x - exit.x);
+    const lifeMs = 4600;
+    const addPortal = (p, index, linkedIndex, aimAngle, pairId, colors) => {
+      enemyBullets.push({
+        x: p.x, y: p.y, vx: 0, vy: 0, r: 17,
+        theme: 'bulletPortal',
+        bulletPortal: true,
+        portalPairId: pairId,
+        portalIndex: index,
+        linkedIndex,
+        portalAngle: clamp(aimAngle + Math.PI / 2, -0.95, 0.95),
+        portalAimAngle: aimAngle,
+        portalActive: true,
+        portalColorA: colors.a,
+        portalColorB: colors.b,
+        telegraph: true,
+        born: now,
+        expiresAt: now + lifeMs
+      });
+    };
+    const addSinglePortal = (p, aimAngle) => {
+      enemyBullets.push({
+        x: p.x, y: p.y, vx: 0, vy: 0, r: 18,
+        theme: 'bulletPortal', bulletPortal: true, portalSingle: true,
+        portalAngle: aimAngle + Math.PI / 2,
+        portalAimAngle: aimAngle,
+        portalActive: true,
+        portalColorA: '#33ff66', portalColorB: '#f6e9ff',
+        born: now, expiresAt: now + Math.max(3600, lifeMs - 1200), spinPortal: true,
+      });
+    };
+    const solveId = `gray-${now}-${st.cycle}-solve`;
+    addPortal(entry, 0, 1, aimFromEntry, solveId, { a: '#b36bff', b: '#65f0ff' });
+    addPortal(exit, 1, 0, aimFromExit, solveId, { a: '#b36bff', b: '#65f0ff' });
+    const singlePortal = choosePortalPoint({ x: W * 0.50, y: H * 0.77 }, 6);
+    addSinglePortal(singlePortal, Math.atan2(t.gray.y - singlePortal.y, t.gray.x - singlePortal.x));
+
+    const decoyTarget = {
+      x: t.gray.x < W * 0.5 ? W - 24 : 24,
+      y: Math.min(H - 38, H * 0.78)
+    };
+    const decoyAimFromEntry = Math.atan2(decoyTarget.y - decoyEntry.y, decoyTarget.x - decoyEntry.x);
+    const decoyAimFromExit = Math.atan2(decoyTarget.y - decoyExit.y, decoyTarget.x - decoyExit.x);
+    const decoyId = `gray-${now}-${st.cycle}-decoy`;
+    addPortal(decoyEntry, 0, 1, decoyAimFromEntry, decoyId, { a: '#ff5bd6', b: '#ffe66d' });
+    addPortal(decoyExit, 1, 0, decoyAimFromExit, decoyId, { a: '#ff5bd6', b: '#ffe66d' });
+
+    addFloatText(t.label, (entry.x + exit.x) / 2, Math.min(entry.y, exit.y) - 24, '#b36bff', 14);
+    addFloatText('SHOOT GRAY THROUGH PORTALS!', b.x, b.y + b.r + 18, '#b36bff', 16);
     spaceSfx('boss.gray.projectile');
   }
 
@@ -1046,16 +1125,15 @@
 
   function grayVisitorTookPortalHit(b, now) {
     if (!b || b.attackType !== 'portal' || !b.grayState) return;
-    enemyBullets.forEach(e => { if (e.bulletPortal || e.grayRelay) e._gone = true; });
+    enemyBullets.forEach(e => { if (e.bulletPortal) e._gone = true; });
     b.grayState.shotDone = true;
     b.grayState.portalsSpawned = false;
-    b.forcefieldFlashUntil = now + 460;
     graySetPhase(b, 'dissolve', 560, now);
     b.ghostUntil = now + 2050;
     b.invisibleUntil = now + 680;
     b.phaseAlphaUntil = now + 2050;
     b._glitchAt = now;
-    addFloatText('RELAY ZAP!', b.x, b.y + b.r + 18, '#33ff66', 16);
+    addFloatText('SHIFTING!', b.x, b.y + b.r + 18, '#ff5bd6', 14);
   }
 
   // captive=true reskins this exact fight as "free the hero from the jail cell" —
@@ -4061,38 +4139,291 @@ function nextWave() {
     });
 
 
-    // Gray Visitor shield relay: hero bullets can charge the tethered relay;
-    // the second relay hit zaps Gray by marking that bullet as the valid indirect hit.
-    const activeGrayRelays = enemyBullets.filter(e => e.grayRelay && !e._gone);
-    if (activeGrayRelays.length && boss && boss.attackType === 'portal') {
+    // Phase 3C.7 Gray Visitor: bullet-routing portals. These only affect the
+    // hero's bullets, never the player ship. Matching-color portals are linked;
+    // dim/inactive portals let shots go straight through.
+    const activeBulletPortals = enemyBullets.filter(e => e.bulletPortal && !e._gone);
+    if (activeBulletPortals.length) {
       for (const hb of bullets) {
         if (hb.vy === 999 || Date.now() < (hb.portalCooldownUntil || 0)) continue;
-        for (const relay of activeGrayRelays) {
-          if (Math.hypot(hb.x - relay.x, hb.y - relay.y) < (relay.r || 18) * 1.55) {
-            const now = Date.now();
-            relay.relayHits = (relay.relayHits || 0) + 1;
-            relay.litUntil = now + 520;
-            relay.crackUntil = now + 620;
-            miniExplosion(relay.x, relay.y, relay.relayHits >= 2 ? '#33ff66' : '#65f0ff');
-            if (relay.relayHits >= 2) {
-              relay._gone = true;
-              hb.x = boss.x;
-              hb.y = boss.y;
-              hb.vx = 0;
-              hb.vy = -Math.max(7.4, Math.hypot(hb.vx || 0, hb.vy || -8));
-              hb.portalCooldownUntil = now + 260;
-              hb.portalRoutedUntil = now + 1850;
-              hb.grayRelayZap = true;
-              boss.forcefieldFlashUntil = now + 520;
-              addFloatText('ZAP!', relay.x, relay.y - 24, '#33ff66', 18);
-              addFloatText('SHIELD CRACKED!', boss.x, boss.y - boss.r - 22, '#33ff66', 15);
-              spaceSfx('boss.gray.projectile');
-            } else {
-              hb.vy = 999;
-              hb.portalCooldownUntil = now + 180;
-              addFloatText('1 MORE HIT!', relay.x, relay.y - 24, '#65f0ff', 14);
-              SFX.powerupCollect && SFX.powerupCollect();
+        for (const gate of activeBulletPortals) {
+          if (Math.hypot(hb.x - gate.x, hb.y - gate.y) < (gate.r || 14) * 1.25) {
+            if (!gate.portalActive) {
+              hb.portalCooldownUntil = Date.now() + 180;
+              gate.litUntil = Date.now() + 220;
+              break;
             }
+            const speed = Math.max(7.4, Math.hypot(hb.vx || 0, hb.vy || -8));
+            if (gate.portalSingle) {
+              // Single green portal: a simpler readable route. A shot through it is
+              // immediately re-aimed at Gray and counts as a portal-routed hit.
+              const targetX = boss ? boss.x : gate.x;
+              const targetY = boss ? boss.y : Math.max(90, gate.y - 180);
+              const ang = Math.atan2(targetY - gate.y, targetX - gate.x);
+              hb.x = gate.x + Math.cos(ang) * (gate.r + 6);
+              hb.y = gate.y + Math.sin(ang) * (gate.r + 6);
+              hb.vx = Math.cos(ang) * speed;
+              hb.vy = Math.sin(ang) * speed;
+              hb.portalCooldownUntil = Date.now() + 260;
+              hb.portalRoutedUntil = Date.now() + 1850;
+              gate.litUntil = Date.now() + 420;
+              gate._gone = true;
+              miniExplosion(gate.x, gate.y, gate.portalColorA || '#33ff66');
+              break;
+            }
+            const exit = activeBulletPortals.find(e => e.portalPairId === gate.portalPairId && e.portalIndex === gate.linkedIndex && !e._gone);
+            if (!exit) break;
+            // Exit shots are aimed at Gray's current/reappear coordinate. The portal
+            // art still tilts, but the actual route is guaranteed solvable.
+            const ang = exit.portalAimAngle != null ? exit.portalAimAngle : (-Math.PI / 2 + (exit.portalAngle || 0));
+            hb.x = exit.x + Math.cos(ang) * (exit.r + 5);
+            hb.y = exit.y + Math.sin(ang) * (exit.r + 5);
+            hb.vx = Math.cos(ang) * speed;
+            hb.vy = Math.sin(ang) * speed;
+            hb.portalCooldownUntil = Date.now() + 260;
+            hb.portalRoutedUntil = Date.now() + 1850;
+            gate.litUntil = exit.litUntil = Date.now() + 360;
+            miniExplosion(exit.x, exit.y, exit.portalColorA || '#b36bff');
+            break;
+          }
+        }
+      }
+    }
+
+    // Power-ups: drift down, draw, collect by touch only — bullets pass straight
+    // through them. SHOOT is for hostiles, CATCH is for pickups; letting bullets
+    // also collect them blurred that distinction. Mystery is the one deliberate
+    // exception now — it's a shoot target (ring takes 7 hits to break, then the
+    // outcome applies automatically), not something you fly into to catch.
+    powerups = powerups.filter(p => p.y < H + 40);
+    for (const p of powerups) {
+      if (!waveTransitioning) p.y += p.vy;
+      // Mystery boxes now fall straight like other pickups; the pulsing ring/crate art is the tell.
+      if (!waveTransitioning && p.rotSpeed) p.rot += p.rotSpeed;
+      drawPowerup(p);
+      if (waveTransitioning) continue;
+      if (p.type === 'mystery' && p.ringHp > 0) {
+        for (const b of bullets) {
+          if (b.vy === 999) continue; // already spent on something else this frame
+          if (Math.hypot(b.x - p.x, b.y - p.y) < p.r * 1.1) {
+            b.vy = 999;
+            p.litUntil = Date.now() + 320;
+            p.ringHp--;
+            if (p.ringHp <= 0) {
+              miniExplosion(p.x, p.y, '#cc66ff');
+              applyPowerup('mystery');
+              p._collected = true;
+            } else {
+              SFX.score();
+            }
+            break;
+          }
+        }
+        if (p._collected) continue;
+      }
+      if (p.type === 'instrument') {
+        // One hit and it's gone — pure fun, no ring/HP, just a note + points.
+        for (const b of bullets) {
+          if (b.vy === 999) continue;
+          if (Math.hypot(b.x - p.x, b.y - p.y) < p.r * 1.1) {
+            b.vy = 999;
+            p.litUntil = Date.now() + 320;
+            score += 20;
+            addFloatText('♪ +20', p.x, p.y - 10, '#ffe61a', 18);
+            miniExplosion(p.x, p.y, p.kind === 'guitar' ? '#c47a32' : p.kind === 'piano' ? '#f5f3ec' : '#e6ad2e');
+            if (p.kind === 'guitar') SFX.guitarNote();
+            else if (p.kind === 'piano') SFX.pianoNote();
+            else SFX.saxNote();
+            p._collected = true;
+            break;
+          }
+        }
+        if (p._collected) continue;
+      }
+      let gotIt = p.type !== 'mystery' && p.type !== 'instrument' && Math.hypot(p.x - player.x, p.y - player.y) < p.r + player.r * 0.9;
+      // An active escort can also catch pickups itself, not just the player ship —
+      // it's right there next to you, no reason it should be unable to grab one.
+      if (!gotIt && p.type !== 'mystery' && p.type !== 'instrument' && escort && escort.state === 'active') {
+        gotIt = Math.hypot(p.x - escort.x, p.y - escort.y) < p.r + 16 * 0.9;
+      }
+      if (gotIt) {
+        if (SOCKET_TYPES.includes(p.type)) {
+          // Banked, not applied — deployed later by tapping its socket. HP and
+          // mystery boxes aren't bankable and keep applying instantly below.
+          if (inventory[p.type]) {
+            handleDuplicatePowerup(p.type, p);
+          } else {
+            inventory[p.type] = true;
+            showTopBanner(p.type.toUpperCase() + ' ADDED', 'good');
+            SFX.powerupCollect();
+          }
+        } else {
+          applyPowerup(p.type, p.type === 'hp' ? p.hpValue : undefined);
+        }
+        miniExplosion(p.x, p.y, p.type === 'hp' ? '#33ff66' : p.type === 'mystery' ? '#cc66ff' : '#ffe61a');
+        p._collected = true;
+      }
+    }
+    powerups = powerups.filter(p => !p._collected);
+
+    obstacles=obstacles.filter(o=>o.y<H+60&&o.x>-60&&o.x<W+60);
+    for(const o of obstacles){
+      if (o.isDeflected) {
+        const elapsed = Date.now() - (o.deflectStart || Date.now());
+        const t = Math.min(1, elapsed / (o.deflectDuration || 620));
+        o.x += o.vx;
+        o.y += o.vy;
+        o.vx *= 0.985;
+        o.vy *= 0.955;
+        o.deflectScale = 1 - t * 0.92;
+        if (o.type === 'asteroid') o.rot += (o.deflectSpin || 0.24);
+        if (t >= 1) o.alive = false;
+        continue;
+      }
+      // MIRROR ENEMY: hovers at a fixed height and tracks the player's x every frame
+      // instead of falling — skips the normal vx/vy movement entirely.
+      if (o.isMirror) {
+        const targetX = Math.max(o.r, Math.min(W - o.r, player.x + (o.mirrorOffset || 0)));
+        o.x += (targetX - o.x) * (o.mirrorEase || 0.12);
+        continue;
+      }
+      o.x+=o.vx;
+      if(o.x<o.r&&o.vx<0) o.vx*=-1;
+      if(o.x>W-o.r&&o.vx>0) o.vx*=-1;
+      if (o.blackoutHiddenEnemy && Date.now() < (o.blackoutHoldUntil || 0)) continue;
+
+      // Non-hero enemies pause once, partway down, for a quick burst of fire before
+      // resuming their descent — see the note in spawnObstacle() for why.
+      if (o.type === 'face' && !o.isTrapped && !o.pausedBurstDone) {
+        if (!o.paused && o.y > H * 0.4) {
+          o.paused = true; o.pauseUntil = Date.now() + 1000; o.burstShotsLeft = 3; o.lastBurstShot = 0;
+        }
+        if (o.paused) {
+          if (Date.now() > o.pauseUntil) {
+            o.paused = false; o.pausedBurstDone = true;
+          } else {
+            if (o.burstShotsLeft > 0 && Date.now() - o.lastBurstShot > 320) {
+              enemyFireAt(o, 1.15, 'ENEMY BURST');
+              o.burstShotsLeft--; o.lastBurstShot = Date.now();
+            }
+            continue; // hold position while paused
+          }
+        }
+      }
+
+      o.y+=o.vy;
+      if(o.type==='asteroid') o.rot+=o.rotSpeed;
+    }
+    // Danger line crossing — REVERSE flips both which line and which direction
+    // counts as "crossed", since obstacles travel upward toward REVERSE_LINE_Y
+    // instead of downward toward dangerY.
+    const _lineY = waveTheme === 'flip' ? REVERSE_LINE_Y : dangerY;
+    for(const o of obstacles){
+      if (o.isDeflected) continue;
+      const _crossedLine = waveTheme === 'flip' ? o.y < _lineY : o.y > _lineY;
+      if(!o._crossed && _crossedLine){
+        o._crossed = true;
+        o.alive = false;
+        lineFlashA = 1.0;
+        if(o.type==='asteroid'){
+          const rockDamage = o.r < 22 ? 5 : 10;
+          takeDamage(rockDamage, waveTheme === 'flip' ? 'REVERSE ASTEROID ESCAPE' : 'ASTEROID REACHED LINE');
+          bigExplosion(o.x, _lineY, '#aa8855');
+          SFX.whack && SFX.whack(); // thud sound
+          waveKills++;
+        } else if(!o.isTrapped){
+          // enemy crosses line — big damage
+          takeDamage(30, 'ENEMY REACHED LINE');
+          bigExplosion(o.x, _lineY, GAME_CHARS[o.ci].color);
+          if (!o.blackoutHiddenEnemy) faceFlash(o.ci, 'sad', o.x, _lineY - 30);
+          SFX.miss();
+          waveKills++;
+        } else {
+          // trapped hero crosses line — not gone forever, queued back into the rescue pool
+          queueMissionCaptiveRetry(o.ci);
+          addFloatText('TRY AGAIN!', o.x, o.y, '#00e5ff', 24);
+          faceFlash(o.ci, 'sad', o.x, o.y - 20);
+          SFX.miss();
+          waveKills++;
+        }
+        if(state==='over') return;
+      }
+    }
+    obstacles=obstacles.filter(o=>!o._crossed);
+
+    obstacles.forEach(o => { if (!o.blackoutHiddenEnemy) drawObstacle(o); });
+
+    // Draw all bullets in one batch (no per-bullet ctx.save/restore or shadowBlur).
+    // FROZEN/ZAPPED are purely cosmetic reskins of the SAME bullets, except zapped
+    // bullets also genuinely deal 0 damage (gated below) — the fart skin is the
+    // visible reason why, same idea as the snowflake being the tell for the slow.
+    // (_frozen/_zapped computed once near the top of loop() and reused throughout.)
+    ctx.fillStyle=C('#ffe61a');
+    for(const b of bullets){
+      if (_frozen) {
+        drawIceShard(b.x, b.y, 28, (b._wob || 0) * 0.5, 'rgba(102,221,255,0.72)');
+      } else if (_zapped) {
+        if (drawProjectileImage('zap', b.x, b.y, 34, b._wob || 0, 'rgba(204,153,255,0.72)')) continue;
+        // Hand-drawn puff cluster instead of the emoji glyph — soft translucent
+        // greenish-brown blobs, comedic rather than a clean projectile. Bigger and
+        // more spread out than a normal bullet — it should read as a cloud, not a shot.
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        const wob = b._wob || 0;
+        ctx.fillStyle = 'rgba(150,200,90,0.45)';
+        ctx.beginPath(); ctx.arc(0, 0, 17, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(180,160,90,0.38)';
+        ctx.beginPath(); ctx.arc(Math.cos(wob)*14, Math.sin(wob)*10, 12, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(-Math.cos(wob)*14, 10, 11, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(150,200,90,0.32)';
+        ctx.beginPath(); ctx.arc(Math.sin(wob)*11, -13, 9, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(-Math.sin(wob)*12, 4, 7.5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(180,160,90,0.28)';
+        ctx.beginPath(); ctx.arc(Math.cos(wob*0.7)*16, -4, 7, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+      } else if (b.isPizza) {
+        if (drawProjectileImage('pizza', b.x, b.y, 27, Math.atan2(b.vy, b.vx) + Math.PI / 2, 'rgba(255,204,68,0.7)')) continue;
+        // Hand-drawn pizza slice — wedge and pepperoni dots,
+        // rotated to face the direction it's actually flying (the shotgun spread
+        // fans out at angles, not just straight up).
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.rotate(Math.atan2(b.vy, b.vx) + Math.PI / 2);
+        ctx.beginPath();
+        ctx.moveTo(0, -10); ctx.lineTo(-7, 8); ctx.lineTo(7, 8); ctx.closePath();
+        ctx.fillStyle = '#ffcc44'; ctx.fill();
+        ctx.strokeStyle = '#e8a020'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.fillStyle = '#cc3322';
+        ctx.beginPath(); ctx.arc(-2.5, -1, 1.6, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(2.5, 2, 1.6, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(0.5, -4.5, 1.4, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      } else {
+        ctx.fillRect(b.x-2,b.y-12,4,14);
+        ctx.fillStyle='rgba(255,230,26,0.35)'; ctx.fillRect(b.x-4,b.y-14,8,18); // cheap glow
+        ctx.fillStyle=C('#ffe61a');
+      }
+    }
+
+    const activeTacoGuards = boss && boss.attackType === 'sombrero'
+      ? enemyBullets.filter(g => g.tacoGuard && g.telegraph && !g._gone)
+      : [];
+    if (activeTacoGuards.length) {
+      for (const b of bullets) {
+        if (b.vy === 999 || b.tacoDeflected || b.octoDeflected) continue;
+        for (const g of activeTacoGuards) {
+          const blockR = (g.r || 8) * 5.4;
+          if (Math.hypot(b.x - g.x, b.y - g.y) < blockR) {
+            const side = g.tacoSide || (b.x < g.x ? -1 : 1);
+            b.x += side * 6;
+            b.vx = side * (4.7 + Math.random() * 1.3);
+            b.vy = 4.4 + Math.random() * 1.1;
+            b.tacoDeflected = true;
+            b.portalCooldownUntil = Date.now() + 999;
+            g.litUntil = Date.now() + 260;
+            boss.tacoGuardFlashUntil = Date.now() + 260;
+            miniExplosion(b.x, b.y, '#d99a2b');
+            SFX.powerupCollect && SFX.powerupCollect();
             break;
           }
         }
@@ -4349,8 +4680,7 @@ function nextWave() {
             boss.forcefieldFlashUntil = Date.now() + 320;
             boss.forcefieldShakeUntil = Date.now() + 260;
             boss.forcefieldShakeSeed = Math.random() * Math.PI * 2;
-            addFloatText('DIRECT SHOTS BLOCKED', boss.x, boss.y - boss.r - 22, '#b36bff', 14);
-            addFloatText('SHOOT THE RELAY', boss.x, boss.y + boss.r + 18, '#33ff66', 14);
+            addFloatText('ROUTE IT!', boss.x, boss.y - boss.r - 20, '#b36bff', 14);
             miniExplosion(b.x, b.y, '#b36bff');
             SFX.emp && SFX.emp();
             continue;
@@ -4654,7 +4984,7 @@ function nextWave() {
           SFX.tone && SFX.tone(300 + ((b.spinSeq || 0) % 5) * 34, 'triangle', 0, 0.025, 0.05, 80);
         }
       }
-      if ((b.bulletPortal || b.grayRelay) && now >= (b.expiresAt || now + 1)) { b._gone = true; return; }
+      if (b.bulletPortal && now >= (b.expiresAt || now + 1)) { b._gone = true; return; }
       if ((b.portalEnter || b.portalSeed) && now >= (b.expiresAt || now + 1)) { b._gone = true; return; }
       if (b.tacoGuard && now >= (b.expiresAt || now + 1)) { b._gone = true; return; }
       if (b.octoSpinShot && now >= (b.expiresAt || now + 1)) { b._gone = true; return; }
@@ -4794,45 +5124,6 @@ function nextWave() {
           ctx.fillStyle = '#9a7a55'; ctx.fillRect(-rr*0.9, -rr*0.35, rr*1.8, rr*0.95);
           ctx.beginPath(); ctx.moveTo(-rr*0.9,-rr*0.3); ctx.lineTo(-rr*1.45,-rr*0.95); ctx.lineTo(-rr*0.3,-rr*0.55); ctx.fill();
           ctx.fillStyle = '#2a1a10'; ctx.fillRect(-rr*0.35, rr*0.05, rr*0.22, rr*0.85); ctx.fillRect(rr*0.35, rr*0.05, rr*0.22, rr*0.85);
-        } else if (b.theme === 'grayRelay') {
-          ctx.save();
-          const pulse = 1 + Math.sin(now * 0.012) * 0.08;
-          const hot = now < (b.litUntil || 0);
-          const cracked = (b.relayHits || 0) > 0;
-          if (boss && boss.attackType === 'portal') {
-            const tx = boss.x - b.x;
-            const ty = boss.y - b.y;
-            ctx.save();
-            ctx.globalAlpha = 0.42 + (hot ? 0.26 : 0);
-            ctx.strokeStyle = cracked ? 'rgba(51,255,102,0.82)' : 'rgba(101,240,255,0.64)';
-            ctx.lineWidth = hot ? 4.2 : 2.4;
-            ctx.setLineDash([9, 7]);
-            ctx.lineDashOffset = -((now / 55) % 16);
-            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(tx, ty); ctx.stroke();
-            ctx.setLineDash([]);
-            ctx.restore();
-          }
-          ctx.shadowColor = cracked ? '#33ff66' : '#65f0ff';
-          ctx.shadowBlur = hot ? rr * 3.0 : rr * 1.4;
-          ctx.fillStyle = cracked ? 'rgba(51,255,102,0.22)' : 'rgba(101,240,255,0.20)';
-          ctx.beginPath(); ctx.arc(0, 0, rr * 1.75 * pulse, 0, Math.PI * 2); ctx.fill();
-          ctx.strokeStyle = cracked ? '#33ff66' : '#65f0ff';
-          ctx.lineWidth = hot ? 4.2 : 3.0;
-          ctx.beginPath(); ctx.arc(0, 0, rr * 1.08 * pulse, 0, Math.PI * 2); ctx.stroke();
-          ctx.strokeStyle = 'rgba(234,255,255,0.76)';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(-rr * 0.48, 0); ctx.lineTo(rr * 0.48, 0);
-          ctx.moveTo(0, -rr * 0.48); ctx.lineTo(0, rr * 0.48);
-          ctx.stroke();
-          if (cracked) {
-            ctx.strokeStyle = 'rgba(255,255,255,0.72)';
-            ctx.lineWidth = 1.8;
-            ctx.beginPath();
-            ctx.moveTo(-rr * 0.25, -rr * 0.85); ctx.lineTo(rr * 0.08, -rr * 0.20); ctx.lineTo(-rr * 0.10, rr * 0.25); ctx.lineTo(rr * 0.28, rr * 0.86);
-            ctx.stroke();
-          }
-          ctx.restore();
         } else if (b.theme === 'bulletPortal') {
           ctx.save();
           const pulse = 1 + Math.sin(now * 0.012) * 0.055;
@@ -5129,7 +5420,7 @@ function nextWave() {
         ctx.fillRect(b.x - 4, b.y - 14, 8, 18);
       };
       const drawBlackoutLitEnemyBullet = b => {
-        if (b.theme === 'bulletPortal' || b.theme === 'grayRelay') return;
+        if (b.theme === 'bulletPortal') return;
         const rr = b.r || 5;
         const sp = Math.hypot(b.vx || 0, b.vy || 0) || 1;
         const tx = b.x - ((b.vx || 0) / sp) * rr * 5;
