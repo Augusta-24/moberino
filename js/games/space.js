@@ -6598,9 +6598,9 @@ function nextWave() {
   }
 
   function spaceModeButtonHTML(label, detail, onclick, color, glyph) {
-    return `<button class="whack-btn" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;border-color:${color};background:${color}24;font-size:15px;letter-spacing:3px;padding:12px 14px;text-align:left" onclick="${onclick}">
-      <span style="display:flex;align-items:center;gap:10px"><span style="font-size:18px;line-height:1">${glyph || '▶'}</span><span>${label}</span></span>
-      <span style="font-family:'VCR',monospace;font-size:9px;letter-spacing:1.2px;color:rgba(242,239,232,0.48);line-height:1.25;text-align:right">${detail}</span>
+    return `<button class="whack-btn" style="width:100%;min-height:46px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-color:${color};background:${color}14;font-size:14px;letter-spacing:2.6px;padding:8px 14px;text-align:left;box-shadow:inset 0 0 18px ${color}10" onclick="${onclick}">
+      <span style="display:flex;align-items:center;gap:10px;min-width:0"><span style="font-size:17px;line-height:1;color:#f2efe8">${glyph || '▶'}</span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${label}</span></span>
+      <span style="font-family:'VCR',monospace;font-size:8px;letter-spacing:1.1px;color:rgba(242,239,232,0.46);line-height:1.25;text-align:right;white-space:nowrap">${detail}</span>
     </button>`;
   }
 
@@ -6722,24 +6722,24 @@ function nextWave() {
               <div id="space-select-art" style="position:absolute;inset:0;z-index:0;opacity:0.42;transform:scale(1.26) translateY(10px);filter:saturate(1.18) brightness(1.02);pointer-events:none;mix-blend-mode:screen"></div>
             </div>
             <div class="game-card-info" style="position:relative;z-index:2;padding:16px 18px 20px;background:linear-gradient(to top, rgba(5,2,18,0.97) 78%, rgba(32,34,44,0.34) 100%)">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:14px;padding:16px 18px;border:1px solid rgba(242,239,232,0.18);border-radius:16px;background:linear-gradient(135deg,rgba(62,64,74,0.94),rgba(30,32,42,0.88));box-shadow:inset 0 0 32px rgba(255,255,255,0.05),0 0 24px rgba(0,0,0,0.20)">
-                <div style="display:flex;align-items:center;gap:12px;min-width:0">
-                  <div style="width:78px;height:78px;flex-shrink:0;border-radius:50%;background:radial-gradient(circle at 50% 42%,rgba(242,239,232,0.18),rgba(46,48,58,0.94) 62%,rgba(13,16,24,1));display:flex;align-items:center;justify-content:center;border:3px solid ${gc.color}aa;box-shadow:0 0 22px ${gc.color}55,inset 0 0 26px rgba(255,255,255,0.06)">
-                    <div class="char-tilt" style="width:58px;height:58px">${charFace(gc,'normal')}</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px;padding:12px 14px;border:1px solid rgba(242,239,232,0.12);border-radius:16px;background:linear-gradient(135deg,rgba(72,74,84,0.34),rgba(18,20,30,0.28));box-shadow:inset 0 0 22px rgba(255,255,255,0.035),0 0 18px rgba(0,0,0,0.14);backdrop-filter:blur(2px)">
+                <div style="display:flex;align-items:center;gap:14px;min-width:0">
+                  <div style="width:96px;height:96px;flex-shrink:0;border-radius:50%;background:radial-gradient(circle at 50% 42%,rgba(242,239,232,0.28),rgba(46,48,58,0.72) 62%,rgba(13,16,24,0.84));display:flex;align-items:center;justify-content:center;border:3px solid ${gc.color}cc;box-shadow:0 0 26px ${gc.color}88,0 0 42px ${gc.color}33,inset 0 0 28px rgba(255,255,255,0.08)">
+                    <div class="char-tilt" style="width:72px;height:72px;filter:drop-shadow(0 0 10px ${gc.color}66)">${charFace(gc,'normal')}</div>
                   </div>
-                  <div style="text-align:left;min-width:0">
-                    <div style="font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.72);font-family:'VCR',monospace;text-shadow:0 0 8px rgba(255,255,255,0.12)">TODAY'S PILOT</div>
-                    <div style="font-family:'Bebas Neue',cursive;font-size:36px;letter-spacing:3px;color:${gc.color};text-shadow:0 0 14px ${gc.color},0 1px 0 rgba(255,255,255,0.18);line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${gc.name}</div>
-                    <div style="font-family:'VCR',monospace;font-size:9px;letter-spacing:1.25px;color:rgba(242,239,232,0.68);line-height:1.42;margin-top:8px;text-shadow:0 0 8px rgba(0,0,0,0.55)">helmet on · snacks packed<br>chaos pending</div>
+                  <div style="text-align:left;min-width:0;position:relative">
+                    <div style="position:absolute;left:-8px;right:-20px;top:22px;height:44px;border-radius:999px;background:radial-gradient(ellipse at 36% 50%,${gc.color}44,${gc.color}1c 44%,transparent 72%);filter:blur(7px);pointer-events:none"></div>
+                    <div style="font-size:10px;letter-spacing:2.2px;color:rgba(242,239,232,0.82);font-family:'VCR',monospace;text-shadow:0 0 10px rgba(255,255,255,0.18)">TODAY'S PILOT</div>
+                    <div style="position:relative;font-family:'Bebas Neue',cursive;font-size:44px;letter-spacing:3.5px;color:${gc.color};text-shadow:0 0 10px ${gc.color}cc,0 1px 0 rgba(255,255,255,0.22);line-height:0.98;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px">${gc.name}</div>
                   </div>
                 </div>
-                <div style="display:flex;align-items:center;gap:12px;flex-shrink:0">
-                  <button class="space-boss-trigger" onclick="showSpaceOverlay('how-to-play')" aria-label="How to play" title="How to play" style="color:#00e5ff;border-color:rgba(0,229,255,0.45);background:rgba(0,229,255,0.10)">ⓘ</button>
-                  <button class="space-boss-trigger" onclick="showSpaceOverlay('boss-preview')" aria-label="Bosses" title="Bosses">☠</button>
-                  <button class="space-boss-trigger" onclick="showSpaceOverlay('debug')" aria-label="Debug" title="Debug" style="color:#ffe61a;border-color:rgba(255,230,26,0.38);background:rgba(255,230,26,0.09)">⚙</button>
+                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+                  <button class="space-boss-trigger" onclick="showSpaceOverlay('how-to-play')" aria-label="How to play" title="How to play" style="width:42px;height:42px;flex-basis:42px;font-size:20px;color:#00e5ff;border-color:rgba(0,229,255,0.52);background:rgba(0,229,255,0.07);box-shadow:0 0 12px rgba(0,229,255,0.18)">ⓘ</button>
+                  <button class="space-boss-trigger" onclick="showSpaceOverlay('boss-preview')" aria-label="Bosses" title="Bosses" style="width:42px;height:42px;flex-basis:42px;font-size:23px;background:rgba(51,255,102,0.07);box-shadow:0 0 12px rgba(51,255,102,0.18)">☠</button>
+                  <button class="space-boss-trigger" onclick="showSpaceOverlay('debug')" aria-label="Debug" title="Debug" style="width:42px;height:42px;flex-basis:42px;font-size:23px;color:#ffe61a;border-color:rgba(255,230,26,0.46);background:rgba(255,230,26,0.07);box-shadow:0 0 12px rgba(255,230,26,0.16)">⚙</button>
                 </div>
               </div>
-              <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;flex-direction:column;gap:8px">
                 ${spaceModeButtonHTML('SPACE TUTORIAL', 'SAFE LESSONS', 'spaceAcademyStart()', '#7b61ff', '★')}
                 ${spaceModeButtonHTML('PLAY CAMPAIGN', '13 WAVES / 6 RESCUES', 'spaceStart()', '#33ff66', '▶')}
                 ${spaceModeButtonHTML('BOSS RUN', 'BOSSES ONLY', 'spaceBossRunStart()', '#ffe61a', '☠')}
