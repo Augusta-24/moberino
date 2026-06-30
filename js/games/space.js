@@ -117,11 +117,12 @@
   // gates and the wave immediately after them is always a special "new tier" wave.
   let waveTheme = null; // null = normal wave, else one of WAVE_THEMES
   let themeEffectsAt = 0; // BLACKOUT's vignette waits until this time so it doesn't visually swallow the wave/theme announcement
-  let waveTransitioning = false; // true from nextWave() until its announcement clears — guards against the per-frame wave-cleared check re-firing nextWave()
+  let waveTransitioning = false; // true from nextWave() through the short instruction read window before hazards resume
   let pendingBossWin = null; // boss defeated, but the victory cinematic is held until the board (minions/asteroids) is clear
   let mirrorSequenceActive = false, mirrorStageTimers = [];
   let spaceBriefingTimers = [];
   let spaceFlowToken = 0;
+  const SPACE_WAVE_INSTRUCTION_READ_MS = 1500;
   let academyMode = false;
   let academyStep = 0;
   let academyStepStarted = 0;
@@ -2757,26 +2758,32 @@ function nextWave() {
       // previously these fired on their own shorter timers, racing the announcement
       // rather than waiting for it.
       announceWave(wave, announceMs, () => {
-        waveTransitioning = false;
         if (state !== 'playing') return;
-        themeEffectsAt = waveTheme === 'blackout' ? Date.now() + 1400 : 0;
-        startWaveSpawn(currentCfg);
-        // Fresh campaign waves need their support-drop timers restarted here too.
-        // The Wave 2/3 configs already allow HP/bombs; without these schedules,
-        // normal next-wave flow never gave those drops a chance to fire.
-        scheduleHpPowerup();
-        schedulePowerup();
-        scheduleMysteryBox();
-        scheduleInstrument();
-        if (waveTheme === 'blackout') spawnBlackoutHiddenEnemies();
-        if (waveTheme === 'captive' && wave === 6) spawnCampaignRescueLock();
-        if (waveTheme === 'boss') spawnBoss(false, { guardedRescue: [4,7,9,11].includes(wave) && hasUnrescuedMissionCaptive() });
-        if (waveTheme === 'gizmo') spawnBoss(false, { guardedRescue: hasUnrescuedMissionCaptive(), escape: wave !== SPACE_FINAL_GIZMO_WAVE, final: wave === SPACE_FINAL_GIZMO_WAVE });
-        if (waveTheme === 'captive' && wave !== 6) spawnBoss(true);
-        if (waveTheme === 'ghost' || waveTheme === 'emp') spawnMiniBoss(waveTheme);
-        if (waveTheme === 'mirror') spawnMirrorEnemy();
-        if (waveTheme === 'rave') SFX.neonOn();
-        showSkillCalloutForWave();
+        const flowToken = spaceFlowToken;
+        themeEffectsAt = waveTheme === 'blackout' ? Date.now() + SPACE_WAVE_INSTRUCTION_READ_MS : 0;
+        showSkillCalloutForWave({ delayMs: 0, allowDuringTransition: true });
+        // Keep the board quiet for a short read window so wave instructions like
+        // BLACKOUT / STAY IN THE LIGHT are not swallowed by immediate hazards.
+        setTimeout(() => {
+          if (flowToken !== spaceFlowToken || state !== 'playing') return;
+          waveTransitioning = false;
+          startWaveSpawn(currentCfg);
+          // Fresh campaign waves need their support-drop timers restarted here too.
+          // The Wave 2/3 configs already allow HP/bombs; without these schedules,
+          // normal next-wave flow never gave those drops a chance to fire.
+          scheduleHpPowerup();
+          schedulePowerup();
+          scheduleMysteryBox();
+          scheduleInstrument();
+          if (waveTheme === 'blackout') spawnBlackoutHiddenEnemies();
+          if (waveTheme === 'captive' && wave === 6) spawnCampaignRescueLock();
+          if (waveTheme === 'boss') spawnBoss(false, { guardedRescue: [4,7,9,11].includes(wave) && hasUnrescuedMissionCaptive() });
+          if (waveTheme === 'gizmo') spawnBoss(false, { guardedRescue: hasUnrescuedMissionCaptive(), escape: wave !== SPACE_FINAL_GIZMO_WAVE, final: wave === SPACE_FINAL_GIZMO_WAVE });
+          if (waveTheme === 'captive' && wave !== 6) spawnBoss(true);
+          if (waveTheme === 'ghost' || waveTheme === 'emp') spawnMiniBoss(waveTheme);
+          if (waveTheme === 'mirror') spawnMirrorEnemy();
+          if (waveTheme === 'rave') SFX.neonOn();
+        }, SPACE_WAVE_INSTRUCTION_READ_MS);
       });
     });
   }
@@ -2804,19 +2811,20 @@ function nextWave() {
     return null;
   }
 
-  function showSkillCalloutForWave() {
+  function showSkillCalloutForWave(opts) {
+    opts = opts || {};
     const text = skillCalloutForWave();
     if (!text) return;
     const flowToken = spaceFlowToken;
     setTimeout(() => {
-      if (flowToken !== spaceFlowToken || state !== 'playing' || waveTransitioning) return;
+      if (flowToken !== spaceFlowToken || state !== 'playing' || (waveTransitioning && !opts.allowDuringTransition)) return;
       if (waveTheme === 'blackout') {
         addFloatText('BLACKOUT!', W / 2, H * 0.35, '#ffe61a', 32, { holdMs: 2200, fade: 0.012 });
         addFloatText('STAY IN THE LIGHT', W / 2, H * 0.35 + 30, '#33ff66', 20, { holdMs: 2200, fade: 0.012 });
       } else {
         showTopBanner(text, waveTheme === 'boss' || waveTheme === 'gizmo' || waveTheme === 'captive' ? 'bad' : 'good', { holdMs: 1800 });
       }
-    }, 420);
+    }, opts.delayMs != null ? opts.delayMs : 420);
   }
 
   const SLOT_SPIN_LABELS = ['SURVIVE', ...WAVE_THEMES.map(t => THEME_LABEL[t])];
@@ -5988,7 +5996,7 @@ function nextWave() {
     'boss.ogre.voice': () => { if (SFX.scaryLaugh) SFX.scaryLaugh(); else playBossPreviewTone(120, 'sawtooth', 0.18, 0.10, 70); },
     'boss.ogre.projectile': () => playDonkeyHeeHaw(),
     'boss.dragon.voice': () => playBossPreviewTone(150, 'sawtooth', 0.22, 0.09, 90),
-    'boss.dragon.projectile': () => playBossPreviewTone(130, 'sawtooth', 0.20, 0.13, 70),
+    'boss.dragon.projectile': () => playBossPreviewTone(130, 'sawtooth', 0.26, 0.16, 70),
     'boss.knight.voice': () => playBossPreviewTone(260, 'square', 0.14, 0.09, 90),
     'boss.knight.projectile': () => { if (SFX.missionBossCharge) SFX.missionBossCharge(); else if (SFX.neonOn) SFX.neonOn(); },
     'boss.gray.voice': () => { if (SFX.ghostTeleport) SFX.ghostTeleport(); else if (SFX.emp) SFX.emp(); else playBossPreviewTone(180, 'sine', 0.16, 0.08, 520); },
@@ -5996,7 +6004,7 @@ function nextWave() {
     'boss.shark.voice': () => playBossPreviewTone(180, 'sawtooth', 0.16, 0.08, 90),
     'boss.shark.projectile': () => { if (SFX.bomberDive) SFX.bomberDive(); },
     'boss.taco.voice': () => playBossPreviewTone(300, 'square', 0.16, 0.08, 180),
-    'boss.taco.projectile': () => playBossPreviewTone(420, 'square', 0.12, 0.12, 260),
+    'boss.taco.projectile': () => playBossPreviewTone(420, 'square', 0.18, 0.15, 260),
     'boss.octo.voice': () => playBossPreviewTone(95, 'sawtooth', 0.22, 0.09, 60),
     'boss.octo.projectile': () => { if (SFX.neonOn) SFX.neonOn(); },
     'boss.gizmo.voice': () => { if (SFX.gizmoBark) SFX.gizmoBark(); else playBossPreviewTone(240, 'square', 0.14, 0.10, 120); },
