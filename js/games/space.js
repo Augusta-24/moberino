@@ -123,6 +123,7 @@
   let spaceBriefingTimers = [];
   let spaceFlowToken = 0;
   const SPACE_WAVE_INSTRUCTION_READ_MS = 1500;
+  const SPACE_BLACKOUT_VISUAL_READ_MS = 2600;
   let academyMode = false;
   let academyStep = 0;
   let academyStepStarted = 0;
@@ -2429,7 +2430,7 @@
       pendingBossCreature = (waveTheme === 'boss' || waveTheme === 'gizmo') ? pickBossCreature() : null;
     }
     spawnsRemaining = 0;
-    themeEffectsAt = waveTheme === 'blackout' ? Date.now() + 1400 : 0;
+    themeEffectsAt = waveTheme === 'blackout' ? Date.now() + SPACE_BLACKOUT_VISUAL_READ_MS : 0;
     waveTransitioning = false;
     pendingBossWin = null;
     startWaveSpawn(currentCfg);
@@ -2445,7 +2446,7 @@
     if (waveTheme === 'ghost' || waveTheme === 'emp') spawnMiniBoss(waveTheme);
     if (waveTheme === 'mirror') spawnMirrorEnemy();
     if (waveTheme === 'rave') SFX.neonOn();
-    showTopBanner(forcedBossName ? `TEST ${forcedBossName}` : `DEBUG WAVE ${wave}`, 'good');
+    if (waveTheme !== 'blackout' && waveTheme !== 'music') showTopBanner(forcedBossName ? `TEST ${forcedBossName}` : `DEBUG WAVE ${wave}`, 'good');
     showSkillCalloutForWave();
   }
 
@@ -2688,6 +2689,12 @@
   }
 
   function showSpaceVictoryBriefing(onDone) {
+    clearSpaceRuntimeTimers();
+    clearSpaceBonusObjects();
+    clearSpaceCinematicOverlays();
+    rescueBanner = null;
+    topBanner = null;
+    const flowToken = spaceFlowToken;
     waveTransitioning = true;
     const ov = document.createElement('div');
     ov.className = 'space-rescue-briefing';
@@ -2709,10 +2716,14 @@
       card.style.transform = 'scale(1)';
     });
     setTimeout(() => {
+      if (flowToken !== spaceFlowToken || state !== 'playing') { ov.remove(); return; }
       ov.style.background = 'rgba(3,1,16,0)';
       card.style.opacity = '0';
       card.style.transform = 'scale(1.04)';
-      setTimeout(() => { ov.remove(); waveTransitioning = false; if (onDone) onDone(); }, 350);
+      setTimeout(() => {
+        if (flowToken !== spaceFlowToken || state !== 'playing') { ov.remove(); return; }
+        ov.remove(); waveTransitioning = false; if (onDone) onDone();
+      }, 350);
     }, 5200);
   }
 
@@ -2760,7 +2771,7 @@ function nextWave() {
       announceWave(wave, announceMs, () => {
         if (state !== 'playing') return;
         const flowToken = spaceFlowToken;
-        themeEffectsAt = waveTheme === 'blackout' ? Date.now() + SPACE_WAVE_INSTRUCTION_READ_MS : 0;
+        themeEffectsAt = waveTheme === 'blackout' ? Date.now() + SPACE_BLACKOUT_VISUAL_READ_MS : 0;
         showSkillCalloutForWave({ delayMs: 0, allowDuringTransition: true });
         // Keep the board quiet for a short read window so wave instructions like
         // BLACKOUT / STAY IN THE LIGHT are not swallowed by immediate hazards.
@@ -6649,6 +6660,10 @@ function nextWave() {
     spaceRunMode = 'campaign';
     state = 'complete';
     clearSpaceRuntimeTimers();
+    clearSpaceBonusObjects();
+    clearSpaceCinematicOverlays();
+    rescueBanner = null;
+    topBanner = null;
     cancelAnimationFrame(raf);
     const ov = document.getElementById('space-overlay');
     if (!ov) return;
