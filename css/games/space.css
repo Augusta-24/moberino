@@ -10,7 +10,12 @@
    align/justify-center here just centers whatever size that ends up being. The
    #030110 page background matches the canvas's own in-game fill so any letterbox
    space reads as intentional "cabinet" framing, not empty page background. */
-#pg-space { position: relative; z-index: 1; height: var(--app-vh, 100dvh); overflow: hidden; display: none; flex-direction: column; align-items: center; justify-content: center; background: #030110; }
+#pg-space {
+  position: relative; z-index: 1;
+  height: calc(var(--app-vh, 100dvh) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  margin-top: env(safe-area-inset-top, 0px);
+  overflow: hidden; display: none; flex-direction: column; align-items: center; justify-content: center; background: #030110;
+}
 #pg-space.active { display: flex; }
 /* #pg-space's align-items:center is for letterboxing the canvas (a flex column
    child, centered horizontally when narrower than the screen) — but the same rule
@@ -21,7 +26,9 @@
 #pg-space .cats-header { align-self: stretch; width: 100%; }
 #space-canvas { flex: none; display: block; touch-action: none; background: #030110; }
 #space-overlay {
-  position: fixed; left: 0; right: 0; bottom: 0; top: 56px;
+  position: fixed;
+  left: env(safe-area-inset-left, 0px); right: env(safe-area-inset-right, 0px);
+  bottom: env(safe-area-inset-bottom, 0px); top: max(56px, env(safe-area-inset-top, 0px));
   max-width: 460px; margin: 0 auto;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 16px; z-index: 10;
