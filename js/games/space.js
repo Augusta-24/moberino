@@ -922,7 +922,6 @@
       phaseUntil: now + 850,
       templateIndex: 0,
       cycle: 0,
-      shotDone: false,
       tetherSpawned: false
     };
     b.ghostUntil = now + 620;
@@ -944,7 +943,7 @@
       enemyBullets.push({
         x: b.x, y: b.y + b.r * 0.56,
         vx: Math.cos(aim) * speed, vy: Math.sin(aim) * speed,
-        r: 5.8, theme: 'greenOrb', damage: bossDamage(b, 12), born: now,
+        r: 13.9, theme: 'greenOrb', damage: bossDamage(b, 12), born: now,
         homing: 0.018,
         maxSpeed: speed + 0.28,
         visualScale: 0.92
@@ -965,6 +964,11 @@
       hp: 3 + Math.min(2, Math.floor(campaignTier(wave) / 2)),
       maxHp: 3 + Math.min(2, Math.floor(campaignTier(wave) / 2)),
       born: now,
+      baseX: t.node.x,
+      baseY: t.node.y,
+      ampX: clamp(W * 0.08, 20, 42),
+      ampY: clamp(H * 0.028, 12, 24),
+      driftSeed: Math.random() * Math.PI * 2,
       hitUntil: 0
     };
     // Gray's shield is a tether puzzle now, not a portal/trick-shot puzzle.
@@ -973,13 +977,23 @@
     spaceSfx('boss.gray.projectile');
   }
 
+  function grayUpdateTetherSource(b, now) {
+    const src = b && b.tetherSource;
+    if (!src) return;
+    // Keep the shield source floating, but constrained so the tether stays readable
+    // and the target never drifts into Gray's body or off the mobile play area.
+    const age = now - (src.born || now);
+    src.x = clamp(src.baseX + Math.sin(age * 0.00125 + src.driftSeed) * src.ampX, src.r + 24, W - src.r - 24);
+    src.y = clamp(src.baseY + Math.cos(age * 0.00105 + src.driftSeed * 1.7) * src.ampY, 110, Math.min(H - 110, H * 0.78));
+  }
+
   function updateGrayVisitorBoss(b, now) {
     if (!b || b.attackType !== 'tether') return;
     if (!b.grayState) initGrayVisitorState(b, now);
     const st = b.grayState;
     b.vx = 0;
+    grayUpdateTetherSource(b, now);
     if (st.phase === 'appear' && now >= st.phaseUntil) {
-      st.shotDone = false;
       st.tetherSpawned = false;
       graySetPhase(b, 'tetherShield', 6200, now);
     } else if (st.phase === 'dissolve' && now >= st.phaseUntil) {
@@ -1007,21 +1021,20 @@
       addFloatText('REAPPEAR!', b.x, b.y + b.r + 18, '#65f0ff', 14);
       graySetPhase(b, 'reappear', 680, now);
     } else if (st.phase === 'reappear' && now >= st.phaseUntil) {
-      st.shotDone = false;
       st.tetherSpawned = false;
       graySetPhase(b, 'tetherShield', 6200, now);
     } else if (st.phase === 'tetherShield') {
       if (!st.tetherSpawned) {
         graySpawnTetherSource(b, now);
+        st.nextOrbAt = now + 520;
         st.tetherSpawned = true;
       }
-      if (!st.shotDone && now - st.phaseStarted > 520) {
+      if (now >= (st.nextOrbAt || 0)) {
         grayFireAlienOrbs(b, now);
-        st.shotDone = true;
+        st.nextOrbAt = now + 2000;
       }
       if (now >= st.phaseUntil) {
         st.cycle++;
-        st.shotDone = false;
         st.tetherSpawned = false;
         b.tetherSource = null;
         b.tetherShieldActive = true;
@@ -1052,7 +1065,6 @@
     b.forcefieldFlashUntil = now + 520;
     b.forcefieldShakeUntil = now + 320;
     b.forcefieldShakeSeed = Math.random() * Math.PI * 2;
-    b.grayState.shotDone = true;
     b.grayState.tetherSpawned = false;
     graySetPhase(b, 'vulnerable', b.tetherVulnerableUntil - now, now);
     miniExplosion(b.x, b.y, '#65f0ff');
