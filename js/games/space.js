@@ -138,7 +138,6 @@
   let academyShieldNoticeAt = 0; // Space Tutorial safety net: lessons teach without causing campaign/game-over state
   let academyGoalComplete = false;
   let academyRetryNoticeAt = 0;
-  let academyBossPreviewName = null; // which boss sprite (if any) is on screen for the BOSS WARNINGS lesson
   let academyCompleting = false; // Keeps the tutorial-complete beat from being mistaken for a finished campaign wave.
   // 'flip' (not 'reverse') for the wave theme key — the mystery outcome list below
   // already uses 'reverse' for reversed controls, an unrelated effect; same string
@@ -2358,7 +2357,6 @@
     { title: 'TAP A SOCKET', detail: 'BOMB SOCKET CLEARS DANGER', confirm: 'BOMB DEPLOYED!' },
     { title: 'SHOOT THE ? CRATE', detail: 'IT CAN HELP OR HURT', confirm: 'MYSTERY LEARNED!' },
     { title: 'BREAK THE BLUE LOCK', detail: 'SHOOT THE RING, NOT THE MOBE', confirm: 'RESCUE UNLOCKED!' },
-    { title: 'BOSS WARNINGS', detail: 'READ THE ATTACK CUE', confirm: 'CUES READ!' },
     { title: 'BLACKOUT', detail: 'SLOW DOWN. WATCH THE LINE.', confirm: 'TRAINING COMPLETE!' },
   ];
 
@@ -2376,6 +2374,13 @@
   // (or one title+detail pair) is ever visible — never stacked, never racing.
   let academyMsgPanel = null; // {title, detail, kind, x, y, startedAt, holdMs}
   const ACADEMY_MSG_FADE_IN = 180, ACADEMY_MSG_FADE_OUT = 260;
+  const ACADEMY_INTRO_HOLD_MS = 2000;
+  function academyMsgDuration(holdMs) {
+    return ACADEMY_MSG_FADE_IN + holdMs + ACADEMY_MSG_FADE_OUT;
+  }
+  function academyTargetArmY() {
+    return 56 + 14 + 24; // HP bar bottom plus enough room for the target to read.
+  }
   function academyShowMsg(title, detail, opts) {
     opts = opts || {};
     academyMsgPanel = {
@@ -2421,7 +2426,16 @@
   }
 
   function academyMessage(lesson) {
-    academyShowMsg(lesson.title, lesson.detail, { kind: 'good', holdMs: 1700 });
+    academyShowMsg(lesson.title, lesson.detail, { kind: 'good', holdMs: ACADEMY_INTRO_HOLD_MS });
+  }
+
+  function academyAfterIntro(fn, extraDelay) {
+    academyTimer(() => {
+      if (!academyMode || state !== 'playing') return;
+      academyClearMsg();
+      bullets = [];
+      fn();
+    }, academyMsgDuration(ACADEMY_INTRO_HOLD_MS) + 120 + (extraDelay || 0));
   }
 
   function academyConfirm(text) {
@@ -2429,18 +2443,25 @@
     academyShowMsg(text || 'NICE!', '', { kind: 'good', holdMs: 1100, titleSize: 27 });
   }
 
-  function academyTryAgain(text) {
+  function academyTryAgain(text, onDone) {
     const now = Date.now();
-    if (now - academyRetryNoticeAt < 1200) return;
+    if (academyMsgPanel) return false;
+    if (now - academyRetryNoticeAt < 1200) return false;
     academyRetryNoticeAt = now;
     academyShowMsg(text || 'TRY AGAIN!', '', { kind: 'bad', holdMs: 900, titleSize: 21 });
+    academyTimer(() => {
+      if (!academyMode || state !== 'playing') return;
+      academyClearMsg();
+      if (onDone) onDone();
+    }, academyMsgDuration(900) + 120);
+    return true;
   }
 
   function academySafeTimeoutMs(index) {
     // Checkpoint E: every Academy lesson has a deterministic escape hatch. The
     // player can finish by doing the mechanic, but missed pickups/crates/targets
     // never strand the tutorial or bleed into campaign state.
-    const lessonTimeouts = [12500, 14000, 14000, 18000, 15000, 18000, 18000, 9800, 11200];
+    const lessonTimeouts = [12500, 16000, 16000, 20000, 17000, 20000, 20000, 13200];
     return lessonTimeouts[index] || 10000;
   }
 
@@ -2458,11 +2479,11 @@
     const now = Date.now();
     if (behavior === 'swarmer') {
       const r = FACE_R * 0.56;
-      obstacles.push({ type: 'face', behavior: 'swarmer', x: clamp(x, r, W - r), y, vx: 0, vy: 2.45, r, ci: nextMissionEnemyIndex(), hp: hp || 1, isTrapped: false, ringHp: 0, pausedBurstDone: true, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0, swarmerFlashSeed: Math.random() * 1000, academyObstacle: true, academyGoal: 'swarmer' });
+      obstacles.push({ type: 'face', behavior: 'swarmer', x: clamp(x, r, W - r), y, vx: 0, vy: 2.45, r, ci: nextMissionEnemyIndex(), hp: hp || 1, isTrapped: false, ringHp: 0, pausedBurstDone: true, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0, swarmerFlashSeed: Math.random() * 1000, academyObstacle: true, academyGoal: 'swarmer', academyArmY: academyTargetArmY() });
       return;
     }
     const holdY = clamp(y > 0 ? y : H * 0.34, Math.max(118, H * 0.24), Math.min(dangerY - 86, H * 0.68));
-    obstacles.push({ type: 'face', behavior: 'holdDrift', x: clamp(x, FACE_R, W - FACE_R), y: -FACE_R - 10, vx: 0.34 * (x < W / 2 ? 1 : -1), vy: 1.18, r: FACE_R, ci: nextMissionEnemyIndex(), hp: hp || 1, isTrapped: false, ringHp: 0, pausedBurstDone: true, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0, holdY, baseY: holdY, born: now, holdSettled: false, driftSeed: Math.random() * Math.PI * 2, driftAmpY: 5, nextDriftTurnAt: now + 1200, academyObstacle: true, academyGoal: 'normalEnemy' });
+    obstacles.push({ type: 'face', behavior: 'holdDrift', x: clamp(x, FACE_R, W - FACE_R), y: -FACE_R - 10, vx: 0.34 * (x < W / 2 ? 1 : -1), vy: 1.18, r: FACE_R, ci: nextMissionEnemyIndex(), hp: hp || 1, isTrapped: false, ringHp: 0, pausedBurstDone: true, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0, holdY, baseY: holdY, born: now, holdSettled: false, driftSeed: Math.random() * Math.PI * 2, driftAmpY: 5, nextDriftTurnAt: now + 1200, academyObstacle: true, academyGoal: 'normalEnemy', academyArmY: Math.min(holdY - 8, academyTargetArmY()) });
   }
 
   function spawnAcademyPowerup(type, x, delay) {
@@ -2475,7 +2496,7 @@
   function spawnAcademyMystery(x, delay) {
     academyTimer(() => {
       if (!academyMode || state !== 'playing') return;
-      powerups.push({ type: 'mystery', x, y: -POWERUP_R - 10, vy: 0.72, r: POWERUP_R, bob: 0, ringHp: 2, academyMystery: true });
+      powerups.push({ type: 'mystery', x, y: -POWERUP_R - 10, vy: 0.72, r: POWERUP_R, bob: 0, ringHp: 2, academyMystery: true, academyArmY: academyTargetArmY() });
     }, delay || 0);
   }
 
@@ -2500,73 +2521,49 @@
     blackoutHitFlashes = [];
     waveTheme = null;
     themeEffectsAt = 0;
-    academyBossPreviewName = null;
     academyClearMsg();
     currentCfg = Object.assign(waveConfig(1), { speed: 1.65, tier: 0, enemyFireMult: 0.55, allowHp: false, allowPowerups: false, allowMystery: false });
     const lesson = SPACE_ACADEMY_LESSONS[index];
     if (!lesson) { completeSpaceAcademy(); return; }
     academyMessage(lesson);
-    // Every extra hint below waits until the lesson's title+detail message has
-    // had its own full, uninterrupted read (~2.1s) before replacing it — same
-    // single-slot panel, so this is purely about pacing/breathing room, not
-    // preventing overlap (the panel already guarantees that by construction).
+    // Tutorial scenes breathe in three beats: read the card, clear it, then play.
+    // Success/retry cards happen only after the active lesson objects are gone.
     if (index === 0) {
-      [0.28, 0.5, 0.72].forEach((xp, i) => spawnAcademyAsteroid(W * xp, -40 - i * 130, 1.0));
+      academyAfterIntro(() => {
+        [0.28, 0.5, 0.72].forEach((xp, i) => spawnAcademyAsteroid(W * xp, -40 - i * 130, 1.0));
+      });
     } else if (index === 1) {
-      [0.32, 0.68].forEach((xp, i) => spawnAcademyEnemy(W * xp, H * (0.34 + i * 0.12), 1, 'holdDrift'));
-      // "THEY DO NOT CHARGE" used to fire on a fixed timer regardless of whether
-      // the enemies had actually finished falling in. Poll until both have
-      // settled (capped so it can never hang), starting only after the lesson's
-      // own intro message has finished its read.
-      const announceCalm = (waited) => {
-        if (!academyMode || state !== 'playing') return;
-        const holdDrifters = obstacles.filter(o => o.academyObstacle && o.behavior === 'holdDrift');
-        const allSettled = holdDrifters.length === 0 || holdDrifters.every(o => o.holdSettled);
-        if (allSettled || waited >= 2600) {
-          academyShowMsg('THEY DO NOT CHARGE', '', { kind: 'good', holdMs: 1300 });
-        } else {
-          academyTimer(() => announceCalm(waited + 150), 150);
-        }
-      };
-      academyTimer(() => announceCalm(0), 2200);
+      academyAfterIntro(() => {
+        [0.20, 0.40, 0.60, 0.80].forEach((xp, i) => {
+          spawnAcademyEnemy(W * xp, H * (0.31 + (i % 2) * 0.12), 1, 'holdDrift');
+        });
+      });
     } else if (index === 2) {
-      // Threat lessons (a live enemy is already rushing in) get their actionable
-      // hint fast — the 2.2s "let the intro breathe" delay used for calm/passive
-      // lessons left the player with zero guidance while something was already
-      // closing in. Quiet lessons keep the longer delay; urgent ones don't.
-      academyTimer(() => academyMode && academyShowMsg('RED FLASH = RUSHER', '', { kind: 'bad', holdMs: 1300 }), 700);
-      spawnAcademyEnemy(W * 0.5, -40, 1, 'swarmer');
+      academyAfterIntro(() => spawnAcademyEnemy(W * 0.5, -40, 1, 'swarmer'));
     } else if (index === 3) {
-      academyTimer(() => academyMode && academyShowMsg('WATCH THE LEFT SOCKETS', '', { kind: 'good', holdMs: 1300, x: SOCKET_X + SOCKET_SIZE + 74, y: socketRect(1).y + SOCKET_SIZE / 2, titleSize: 16 }), 2200);
-      spawnAcademyPowerup('gun', W * 0.28, 500);
-      spawnAcademyPowerup('shield', W * 0.5, 1650);
-      spawnAcademyPowerup('bomb', W * 0.72, 2800);
+      academyAfterIntro(() => {
+        spawnAcademyPowerup('gun', W * 0.28, 0);
+        spawnAcademyPowerup('shield', W * 0.5, 1150);
+        spawnAcademyPowerup('bomb', W * 0.72, 2300);
+      });
     } else if (index === 4) {
       inventory.bomb = true;
-      // 5 swarmers used to all land in the same frame, instantly, with the only
-      // guidance (which socket to tap) arriving 2.2s later — by the time the
-      // player had any instruction, the screen was already a wall of enemies.
-      // Stagger the spawn and show the hint almost immediately instead.
-      academyTimer(() => academyMode && academyShowMsg('TAP THE ORANGE BOMB SOCKET', '', { kind: 'good', holdMs: 1500, x: SOCKET_X + SOCKET_SIZE + 112, y: socketRect(2).y + SOCKET_SIZE / 2, titleSize: 16 }), 500);
-      for (let i = 0; i < 5; i++) academyTimer(() => academyMode && spawnAcademyEnemy(W * (0.2 + i * 0.15), -35, 1, 'swarmer'), i * 260);
+      academyAfterIntro(() => {
+        for (let i = 0; i < 5; i++) academyTimer(() => academyMode && spawnAcademyEnemy(W * (0.2 + i * 0.15), -35, 1, 'swarmer'), i * 260);
+      });
     } else if (index === 5) {
-      spawnAcademyMystery(W * 0.38, 0);
-      spawnAcademyMystery(W * 0.62, 2600);
+      academyAfterIntro(() => {
+        spawnAcademyMystery(W * 0.38, 0);
+        spawnAcademyMystery(W * 0.62, 2600);
+      });
     } else if (index === 6) {
-      academyTimer(() => academyMode && academyShowMsg('BLUE RING = RESCUE LOCK', '', { kind: 'good', holdMs: 1300 }), 2200);
-      spawnAcademyRescueLock();
+      academyAfterIntro(() => spawnAcademyRescueLock());
     } else if (index === 7) {
-      // The lesson narrates boss tells but used to spawn nothing — text with no
-      // boss on screen to anchor it to. Show the actual boss sprite (calm preview
-      // pose, no live combat/attacks) alongside each name as it's called out, each
-      // waiting for the previous boss message's full read before replacing it.
-      academyTimer(() => { if (academyMode) { academyBossPreviewName = 'STAR OGRE'; academyShowMsg('OGRE: HEE HAW MEANS CHARGE', '', { kind: 'bad', holdMs: 1700 }); } }, 2200);
-      academyTimer(() => { if (academyMode) { academyBossPreviewName = 'DARK KNIGHT'; academyShowMsg('KNIGHT: WHEN SWORD GLOWS, MOVE', '', { kind: 'bad', holdMs: 1700 }); } }, 4350);
-      academyTimer(() => { if (academyMode) { academyBossPreviewName = 'GIZMO'; academyShowMsg('GIZMO: READ THE BOUNCE', '', { kind: 'bad', holdMs: 1700 }); } }, 6500);
-    } else if (index === 8) {
-      waveTheme = 'blackout';
-      themeEffectsAt = Date.now();
-      [0.34, 0.66].forEach((xp, i) => spawnAcademyAsteroid(W * xp, -35 - i * 160, 0.86));
+      academyAfterIntro(() => {
+        waveTheme = 'blackout';
+        themeEffectsAt = Date.now();
+        [0.34, 0.66].forEach((xp, i) => spawnAcademyAsteroid(W * xp, -35 - i * 160, 0.86));
+      });
     }
   }
 
@@ -2606,7 +2603,6 @@
     academyMode = false;
     academyCompleting = true;
     academyShieldNoticeAt = 0;
-    academyBossPreviewName = null;
     academyClearMsg();
     // Clear the board before the beat starts (not after) — academyMode is now
     // false, so the training shield no longer blocks real damage, and the beat
@@ -2627,72 +2623,17 @@
     });
   }
 
-  // BOSS WARNINGS lesson preview — the named boss on screen (calm pose, no live
-  // combat/attack-pattern object — see drawThemedBoss/drawGizmoOrb) PLUS a small
-  // looping, purely time-driven demo of its actual attack cue, drawn with the
-  // same projectile icons real combat uses. This never touches enemyBullets or
-  // the live boss/attack state machines — it cannot deal damage or interact with
-  // anything; it exists only so "read the attack cue" has something to read.
-  function drawAcademyBossPreview(name) {
-    // Pinned well below the title/detail text band (0.24H/0.32H) so the sprite's
-    // own footprint never crowds the lesson's two intro lines.
-    const size = BOSS_R * 2.05;
-    const cx = W / 2, cy = H * 0.50;
-    ctx.save();
-    ctx.translate(cx, cy);
-    if (name === 'GIZMO') {
-      drawGizmoOrb(size);
-    } else {
-      const creature = BOSS_CREATURES.find(c => c.name === name);
-      if (creature) drawThemedBoss(creature, size);
-    }
-    ctx.restore();
-    const t = Date.now();
-    if (name === 'STAR OGRE') {
-      // Brief glow-in-place (the telegraph), then charges straight down — the
-      // same "wait for it, then it charges" read the real fight asks for.
-      const cycle = t % 1500;
-      if (cycle < 350) {
-        ctx.save();
-        ctx.globalAlpha = 0.45 + Math.sin(t * 0.025) * 0.35;
-        drawProjectileImage('donkey', cx, cy + size * 0.5, 42, 0, '#c7a16b');
-        ctx.restore();
-      } else {
-        const chargeY = cy + size * 0.5 + ((cycle - 350) / 1150) * (H * 0.30);
-        drawProjectileImage('donkey', cx, chargeY, 42, 0, '#c7a16b');
-      }
-    } else if (name === 'DARK KNIGHT') {
-      // Sword glows brightly in place, THEN drops — matching "when sword glows, move".
-      const cycle = t % 1500;
-      if (cycle < 1000) {
-        const pulse = 0.55 + Math.sin(t * 0.02) * 0.45;
-        ctx.save();
-        ctx.globalAlpha = 0.65 + pulse * 0.35;
-        drawProjectileImage('sword', cx, cy + size * 0.5, 38, Math.PI, '#eaffff');
-        ctx.restore();
-      } else {
-        const dropY = cy + size * 0.5 + ((cycle - 1000) / 500) * (H * 0.24);
-        drawProjectileImage('sword', cx, dropY, 38, Math.PI);
-      }
-    } else if (name === 'GIZMO') {
-      // Tennis ball bouncing side to side — "read the bounce" made literal.
-      const cycle = (t % 1600) / 1600;
-      const bx = cx + Math.sin(cycle * Math.PI * 2) * size * 1.1;
-      const by = cy + size * 0.55 + Math.abs(Math.sin(cycle * Math.PI * 4)) * 26;
-      drawProjectileImage('tennis', bx, by, 32, t * 0.01, '#c6ff3a');
-    }
-  }
-
   function academyRespawnLessonObjects(elapsed) {
     if (!academyMode || state !== 'playing' || academyStepArmed) return;
     const activeAcademyObstacles = obstacles.filter(o => o.academyObstacle && o.alive !== false && !o._crossed);
     const activeAcademyPowerups = powerups.filter(p => p.academyPowerup || p.academyMystery);
     if (academyStep === 1) {
-      if (elapsed > 3200 && !academyGoalComplete && activeAcademyObstacles.length === 0) {
-        academyTryAgain('TRY AGAIN: CLEAR THE DRIFTER');
-        spawnAcademyEnemy(W * 0.5, H * 0.38, 1, 'holdDrift');
+      if (elapsed > 5200 && !academyGoalComplete && activeAcademyObstacles.length === 0) {
+        academyTryAgain('TRY AGAIN: CLEAR THE DRIFTERS', () => {
+          [0.24, 0.42, 0.58, 0.76].forEach((xp, i) => spawnAcademyEnemy(W * xp, H * (0.32 + (i % 2) * 0.12), 1, 'holdDrift'));
+        });
       }
-      if (elapsed > 1700 && Date.now() - lastEnemyFire > 1150) {
+      if (elapsed > 3600 && Date.now() - lastEnemyFire > 1150) {
         const shooters = obstacles.filter(o => o.academyObstacle && o.behavior === 'holdDrift' && o.y > 0);
         if (shooters.length) {
           enemyFireAt(shooters[Math.floor(Math.random() * shooters.length)], 0.70, 'TRAINING SHOT');
@@ -2700,31 +2641,30 @@
         }
       }
     } else if (academyStep === 2) {
-      if (elapsed > 2300 && !academyGoalComplete && !obstacles.some(o => o.academyObstacle && o.behavior === 'swarmer')) {
-        academyTryAgain('TRY AGAIN: STOP THE RED SWARMER');
-        spawnAcademyEnemy(W * rand(0.35, 0.65), -40, 1, 'swarmer');
+      if (elapsed > 4300 && !academyGoalComplete && !obstacles.some(o => o.academyObstacle && o.behavior === 'swarmer')) {
+        academyTryAgain('TRY AGAIN: STOP THE RED SWARMER', () => spawnAcademyEnemy(W * rand(0.35, 0.65), -40, 1, 'swarmer'));
       }
     } else if (academyStep === 3) {
       if (elapsed > 5600 && !(inventory.gun && inventory.shield && inventory.bomb) && activeAcademyPowerups.length === 0) {
-        academyTryAgain('MISSED ONE — NEW POWERUPS');
-        if (!inventory.gun) spawnAcademyPowerup('gun', W * 0.30, 0);
-        if (!inventory.shield) spawnAcademyPowerup('shield', W * 0.50, inventory.gun ? 0 : 900);
-        if (!inventory.bomb) spawnAcademyPowerup('bomb', W * 0.70, (inventory.gun && inventory.shield) ? 0 : 1800);
+        academyTryAgain('MISSED ONE - NEW POWERUPS', () => {
+          if (!inventory.gun) spawnAcademyPowerup('gun', W * 0.30, 0);
+          if (!inventory.shield) spawnAcademyPowerup('shield', W * 0.50, inventory.gun ? 0 : 900);
+          if (!inventory.bomb) spawnAcademyPowerup('bomb', W * 0.70, (inventory.gun && inventory.shield) ? 0 : 1800);
+        });
       }
     } else if (academyStep === 4) {
       if (elapsed > 5200 && inventory.bomb && activeAcademyObstacles.length === 0) {
-        academyTryAgain('TRY AGAIN: TAP THE BOMB SOCKET');
-        for (let i = 0; i < 4; i++) spawnAcademyEnemy(W * (0.24 + i * 0.17), -35 - i * 38, 1, 'swarmer');
+        academyTryAgain('TRY AGAIN: TAP THE BOMB SOCKET', () => {
+          for (let i = 0; i < 4; i++) spawnAcademyEnemy(W * (0.24 + i * 0.17), -35 - i * 38, 1, 'swarmer');
+        });
       }
     } else if (academyStep === 5) {
       if (elapsed > 6200 && academyMysteryIndex < 2 && activeAcademyPowerups.length === 0) {
-        academyTryAgain('TRY AGAIN: SHOOT THE ? CRATE');
-        spawnAcademyMystery(W * 0.5, 0);
+        academyTryAgain('TRY AGAIN: SHOOT THE ? CRATE', () => spawnAcademyMystery(W * 0.5, 0));
       }
     } else if (academyStep === 6) {
       if (elapsed > 5200 && !academyGoalComplete && activeAcademyObstacles.length === 0) {
-        academyTryAgain('TRY AGAIN: BREAK THE BLUE LOCK');
-        spawnAcademyRescueLock();
+        academyTryAgain('TRY AGAIN: BREAK THE BLUE LOCK', () => spawnAcademyRescueLock());
       }
     }
   }
@@ -2739,22 +2679,28 @@
     else if (academyStep === 3) done = elapsed > 4200 && inventory.gun && inventory.shield && inventory.bomb;
     else if (academyStep === 4) done = elapsed > 3200 && !inventory.bomb && obstacles.length === 0;
     else if (academyStep === 5) done = elapsed > 5200 && academyMysteryIndex >= 2 && powerups.length === 0;
-    else if (academyStep === 7) done = elapsed > 9000;
-    else if (academyStep === 8) done = elapsed > 10200;
+    else if (academyStep === 7) done = elapsed > 12200 && obstacles.length === 0;
     // Every lesson gets the same deterministic escape hatch, not just the three
     // read-only ones — interactive lessons (1-6) previously had no fallback at
     // all, so a player who couldn't land the required hit/catch/tap could be
     // stuck on that step indefinitely with no way to advance or skip.
-    if (!done && elapsed > academySafeTimeoutMs(academyStep)) done = true;
+    const timedOut = !done && elapsed > academySafeTimeoutMs(academyStep);
+    if (timedOut) done = true;
     if (!done) return;
     academyStepArmed = true;
+    bullets = [];
+    enemyBullets = [];
+    if (timedOut) {
+      obstacles = [];
+      powerups = [];
+    }
     const lesson = SPACE_ACADEMY_LESSONS[academyStep];
     academyConfirm(lesson && lesson.confirm ? lesson.confirm : 'NICE!');
     academyTimer(() => {
       if (!academyMode || state !== 'playing') return;
       if (academyStep >= SPACE_ACADEMY_LESSONS.length - 1) completeSpaceAcademy();
       else enterSpaceAcademyLesson(academyStep + 1);
-    }, academyStep >= SPACE_ACADEMY_LESSONS.length - 1 ? 1850 : 1450);
+    }, academyStep >= SPACE_ACADEMY_LESSONS.length - 1 ? 1850 : 1650);
   }
 
 
@@ -4622,6 +4568,7 @@ function nextWave() {
       drawPowerup(p);
       if (waveTransitioning) continue;
       if (p.type === 'mystery' && p.ringHp > 0) {
+        if (academyMode && p.academyMystery && p.y < (p.academyArmY || academyTargetArmY())) continue;
         for (const b of bullets) {
           if (b.vy === 999) continue; // already spent on something else this frame
           if (Math.hypot(b.x - p.x, b.y - p.y) < p.r * 1.1) {
@@ -4978,6 +4925,7 @@ function nextWave() {
     if (!_zapped) for(const b of bullets){
       for(const o of obstacles){
         if(o.alive===false) continue;
+        if (academyMode && o.academyObstacle && o.y < (o.academyArmY || academyTargetArmY())) continue;
         const hitRadius = (o.type==='face' && o.isTrapped && o.ringHp > 0) ? o.r+12 : o.r+3;
         if(Math.hypot(b.x-o.x,b.y-o.y)<hitRadius){
           b.vy=999;
@@ -5532,7 +5480,6 @@ function nextWave() {
     ctx.restore();
 
     if (boss) drawBoss();
-    if (academyMode && academyBossPreviewName) drawAcademyBossPreview(academyBossPreviewName);
     if (miniBoss) drawMiniBoss();
     drawPlayer();
     if (twin) drawTwin();
