@@ -2745,6 +2745,13 @@ function nextWave() {
         if (state !== 'playing') return;
         themeEffectsAt = waveTheme === 'blackout' ? Date.now() + 1400 : 0;
         startWaveSpawn(currentCfg);
+        // Fresh campaign waves need their support-drop timers restarted here too.
+        // The Wave 2/3 configs already allow HP/bombs; without these schedules,
+        // normal next-wave flow never gave those drops a chance to fire.
+        scheduleHpPowerup();
+        schedulePowerup();
+        scheduleMysteryBox();
+        scheduleInstrument();
         if (waveTheme === 'blackout') spawnBlackoutHiddenEnemies();
         if (waveTheme === 'captive' && wave === 6) spawnCampaignRescueLock();
         if (waveTheme === 'boss') spawnBoss(false, { guardedRescue: [4,7,9,11].includes(wave) && hasUnrescuedMissionCaptive() });
