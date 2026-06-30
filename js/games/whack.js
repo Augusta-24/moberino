@@ -738,9 +738,6 @@
       if (waveHits >= threshold) {
         waveHits = 0; wave++;
         clearWaveTransition();
-        // Wave 4 is the second WHACK-type wave in the round cycle (wave 1 is the
-        // first) — same intro point for both difficulties now.
-        if (wave === 4 && !selfActive) setTimeout(addSelf, 900);
       }
       setTimeout(() => popDown(i, true), 350);
     } else {
@@ -813,6 +810,9 @@
     if (wm) wm.textContent = `WAVE ${clearedWave} CLEARED`;
     showWaveClearCheckmark(clearedWave);
     currentRoundType = pickRoundType(wave);
+    // Trigger from the upcoming wave state here; the old whack-hit path remembered
+    // the previous round, so wave 4 was missed because wave 3 is a Memory round.
+    if (wave === 4 && currentRoundType === 'whack' && !selfActive) setTimeout(addSelf, 900);
 
     setTimeout(() => {
       if (state !== 'playing') return;

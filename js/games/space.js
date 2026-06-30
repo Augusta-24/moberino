@@ -955,39 +955,43 @@
     const t = grayPortalTemplate(st.templateIndex);
     enemyBullets.forEach(e => { if (e.bulletPortal) e._gone = true; });
     b.portalShieldUntil = now + 999999;
-    const minPortalSpacing = clamp(Math.min(W, H) * 0.2, 64, 88);
+    const minPortalSpacing = clamp(Math.min(W, H) * 0.22, 74, 104);
     const placed = [];
     const clampPortalPoint = p => ({
       x: clamp(p.x, b.r + 30, W - b.r - 30),
       y: clamp(p.y, 92, Math.min(H - 82, H * 0.80))
     });
-    const canPlacePortal = p => Math.hypot(p.x - t.gray.x, p.y - t.gray.y) > b.r + 66
-      && placed.every(other => Math.hypot(p.x - other.x, p.y - other.y) > minPortalSpacing);
-    const reservePortal = p => {
-      const pt = clampPortalPoint(p);
-      placed.push(pt);
-      return pt;
+    const portalCandidates = preferred => [
+      preferred,
+      { x: W * 0.16, y: H * 0.38 },
+      { x: W * 0.84, y: H * 0.38 },
+      { x: W * 0.18, y: H * 0.74 },
+      { x: W * 0.82, y: H * 0.74 },
+      { x: W * 0.50, y: H * 0.54 },
+      { x: W * 0.32, y: H * 0.70 },
+      { x: W * 0.68, y: H * 0.70 },
+    ];
+    const gridCandidates = [];
+    [0.14, 0.26, 0.38, 0.50, 0.62, 0.74, 0.86].forEach(xp => {
+      [0.38, 0.50, 0.64, 0.78].forEach(yp => gridCandidates.push({ x: W * xp, y: H * yp }));
+    });
+    // Gray's shield puzzle needs readable lanes: portals stay out of his body/top
+    // travel lane, and every portal claims spacing before the next one can be placed.
+    const canPlacePortal = p => {
+      const awayFromGray = Math.hypot(p.x - t.gray.x, p.y - t.gray.y) > b.r + 72;
+      const outOfGrayPath = p.y > t.gray.y + b.r * 2.25 || Math.abs(p.x - t.gray.x) > b.r + 92;
+      const spaced = placed.every(other => Math.hypot(p.x - other.x, p.y - other.y) > minPortalSpacing);
+      return awayFromGray && outOfGrayPath && spaced;
     };
     const choosePortalPoint = (preferred, fallbackIndex) => {
-      const baseCandidates = [
-        preferred,
-        { x: W * 0.16, y: H * 0.38 },
-        { x: W * 0.84, y: H * 0.38 },
-        { x: W * 0.18, y: H * 0.74 },
-        { x: W * 0.82, y: H * 0.74 },
-        { x: W * 0.50, y: H * 0.54 },
-        { x: W * 0.32, y: H * 0.70 },
-        { x: W * 0.68, y: H * 0.70 },
-      ];
-      const gridCandidates = [];
-      [0.14, 0.26, 0.38, 0.50, 0.62, 0.74, 0.86].forEach(xp => {
-        [0.38, 0.50, 0.64, 0.78].forEach(yp => gridCandidates.push({ x: W * xp, y: H * yp }));
-      });
-      const candidates = baseCandidates.concat(gridCandidates).map(clampPortalPoint);
+      const candidates = portalCandidates(preferred).concat(gridCandidates).map(clampPortalPoint);
       const start = fallbackIndex % candidates.length;
       for (let i = 0; i < candidates.length; i++) {
         const p = candidates[(start + i) % candidates.length];
-        if (canPlacePortal(p)) return reservePortal(p);
+        if (canPlacePortal(p)) {
+          placed.push(p);
+          return p;
+        }
       }
       const farthest = candidates
         .map(p => ({
@@ -998,19 +1002,18 @@
           )
         }))
         .sort((a, b) => b.score - a.score)[0].p;
-      return reservePortal(farthest);
+      placed.push(farthest);
+      return farthest;
     };
     const usable = Math.hypot(t.entry.x - t.gray.x, t.entry.y - t.gray.y) > b.r + 64
       && Math.hypot(t.exit.x - t.gray.x, t.exit.y - t.gray.y) > b.r + 64
       && Math.hypot(t.entry.x - t.exit.x, t.entry.y - t.exit.y) > 90;
-    const entry = reservePortal(usable ? t.entry : { x: t.gray.x < W * 0.5 ? W * 0.80 : W * 0.20, y: H * 0.62 });
-    const exit = choosePortalPoint(usable ? t.exit : { x: t.gray.x < W * 0.5 ? W * 0.54 : W * 0.46, y: H * 0.42 }, 0);
-    const decoyEntry = choosePortalPoint(t.decoyEntry, 2);
-    const decoyExit = choosePortalPoint(t.decoyExit, 4);
+    const entry = choosePortalPoint(usable ? t.entry : { x: t.gray.x < W * 0.5 ? W * 0.80 : W * 0.20, y: H * 0.62 }, 0);
+    const exit = choosePortalPoint(usable ? t.exit : { x: t.gray.x < W * 0.5 ? W * 0.54 : W * 0.46, y: H * 0.42 }, 3);
     const aimFromEntry = Math.atan2(t.gray.y - entry.y, t.gray.x - entry.x);
     const aimFromExit = Math.atan2(t.gray.y - exit.y, t.gray.x - exit.x);
     const lifeMs = 4600;
-    const addPortal = (p, index, linkedIndex, aimAngle, pairId, colors) => {
+    const addPortal = (p, index, linkedIndex, aimAngle, pairId, colors, active) => {
       enemyBullets.push({
         x: p.x, y: p.y, vx: 0, vy: 0, r: 17,
         theme: 'bulletPortal',
@@ -1020,7 +1023,7 @@
         linkedIndex,
         portalAngle: clamp(aimAngle + Math.PI / 2, -0.95, 0.95),
         portalAimAngle: aimAngle,
-        portalActive: true,
+        portalActive: active,
         portalColorA: colors.a,
         portalColorB: colors.b,
         telegraph: true,
@@ -1028,32 +1031,20 @@
         expiresAt: now + lifeMs
       });
     };
-    const addSinglePortal = (p, aimAngle) => {
-      enemyBullets.push({
-        x: p.x, y: p.y, vx: 0, vy: 0, r: 18,
-        theme: 'bulletPortal', bulletPortal: true, portalSingle: true,
-        portalAngle: aimAngle + Math.PI / 2,
-        portalAimAngle: aimAngle,
-        portalActive: true,
-        portalColorA: '#33ff66', portalColorB: '#f6e9ff',
-        born: now, expiresAt: now + Math.max(3600, lifeMs - 1200), spinPortal: true,
-      });
-    };
     const solveId = `gray-${now}-${st.cycle}-solve`;
-    addPortal(entry, 0, 1, aimFromEntry, solveId, { a: '#b36bff', b: '#65f0ff' });
-    addPortal(exit, 1, 0, aimFromExit, solveId, { a: '#b36bff', b: '#65f0ff' });
-    const singlePortal = choosePortalPoint({ x: W * 0.50, y: H * 0.77 }, 6);
-    addSinglePortal(singlePortal, Math.atan2(t.gray.y - singlePortal.y, t.gray.x - singlePortal.x));
+    addPortal(entry, 0, 1, aimFromEntry, solveId, { a: '#b36bff', b: '#65f0ff' }, true);
+    addPortal(exit, 1, 0, aimFromExit, solveId, { a: '#b36bff', b: '#65f0ff' }, true);
 
-    const decoyTarget = {
-      x: t.gray.x < W * 0.5 ? W - 24 : 24,
-      y: Math.min(H - 38, H * 0.78)
-    };
-    const decoyAimFromEntry = Math.atan2(decoyTarget.y - decoyEntry.y, decoyTarget.x - decoyEntry.x);
-    const decoyAimFromExit = Math.atan2(decoyTarget.y - decoyExit.y, decoyTarget.x - decoyExit.x);
-    const decoyId = `gray-${now}-${st.cycle}-decoy`;
-    addPortal(decoyEntry, 0, 1, decoyAimFromEntry, decoyId, { a: '#ff5bd6', b: '#ffe66d' });
-    addPortal(decoyExit, 1, 0, decoyAimFromExit, decoyId, { a: '#ff5bd6', b: '#ffe66d' });
+    const showDecoyPair = st.cycle > 0 && st.cycle % 2 === 1;
+    if (showDecoyPair) {
+      const decoyEntry = choosePortalPoint(t.decoyEntry, 8);
+      const decoyExit = choosePortalPoint(t.decoyExit, 12);
+      const decoyAimFromEntry = Math.atan2(t.gray.y - decoyEntry.y, t.gray.x - decoyEntry.x);
+      const decoyAimFromExit = Math.atan2(t.gray.y - decoyExit.y, t.gray.x - decoyExit.x);
+      const decoyId = `gray-${now}-${st.cycle}-decoy`;
+      addPortal(decoyEntry, 0, 1, decoyAimFromEntry, decoyId, { a: '#ff5bd6', b: '#ffe66d' }, false);
+      addPortal(decoyExit, 1, 0, decoyAimFromExit, decoyId, { a: '#ff5bd6', b: '#ffe66d' }, false);
+    }
 
     addFloatText(t.label, (entry.x + exit.x) / 2, Math.min(entry.y, exit.y) - 24, '#b36bff', 14);
     addFloatText('SHOOT GRAY THROUGH PORTALS!', b.x, b.y + b.r + 18, '#b36bff', 16);
