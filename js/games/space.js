@@ -23,6 +23,7 @@
   let dangerY = 0, socketAnchorY = 0, lineFlashA = 0;
   const SPACE_SHIP_BOTTOM_OFFSET = 40;
   const SPACE_SOCKET_ANCHOR_BOTTOM_OFFSET = 94;
+  const SPACE_DANGER_LINE_RAISE = 10;
   // REVERSE theme: a separate fixed "escape" line near the top, just below the
   // HUD/banner strip — kept independent of dangerY on purpose, since dangerY tracks
   // the player position and also drives the socket column's placement; repurposing
@@ -65,6 +66,10 @@
     const totalH = n * SOCKET_SIZE + (n - 1) * SOCKET_GAP;
     const groupTop = (socketAnchorY - 14) - totalH;
     return { x: SOCKET_X, y: groupTop + i * (SOCKET_SIZE + SOCKET_GAP), w: SOCKET_SIZE, h: SOCKET_SIZE };
+  }
+  function spaceDangerLineY() {
+    // Raise only the safety line/ship lane; socket anchoring stays unchanged.
+    return socketAnchorY + (H - socketAnchorY) * 0.5 - SPACE_DANGER_LINE_RAISE;
   }
   // Returns the socket type hit by a canvas-space point, or null — used both for
   // touch (reserving that column from also moving the ship) and desktop clicks.
@@ -2197,7 +2202,7 @@
     buffFrozenUntil = 0; buffZappedUntil = 0; blasterDisabledUntil = 0; controlsReversedUntil = 0; twin = null; rebound = null; buffPizzaUntil = 0; snowingUntil = 0; snowParticles = [];
     inventory = { gun: false, shield: false, bomb: false };
     socketAnchorY = H - SPACE_SOCKET_ANCHOR_BOTTOM_OFFSET;
-    dangerY = socketAnchorY + (H - socketAnchorY) * 0.5;
+    dangerY = spaceDangerLineY();
     player.y = dangerY + player.r * 1.1;
     highScore = parseInt(localStorage.getItem(getSpaceBestKey())||'0');
     leftHeld=false; rightHeld=false; lastAutoFire=0; lastPizzaFire=0;
@@ -7499,7 +7504,7 @@ function nextWave() {
     fitSpaceCanvas();
     player = { x: W / 2, y: H - SPACE_SHIP_BOTTOM_OFFSET, r: 18 };
     socketAnchorY = H - SPACE_SOCKET_ANCHOR_BOTTOM_OFFSET;
-    dangerY = socketAnchorY + (H - socketAnchorY) * 0.5;
+    dangerY = spaceDangerLineY();
     player.y = dangerY + player.r * 1.1;
     bullets = []; obstacles = []; enemyBullets = []; powerups = []; floatTexts = []; blackoutHitFlashes = []; topBanner = null;
     boss = null; miniBoss = null; pendingBossWin = null; rescueBanner = null; mirrorSequenceActive = false;
@@ -7705,9 +7710,9 @@ function nextWave() {
       fitSpaceCanvas();
       if (player && oldW) {
         player.x = Math.min(Math.max(player.r, player.x * (W / oldW)), W - player.r);
-        player.y = H - SPACE_SHIP_BOTTOM_OFFSET;
         socketAnchorY = H - SPACE_SOCKET_ANCHOR_BOTTOM_OFFSET;
-        dangerY = socketAnchorY + (H - socketAnchorY) * 0.5;
+        dangerY = spaceDangerLineY();
+        player.y = dangerY + player.r * 1.1;
       }
       mkStars();
     }, 150);
