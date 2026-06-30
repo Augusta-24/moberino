@@ -961,13 +961,19 @@
 
   function spawnBlackoutHiddenEnemies() {
     if (waveTheme !== 'blackout' || !currentCfg || obstacles.some(o => o.blackoutHiddenEnemy)) return;
-    [0.16, 0.33, 0.5, 0.67, 0.84].forEach((xp, i) => {
+    // Campaign BLACKOUT is an authored set piece. Endless BLACKOUT can arrive
+    // later at higher speeds, so keep its hidden shooter pack smaller and more
+    // staggered instead of dumping five faces into the dark at once.
+    const lanes = spaceRunMode === 'endless' ? [0.23, 0.50, 0.77] : [0.16, 0.33, 0.5, 0.67, 0.84];
+    const yGap = spaceRunMode === 'endless' ? 132 : 90;
+    const speedMult = spaceRunMode === 'endless' ? 0.34 : 0.44;
+    lanes.forEach((xp, i) => {
       obstacles.push({
         type: 'face',
         x: clamp(W * xp, FACE_R, W - FACE_R),
-        y: -FACE_R - 60 - i * 90,
+        y: -FACE_R - 80 - i * yGap,
         vx: 0,
-        vy: currentCfg.speed * 0.44,
+        vy: currentCfg.speed * speedMult,
         r: FACE_R,
         ci: nextMissionEnemyIndex(),
         hp: 3,
@@ -2837,7 +2843,7 @@ function nextWave() {
     // Folding the captive grid into the same centered, animated block naturally pulls
     // the slot-machine text up a bit too — the taller block still centers as a whole.
     const captiveGridHTML = missionTrappedChars.length ? `
-      <div style="margin-top:22px;display:flex;flex-wrap:wrap;justify-content:center;gap:12px 16px;max-width:380px">${missionTrappedChars.map(waveCaptiveFace).join('')}</div>` : '';
+      <div style="margin:22px auto 0;display:grid;grid-template-columns:repeat(3,54px);justify-content:center;align-items:start;gap:22px 48px;width:max-content;max-width:92vw">${missionTrappedChars.map(waveCaptiveFace).join('')}</div>` : '';
     ann.innerHTML=`<div style="text-align:center;animation:wave-announce ${ds}s ease-out forwards">
       <div id="sp-wave-incoming" style="font-family:'VCR',monospace;font-size:11px;letter-spacing:5px;color:#33ff66">INCOMING</div>
       <div id="sp-wave-type" style="font-family:'Bebas Neue',cursive;font-size:clamp(30px, 8vh, 60px);letter-spacing:6px;color:#33ff66;text-shadow:0 0 20px #33ff66,0 0 40px #33ff6688;line-height:1;transition:transform 0.3s ease-out">SURVIVE</div>
@@ -6482,27 +6488,48 @@ function nextWave() {
     if (mode === 'select' || mode === 'boss-preview' || mode === 'how-to-play' || mode === 'debug' || mode === 'mode-complete') ov.classList.remove('hidden');
     ov.classList.toggle('space-over', mode === 'over');
     ov.classList.toggle('space-boss-preview', mode === 'boss-preview');
-    ov.style.justifyContent = (mode === 'select' || mode === 'boss-preview' || mode === 'how-to-play' || mode === 'debug' || mode === 'mode-complete') ? 'flex-start' : '';
-    ov.style.paddingTop = (mode === 'select' || mode === 'how-to-play' || mode === 'debug' || mode === 'mode-complete') ? '16px' : '';
+    const isSpaceMenuOverlay = mode === 'select' || mode === 'boss-preview' || mode === 'how-to-play' || mode === 'debug' || mode === 'mode-complete';
+    ov.style.justifyContent = isSpaceMenuOverlay ? 'flex-start' : '';
+    ov.style.paddingTop = (mode === 'select' || mode === 'how-to-play' || mode === 'debug' || mode === 'mode-complete') ? '10px' : '';
+    if (isSpaceMenuOverlay) {
+      // Menu overlays should fully cover the paused game canvas. Without this,
+      // returning from leaderboard/menu flows can leave a strip of the old run
+      // visible above the Space launch card.
+      ov.style.background = 'radial-gradient(circle at 22% 18%, rgba(0,229,255,0.10), transparent 32%), radial-gradient(circle at 82% 8%, rgba(255,0,204,0.09), transparent 30%), linear-gradient(180deg, rgba(3,1,14,0.985), rgba(7,3,22,0.985))';
+      ov.style.backdropFilter = 'blur(2px)';
+      ov.style.overflowY = 'auto';
+    } else {
+      ov.style.background = '';
+      ov.style.backdropFilter = '';
+      ov.style.overflowY = '';
+    }
     setArcadeExitVisible(mode !== 'over');
     if(mode==='select'){
       const gc=GAME_CHARS[activeChar];
       ov.innerHTML=`
-        <div class="whack-mode-shell" style="max-width:440px;margin-top:16px">
-          <div class="whack-mode-title">SPACE MOBE</div>
-          <div class="game-card whack-mode-card" style="border-color:#33ff6677;cursor:default;min-height:0">
-            <div class="game-card-art" style="background:#0d0a1e;min-height:118px">
-              <div id="space-select-art" style="position:absolute;inset:0;z-index:0;opacity:0.42;transform:scale(1.26) translateY(10px);filter:saturate(1.18) brightness(1.02);pointer-events:none;mix-blend-mode:screen"></div>
+        <div class="whack-mode-shell" style="max-width:540px;margin-top:8px">
+          <div class="whack-mode-title" style="text-shadow:0 0 22px rgba(255,255,255,0.34),0 0 30px rgba(0,229,255,0.22)">SPACE MOBE</div>
+          <div class="game-card whack-mode-card" style="border-color:#33ff6677;cursor:default;min-height:0;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,0.04),0 20px 60px rgba(0,0,0,0.48)">
+            <div class="game-card-art" style="background:#0d0a1e;min-height:154px;overflow:hidden">
+              <div id="space-select-art" style="position:absolute;inset:0;z-index:0;opacity:0.52;transform:scale(1.18) translateY(4px);filter:saturate(1.24) brightness(1.08);pointer-events:none;mix-blend-mode:screen"></div>
+              <div style="position:absolute;left:18px;top:16px;font-family:'VCR',monospace;font-size:10px;letter-spacing:2px;color:rgba(242,239,232,0.64);z-index:2">MISSION CONTROL</div>
+              <div style="position:absolute;right:24px;top:20px;width:72px;height:72px;border-radius:50%;border:3px solid rgba(0,229,255,0.55);box-shadow:0 0 26px rgba(0,229,255,0.28),inset 0 0 20px rgba(0,229,255,0.12);z-index:2"></div>
+              <div style="position:absolute;right:47px;top:40px;font-size:30px;filter:drop-shadow(0 0 12px rgba(255,230,26,0.65));z-index:3">🚀</div>
+              <div style="position:absolute;left:22px;right:118px;bottom:18px;text-align:left;z-index:2">
+                <div style="font-family:'Bebas Neue',cursive;font-size:32px;letter-spacing:4px;color:#f2efe8;line-height:0.95;text-shadow:0 0 16px rgba(255,255,255,0.28)">READY FOR LAUNCH</div>
+                <div style="font-family:'VCR',monospace;font-size:10px;letter-spacing:1.4px;color:rgba(242,239,232,0.58);margin-top:7px;line-height:1.35">pick a route · save the mobes · survive the weird stuff</div>
+              </div>
             </div>
-            <div class="game-card-info" style="position:relative;z-index:2;padding:14px 16px 16px;background:linear-gradient(to top, rgba(5,2,18,0.96) 78%, rgba(5,2,18,0.14) 100%)">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
-                <div style="display:flex;align-items:center;gap:12px;min-width:0">
-                  <div style="width:58px;height:58px;flex-shrink:0;border-radius:50%;background:${gc.color}33;display:flex;align-items:center;justify-content:center;border:2px solid ${gc.color}88;box-shadow:0 0 16px ${gc.color}44">
-                    <div class="char-tilt" style="width:46px;height:46px">${charFace(gc,'normal')}</div>
+            <div class="game-card-info" style="position:relative;z-index:2;padding:15px 18px 18px;background:linear-gradient(90deg, rgba(5,2,18,0.98), rgba(10,5,28,0.94) 58%, rgba(18,8,38,0.96))">
+              <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:14px;margin-bottom:14px">
+                <div style="display:flex;align-items:center;gap:14px;min-width:0;background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:10px 12px">
+                  <div style="width:76px;height:76px;flex-shrink:0;border-radius:50%;background:${gc.color}33;display:flex;align-items:center;justify-content:center;border:3px solid ${gc.color}88;box-shadow:0 0 20px ${gc.color}44,inset 0 0 18px rgba(255,255,255,0.08)">
+                    <div class="char-tilt" style="width:61px;height:61px">${charFace(gc,'normal')}</div>
                   </div>
                   <div style="text-align:left;min-width:0">
-                    <div style="font-size:10px;letter-spacing:2px;color:rgba(242,239,232,0.5);font-family:'VCR',monospace">YOUR PILOT</div>
-                    <div style="font-family:'Bebas Neue',cursive;font-size:27px;letter-spacing:3px;color:${gc.color};text-shadow:0 0 10px ${gc.color}88;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${gc.name}</div>
+                    <div style="font-size:10px;letter-spacing:2px;color:rgba(242,239,232,0.54);font-family:'VCR',monospace">TODAY'S PILOT</div>
+                    <div style="font-family:'Bebas Neue',cursive;font-size:33px;letter-spacing:3.5px;color:${gc.color};text-shadow:0 0 12px ${gc.color}88;line-height:1.0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${gc.name}</div>
+                    <div style="font-family:'VCR',monospace;font-size:9px;letter-spacing:1.2px;color:rgba(242,239,232,0.48);margin-top:5px">helmet on · snack packed · chaos pending</div>
                   </div>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
@@ -6517,7 +6544,6 @@ function nextWave() {
                 ${spaceModeButtonHTML('BOSS RUN', 'BOSSES ONLY', 'spaceBossRunStart()', '#ffe61a', '☠')}
                 ${spaceModeButtonHTML('ENDLESS', 'CHAOS MODE', 'spaceEndlessStart()', '#ff00cc', '∞')}
               </div>
-              <div style="font-family:'VCR',monospace;font-size:9px;letter-spacing:1.3px;color:rgba(242,239,232,0.34);line-height:1.45;text-align:center;margin-top:12px">INFO, BOSSES, AND DEBUG ARE NOW BEHIND THE TOP ICONS</div>
             </div>
           </div>
         </div>`;
@@ -6646,12 +6672,16 @@ function nextWave() {
     document.body.appendChild(ann);
     return ann;
   }
-  function spEnsureIntroSkipButton(overlay, onSkip) {
+  function spEnsureIntroSkipButton(overlay, onSkip, label) {
     if (!overlay || !onSkip || overlay.querySelector('.intro-skip-btn')) return;
     const btn = document.createElement('button');
     btn.className = 'intro-skip-btn';
-    btn.textContent = 'SKIP';
-    btn.style.cssText = "position:fixed;top:max(10px, env(safe-area-inset-top, 10px));right:calc(max(10px, env(safe-area-inset-right, 10px)) + 44px);z-index:10000;pointer-events:auto;height:32px;min-height:32px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;font-family:'VCR',monospace;font-size:10px;letter-spacing:2px;background:none;border:1px solid rgba(242,239,232,0.2);border-radius:6px;padding:0 12px;color:rgba(242,239,232,0.5);cursor:pointer";
+    btn.textContent = label || 'SKIP';
+    // Center-bottom and intentionally translucent: visible enough to escape the
+    // tutorial/story, but quiet enough that it does not dominate the cinematic.
+    btn.style.cssText = "position:fixed;left:50%;bottom:calc(max(18px, env(safe-area-inset-bottom, 18px)) + 8px);transform:translateX(-50%);z-index:10000;pointer-events:auto;height:34px;min-height:34px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;font-family:'VCR',monospace;font-size:10px;letter-spacing:2.4px;background:rgba(3,1,16,0.28);border:1px solid rgba(242,239,232,0.26);border-radius:999px;padding:0 16px;color:rgba(242,239,232,0.58);box-shadow:0 0 14px rgba(0,0,0,0.18);cursor:pointer;backdrop-filter:blur(2px);opacity:0.74";
+    btn.onmouseenter = () => { btn.style.opacity = '0.95'; btn.style.color = 'rgba(242,239,232,0.82)'; };
+    btn.onmouseleave = () => { btn.style.opacity = '0.74'; btn.style.color = 'rgba(242,239,232,0.58)'; };
     btn.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -6680,7 +6710,7 @@ function nextWave() {
       if (i >= steps.length) { finish(); return; }
       const step = steps[i++];
       step.show();
-      spEnsureIntroSkipButton(ann, onSkip);
+      spEnsureIntroSkipButton(ann, onSkip, 'SKIP TUTORIAL');
       timeoutId = setTimeout(tick, step.duration);
     }
     tick();
@@ -7021,6 +7051,28 @@ function nextWave() {
       <div id="space-brief-card" style="width:min(94vw,430px);text-align:center;transform:scale(0.96);opacity:0;transition:transform 0.35s ease,opacity 0.35s ease">
       </div>`;
     document.body.appendChild(ov);
+    let storySkipped = false;
+    const skipStory = () => {
+      if (storySkipped) return;
+      storySkipped = true;
+      spaceBriefingTimers.forEach(clearTimeout);
+      spaceBriefingTimers = [];
+      if (document.body.contains(ov)) {
+        ov.style.background = 'rgba(3,1,16,0)';
+        const cardEl = ov.querySelector('#space-brief-card');
+        if (cardEl) {
+          cardEl.style.opacity = '0';
+          cardEl.style.transform = 'scale(1.04)';
+        }
+        setTimeout(() => {
+          if (document.body.contains(ov)) ov.remove();
+          onDone();
+        }, 180);
+      } else {
+        onDone();
+      }
+    };
+    spEnsureIntroSkipButton(ov, skipStory, 'SKIP STORY');
     const card = ov.querySelector('#space-brief-card');
     function setStage(html) {
       if (!document.body.contains(ov)) return;
@@ -7114,12 +7166,12 @@ function nextWave() {
       spaceBriefingTimers.push(timer);
     });
     const finishTimer = setTimeout(() => {
-      if (!document.body.contains(ov)) return;
+      if (storySkipped || !document.body.contains(ov)) return;
       ov.style.background = 'rgba(3,1,16,0)';
       card.style.opacity = '0';
       card.style.transform = 'scale(1.04)';
       const removeTimer = setTimeout(() => {
-        if (!document.body.contains(ov)) return;
+        if (storySkipped || !document.body.contains(ov)) return;
         ov.remove();
         onDone();
       }, 350);
@@ -7134,6 +7186,9 @@ function nextWave() {
     if(ov) {
       ov.classList.add('hidden');
       ov.classList.remove('space-boss-preview');
+      ov.style.background = '';
+      ov.style.backdropFilter = '';
+      ov.style.overflowY = '';
     }
     cancelAnimationFrame(bossPreviewRaf);
     bossPreviewRaf = null;
@@ -7217,8 +7272,12 @@ function nextWave() {
     wave = SPACE_CAMPAIGN_FINAL_WAVE + 1;
     waveKills = 0;
     currentCfg = waveConfig(wave);
-    waveTheme = pickWaveTheme(wave, null);
-    pendingBossCreature = (waveTheme === 'boss' || waveTheme === 'gizmo') ? pickBossCreature() : null;
+    // Do not open Endless with BLACKOUT. Wave 14's normal theme pick is
+    // BLACKOUT, which feels like an instant ambush from the launch screen.
+    // Start Endless with a readable asteroid field; later waves return to
+    // the normal post-campaign variety.
+    waveTheme = 'asteroids';
+    pendingBossCreature = null;
     spawnsRemaining = 0;
     themeEffectsAt = waveTheme === 'blackout' ? Date.now() + 1400 : 0;
     startWaveSpawn(currentCfg);
