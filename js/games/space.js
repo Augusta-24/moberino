@@ -4452,7 +4452,7 @@ function nextWave() {
             enemyBullets.push({ x: boss.x, y: boss.y + boss.r * 0.5, vx, vy, r: 9, theme: 'tennis', damage: bossDamage(boss, 20), tennis: true, bounce: true, visualScale: 3.2, born: Date.now() });
           }
           addFloatText('TENNIS SMASH!', boss.x, boss.y + boss.r + 18, '#c6ff3a', 16);
-          spaceSfx('boss.gizmo.voice');
+          spaceSfx('boss.gizmo.projectile');
           if (boss.isFinalGizmo) {
             // FINAL GIZMO: the tennis barrage AND the classic bone shotgun together.
             const boneCount = 6;
@@ -6386,7 +6386,13 @@ function nextWave() {
     'wave.start': 'assets/space/sfx/wave_start.mp3',
   };
   const _spaceSfxAudioCache = {};
-  function _playSpaceSfxFile(path) {
+  function _playSpaceSfxFile(path, fallback) {
+    let didFallback = false;
+    const runFallback = () => {
+      if (didFallback) return;
+      didFallback = true;
+      if (fallback) fallback();
+    };
     try {
       // Cache one loaded <audio> per path and clone it per play — cloning
       // (instead of replaying the same node) lets two overlapping triggers
@@ -6396,11 +6402,17 @@ function nextWave() {
       if (!base) {
         base = new Audio(path);
         base.preload = 'auto';
+        base.load();
         _spaceSfxAudioCache[path] = base;
       }
       const node = base.cloneNode(true);
+      node.preload = 'auto';
+      node.addEventListener('error', runFallback, { once: true });
       const p = node.play();
-      if (p && p.catch) p.catch(() => {});
+      // HTMLAudioElement.play() can reject after this function returns (autoplay,
+      // decode/load timing, mobile media limits). Do not let that become silence:
+      // fall back to the procedural SFX if the file path cannot actually play.
+      if (p && p.catch) p.catch(runFallback);
       return true;
     } catch (e) {
       return false;
@@ -6408,12 +6420,13 @@ function nextWave() {
   }
   function spaceSfx(key) {
     try {
+      const fn = SPACE_SFX[key];
+      const playFallback = () => { if (fn) fn(); };
       if (SPACE_SFX_USE_FILES) {
         const path = SPACE_SFX_FILES[key];
-        if (path && _playSpaceSfxFile(path)) return;
+        if (path && _playSpaceSfxFile(path, playFallback)) return;
       }
-      const fn = SPACE_SFX[key];
-      if (fn) fn();
+      playFallback();
     } catch (e) {}
   }
   const BOSS_SFX_KEY_PREFIX = {
