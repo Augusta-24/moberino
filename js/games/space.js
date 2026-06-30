@@ -2240,6 +2240,10 @@
 
   function clearSpaceCinematicOverlays() {
     document.querySelectorAll('.space-rescue-briefing,.space-intro-overlay,.space-wave-cleared,.space-wave-announce,.space-reboot-overlay').forEach(el => el.remove());
+    // Removing the DOM is not enough: briefing timers can still fire later and
+    // stack an old announcement on top of the next wave/boss beat.
+    spaceBriefingTimers.forEach(clearTimeout);
+    spaceBriefingTimers = [];
   }
 
   function spaceDamageSuppressed() {
@@ -2609,6 +2613,10 @@
   }
 
   function showBossDefeatedBeat(bossName, x, y, onDone) {
+    const flowToken = spaceFlowToken;
+    waveTransitioning = true;
+    rescueBanner = null;
+    clearSpaceCinematicOverlays();
     const el = document.createElement('div');
     el.className = 'space-wave-cleared';
     el.style.cssText = 'position:fixed;inset:0;z-index:9997;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity 0.2s ease';
@@ -2622,8 +2630,14 @@
       el.querySelector('div > div').style.transform = 'scale(1)';
     });
     setTimeout(() => {
+      if (flowToken !== spaceFlowToken || state !== 'playing') { el.remove(); return; }
       el.style.opacity = '0';
-      setTimeout(() => { el.remove(); if (onDone) onDone(); }, 220);
+      setTimeout(() => {
+        if (flowToken !== spaceFlowToken || state !== 'playing') { el.remove(); return; }
+        el.remove();
+        waveTransitioning = false;
+        if (onDone) onDone();
+      }, 220);
     }, 1800);
   }
 
