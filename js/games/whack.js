@@ -681,12 +681,12 @@
     scheduleSurvivalNext();
   }
 
-  function addSelf() {
+  function addSelf(introWave) {
     // Used to show a big screen-covering warning here — removed, the VS bar already
     // communicates "don't whack" clearly enough on its own by now.
     if (selfActive) return;
     selfActive = true;
-    selfIntroWave = wave; // self-hit rate ramps up gradually starting from here
+    selfIntroWave = introWave == null ? wave : introWave; // self-hit rate ramps up gradually starting from here
   }
 
   window.whackHit = function(i) {
@@ -738,9 +738,6 @@
       if (waveHits >= threshold) {
         waveHits = 0; wave++;
         clearWaveTransition();
-        // Wave 4 is the second WHACK-type wave in the round cycle (wave 1 is the
-        // first) — same intro point for both difficulties now.
-        if (wave === 4 && !selfActive) setTimeout(addSelf, 900);
       }
       setTimeout(() => popDown(i, true), 350);
     } else {
@@ -829,6 +826,10 @@
         waveTransitioning = false;
         if (currentRoundType === 'clear') { startClearRound(); return; }
         if (currentRoundType === 'memory') { startMemoryRound(); return; }
+        // Wave 4 is the second WHACK-type wave in the round cycle (wave 1 is the
+        // first). It is reached by clearing Memory Wave 3, not by clearing a Whack
+        // wave, so activate the self-character risk from the Whack round start.
+        if (wave >= 4 && !selfActive) addSelf(wave - 1);
         const n = concurrencyForWave(wave);
         for (let k = 0; k < n; k++) scheduleSurvivalNext();
       };

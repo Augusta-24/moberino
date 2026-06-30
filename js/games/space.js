@@ -4430,6 +4430,246 @@ function nextWave() {
       }
     }
 
+    // Power-ups: drift down, draw, collect by touch only — bullets pass straight
+    // through them. SHOOT is for hostiles, CATCH is for pickups; letting bullets
+    // also collect them blurred that distinction. Mystery is the one deliberate
+    // exception now — it's a shoot target (ring takes 7 hits to break, then the
+    // outcome applies automatically), not something you fly into to catch.
+    powerups = powerups.filter(p => p.y < H + 40);
+    for (const p of powerups) {
+      if (!waveTransitioning) p.y += p.vy;
+      // Mystery boxes now fall straight like other pickups; the pulsing ring/crate art is the tell.
+      if (!waveTransitioning && p.rotSpeed) p.rot += p.rotSpeed;
+      drawPowerup(p);
+      if (waveTransitioning) continue;
+      if (p.type === 'mystery' && p.ringHp > 0) {
+        for (const b of bullets) {
+          if (b.vy === 999) continue; // already spent on something else this frame
+          if (Math.hypot(b.x - p.x, b.y - p.y) < p.r * 1.1) {
+            b.vy = 999;
+            p.litUntil = Date.now() + 320;
+            p.ringHp--;
+            if (p.ringHp <= 0) {
+              miniExplosion(p.x, p.y, '#cc66ff');
+              applyPowerup('mystery');
+              p._collected = true;
+            } else {
+              SFX.score();
+            }
+            break;
+          }
+        }
+        if (p._collected) continue;
+      }
+      if (p.type === 'instrument') {
+        // One hit and it's gone — pure fun, no ring/HP, just a note + points.
+        for (const b of bullets) {
+          if (b.vy === 999) continue;
+          if (Math.hypot(b.x - p.x, b.y - p.y) < p.r * 1.1) {
+            b.vy = 999;
+            p.litUntil = Date.now() + 320;
+            score += 20;
+            addFloatText('♪ +20', p.x, p.y - 10, '#ffe61a', 18);
+            miniExplosion(p.x, p.y, p.kind === 'guitar' ? '#c47a32' : p.kind === 'piano' ? '#f5f3ec' : '#e6ad2e');
+            if (p.kind === 'guitar') SFX.guitarNote();
+            else if (p.kind === 'piano') SFX.pianoNote();
+            else SFX.saxNote();
+            p._collected = true;
+            break;
+          }
+        }
+        if (p._collected) continue;
+      }
+      let gotIt = p.type !== 'mystery' && p.type !== 'instrument' && Math.hypot(p.x - player.x, p.y - player.y) < p.r + player.r * 0.9;
+      // An active escort can also catch pickups itself, not just the player ship —
+      // it's right there next to you, no reason it should be unable to grab one.
+      if (!gotIt && p.type !== 'mystery' && p.type !== 'instrument' && escort && escort.state === 'active') {
+        gotIt = Math.hypot(p.x - escort.x, p.y - escort.y) < p.r + 16 * 0.9;
+      }
+      if (gotIt) {
+        if (SOCKET_TYPES.includes(p.type)) {
+          // Banked, not applied — deployed later by tapping its socket. HP and
+          // mystery boxes aren't bankable and keep applying instantly below.
+          if (inventory[p.type]) {
+            handleDuplicatePowerup(p.type, p);
+          } else {
+            inventory[p.type] = true;
+            showTopBanner(p.type.toUpperCase() + ' ADDED', 'good');
+            SFX.powerupCollect();
+          }
+        } else {
+          applyPowerup(p.type, p.type === 'hp' ? p.hpValue : undefined);
+        }
+        miniExplosion(p.x, p.y, p.type === 'hp' ? '#33ff66' : p.type === 'mystery' ? '#cc66ff' : '#ffe61a');
+        p._collected = true;
+      }
+    }
+    powerups = powerups.filter(p => !p._collected);
+
+    obstacles=obstacles.filter(o=>o.y<H+60&&o.x>-60&&o.x<W+60);
+    for(const o of obstacles){
+      if (o.isDeflected) {
+        const elapsed = Date.now() - (o.deflectStart || Date.now());
+        const t = Math.min(1, elapsed / (o.deflectDuration || 620));
+        o.x += o.vx;
+        o.y += o.vy;
+        o.vx *= 0.985;
+        o.vy *= 0.955;
+        o.deflectScale = 1 - t * 0.92;
+        if (o.type === 'asteroid') o.rot += (o.deflectSpin || 0.24);
+        if (t >= 1) o.alive = false;
+        continue;
+      }
+      // MIRROR ENEMY: hovers at a fixed height and tracks the player's x every frame
+      // instead of falling — skips the normal vx/vy movement entirely.
+      if (o.isMirror) {
+        const targetX = Math.max(o.r, Math.min(W - o.r, player.x + (o.mirrorOffset || 0)));
+        o.x += (targetX - o.x) * (o.mirrorEase || 0.12);
+        continue;
+      }
+      o.x+=o.vx;
+      if(o.x<o.r&&o.vx<0) o.vx*=-1;
+      if(o.x>W-o.r&&o.vx>0) o.vx*=-1;
+      if (o.blackoutHiddenEnemy && Date.now() < (o.blackoutHoldUntil || 0)) continue;
+
+      // Non-hero enemies pause once, partway down, for a quick burst of fire before
+      // resuming their descent — see the note in spawnObstacle() for why.
+      if (o.type === 'face' && !o.isTrapped && !o.pausedBurstDone) {
+        if (!o.paused && o.y > H * 0.4) {
+          o.paused = true; o.pauseUntil = Date.now() + 1000; o.burstShotsLeft = 3; o.lastBurstShot = 0;
+        }
+        if (o.paused) {
+          if (Date.now() > o.pauseUntil) {
+            o.paused = false; o.pausedBurstDone = true;
+          } else {
+            if (o.burstShotsLeft > 0 && Date.now() - o.lastBurstShot > 320) {
+              enemyFireAt(o, 1.15, 'ENEMY BURST');
+              o.burstShotsLeft--; o.lastBurstShot = Date.now();
+            }
+            continue; // hold position while paused
+          }
+        }
+      }
+
+      o.y+=o.vy;
+      if(o.type==='asteroid') o.rot+=o.rotSpeed;
+    }
+    // Danger line crossing — REVERSE flips both which line and which direction
+    // counts as "crossed", since obstacles travel upward toward REVERSE_LINE_Y
+    // instead of downward toward dangerY.
+    const _lineY = waveTheme === 'flip' ? REVERSE_LINE_Y : dangerY;
+    for(const o of obstacles){
+      if (o.isDeflected) continue;
+      const _crossedLine = waveTheme === 'flip' ? o.y < _lineY : o.y > _lineY;
+      if(!o._crossed && _crossedLine){
+        o._crossed = true;
+        o.alive = false;
+        lineFlashA = 1.0;
+        if(o.type==='asteroid'){
+          const rockDamage = o.r < 22 ? 5 : 10;
+          takeDamage(rockDamage, waveTheme === 'flip' ? 'REVERSE ASTEROID ESCAPE' : 'ASTEROID REACHED LINE');
+          bigExplosion(o.x, _lineY, '#aa8855');
+          SFX.whack && SFX.whack(); // thud sound
+          waveKills++;
+        } else if(!o.isTrapped){
+          // enemy crosses line — big damage
+          takeDamage(30, 'ENEMY REACHED LINE');
+          bigExplosion(o.x, _lineY, GAME_CHARS[o.ci].color);
+          if (!o.blackoutHiddenEnemy) faceFlash(o.ci, 'sad', o.x, _lineY - 30);
+          SFX.miss();
+          waveKills++;
+        } else {
+          // trapped hero crosses line — not gone forever, queued back into the rescue pool
+          queueMissionCaptiveRetry(o.ci);
+          addFloatText('TRY AGAIN!', o.x, o.y, '#00e5ff', 24);
+          faceFlash(o.ci, 'sad', o.x, o.y - 20);
+          SFX.miss();
+          waveKills++;
+        }
+        if(state==='over') return;
+      }
+    }
+    obstacles=obstacles.filter(o=>!o._crossed);
+
+    obstacles.forEach(o => { if (!o.blackoutHiddenEnemy) drawObstacle(o); });
+
+    // Draw all bullets in one batch (no per-bullet ctx.save/restore or shadowBlur).
+    // FROZEN/ZAPPED are purely cosmetic reskins of the SAME bullets, except zapped
+    // bullets also genuinely deal 0 damage (gated below) — the fart skin is the
+    // visible reason why, same idea as the snowflake being the tell for the slow.
+    // (_frozen/_zapped computed once near the top of loop() and reused throughout.)
+    ctx.fillStyle=C('#ffe61a');
+    for(const b of bullets){
+      if (_frozen) {
+        drawIceShard(b.x, b.y, 28, (b._wob || 0) * 0.5, 'rgba(102,221,255,0.72)');
+      } else if (_zapped) {
+        if (drawProjectileImage('zap', b.x, b.y, 34, b._wob || 0, 'rgba(204,153,255,0.72)')) continue;
+        // Hand-drawn puff cluster instead of the emoji glyph — soft translucent
+        // greenish-brown blobs, comedic rather than a clean projectile. Bigger and
+        // more spread out than a normal bullet — it should read as a cloud, not a shot.
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        const wob = b._wob || 0;
+        ctx.fillStyle = 'rgba(150,200,90,0.45)';
+        ctx.beginPath(); ctx.arc(0, 0, 17, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(180,160,90,0.38)';
+        ctx.beginPath(); ctx.arc(Math.cos(wob)*14, Math.sin(wob)*10, 12, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(-Math.cos(wob)*14, 10, 11, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(150,200,90,0.32)';
+        ctx.beginPath(); ctx.arc(Math.sin(wob)*11, -13, 9, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(-Math.sin(wob)*12, 4, 7.5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(180,160,90,0.28)';
+        ctx.beginPath(); ctx.arc(Math.cos(wob*0.7)*16, -4, 7, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+      } else if (b.isPizza) {
+        if (drawProjectileImage('pizza', b.x, b.y, 27, Math.atan2(b.vy, b.vx) + Math.PI / 2, 'rgba(255,204,68,0.7)')) continue;
+        // Hand-drawn pizza slice — wedge and pepperoni dots,
+        // rotated to face the direction it's actually flying (the shotgun spread
+        // fans out at angles, not just straight up).
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.rotate(Math.atan2(b.vy, b.vx) + Math.PI / 2);
+        ctx.beginPath();
+        ctx.moveTo(0, -10); ctx.lineTo(-7, 8); ctx.lineTo(7, 8); ctx.closePath();
+        ctx.fillStyle = '#ffcc44'; ctx.fill();
+        ctx.strokeStyle = '#e8a020'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.fillStyle = '#cc3322';
+        ctx.beginPath(); ctx.arc(-2.5, -1, 1.6, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(2.5, 2, 1.6, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(0.5, -4.5, 1.4, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      } else {
+        ctx.fillRect(b.x-2,b.y-12,4,14);
+        ctx.fillStyle='rgba(255,230,26,0.35)'; ctx.fillRect(b.x-4,b.y-14,8,18); // cheap glow
+        ctx.fillStyle=C('#ffe61a');
+      }
+    }
+
+    const activeTacoGuards = boss && boss.attackType === 'sombrero'
+      ? enemyBullets.filter(g => g.tacoGuard && g.telegraph && !g._gone)
+      : [];
+    if (activeTacoGuards.length) {
+      for (const b of bullets) {
+        if (b.vy === 999 || b.tacoDeflected || b.octoDeflected) continue;
+        for (const g of activeTacoGuards) {
+          const blockR = (g.r || 8) * 5.4;
+          if (Math.hypot(b.x - g.x, b.y - g.y) < blockR) {
+            const side = g.tacoSide || (b.x < g.x ? -1 : 1);
+            b.x += side * 6;
+            b.vx = side * (4.7 + Math.random() * 1.3);
+            b.vy = 4.4 + Math.random() * 1.1;
+            b.tacoDeflected = true;
+            b.portalCooldownUntil = Date.now() + 999;
+            g.litUntil = Date.now() + 260;
+            boss.tacoGuardFlashUntil = Date.now() + 260;
+            miniExplosion(b.x, b.y, '#d99a2b');
+            SFX.powerupCollect && SFX.powerupCollect();
+            break;
+          }
+        }
+      }
+    }
+
     // Bullet vs boss — skipped entirely while zapped, so "deals 0 damage" is literal.
     if (boss && !_zapped) {
       for (const b of bullets) {
