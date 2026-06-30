@@ -139,6 +139,7 @@
   let academyGoalComplete = false;
   let academyRetryNoticeAt = 0;
   let academyBossPreviewName = null; // which boss sprite (if any) is on screen for the BOSS WARNINGS lesson
+  let academyCompleting = false; // Keeps the tutorial-complete beat from being mistaken for a finished campaign wave.
   // 'flip' (not 'reverse') for the wave theme key — the mystery outcome list below
   // already uses 'reverse' for reversed controls, an unrelated effect; same string
   // in both would be confusing to read even though they're different variables.
@@ -2275,6 +2276,7 @@
   function reset() {
     fitSpaceCanvas();
     academyMode = false;
+    academyCompleting = false;
     player = { x:W/2, y:H-SPACE_SHIP_BOTTOM_OFFSET, r:18 };
     bullets=[]; obstacles=[]; score=0; health=100; wave=1; waveKills=0; campaignRebootUsed=false;
     lastDamageCause=''; lastDamageAmount=0; lastDamageAt=0; lastDamageWave=0; deathCause=''; deathDamageAmount=0; deathWave=0; deathWaveTheme='';
@@ -2602,6 +2604,7 @@
   function completeSpaceAcademy() {
     clearSpaceAcademyTimers();
     academyMode = false;
+    academyCompleting = true;
     academyShieldNoticeAt = 0;
     academyBossPreviewName = null;
     academyClearMsg();
@@ -2617,6 +2620,7 @@
     showAcademyCompleteBeat(() => {
       clearSpaceRuntimeTimers();
       clearSpaceBonusObjects();
+      academyCompleting = false;
       state = 'idle';
       cancelAnimationFrame(raf);
       showSpaceOverlay('select');
@@ -2756,6 +2760,7 @@
 
   function beginConfiguredWave(startWave, forcedBossName) {
     academyMode = false;
+    academyCompleting = false;
     clearSpaceAcademyTimers();
     clearSpaceRuntimeTimers();
     clearSpaceCinematicOverlays();
@@ -5090,7 +5095,7 @@ function nextWave() {
     if (pendingBossWin && obstacles.length === 0 && enemyBullets.length === 0 && !boss && !miniBoss && state === 'playing') {
       const runWin = pendingBossWin; pendingBossWin = null; runWin();
     }
-    if (!academyMode && spaceRunMode !== 'bossrun' && spawnsRemaining <= 0 && obstacles.length === 0 && !boss && !miniBoss && !mirrorSequenceActive && !pendingBossWin && state === 'playing') {
+    if (!academyMode && !academyCompleting && spaceRunMode !== 'bossrun' && spawnsRemaining <= 0 && obstacles.length === 0 && !boss && !miniBoss && !mirrorSequenceActive && !pendingBossWin && state === 'playing') {
       nextWave();
     }
     updateSpaceAcademy();
@@ -7190,7 +7195,7 @@ function nextWave() {
           scoreValue: resultValue,
           saveValue: resultValue,
           field,
-          extra: `${getSpaceResultExtraLine()}${gameOverCauseHTML()}`,
+          extra: getSpaceResultExtraLine(),
           ascending: false,
           maxWidth: 430,
           minHeight: 220,
@@ -7767,6 +7772,7 @@ function nextWave() {
     hideSpaceOverlayForRun();
     cancelAnimationFrame(raf);
     spaceRunMode = mode || 'campaign';
+    academyCompleting = false;
     state = 'idle';
   }
 
@@ -7898,6 +7904,7 @@ function nextWave() {
     mkStars();
     currentCfg = Object.assign(waveConfig(1), { speed: 1.65, tier: 0, enemyFireMult: 0 });
     academyMode = true;
+    academyCompleting = false;
     academyShieldNoticeAt = 0;
     academyStep = 0;
     academyStepArmed = false;
@@ -7982,7 +7989,7 @@ function nextWave() {
   };
   window.spacePause=function(){
     clearSpaceRuntimeTimers();spaceBriefingTimers.forEach(clearTimeout);spaceBriefingTimers=[];cancelAnimationFrame(raf);state='idle';
-    clearSpaceAcademyTimers(); academyMode = false;
+    clearSpaceAcademyTimers(); academyMode = false; academyCompleting = false;
     clearSpaceCinematicOverlays();
     const _ov=document.getElementById('space-overlay');
     if(_ov) _ov.classList.add('hidden');
@@ -8002,6 +8009,7 @@ function nextWave() {
     waveTransitioning = false;
     pendingBossWin = null;
     academyMode = false;
+    academyCompleting = false;
     // Always unhide the overlay when entering the space page
     const _ov=document.getElementById('space-overlay');
     if(_ov) _ov.classList.remove('hidden');
