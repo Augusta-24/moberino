@@ -588,7 +588,7 @@
   }
 
 
-  const P_SPEED = 5, B_SPEED = 9, O_SPEED_BASE = 2.0; // +10% over original 1.8
+  const P_SPEED = 5, B_SPEED = 9.45, O_SPEED_BASE = 2.0; // +10% over original 1.8; blaster +5% over 9
   const AUTO_FIRE_MS = 200;
   const FACE_R = 22, ASTEROID_R_MIN = 14, ASTEROID_R_MAX = 30;
   const CAPTIVE_RING_HP = 15;
@@ -730,7 +730,7 @@
       // Wave 5 also staggers three normal enemies into fixed slots; the pool still
       // ends through spawnsRemaining/board-clear, so it cannot overlap nextWave().
       1: { spawnsRemaining: 40, speedOverride: 2.86, spawnMsOverride: 930, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [2600, 5200], spawnCadenceMult: 0.9, activeObstacleCap: 6, notes: 'Intro is dangerous: small rocks cost 5 HP and big rocks cost 10 HP, with early HP drops teaching recovery.' },
-      2: { spawnsRemaining: 32, speedOverride: 2.62, spawnMsOverride: 790, asteroidRatioOverride: 0, enemyHpOverride: 2, enemyFireMult: 1.20, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [1200, 1900], hpDelayRange: [2600, 5200], spawnCadenceMult: 0.94, activeObstacleCap: 5, notes: 'Teach enemies while stocking a bomb before Wave 3 swarm.' },
+      2: { spawnsRemaining: 12, speedOverride: 2.62, spawnMsOverride: 1030, asteroidRatioOverride: 0, enemyHpOverride: 3, enemyFireMult: 1.26, enemyFireRateMult: 0.66, enemyVyMult: 1.28, enemyDriftMult: 2.04, enemyDodgeMult: 1.36, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [1200, 1900], hpDelayRange: [2600, 5200], spawnCadenceMult: 0.94, activeObstacleCap: 3, notes: 'Only 12 normal enemies: faster, evasive, 3-hit duel targets.' },
       // spawnMsOverride raised 710->1087: same 26-enemy pool, just stretched out.
       // Actual per-spawn gap is spawnMs * 0.8 * 0.65 (swarm themeSpeedup) * 1.02
       // (spawnCadenceMult) * a 0.7-1.3 random factor (see startWaveSpawn) — at
@@ -740,13 +740,13 @@
       3: { spawnsRemaining: 26, speedOverride: 2.72, spawnMsOverride: 1087, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.34, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 1, powerupDelayRange: [900, 1300], hpDelayRange: [2200, 4400], swarmCap: 5, activeObstacleCap: 5, spawnCadenceMult: 1.02, notes: 'Swarm stays chaotic, but health drops earlier so it feels survivable/fun.' },
       4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [7600, 11600], enemyFireMult: 0.75 },
       5: { spawnsRemaining: 33, normalEnemySlots: [9, 18, 27], speedOverride: 2.86, spawnMsOverride: 1048, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: true, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [3600, 6200], hpDelayRange: [3600, 6800], spawnCadenceMult: 0.9, activeObstacleCap: 7 },
-      6: { spawnsRemaining: 20, speedOverride: 2.72, spawnMsOverride: 700, asteroidRatioOverride: 0.28, enemyHpOverride: 2, enemyFireMult: 0.78, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, rescueRingHp: 30, powerupDelayRange: [3600, 6200], hpDelayRange: [4800, 7800], spawnCadenceMult: 0.86, activeObstacleCap: 6 },
+      6: { spawnsRemaining: 14, speedOverride: 2.72, spawnMsOverride: 880, asteroidRatioOverride: 0.36, enemyHpOverride: 3, enemyFireMult: 0.94, enemyFireRateMult: 0.70, enemyVyMult: 1.24, enemyDriftMult: 1.86, enemyDodgeMult: 1.12, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, rescueRingHp: 30, powerupDelayRange: [3600, 6200], hpDelayRange: [4800, 7800], spawnCadenceMult: 0.86, activeObstacleCap: 4 },
       7: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [8000, 12000], enemyFireMult: 0.85 },
       8: { spawnsRemaining: 16, speedOverride: 2.76, spawnMsOverride: 820, asteroidRatioOverride: 1, enemyFireMult: 0.82, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [5600, 9000], spawnCadenceMult: 1.0, activeObstacleCap: 8 },
       9: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [6400, 9800], hpDelayRange: [7000, 11000], enemyFireMult: 0.9 },
-      10: { spawnsRemaining: 37, speedOverride: 3.08, spawnMsOverride: 620, asteroidRatioOverride: 0.22, enemyHpOverride: 2, enemyFireMult: 1.08, allowMystery: true, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, maxInstruments: 9, instrumentDelayRange: [650, 980], powerupDelayRange: [4100, 6600], hpDelayRange: [4800, 8000], mysteryDelayRange: [6500, 10500], spawnCadenceMult: 0.82, activeObstacleCap: 7 },
+      10: { spawnsRemaining: 24, speedOverride: 3.08, spawnMsOverride: 780, asteroidRatioOverride: 0.52, enemyHpOverride: 3, enemyFireMult: 1.16, enemyFireRateMult: 0.68, enemyVyMult: 1.24, enemyDriftMult: 1.94, enemyDodgeMult: 1.2, allowMystery: true, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, maxInstruments: 9, instrumentDelayRange: [650, 980], powerupDelayRange: [4100, 6600], hpDelayRange: [4800, 8000], mysteryDelayRange: [6500, 10500], spawnCadenceMult: 0.82, activeObstacleCap: 5 },
       11: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [7200, 10400], hpDelayRange: [7600, 11200], enemyFireMult: 1.0 },
-      12: { spawnsRemaining: 44, speedOverride: 3.06, spawnMsOverride: 640, asteroidRatioOverride: 0.52, enemyHpOverride: 2, enemyFireMult: 1.02, allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 4, powerupDelayRange: [3000, 5000], hpDelayRange: [3600, 6000], mysteryDelayRange: [5200, 8800], spawnCadenceMult: 0.84, activeObstacleCap: 7, notes: 'Hard final prep. Keep for now pending full 1-13 playthrough.' },
+      12: { spawnsRemaining: 30, speedOverride: 3.06, spawnMsOverride: 820, asteroidRatioOverride: 0.70, enemyHpOverride: 3, enemyFireMult: 1.12, enemyFireRateMult: 0.70, enemyVyMult: 1.22, enemyDriftMult: 1.82, enemyDodgeMult: 1.08, allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 4, powerupDelayRange: [3000, 5000], hpDelayRange: [3600, 6000], mysteryDelayRange: [5200, 8800], spawnCadenceMult: 0.84, activeObstacleCap: 5, notes: 'Hard final prep with fewer, evasive normal enemies.' },
       13: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [8500, 12500], enemyFireMult: 1.0, finalBossHpNote: 'Final Gizmo HP is tuned through BOSS_TUNING final override.' },
     };
     return tuning[w] || null;
@@ -788,7 +788,7 @@
     const tier = currentCfg ? currentCfg.tier : campaignTier(wave);
     const balanceMult = currentCfg && currentCfg.enemyFireMult != null ? currentCfg.enemyFireMult : 1;
     const bulletSpeed = (3.0 + tier * 0.45 + Math.min(wave, 12) * 0.16 + Math.max(0, wave - 18) * 0.18) * (speedMult || 1) * balanceMult;
-    enemyBullets.push({ x: shooter.x, y: shooter.y + shooter.r, vx: (dx/dist)*bulletSpeed, vy: (dy/dist)*bulletSpeed, r: 4, damageCause: cause || 'ENEMY SHOT' });
+    enemyBullets.push({ x: shooter.x, y: shooter.y + shooter.r, vx: (dx/dist)*bulletSpeed, vy: (dy/dist)*bulletSpeed, r: 4, damage: 3, damageCause: cause || 'ENEMY SHOT' });
   }
 
   function warnAndFireBlackoutEnemy(shooter) {
@@ -821,8 +821,11 @@
     }
     if (o.baseY == null) o.baseY = targetY;
     if (o.driftSeed == null) o.driftSeed = Math.random() * Math.PI * 2;
+    const driftMult = o.enemyDriftMult || 1;
+    const dodgeMult = o.enemyDodgeMult || 0;
+    const jukeMult = o.enemyJukeMult || 1;
     const age = now - (o.holdSettledAt || now);
-    const bob = Math.sin(age * 0.00125 + o.driftSeed) * (o.driftAmpY || 8);
+    const bob = Math.sin(age * 0.00125 * Math.min(1.8, driftMult) + o.driftSeed) * (o.driftAmpY || 8);
     // Ease toward the bob target instead of snapping y directly every frame. The
     // direct assignment made the upward part of the bob look jittery/glitchy.
     let driftTargetY = clamp(o.baseY + bob, o.r + 84, safeMaxY);
@@ -844,18 +847,38 @@
       repelY += (dy / dist) * push * 0.55;
     }
     if (repelX || repelY) {
-      o.vx = clamp(o.vx + repelX * 0.18, -1.15, 1.15);
-      o.x = clamp(o.x + repelX * 0.42, o.r, W - o.r);
+      o.vx = clamp(o.vx + repelX * 0.18 * driftMult, -1.15 * driftMult, 1.15 * driftMult);
+      o.x = clamp(o.x + repelX * 0.42 * driftMult, o.r, W - o.r);
       driftTargetY = clamp(driftTargetY + repelY * 8, o.r + 84, safeMaxY);
     }
 
-    o.y += (driftTargetY - o.y) * 0.075;
+    // Normal enemy awareness: a short, imperfect sidestep from nearby player
+    // bullets. Cooldown + small impulse keeps them lively without making them
+    // psychic or impossible to lead.
+    if (dodgeMult > 0 && now > (o.nextDodgeAt || 0)) {
+      const threat = bullets.find(b => b && b.vy < 0 && b.y > o.y && Math.abs(b.x - o.x) < o.r * 1.86 && (b.y - o.y) < 190);
+      if (threat) {
+        const away = threat.x <= o.x ? 1 : -1;
+        const edgeBias = o.x < o.r + 26 ? 1 : o.x > W - o.r - 26 ? -1 : away;
+        o.vx = clamp(o.vx + edgeBias * (1.08 + Math.random() * 0.55) * dodgeMult, -2.32 * driftMult, 2.32 * driftMult);
+        o.baseY = clamp(o.baseY + rand(-9, 11) * dodgeMult, o.r + 84, safeMaxY);
+        o.nextDodgeAt = now + rand(360, 680);
+        o.dodgeWobbleUntil = now + 220;
+      }
+    }
+
+    o.y += (driftTargetY - o.y) * Math.min(0.12, 0.075 * driftMult);
     if (Math.abs(driftTargetY - o.y) < 0.05) o.y = driftTargetY;
-    if (Math.abs(o.vx) < 0.15) o.vx = (Math.random() < 0.5 ? -1 : 1) * 0.45;
+    if (Math.abs(o.vx) < 0.15) o.vx = (Math.random() < 0.5 ? -1 : 1) * 0.45 * driftMult;
     if (now > (o.nextDriftTurnAt || 0)) {
-      o.vx += rand(-0.18, 0.18);
-      o.vx = clamp(o.vx, -1.0, 1.0);
-      o.nextDriftTurnAt = now + rand(1100, 1900);
+      o.vx += rand(-0.18, 0.18) * driftMult;
+      o.vx = clamp(o.vx, -1.0 * driftMult, 1.0 * driftMult);
+      o.nextDriftTurnAt = now + rand(850, 1550) / Math.min(1.5, driftMult);
+    }
+    if (now > (o.nextJukeAt || 0)) {
+      o.vx = clamp(o.vx + rand(-0.48, 0.48) * driftMult, -1.65 * driftMult, 1.65 * driftMult);
+      o.baseY = clamp(o.baseY + rand(-8, 8) * driftMult, o.r + 84, safeMaxY);
+      o.nextJukeAt = now + (rand(760, 1450) * jukeMult) / Math.min(1.5, driftMult);
     }
     return true;
   }
@@ -936,6 +959,13 @@
         }
       }
       const faceVyMult = cfg.enemyVyMult == null ? 1 : cfg.enemyVyMult;
+      const enemyDriftMult = cfg.enemyDriftMult == null ? 1 : cfg.enemyDriftMult;
+      const enemyDodgeMult = cfg.enemyDodgeMult == null ? 0 : cfg.enemyDodgeMult;
+      const personalityRoll = Math.random();
+      const enemyPersonality = personalityRoll > 0.58 ? 'pesky' : personalityRoll < 0.10 ? 'loose' : 'shifty';
+      const personalityDrift = enemyPersonality === 'pesky' ? 1.44 : enemyPersonality === 'loose' ? 1.02 : 1.2;
+      const personalityDodge = enemyPersonality === 'pesky' ? 1.72 : enemyPersonality === 'loose' ? 0.96 : 1.26;
+      const personalityJuke = enemyPersonality === 'pesky' ? 0.46 : enemyPersonality === 'loose' ? 1.08 : 0.74;
       const faceHp = isTrapped ? 1 : (cfg.enemyHpOverride || 3);
       const faceR = FACE_R;
       const holdMinY = Math.max(118, H * 0.26);
@@ -950,7 +980,7 @@
           if (!tooClose) { spawnX = candidate; break; }
         }
       }
-      obstacles.push({ type:'face', behavior: isTrapped ? 'captiveDrift' : 'holdDrift', x:spawnX, y:-faceR-10, vx:rand(-0.55,0.55)*cfg.speed*0.22, vy:cfg.speed*(0.7+Math.random()*0.5)*(isTrapped?0.82:0.38)*faceVyMult, r:faceR, ci, hp: faceHp, isTrapped, ringHp: isTrapped ? CAPTIVE_RING_HP : 0, maxRingHp: isTrapped ? CAPTIVE_RING_HP : 0, pausedBurstDone: true, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0, holdY, baseY: holdY, born: Date.now(), driftSeed: Math.random() * Math.PI * 2, driftAmpY: rand(5, 10), nextDriftTurnAt: Date.now() + rand(700, 1500) });
+      obstacles.push({ type:'face', behavior: isTrapped ? 'captiveDrift' : 'holdDrift', x:spawnX, y:-faceR-10, vx:rand(-0.55,0.55)*cfg.speed*0.22*enemyDriftMult*personalityDrift, vy:cfg.speed*(0.7+Math.random()*0.5)*(isTrapped?0.82:0.38)*faceVyMult, r:faceR, ci, hp: faceHp, isTrapped, ringHp: isTrapped ? CAPTIVE_RING_HP : 0, maxRingHp: isTrapped ? CAPTIVE_RING_HP : 0, pausedBurstDone: true, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0, holdY, baseY: holdY, born: Date.now(), driftSeed: Math.random() * Math.PI * 2, driftAmpY: rand(7, 12) * enemyDriftMult * personalityDrift, enemyDriftMult: enemyDriftMult * personalityDrift, enemyDodgeMult: enemyDodgeMult * personalityDodge, enemyJukeMult: personalityJuke, enemyPersonality, nextDodgeAt: Date.now() + rand(420, 980), nextDriftTurnAt: Date.now() + rand(580, 1220) / Math.min(1.55, enemyDriftMult * personalityDrift), nextJukeAt: Date.now() + rand(520, 1300) * personalityJuke });
     }
   }
 
@@ -4964,12 +4994,12 @@ function nextWave() {
               // Normal enemy face — takes 3 hits to clear
               o.hp--;
               if (o.hp > 0) {
-                SFX.hit();
+                if (SFX.miniBossHit) SFX.miniBossHit(); else SFX.hit();
                 miniExplosion(o.x, o.y, 'rgba(255,255,255,0.7)'); // hurt flicker, not destroyed yet
                 addFloatText('HIT!', o.x, o.y - 14, '#ffffff', 14);
               } else {
                 const pts = 25+(wave*5);
-                score+=pts; SFX.score();
+                score+=pts; playTargetBreakSfx('enemy');
                 if (!o.blackoutHiddenEnemy) {
                   miniExplosion(o.x,o.y,GAME_CHARS[o.ci].color);
                   faceFlash(o.ci,'sad',o.x,o.y);
@@ -4986,7 +5016,7 @@ function nextWave() {
           } else {
             // Asteroid
             const pts = 10+(wave*2);
-            score+=pts; SFX.hit();
+            score+=pts; playTargetBreakSfx('asteroid');
             miniExplosion(o.x,o.y,'#7a6a90');
             if(o.r > 22 && currentCfg){
               for(let s=0; s<2; s++){
@@ -5051,7 +5081,8 @@ function nextWave() {
     // Enemy fire ramps by campaign tier, not raw wave flood. Later chapters ask for
     // better dodging and target priority, but keep a readable cadence on mobile.
     const fireTier = currentCfg ? currentCfg.tier : campaignTier(wave);
-    const enemyFireInterval = Math.max(420, 1280 - fireTier * 125 - Math.min(wave, 12) * 28 - Math.max(0, wave - 18) * 35) * 0.85;
+    const fireRateMult = currentCfg && currentCfg.enemyFireRateMult != null ? currentCfg.enemyFireRateMult : 1;
+    const enemyFireInterval = Math.max(360, (1280 - fireTier * 125 - Math.min(wave, 12) * 28 - Math.max(0, wave - 18) * 35) * 0.85 * fireRateMult);
     if(!academyMode && Date.now() - lastEnemyFire > enemyFireInterval){
       const shooters = obstacles.filter(o => o.type==='face' && o.behavior !== 'swarmer' && !o.isTrapped && o.y > 0);
       if(shooters.length > 0){
@@ -6323,6 +6354,155 @@ function nextWave() {
   function playBossPreviewTone(freq, type, dur, vol, endFreq) {
     if (SFX && SFX.tone) SFX.tone(freq, type || 'square', 0, dur || 0.12, vol || 0.08, endFreq || freq);
     else if (SFX && SFX.hit) SFX.hit();
+  }
+  function playSpaceNoiseBurst(dur, vol, filterFreq, filterType) {
+    try {
+      if (typeof getAudioCtx !== 'function') return false;
+      const c = getAudioCtx();
+      const bufferSize = Math.max(1, Math.floor(c.sampleRate * dur));
+      const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2.3);
+      const noise = c.createBufferSource();
+      const filter = c.createBiquadFilter();
+      const gain = c.createGain();
+      const t0 = c.currentTime + 0.01;
+      noise.buffer = buffer;
+      filter.type = filterType || 'lowpass';
+      filter.frequency.value = filterFreq;
+      gain.gain.setValueAtTime(vol, t0);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(c.destination);
+      noise.start(t0);
+      noise.stop(t0 + dur + 0.02);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  function playSpaceTone(freq, type, start, dur, vol, endFreq) {
+    try {
+      if (typeof getAudioCtx !== 'function') return false;
+      const c = getAudioCtx();
+      const o = c.createOscillator();
+      const g = c.createGain();
+      const t0 = c.currentTime + Math.max(start || 0, 0.01);
+      o.type = type || 'square';
+      o.frequency.setValueAtTime(freq, t0);
+      if (endFreq) o.frequency.exponentialRampToValueAtTime(Math.max(1, endFreq), t0 + dur);
+      g.gain.setValueAtTime(vol, t0);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+      o.connect(g);
+      g.connect(c.destination);
+      o.start(t0);
+      o.stop(t0 + dur + 0.02);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  function playSpaceZzfxPatch(p) {
+    try {
+      if (typeof getAudioCtx !== 'function') return false;
+      const c = getAudioCtx();
+      const sr = c.sampleRate || 44100;
+      const volume = p[0] == null ? 1 : p[0];
+      const randomness = p[1] || 0;
+      const baseFreq = Math.max(1, (p[2] || 220) * (1 + (Math.random() * 2 - 1) * randomness));
+      const attack = Math.max(0.001, p[3] || 0.001);
+      const sustain = Math.max(0, p[4] || 0);
+      const release = Math.max(0.01, p[5] || 0.1);
+      const shape = p[6] || 0;
+      const shapeCurve = p[7] || 1;
+      const slide = p[8] || 0;
+      const deltaSlide = p[9] || 0;
+      const pitchJump = p[10] || 0;
+      const pitchJumpTime = p[11] || 0;
+      const repeatTime = p[12] || 0;
+      const noiseAmount = Math.max(0, Math.min(1, p[13] || 0));
+      const modulation = p[14] || 0;
+      const bitCrush = p[15] || 0;
+      const delay = Math.max(0, p[16] || 0);
+      const sustainVolume = p[17] == null ? 1 : p[17];
+      const decay = Math.max(0, p[18] || 0);
+      const tremolo = p[19] || 0;
+      const filter = p[20] || 0;
+      const dur = Math.min(1.6, attack + sustain + release + decay + delay + 0.06);
+      const n = Math.max(1, Math.floor(sr * dur));
+      const buffer = c.createBuffer(1, n, sr);
+      const data = buffer.getChannelData(0);
+      const repeatSamples = repeatTime > 0 ? Math.max(1, Math.floor(repeatTime * sr)) : 0;
+      const jumpSample = pitchJumpTime > 0 ? Math.floor(pitchJumpTime * sr) : -1;
+      let phase = 0;
+      let held = 0;
+      let crushSample = 0;
+      let low = 0;
+      for (let i = 0; i < n; i++) {
+        const t = i / sr;
+        const localI = repeatSamples ? i % repeatSamples : i;
+        const localT = localI / sr;
+        let freq = baseFreq + slide * localT + deltaSlide * localT * localT;
+        if (jumpSample >= 0 && localI >= jumpSample) freq += pitchJump;
+        freq = Math.max(12, Math.min(6000, freq));
+        phase += freq / sr;
+        const ph = phase % 1;
+        let osc;
+        if (shape === 1) osc = 1 - 4 * Math.abs(Math.round(ph - 0.25) - (ph - 0.25));
+        else if (shape === 2) osc = 2 * (ph < 0.5) - 1;
+        else if (shape === 3) osc = 2 * (ph - Math.floor(ph + 0.5));
+        else osc = Math.sin(ph * Math.PI * 2);
+        osc = Math.sign(osc) * Math.pow(Math.abs(osc), shapeCurve);
+        const noise = Math.random() * 2 - 1;
+        let sample = osc * (1 - noiseAmount) + noise * noiseAmount;
+        if (modulation) sample *= Math.sin(Math.PI * 2 * modulation * t);
+        if (bitCrush) {
+          const hold = Math.max(1, Math.floor((bitCrush * bitCrush * 80) + 1));
+          if (i % hold === 0) crushSample = sample;
+          sample = crushSample;
+        }
+        let env;
+        if (t < attack) env = t / attack;
+        else if (t < attack + sustain) env = 1 - (1 - sustainVolume) * ((t - attack) / Math.max(0.001, sustain));
+        else env = sustainVolume * Math.max(0, 1 - (t - attack - sustain) / release);
+        if (decay && t > attack) env *= Math.max(0, 1 - (t - attack) / (sustain + release + decay));
+        if (t < delay) env *= 0.7;
+        if (tremolo) env *= 0.72 + 0.28 * Math.sin(Math.PI * 2 * tremolo * t);
+        if (filter) {
+          const cutoff = clamp(Math.abs(filter) / sr * 6.2, 0.015, 0.72);
+          low += (sample - low) * cutoff;
+          sample = filter < 0 ? sample - low : low;
+        }
+        held = sample * env * volume * 0.72;
+        data[i] = Math.max(-1, Math.min(1, held));
+      }
+      const src = c.createBufferSource();
+      src.buffer = buffer;
+      src.connect(c.destination);
+      src.start();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  function playTargetBreakSfx(kind) {
+    if (typeof getAudioCtx !== 'function') {
+      if (SFX && SFX.hit) SFX.hit();
+      return;
+    }
+    if (kind === 'asteroid') {
+      playSpaceNoiseBurst(0.035, 0.12, 1200, 'bandpass');
+      playSpaceNoiseBurst(0.24, 0.28, 360, 'lowpass');
+      playSpaceTone(54, 'sine', 0, 0.26, 0.22, 34);
+      playSpaceTone(118, 'triangle', 0.025, 0.12, 0.11, 58);
+      playSpaceTone(230, 'square', 0.018, 0.035, 0.055, 105);
+    } else {
+      playSpaceNoiseBurst(0.026, 0.08, 720, 'bandpass');
+      playSpaceTone(220, 'square', 0, 0.03, 0.10, 96);
+      playSpaceTone(104, 'triangle', 0.032, 0.09, 0.11, 42);
+      playSpaceTone(70, 'sine', 0.105, 0.08, 0.08, 30);
+    }
   }
   // ── Space SFX registry (lightweight, no audio files) ──────────────────────
   // Named lookup over the EXISTING procedural SFX/tone calls. Nothing here is a
