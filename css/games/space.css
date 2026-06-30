@@ -16,6 +16,18 @@
   margin-top: env(safe-area-inset-top, 0px);
   overflow: hidden; display: none; flex-direction: column; align-items: center; justify-content: center; background: #030110;
 }
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) {
+    #pg-space {
+      --space-ios-top-safe: max(env(safe-area-inset-top, 0px), 34px);
+      height: calc(var(--app-vh, 100dvh) - var(--space-ios-top-safe) - env(safe-area-inset-bottom, 0px));
+      margin-top: var(--space-ios-top-safe);
+    }
+    #space-overlay {
+      top: max(56px, var(--space-ios-top-safe));
+    }
+  }
+}
 #pg-space.active { display: flex; }
 /* #pg-space's align-items:center is for letterboxing the canvas (a flex column
    child, centered horizontally when narrower than the screen) — but the same rule
