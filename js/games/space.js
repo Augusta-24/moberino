@@ -689,6 +689,7 @@
     escort = { ci, state: 'active', expiresAt: Date.now() + ESCORT_DURATION_MS, x: player.x - 40, y: player.y, lastFire: 0, opacity: 1 };
     rescueBanner = { ci, startedAt: Date.now(), rescued: rescuedChars.size, total: missionTrappedChars.length || SPACE_RESCUE_TARGET_COUNT };
     faceFlash(ci, 'happy', x, y);
+    playRescueFlourish();
     addFloatText(label || '+150 RESCUED!', x, y, '#00e5ff', 22);
     if (wasNew && rescuedChars.size >= missionTrappedChars.length && missionTrappedChars.length) {
       score += 750;
@@ -1229,7 +1230,7 @@
     b.forcefieldShakeSeed = Math.random() * Math.PI * 2;
     addFloatText(b.tetherSource ? 'BREAK TETHER!' : 'PHASING!', b.x, b.y - b.r - 20, '#b36bff', 14);
     miniExplosion(shot.x, shot.y, '#b36bff');
-    SFX.emp && SFX.emp();
+    playShieldBellPing();
   }
 
   function drawGrayTetherField(b, now) {
@@ -2136,20 +2137,19 @@
       miniExplosion(player.x, player.y, '#ff8800');
       addFloatText(`EXTRA BOMB POP! +${cleared}`, W / 2, H * 0.38, '#ff8800', 24);
       showTopBanner('SOCKET FULL — MINI POP', 'good');
-      if (SFX.over) SFX.over();
-      else if (SFX.powerupCollect) SFX.powerupCollect();
+      playNormalInstrumentSfx('bomb');
     } else if (type === 'shield') {
       health = Math.min(100, health + 5);
       miniExplosion(sx, sy, '#00e5ff');
       addFloatText('SOCKET FULL +5 HP', W / 2, H * 0.38, '#00e5ff', 22);
       showTopBanner('SOCKET FULL — +5 HP', 'good');
-      SFX.powerupCollect();
+      playNormalInstrumentSfx('hp');
     } else if (type === 'gun') {
       score += 250;
       miniExplosion(sx, sy, '#ffe61a');
       addFloatText('SOCKET FULL +250', W / 2, H * 0.38, '#ffe61a', 22);
       showTopBanner('SOCKET FULL — +250', 'good');
-      SFX.powerupCollect();
+      playNormalInstrumentSfx('powerup');
     }
   }
 
@@ -2158,7 +2158,7 @@
       buffGunUntil = Date.now() + 8000;
       addFloatText('MACHINE GUN!', player.x, player.y - 50, '#ffe61a', 20);
       showTopBanner('MACHINE GUN', 'good');
-      SFX.powerupCollect();
+      playNormalInstrumentSfx('powerup');
     } else if (type === 'bomb') {
       let cleared = 0;
       obstacles.forEach(o => {
@@ -2178,20 +2178,20 @@
       }
       addFloatText(`BOMB! +${cleared}`, player.x, player.y - 50, '#ff8800', 22);
       showTopBanner(`BOMB +${cleared}`, 'good');
-      SFX.over();
+      playNormalInstrumentSfx('bomb');
     } else if (type === 'hp') {
       const gain = arguments[1] || 2;
       health = Math.min(100, health + gain);
       addFloatText(`+${gain} HP`, player.x, player.y - 50, '#33ff66', 20);
       showTopBanner(`+${gain} HP`, 'good');
-      SFX.powerupCollect();
+      playNormalInstrumentSfx('hp');
     } else if (type === 'shield') {
       buffShieldUntil = Date.now() + 8000;
       addFloatText('SHIELD UP!', player.x, player.y - 50, '#00e5ff', 20);
       showTopBanner('SHIELD UP', 'good');
-      SFX.powerupCollect();
+      playNormalInstrumentSfx('shield');
     } else if (type === 'mystery') {
-      SFX.boxOpen();
+      playNormalInstrumentSfx('mystery');
       if (academyMode) {
         academyMysteryIndex++;
         if (academyMysteryIndex === 1) {
@@ -2203,7 +2203,7 @@
           addFloatText('MYSTERY: PIZZA BLAST!', player.x, player.y - 50, '#ffcc44', 20);
           showTopBanner('MYSTERY: PIZZA BLAST', 'good');
         }
-        SFX.mysteryGood();
+        playNormalInstrumentSfx('mystery');
         return;
       }
       // No plain "bomb" here — that's already a normal pickup with no twist on it.
@@ -2216,7 +2216,7 @@
         health = Math.min(100, health + 25);
         addFloatText('MYSTERY: +25 HP!', player.x, player.y - 50, '#33ff66', 20);
         showTopBanner('MYSTERY: +25 HP!', 'good');
-        SFX.mysteryGood();
+        playNormalInstrumentSfx('hp');
       } else if (roll === 'tripleBuff') {
         const now = Date.now();
         buffSpeedUntil = Math.max(buffSpeedUntil, now) + 8000;
@@ -2224,48 +2224,48 @@
         buffShieldUntil = Math.max(buffShieldUntil, now) + 8000;
         addFloatText('MYSTERY: TRIPLE BUFF!', player.x, player.y - 50, '#ffe61a', 20);
         showTopBanner('MYSTERY: TRIPLE BUFF!', 'good');
-        SFX.mysteryGood(); ticketConfetti(true);
+        playNormalInstrumentSfx('mystery'); ticketConfetti(true);
       } else if (roll === 'twin') {
         twin = { x: player.x + 40, y: player.y, lastFire: 0, expiresAt: Date.now() + 8000 };
         addFloatText('MYSTERY: TWIN SHIP!', player.x, player.y - 50, '#ffe61a', 20);
         showTopBanner('MYSTERY: TWIN SHIP!', 'good');
-        SFX.mysteryGood(); ticketConfetti(true);
+        playNormalInstrumentSfx('mystery'); ticketConfetti(true);
       } else if (roll === 'pizzaBlast') {
         buffPizzaUntil = Date.now() + 8000;
         addFloatText('MYSTERY: PIZZA BLAST!', player.x, player.y - 50, '#ffcc44', 20);
         showTopBanner('MYSTERY: PIZZA BLAST!', 'good');
-        SFX.mysteryGood();
+        playNormalInstrumentSfx('mystery');
       } else if (roll === 'frozen') {
         buffFrozenUntil = Date.now() + 5000;
         addFloatText('MYSTERY: FROZEN!', player.x, player.y - 50, '#66ddff', 20);
         showTopBanner('MYSTERY: FROZEN!', 'bad');
-        SFX.mysteryBad();
+        playFrozenGlassShimmer();
       } else if (roll === 'zapped') {
         buffZappedUntil = Date.now() + 5000;
         addFloatText('MYSTERY: FARTED!', player.x, player.y - 50, '#cc99ff', 20);
         showTopBanner('MYSTERY: FARTED!', 'bad');
-        SFX.mysteryBad();
+        playZappedGlitchPop();
       } else if (roll === 'reverse') {
         controlsReversedUntil = Date.now() + 4000;
         addFloatText('MYSTERY: REVERSED!', player.x, player.y - 50, '#ff5500', 20);
         showTopBanner('MYSTERY: REVERSED!', 'bad');
-        SFX.mysteryBad();
+        playNormalInstrumentSfx('bad');
       } else if (roll === 'tiny') {
         player.r = Math.max(8, player.r * 0.6);
         addFloatText('MYSTERY: TINY SHIP!', player.x, player.y - 50, '#cc66ff', 20);
         showTopBanner('MYSTERY: TINY SHIP!', 'bad');
-        SFX.mysteryBad();
+        playNormalInstrumentSfx('bad');
         setTimeout(() => { if (state === 'playing') player.r = 18; }, 6000);
       } else if (roll === 'rebound') {
         spawnRebound();
         addFloatText('MYSTERY: REBOUND!', player.x, player.y - 50, '#ff4444', 20);
         showTopBanner('MYSTERY: REBOUND!', 'bad');
-        SFX.mysteryBad();
+        playNormalInstrumentSfx('bad');
       } else if (roll === 'snowing') {
         snowingUntil = Date.now() + 12000;
         addFloatText('MYSTERY: SNOWSTORM!', player.x, player.y - 50, '#aee8ff', 20);
         showTopBanner('MYSTERY: SNOWSTORM!', 'bad');
-        SFX.mysteryBad();
+        playFrozenGlassShimmer();
       }
     }
   }
@@ -2325,7 +2325,7 @@
     currentCfg = waveConfig(wave);
     waveTheme = pickWaveTheme(wave, null);
     startWaveSpawn(currentCfg);
-    if (waveTheme === 'blackout') spawnBlackoutHiddenEnemies();
+    if (waveTheme === 'blackout') { spawnBlackoutHiddenEnemies(); spaceSfx('wave.blackout'); }
     if (waveTheme === 'captive' && wave === 6) spawnCampaignRescueLock();
     scheduleHpPowerup();
     schedulePowerup();
@@ -2763,7 +2763,7 @@
     waveTransitioning = false;
     pendingBossWin = null;
     startWaveSpawn(currentCfg);
-    if (waveTheme === 'blackout') spawnBlackoutHiddenEnemies();
+    if (waveTheme === 'blackout') { spawnBlackoutHiddenEnemies(); spaceSfx('wave.blackout'); }
     if (waveTheme === 'captive' && wave === 6) spawnCampaignRescueLock();
     scheduleHpPowerup();
     schedulePowerup();
@@ -2772,9 +2772,9 @@
     if (waveTheme === 'boss') spawnBoss(false, { guardedRescue: [4,7,9,11].includes(wave) && hasUnrescuedMissionCaptive() });
     if (waveTheme === 'gizmo') spawnBoss(false, { guardedRescue: hasUnrescuedMissionCaptive(), escape: !forcedBossName && wave !== SPACE_FINAL_GIZMO_WAVE, final: !forcedBossName && wave === SPACE_FINAL_GIZMO_WAVE });
     if (waveTheme === 'captive' && wave !== 6) spawnBoss(true);
-    if (waveTheme === 'ghost' || waveTheme === 'emp') spawnMiniBoss(waveTheme);
+    if (waveTheme === 'ghost' || waveTheme === 'emp') { spawnMiniBoss(waveTheme); if (waveTheme === 'emp') spaceSfx('status.emp'); }
     if (waveTheme === 'mirror') spawnMirrorEnemy();
-    if (waveTheme === 'rave') SFX.neonOn();
+    if (waveTheme === 'rave') playRaveDiscoStab();
     if (waveTheme !== 'blackout' && waveTheme !== 'music') showTopBanner(forcedBossName ? `TEST ${forcedBossName}` : `DEBUG WAVE ${wave}`, 'good');
     showSkillCalloutForWave();
   }
@@ -2831,7 +2831,7 @@
   // for ~1s before the slot-machine announcement for the next wave begins.
   function showWaveClearedBeat(clearedWave, onDone) {
     const flowToken = spaceFlowToken;
-    SFX.win();
+    playMusicBoxArpeggio();
     const el = document.createElement('div');
     el.className = 'space-wave-cleared';
     el.style.cssText = 'position:fixed;inset:0;z-index:9997;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity 0.2s ease-in-out;background:rgba(3,1,16,0.7)';
@@ -3002,7 +3002,7 @@
       </div>`;
     document.body.appendChild(el);
     requestAnimationFrame(() => { el.style.opacity = '1'; });
-    SFX.missionHero();
+    playRescueFlourish();
     ticketConfetti(true);
     setTimeout(() => {
       if (flowToken !== spaceFlowToken) { el.remove(); return; }
@@ -3041,7 +3041,7 @@
       </div>`;
     document.body.appendChild(ov);
     const card = ov.firstElementChild;
-    SFX.win(); ticketConfetti(true);
+    playMusicBoxArpeggio(); ticketConfetti(true);
     requestAnimationFrame(() => {
       ov.style.background = 'rgba(3,1,16,0.94)';
       card.style.opacity = '1';
@@ -3118,14 +3118,14 @@ function nextWave() {
           schedulePowerup();
           scheduleMysteryBox();
           scheduleInstrument();
-          if (waveTheme === 'blackout') spawnBlackoutHiddenEnemies();
+          if (waveTheme === 'blackout') { spawnBlackoutHiddenEnemies(); spaceSfx('wave.blackout'); }
           if (waveTheme === 'captive' && wave === 6) spawnCampaignRescueLock();
           if (waveTheme === 'boss') spawnBoss(false, { guardedRescue: [4,7,9,11].includes(wave) && hasUnrescuedMissionCaptive() });
           if (waveTheme === 'gizmo') spawnBoss(false, { guardedRescue: hasUnrescuedMissionCaptive(), escape: wave !== SPACE_FINAL_GIZMO_WAVE, final: wave === SPACE_FINAL_GIZMO_WAVE });
           if (waveTheme === 'captive' && wave !== 6) spawnBoss(true);
-          if (waveTheme === 'ghost' || waveTheme === 'emp') spawnMiniBoss(waveTheme);
+          if (waveTheme === 'ghost' || waveTheme === 'emp') { spawnMiniBoss(waveTheme); if (waveTheme === 'emp') spaceSfx('status.emp'); }
           if (waveTheme === 'mirror') spawnMirrorEnemy();
-          if (waveTheme === 'rave') SFX.neonOn();
+          if (waveTheme === 'rave') playRaveDiscoStab();
         }, SPACE_WAVE_INSTRUCTION_READ_MS);
       });
     });
@@ -3388,7 +3388,7 @@ function nextWave() {
     SFX.over && SFX.over();
     setTimeout(() => {
       renderRebootCard(false);
-      SFX.win && SFX.win();
+      playMusicBoxArpeggio();
     }, 1150);
     setTimeout(() => {
       ov.style.opacity = '0';
@@ -3420,6 +3420,7 @@ function nextWave() {
     if (Date.now() < buffShieldUntil) {
       addFloatText('BLOCKED!', player.x, player.y - 40, '#00e5ff', 18);
       miniExplosion(player.x, player.y, '#00e5ff');
+      playShieldBellPing();
       return; // shield fully absorbs the hit — no health loss
     }
     recordDamageCause(amount, cause);
@@ -3427,12 +3428,14 @@ function nextWave() {
     addFloatText(`-${amount}`, player.x, player.y - 40, '#ff4444', 20);
     miniExplosion(player.x, player.y, '#ff4444');
     triggerShake(amount * 1.2);
+    spaceSfx('player.hit');
     // Mystery "snowing" outcome — getting hit at all while it's snowing also
     // freezes you briefly, on top of the normal damage. Reuses the existing
     // FROZEN debuff (movement slow + snowflake bullets) rather than a new state.
     if (Date.now() < snowingUntil) {
       buffFrozenUntil = Math.max(buffFrozenUntil, Date.now() + 2000);
       addFloatText('FROZEN!', player.x, player.y - 60, '#66ddff', 16);
+      playFrozenGlassShimmer();
     }
     if (health <= 0 && state === 'playing') lockDeathCause(amount, cause);
     if (health <= 0 && state === 'playing' && spaceRunMode === 'campaign' && wave <= SPACE_CAMPAIGN_FINAL_WAVE && !campaignRebootUsed) {
@@ -3480,7 +3483,7 @@ function nextWave() {
     score += o.type === 'asteroid' ? 10 + wave * 2 : 25 + wave * 5;
     addFloatText('DEFLECT!', o.x, o.y - 10, '#00e5ff', 18);
     miniExplosion(o.x, o.y, '#00e5ff');
-    SFX.powerupCollect();
+    playShieldBellPing();
     return true;
   }
 
@@ -4131,7 +4134,7 @@ function nextWave() {
       }
     } else if(!waveTransitioning && !_blasterJammed && ts-lastAutoFire>curFireMs){
       bullets.push({x:player.x,y:player.y-player.r*1.2,vy:-B_SPEED});
-      if (_zapped) SFX.fart(); else SFX.blaster();
+      if (_zapped) SFX.fart(); else playNormalInstrumentSfx('blaster');
       lastAutoFire=ts;
     }
 
@@ -4307,7 +4310,7 @@ function nextWave() {
             enemyBullets.push({ x: boss.x + spread * boss.r * 0.55, y: boss.y + boss.r * 0.72, vx, vy, r: 6.6, isLock: true });
           }
           addFloatText('LOCK PULSE!', boss.x, boss.y + boss.r + 18, '#00e5ff', 16);
-          SFX.neonOn && SFX.neonOn();
+          playRaveDiscoStab();
           boss.nextAttack = Date.now() + (boss.attackDelay || 2200);
         } else if (boss.attackType === 'donkey') {
           beginOgreDonkeyWave();
@@ -4628,8 +4631,8 @@ function nextWave() {
             addFloatText('♪ +20', p.x, p.y - 10, '#ffe61a', 18);
             miniExplosion(p.x, p.y, p.kind === 'guitar' ? '#c47a32' : p.kind === 'piano' ? '#f5f3ec' : '#e6ad2e');
             if (p.kind === 'guitar') SFX.guitarNote();
-            else if (p.kind === 'piano') SFX.pianoNote();
-            else SFX.saxNote();
+            else if (p.kind === 'piano') playMainPianoChord();
+            else playObviousSaxSound();
             p._collected = true;
             break;
           }
@@ -4651,7 +4654,7 @@ function nextWave() {
           } else {
             inventory[p.type] = true;
             showTopBanner(p.type.toUpperCase() + ' ADDED', 'good');
-            SFX.powerupCollect();
+            playNormalInstrumentSfx(p.type === 'hp' ? 'hp' : 'powerup');
           }
         } else {
           applyPowerup(p.type, p.type === 'hp' ? p.hpValue : undefined);
@@ -4727,21 +4730,21 @@ function nextWave() {
           const rockDamage = o.r < 22 ? 5 : 10;
           takeDamage(rockDamage, waveTheme === 'flip' ? 'REVERSE ASTEROID ESCAPE' : 'ASTEROID REACHED LINE');
           bigExplosion(o.x, _lineY, '#aa8855');
-          SFX.whack && SFX.whack(); // thud sound
+          playPlayerDamageThud(); // musical thud sound
           waveKills++;
         } else if(!o.isTrapped){
           // enemy crosses line — big damage
           takeDamage(30, 'ENEMY REACHED LINE');
           bigExplosion(o.x, _lineY, GAME_CHARS[o.ci].color);
           if (!o.blackoutHiddenEnemy) faceFlash(o.ci, 'sad', o.x, _lineY - 30);
-          SFX.miss();
+          playPlayerDamageThud();
           waveKills++;
         } else {
           // trapped hero crosses line — not gone forever, queued back into the rescue pool
           queueMissionCaptiveRetry(o.ci);
           addFloatText('TRY AGAIN!', o.x, o.y, '#00e5ff', 24);
           faceFlash(o.ci, 'sad', o.x, o.y - 20);
-          SFX.miss();
+          playPlayerDamageThud();
           waveKills++;
         }
         if(state==='over') return;
@@ -4821,7 +4824,7 @@ function nextWave() {
             g.litUntil = Date.now() + 260;
             boss.tacoGuardFlashUntil = Date.now() + 260;
             miniExplosion(b.x, b.y, '#d99a2b');
-            SFX.powerupCollect && SFX.powerupCollect();
+            playShieldBellPing();
             break;
           }
         }
@@ -4844,7 +4847,7 @@ function nextWave() {
             enemyBullets.push({ x: b.x, y: b.y, vx: (b.vx || 0) * 0.35, vy: 5.4 + wave * 0.08, r: 5.5, theme: 'shield', damageCause: 'SHIELD BURST' });
             addFloatText('DEFLECTED!', boss.x, boss.y - boss.r - 20, '#c8d4ff', 16);
             miniExplosion(b.x, b.y, '#c8d4ff');
-            SFX.powerupCollect && SFX.powerupCollect();
+            playShieldBellPing();
             continue;
           }
           if (boss.attackType === 'sombrero' && Date.now() < (boss.tacoGuardUntil || 0)) {
@@ -4856,7 +4859,7 @@ function nextWave() {
             boss.tacoGuardFlashUntil = Date.now() + 260;
             addFloatText('GUARDED!', boss.x, boss.y - boss.r - 20, '#d99a2b', 16);
             miniExplosion(b.x, b.y, '#d99a2b');
-            SFX.powerupCollect && SFX.powerupCollect();
+            playShieldBellPing();
             continue;
           }
           if (boss.attackType === 'ink' && Date.now() < (boss.octoGuardUntil || 0)) {
@@ -4868,7 +4871,7 @@ function nextWave() {
             boss.octoGuardFlashUntil = Date.now() + 260;
             addFloatText('INK GUARD!', boss.x, boss.y - boss.r - 20, '#ff76d2', 16);
             miniExplosion(b.x, b.y, '#ff76d2');
-            SFX.neonOn && SFX.neonOn();
+            playRaveDiscoStab();
             continue;
           }
           b.vy = 999;
@@ -4890,7 +4893,7 @@ function nextWave() {
             bigExplosion(defeatedBoss.x, defeatedBoss.y, '#ff4444');
             if (!defeatedBoss.isCaptive) addFloatText(defeatedBoss.isGizmoEscape ? 'GIZMO RETREATS!' : defeatedBoss.isFinalGizmo ? 'GIZMO DOWN!' : 'BOSS DOWN! +500', defeatedBoss.x, defeatedBoss.y, '#ffe61a', 22);
             if (hpGain > 0) addFloatText(`+${hpGain} HP`, defeatedBoss.x, defeatedBoss.y - 30, '#33ff66', 16);
-            SFX.win();
+            playMusicBoxArpeggio();
             boss = null;
             bullets = [];
             enemyBullets = [];
@@ -4970,7 +4973,7 @@ function nextWave() {
                 // again just replaces/refreshes it with the newest hero, no stacking).
                 score += 150; waveKills++;
                 o.alive=false;
-                SFX.win();
+                playRescueFlourish();
                 miniExplosion(o.x,o.y,'#00e5ff');
                 if (academyMode && o.academyGoal === 'rescueLock') academyGoalComplete = true;
                 rescueMissionChar(o.ci, o.x, o.y, '+150 RESCUED!');
@@ -4983,7 +4986,7 @@ function nextWave() {
               }
             } else if(o.isTrapped && o.ringHp === 0){
               // Ring already destroyed but player shot the face — penalty!
-              SFX.miss();
+              playPlayerDamageThud();
               o.alive=false;
               addFloatText('OOPS!', o.x, o.y, '#ff4444', 24);
               miniExplosion(o.x, o.y, '#ff4444');
@@ -4994,7 +4997,7 @@ function nextWave() {
               // Normal enemy face — takes 3 hits to clear
               o.hp--;
               if (o.hp > 0) {
-                if (SFX.miniBossHit) SFX.miniBossHit(); else SFX.hit();
+                playEnemyHitPairSfx(o.hp);
                 miniExplosion(o.x, o.y, 'rgba(255,255,255,0.7)'); // hurt flicker, not destroyed yet
                 addFloatText('HIT!', o.x, o.y - 14, '#ffffff', 14);
               } else {
@@ -5056,7 +5059,7 @@ function nextWave() {
           if (Date.now() < buffShieldUntil && shieldDeflectObstacle(o)) {
             continue;
           }
-          o.alive=false; SFX.miss();
+          o.alive=false; playPlayerDamageThud();
           takeDamage(o.type==='face' ? 30 : (o.r < 22 ? 5 : 10), o.type==='face' ? 'ENEMY COLLISION' : 'ASTEROID COLLISION');
           if(state==='over') return;
         }
@@ -5439,35 +5442,35 @@ function nextWave() {
         if (b.isIce) {
           buffFrozenUntil = Date.now() + 5000;
           addFloatText('FROZEN!', player.x, player.y - 40, '#66ddff', 18);
-          SFX.freeze();
+          playFrozenGlassShimmer();
         } else if (b.isZap) {
           buffZappedUntil = Date.now() + 5000;
           addFloatText('FARTED!', player.x, player.y - 40, '#cc99ff', 18);
-          SFX.emp();
+          playEmpKalimbaGlitch();
         } else if (b.isLock) {
           addFloatText('LOCK HIT!', player.x, player.y - 40, '#00e5ff', 16);
-          SFX.miss();
+          playPlayerDamageThud();
           takeDamage(b.damage || 7, projectileDamageCause(b));
         } else if (b.tennis) {
           addFloatText('SMASH! -20', player.x, player.y - 40, '#c6ff3a', 18);
-          SFX.miss();
+          playPlayerDamageThud();
           takeDamage(b.damage || 20, projectileDamageCause(b));
         } else if (b.theme === 'donkey') {
           addFloatText('HEE HAW! -20', player.x, player.y - 40, '#c7a16b', 18);
-          SFX.whack && SFX.whack();
+          playPlayerDamageThud();
           takeDamage(b.damage || 20, projectileDamageCause(b));
         } else if (b.theme === 'sword') {
           addFloatText('SWORD! -35', player.x, player.y - 40, '#c8d4ff', 18);
-          SFX.miss();
+          playPlayerDamageThud();
           takeDamage(b.damage || 35, projectileDamageCause(b));
         } else if (b.splat || b.theme === 'ink') {
           bossInkBlindUntil = Date.now() + 2400;
           blasterDisabledUntil = Date.now() + 2600;
           addFloatText('BLASTER JAMMED!', player.x, player.y - 40, '#ff76d2', 18);
-          SFX.neonOn && SFX.neonOn();
+          playRaveDiscoStab();
           takeDamage(b.damage || 5, projectileDamageCause(b));
         } else {
-          SFX.miss();
+          playPlayerDamageThud();
           takeDamage(b.damage || 5, projectileDamageCause(b));
         }
       }
@@ -6486,23 +6489,215 @@ function nextWave() {
       return false;
     }
   }
-  function playTargetBreakSfx(kind) {
-    if (typeof getAudioCtx !== 'function') {
-      if (SFX && SFX.hit) SFX.hit();
+  function playSpacePianoCluster(notes, start, baseVol) {
+    // Quick chord stab: multiple keys at nearly the same instant, same-key voicings.
+    notes.forEach((f, i) => {
+      const t = (start || 0) + (i % 2) * 0.002;
+      const v = (baseVol || 0.07) * (i === 0 ? 1 : 0.72);
+      playSpaceTone(f, 'triangle', t, 0.13, v, f * 0.994);
+      playSpaceTone(f * 2.01, 'sine', t + 0.002, 0.055, v * 0.24, f * 1.99);
+    });
+  }
+
+  function playRockPianoSoundscape() {
+    // Asteroids are quick single piano notes in A minor pentatonic. The repeated
+    // clears should feel darker/moodier, while avoiding sour random chromatic hits.
+    const notes = [110.00, 130.81, 146.83, 164.81, 196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00]; // A minor pentatonic: A C D E G
+    const f = notes[Math.floor(Math.random() * notes.length)];
+    playSpaceTone(f, 'triangle', 0, 0.145, 0.070, f * 0.992);
+    playSpaceTone(f * 2.01, 'sine', 0.003, 0.062, 0.020, f * 1.98);
+  }
+
+  function playMainPianoChord() {
+    // The actual piano instrument is the more obvious chord hit.
+    const voicings = [
+      [261.63, 329.63, 392.00, 523.25],
+      [220.00, 261.63, 329.63, 440.00],
+      [196.00, 246.94, 293.66, 392.00],
+      [164.81, 196.00, 246.94, 329.63],
+    ];
+    playSpacePianoCluster(voicings[Math.floor(Math.random() * voicings.length)], 0, 0.067);
+  }
+
+  function playOldSaxEnemySound() {
+    // Enemy defeat stays as the older, subtler sax-style hit.
+    if (SFX && SFX.saxNote) { SFX.saxNote(); return; }
+    playSpaceTone(330, 'sawtooth', 0, 0.18, 0.08, 250);
+    playSpaceTone(494, 'triangle', 0.055, 0.12, 0.05, 392);
+  }
+
+  function playObviousSaxSound() {
+    // More sax-like than the generic note: reedy buzz + upward scoop + tiny wah/noise breath.
+    const base = Math.random() < 0.5 ? 233.08 : 261.63; // Bb/C-ish, still friendly with the piano key center
+    playSpaceTone(base * 0.92, 'sawtooth', 0, 0.055, 0.030, base);
+    playSpaceTone(base, 'sawtooth', 0.018, 0.18, 0.050, base * 1.12);
+    playSpaceTone(base * 2.01, 'triangle', 0.026, 0.13, 0.018, base * 2.08);
+    playSpaceTone(base * 1.50, 'square', 0.055, 0.09, 0.010, base * 1.60);
+    playSpaceNoiseBurst(0.045, 0.006, 950, 'bandpass');
+  }
+
+  function playEnemyHitPairSfx(hpAfterHit) {
+    // First two normal-enemy hits pair with the sax defeat: muted trumpet-ish,
+    // then clarinet-ish, then the old sax hit plays on defeat.
+    if (hpAfterHit >= 2) {
+      playSpaceTone(293.66, 'sawtooth', 0, 0.095, 0.030, 277.18);
+      playSpaceTone(587.33, 'triangle', 0.008, 0.060, 0.012, 554.37);
+      playSpaceNoiseBurst(0.028, 0.004, 1250, 'bandpass');
       return;
     }
-    if (kind === 'asteroid') {
-      playSpaceNoiseBurst(0.035, 0.12, 1200, 'bandpass');
-      playSpaceNoiseBurst(0.24, 0.28, 360, 'lowpass');
-      playSpaceTone(54, 'sine', 0, 0.26, 0.22, 34);
-      playSpaceTone(118, 'triangle', 0.025, 0.12, 0.11, 58);
-      playSpaceTone(230, 'square', 0.018, 0.035, 0.055, 105);
-    } else {
-      playSpaceNoiseBurst(0.026, 0.08, 720, 'bandpass');
-      playSpaceTone(220, 'square', 0, 0.03, 0.10, 96);
-      playSpaceTone(104, 'triangle', 0.032, 0.09, 0.11, 42);
-      playSpaceTone(70, 'sine', 0.105, 0.08, 0.08, 30);
-    }
+    playSpaceTone(329.63, 'triangle', 0, 0.115, 0.034, 311.13);
+    playSpaceTone(659.25, 'sine', 0.006, 0.075, 0.013, 622.25);
+    playSpaceNoiseBurst(0.018, 0.003, 1700, 'bandpass');
+  }
+
+  function playShortHealthHarp() {
+    // Very short harp sparkle, in the same A-minor family as the rocks.
+    [440.00, 523.25, 659.25, 880.00].forEach((f, i) => {
+      playSpaceTone(f, 'triangle', i * 0.018, 0.075, 0.047 - i * 0.006, f * 1.006);
+      playSpaceTone(f * 2, 'sine', i * 0.018 + 0.002, 0.045, 0.014, f * 2.01);
+    });
+  }
+
+  function playCoolSpaceBlaster() {
+    // Lower, softer blaster: still sci-fi, less chirpy/repetitive than the guitar note.
+    playSpaceTone(320, 'triangle', 0, 0.055, 0.034, 175);
+    playSpaceTone(165, 'sawtooth', 0.006, 0.068, 0.018, 92);
+    playSpaceTone(640, 'sine', 0.004, 0.032, 0.012, 410);
+    playSpaceNoiseBurst(0.035, 0.010, 620, 'lowpass');
+  }
+
+
+  function playMusicBoxArpeggio() {
+    // Clean success language: tiny music-box run, bright but not as wide as the rescue flourish.
+    [659.25, 783.99, 987.77, 1318.51].forEach((f, i) => {
+      playSpaceTone(f, 'triangle', i * 0.042, 0.105, 0.034 - i * 0.004, f * 1.004);
+      playSpaceTone(f * 2, 'sine', i * 0.042 + 0.003, 0.058, 0.010, f * 2.01);
+    });
+  }
+
+  function playRescueFlourish() {
+    // Bigger angelic rescue sparkle: harp + music-box overtones, still short.
+    [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach((f, i) => {
+      playSpaceTone(f, 'triangle', i * 0.028, 0.13, 0.045 - i * 0.005, f * 1.006);
+      playSpaceTone(f * 2, 'sine', i * 0.028 + 0.004, 0.070, 0.012, f * 2.012);
+    });
+    playSpaceNoiseBurst(0.055, 0.004, 2600, 'highpass');
+  }
+
+  function playPlayerDamageThud() {
+    // Wrong-sounding musical impact: low piano/gong thump instead of a generic miss chirp.
+    playSpaceTone(82.41, 'triangle', 0, 0.18, 0.060, 73.42);
+    playSpaceTone(164.81, 'sine', 0.006, 0.12, 0.028, 146.83);
+    playSpaceNoiseBurst(0.060, 0.018, 420, 'lowpass');
+  }
+
+  function playShieldBellPing() {
+    // Protective glass/vibraphone ping. Pickup language stays harp; shield language is bell.
+    playSpaceTone(1046.50, 'sine', 0, 0.145, 0.045, 1049);
+    playSpaceTone(1567.98, 'triangle', 0.006, 0.105, 0.020, 1572);
+    playSpaceTone(2093.00, 'sine', 0.012, 0.070, 0.011, 2100);
+  }
+
+  function playBombOrchestraHit() {
+    // Musical but heavy: timpani thump + short brass/orchestra stab for bomb deployment.
+    playSpaceTone(73.42, 'sine', 0, 0.21, 0.075, 55.00);
+    playSpaceTone(146.83, 'triangle', 0.012, 0.16, 0.042, 110.00);
+    playSpaceTone(293.66, 'sawtooth', 0.018, 0.10, 0.030, 220.00);
+    playSpaceNoiseBurst(0.090, 0.020, 900, 'lowpass');
+  }
+
+  function playMysteryQuestionRun() {
+    // Question-mark music-box: playful and slightly suspicious.
+    [587.33, 698.46, 622.25, 880.00].forEach((f, i) => {
+      playSpaceTone(f, 'triangle', i * 0.035, 0.085, 0.032 - i * 0.003, f * 1.006);
+      playSpaceTone(f * 2, 'sine', i * 0.035 + 0.002, 0.045, 0.009, f * 2.01);
+    });
+  }
+
+  function playWaveStartChime() {
+    // Start-of-wave cue: low synth bed with a tiny chime on top.
+    playSpaceTone(110.00, 'triangle', 0, 0.18, 0.035, 110.00);
+    playSpaceTone(220.00, 'sine', 0.012, 0.12, 0.018, 220.00);
+    playSpaceTone(880.00, 'triangle', 0.045, 0.095, 0.025, 884.00);
+  }
+
+  function playRaveDiscoStab() {
+    // RAVE stays electronic: disco chord stab + tiny sparkle.
+    [261.63, 329.63, 392.00].forEach((f, i) => playSpaceTone(f, i === 1 ? 'sawtooth' : 'square', i * 0.004, 0.095, 0.024, f * 0.997));
+    playSpaceTone(1046.50, 'triangle', 0.055, 0.055, 0.022, 1318.51);
+    playSpaceNoiseBurst(0.045, 0.010, 1800, 'bandpass');
+  }
+
+  function playBlackoutDoomNote() {
+    // Dark special-event cue: upright-bass/doom note.
+    playSpaceTone(55.00, 'sine', 0, 0.34, 0.060, 46.25);
+    playSpaceTone(110.00, 'triangle', 0.010, 0.22, 0.024, 92.50);
+  }
+
+  function playEmpKalimbaGlitch() {
+    // Metallic kalimba/glitch zap, distinct from normal blaster and pickups.
+    [783.99, 622.25, 987.77].forEach((f, i) => playSpaceTone(f, i % 2 ? 'square' : 'triangle', i * 0.022, 0.060, 0.026, f * 0.74));
+    playSpaceNoiseBurst(0.050, 0.011, 2100, 'bandpass');
+  }
+
+  function playFrozenGlassShimmer() {
+    // High glass shimmer for frozen hits/debuffs.
+    [1174.66, 1567.98, 2093.00].forEach((f, i) => playSpaceTone(f, 'sine', i * 0.018, 0.115, 0.030 - i * 0.006, f * 1.004));
+  }
+
+  function playZappedGlitchPop() {
+    // Silly but still readable: buzzy little zap-pop.
+    playSpaceTone(180, 'square', 0, 0.055, 0.035, 420);
+    playSpaceTone(95, 'sawtooth', 0.020, 0.080, 0.020, 60);
+    playSpaceNoiseBurst(0.045, 0.012, 760, 'bandpass');
+  }
+
+  function playNormalInstrumentSfx(kind) {
+    // Space-only normal SFX pass. Boss voices/projectiles still use the SPACE_SFX registry.
+    try {
+      if (kind === 'asteroid') {
+        playRockPianoSoundscape();
+        return;
+      }
+      if (kind === 'enemyDefeat') {
+        playOldSaxEnemySound();
+        return;
+      }
+      if (kind === 'blaster') {
+        playCoolSpaceBlaster();
+        return;
+      }
+      if (kind === 'hp') {
+        playShortHealthHarp();
+        return;
+      }
+      if (kind === 'powerup') {
+        playShortHealthHarp();
+        return;
+      }
+      if (kind === 'bomb') {
+        playBombOrchestraHit();
+        return;
+      }
+      if (kind === 'shield') {
+        playShieldBellPing();
+        return;
+      }
+      if (kind === 'mystery') {
+        playMysteryQuestionRun();
+        return;
+      }
+      if (kind === 'bad') {
+        playPlayerDamageThud();
+        return;
+      }
+    } catch (e) {}
+    try { if (SFX && SFX.powerupCollect) SFX.powerupCollect(); } catch (e) {}
+  }
+
+  function playTargetBreakSfx(kind) {
+    if (kind === 'asteroid') playNormalInstrumentSfx('asteroid');
+    else playNormalInstrumentSfx('enemyDefeat');
   }
   // ── Space SFX registry (lightweight, no audio files) ──────────────────────
   // Named lookup over the EXISTING procedural SFX/tone calls. Nothing here is a
@@ -6518,8 +6713,8 @@ function nextWave() {
     'boss.dragon.projectile': () => playBossPreviewTone(130, 'sawtooth', 0.26, 0.16, 70),
     'boss.knight.voice': () => playBossPreviewTone(260, 'square', 0.14, 0.09, 90),
     'boss.knight.projectile': () => { if (SFX.missionBossCharge) SFX.missionBossCharge(); else if (SFX.neonOn) SFX.neonOn(); },
-    'boss.gray.voice': () => { if (SFX.ghostTeleport) SFX.ghostTeleport(); else if (SFX.emp) SFX.emp(); else playBossPreviewTone(180, 'sine', 0.16, 0.08, 520); },
-    'boss.gray.projectile': () => { if (SFX.emp) SFX.emp(); },
+    'boss.gray.voice': () => { if (SFX.ghostTeleport) SFX.ghostTeleport(); else if (SFX.emp) playEmpKalimbaGlitch(); else playBossPreviewTone(180, 'sine', 0.16, 0.08, 520); },
+    'boss.gray.projectile': () => { if (SFX.emp) playEmpKalimbaGlitch(); },
     'boss.shark.voice': () => playBossPreviewTone(180, 'sawtooth', 0.16, 0.08, 90),
     'boss.shark.projectile': () => { if (SFX.bomberDive) SFX.bomberDive(); },
     'boss.taco.voice': () => playBossPreviewTone(300, 'square', 0.16, 0.08, 180),
@@ -6528,12 +6723,20 @@ function nextWave() {
     'boss.octo.projectile': () => { if (SFX.neonOn) SFX.neonOn(); },
     'boss.gizmo.voice': () => { if (SFX.gizmoBark) SFX.gizmoBark(); else playBossPreviewTone(240, 'square', 0.14, 0.10, 120); },
     'boss.gizmo.projectile': () => playBossPreviewTone(540, 'triangle', 0.10, 0.09, 840),
-    'player.hit': () => { if (SFX.hit) SFX.hit(); },
+    'player.hit': () => playPlayerDamageThud(),
     'player.death': () => { if (SFX.over) SFX.over(); },
-    'rescue.success': () => { if (SFX.win) SFX.win(); },
-    'powerup.hp': () => { if (SFX.powerupCollect) SFX.powerupCollect(); },
-    'powerup.bomb': () => { if (SFX.over) SFX.over(); },
-    'wave.start': () => { if (SFX.missionSignal) SFX.missionSignal(); },
+    'rescue.success': () => playRescueFlourish(),
+    'powerup.hp': () => playShortHealthHarp(),
+    'powerup.bomb': () => playBombOrchestraHit(),
+    'powerup.shield': () => playShieldBellPing(),
+    'powerup.mystery': () => playMysteryQuestionRun(),
+    'wave.start': () => playWaveStartChime(),
+    'wave.clear': () => playMusicBoxArpeggio(),
+    'wave.rave': () => playRaveDiscoStab(),
+    'wave.blackout': () => playBlackoutDoomNote(),
+    'status.emp': () => playEmpKalimbaGlitch(),
+    'status.frozen': () => playFrozenGlassShimmer(),
+    'status.zapped': () => playZappedGlitchPop(),
   };
   // ── Real-audio overlay ──────────────────────────────────────────────────
   // Flip this to false to fall back to the procedural SPACE_SFX placeholders
@@ -6559,11 +6762,7 @@ function nextWave() {
     'boss.octo.projectile': 'assets/space/sfx/boss_octo_projectile.mp3',
     'boss.gizmo.voice': 'assets/space/sfx/boss_gizmo_voice.mp3',
     'boss.gizmo.projectile': 'assets/space/sfx/boss_gizmo_projectile.mp3',
-    'player.hit': 'assets/space/sfx/player_hit.mp3',
     'player.death': 'assets/space/sfx/player_death.mp3',
-    'rescue.success': 'assets/space/sfx/rescue_success.mp3',
-    'powerup.hp': 'assets/space/sfx/powerup_hp.mp3',
-    'wave.start': 'assets/space/sfx/wave_start.mp3',
   };
   const _spaceSfxAudioCache = {};
   function _playSpaceSfxFile(path, fallback) {
@@ -7367,7 +7566,7 @@ function nextWave() {
   window.spaceShoot=function(){
     if(state!=='playing')return;
     bullets.push({x:player.x,y:player.y-player.r*1.2,vy:-B_SPEED});
-    SFX.blaster();
+    playNormalInstrumentSfx('blaster');
   };
   // ── First-time intro ── same font/color/size/timing as Whack's objective text
   // (Bebas Neue, #00e5ff, 40px, 3000ms holds) — this is a separate IIFE from Whack's,
@@ -7466,7 +7665,7 @@ function nextWave() {
           const b1 = document.getElementById('sp-intro-bullet1'), b2 = document.getElementById('sp-intro-bullet2');
           if (b1) b1.style.top = '40px';
           if (b2) b2.style.top = '40px';
-          SFX.blaster && SFX.blaster();
+          playNormalInstrumentSfx('blaster');
         }, 700);
         setTimeout(() => {
           const rock = document.getElementById('sp-intro-rock'), enemy = document.getElementById('sp-intro-enemy');
@@ -7552,7 +7751,7 @@ function nextWave() {
         setTimeout(() => {
           const b = document.getElementById('sp-intro-bullet3');
           if (b) b.style.bottom = '60px';
-          SFX.blaster && SFX.blaster();
+          playNormalInstrumentSfx('blaster');
         }, 900);
         setTimeout(() => {
           const ring = document.getElementById('sp-intro-ring'), b = document.getElementById('sp-intro-bullet3');
@@ -7563,7 +7762,7 @@ function nextWave() {
             ring.style.transition = 'transform 0.4s ease-out, opacity 0.4s ease-out';
             ring.style.transform = 'scale(1.8)'; ring.style.opacity = '0';
           }
-          SFX.win && SFX.win();
+          playMusicBoxArpeggio();
         }, 1300);
       }},
       { duration: 3800, show: () => {
@@ -7586,7 +7785,7 @@ function nextWave() {
           const hp = document.getElementById('sp-intro-hp'), s = document.getElementById('sp-intro-ship');
           if (hp) hp.style.opacity = '0';
           if (s) { const rect = s.getBoundingClientRect(); spIntroBurst(rect.left + rect.width / 2, rect.top); }
-          SFX.powerupCollect && SFX.powerupCollect();
+          playNormalInstrumentSfx('hp');
         }, 1200);
         setTimeout(() => {
           const pu = document.getElementById('sp-intro-pu'), s = document.getElementById('sp-intro-ship');
@@ -7597,7 +7796,7 @@ function nextWave() {
           const pu = document.getElementById('sp-intro-pu'), s = document.getElementById('sp-intro-ship');
           if (pu) pu.style.opacity = '0';
           if (s) { const rect = s.getBoundingClientRect(); spIntroBurst(rect.left + rect.width / 2, rect.top); }
-          SFX.powerupCollect && SFX.powerupCollect();
+          playNormalInstrumentSfx('powerup');
         }, 2400);
         setTimeout(() => {
           const s = document.getElementById('sp-intro-ship');
@@ -7622,7 +7821,7 @@ function nextWave() {
         setTimeout(() => {
           const tap = document.getElementById('sp-intro-tap');
           if (tap) { tap.style.opacity = '0.8'; tap.style.transform = 'scale(1.5)'; }
-          SFX.neonOn && SFX.neonOn();
+          playRaveDiscoStab();
         }, 900);
         setTimeout(() => {
           const tap = document.getElementById('sp-intro-tap');
@@ -7854,7 +8053,7 @@ function nextWave() {
       card.style.transform = 'scale(1)';
     });
     card.innerHTML = normalDayStage;
-    SFX.missionSignal && SFX.missionSignal();
+    spaceSfx('wave.start');
     [
       [2000, castStage, 'missionBirds'],
       [5600, traitorLineStage, 'missionOminous'],
@@ -7987,12 +8186,12 @@ function nextWave() {
     spawnsRemaining = 0;
     themeEffectsAt = waveTheme === 'blackout' ? Date.now() + 1400 : 0;
     startWaveSpawn(currentCfg);
-    if (waveTheme === 'blackout') spawnBlackoutHiddenEnemies();
+    if (waveTheme === 'blackout') { spawnBlackoutHiddenEnemies(); spaceSfx('wave.blackout'); }
     if (waveTheme === 'boss') spawnBoss(false, { guardedRescue: false });
     if (waveTheme === 'gizmo') spawnBoss(false, { guardedRescue: false, escape: false, final: false });
-    if (waveTheme === 'ghost' || waveTheme === 'emp') spawnMiniBoss(waveTheme);
+    if (waveTheme === 'ghost' || waveTheme === 'emp') { spawnMiniBoss(waveTheme); if (waveTheme === 'emp') spaceSfx('status.emp'); }
     if (waveTheme === 'mirror') spawnMirrorEnemy();
-    if (waveTheme === 'rave') SFX.neonOn();
+    if (waveTheme === 'rave') playRaveDiscoStab();
     showTopBanner('ENDLESS MODE', 'good');
     showSkillCalloutForWave();
   }
