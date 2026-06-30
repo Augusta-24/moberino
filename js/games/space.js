@@ -429,6 +429,8 @@
       text, x, y, color, a: 1,
       vy: opts.vy != null ? opts.vy : -1.5,
       fade: opts.fade != null ? opts.fade : 0.02,
+      holdMs: opts.holdMs || 0,
+      startedAt: Date.now(),
       size: size || 20
     });
   }
@@ -2809,10 +2811,10 @@ function nextWave() {
     setTimeout(() => {
       if (flowToken !== spaceFlowToken || state !== 'playing' || waveTransitioning) return;
       if (waveTheme === 'blackout') {
-        addFloatText('BLACKOUT!', W / 2, H * 0.35, '#ffe61a', 32);
-        addFloatText('STAY IN THE LIGHT', W / 2, H * 0.35 + 30, '#33ff66', 20);
+        addFloatText('BLACKOUT!', W / 2, H * 0.35, '#ffe61a', 32, { holdMs: 2200, fade: 0.012 });
+        addFloatText('STAY IN THE LIGHT', W / 2, H * 0.35 + 30, '#33ff66', 20, { holdMs: 2200, fade: 0.012 });
       } else {
-        showTopBanner(text, waveTheme === 'boss' || waveTheme === 'gizmo' || waveTheme === 'captive' ? 'bad' : 'good');
+        showTopBanner(text, waveTheme === 'boss' || waveTheme === 'gizmo' || waveTheme === 'captive' ? 'bad' : 'good', { holdMs: 1800 });
       }
     }, 420);
   }
@@ -5099,7 +5101,8 @@ function nextWave() {
     // Float texts
     floatTexts = floatTexts.filter(t => t.a > 0.02);
     floatTexts.forEach(t => {
-      t.y += t.vy; t.a -= (t.fade || 0.02);
+      t.y += t.vy;
+      if (!t.holdMs || Date.now() - (t.startedAt || 0) > t.holdMs) t.a -= (t.fade || 0.02);
       ctx.save();
       ctx.globalAlpha = t.a;
       ctx.font = `bold ${t.size}px 'Bebas Neue', cursive`;
@@ -5400,22 +5403,25 @@ function nextWave() {
   // snapping on/off — reads as "appearing," not a flash.
   let topBanner = null;
   const TOP_BANNER_FADE_IN = 220, TOP_BANNER_HOLD = 700, TOP_BANNER_FADE_OUT = 380;
-  function showTopBanner(text, kind) {
+  function showTopBanner(text, kind, opts) {
+    opts = opts || {};
     topBanner = {
       text,
       color: kind === 'bad' ? '#ff4444' : '#00e5ff',
       startedAt: Date.now(),
+      holdMs: opts.holdMs || TOP_BANNER_HOLD,
     };
   }
   function drawTopBanner() {
     if (!topBanner) return;
     const elapsed = Date.now() - topBanner.startedAt;
-    const total = TOP_BANNER_FADE_IN + TOP_BANNER_HOLD + TOP_BANNER_FADE_OUT;
+    const holdMs = topBanner.holdMs || TOP_BANNER_HOLD;
+    const total = TOP_BANNER_FADE_IN + holdMs + TOP_BANNER_FADE_OUT;
     if (elapsed > total) { topBanner = null; return; }
     let a;
     if (elapsed < TOP_BANNER_FADE_IN) a = elapsed / TOP_BANNER_FADE_IN;
-    else if (elapsed < TOP_BANNER_FADE_IN + TOP_BANNER_HOLD) a = 1;
-    else a = 1 - (elapsed - TOP_BANNER_FADE_IN - TOP_BANNER_HOLD) / TOP_BANNER_FADE_OUT;
+    else if (elapsed < TOP_BANNER_FADE_IN + holdMs) a = 1;
+    else a = 1 - (elapsed - TOP_BANNER_FADE_IN - holdMs) / TOP_BANNER_FADE_OUT;
     const c = topBanner.color;
     ctx.save();
     ctx.globalAlpha = a;
