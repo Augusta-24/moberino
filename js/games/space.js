@@ -726,7 +726,10 @@
     // spawnsRemaining is exact for these campaign waves so startWaveSpawn() does
     // not re-inflate them with the older theme multipliers.
     const tuning = {
-      1: { spawnsRemaining: 40, speedOverride: 2.86, spawnMsOverride: 780, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [2600, 5200], spawnCadenceMult: 0.9, activeObstacleCap: 6, notes: 'Intro is dangerous: small rocks cost 5 HP and big rocks cost 10 HP, with early HP drops teaching recovery.' },
+      // Asteroid-field waves use slower cadence instead of dumping rocks faster.
+      // Wave 5 also staggers three normal enemies into fixed slots; the pool still
+      // ends through spawnsRemaining/board-clear, so it cannot overlap nextWave().
+      1: { spawnsRemaining: 40, speedOverride: 2.86, spawnMsOverride: 930, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [2600, 5200], spawnCadenceMult: 0.9, activeObstacleCap: 6, notes: 'Intro is dangerous: small rocks cost 5 HP and big rocks cost 10 HP, with early HP drops teaching recovery.' },
       2: { spawnsRemaining: 32, speedOverride: 2.62, spawnMsOverride: 790, asteroidRatioOverride: 0, enemyHpOverride: 2, enemyFireMult: 1.20, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [1200, 1900], hpDelayRange: [2600, 5200], spawnCadenceMult: 0.94, activeObstacleCap: 5, notes: 'Teach enemies while stocking a bomb before Wave 3 swarm.' },
       // spawnMsOverride raised 710->1087: same 26-enemy pool, just stretched out.
       // Actual per-spawn gap is spawnMs * 0.8 * 0.65 (swarm themeSpeedup) * 1.02
@@ -736,7 +739,7 @@
       // without changing the enemy count or any other wave-3 tuning.
       3: { spawnsRemaining: 26, speedOverride: 2.72, spawnMsOverride: 1087, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.34, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 1, powerupDelayRange: [900, 1300], hpDelayRange: [2200, 4400], swarmCap: 5, activeObstacleCap: 5, spawnCadenceMult: 1.02, notes: 'Swarm stays chaotic, but health drops earlier so it feels survivable/fun.' },
       4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [7600, 11600], enemyFireMult: 0.75 },
-      5: { spawnsRemaining: 30, speedOverride: 2.86, spawnMsOverride: 700, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: true, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [3600, 6200], hpDelayRange: [3600, 6800], spawnCadenceMult: 0.9, activeObstacleCap: 7 },
+      5: { spawnsRemaining: 33, normalEnemySlots: [9, 18, 27], speedOverride: 2.86, spawnMsOverride: 1048, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: true, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [3600, 6200], hpDelayRange: [3600, 6800], spawnCadenceMult: 0.9, activeObstacleCap: 7 },
       6: { spawnsRemaining: 20, speedOverride: 2.72, spawnMsOverride: 700, asteroidRatioOverride: 0.28, enemyHpOverride: 2, enemyFireMult: 0.78, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, rescueRingHp: 30, powerupDelayRange: [3600, 6200], hpDelayRange: [4800, 7800], spawnCadenceMult: 0.86, activeObstacleCap: 6 },
       7: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [8000, 12000], enemyFireMult: 0.85 },
       8: { spawnsRemaining: 16, speedOverride: 2.76, spawnMsOverride: 820, asteroidRatioOverride: 1, enemyFireMult: 0.82, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [5600, 9000], spawnCadenceMult: 1.0, activeObstacleCap: 8 },
@@ -861,9 +864,9 @@
   // top-down fall. Rather than threading a flip through every push() site below
   // (asteroid/swarm/bomber/normal/mirror all have their own hardcoded y/vy), this
   // wrapper just corrects whatever _spawnObstacleReal() actually pushed afterward.
-  function spawnObstacle(cfg) {
+  function spawnObstacle(cfg, opts) {
     const before = obstacles.length;
-    _spawnObstacleReal(cfg);
+    _spawnObstacleReal(cfg, opts || {});
     if (waveTheme === 'flip' && obstacles.length > before) {
       const o = obstacles[obstacles.length - 1];
       o.y = H + o.r + 10;
@@ -874,7 +877,7 @@
       o.pausedBurstDone = true;
     }
   }
-  function _spawnObstacleReal(cfg) {
+  function _spawnObstacleReal(cfg, opts) {
     // Themed waves bend the asteroid/enemy mix and a few spawn stats without
     // touching waveConfig(cfg) itself — purely a local override of this one roll.
     let ratio = cfg.asteroidRatio;
@@ -883,7 +886,7 @@
     else if (waveTheme === 'swarm') ratio = 0.1;
     else if (waveTheme === 'goldrush') ratio = 0.85;
     else if (waveTheme === 'mirror') ratio = 1;
-    const isAsteroid = Math.random() < ratio;
+    const isAsteroid = !(opts && opts.forceNormalEnemy) && Math.random() < ratio;
     if (isAsteroid) {
       const r = rand(ASTEROID_R_MIN, ASTEROID_R_MAX);
       const sides = 7 + Math.floor(Math.random() * 5);
@@ -2807,6 +2810,8 @@
     else if (waveTheme === 'mirror') spawnsRemaining = Math.max(4, Math.ceil(cfg.poolSize * 0.34));
     else if (waveTheme === 'bomber') spawnsRemaining = Math.max(4, Math.ceil(cfg.poolSize * 0.48));
     else spawnsRemaining = cfg.poolSize;
+    const totalSpawns = spawnsRemaining;
+    const normalEnemySlots = Array.isArray(cfg.normalEnemySlots) ? cfg.normalEnemySlots : [];
     function doSpawn() {
       if (state !== 'playing') return;
       // Paused entirely while a boss fight is active — it's deploying its own minions
@@ -2820,7 +2825,8 @@
       const activeCap = cfg.activeObstacleCap || (waveTheme === 'swarm' ? (cfg.swarmCap || 5) : 0);
       const activeThreats = obstacles.filter(o => o.alive !== false && !o.isTrapped).length;
       if (activeCap && activeThreats >= activeCap) { spawnTimer = setTimeout(doSpawn, 260); return; }
-      spawnObstacle(cfg);
+      const spawnIndex = totalSpawns - spawnsRemaining + 1;
+      spawnObstacle(cfg, { forceNormalEnemy: normalEnemySlots.includes(spawnIndex) });
       spawnsRemaining--;
       // SWARM speeds up by cadence, not by screen-flooding. ALL ASTEROIDS now works
       // the same way: more total rocks across the wave, but no triple-dumps that
