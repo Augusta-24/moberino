@@ -886,7 +886,7 @@
   }
 
   function grayTetherTemplate(index) {
-    const safeTop = Math.max(96, Math.min(150, H * 0.16));
+    const safeTop = Math.max(120, Math.min(176, H * 0.16 + 24));
     const templates = [
       { gray: { x: W * 0.24, y: safeTop }, node: { x: W * 0.74, y: H * 0.54 }, label: 'BREAK TETHER' },
       { gray: { x: W * 0.76, y: safeTop + 8 }, node: { x: W * 0.26, y: H * 0.54 }, label: 'SHIELD NODE' },
@@ -936,16 +936,16 @@
   function grayFireAlienOrbs(b, now) {
     const bt = campaignTier(wave);
     const count = bt >= 2 ? 4 : 3;
-    const speed = bossProjectileSpeed(b, 3.75 + bt * 0.18);
+    const speed = bossProjectileSpeed(b, (3.75 + bt * 0.18) * 2);
     for (let k = 0; k < count; k++) {
       const spread = count === 1 ? 0 : (k - (count - 1) / 2) * 0.18;
       const aim = Math.atan2((player ? player.y : H * 0.78) - b.y, (player ? player.x : W / 2) - b.x) + spread;
       enemyBullets.push({
         x: b.x, y: b.y + b.r * 0.56,
         vx: Math.cos(aim) * speed, vy: Math.sin(aim) * speed,
-        r: 13.9, theme: 'greenOrb', damage: bossDamage(b, 12), born: now,
+        r: 27.8, theme: 'greenOrb', damage: bossDamage(b, 12), born: now,
         homing: 0.018,
-        maxSpeed: speed + 0.28,
+        maxSpeed: speed * 2 + 0.56,
         visualScale: 0.92
       });
     }
@@ -969,7 +969,8 @@
       ampX: clamp(W * 0.08, 20, 42),
       ampY: clamp(H * 0.028, 12, 24),
       driftSeed: Math.random() * Math.PI * 2,
-      hitUntil: 0
+      hitUntil: 0,
+      zapUntil: 0
     };
     // Gray's shield is a tether puzzle now, not a portal/trick-shot puzzle.
     addFloatText(t.label, b.tetherSource.x, b.tetherSource.y - b.tetherSource.r - 16, '#65f0ff', 14);
@@ -1026,12 +1027,12 @@
     } else if (st.phase === 'tetherShield') {
       if (!st.tetherSpawned) {
         graySpawnTetherSource(b, now);
-        st.nextOrbAt = now + 520;
+        st.nextOrbAt = now + 260;
         st.tetherSpawned = true;
       }
       if (now >= (st.nextOrbAt || 0)) {
         grayFireAlienOrbs(b, now);
-        st.nextOrbAt = now + 2000;
+        st.nextOrbAt = now + 1000;
       }
       if (now >= st.phaseUntil) {
         st.cycle++;
@@ -1079,6 +1080,7 @@
     shot.vy = 999;
     src.hp--;
     src.hitUntil = now + 220;
+    src.zapUntil = now + 420;
     miniExplosion(shot.x, shot.y, '#65f0ff');
     if (src.hp <= 0) {
       grayBreakTether(b, now);
@@ -1121,6 +1123,26 @@
       ctx.lineDashOffset = -((now / 58) % 17);
       ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(sx, sy); ctx.stroke();
       ctx.setLineDash([]);
+      if (now < (src.zapUntil || 0)) {
+        const zap = Math.max(0, Math.min(1, (src.zapUntil - now) / 420));
+        ctx.globalAlpha = 0.62 + zap * 0.35;
+        ctx.shadowColor = '#eaffff';
+        ctx.shadowBlur = 18 + zap * 18;
+        ctx.strokeStyle = '#eaffff';
+        ctx.lineWidth = 3.2 + zap * 2.4;
+        ctx.beginPath();
+        for (let i = 0; i <= 9; i++) {
+          const t = i / 9;
+          const jitter = i === 0 || i === 9 ? 0 : Math.sin(now * 0.08 + i * 2.1) * (5 + zap * 7);
+          const nx = -sy / (Math.hypot(sx, sy) || 1);
+          const ny = sx / (Math.hypot(sx, sy) || 1);
+          const x = sx * (1 - t) + nx * jitter;
+          const y = sy * (1 - t) + ny * jitter;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
       ctx.shadowColor = '#65f0ff';
       ctx.shadowBlur = hot ? 18 : 10;
       const pulse = 1 + Math.sin(now * 0.014) * 0.08;
@@ -1149,16 +1171,22 @@
       if (shaking) {
         ctx.translate(Math.sin(now * 0.13 + shakeSeed) * 6 * shakeT, Math.cos(now * 0.17 + shakeSeed) * 4 * shakeT);
       }
-      ctx.globalAlpha = b.tetherShieldActive ? (0.44 + flash * 0.34 + shakeT * 0.12) : (0.20 + flash * 0.18);
-      ctx.strokeStyle = flash ? 'rgba(234,255,255,0.92)' : 'rgba(179,107,255,0.78)';
-      ctx.lineWidth = flash || shaking ? 4.2 : 2.6;
+      const shieldPulse = 1 + Math.sin(now * 0.009) * 0.12;
+      ctx.shadowColor = flash ? '#eaffff' : '#b36bff';
+      ctx.shadowBlur = b.tetherShieldActive ? 22 + Math.sin(now * 0.014) * 8 : 10;
+      ctx.globalAlpha = b.tetherShieldActive ? (0.72 + flash * 0.24 + shakeT * 0.12) : (0.24 + flash * 0.18);
+      ctx.strokeStyle = flash ? 'rgba(234,255,255,0.98)' : 'rgba(179,107,255,0.96)';
+      ctx.lineWidth = flash || shaking ? 6.4 : 4.8;
       ctx.setLineDash([8, 7]);
       ctx.lineDashOffset = -((now / 65) % 15);
-      ctx.beginPath(); ctx.arc(0, 0, b.r * 1.24 * pulse, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, b.r * 1.34 * pulse * shieldPulse, 0, Math.PI * 2); ctx.stroke();
       ctx.setLineDash([]);
-      ctx.globalAlpha = b.tetherShieldActive ? (0.16 + flash * 0.14 + shakeT * 0.08) : 0.08;
-      ctx.fillStyle = 'rgba(101,240,255,0.28)';
-      ctx.beginPath(); ctx.arc(0, 0, b.r * 1.18 * pulse, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(101,240,255,0.82)';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.arc(0, 0, b.r * 1.12 * pulse, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = b.tetherShieldActive ? (0.25 + flash * 0.14 + shakeT * 0.08) : 0.10;
+      ctx.fillStyle = 'rgba(101,240,255,0.34)';
+      ctx.beginPath(); ctx.arc(0, 0, b.r * 1.24 * pulse * shieldPulse, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
     }
   }
