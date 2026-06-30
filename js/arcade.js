@@ -1,5 +1,66 @@
 // ── STANDALONE ARCADE ROUTER ───────────────────────────────────────────────
 (function() {
+  let arcadeInstallPromptEvent = null;
+
+  function arcadeIsStandaloneApp() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
+
+  function updateArcadeInstallPrompt() {
+    const card = document.getElementById('arcade-install-card');
+    const text = document.getElementById('arcade-install-text');
+    const btn = document.getElementById('arcade-install-btn');
+    if (!card || !text || !btn) return;
+
+    const isLobby = document.body.classList.contains('on-lobby');
+    if (!isLobby || arcadeIsStandaloneApp()) {
+      card.hidden = true;
+      return;
+    }
+
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    card.hidden = false;
+    if (arcadeInstallPromptEvent) {
+      text.textContent = 'Install the arcade app for full-screen play.';
+      btn.textContent = 'INSTALL';
+      btn.hidden = false;
+    } else if (isIOS) {
+      text.textContent = 'Tap Share, then Add to Home Screen for full-screen play.';
+      btn.textContent = 'HOW';
+      btn.hidden = false;
+    } else {
+      text.textContent = 'Use your browser menu to install or add this arcade to your Home Screen.';
+      btn.hidden = true;
+    }
+  }
+
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    arcadeInstallPromptEvent = e;
+    updateArcadeInstallPrompt();
+  });
+
+  window.addEventListener('appinstalled', () => {
+    arcadeInstallPromptEvent = null;
+    updateArcadeInstallPrompt();
+  });
+
+  document.addEventListener('click', e => {
+    const btn = e.target.closest && e.target.closest('#arcade-install-btn');
+    if (!btn) return;
+    if (typeof SFX !== 'undefined' && typeof SFX.menuSelect === 'function') SFX.menuSelect();
+    if (arcadeInstallPromptEvent) {
+      arcadeInstallPromptEvent.prompt();
+      arcadeInstallPromptEvent.userChoice.finally(() => {
+        arcadeInstallPromptEvent = null;
+        updateArcadeInstallPrompt();
+      });
+    } else {
+      alert('On iPhone or iPad: tap Share, then choose Add to Home Screen.');
+    }
+  });
+
   function setArcadeExitVisible(show) {
     const btn = document.getElementById('arcade-game-exit');
     if (!btn) return;
@@ -51,6 +112,7 @@
       if (typeof drawPixelIcons === 'function') drawPixelIcons();
       if (typeof initCarousel === 'function') initCarousel();
     }
+    updateArcadeInstallPrompt();
     if (onWhack && typeof initWhack === 'function') initWhack();
     if (onMatch && typeof initMatch === 'function') initMatch();
     if (onSpace && typeof initSpace === 'function') initSpace();
@@ -62,6 +124,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     document.documentElement.classList.add('arcade-root');
     nav('lobby');
+    updateArcadeInstallPrompt();
   });
 })();
 
