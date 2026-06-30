@@ -496,7 +496,7 @@ body.on-match .mobe-face-img {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
 }
 #char-select-title {
-  font-family: 'Bebas Neue', cursive;
+  font-family: 'Bebas Neue', 'Arial Narrow', Impact, sans-serif;
   font-size: clamp(28px, 8vw, 52px);
   letter-spacing: 6px; color: #ffe61a;
   text-shadow: 0 0 20px #ffe61a, 0 0 40px #ffe61a88;
@@ -544,7 +544,7 @@ body.on-match .mobe-face-img {
   flex-shrink: 0;
   display: flex; align-items: center;
   padding: 0 24px;
-  font-family: 'Bebas Neue', cursive;
+  font-family: 'Bebas Neue', 'Arial Narrow', Impact, sans-serif;
   font-size: 28px; letter-spacing: 5px;
   color: rgba(242,239,232,0.82);
   cursor: pointer;
@@ -590,7 +590,7 @@ body.on-match .mobe-face-img {
   pointer-events: none;
 }
 #char-preview-name {
-  font-family: 'Bebas Neue', cursive; font-size: 28px;
+  font-family: 'Bebas Neue', 'Arial Narrow', Impact, sans-serif; font-size: 28px;
   letter-spacing: 5px;
 }
 #char-select-confirm {
