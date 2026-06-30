@@ -5984,8 +5984,66 @@ function nextWave() {
     'powerup.bomb': () => { if (SFX.over) SFX.over(); },
     'wave.start': () => { if (SFX.missionSignal) SFX.missionSignal(); },
   };
+  // ── Real-audio overlay ──────────────────────────────────────────────────
+  // Flip this to false to fall back to the procedural SPACE_SFX placeholders
+  // everywhere, with zero other changes — every spaceSfx() call site already
+  // goes through this one function, so this is the only switch that matters.
+  const SPACE_SFX_USE_FILES = true;
+  // Keys with no entry here (e.g. 'powerup.bomb', removed from the asset pack)
+  // automatically fall back to their SPACE_SFX procedural placeholder below.
+  const SPACE_SFX_FILES = {
+    'boss.ogre.voice': 'assets/space/sfx/boss_ogre_voice.mp3',
+    'boss.ogre.projectile': 'assets/space/sfx/boss_ogre_projectile.mp3',
+    'boss.dragon.voice': 'assets/space/sfx/boss_dragon_voice.mp3',
+    'boss.dragon.projectile': 'assets/space/sfx/boss_dragon_projectile.mp3',
+    'boss.knight.voice': 'assets/space/sfx/boss_knight_voice.mp3',
+    'boss.knight.projectile': 'assets/space/sfx/boss_knight_projectile.mp3',
+    'boss.gray.voice': 'assets/space/sfx/boss_gray_voice.mp3',
+    'boss.gray.projectile': 'assets/space/sfx/boss_gray_projectile.mp3',
+    'boss.shark.voice': 'assets/space/sfx/boss_shark_voice.mp3',
+    'boss.shark.projectile': 'assets/space/sfx/boss_shark_projectile.mp3',
+    'boss.taco.voice': 'assets/space/sfx/boss_taco_voice.mp3',
+    'boss.taco.projectile': 'assets/space/sfx/boss_taco_projectile.mp3',
+    'boss.octo.voice': 'assets/space/sfx/boss_octo_voice.mp3',
+    'boss.octo.projectile': 'assets/space/sfx/boss_octo_projectile.mp3',
+    'boss.gizmo.voice': 'assets/space/sfx/boss_gizmo_voice.mp3',
+    'boss.gizmo.projectile': 'assets/space/sfx/boss_gizmo_projectile.mp3',
+    'player.hit': 'assets/space/sfx/player_hit.mp3',
+    'player.death': 'assets/space/sfx/player_death.mp3',
+    'rescue.success': 'assets/space/sfx/rescue_success.mp3',
+    'powerup.hp': 'assets/space/sfx/powerup_hp.mp3',
+    'wave.start': 'assets/space/sfx/wave_start.mp3',
+  };
+  const _spaceSfxAudioCache = {};
+  function _playSpaceSfxFile(path) {
+    try {
+      // Cache one loaded <audio> per path and clone it per play — cloning
+      // (instead of replaying the same node) lets two overlapping triggers
+      // (e.g. two donkeys charging close together) play on top of each other
+      // instead of the second cutting the first off.
+      let base = _spaceSfxAudioCache[path];
+      if (!base) {
+        base = new Audio(path);
+        base.preload = 'auto';
+        _spaceSfxAudioCache[path] = base;
+      }
+      const node = base.cloneNode(true);
+      const p = node.play();
+      if (p && p.catch) p.catch(() => {});
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
   function spaceSfx(key) {
-    try { const fn = SPACE_SFX[key]; if (fn) fn(); } catch (e) {}
+    try {
+      if (SPACE_SFX_USE_FILES) {
+        const path = SPACE_SFX_FILES[key];
+        if (path && _playSpaceSfxFile(path)) return;
+      }
+      const fn = SPACE_SFX[key];
+      if (fn) fn();
+    } catch (e) {}
   }
   const BOSS_SFX_KEY_PREFIX = {
     'STAR OGRE': 'boss.ogre',
