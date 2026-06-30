@@ -288,7 +288,7 @@
     'STAR OGRE': 'donkey',
     'SKY DRAGON': 'fire',
     'DARK KNIGHT': 'sword',
-    'GRAY VISITOR': 'portal',
+    'GRAY VISITOR': 'tether',
     'SPACE SHARK': 'fish',
     'MEAN TACO': 'sombrero',
     'COSMIC OCTO': 'ink',
@@ -300,7 +300,7 @@
     'STAR OGRE':    { rMult: 1.10, hpMult: 1.24, attackDelayMult: 0.64, projectileSpeedMult: 1.10, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Large commander. Donkey dodging is the fight.' },
     'SKY DRAGON':   { rMult: 1.12, hpMult: 1.02, attackDelayMult: 0.52, projectileSpeedMult: 1.44, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Big readable target while reading fire split.' },
     'DARK KNIGHT':  { rMult: 0.84, hpMult: 0.92, attackDelayMult: 0.76, projectileSpeedMult: 1.0, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Precise sword fight, not an HP sponge.' },
-    'GRAY VISITOR': { rMult: 0.58, hpMult: 0.68, attackDelayMult: 0.92, projectileSpeedMult: 1.04, damageMult: 1.0, vulnerabilityWindowMult: 1.15, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Small glitch boss. Player bullets route through portals; Gray attacks stay simple.' },
+    'GRAY VISITOR': { rMult: 0.58, hpMult: 0.68, attackDelayMult: 0.92, projectileSpeedMult: 1.04, damageMult: 1.0, vulnerabilityWindowMult: 1.15, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Small glitch boss. Break the tether source to drop the forcefield.' },
     'SPACE SHARK':  { rMult: 0.95, hpMult: 0.92, attackDelayMult: 0.55, projectileSpeedMult: 1.08, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Aggressive pattern boss.' },
     'MEAN TACO':    { rMult: 1.12, hpMult: 1.08, attackDelayMult: 1.0, projectileSpeedMult: 1.0, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Large target, but defense windows justify some extra HP.' },
     'COSMIC OCTO':  { rMult: 1.10, hpMult: 0.98, attackDelayMult: 1.0, projectileSpeedMult: 1.0, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Large target, but ink can steal player attack time.' },
@@ -885,13 +885,14 @@
     });
   }
 
-  function grayPortalTemplate(index) {
+  function grayTetherTemplate(index) {
     const safeTop = Math.max(96, Math.min(150, H * 0.16));
     const templates = [
-      { gray: { x: W * 0.24, y: safeTop }, entry: { x: W * 0.78, y: H * 0.74 }, exit: { x: W * 0.42, y: H * 0.42 }, decoyEntry: { x: W * 0.18, y: H * 0.68 }, decoyExit: { x: W * 0.86, y: H * 0.46 }, label: 'CROSS LEFT' },
-      { gray: { x: W * 0.76, y: safeTop + 8 }, entry: { x: W * 0.22, y: H * 0.74 }, exit: { x: W * 0.58, y: H * 0.42 }, decoyEntry: { x: W * 0.82, y: H * 0.68 }, decoyExit: { x: W * 0.14, y: H * 0.46 }, label: 'CROSS RIGHT' },
-      { gray: { x: W * 0.50, y: safeTop - 2 }, entry: { x: W * 0.20, y: H * 0.72 }, exit: { x: W * 0.74, y: H * 0.46 }, decoyEntry: { x: W * 0.82, y: H * 0.76 }, decoyExit: { x: W * 0.28, y: H * 0.36 }, label: 'BANK CENTER' },
-      { gray: { x: W * 0.34, y: safeTop + 12 }, entry: { x: W * 0.84, y: H * 0.72 }, exit: { x: W * 0.62, y: H * 0.39 }, decoyEntry: { x: W * 0.18, y: H * 0.76 }, decoyExit: { x: W * 0.78, y: H * 0.36 }, label: 'BACK SHOT' }
+      { gray: { x: W * 0.24, y: safeTop }, node: { x: W * 0.74, y: H * 0.54 }, label: 'BREAK TETHER' },
+      { gray: { x: W * 0.76, y: safeTop + 8 }, node: { x: W * 0.26, y: H * 0.54 }, label: 'SHIELD NODE' },
+      { gray: { x: W * 0.50, y: safeTop - 2 }, node: { x: W * 0.50, y: H * 0.62 }, label: 'TETHER CORE' },
+      { gray: { x: W * 0.34, y: safeTop + 12 }, node: { x: W * 0.78, y: H * 0.48 }, label: 'ALIEN SOURCE' },
+      { gray: { x: W * 0.66, y: safeTop + 12 }, node: { x: W * 0.22, y: H * 0.48 }, label: 'ALIEN SOURCE' }
     ];
     const t = templates[index % templates.length];
     const bossR = boss ? boss.r : BOSS_R;
@@ -899,7 +900,7 @@
       x: clamp(p.x, bossR + 30, W - bossR - 30),
       y: clamp(p.y, 82, Math.min(H - 92, H * 0.80))
     });
-    return { gray: clampPoint(t.gray), entry: clampPoint(t.entry), exit: clampPoint(t.exit), decoyEntry: clampPoint(t.decoyEntry), decoyExit: clampPoint(t.decoyExit), label: t.label };
+    return { gray: clampPoint(t.gray), node: clampPoint(t.node), label: t.label };
   }
 
   function graySetPhase(b, phase, duration, now) {
@@ -909,8 +910,8 @@
   }
 
   function initGrayVisitorState(b, now) {
-    if (!b || b.attackType !== 'portal') return;
-    const firstTemplate = grayPortalTemplate(0);
+    if (!b || b.attackType !== 'tether') return;
+    const firstTemplate = grayTetherTemplate(0);
     b.x = firstTemplate.gray.x;
     b.y = firstTemplate.gray.y;
     b.vx = 0;
@@ -922,12 +923,14 @@
       templateIndex: 0,
       cycle: 0,
       shotDone: false,
-      portalsSpawned: false
+      tetherSpawned: false
     };
     b.ghostUntil = now + 620;
     b.phaseAlphaUntil = now + 720;
     b.invisibleUntil = 0;
-    b.portalShieldUntil = now + 999999;
+    b.tetherShieldActive = false;
+    b.tetherSource = null;
+    b.tetherVulnerableUntil = 0;
     b.grayTeleport = null;
   }
 
@@ -941,7 +944,7 @@
       enemyBullets.push({
         x: b.x, y: b.y + b.r * 0.56,
         vx: Math.cos(aim) * speed, vy: Math.sin(aim) * speed,
-        r: 5.8, theme: 'portalOrb', damage: bossDamage(b, 12), born: now,
+        r: 5.8, theme: 'greenOrb', damage: bossDamage(b, 12), born: now,
         homing: 0.018,
         maxSpeed: speed + 0.28,
         visualScale: 0.92
@@ -950,139 +953,37 @@
     addFloatText('ORB SHOTS', b.x, b.y + b.r + 18, '#65f0ff', 14);
   }
 
-  function graySpawnPortalPuzzle(b, now) {
+  function graySpawnTetherSource(b, now) {
     const st = b.grayState;
-    const t = grayPortalTemplate(st.templateIndex);
-    enemyBullets.forEach(e => { if (e.bulletPortal) e._gone = true; });
-    b.portalShieldUntil = now + 999999;
-    const minPortalSpacing = clamp(Math.min(W, H) * 0.2, 64, 88);
-    const placed = [];
-    const clampPortalPoint = p => ({
-      x: clamp(p.x, b.r + 30, W - b.r - 30),
-      y: clamp(p.y, 92, Math.min(H - 82, H * 0.80))
-    });
-    const canPlacePortal = p => Math.hypot(p.x - t.gray.x, p.y - t.gray.y) > b.r + 66
-      && placed.every(other => Math.hypot(p.x - other.x, p.y - other.y) > minPortalSpacing);
-    const reservePortal = p => {
-      const pt = clampPortalPoint(p);
-      placed.push(pt);
-      return pt;
+    const t = grayTetherTemplate(st.templateIndex);
+    b.tetherShieldActive = true;
+    b.tetherVulnerableUntil = 0;
+    b.tetherSource = {
+      x: t.node.x,
+      y: t.node.y,
+      r: clamp(Math.min(W, H) * 0.033, 17, 24),
+      hp: 3 + Math.min(2, Math.floor(campaignTier(wave) / 2)),
+      maxHp: 3 + Math.min(2, Math.floor(campaignTier(wave) / 2)),
+      born: now,
+      hitUntil: 0
     };
-    const choosePortalPoint = (preferred, fallbackIndex) => {
-      const baseCandidates = [
-        preferred,
-        { x: W * 0.16, y: H * 0.38 },
-        { x: W * 0.84, y: H * 0.38 },
-        { x: W * 0.18, y: H * 0.74 },
-        { x: W * 0.82, y: H * 0.74 },
-        { x: W * 0.50, y: H * 0.54 },
-        { x: W * 0.32, y: H * 0.70 },
-        { x: W * 0.68, y: H * 0.70 },
-      ];
-      const gridCandidates = [];
-      [0.14, 0.26, 0.38, 0.50, 0.62, 0.74, 0.86].forEach(xp => {
-        [0.38, 0.50, 0.64, 0.78].forEach(yp => gridCandidates.push({ x: W * xp, y: H * yp }));
-      });
-      const candidates = baseCandidates.concat(gridCandidates).map(clampPortalPoint);
-      const start = fallbackIndex % candidates.length;
-      for (let i = 0; i < candidates.length; i++) {
-        const p = candidates[(start + i) % candidates.length];
-        if (canPlacePortal(p)) return reservePortal(p);
-      }
-      const farthest = candidates
-        .map(p => ({
-          p,
-          score: Math.min(
-            Math.hypot(p.x - t.gray.x, p.y - t.gray.y) - b.r - 66,
-            ...placed.map(other => Math.hypot(p.x - other.x, p.y - other.y) - minPortalSpacing)
-          )
-        }))
-        .sort((a, b) => b.score - a.score)[0].p;
-      return reservePortal(farthest);
-    };
-    const usable = Math.hypot(t.entry.x - t.gray.x, t.entry.y - t.gray.y) > b.r + 64
-      && Math.hypot(t.exit.x - t.gray.x, t.exit.y - t.gray.y) > b.r + 64
-      && Math.hypot(t.entry.x - t.exit.x, t.entry.y - t.exit.y) > 90;
-    const entry = reservePortal(usable ? t.entry : { x: t.gray.x < W * 0.5 ? W * 0.80 : W * 0.20, y: H * 0.62 });
-    const exit = choosePortalPoint(usable ? t.exit : { x: t.gray.x < W * 0.5 ? W * 0.54 : W * 0.46, y: H * 0.42 }, 0);
-    const decoyEntry = choosePortalPoint(t.decoyEntry, 2);
-    const decoyExit = choosePortalPoint(t.decoyExit, 4);
-    const aimFromEntry = Math.atan2(t.gray.y - entry.y, t.gray.x - entry.x);
-    const aimFromExit = Math.atan2(t.gray.y - exit.y, t.gray.x - exit.x);
-    const lifeMs = 4600;
-    const addPortal = (p, index, linkedIndex, aimAngle, pairId, colors) => {
-      enemyBullets.push({
-        x: p.x, y: p.y, vx: 0, vy: 0, r: 17,
-        theme: 'bulletPortal',
-        bulletPortal: true,
-        portalPairId: pairId,
-        portalIndex: index,
-        linkedIndex,
-        portalAngle: clamp(aimAngle + Math.PI / 2, -0.95, 0.95),
-        portalAimAngle: aimAngle,
-        portalActive: true,
-        portalColorA: colors.a,
-        portalColorB: colors.b,
-        telegraph: true,
-        born: now,
-        expiresAt: now + lifeMs
-      });
-    };
-    const addSinglePortal = (p, aimAngle) => {
-      enemyBullets.push({
-        x: p.x, y: p.y, vx: 0, vy: 0, r: 18,
-        theme: 'bulletPortal', bulletPortal: true, portalSingle: true,
-        portalAngle: aimAngle + Math.PI / 2,
-        portalAimAngle: aimAngle,
-        portalActive: true,
-        portalColorA: '#33ff66', portalColorB: '#f6e9ff',
-        born: now, expiresAt: now + Math.max(3600, lifeMs - 1200), spinPortal: true,
-      });
-    };
-    const solveId = `gray-${now}-${st.cycle}-solve`;
-    addPortal(entry, 0, 1, aimFromEntry, solveId, { a: '#b36bff', b: '#65f0ff' });
-    addPortal(exit, 1, 0, aimFromExit, solveId, { a: '#b36bff', b: '#65f0ff' });
-    const singlePortal = choosePortalPoint({ x: W * 0.50, y: H * 0.77 }, 6);
-    addSinglePortal(singlePortal, Math.atan2(t.gray.y - singlePortal.y, t.gray.x - singlePortal.x));
-
-    const decoyTarget = {
-      x: t.gray.x < W * 0.5 ? W - 24 : 24,
-      y: Math.min(H - 38, H * 0.78)
-    };
-    const decoyAimFromEntry = Math.atan2(decoyTarget.y - decoyEntry.y, decoyTarget.x - decoyEntry.x);
-    const decoyAimFromExit = Math.atan2(decoyTarget.y - decoyExit.y, decoyTarget.x - decoyExit.x);
-    const decoyId = `gray-${now}-${st.cycle}-decoy`;
-    addPortal(decoyEntry, 0, 1, decoyAimFromEntry, decoyId, { a: '#ff5bd6', b: '#ffe66d' });
-    addPortal(decoyExit, 1, 0, decoyAimFromExit, decoyId, { a: '#ff5bd6', b: '#ffe66d' });
-
-    addFloatText(t.label, (entry.x + exit.x) / 2, Math.min(entry.y, exit.y) - 24, '#b36bff', 14);
-    addFloatText('SHOOT GRAY THROUGH PORTALS!', b.x, b.y + b.r + 18, '#b36bff', 16);
+    // Gray's shield is a tether puzzle now, not a portal/trick-shot puzzle.
+    addFloatText(t.label, b.tetherSource.x, b.tetherSource.y - b.tetherSource.r - 16, '#65f0ff', 14);
+    addFloatText('SHOOT THE TETHER!', b.x, b.y + b.r + 18, '#b36bff', 16);
     spaceSfx('boss.gray.projectile');
   }
 
   function updateGrayVisitorBoss(b, now) {
-    if (!b || b.attackType !== 'portal') return;
+    if (!b || b.attackType !== 'tether') return;
     if (!b.grayState) initGrayVisitorState(b, now);
     const st = b.grayState;
     b.vx = 0;
     if (st.phase === 'appear' && now >= st.phaseUntil) {
       st.shotDone = false;
-      graySetPhase(b, 'holdShoot', 1450, now);
-    } else if (st.phase === 'holdShoot') {
-      if (!st.shotDone && now - st.phaseStarted > 360) {
-        grayFireAlienOrbs(b, now);
-        st.shotDone = true;
-      }
-      if (now >= st.phaseUntil) {
-        graySetPhase(b, 'dissolve', 620, now);
-        b.ghostUntil = now + 2100;
-        b.invisibleUntil = now + 720;
-        b.phaseAlphaUntil = now + 2100;
-        b._glitchAt = now;
-        addFloatText('DISSOLVE...', b.x, b.y + b.r + 18, '#b36bff', 14);
-      }
+      st.tetherSpawned = false;
+      graySetPhase(b, 'tetherShield', 6200, now);
     } else if (st.phase === 'dissolve' && now >= st.phaseUntil) {
-      const nextTemplate = grayPortalTemplate(st.templateIndex + 1);
+      const nextTemplate = grayTetherTemplate(st.templateIndex + 1);
       b.grayTeleport = {
         fromX: b.x, fromY: b.y,
         toX: nextTemplate.gray.x, toY: nextTemplate.gray.y,
@@ -1095,7 +996,7 @@
       st.templateIndex++;
       graySetPhase(b, 'ghostMove', 980, now);
     } else if (st.phase === 'ghostMove' && now >= st.phaseUntil) {
-      const current = grayPortalTemplate(st.templateIndex);
+      const current = grayTetherTemplate(st.templateIndex);
       b.x = current.gray.x;
       b.y = current.gray.y;
       b.grayTeleport = null;
@@ -1104,36 +1005,150 @@
       b.phaseAlphaUntil = now + 620;
       miniExplosion(b.x, b.y, '#65f0ff');
       addFloatText('REAPPEAR!', b.x, b.y + b.r + 18, '#65f0ff', 14);
-      grayFireAlienOrbs(b, now);
       graySetPhase(b, 'reappear', 680, now);
     } else if (st.phase === 'reappear' && now >= st.phaseUntil) {
-      st.portalsSpawned = false;
-      graySetPhase(b, 'portalPuzzle', 6400, now);
-    } else if (st.phase === 'portalPuzzle') {
-      if (!st.portalsSpawned) {
-        graySpawnPortalPuzzle(b, now);
-        st.portalsSpawned = true;
+      st.shotDone = false;
+      st.tetherSpawned = false;
+      graySetPhase(b, 'tetherShield', 6200, now);
+    } else if (st.phase === 'tetherShield') {
+      if (!st.tetherSpawned) {
+        graySpawnTetherSource(b, now);
+        st.tetherSpawned = true;
+      }
+      if (!st.shotDone && now - st.phaseStarted > 520) {
+        grayFireAlienOrbs(b, now);
+        st.shotDone = true;
       }
       if (now >= st.phaseUntil) {
         st.cycle++;
-        graySetPhase(b, 'holdShoot', 1300, now);
         st.shotDone = false;
-        st.portalsSpawned = false;
+        st.tetherSpawned = false;
+        b.tetherSource = null;
+        b.tetherShieldActive = true;
+        graySetPhase(b, 'dissolve', 620, now);
+        b.ghostUntil = now + 2100;
+        b.invisibleUntil = now + 720;
+        b.phaseAlphaUntil = now + 2100;
+        b._glitchAt = now;
+        addFloatText('GLITCH SHIFT', b.x, b.y + b.r + 18, '#b36bff', 14);
       }
+    } else if (st.phase === 'vulnerable' && now >= st.phaseUntil) {
+      graySetPhase(b, 'dissolve', 620, now);
+      b.tetherVulnerableUntil = 0;
+      b.tetherShieldActive = true;
+      b.ghostUntil = now + 2100;
+      b.invisibleUntil = now + 720;
+      b.phaseAlphaUntil = now + 2100;
+      b._glitchAt = now;
+      addFloatText('SHIELD REFORMING', b.x, b.y + b.r + 18, '#b36bff', 14);
     }
   }
 
-  function grayVisitorTookPortalHit(b, now) {
-    if (!b || b.attackType !== 'portal' || !b.grayState) return;
-    enemyBullets.forEach(e => { if (e.bulletPortal) e._gone = true; });
+  function grayBreakTether(b, now) {
+    if (!b || b.attackType !== 'tether' || !b.grayState) return;
+    b.tetherSource = null;
+    b.tetherShieldActive = false;
+    b.tetherVulnerableUntil = now + bossWindowMs(b, 3400);
+    b.forcefieldFlashUntil = now + 520;
+    b.forcefieldShakeUntil = now + 320;
+    b.forcefieldShakeSeed = Math.random() * Math.PI * 2;
     b.grayState.shotDone = true;
-    b.grayState.portalsSpawned = false;
-    graySetPhase(b, 'dissolve', 560, now);
-    b.ghostUntil = now + 2050;
-    b.invisibleUntil = now + 680;
-    b.phaseAlphaUntil = now + 2050;
-    b._glitchAt = now;
-    addFloatText('SHIFTING!', b.x, b.y + b.r + 18, '#ff5bd6', 14);
+    b.grayState.tetherSpawned = false;
+    graySetPhase(b, 'vulnerable', b.tetherVulnerableUntil - now, now);
+    miniExplosion(b.x, b.y, '#65f0ff');
+    addFloatText('SHIELD DOWN!', b.x, b.y - b.r - 20, '#33ff66', 18);
+    spaceSfx('boss.gray.projectile');
+  }
+
+  function grayHandleTetherSourceHit(shot, b, now) {
+    const src = b && b.tetherSource;
+    if (!src || !b.tetherShieldActive || shot.vy === 999) return false;
+    if (Math.hypot(shot.x - src.x, shot.y - src.y) >= src.r + 6) return false;
+    shot.vy = 999;
+    src.hp--;
+    src.hitUntil = now + 220;
+    miniExplosion(shot.x, shot.y, '#65f0ff');
+    if (src.hp <= 0) {
+      grayBreakTether(b, now);
+    } else {
+      addFloatText('TETHER HIT', src.x, src.y - src.r - 12, '#65f0ff', 13);
+      if (SFX.hit) SFX.hit();
+    }
+    return true;
+  }
+
+  function grayShieldBlocksBossHit(b, now) {
+    if (!b || b.attackType !== 'tether') return false;
+    if (now < (b.invisibleUntil || 0)) return true;
+    if (b.grayState && (b.grayState.phase === 'dissolve' || b.grayState.phase === 'ghostMove' || b.grayState.phase === 'appear')) return true;
+    if (b.tetherShieldActive) return true;
+    return now > (b.tetherVulnerableUntil || 0);
+  }
+
+  function grayBounceShieldShot(shot, b, now) {
+    shot.vy = 999;
+    b.forcefieldFlashUntil = now + 320;
+    b.forcefieldShakeUntil = now + 260;
+    b.forcefieldShakeSeed = Math.random() * Math.PI * 2;
+    addFloatText(b.tetherSource ? 'BREAK TETHER!' : 'PHASING!', b.x, b.y - b.r - 20, '#b36bff', 14);
+    miniExplosion(shot.x, shot.y, '#b36bff');
+    SFX.emp && SFX.emp();
+  }
+
+  function drawGrayTetherField(b, now) {
+    const src = b.tetherSource;
+    const shieldOn = b.tetherShieldActive || now < (b.forcefieldFlashUntil || 0);
+    if (src) {
+      const sx = src.x - b.x, sy = src.y - b.y;
+      const hot = now < (src.hitUntil || 0);
+      ctx.save();
+      ctx.globalAlpha = 0.56 + (hot ? 0.26 : 0);
+      ctx.strokeStyle = hot ? 'rgba(234,255,255,0.94)' : 'rgba(101,240,255,0.78)';
+      ctx.lineWidth = hot ? 4.2 : 3;
+      ctx.setLineDash([10, 7]);
+      ctx.lineDashOffset = -((now / 58) % 17);
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(sx, sy); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.shadowColor = '#65f0ff';
+      ctx.shadowBlur = hot ? 18 : 10;
+      const pulse = 1 + Math.sin(now * 0.014) * 0.08;
+      ctx.fillStyle = 'rgba(101,240,255,0.18)';
+      ctx.beginPath(); ctx.arc(sx, sy, src.r * 1.55 * pulse, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#65f0ff';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(sx, sy, src.r * pulse, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = '#dffcff';
+      ctx.beginPath(); ctx.arc(sx, sy, src.r * 0.45, 0, Math.PI * 2); ctx.fill();
+      const pct = Math.max(0, src.hp / src.maxHp);
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(8,16,42,0.82)';
+      ctx.fillRect(sx - src.r, sy + src.r + 8, src.r * 2, 4);
+      ctx.fillStyle = '#33ff66';
+      ctx.fillRect(sx - src.r, sy + src.r + 8, src.r * 2 * pct, 4);
+      ctx.restore();
+    }
+    if (shieldOn) {
+      const flash = now < (b.forcefieldFlashUntil || 0) ? 1 : 0;
+      const shaking = now < (b.forcefieldShakeUntil || 0);
+      const shakeT = shaking ? (b.forcefieldShakeUntil - now) / 260 : 0;
+      const shakeSeed = b.forcefieldShakeSeed || 0;
+      const pulse = 1 + Math.sin(now * 0.012) * 0.035;
+      ctx.save();
+      if (shaking) {
+        ctx.translate(Math.sin(now * 0.13 + shakeSeed) * 6 * shakeT, Math.cos(now * 0.17 + shakeSeed) * 4 * shakeT);
+      }
+      ctx.globalAlpha = b.tetherShieldActive ? (0.44 + flash * 0.34 + shakeT * 0.12) : (0.20 + flash * 0.18);
+      ctx.strokeStyle = flash ? 'rgba(234,255,255,0.92)' : 'rgba(179,107,255,0.78)';
+      ctx.lineWidth = flash || shaking ? 4.2 : 2.6;
+      ctx.setLineDash([8, 7]);
+      ctx.lineDashOffset = -((now / 65) % 15);
+      ctx.beginPath(); ctx.arc(0, 0, b.r * 1.24 * pulse, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = b.tetherShieldActive ? (0.16 + flash * 0.14 + shakeT * 0.08) : 0.08;
+      ctx.fillStyle = 'rgba(101,240,255,0.28)';
+      ctx.beginPath(); ctx.arc(0, 0, b.r * 1.18 * pulse, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
   }
 
   // captive=true reskins this exact fight as "free the hero from the jail cell" —
@@ -1201,7 +1216,7 @@
       // Phase 3C.5: Dragon breath reads well now; make the boss sweep
       // side-to-side faster so the breath chain snakes across the arena.
       boss.vx *= 2.15;
-    } else if (attackType === 'portal') {
+    } else if (attackType === 'tether') {
       initGrayVisitorState(boss, Date.now());
     }
     bossDeployTimer = Date.now() + 3500; // first reinforcement a little after the fight starts
@@ -3777,7 +3792,7 @@ function nextWave() {
     // during the fight, since the regular wave queue is paused for its duration.
     if (boss) {
       boss.x += boss.vx;
-      if (boss.attackType === 'portal' && boss.grayTeleport && !boss.grayTeleport.arrived) {
+      if (boss.attackType === 'tether' && boss.grayTeleport && !boss.grayTeleport.arrived) {
         const gtNow = Date.now();
         const g = boss.grayTeleport;
         boss.vx = 0;
@@ -3846,9 +3861,9 @@ function nextWave() {
 
       updateOgreDonkeyLine();
       updateBossSupportDrops();
-      if (boss.attackType === 'portal') updateGrayVisitorBoss(boss, Date.now());
+      if (boss.attackType === 'tether') updateGrayVisitorBoss(boss, Date.now());
 
-      if (Date.now() > boss.nextAttack && boss.attackType !== 'portal' && !boss.laserPhase && !(boss.attackType === 'donkey' && boss.ogreLine)) {
+      if (Date.now() > boss.nextAttack && boss.attackType !== 'tether' && !boss.laserPhase && !(boss.attackType === 'donkey' && boss.ogreLine)) {
         const bt = campaignTier(wave);
         if (boss.isCaptive) {
           const count = Math.min(7, 4 + Math.floor(bt / 2));
@@ -4138,58 +4153,6 @@ function nextWave() {
       }
     });
 
-
-    // Phase 3C.7 Gray Visitor: bullet-routing portals. These only affect the
-    // hero's bullets, never the player ship. Matching-color portals are linked;
-    // dim/inactive portals let shots go straight through.
-    const activeBulletPortals = enemyBullets.filter(e => e.bulletPortal && !e._gone);
-    if (activeBulletPortals.length) {
-      for (const hb of bullets) {
-        if (hb.vy === 999 || Date.now() < (hb.portalCooldownUntil || 0)) continue;
-        for (const gate of activeBulletPortals) {
-          if (Math.hypot(hb.x - gate.x, hb.y - gate.y) < (gate.r || 14) * 1.25) {
-            if (!gate.portalActive) {
-              hb.portalCooldownUntil = Date.now() + 180;
-              gate.litUntil = Date.now() + 220;
-              break;
-            }
-            const speed = Math.max(7.4, Math.hypot(hb.vx || 0, hb.vy || -8));
-            if (gate.portalSingle) {
-              // Single green portal: a simpler readable route. A shot through it is
-              // immediately re-aimed at Gray and counts as a portal-routed hit.
-              const targetX = boss ? boss.x : gate.x;
-              const targetY = boss ? boss.y : Math.max(90, gate.y - 180);
-              const ang = Math.atan2(targetY - gate.y, targetX - gate.x);
-              hb.x = gate.x + Math.cos(ang) * (gate.r + 6);
-              hb.y = gate.y + Math.sin(ang) * (gate.r + 6);
-              hb.vx = Math.cos(ang) * speed;
-              hb.vy = Math.sin(ang) * speed;
-              hb.portalCooldownUntil = Date.now() + 260;
-              hb.portalRoutedUntil = Date.now() + 1850;
-              gate.litUntil = Date.now() + 420;
-              gate._gone = true;
-              miniExplosion(gate.x, gate.y, gate.portalColorA || '#33ff66');
-              break;
-            }
-            const exit = activeBulletPortals.find(e => e.portalPairId === gate.portalPairId && e.portalIndex === gate.linkedIndex && !e._gone);
-            if (!exit) break;
-            // Exit shots are aimed at Gray's current/reappear coordinate. The portal
-            // art still tilts, but the actual route is guaranteed solvable.
-            const ang = exit.portalAimAngle != null ? exit.portalAimAngle : (-Math.PI / 2 + (exit.portalAngle || 0));
-            hb.x = exit.x + Math.cos(ang) * (exit.r + 5);
-            hb.y = exit.y + Math.sin(ang) * (exit.r + 5);
-            hb.vx = Math.cos(ang) * speed;
-            hb.vy = Math.sin(ang) * speed;
-            hb.portalCooldownUntil = Date.now() + 260;
-            hb.portalRoutedUntil = Date.now() + 1850;
-            gate.litUntil = exit.litUntil = Date.now() + 360;
-            miniExplosion(exit.x, exit.y, exit.portalColorA || '#b36bff');
-            break;
-          }
-        }
-      }
-    }
-
     // Power-ups: drift down, draw, collect by touch only — bullets pass straight
     // through them. SHOOT is for hostiles, CATCH is for pickups; letting bullets
     // also collect them blurred that distinction. Mystery is the one deliberate
@@ -4434,15 +4397,11 @@ function nextWave() {
     if (boss && !_zapped) {
       for (const b of bullets) {
         if (b.vy === 999 || b.tacoDeflected || b.octoDeflected) continue;
+        const hitGrayTetherSource = boss.attackType === 'tether' && grayHandleTetherSourceHit(b, boss, Date.now());
+        if (hitGrayTetherSource) continue;
         if (Math.hypot(b.x - boss.x, b.y - boss.y) < boss.r + 3) {
-          if (boss.attackType === 'portal' && Date.now() > (b.portalRoutedUntil || 0)) {
-            b.vy = 999;
-            boss.forcefieldFlashUntil = Date.now() + 320;
-            boss.forcefieldShakeUntil = Date.now() + 260;
-            boss.forcefieldShakeSeed = Math.random() * Math.PI * 2;
-            addFloatText('ROUTE IT!', boss.x, boss.y - boss.r - 20, '#b36bff', 14);
-            miniExplosion(b.x, b.y, '#b36bff');
-            SFX.emp && SFX.emp();
+          if (boss.attackType === 'tether' && grayShieldBlocksBossHit(boss, Date.now())) {
+            grayBounceShieldShot(b, boss, Date.now());
             continue;
           }
           if (boss.attackType === 'shield' && Date.now() < (boss.shieldUntil || 0)) {
@@ -4480,7 +4439,6 @@ function nextWave() {
           b.vy = 999;
           boss.hp--; boss.hitFlash = 1;
           miniExplosion(b.x, b.y, boss.isCaptive ? '#00e5ff' : '#ff8888');
-          const wasGrayPortalHit = boss.attackType === 'portal' && Date.now() <= (b.portalRoutedUntil || 0);
           if (boss.isCaptive && boss.hp > 0 && boss.hp % 10 === 0) addFloatText('LOCK CRACKING!', boss.x, boss.y - boss.r - 24, '#00e5ff', 16);
           if (boss.hp <= 0) {
             const defeatedBoss = boss;
@@ -4531,7 +4489,6 @@ function nextWave() {
             };
             break;
           } else {
-            if (wasGrayPortalHit) grayVisitorTookPortalHit(boss, Date.now());
             SFX.hit();
           }
         }
@@ -6239,18 +6196,18 @@ function nextWave() {
     } else {
       // No red ring here — unlike a small enemy face, the boss is already unmistakably
       // a threat (its size, name label, and health bar), so the ring was redundant.
-      let skipPortalMainDraw = false;
-      if (boss.attackType === 'portal') {
+      let skipGrayMainDraw = false;
+      if (boss.attackType === 'tether') {
         const now = Date.now();
-        const portalBaseAlpha = ctx.globalAlpha;
+        const grayBaseAlpha = ctx.globalAlpha;
         const ghosting = now < (boss.ghostUntil || 0);
-        skipPortalMainDraw = now < (boss.invisibleUntil || 0);
+        skipGrayMainDraw = now < (boss.invisibleUntil || 0);
         if (ghosting) {
           const vanishPhase = boss.grayTeleport && !boss.grayTeleport.arrived;
           const g = boss.grayTeleport;
           const travelT = (vanishPhase && g) ? Math.max(0, Math.min(1, (now - g.start) / Math.max(1, g.reappearAt - g.start))) : 1;
           const flick = vanishPhase ? (0.18 + Math.abs(Math.sin(now * 0.075)) * 0.32) : (0.52 + Math.abs(Math.sin(now * 0.045)) * 0.34);
-          ctx.globalAlpha *= skipPortalMainDraw ? 0.06 : flick;
+          ctx.globalAlpha *= skipGrayMainDraw ? 0.06 : flick;
           if (vanishPhase && g) {
             // Cyan/purple afterimages along the real travel path, so the movement
             // reads as a ghost crossing the arena rather than a local jitter.
@@ -6280,38 +6237,16 @@ function nextWave() {
           ctx.stroke();
           ctx.restore();
         }
-        ctx.globalAlpha = portalBaseAlpha;
+        ctx.globalAlpha = grayBaseAlpha;
       }
-      if (!skipPortalMainDraw) {
+      if (!skipGrayMainDraw) {
         if (boss.isGizmo) {
           drawGizmoOrb(boss.r * 2.1);
         } else {
           drawThemedBoss(boss.creature, boss.r * 2.05);
         }
       }
-      if (boss.attackType === 'portal') {
-        const now = Date.now();
-        const flash = now < (boss.forcefieldFlashUntil || 0) ? 1 : 0;
-        const shaking = now < (boss.forcefieldShakeUntil || 0);
-        const shakeT = shaking ? (boss.forcefieldShakeUntil - now) / 260 : 0;
-        const shakeSeed = boss.forcefieldShakeSeed || 0;
-        const pulse = 1 + Math.sin(now * 0.012) * 0.035;
-        ctx.save();
-        if (shaking) {
-          ctx.translate(Math.sin(now * 0.13 + shakeSeed) * 6 * shakeT, Math.cos(now * 0.17 + shakeSeed) * 4 * shakeT);
-        }
-        ctx.globalAlpha = 0.44 + flash * 0.34 + shakeT * 0.12;
-        ctx.strokeStyle = flash ? 'rgba(234,255,255,0.92)' : 'rgba(179,107,255,0.78)';
-        ctx.lineWidth = flash || shaking ? 4.2 : 2.6;
-        ctx.setLineDash([8, 7]);
-        ctx.lineDashOffset = -((now / 65) % 15);
-        ctx.beginPath(); ctx.arc(0, 0, boss.r * 1.24 * pulse, 0, Math.PI * 2); ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.globalAlpha = 0.16 + flash * 0.14 + shakeT * 0.08;
-        ctx.fillStyle = 'rgba(101,240,255,0.28)';
-        ctx.beginPath(); ctx.arc(0, 0, boss.r * 1.18 * pulse, 0, Math.PI * 2); ctx.fill();
-        ctx.restore();
-      }
+      if (boss.attackType === 'tether') drawGrayTetherField(boss, Date.now());
       if (boss.guardedRescue && boss.captiveCi >= 0) {
         const gc = GAME_CHARS[boss.captiveCi];
         const t = Date.now() * 0.003;
