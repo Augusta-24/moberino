@@ -29,9 +29,13 @@
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
 }
 #space-overlay.space-over {
+  /* Game-over is a terminal state — the in-game HUD behind it is stale, so this
+     screen alone reclaims the header's reserved 56px to fit on short mobile
+     viewports (browser chrome eats a lot of vertical space) without scrolling. */
+  top: 10px;
   align-items: center;
   justify-content: flex-start;
-  padding: 18px 0 24px;
+  padding: 6px 0 10px;
   box-sizing: border-box;
   overflow-y: auto;
 }

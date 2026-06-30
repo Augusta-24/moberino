@@ -728,7 +728,13 @@
     const tuning = {
       1: { spawnsRemaining: 40, speedOverride: 2.86, spawnMsOverride: 780, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [2600, 5200], spawnCadenceMult: 0.9, activeObstacleCap: 6, notes: 'Intro is dangerous: small rocks cost 5 HP and big rocks cost 10 HP, with early HP drops teaching recovery.' },
       2: { spawnsRemaining: 32, speedOverride: 2.62, spawnMsOverride: 790, asteroidRatioOverride: 0, enemyHpOverride: 2, enemyFireMult: 1.20, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [1200, 1900], hpDelayRange: [2600, 5200], spawnCadenceMult: 0.94, activeObstacleCap: 5, notes: 'Teach enemies while stocking a bomb before Wave 3 swarm.' },
-      3: { spawnsRemaining: 26, speedOverride: 2.72, spawnMsOverride: 710, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.34, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 1, powerupDelayRange: [900, 1300], hpDelayRange: [2200, 4400], swarmCap: 5, activeObstacleCap: 5, spawnCadenceMult: 1.02, notes: 'Swarm stays chaotic, but health drops earlier so it feels survivable/fun.' },
+      // spawnMsOverride raised 710->1087: same 26-enemy pool, just stretched out.
+      // Actual per-spawn gap is spawnMs * 0.8 * 0.65 (swarm themeSpeedup) * 1.02
+      // (spawnCadenceMult) * a 0.7-1.3 random factor (see startWaveSpawn) — at
+      // 710 that averaged ~377ms/gap across the 25 gaps between 26 spawns
+      // (~9.4s); at 1087 it averages ~577ms/gap (~14.4s), adding ~5s overall
+      // without changing the enemy count or any other wave-3 tuning.
+      3: { spawnsRemaining: 26, speedOverride: 2.72, spawnMsOverride: 1087, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.34, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 1, powerupDelayRange: [900, 1300], hpDelayRange: [2200, 4400], swarmCap: 5, activeObstacleCap: 5, spawnCadenceMult: 1.02, notes: 'Swarm stays chaotic, but health drops earlier so it feels survivable/fun.' },
       4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [7600, 11600], enemyFireMult: 0.75 },
       5: { spawnsRemaining: 30, speedOverride: 2.86, spawnMsOverride: 700, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: true, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [3600, 6200], hpDelayRange: [3600, 6800], spawnCadenceMult: 0.9, activeObstacleCap: 7 },
       6: { spawnsRemaining: 20, speedOverride: 2.72, spawnMsOverride: 700, asteroidRatioOverride: 0.28, enemyHpOverride: 2, enemyFireMult: 0.78, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, rescueRingHp: 30, powerupDelayRange: [3600, 6200], hpDelayRange: [4800, 7800], spawnCadenceMult: 0.86, activeObstacleCap: 6 },
@@ -5062,7 +5068,7 @@ function nextWave() {
             continue;
           }
           o.alive=false; SFX.miss();
-          takeDamage(o.type==='face' ? 30 : 15, o.type==='face' ? 'ENEMY COLLISION' : 'ASTEROID COLLISION');
+          takeDamage(o.type==='face' ? 30 : (o.r < 22 ? 5 : 10), o.type==='face' ? 'ENEMY COLLISION' : 'ASTEROID COLLISION');
           if(state==='over') return;
         }
       }
@@ -6964,8 +6970,15 @@ function nextWave() {
   }
 
   function spaceInfoRowHTML(glyph, title, detail, color) {
+    // glyph is either a literal character (legacy) or a path to one of the same
+    // PNG icons live gameplay actually uses (projectiles/...) — the latter
+    // renders as an <img> instead of text so HOW TO PLAY matches the real game.
+    const isImg = typeof glyph === 'string' && glyph.indexOf('/') !== -1;
+    const iconHTML = isImg
+      ? `<img src="${glyph}" alt="" style="width:22px;height:22px;object-fit:contain;filter:drop-shadow(0 0 4px ${color}aa)">`
+      : glyph;
     return `<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid rgba(242,239,232,0.07)">
-      <div style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid ${color}66;border-radius:8px;background:${color}18;color:${color};font-size:18px;flex-shrink:0">${glyph}</div>
+      <div style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid ${color}66;border-radius:8px;background:${color}18;color:${color};font-size:18px;flex-shrink:0">${iconHTML}</div>
       <div style="text-align:left"><div style="font-family:'Bebas Neue',cursive;font-size:19px;letter-spacing:2.4px;color:${color};line-height:1">${title}</div><div style="font-family:'VCR',monospace;font-size:10px;letter-spacing:1px;color:rgba(242,239,232,0.55);line-height:1.35;margin-top:3px">${detail}</div></div>
     </div>`;
   }
@@ -6974,11 +6987,11 @@ function nextWave() {
     return `<div class="whack-mode-shell" style="max-width:430px;margin-top:18px;text-align:center">
       <div class="whack-mode-title" style="color:#00e5ff;text-shadow:0 0 16px #00e5ff88">HOW TO PLAY</div>
       <div class="game-card whack-mode-card" style="border-color:#00e5ff77;cursor:default;min-height:0;padding:18px;background:rgba(5,2,18,0.94)">
-        ${spaceInfoRowHTML('⚡', 'LIGHTNING', 'Stores rapid fire in the left socket.', '#ffe61a')}
-        ${spaceInfoRowHTML('🛡', 'SHIELD', 'Blocks damage when deployed.', '#00e5ff')}
-        ${spaceInfoRowHTML('💣', 'BOMB', 'Clears danger around the ship.', '#ff8800')}
-        ${spaceInfoRowHTML('?', 'MYSTERY CRATE', 'Shoot it open. It can help or hurt.', '#cc66ff')}
-        ${spaceInfoRowHTML('🔒', 'CAPTIVE LOCK', 'Break the blue ring to rescue the Mobe.', '#5ab1ff')}
+        ${spaceInfoRowHTML('projectiles/lightning.png', 'LIGHTNING', 'Stores rapid fire in the left socket.', '#ffe61a')}
+        ${spaceInfoRowHTML('projectiles/shield.png', 'SHIELD', 'Blocks damage when deployed.', '#00e5ff')}
+        ${spaceInfoRowHTML('projectiles/bomb.png', 'BOMB', 'Clears danger around the ship.', '#ff8800')}
+        ${spaceInfoRowHTML('projectiles/mystery_crate.png', 'MYSTERY CRATE', 'Shoot it open. It can help or hurt.', '#cc66ff')}
+        ${spaceInfoRowHTML('projectiles/blue_bone.png', 'CAPTIVE LOCK', 'Break the blue ring to rescue the Mobe.', '#5ab1ff')}
         <button class="whack-btn" style="width:100%;border-color:#00e5ff;background:rgba(0,229,255,0.16);margin-top:14px" onclick="showSpaceOverlay('select')">BACK</button>
       </div>
     </div>`;
@@ -7094,7 +7107,7 @@ function nextWave() {
                 </div>
                 <div class="space-select-icon-col">
                   <button class="space-select-icon-btn" onclick="showSpaceOverlay('how-to-play')" aria-label="How to play" title="How to play" style="color:#00e5ff">ⓘ</button>
-                  <button class="space-select-icon-btn" onclick="showSpaceOverlay('boss-preview')" aria-label="Bosses" title="Bosses" style="color:#33ff66">☠</button>
+                  <button class="space-select-icon-btn" onclick="showSpaceOverlay('boss-preview')" aria-label="Bosses" title="Bosses" style="color:#33ff66"><img src="bosses/boss_gizmo.png" alt="" style="width:24px;height:24px;object-fit:contain;filter:drop-shadow(0 0 4px #33ff66aa)"></button>
                   <button class="space-select-icon-btn" onclick="showSpaceOverlay('debug')" aria-label="Debug" title="Debug" style="color:#ffe61a">⚙</button>
                 </div>
               </div>
@@ -7174,7 +7187,7 @@ function nextWave() {
           extra: `${getSpaceResultExtraLine()}${gameOverCauseHTML()}`,
           ascending: false,
           maxWidth: 430,
-          minHeight: 300,
+          minHeight: 220,
           saveMarginTop: 18,
           buttons: `
             ${spaceLeaderboardMode() === 'bossrun' ? `<button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#ffe61a;background:rgba(255,230,26,0.24)" onclick="spaceBossRunStart()">BOSS RUN AGAIN</button>` : spaceLeaderboardMode() === 'endless' ? `<button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#ff00cc;background:rgba(255,0,204,0.26)" onclick="spaceEndlessStart()">ENDLESS AGAIN</button>` : `<button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN AGAIN</button>`}

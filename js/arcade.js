@@ -386,6 +386,14 @@ const ArcadeMusic = (() => {
   const FULL_VOL = 0.04, DUCK_VOL = 0.01;
   let targetVol = FULL_VOL;
   let gainNode = null, sourceNode = null, audioBuffer = null, loadStarted = false;
+  // Set by stop(), cleared by start()/duck()/unduck(). Whack/Match/Space all call
+  // stop() the instant real gameplay begins (silence the lobby loop during play),
+  // but body keeps its .on-whack/.on-match/.on-space class for the whole game, and
+  // gameplay is inherently click/touch-driven — so the global auto-resume listeners
+  // below used to immediately undo that stop() on the player's very first tap. This
+  // flag lets them tell "deliberately silenced for gameplay" apart from "autoplay
+  // hasn't unlocked yet" (the actual case those listeners exist to handle).
+  let suppressAutoResume = false;
 
   // Web Audio API, not a plain <audio> element — a looping <audio>/<video> element can
   // get silently promoted by iOS to a real background media session (lock-screen "Now
@@ -436,32 +444,36 @@ const ArcadeMusic = (() => {
 
   return {
     start() {
+      suppressAutoResume = false;
       if (muted) return;
       startPlayback();
     },
-    stop() { started = false; stopSource(); },
-    duck()   { targetVol = DUCK_VOL; if (gainNode && !muted) gainNode.gain.value = DUCK_VOL; },
-    unduck() { targetVol = FULL_VOL; if (gainNode && !muted) gainNode.gain.value = FULL_VOL; },
+    stop() { started = false; suppressAutoResume = true; stopSource(); },
+    duck()   { suppressAutoResume = false; targetVol = DUCK_VOL; if (gainNode && !muted) gainNode.gain.value = DUCK_VOL; },
+    unduck() { suppressAutoResume = false; targetVol = FULL_VOL; if (gainNode && !muted) gainNode.gain.value = FULL_VOL; },
     toggleMute() {
       muted = !muted;
       if (gainNode) gainNode.gain.value = muted ? 0 : targetVol;
       if (muted) { stopSource(); started = false; }
-      else { startPlayback(); }
+      else { suppressAutoResume = false; startPlayback(); }
       return muted;
     },
     get muted()   { return muted; },
     get playing() { return !!sourceNode; },
+    get suppressAutoResume() { return suppressAutoResume; },
   };
 })();
 
-// Resume/start music on any user tap while on arcade pages
+// Resume/start music on any user tap while on arcade pages — but only to unlock
+// autoplay (cold load / browser blocked it), never to fight a deliberate
+// ArcadeMusic.stop() from a game that's actively silencing music for gameplay.
 document.addEventListener('click', function() {
   const onArcade = document.body.matches('.on-lobby,.on-whack,.on-match,.on-space,.on-char');
-  if (onArcade && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
+  if (onArcade && !ArcadeMusic.playing && !ArcadeMusic.muted && !ArcadeMusic.suppressAutoResume) ArcadeMusic.start();
 }, { passive: true });
 document.addEventListener('touchstart', function() {
   const onArcade = document.body.matches('.on-lobby,.on-whack,.on-match,.on-space,.on-char');
-  if (onArcade && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
+  if (onArcade && !ArcadeMusic.playing && !ArcadeMusic.muted && !ArcadeMusic.suppressAutoResume) ArcadeMusic.start();
 }, { passive: true });
 
 // ══════════════════════════════════════
