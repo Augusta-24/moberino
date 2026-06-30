@@ -44,7 +44,8 @@
 }
 #space-overlay.hidden { display: none; }
 .space-boss-trigger {
-  width: 38px; height: 38px; flex: 0 0 38px;
+  width: 50px; height: 50px; flex: 0 0 50px;
+  font-size: 21px;
   display: inline-flex; align-items: center; justify-content: center;
   border: 2px solid rgba(51,255,102,0.48); border-radius: 8px;
   background: rgba(51,255,102,0.12); color: #33ff66;
@@ -69,7 +70,8 @@
   gap: 10px;
 }
 .space-boss-card {
-  min-height: 162px; border: 2px solid rgba(51,255,102,0.22); border-radius: 8px;
+  position: relative;
+  min-height: 188px; border: 2px solid rgba(51,255,102,0.22); border-radius: 8px;
   background: linear-gradient(180deg, rgba(18,8,42,0.92), rgba(5,2,18,0.96));
   display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
   padding: 9px 8px 10px; box-sizing: border-box;
@@ -77,10 +79,38 @@
 .space-boss-card canvas {
   width: 112px; height: 112px; display: block;
 }
+.space-boss-art-btn {
+  width: 116px; height: 116px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 0; background: transparent; padding: 0; margin: 0;
+  cursor: pointer; border-radius: 999px;
+}
+.space-boss-art-btn:focus-visible,
+.space-boss-projectile-btn:focus-visible,
+.space-boss-practice:focus-visible {
+  outline: 2px solid #eaffff;
+  outline-offset: 2px;
+}
+.space-boss-art-btn:active,
+.space-boss-projectile-btn:active { transform: translateY(1px) scale(0.99); }
+.space-boss-projectile-btn {
+  position: absolute; right: 14px; top: 14px; z-index: 2;
+  width: 62px; height: 62px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0; box-sizing: border-box;
+  border: 0; border-radius: 999px;
+  background: transparent;
+  filter: drop-shadow(0 0 10px rgba(234,255,255,0.28));
+  cursor: pointer;
+}
+.space-boss-projectile-btn canvas {
+  width: 58px; height: 58px; display: block; pointer-events: none;
+}
 .space-boss-name {
   font-family: 'Bebas Neue', cursive; font-size: 21px; line-height: 1;
   letter-spacing: 2px; color: #33ff66; text-align: center;
-  text-shadow: 0 0 12px rgba(51,255,102,0.48); margin-top: 3px;
+  text-shadow: 0 0 12px rgba(51,255,102,0.48); margin-top: 5px;
+  max-width: 100%; padding: 0 18px; box-sizing: border-box;
 }
 .space-boss-ability {
   font-family: 'VCR', monospace; font-size: 9px; line-height: 1.25;

@@ -253,7 +253,12 @@ body::after {
 }
 .tab.on .tab-line { opacity: 1; }
 
-@media (max-width: 767px), (pointer: coarse) and (max-width: 1023px) {
+@media (max-width: 1023px) {
+  /* Pure width split (no pointer condition) — pointer:coarse/fine is reported
+     inconsistently across browsers and devtools device-emulation modes, which was
+     creating an actual gap (neither nav showing) at some widths in some tools.
+     Width alone is unambiguous: ≤1023px always gets the bottom-tab nav, ≥1024px
+     always gets the desktop header (see the matching .main-site-header query). */
   #tabs {
     position: fixed;
     left: max(10px, env(safe-area-inset-left, 0px) + 8px);
@@ -630,13 +635,12 @@ body.on-timeline #collage::after {
   gap: 8px;
   width: 100%;
 }
-@media (min-width: 768px) and (pointer: fine), (min-width: 1024px) and (pointer: coarse) {
+@media (min-width: 1024px) {
   /* One desktop header ruler for the whole main website. Home/Search used to have
      their own header patterns, while Browse/Years/Map used page headers; that made
-     nav buttons appear to jump between different coordinate systems. The coarse-pointer
-     alternative picks up tablet landscape (iPad landscape width is 1024px+) — without it,
-     landscape tablets fell into a gap between this desktop query (pointer:fine only) and
-     the bottom-tab mobile query (capped at max-width:1023px), showing no nav at all. */
+     nav buttons appear to jump between different coordinate systems. Pure width split
+     (no pointer condition) — see the matching #tabs query above for why pointer was
+     dropped entirely. */
   .main-site-header {
     width: var(--desktop-nav-width);
     max-width: none;
@@ -887,7 +891,7 @@ body.rec-open { overflow-y: auto; }
 .main-site-header {
   display: none;
 }
-@media (min-width: 768px) and (pointer: fine), (min-width: 1024px) and (pointer: coarse) {
+@media (min-width: 1024px) {
   .main-site-header {
     display: flex;
   }
@@ -1879,7 +1883,7 @@ body.rec-open { overflow-y: auto; }
    even when the main site breaks the map page out of the legacy capped body width.
    This avoids the side panel/Top Places control being clipped by the desktop shell
    without resizing the map or moving the nav/header. */
-@media (min-width: 768px) and (pointer: fine) {
+@media (min-width: 1024px) {
   body.on-map #map-places-drawer {
     position: fixed;
     top: var(--map-overlay-top, 118px);
@@ -1899,7 +1903,7 @@ body.rec-open { overflow-y: auto; }
 
 /* Mobile: stretch the drawer edge-to-edge instead of capping at the
    desktop 360px width — same top-left anchor, just wider on small screens. */
-@media (max-width: 767px), (pointer: coarse) and (max-width: 1023px) {
+@media (max-width: 1023px) {
   #map-places-drawer {
     left: 14px; right: 14px; top: 14px;
     width: auto;
@@ -2390,11 +2394,10 @@ body.main-scrolled .main-site-header .page-nav-btn.active::after {
   /* Keep the active fog readable on top of the darker scrolled header shield. */
   opacity: 0.62;
 }
-@media (max-width: 1023px) and (pointer: coarse) {
-  /* Coarse-pointer (touch) devices below 1024px use bottom tabs — hide the desktop
-     per-page header here. Fine-pointer (mouse) desktops at any width always show the
-     desktop header regardless, so pointer:coarse is required to avoid hiding the nav
-     in a narrowed desktop browser window (768–1023px), which would leave no nav at all. */
+@media (max-width: 1023px) {
+  /* Below 1024px the bottom-tab nav is in charge (see #tabs query above), so the
+     per-page desktop header is hidden here. Pure width split, no pointer condition —
+     see the #tabs query comment for why. */
   #pg-detail.active, #pg-timeline.active, #pg-search.active, #pg-shelf.active {
     padding-top: 0;
   }
@@ -2538,7 +2541,7 @@ body.theme-xmas.on-timeline #collage::after { background: rgba(0,52,18,0.98); }
 .mobile-sparkle-btn {
   display: none;
 }
-@media (max-width: 767px), (pointer: coarse) and (max-width: 1023px) {
+@media (max-width: 1023px) {
   .mobile-sparkle-btn {
     position: fixed;
     top: max(12px, env(safe-area-inset-top, 0px) + 8px);
@@ -4149,7 +4152,7 @@ function updateMapOverlayVars() {
   document.documentElement.style.setProperty('--map-overlay-bottom', `${Math.max(14, Math.round(window.innerHeight - r.bottom + 14))}px`);
 }
 function isMobileMapView() {
-  return window.matchMedia('(max-width: 767px), (pointer: coarse) and (max-width: 1023px)').matches;
+  return window.innerWidth <= 1023;
 }
 function getMapPanelOffset() {
   updateMapOverlayVars();

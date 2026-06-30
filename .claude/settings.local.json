@@ -31,7 +31,8 @@
       "Bash(xargs -r kill -9)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:59280/index.html)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8765/index.html)",
-      "Bash(node --check /Users/kevinseverino/Documents/moberino/js/games/space.js)"
+      "Bash(node --check /Users/kevinseverino/Documents/moberino/js/games/space.js)",
+      "Bash(curl -skL \"https://www.moberino.com/\" -o /tmp/live_check.html -w \"HTTP %{http_code}, size %{size_download}\\\\n\")"
     ]
   }
 }

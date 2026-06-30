@@ -593,104 +593,6 @@
 
   function rand(a,b){ return a + Math.random()*(b-a); }
   function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-  const SPACE_LEADERBOARD_CONFIG = {
-    campaign: { boardKey: 'space-campaign', bestKey: 'space-best-campaign', uid: 'space-campaign', color: '#33ff66', field: 'score', label: 'CAMPAIGN SCORE' },
-    bossrun: { boardKey: 'space-bossrun', bestKey: 'space-best-bossrun', uid: 'space-bossrun', color: '#ffe61a', field: 'bosses', label: 'BOSSES DEFEATED' },
-    endless: { boardKey: 'space-endless', bestKey: 'space-best-endless', uid: 'space-endless', color: '#ff00cc', field: 'wave', label: 'WAVE REACHED' }
-  };
-
-  function spaceLeaderboardMode() {
-    if (academyMode || spaceRunMode === 'academy' || spaceRunMode === 'debug') return null;
-    if (spaceRunMode === 'bossrun') return 'bossrun';
-    if (spaceRunMode === 'endless') return 'endless';
-    return 'campaign';
-  }
-
-  function spaceLeaderboardConfig(mode) {
-    return SPACE_LEADERBOARD_CONFIG[mode || spaceLeaderboardMode()] || null;
-  }
-
-  function getSpaceLeaderboardKey(mode) {
-    const cfg = spaceLeaderboardConfig(mode);
-    return cfg ? cfg.boardKey : 'space-campaign';
-  }
-
-  function getSpaceBestKey(mode) {
-    const cfg = spaceLeaderboardConfig(mode);
-    return cfg ? cfg.bestKey : 'space-best-campaign';
-  }
-
-  function spaceBossesDefeatedForResult() {
-    if (spaceRunMode !== 'bossrun') return 0;
-    return clamp(bossRunIndex || 0, 0, bossRunQueue.length || 0);
-  }
-
-  function spaceLeaderboardResult() {
-    const mode = spaceLeaderboardMode();
-    const cfg = spaceLeaderboardConfig(mode);
-    if (!cfg) return null;
-    if (mode === 'bossrun') {
-      const defeated = spaceBossesDefeatedForResult();
-      return Object.assign({}, cfg, {
-        mode,
-        title: defeated >= (bossRunQueue.length || 0) && defeated > 0 ? 'BOSS RUN COMPLETE' : 'BOSS RUN FAILED',
-        scoreLabel: 'BOSSES DEFEATED',
-        scoreValue: defeated,
-        saveValue: defeated,
-        extra: `SCORE ${score} / BOSS ${Math.min((bossRunIndex || 0) + 1, bossRunQueue.length || 1)}/${bossRunQueue.length || 1}${gameOverCauseHTML()}`,
-        buttons: `
-          <button class="whack-btn" style="border-color:#ffe61a;background:rgba(255,230,26,0.24)" onclick="spaceBossRunStart()">BOSS RUN AGAIN</button>
-          <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.24)" onclick="spaceStart()">PLAY CAMPAIGN</button>
-          <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="spaceEndlessStart()">ENDLESS</button>
-          <button class="whack-btn" style="border-color:rgba(242,239,232,0.35);background:rgba(242,239,232,0.08)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
-        `
-      });
-    }
-    if (mode === 'endless') {
-      return Object.assign({}, cfg, {
-        mode,
-        title: 'ENDLESS RUN OVER',
-        scoreLabel: 'WAVE REACHED',
-        scoreValue: wave || 0,
-        saveValue: wave || 0,
-        extra: `SCORE ${score}${gameOverCauseHTML()}`,
-        buttons: `
-          <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="spaceEndlessStart()">PLAY ENDLESS AGAIN</button>
-          <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.24)" onclick="spaceStart()">PLAY CAMPAIGN</button>
-          <button class="whack-btn" style="border-color:#ffe61a;background:rgba(255,230,26,0.20)" onclick="spaceBossRunStart()">BOSS RUN</button>
-          <button class="whack-btn" style="border-color:rgba(242,239,232,0.35);background:rgba(242,239,232,0.08)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
-        `
-      });
-    }
-    return Object.assign({}, cfg, {
-      mode,
-      title: 'CAMPAIGN FAILED',
-      scoreLabel: 'CAMPAIGN SCORE',
-      scoreValue: score,
-      saveValue: score,
-      extra: `RESCUED ${rescuedChars.size}/${missionTrappedChars.length || SPACE_RESCUE_TARGET_COUNT} / WAVE ${wave}${gameOverCauseHTML()}`,
-      buttons: `
-        <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN AGAIN</button>
-        <button class="whack-btn" style="border-color:#7c6bff;background:rgba(124,107,255,0.18)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
-        <button class="whack-btn" style="border-color:rgba(242,239,232,0.35);background:rgba(242,239,232,0.08)" onclick="nav('lobby')">BACK TO ARCADE</button>
-      `
-    });
-  }
-
-  function spaceNoLeaderboardGameOverHTML() {
-    return `<div class="whack-mode-shell" style="max-width:410px;margin-top:22px;text-align:center">
-      <div class="whack-mode-title" style="color:#ff6666;text-shadow:0 0 18px #ff444488">GAME OVER</div>
-      <div class="game-card whack-mode-card" style="border-color:#ff666677;cursor:default;min-height:0;padding:20px 18px;background:rgba(5,2,18,0.94)">
-        <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.62);margin-bottom:12px">DEBUG / TUTORIAL RUN — NO LEADERBOARD</div>
-        ${gameOverCauseHTML()}
-        <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
-          <button class="whack-btn" style="border-color:#7c6bff;background:rgba(124,107,255,0.18)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
-          <button class="whack-btn" style="border-color:rgba(242,239,232,0.35);background:rgba(242,239,232,0.08)" onclick="nav('lobby')">BACK TO ARCADE</button>
-        </div>
-      </div>
-    </div>`;
-  }
-
 
   function blackoutHeadlightGeometry() {
     if (!player) return null;
@@ -812,8 +714,8 @@
     // not re-inflate them with the older theme multipliers.
     const tuning = {
       1: { spawnsRemaining: 40, speedOverride: 2.86, spawnMsOverride: 780, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [2600, 5200], spawnCadenceMult: 0.9, activeObstacleCap: 6, notes: 'Intro is dangerous: small rocks cost 5 HP and big rocks cost 10 HP, with early HP drops teaching recovery.' },
-      2: { spawnsRemaining: 32, speedOverride: 2.62, spawnMsOverride: 790, asteroidRatioOverride: 0, enemyHpOverride: 2, enemyFireMult: 1.20, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [5200, 8200], hpDelayRange: [5200, 9000], spawnCadenceMult: 0.94, activeObstacleCap: 5 },
-      3: { spawnsRemaining: 26, speedOverride: 2.72, spawnMsOverride: 710, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.34, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 1, powerupDelayRange: [900, 1300], hpDelayRange: [6200, 9200], swarmCap: 5, activeObstacleCap: 5, spawnCadenceMult: 1.02 },
+      2: { spawnsRemaining: 32, speedOverride: 2.62, spawnMsOverride: 790, asteroidRatioOverride: 0, enemyHpOverride: 2, enemyFireMult: 1.20, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [1200, 1900], hpDelayRange: [2600, 5200], spawnCadenceMult: 0.94, activeObstacleCap: 5, notes: 'Teach enemies while stocking a bomb before Wave 3 swarm.' },
+      3: { spawnsRemaining: 26, speedOverride: 2.72, spawnMsOverride: 710, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.34, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 1, powerupDelayRange: [900, 1300], hpDelayRange: [2200, 4400], swarmCap: 5, activeObstacleCap: 5, spawnCadenceMult: 1.02, notes: 'Swarm stays chaotic, but health drops earlier so it feels survivable/fun.' },
       4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [7600, 11600], enemyFireMult: 0.75 },
       5: { spawnsRemaining: 30, speedOverride: 2.86, spawnMsOverride: 700, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: true, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [3600, 6200], hpDelayRange: [3600, 6800], spawnCadenceMult: 0.9, activeObstacleCap: 7 },
       6: { spawnsRemaining: 20, speedOverride: 2.72, spawnMsOverride: 700, asteroidRatioOverride: 0.28, enemyHpOverride: 2, enemyFireMult: 0.78, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, rescueRingHp: 30, powerupDelayRange: [3600, 6200], hpDelayRange: [4800, 7800], spawnCadenceMult: 0.86, activeObstacleCap: 6 },
@@ -961,19 +863,13 @@
 
   function spawnBlackoutHiddenEnemies() {
     if (waveTheme !== 'blackout' || !currentCfg || obstacles.some(o => o.blackoutHiddenEnemy)) return;
-    // Campaign BLACKOUT is an authored set piece. Endless BLACKOUT can arrive
-    // later at higher speeds, so keep its hidden shooter pack smaller and more
-    // staggered instead of dumping five faces into the dark at once.
-    const lanes = spaceRunMode === 'endless' ? [0.23, 0.50, 0.77] : [0.16, 0.33, 0.5, 0.67, 0.84];
-    const yGap = spaceRunMode === 'endless' ? 132 : 90;
-    const speedMult = spaceRunMode === 'endless' ? 0.34 : 0.44;
-    lanes.forEach((xp, i) => {
+    [0.16, 0.33, 0.5, 0.67, 0.84].forEach((xp, i) => {
       obstacles.push({
         type: 'face',
         x: clamp(W * xp, FACE_R, W - FACE_R),
-        y: -FACE_R - 80 - i * yGap,
+        y: -FACE_R - 60 - i * 90,
         vx: 0,
-        vy: currentCfg.speed * speedMult,
+        vy: currentCfg.speed * 0.44,
         r: FACE_R,
         ci: nextMissionEnemyIndex(),
         hp: 3,
@@ -992,16 +888,16 @@
   function grayPortalTemplate(index) {
     const safeTop = Math.max(96, Math.min(150, H * 0.16));
     const templates = [
-      { gray: { x: W * 0.24, y: safeTop }, entry: { x: W * 0.78, y: H * 0.62 }, exit: { x: W * 0.42, y: H * 0.42 }, decoyEntry: { x: W * 0.18, y: H * 0.40 }, decoyExit: { x: W * 0.86, y: H * 0.46 }, label: 'CROSS LEFT' },
-      { gray: { x: W * 0.76, y: safeTop + 8 }, entry: { x: W * 0.22, y: H * 0.62 }, exit: { x: W * 0.58, y: H * 0.42 }, decoyEntry: { x: W * 0.82, y: H * 0.40 }, decoyExit: { x: W * 0.14, y: H * 0.46 }, label: 'CROSS RIGHT' },
-      { gray: { x: W * 0.50, y: safeTop - 2 }, entry: { x: W * 0.20, y: H * 0.58 }, exit: { x: W * 0.74, y: H * 0.46 }, decoyEntry: { x: W * 0.82, y: H * 0.68 }, decoyExit: { x: W * 0.28, y: H * 0.36 }, label: 'BANK CENTER' },
-      { gray: { x: W * 0.34, y: safeTop + 12 }, entry: { x: W * 0.84, y: H * 0.57 }, exit: { x: W * 0.62, y: H * 0.39 }, decoyEntry: { x: W * 0.18, y: H * 0.66 }, decoyExit: { x: W * 0.78, y: H * 0.36 }, label: 'BACK SHOT' }
+      { gray: { x: W * 0.24, y: safeTop }, entry: { x: W * 0.78, y: H * 0.74 }, exit: { x: W * 0.42, y: H * 0.42 }, decoyEntry: { x: W * 0.18, y: H * 0.68 }, decoyExit: { x: W * 0.86, y: H * 0.46 }, label: 'CROSS LEFT' },
+      { gray: { x: W * 0.76, y: safeTop + 8 }, entry: { x: W * 0.22, y: H * 0.74 }, exit: { x: W * 0.58, y: H * 0.42 }, decoyEntry: { x: W * 0.82, y: H * 0.68 }, decoyExit: { x: W * 0.14, y: H * 0.46 }, label: 'CROSS RIGHT' },
+      { gray: { x: W * 0.50, y: safeTop - 2 }, entry: { x: W * 0.20, y: H * 0.72 }, exit: { x: W * 0.74, y: H * 0.46 }, decoyEntry: { x: W * 0.82, y: H * 0.76 }, decoyExit: { x: W * 0.28, y: H * 0.36 }, label: 'BANK CENTER' },
+      { gray: { x: W * 0.34, y: safeTop + 12 }, entry: { x: W * 0.84, y: H * 0.72 }, exit: { x: W * 0.62, y: H * 0.39 }, decoyEntry: { x: W * 0.18, y: H * 0.76 }, decoyExit: { x: W * 0.78, y: H * 0.36 }, label: 'BACK SHOT' }
     ];
     const t = templates[index % templates.length];
     const bossR = boss ? boss.r : BOSS_R;
     const clampPoint = p => ({
       x: clamp(p.x, bossR + 30, W - bossR - 30),
-      y: clamp(p.y, 82, Math.min(H - 120, H * 0.72))
+      y: clamp(p.y, 82, Math.min(H - 92, H * 0.80))
     });
     return { gray: clampPoint(t.gray), entry: clampPoint(t.entry), exit: clampPoint(t.exit), decoyEntry: clampPoint(t.decoyEntry), decoyExit: clampPoint(t.decoyExit), label: t.label };
   }
@@ -1063,7 +959,7 @@
     const placed = [];
     const clampPortalPoint = p => ({
       x: clamp(p.x, b.r + 30, W - b.r - 30),
-      y: clamp(p.y, 92, Math.min(H - 92, H * 0.72))
+      y: clamp(p.y, 92, Math.min(H - 82, H * 0.80))
     });
     const canPlacePortal = p => Math.hypot(p.x - t.gray.x, p.y - t.gray.y) > b.r + 66
       && placed.every(other => Math.hypot(p.x - other.x, p.y - other.y) > minPortalSpacing);
@@ -1077,15 +973,15 @@
         preferred,
         { x: W * 0.16, y: H * 0.38 },
         { x: W * 0.84, y: H * 0.38 },
-        { x: W * 0.18, y: H * 0.68 },
-        { x: W * 0.82, y: H * 0.68 },
+        { x: W * 0.18, y: H * 0.74 },
+        { x: W * 0.82, y: H * 0.74 },
         { x: W * 0.50, y: H * 0.54 },
         { x: W * 0.32, y: H * 0.70 },
         { x: W * 0.68, y: H * 0.70 },
       ];
       const gridCandidates = [];
       [0.14, 0.26, 0.38, 0.50, 0.62, 0.74, 0.86].forEach(xp => {
-        [0.34, 0.46, 0.58, 0.70].forEach(yp => gridCandidates.push({ x: W * xp, y: H * yp }));
+        [0.38, 0.50, 0.64, 0.78].forEach(yp => gridCandidates.push({ x: W * xp, y: H * yp }));
       });
       const candidates = baseCandidates.concat(gridCandidates).map(clampPortalPoint);
       const start = fallbackIndex % candidates.length;
@@ -1113,7 +1009,7 @@
     const decoyExit = choosePortalPoint(t.decoyExit, 4);
     const aimFromEntry = Math.atan2(t.gray.y - entry.y, t.gray.x - entry.x);
     const aimFromExit = Math.atan2(t.gray.y - exit.y, t.gray.x - exit.x);
-    const lifeMs = 9000;
+    const lifeMs = 6200;
     const addPortal = (p, index, linkedIndex, aimAngle, pairId, colors) => {
       enemyBullets.push({
         x: p.x, y: p.y, vx: 0, vy: 0, r: 17,
@@ -1132,9 +1028,22 @@
         expiresAt: now + lifeMs
       });
     };
+    const addSinglePortal = (p, aimAngle) => {
+      enemyBullets.push({
+        x: p.x, y: p.y, vx: 0, vy: 0, r: 18,
+        theme: 'bulletPortal', bulletPortal: true, portalSingle: true,
+        portalAngle: aimAngle + Math.PI / 2,
+        portalAimAngle: aimAngle,
+        portalActive: true,
+        portalColorA: '#33ff66', portalColorB: '#f6e9ff',
+        born: now, expiresAt: now + Math.max(3600, lifeMs - 1200), spinPortal: true,
+      });
+    };
     const solveId = `gray-${now}-${st.cycle}-solve`;
     addPortal(entry, 0, 1, aimFromEntry, solveId, { a: '#b36bff', b: '#65f0ff' });
     addPortal(exit, 1, 0, aimFromExit, solveId, { a: '#b36bff', b: '#65f0ff' });
+    const singlePortal = choosePortalPoint({ x: W * 0.50, y: H * 0.77 }, 6);
+    addSinglePortal(singlePortal, Math.atan2(t.gray.y - singlePortal.y, t.gray.x - singlePortal.x));
 
     const decoyTarget = {
       x: t.gray.x < W * 0.5 ? W - 24 : 24,
@@ -1147,7 +1056,7 @@
     addPortal(decoyExit, 1, 0, decoyAimFromExit, decoyId, { a: '#ff5bd6', b: '#ffe66d' });
 
     addFloatText(t.label, (entry.x + exit.x) / 2, Math.min(entry.y, exit.y) - 24, '#b36bff', 14);
-    addFloatText('FORCEFIELD: USE PORTALS!', b.x, b.y + b.r + 18, '#b36bff', 16);
+    addFloatText('SHOOT GRAY THROUGH PORTALS!', b.x, b.y + b.r + 18, '#b36bff', 16);
     SFX.emp && SFX.emp();
   }
 
@@ -1199,7 +1108,7 @@
       graySetPhase(b, 'reappear', 680, now);
     } else if (st.phase === 'reappear' && now >= st.phaseUntil) {
       st.portalsSpawned = false;
-      graySetPhase(b, 'portalPuzzle', 9200, now);
+      graySetPhase(b, 'portalPuzzle', 6400, now);
     } else if (st.phase === 'portalPuzzle') {
       if (!st.portalsSpawned) {
         graySpawnPortalPuzzle(b, now);
@@ -1297,6 +1206,9 @@
     }
     bossDeployTimer = Date.now() + 3500; // first reinforcement a little after the fight starts
     addFloatText(captive ? `FREE ${GAME_CHARS[captiveCi].name}!` : `${creature.name} INCOMING`, W / 2, 140, captive ? '#00e5ff' : '#ff4444', 22);
+    if (!captive && creature && creature.name === 'GRAY VISITOR') {
+      addFloatText('SHOOT THE VISITOR — USE PORTALS', W / 2, 176, '#b36bff', 15, { vy: -0.05, fade: 0.004 });
+    }
     if (captive) showTopBanner(`FREE ${GAME_CHARS[captiveCi].name}`, 'good');
     else if (guardedRescue && captiveCi >= 0) showTopBanner(`${creature.name} HAS ${GAME_CHARS[captiveCi].name}`, 'bad');
     SFX.over();
@@ -1789,7 +1701,7 @@
     const t = Date.now();
     const activeGlow = mutedIcon ? null : (glowColor || (fx.glow ? rgbaFromHex(fx.glow, 0.78) : null));
     const pulse = mutedIcon ? 1 : 1 + Math.sin(t * 0.006 + x * 0.01 + y * 0.01) * (fx.pulse || 0.035);
-    const wobble = mutedIcon ? 0 : Math.sin(t * 0.005 + x * 0.02) * (fx.wobble || 0);
+    const wobble = (mutedIcon || staticIcon) ? 0 : Math.sin(t * 0.005 + x * 0.02) * (fx.wobble || 0);
     ctx.save();
     ctx.translate(x, y);
     if (rotation) ctx.rotate(rotation);
@@ -2580,9 +2492,12 @@
 
   function showMissionFailedBeat(onDone) {
     const gc = GAME_CHARS[activeChar];
+    const isBossRunFail = spaceRunMode === 'bossrun';
     const rescued = rescuedChars.size;
     const total = missionTrappedChars.length || SPACE_RESCUE_TARGET_COUNT;
-    const allSaved = rescued >= total;
+    const bossTotal = bossRunQueue.length || 8;
+    const bossesDefeated = Math.min(Math.max(0, bossRunIndex || 0), bossTotal);
+    const allSaved = isBossRunFail ? bossesDefeated >= bossTotal : rescued >= total;
     const captiveGrid = missionTrappedChars.length ? missionTrappedChars.map(ci => {
       const g = GAME_CHARS[ci];
       const freed = rescuedChars.has(ci);
@@ -2602,10 +2517,15 @@
         <div style="font-family:'Bebas Neue',cursive;font-size:52px;letter-spacing:6px;line-height:0.95;color:#ff4444;text-shadow:0 0 22px #ff444488;margin-bottom:18px">MISSION FAILED</div>
         <div style="width:110px;height:110px;margin:0 auto 14px;border-radius:18px;overflow:hidden;border:3px solid ${gc.color}66;background:${gc.color}11;box-shadow:0 0 18px ${gc.color}33">${charFace(gc, 'sad')}</div>
         <div style="font-family:'VCR',monospace;font-size:12px;letter-spacing:3px;color:rgba(242,239,232,0.5);margin-bottom:6px">${gc.name}</div>
-        <div style="font-family:'Bebas Neue',cursive;font-size:36px;letter-spacing:4px;line-height:1;color:${allSaved ? '#33ff66' : '#00e5ff'};text-shadow:0 0 14px ${allSaved ? '#33ff66' : '#00e5ff'}88;margin-bottom:6px">${rescued}/${total} HEROES SAVED</div>
-        <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.45);margin-bottom:18px">WAVE ${wave} · SCORE ${score}</div>
-        ${captiveGrid ? `<div style="display:grid;grid-template-columns:repeat(5,42px);justify-content:center;gap:10px 14px;margin:0 auto 20px">${captiveGrid}</div>` : ''}
-        <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.4)">THEY STILL NEED YOU</div>
+        <div style="font-family:'Bebas Neue',cursive;font-size:36px;letter-spacing:4px;line-height:1;color:${allSaved ? '#33ff66' : '#00e5ff'};text-shadow:0 0 14px ${allSaved ? '#33ff66' : '#00e5ff'}88;margin-bottom:6px">${isBossRunFail ? `${bossesDefeated}/${bossTotal} BOSSES DEFEATED` : `${rescued}/${total} HEROES SAVED`}</div>
+        <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.45);margin-bottom:12px">WAVE ${wave} · SCORE ${score}</div>
+        <div style="width:min(92vw,360px);margin:0 auto 18px;padding:10px 12px;border:1px solid rgba(255,68,68,0.42);background:rgba(255,68,68,0.10);border-radius:12px;text-align:left;font-family:'VCR',monospace;line-height:1.35">
+          <div style="font-size:9px;letter-spacing:2px;color:rgba(242,239,232,0.55);margin-bottom:4px">CAUSE OF DEFEAT</div>
+          <div style="font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:3px;line-height:1;color:#ff6666;text-shadow:0 0 10px rgba(255,68,68,0.55)">${prettyDamageCause(deathCause || lastDamageCause || 'UNKNOWN HAZARD')}</div>
+          <div style="font-size:10px;letter-spacing:1.4px;color:rgba(242,239,232,0.72);margin-top:5px">WAVE ${deathWave || wave} — ${deathWaveTheme || waveNameForDeath()}${(deathDamageAmount || lastDamageAmount) ? ` / -${deathDamageAmount || lastDamageAmount} HP` : ''}</div>
+        </div>
+        ${(!isBossRunFail && captiveGrid) ? `<div style="display:grid;grid-template-columns:repeat(3,42px);justify-content:center;gap:10px 18px;margin:0 auto 20px">${captiveGrid}</div>` : ''}
+        <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.4)">${isBossRunFail ? 'THE BOSSES ARE STILL WAITING' : 'THEY STILL NEED YOU'}</div>
       </div>`;
     document.body.appendChild(el);
     const card = el.firstElementChild;
@@ -2843,7 +2763,7 @@ function nextWave() {
     // Folding the captive grid into the same centered, animated block naturally pulls
     // the slot-machine text up a bit too — the taller block still centers as a whole.
     const captiveGridHTML = missionTrappedChars.length ? `
-      <div style="margin:22px auto 0;display:grid;grid-template-columns:repeat(3,54px);justify-content:center;align-items:start;gap:22px 48px;width:max-content;max-width:92vw">${missionTrappedChars.map(waveCaptiveFace).join('')}</div>` : '';
+      <div style="margin-top:22px;display:flex;flex-wrap:wrap;justify-content:center;gap:12px 16px;max-width:380px">${missionTrappedChars.map(waveCaptiveFace).join('')}</div>` : '';
     ann.innerHTML=`<div style="text-align:center;animation:wave-announce ${ds}s ease-out forwards">
       <div id="sp-wave-incoming" style="font-family:'VCR',monospace;font-size:11px;letter-spacing:5px;color:#33ff66">INCOMING</div>
       <div id="sp-wave-type" style="font-family:'Bebas Neue',cursive;font-size:clamp(30px, 8vh, 60px);letter-spacing:6px;color:#33ff66;text-shadow:0 0 20px #33ff66,0 0 40px #33ff6688;line-height:1;transition:transform 0.3s ease-out">SURVIVE</div>
@@ -2891,6 +2811,56 @@ function nextWave() {
     if (miniBoss && miniBoss.kind === 'ghost') return 'GHOST ATTACK';
     if (miniBoss && miniBoss.kind === 'emp') return 'EMP WARNING';
     return THEME_LABEL[waveTheme] || 'SPACE MOBE';
+  }
+
+
+  function spaceLeaderboardMode() {
+    if (spaceRunMode === 'bossrun') return 'bossrun';
+    if (spaceRunMode === 'endless') return 'endless';
+    if (spaceRunMode === 'academy' || spaceRunMode === 'debug') return null;
+    return 'campaign';
+  }
+
+  function getSpaceLeaderboardKey() {
+    const mode = spaceLeaderboardMode();
+    if (mode === 'bossrun') return 'space-bossrun';
+    if (mode === 'endless') return 'space-endless';
+    return 'space-campaign';
+  }
+
+  function getSpaceBestKey() {
+    const mode = spaceLeaderboardMode();
+    if (mode === 'bossrun') return 'space-best-bossrun';
+    if (mode === 'endless') return 'space-best-endless';
+    return 'space-best-campaign';
+  }
+
+  function getSpaceResultField() {
+    const mode = spaceLeaderboardMode();
+    if (mode === 'bossrun') return 'bosses';
+    if (mode === 'endless') return 'wave';
+    return 'score';
+  }
+
+  function getSpaceResultLabel() {
+    const mode = spaceLeaderboardMode();
+    if (mode === 'bossrun') return 'BOSSES DEFEATED';
+    if (mode === 'endless') return 'WAVE REACHED';
+    return 'CAMPAIGN SCORE';
+  }
+
+  function getSpaceResultValue() {
+    const mode = spaceLeaderboardMode();
+    if (mode === 'bossrun') return Math.max(0, bossRunIndex || 0);
+    if (mode === 'endless') return Math.max(0, wave || 0);
+    return Math.max(0, score || 0);
+  }
+
+  function getSpaceResultExtraLine() {
+    const mode = spaceLeaderboardMode();
+    if (mode === 'bossrun') return `${Math.max(0, bossRunIndex || 0)}/${bossRunQueue.length || 8} BOSSES DEFEATED / SCORE ${score}`;
+    if (mode === 'endless') return `SCORE ${score}`;
+    return `RESCUED ${rescuedChars.size}/${missionTrappedChars.length || SPACE_RESCUE_TARGET_COUNT} / WAVE ${wave}`;
   }
 
   function recordDamageCause(amount, cause) {
@@ -3034,7 +3004,8 @@ function nextWave() {
       SFX.over();
       triggerShake(18);
       bigExplosion(player.x, player.y, GAME_CHARS[activeChar].color);
-      if (spaceLeaderboardMode() === 'campaign' && score > highScore) { highScore = score; localStorage.setItem(getSpaceBestKey('campaign'), score); }
+      const resultBestValue = getSpaceResultValue();
+      if (resultBestValue > highScore) { highScore = resultBestValue; localStorage.setItem(getSpaceBestKey(), resultBestValue); }
       // Freeze on the death frame for 3s before showing the game-over overlay
       setTimeout(() => {
         waveTransitioning = false;
@@ -3455,7 +3426,19 @@ function nextWave() {
 
     ctx.textBaseline = 'alphabetic';
 
-    if (missionTrappedChars.length) {
+    if (spaceRunMode === 'bossrun') {
+      const total = bossRunQueue.length || 8;
+      const defeated = Math.min(Math.max(0, bossRunIndex || 0), total);
+      ctx.textAlign = 'left';
+      ctx.font = `bold 13px 'Bebas Neue', cursive`;
+      ctx.fillStyle = '#ffe61a';
+      ctx.fillText(`BOSSES ${defeated}/${total}`, 10, barY + barH + 16);
+      ctx.fillStyle = 'rgba(255,255,255,0.28)';
+      ctx.fillRect(10, barY + barH + 23, 92, 4);
+      ctx.fillStyle = '#ffe61a';
+      ctx.fillRect(10, barY + barH + 23, 92 * (defeated / total), 4);
+      ctx.textBaseline = 'alphabetic';
+    } else if (missionTrappedChars.length) {
       const total = missionTrappedChars.length;
       const rescued = Math.min(rescuedChars.size, total);
       const done = rescued >= total;
@@ -3948,8 +3931,8 @@ function nextWave() {
           boss.nextAttack = Date.now() + Math.max(680, Math.round((boss.attackDelay || 1200) * bossTuneValue(boss, 'attackDelayMult', 1)));
         } else if (boss.attackType === 'sombrero') {
           const now = Date.now();
-          const shieldMs = 1700;
-          const openMs = 2600;
+          const shieldMs = 1450;
+          const openMs = 1500;
           boss.tacoGuardUntil = now + shieldMs;
           boss.tacoOpenUntil = now + shieldMs + openMs;
           boss.tacoGuardFlashUntil = now + shieldMs;
@@ -3975,7 +3958,7 @@ function nextWave() {
             if (state === 'playing' && boss && boss.attackType === 'sombrero' && Date.now() < (boss.tacoOpenUntil || 0)) addFloatText('OPEN!', boss.x, boss.y - boss.r - 20, '#33ff66', 18);
           }, shieldMs);
           SFX.tone && SFX.tone(420,'square',0,0.06,0.08,260);
-          boss.nextAttack = now + shieldMs + openMs + 650;
+          boss.nextAttack = now + shieldMs + openMs + 350;
         } else if (boss.attackType === 'ink') {
           const now = Date.now();
           boss.octoHomeY = boss.octoHomeY || boss.y;
@@ -4137,9 +4120,26 @@ function nextWave() {
               gate.litUntil = Date.now() + 220;
               break;
             }
+            const speed = Math.max(7.4, Math.hypot(hb.vx || 0, hb.vy || -8));
+            if (gate.portalSingle) {
+              // Single green portal: a simpler readable route. A shot through it is
+              // immediately re-aimed at Gray and counts as a portal-routed hit.
+              const targetX = boss ? boss.x : gate.x;
+              const targetY = boss ? boss.y : Math.max(90, gate.y - 180);
+              const ang = Math.atan2(targetY - gate.y, targetX - gate.x);
+              hb.x = gate.x + Math.cos(ang) * (gate.r + 6);
+              hb.y = gate.y + Math.sin(ang) * (gate.r + 6);
+              hb.vx = Math.cos(ang) * speed;
+              hb.vy = Math.sin(ang) * speed;
+              hb.portalCooldownUntil = Date.now() + 260;
+              hb.portalRoutedUntil = Date.now() + 1850;
+              gate.litUntil = Date.now() + 420;
+              gate._gone = true;
+              miniExplosion(gate.x, gate.y, gate.portalColorA || '#33ff66');
+              break;
+            }
             const exit = activeBulletPortals.find(e => e.portalPairId === gate.portalPairId && e.portalIndex === gate.linkedIndex && !e._gone);
             if (!exit) break;
-            const speed = Math.max(7.4, Math.hypot(hb.vx || 0, hb.vy || -8));
             // Exit shots are aimed at Gray's current/reappear coordinate. The portal
             // art still tilts, but the actual route is guaranteed solvable.
             const ang = exit.portalAimAngle != null ? exit.portalAimAngle : (-Math.PI / 2 + (exit.portalAngle || 0));
@@ -4856,7 +4856,7 @@ function nextWave() {
           const pulse = 1 + Math.sin(now * 0.012) * 0.055;
           const hot = now < (b.litUntil || 0);
           const active = b.portalActive;
-          ctx.rotate(b.portalAngle || 0);
+          ctx.rotate((b.portalAngle || 0) + (b.spinPortal ? now * 0.006 : 0));
           ctx.globalAlpha = active ? 0.92 : 0.34;
           ctx.shadowColor = b.portalColorA || '#b36bff';
           ctx.shadowBlur = hot ? rr * 2.6 : rr * 1.2;
@@ -5899,6 +5899,57 @@ function nextWave() {
     'COSMIC OCTO': 'BLASTER INK',
     'GIZMO': 'TENNIS + BONES',
   };
+  const BOSS_PREVIEW_PROJECTILE = {
+    'STAR OGRE': 'donkey',
+    'SKY DRAGON': 'fire',
+    'DARK KNIGHT': 'sword',
+    'GRAY VISITOR': 'greenOrb',
+    'SPACE SHARK': 'fish',
+    'MEAN TACO': 'sombrero',
+    'COSMIC OCTO': 'ink',
+    'GIZMO': 'tennis',
+  };
+  const BOSS_PREVIEW_PROJECTILE_LABEL = {
+    donkey: 'DONKEY', fire: 'FIREBALL', sword: 'SWORD', greenOrb: 'ORB', fish: 'TOOTH',
+    sombrero: 'SOMBRERO', ink: 'INK', tennis: 'TENNIS',
+  };
+  function bossPreviewProjectileFor(creature) {
+    return BOSS_PREVIEW_PROJECTILE[creature && creature.name] || 'greenOrb';
+  }
+  function playBossPreviewTone(freq, type, dur, vol, endFreq) {
+    if (SFX && SFX.tone) SFX.tone(freq, type || 'square', 0, dur || 0.12, vol || 0.08, endFreq || freq);
+    else if (SFX && SFX.hit) SFX.hit();
+  }
+  function playBossPreviewSound(name, part) {
+    // Phase 9 prep: this preview intentionally exposes a quick sound test for each
+    // boss and its projectile. These are existing SFX/tone hooks for now; the next
+    // dedicated SFX pass can replace the mappings without changing the preview UI.
+    try {
+      const projectile = part === 'projectile';
+      if (name === 'STAR OGRE') {
+        if (projectile) playDonkeyHeeHaw();
+        else if (SFX.scaryLaugh) SFX.scaryLaugh(); else playBossPreviewTone(120, 'sawtooth', 0.18, 0.10, 70);
+      } else if (name === 'SKY DRAGON') {
+        playBossPreviewTone(projectile ? 220 : 150, 'sawtooth', projectile ? 0.16 : 0.22, projectile ? 0.11 : 0.09, projectile ? 760 : 90);
+      } else if (name === 'DARK KNIGHT') {
+        playBossPreviewTone(projectile ? 760 : 260, projectile ? 'triangle' : 'square', projectile ? 0.08 : 0.14, 0.09, projectile ? 240 : 90);
+      } else if (name === 'GRAY VISITOR') {
+        if (projectile) playBossPreviewTone(620, 'sine', 0.16, 0.08, 190);
+        else if (SFX.ghostTeleport) SFX.ghostTeleport(); else if (SFX.emp) SFX.emp(); else playBossPreviewTone(180, 'sine', 0.16, 0.08, 520);
+      } else if (name === 'SPACE SHARK') {
+        playBossPreviewTone(projectile ? 520 : 180, 'sawtooth', projectile ? 0.08 : 0.16, 0.08, projectile ? 120 : 90);
+      } else if (name === 'MEAN TACO') {
+        playBossPreviewTone(projectile ? 420 : 300, projectile ? 'triangle' : 'square', projectile ? 0.12 : 0.16, 0.08, projectile ? 780 : 180);
+      } else if (name === 'COSMIC OCTO') {
+        playBossPreviewTone(projectile ? 180 : 95, 'sawtooth', projectile ? 0.14 : 0.22, 0.09, projectile ? 480 : 60);
+      } else if (name === 'GIZMO') {
+        if (projectile) playBossPreviewTone(540, 'triangle', 0.10, 0.09, 840);
+        else if (SFX.gizmoBark) SFX.gizmoBark(); else playBossPreviewTone(240, 'square', 0.14, 0.10, 120);
+      } else {
+        if (projectile && SFX.blaster) SFX.blaster(); else if (SFX.over) SFX.over();
+      }
+    } catch(e) {}
+  }
   function bossPreviewList() {
     return [...BOSS_CREATURES, { name: 'GIZMO', isGizmo: true }];
   }
@@ -5908,28 +5959,45 @@ function nextWave() {
     const oldBoss = boss;
     bossPreviewList().forEach((creature, i) => {
       const cv = document.getElementById(`space-boss-cv-${i}`);
-      if (!cv) return;
+      const projCv = document.getElementById(`space-boss-proj-cv-${i}`);
       const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
-      const css = 112; // larger drawing surface prevents the boss aura/ring from clipping at the canvas edge
-      cv.width = Math.round(css * dpr);
-      cv.height = Math.round(css * dpr);
-      cv.style.width = `${css}px`;
-      cv.style.height = `${css}px`;
-      const cctx = cv.getContext('2d');
-      cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      cctx.clearRect(0, 0, css, css);
-      ctx = cctx;
-      boss = {
-        creature,
-        attackType: bossAttackTypeFor(creature),
-        nextAttack: Date.now() + 420,
-        shieldUntil: 0,
-      };
-      ctx.save();
-      ctx.translate(css / 2, css / 2 + 4);
-      if (creature.isGizmo) drawGizmoOrb(82);
-      else drawThemedBoss(creature, 82);
-      ctx.restore();
+      if (cv) {
+        const css = 112; // larger drawing surface prevents the boss aura/ring from clipping at the canvas edge
+        cv.width = Math.round(css * dpr);
+        cv.height = Math.round(css * dpr);
+        cv.style.width = `${css}px`;
+        cv.style.height = `${css}px`;
+        const cctx = cv.getContext('2d');
+        cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        cctx.clearRect(0, 0, css, css);
+        ctx = cctx;
+        boss = {
+          creature,
+          attackType: bossAttackTypeFor(creature),
+          nextAttack: Date.now() + 420,
+          shieldUntil: 0,
+        };
+        ctx.save();
+        ctx.translate(css / 2, css / 2 + 4);
+        if (creature.isGizmo) drawGizmoOrb(82);
+        else drawThemedBoss(creature, 82);
+        ctx.restore();
+      }
+      if (projCv) {
+        const css = 58;
+        projCv.width = Math.round(css * dpr);
+        projCv.height = Math.round(css * dpr);
+        projCv.style.width = `${css}px`;
+        projCv.style.height = `${css}px`;
+        const pctx = projCv.getContext('2d');
+        pctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        pctx.clearRect(0, 0, css, css);
+        ctx = pctx;
+        const type = bossPreviewProjectileFor(creature);
+        const rot = 0;
+        // Preview badges are static upright icons; live projectiles can still spin in-game.
+        drawProjectileImage(type, css / 2, css / 2, 44, rot, null, true);
+      }
     });
     ctx = oldCtx;
     boss = oldBoss;
@@ -5954,14 +6022,22 @@ function nextWave() {
         <button class="whack-btn" style="width:auto;min-width:82px;height:38px;border-color:rgba(51,255,102,0.42);background:rgba(51,255,102,0.1);font-size:11px;letter-spacing:2px;padding:0 12px" onclick="showSpaceOverlay('select')">CLOSE</button>
       </div>
       <div class="space-boss-gallery">
-        ${bossPreviewList().map((creature, i) => `
+        ${bossPreviewList().map((creature, i) => {
+          const projectileType = bossPreviewProjectileFor(creature);
+          const projectileLabel = BOSS_PREVIEW_PROJECTILE_LABEL[projectileType] || 'SHOT';
+          return `
           <div class="space-boss-card">
-            <canvas id="space-boss-cv-${i}" width="184" height="184"></canvas>
+            <button class="space-boss-art-btn" onclick="spaceBossPreviewSound('${creature.name}', 'boss')" aria-label="Play ${creature.name} boss sound" title="Play boss sound">
+              <canvas id="space-boss-cv-${i}" width="184" height="184"></canvas>
+            </button>
+            <button class="space-boss-projectile-btn" onclick="spaceBossPreviewSound('${creature.name}', 'projectile')" aria-label="Play ${projectileLabel} sound" title="Play projectile sound">
+              <canvas id="space-boss-proj-cv-${i}" width="72" height="72"></canvas>
+            </button>
             <div class="space-boss-name">${creature.name}</div>
             <div class="space-boss-ability">${BOSS_PREVIEW_META[creature.name] || 'BOSS ATTACK'}</div>
             <button class="space-boss-practice" onclick="spaceDebugBoss('${creature.name}')">PRACTICE</button>
-          </div>
-        `).join('')}
+          </div>`;
+        }).join('')}
       </div>`;
   }
 
@@ -6437,7 +6513,7 @@ function nextWave() {
           <button class="whack-btn" style="border-color:#ffe61a;background:rgba(255,230,26,0.24)" onclick="spaceBossRunStart()">BOSS RUN AGAIN</button>
           <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN</button>
           <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="spaceEndlessStart()">ENDLESS</button>
-          <button class="whack-btn" style="border-color:#7c6bff;background:rgba(124,107,255,0.18)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
+          <button class="whack-btn" style="border-color:#7b61ff;background:rgba(123,97,255,0.22)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
           <button class="whack-btn" style="border-color:rgba(242,239,232,0.35);background:rgba(242,239,232,0.08)" onclick="nav('lobby')">BACK TO ARCADE</button>
         </div>
       </div>
@@ -6488,58 +6564,38 @@ function nextWave() {
     if (mode === 'select' || mode === 'boss-preview' || mode === 'how-to-play' || mode === 'debug' || mode === 'mode-complete') ov.classList.remove('hidden');
     ov.classList.toggle('space-over', mode === 'over');
     ov.classList.toggle('space-boss-preview', mode === 'boss-preview');
-    const isSpaceMenuOverlay = mode === 'select' || mode === 'boss-preview' || mode === 'how-to-play' || mode === 'debug' || mode === 'mode-complete';
-    ov.style.justifyContent = isSpaceMenuOverlay ? 'flex-start' : '';
-    ov.style.paddingTop = (mode === 'select' || mode === 'how-to-play' || mode === 'debug' || mode === 'mode-complete') ? '10px' : '';
-    if (isSpaceMenuOverlay) {
-      // Menu overlays should fully cover the paused game canvas. Without this,
-      // returning from leaderboard/menu flows can leave a strip of the old run
-      // visible above the Space launch card.
-      ov.style.background = 'radial-gradient(circle at 22% 18%, rgba(0,229,255,0.10), transparent 32%), radial-gradient(circle at 82% 8%, rgba(255,0,204,0.09), transparent 30%), linear-gradient(180deg, rgba(3,1,14,0.985), rgba(7,3,22,0.985))';
-      ov.style.backdropFilter = 'blur(2px)';
-      ov.style.overflowY = 'auto';
-    } else {
-      ov.style.background = '';
-      ov.style.backdropFilter = '';
-      ov.style.overflowY = '';
-    }
+    ov.style.justifyContent = (mode === 'select' || mode === 'boss-preview' || mode === 'how-to-play' || mode === 'debug' || mode === 'mode-complete') ? 'flex-start' : '';
+    ov.style.paddingTop = (mode === 'select' || mode === 'how-to-play' || mode === 'debug' || mode === 'mode-complete') ? '16px' : '';
     setArcadeExitVisible(mode !== 'over');
     if(mode==='select'){
       const gc=GAME_CHARS[activeChar];
       ov.innerHTML=`
-        <div class="whack-mode-shell" style="max-width:540px;margin-top:8px">
-          <div class="whack-mode-title" style="text-shadow:0 0 22px rgba(255,255,255,0.34),0 0 30px rgba(0,229,255,0.22)">SPACE MOBE</div>
-          <div class="game-card whack-mode-card" style="border-color:#33ff6677;cursor:default;min-height:0;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,0.04),0 20px 60px rgba(0,0,0,0.48)">
-            <div class="game-card-art" style="background:#0d0a1e;min-height:154px;overflow:hidden">
-              <div id="space-select-art" style="position:absolute;inset:0;z-index:0;opacity:0.52;transform:scale(1.18) translateY(4px);filter:saturate(1.24) brightness(1.08);pointer-events:none;mix-blend-mode:screen"></div>
-              <div style="position:absolute;left:18px;top:16px;font-family:'VCR',monospace;font-size:10px;letter-spacing:2px;color:rgba(242,239,232,0.64);z-index:2">MISSION CONTROL</div>
-              <div style="position:absolute;right:24px;top:20px;width:72px;height:72px;border-radius:50%;border:3px solid rgba(0,229,255,0.55);box-shadow:0 0 26px rgba(0,229,255,0.28),inset 0 0 20px rgba(0,229,255,0.12);z-index:2"></div>
-              <div style="position:absolute;right:47px;top:40px;font-size:30px;filter:drop-shadow(0 0 12px rgba(255,230,26,0.65));z-index:3">🚀</div>
-              <div style="position:absolute;left:22px;right:118px;bottom:18px;text-align:left;z-index:2">
-                <div style="font-family:'Bebas Neue',cursive;font-size:32px;letter-spacing:4px;color:#f2efe8;line-height:0.95;text-shadow:0 0 16px rgba(255,255,255,0.28)">READY FOR LAUNCH</div>
-                <div style="font-family:'VCR',monospace;font-size:10px;letter-spacing:1.4px;color:rgba(242,239,232,0.58);margin-top:7px;line-height:1.35">pick a route · save the mobes · survive the weird stuff</div>
-              </div>
+        <div class="whack-mode-shell" style="max-width:500px;margin-top:10px">
+          <div class="whack-mode-title">SPACE MOBE</div>
+          <div class="game-card whack-mode-card" style="border-color:#33ff6677;cursor:default;min-height:0;overflow:hidden">
+            <div class="game-card-art" style="background:#20222c;min-height:128px">
+              <div id="space-select-art" style="position:absolute;inset:0;z-index:0;opacity:0.42;transform:scale(1.26) translateY(10px);filter:saturate(1.18) brightness(1.02);pointer-events:none;mix-blend-mode:screen"></div>
             </div>
-            <div class="game-card-info" style="position:relative;z-index:2;padding:15px 18px 18px;background:linear-gradient(90deg, rgba(5,2,18,0.98), rgba(10,5,28,0.94) 58%, rgba(18,8,38,0.96))">
-              <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:14px;margin-bottom:14px">
-                <div style="display:flex;align-items:center;gap:14px;min-width:0;background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:10px 12px">
-                  <div style="width:76px;height:76px;flex-shrink:0;border-radius:50%;background:${gc.color}33;display:flex;align-items:center;justify-content:center;border:3px solid ${gc.color}88;box-shadow:0 0 20px ${gc.color}44,inset 0 0 18px rgba(255,255,255,0.08)">
-                    <div class="char-tilt" style="width:61px;height:61px">${charFace(gc,'normal')}</div>
+            <div class="game-card-info" style="position:relative;z-index:2;padding:16px 18px 20px;background:linear-gradient(to top, rgba(5,2,18,0.97) 78%, rgba(32,34,44,0.34) 100%)">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:14px;padding:16px 18px;border:1px solid rgba(242,239,232,0.18);border-radius:16px;background:linear-gradient(135deg,rgba(62,64,74,0.94),rgba(30,32,42,0.88));box-shadow:inset 0 0 32px rgba(255,255,255,0.05),0 0 24px rgba(0,0,0,0.20)">
+                <div style="display:flex;align-items:center;gap:12px;min-width:0">
+                  <div style="width:78px;height:78px;flex-shrink:0;border-radius:50%;background:radial-gradient(circle at 50% 42%,rgba(242,239,232,0.18),rgba(46,48,58,0.94) 62%,rgba(13,16,24,1));display:flex;align-items:center;justify-content:center;border:3px solid ${gc.color}aa;box-shadow:0 0 22px ${gc.color}55,inset 0 0 26px rgba(255,255,255,0.06)">
+                    <div class="char-tilt" style="width:58px;height:58px">${charFace(gc,'normal')}</div>
                   </div>
                   <div style="text-align:left;min-width:0">
-                    <div style="font-size:10px;letter-spacing:2px;color:rgba(242,239,232,0.54);font-family:'VCR',monospace">TODAY'S PILOT</div>
-                    <div style="font-family:'Bebas Neue',cursive;font-size:33px;letter-spacing:3.5px;color:${gc.color};text-shadow:0 0 12px ${gc.color}88;line-height:1.0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${gc.name}</div>
-                    <div style="font-family:'VCR',monospace;font-size:9px;letter-spacing:1.2px;color:rgba(242,239,232,0.48);margin-top:5px">helmet on · snack packed · chaos pending</div>
+                    <div style="font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.72);font-family:'VCR',monospace;text-shadow:0 0 8px rgba(255,255,255,0.12)">TODAY'S PILOT</div>
+                    <div style="font-family:'Bebas Neue',cursive;font-size:36px;letter-spacing:3px;color:${gc.color};text-shadow:0 0 14px ${gc.color},0 1px 0 rgba(255,255,255,0.18);line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${gc.name}</div>
+                    <div style="font-family:'VCR',monospace;font-size:9px;letter-spacing:1.25px;color:rgba(242,239,232,0.68);line-height:1.42;margin-top:8px;text-shadow:0 0 8px rgba(0,0,0,0.55)">helmet on · snacks packed<br>chaos pending</div>
                   </div>
                 </div>
-                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+                <div style="display:flex;align-items:center;gap:12px;flex-shrink:0">
                   <button class="space-boss-trigger" onclick="showSpaceOverlay('how-to-play')" aria-label="How to play" title="How to play" style="color:#00e5ff;border-color:rgba(0,229,255,0.45);background:rgba(0,229,255,0.10)">ⓘ</button>
                   <button class="space-boss-trigger" onclick="showSpaceOverlay('boss-preview')" aria-label="Bosses" title="Bosses">☠</button>
                   <button class="space-boss-trigger" onclick="showSpaceOverlay('debug')" aria-label="Debug" title="Debug" style="color:#ffe61a;border-color:rgba(255,230,26,0.38);background:rgba(255,230,26,0.09)">⚙</button>
                 </div>
               </div>
               <div style="display:flex;flex-direction:column;gap:10px">
-                ${spaceModeButtonHTML('SPACE TUTORIAL', 'SAFE LESSONS', 'spaceAcademyStart()', '#7c6bff', '★')}
+                ${spaceModeButtonHTML('SPACE TUTORIAL', 'SAFE LESSONS', 'spaceAcademyStart()', '#7b61ff', '★')}
                 ${spaceModeButtonHTML('PLAY CAMPAIGN', '13 WAVES / 6 RESCUES', 'spaceStart()', '#33ff66', '▶')}
                 ${spaceModeButtonHTML('BOSS RUN', 'BOSSES ONLY', 'spaceBossRunStart()', '#ffe61a', '☠')}
                 ${spaceModeButtonHTML('ENDLESS', 'CHAOS MODE', 'spaceEndlessStart()', '#ff00cc', '∞')}
@@ -6556,78 +6612,72 @@ function nextWave() {
     } else if(mode==='debug'){
       ov.innerHTML = spaceDebugHTML();
     } else if(mode==='mode-complete'){
-      const result = Object.assign({}, spaceLeaderboardConfig('bossrun'), {
-        uid: 'space-bossrun',
-        boardKey: getSpaceLeaderboardKey('bossrun'),
-        color: '#ffe61a',
-        field: 'bosses',
-        scoreLabel: 'BOSSES DEFEATED',
-        scoreValue: bossRunQueue.length || 0,
-        saveValue: bossRunQueue.length || 0,
-        extra: `SCORE ${score}`,
-        buttons: `
-          <button class="whack-btn" style="border-color:#ffe61a;background:rgba(255,230,26,0.24)" onclick="spaceBossRunStart()">BOSS RUN AGAIN</button>
-          <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN</button>
-          <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="spaceEndlessStart()">ENDLESS</button>
-          <button class="whack-btn" style="border-color:#7c6bff;background:rgba(124,107,255,0.18)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
-          <button class="whack-btn" style="border-color:rgba(242,239,232,0.35);background:rgba(242,239,232,0.08)" onclick="nav('lobby')">BACK TO ARCADE</button>
-        `
-      });
-      if (result.saveValue > parseInt(localStorage.getItem(result.bestKey)||'0')) localStorage.setItem(result.bestKey, result.saveValue);
+      const boardKey = 'space-bossrun';
+      const uid = 'space-bossrun-complete';
+      const defeated = Math.max(bossRunQueue.length || 0, bossRunIndex || 0);
       ov.innerHTML = buildArcadeResultCard({
-        uid: result.uid,
-        boardKey: result.boardKey,
+        uid,
+        boardKey,
         artGame: 'space',
-        color: result.color,
+        color: '#ffe61a',
         marquee: 'BOSS RUN COMPLETE!',
-        marqueeEnd: '#7a5d00',
-        scoreLabel: result.scoreLabel,
-        scoreValue: result.scoreValue,
-        saveValue: result.saveValue,
-        field: result.field,
-        extra: result.extra,
+        marqueeEnd: '#665500',
+        scoreLabel: 'BOSSES DEFEATED',
+        scoreValue: defeated,
+        saveValue: defeated,
+        field: 'bosses',
+        extra: `${defeated}/${bossRunQueue.length || 8} BOSSES DEFEATED / SCORE ${score}`,
         ascending: false,
-        maxWidth: 430,
-        minHeight: 330,
+        maxWidth: 560,
+        minHeight: 360,
         saveMarginTop: 18,
-        buttons: result.buttons,
+        buttons: `
+          <button class="whack-btn" style="width:100%;min-height:62px;white-space:nowrap;border-color:#ffe61a;background:rgba(255,230,26,0.24)" onclick="spaceBossRunStart()">BOSS RUN AGAIN</button>
+          <button class="whack-btn" style="width:100%;min-height:62px;white-space:nowrap;border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN</button>
+          <button class="whack-btn" style="width:100%;min-height:62px;white-space:nowrap;border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="spaceEndlessStart()">ENDLESS</button>
+          <button class="whack-btn" style="width:100%;min-height:62px;white-space:nowrap;border-color:#7b61ff;background:rgba(123,97,255,0.22)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
+          <button class="whack-btn" style="width:100%;min-height:62px;white-space:nowrap;border-color:rgba(242,239,232,0.35);background:rgba(242,239,232,0.08)" onclick="nav('lobby')">BACK TO ARCADE</button>
+        `,
       });
-      loadRemoteBoard(result.boardKey, `${result.uid}-board`, result.color, result.field);
-      mountSelectionArt(`${result.uid}-art`, 'space');
+      loadRemoteBoard(boardKey, `${uid}-board`, '#ffe61a', 'bosses');
+      mountSelectionArt(`${uid}-art`, 'space');
     } else if(mode==='over'){
       setArcadeExitVisible(false);
       // Clear stale launch/select markup immediately; otherwise it can flash between
       // the in-game mission-failed beat and the leaderboard game-over card.
       ov.innerHTML = '';
       ov.classList.remove('hidden');
-      const result = spaceLeaderboardResult();
-      const isNew = result ? result.saveValue >= parseInt(localStorage.getItem(result.bestKey)||'0') : false;
+      const boardKey = getSpaceLeaderboardKey();
+      const field = getSpaceResultField();
+      const resultValue = getSpaceResultValue();
+      const modeName = spaceLeaderboardMode() || 'campaign';
+      const uid = `space-${modeName}`;
+      const isNew=resultValue>=parseInt(localStorage.getItem(getSpaceBestKey())||'0');
       showMissionFailedBeat(() => {
-        if (!result) {
-          ov.innerHTML = spaceNoLeaderboardGameOverHTML();
-          return;
-        }
-        if (result.saveValue > parseInt(localStorage.getItem(result.bestKey)||'0')) localStorage.setItem(result.bestKey, result.saveValue);
         ov.innerHTML = buildArcadeResultCard({
-          uid: result.uid,
-          boardKey: result.boardKey,
+          uid,
+          boardKey,
           artGame: 'space',
-          color: result.color,
-          marquee: isNew && result.saveValue > 0 ? result.title : 'GAME OVER',
+          color: '#33ff66',
+          marquee: isNew && resultValue > 0 ? 'GAME OVER' : 'GAME OVER',
           marqueeEnd: '#006622',
-          scoreLabel: result.scoreLabel,
-          scoreValue: result.scoreValue,
-          saveValue: result.saveValue,
-          field: result.field,
-          extra: result.extra,
+          scoreLabel: getSpaceResultLabel(),
+          scoreValue: resultValue,
+          saveValue: resultValue,
+          field,
+          extra: `${getSpaceResultExtraLine()}${gameOverCauseHTML()}`,
           ascending: false,
-          maxWidth: 410,
-          minHeight: 330,
+          maxWidth: 560,
+          minHeight: 360,
           saveMarginTop: 18,
-          buttons: result.buttons,
+          buttons: `
+            ${spaceLeaderboardMode() === 'bossrun' ? `<button class="whack-btn" style="width:100%;min-height:62px;white-space:nowrap;border-color:#ffe61a;background:rgba(255,230,26,0.24)" onclick="spaceBossRunStart()">BOSS RUN AGAIN</button>` : spaceLeaderboardMode() === 'endless' ? `<button class="whack-btn" style="width:100%;min-height:62px;white-space:nowrap;border-color:#ff00cc;background:rgba(255,0,204,0.26)" onclick="spaceEndlessStart()">ENDLESS AGAIN</button>` : `<button class="whack-btn" style="width:100%;min-height:62px;white-space:nowrap;border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN AGAIN</button>`}
+            <button class="whack-btn" style="width:100%;min-height:62px;white-space:nowrap;border-color:#7b61ff;background:rgba(123,97,255,0.22)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
+            <button class="whack-btn" style="width:100%;min-height:62px;white-space:nowrap;border-color:#ff00cc;background:rgba(255,0,204,0.24)" onclick="nav('lobby')">BACK TO ARCADE</button>
+          `,
         });
-        loadRemoteBoard(result.boardKey, `${result.uid}-board`, result.color, result.field);
-        mountSelectionArt(`${result.uid}-art`, 'space');
+        loadRemoteBoard(boardKey, `${uid}-board`, '#33ff66', field);
+        mountSelectionArt(`${uid}-art`, 'space');
       });
     }
     ov.classList.remove('hidden');
@@ -6672,16 +6722,12 @@ function nextWave() {
     document.body.appendChild(ann);
     return ann;
   }
-  function spEnsureIntroSkipButton(overlay, onSkip, label) {
+  function spEnsureIntroSkipButton(overlay, onSkip) {
     if (!overlay || !onSkip || overlay.querySelector('.intro-skip-btn')) return;
     const btn = document.createElement('button');
     btn.className = 'intro-skip-btn';
-    btn.textContent = label || 'SKIP';
-    // Center-bottom and intentionally translucent: visible enough to escape the
-    // tutorial/story, but quiet enough that it does not dominate the cinematic.
-    btn.style.cssText = "position:fixed;left:50%;bottom:calc(max(18px, env(safe-area-inset-bottom, 18px)) + 8px);transform:translateX(-50%);z-index:10000;pointer-events:auto;height:34px;min-height:34px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;font-family:'VCR',monospace;font-size:10px;letter-spacing:2.4px;background:rgba(3,1,16,0.28);border:1px solid rgba(242,239,232,0.26);border-radius:999px;padding:0 16px;color:rgba(242,239,232,0.58);box-shadow:0 0 14px rgba(0,0,0,0.18);cursor:pointer;backdrop-filter:blur(2px);opacity:0.74";
-    btn.onmouseenter = () => { btn.style.opacity = '0.95'; btn.style.color = 'rgba(242,239,232,0.82)'; };
-    btn.onmouseleave = () => { btn.style.opacity = '0.74'; btn.style.color = 'rgba(242,239,232,0.58)'; };
+    btn.textContent = 'SKIP';
+    btn.style.cssText = "position:fixed;top:max(10px, env(safe-area-inset-top, 10px));right:calc(max(10px, env(safe-area-inset-right, 10px)) + 44px);z-index:10000;pointer-events:auto;height:32px;min-height:32px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;font-family:'VCR',monospace;font-size:10px;letter-spacing:2px;background:none;border:1px solid rgba(242,239,232,0.2);border-radius:6px;padding:0 12px;color:rgba(242,239,232,0.5);cursor:pointer";
     btn.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -6710,7 +6756,7 @@ function nextWave() {
       if (i >= steps.length) { finish(); return; }
       const step = steps[i++];
       step.show();
-      spEnsureIntroSkipButton(ann, onSkip, 'SKIP TUTORIAL');
+      spEnsureIntroSkipButton(ann, onSkip);
       timeoutId = setTimeout(tick, step.duration);
     }
     tick();
@@ -7051,28 +7097,6 @@ function nextWave() {
       <div id="space-brief-card" style="width:min(94vw,430px);text-align:center;transform:scale(0.96);opacity:0;transition:transform 0.35s ease,opacity 0.35s ease">
       </div>`;
     document.body.appendChild(ov);
-    let storySkipped = false;
-    const skipStory = () => {
-      if (storySkipped) return;
-      storySkipped = true;
-      spaceBriefingTimers.forEach(clearTimeout);
-      spaceBriefingTimers = [];
-      if (document.body.contains(ov)) {
-        ov.style.background = 'rgba(3,1,16,0)';
-        const cardEl = ov.querySelector('#space-brief-card');
-        if (cardEl) {
-          cardEl.style.opacity = '0';
-          cardEl.style.transform = 'scale(1.04)';
-        }
-        setTimeout(() => {
-          if (document.body.contains(ov)) ov.remove();
-          onDone();
-        }, 180);
-      } else {
-        onDone();
-      }
-    };
-    spEnsureIntroSkipButton(ov, skipStory, 'SKIP STORY');
     const card = ov.querySelector('#space-brief-card');
     function setStage(html) {
       if (!document.body.contains(ov)) return;
@@ -7166,12 +7190,12 @@ function nextWave() {
       spaceBriefingTimers.push(timer);
     });
     const finishTimer = setTimeout(() => {
-      if (storySkipped || !document.body.contains(ov)) return;
+      if (!document.body.contains(ov)) return;
       ov.style.background = 'rgba(3,1,16,0)';
       card.style.opacity = '0';
       card.style.transform = 'scale(1.04)';
       const removeTimer = setTimeout(() => {
-        if (storySkipped || !document.body.contains(ov)) return;
+        if (!document.body.contains(ov)) return;
         ov.remove();
         onDone();
       }, 350);
@@ -7186,9 +7210,6 @@ function nextWave() {
     if(ov) {
       ov.classList.add('hidden');
       ov.classList.remove('space-boss-preview');
-      ov.style.background = '';
-      ov.style.backdropFilter = '';
-      ov.style.overflowY = '';
     }
     cancelAnimationFrame(bossPreviewRaf);
     bossPreviewRaf = null;
@@ -7272,12 +7293,8 @@ function nextWave() {
     wave = SPACE_CAMPAIGN_FINAL_WAVE + 1;
     waveKills = 0;
     currentCfg = waveConfig(wave);
-    // Do not open Endless with BLACKOUT. Wave 14's normal theme pick is
-    // BLACKOUT, which feels like an instant ambush from the launch screen.
-    // Start Endless with a readable asteroid field; later waves return to
-    // the normal post-campaign variety.
-    waveTheme = 'asteroids';
-    pendingBossCreature = null;
+    waveTheme = pickWaveTheme(wave, null);
+    pendingBossCreature = (waveTheme === 'boss' || waveTheme === 'gizmo') ? pickBossCreature() : null;
     spawnsRemaining = 0;
     themeEffectsAt = waveTheme === 'blackout' ? Date.now() + 1400 : 0;
     startWaveSpawn(currentCfg);
@@ -7392,6 +7409,9 @@ function nextWave() {
     beginConfiguredWave(Math.max(1, parseInt(startWave, 10) || 1));
     state='playing';
     raf=requestAnimationFrame(loop);
+  };
+  window.spaceBossPreviewSound=function(bossName, part){
+    playBossPreviewSound(bossName, part);
   };
   window.spaceDebugBoss=function(bossName){
     spaceRunMode = 'debug';
