@@ -32,7 +32,12 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:59280/index.html)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8765/index.html)",
       "Bash(node --check /Users/kevinseverino/Documents/moberino/js/games/space.js)",
-      "Bash(curl -skL \"https://www.moberino.com/\" -o /tmp/live_check.html -w \"HTTP %{http_code}, size %{size_download}\\\\n\")"
+      "Bash(curl -skL \"https://www.moberino.com/\" -o /tmp/live_check.html -w \"HTTP %{http_code}, size %{size_download}\\\\n\")",
+      "Bash(awk '/^  function showSpaceRescueBriefing/,/^  function [a-zA-Z]/' /Users/kevinseverino/Documents/moberino/js/games/space.js)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -c \"print\\('checking for any JS runtime'\\)\")",
+      "Bash(git diff *)",
+      "Bash(awk ' *)"
     ]
   }
 }

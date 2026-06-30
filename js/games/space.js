@@ -563,7 +563,7 @@
         d.donkeyState = 'charge';
         d.chargeBorn = now;
         line.nextChargeAt = now + 390;
-        playDonkeyHeeHaw();
+        spaceSfx('boss.ogre.projectile');
       }
     }
     const allDone = line.donkeys.every(d => d._hit || d._gone);
@@ -1009,7 +1009,7 @@
     const decoyExit = choosePortalPoint(t.decoyExit, 4);
     const aimFromEntry = Math.atan2(t.gray.y - entry.y, t.gray.x - entry.x);
     const aimFromExit = Math.atan2(t.gray.y - exit.y, t.gray.x - exit.x);
-    const lifeMs = 6200;
+    const lifeMs = 4600;
     const addPortal = (p, index, linkedIndex, aimAngle, pairId, colors) => {
       enemyBullets.push({
         x: p.x, y: p.y, vx: 0, vy: 0, r: 17,
@@ -1057,7 +1057,7 @@
 
     addFloatText(t.label, (entry.x + exit.x) / 2, Math.min(entry.y, exit.y) - 24, '#b36bff', 14);
     addFloatText('SHOOT GRAY THROUGH PORTALS!', b.x, b.y + b.r + 18, '#b36bff', 16);
-    SFX.emp && SFX.emp();
+    spaceSfx('boss.gray.projectile');
   }
 
   function updateGrayVisitorBoss(b, now) {
@@ -2156,6 +2156,12 @@
     setTimeout(() => {
       if (flowToken === spaceFlowToken && state === 'playing' && wave === 1) showTopBanner('CLEAR THE ROCKS', 'good');
     }, 900);
+    // Wave 1 starts at full HP, so the existing random HP-crate timer can land while
+    // the player is already capped and never feel like real support. Guarantee one
+    // extra, clearly-timed HP crate after the player has likely taken an early hit.
+    setTimeout(() => {
+      if (flowToken === spaceFlowToken && state === 'playing' && wave === 1 && !boss && !waveTransitioning) spawnHpPowerup();
+    }, 4200);
   }
 
   function clearSpaceRuntimeTimers() {
@@ -2660,6 +2666,16 @@ function nextWave() {
     waveCaptivesSeen.clear();
     currentCfg = waveConfig(wave);
     waveTheme = pickWaveTheme(wave, previousTheme);
+    // Post-campaign/Endless Blackout otherwise inherits the unbounded endless
+    // spawn ramp (no cap, faster cadence, much larger pool than the authored
+    // Wave 8 Blackout). Clamp it back to that wave's safe, readable values.
+    if (waveTheme === 'blackout' && wave !== 8) {
+      currentCfg = Object.assign({}, currentCfg, {
+        spawnMs: Math.max(currentCfg.spawnMs, 820),
+        activeObstacleCap: Math.min(currentCfg.activeObstacleCap || 8, 8),
+        spawnsRemaining: Math.min(currentCfg.spawnsRemaining || 16, 16),
+      });
+    }
     pendingBossCreature = (waveTheme === 'boss' || waveTheme === 'gizmo') ? pickBossCreature() : null;
     const announceMs = 7000;
     clearSpaceCinematicOverlays();
@@ -2763,7 +2779,7 @@ function nextWave() {
     // Folding the captive grid into the same centered, animated block naturally pulls
     // the slot-machine text up a bit too — the taller block still centers as a whole.
     const captiveGridHTML = missionTrappedChars.length ? `
-      <div style="margin-top:22px;display:flex;flex-wrap:wrap;justify-content:center;gap:12px 16px;max-width:380px">${missionTrappedChars.map(waveCaptiveFace).join('')}</div>` : '';
+      <div style="margin-top:22px;display:grid;grid-template-columns:repeat(3,54px);justify-content:center;gap:12px 16px">${missionTrappedChars.map(waveCaptiveFace).join('')}</div>` : '';
     ann.innerHTML=`<div style="text-align:center;animation:wave-announce ${ds}s ease-out forwards">
       <div id="sp-wave-incoming" style="font-family:'VCR',monospace;font-size:11px;letter-spacing:5px;color:#33ff66">INCOMING</div>
       <div id="sp-wave-type" style="font-family:'Bebas Neue',cursive;font-size:clamp(30px, 8vh, 60px);letter-spacing:6px;color:#33ff66;text-shadow:0 0 20px #33ff66,0 0 40px #33ff6688;line-height:1;transition:transform 0.3s ease-out">SURVIVE</div>
@@ -3437,6 +3453,23 @@ function nextWave() {
       ctx.fillRect(10, barY + barH + 23, 92, 4);
       ctx.fillStyle = '#ffe61a';
       ctx.fillRect(10, barY + barH + 23, 92 * (defeated / total), 4);
+      if (boss && boss.creature && boss.creature.name) {
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const label = boss.creature.name.toUpperCase();
+        ctx.font = `bold ${Math.max(24, Math.min(34, W * 0.072))}px 'Bebas Neue', cursive`;
+        ctx.fillStyle = boss.creature.isGizmo ? '#ffe61a' : '#ff4444';
+        ctx.shadowColor = boss.creature.isGizmo ? 'rgba(255,230,26,0.58)' : 'rgba(255,68,68,0.62)';
+        ctx.shadowBlur = 16;
+        ctx.fillText(label, W / 2, barY + barH + 14);
+        ctx.shadowBlur = 0;
+        ctx.font = `bold 10px 'VCR', monospace`;
+        ctx.letterSpacing = '2px';
+        ctx.fillStyle = 'rgba(242,239,232,0.68)';
+        ctx.fillText(`BOSS ${Math.min(bossRunIndex + 1, total)}/${total}`, W / 2, barY + barH + 48);
+        ctx.restore();
+      }
       ctx.textBaseline = 'alphabetic';
     } else if (missionTrappedChars.length) {
       const total = missionTrappedChars.length;
@@ -3868,7 +3901,7 @@ function nextWave() {
             });
           }
           addFloatText('DRAGON BREATH!', boss.x, boss.y + boss.r + 18, '#ff6600', 16);
-          SFX.tone && SFX.tone(130,'sawtooth',0,0.20,0.11,70);
+          spaceSfx('boss.dragon.projectile');
           boss.nextAttack = now + Math.max(2950, Math.round((breathCount * interval + 1320) * bossTuneValue(boss, 'attackDelayMult', 1)));
         } else if (boss.attackType === 'sword') {
           // Phase 3B.2 Knight: seven lane swords line up like Ogre's donkey row.
@@ -3901,7 +3934,7 @@ function nextWave() {
             });
           });
           addFloatText('SWORD LANES!', boss.x, boss.y + boss.r + 18, '#c8d4ff', 16);
-          SFX.missionBossCharge ? SFX.missionBossCharge() : (SFX.neonOn && SFX.neonOn());
+          spaceSfx('boss.knight.projectile');
           boss.nextAttack = now + Math.max(2450, (boss.attackDelay || 3900) + 150);
         } else if (boss.attackType === 'fish') {
           // Phase 3C.1 Shark: continuous tooth deployment, not a single wave.
@@ -3927,12 +3960,12 @@ function nextWave() {
             addFloatText('ZIG-ZAG TEETH!', boss.x, boss.y + boss.r + 18, '#5ab1ff', 16);
             boss._sharkWarnAt = Date.now();
           }
-          SFX.bomberDive && SFX.bomberDive();
+          spaceSfx('boss.shark.projectile');
           boss.nextAttack = Date.now() + Math.max(680, Math.round((boss.attackDelay || 1200) * bossTuneValue(boss, 'attackDelayMult', 1)));
         } else if (boss.attackType === 'sombrero') {
           const now = Date.now();
-          const shieldMs = 1450;
-          const openMs = 1500;
+          const shieldMs = 1100;
+          const openMs = 1150;
           boss.tacoGuardUntil = now + shieldMs;
           boss.tacoOpenUntil = now + shieldMs + openMs;
           boss.tacoGuardFlashUntil = now + shieldMs;
@@ -3957,7 +3990,7 @@ function nextWave() {
           setTimeout(() => {
             if (state === 'playing' && boss && boss.attackType === 'sombrero' && Date.now() < (boss.tacoOpenUntil || 0)) addFloatText('OPEN!', boss.x, boss.y - boss.r - 20, '#33ff66', 18);
           }, shieldMs);
-          SFX.tone && SFX.tone(420,'square',0,0.06,0.08,260);
+          spaceSfx('boss.taco.projectile');
           boss.nextAttack = now + shieldMs + openMs + 350;
         } else if (boss.attackType === 'ink') {
           const now = Date.now();
@@ -3985,7 +4018,7 @@ function nextWave() {
             });
           }
           addFloatText('INK GUARD!', boss.x, boss.y + boss.r + 18, '#7040b8', 16);
-          SFX.neonOn && SFX.neonOn();
+          spaceSfx('boss.octo.projectile');
           boss.nextAttack = now + 5000;
         } else if (boss.attackType === 'gizmo') {
           // Gizmo lobs tennis balls that ricochet off the side walls and rain back
@@ -4002,7 +4035,7 @@ function nextWave() {
             enemyBullets.push({ x: boss.x, y: boss.y + boss.r * 0.5, vx, vy, r: 9, theme: 'tennis', damage: bossDamage(boss, 20), tennis: true, bounce: true, visualScale: 3.2, born: Date.now() });
           }
           addFloatText('TENNIS SMASH!', boss.x, boss.y + boss.r + 18, '#c6ff3a', 16);
-          SFX.gizmoBark ? SFX.gizmoBark() : (SFX.missionOminous && SFX.missionOminous());
+          spaceSfx('boss.gizmo.voice');
           if (boss.isFinalGizmo) {
             // FINAL GIZMO: the tennis barrage AND the classic bone shotgun together.
             const boneCount = 6;
@@ -5920,34 +5953,58 @@ function nextWave() {
     if (SFX && SFX.tone) SFX.tone(freq, type || 'square', 0, dur || 0.12, vol || 0.08, endFreq || freq);
     else if (SFX && SFX.hit) SFX.hit();
   }
+  // ── Space SFX registry (lightweight, no audio files) ──────────────────────
+  // Named lookup over the EXISTING procedural SFX/tone calls. Nothing here is a
+  // new sound — every entry below plays exactly the same placeholder already
+  // used at its real call site (or, for "voice" keys with no live call site yet,
+  // the closest distinct-per-boss tone already authored for Boss Preview). This
+  // just gives the eventual real-audio pass one named spot per event to swap
+  // instead of hunting through inline SFX calls scattered across the file.
+  const SPACE_SFX = {
+    'boss.ogre.voice': () => { if (SFX.scaryLaugh) SFX.scaryLaugh(); else playBossPreviewTone(120, 'sawtooth', 0.18, 0.10, 70); },
+    'boss.ogre.projectile': () => playDonkeyHeeHaw(),
+    'boss.dragon.voice': () => playBossPreviewTone(150, 'sawtooth', 0.22, 0.09, 90),
+    'boss.dragon.projectile': () => playBossPreviewTone(130, 'sawtooth', 0.20, 0.13, 70),
+    'boss.knight.voice': () => playBossPreviewTone(260, 'square', 0.14, 0.09, 90),
+    'boss.knight.projectile': () => { if (SFX.missionBossCharge) SFX.missionBossCharge(); else if (SFX.neonOn) SFX.neonOn(); },
+    'boss.gray.voice': () => { if (SFX.ghostTeleport) SFX.ghostTeleport(); else if (SFX.emp) SFX.emp(); else playBossPreviewTone(180, 'sine', 0.16, 0.08, 520); },
+    'boss.gray.projectile': () => { if (SFX.emp) SFX.emp(); },
+    'boss.shark.voice': () => playBossPreviewTone(180, 'sawtooth', 0.16, 0.08, 90),
+    'boss.shark.projectile': () => { if (SFX.bomberDive) SFX.bomberDive(); },
+    'boss.taco.voice': () => playBossPreviewTone(300, 'square', 0.16, 0.08, 180),
+    'boss.taco.projectile': () => playBossPreviewTone(420, 'square', 0.12, 0.12, 260),
+    'boss.octo.voice': () => playBossPreviewTone(95, 'sawtooth', 0.22, 0.09, 60),
+    'boss.octo.projectile': () => { if (SFX.neonOn) SFX.neonOn(); },
+    'boss.gizmo.voice': () => { if (SFX.gizmoBark) SFX.gizmoBark(); else playBossPreviewTone(240, 'square', 0.14, 0.10, 120); },
+    'boss.gizmo.projectile': () => playBossPreviewTone(540, 'triangle', 0.10, 0.09, 840),
+    'player.hit': () => { if (SFX.hit) SFX.hit(); },
+    'player.death': () => { if (SFX.over) SFX.over(); },
+    'rescue.success': () => { if (SFX.win) SFX.win(); },
+    'powerup.hp': () => { if (SFX.powerupCollect) SFX.powerupCollect(); },
+    'powerup.bomb': () => { if (SFX.over) SFX.over(); },
+    'wave.start': () => { if (SFX.missionSignal) SFX.missionSignal(); },
+  };
+  function spaceSfx(key) {
+    try { const fn = SPACE_SFX[key]; if (fn) fn(); } catch (e) {}
+  }
+  const BOSS_SFX_KEY_PREFIX = {
+    'STAR OGRE': 'boss.ogre',
+    'SKY DRAGON': 'boss.dragon',
+    'DARK KNIGHT': 'boss.knight',
+    'GRAY VISITOR': 'boss.gray',
+    'SPACE SHARK': 'boss.shark',
+    'MEAN TACO': 'boss.taco',
+    'COSMIC OCTO': 'boss.octo',
+    'GIZMO': 'boss.gizmo',
+  };
   function playBossPreviewSound(name, part) {
-    // Phase 9 prep: this preview intentionally exposes a quick sound test for each
-    // boss and its projectile. These are existing SFX/tone hooks for now; the next
-    // dedicated SFX pass can replace the mappings without changing the preview UI.
+    // Phase 9 prep: routed through the SPACE_SFX registry above so a future
+    // dedicated SFX pass can replace one named entry instead of editing this
+    // branch or the live attack call sites separately.
     try {
-      const projectile = part === 'projectile';
-      if (name === 'STAR OGRE') {
-        if (projectile) playDonkeyHeeHaw();
-        else if (SFX.scaryLaugh) SFX.scaryLaugh(); else playBossPreviewTone(120, 'sawtooth', 0.18, 0.10, 70);
-      } else if (name === 'SKY DRAGON') {
-        playBossPreviewTone(projectile ? 220 : 150, 'sawtooth', projectile ? 0.16 : 0.22, projectile ? 0.11 : 0.09, projectile ? 760 : 90);
-      } else if (name === 'DARK KNIGHT') {
-        playBossPreviewTone(projectile ? 760 : 260, projectile ? 'triangle' : 'square', projectile ? 0.08 : 0.14, 0.09, projectile ? 240 : 90);
-      } else if (name === 'GRAY VISITOR') {
-        if (projectile) playBossPreviewTone(620, 'sine', 0.16, 0.08, 190);
-        else if (SFX.ghostTeleport) SFX.ghostTeleport(); else if (SFX.emp) SFX.emp(); else playBossPreviewTone(180, 'sine', 0.16, 0.08, 520);
-      } else if (name === 'SPACE SHARK') {
-        playBossPreviewTone(projectile ? 520 : 180, 'sawtooth', projectile ? 0.08 : 0.16, 0.08, projectile ? 120 : 90);
-      } else if (name === 'MEAN TACO') {
-        playBossPreviewTone(projectile ? 420 : 300, projectile ? 'triangle' : 'square', projectile ? 0.12 : 0.16, 0.08, projectile ? 780 : 180);
-      } else if (name === 'COSMIC OCTO') {
-        playBossPreviewTone(projectile ? 180 : 95, 'sawtooth', projectile ? 0.14 : 0.22, 0.09, projectile ? 480 : 60);
-      } else if (name === 'GIZMO') {
-        if (projectile) playBossPreviewTone(540, 'triangle', 0.10, 0.09, 840);
-        else if (SFX.gizmoBark) SFX.gizmoBark(); else playBossPreviewTone(240, 'square', 0.14, 0.10, 120);
-      } else {
-        if (projectile && SFX.blaster) SFX.blaster(); else if (SFX.over) SFX.over();
-      }
+      const prefix = BOSS_SFX_KEY_PREFIX[name];
+      if (prefix) { spaceSfx(`${prefix}.${part === 'projectile' ? 'projectile' : 'voice'}`); return; }
+      if (part === 'projectile' && SFX.blaster) SFX.blaster(); else if (SFX.over) SFX.over();
     } catch(e) {}
   }
   function bossPreviewList() {
@@ -6241,7 +6298,7 @@ function nextWave() {
     const barW = boss.r * 2.2, barX = boss.x - barW/2, barY = boss.y - boss.r - 18;
     ctx.font = `bold 13px 'Bebas Neue', cursive`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = boss.isCaptive ? '#00e5ff' : '#ff4444';
-    ctx.fillText(boss.isCaptive ? 'CAPTIVE LOCK' : boss.guardedRescue && boss.captiveCi >= 0 ? `${boss.creature.name} HAS ${GAME_CHARS[boss.captiveCi].name}` : boss.creature.name, boss.x, barY - 6);
+    if (!(spaceRunMode === 'bossrun' && !boss.isCaptive)) ctx.fillText(boss.isCaptive ? 'CAPTIVE LOCK' : boss.guardedRescue && boss.captiveCi >= 0 ? `${boss.creature.name} HAS ${GAME_CHARS[boss.captiveCi].name}` : boss.creature.name, boss.x, barY - 6);
     ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(barX, barY, barW, 8);
     ctx.fillStyle = boss.isCaptive ? '#00e5ff' : '#ff4444'; ctx.fillRect(barX, barY, barW * (boss.hp / boss.maxHp), 8);
   }
@@ -6628,15 +6685,15 @@ function nextWave() {
         field: 'bosses',
         extra: `${defeated}/${bossRunQueue.length || 8} BOSSES DEFEATED / SCORE ${score}`,
         ascending: false,
-        maxWidth: 560,
-        minHeight: 360,
+        maxWidth: 430,
+        minHeight: 300,
         saveMarginTop: 18,
         buttons: `
-          <button class="whack-btn" style="width:100%;min-height:62px;white-space:nowrap;border-color:#ffe61a;background:rgba(255,230,26,0.24)" onclick="spaceBossRunStart()">BOSS RUN AGAIN</button>
-          <button class="whack-btn" style="width:100%;min-height:62px;white-space:nowrap;border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN</button>
-          <button class="whack-btn" style="width:100%;min-height:62px;white-space:nowrap;border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="spaceEndlessStart()">ENDLESS</button>
-          <button class="whack-btn" style="width:100%;min-height:62px;white-space:nowrap;border-color:#7b61ff;background:rgba(123,97,255,0.22)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
-          <button class="whack-btn" style="width:100%;min-height:62px;white-space:nowrap;border-color:rgba(242,239,232,0.35);background:rgba(242,239,232,0.08)" onclick="nav('lobby')">BACK TO ARCADE</button>
+          <button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#ffe61a;background:rgba(255,230,26,0.24)" onclick="spaceBossRunStart()">BOSS RUN AGAIN</button>
+          <button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN</button>
+          <button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="spaceEndlessStart()">ENDLESS</button>
+          <button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#7b61ff;background:rgba(123,97,255,0.22)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
+          <button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:rgba(242,239,232,0.35);background:rgba(242,239,232,0.08)" onclick="nav('lobby')">BACK TO ARCADE</button>
         `,
       });
       loadRemoteBoard(boardKey, `${uid}-board`, '#ffe61a', 'bosses');
@@ -6667,13 +6724,13 @@ function nextWave() {
           field,
           extra: `${getSpaceResultExtraLine()}${gameOverCauseHTML()}`,
           ascending: false,
-          maxWidth: 560,
-          minHeight: 360,
+          maxWidth: 430,
+          minHeight: 300,
           saveMarginTop: 18,
           buttons: `
-            ${spaceLeaderboardMode() === 'bossrun' ? `<button class="whack-btn" style="width:100%;min-height:62px;white-space:nowrap;border-color:#ffe61a;background:rgba(255,230,26,0.24)" onclick="spaceBossRunStart()">BOSS RUN AGAIN</button>` : spaceLeaderboardMode() === 'endless' ? `<button class="whack-btn" style="width:100%;min-height:62px;white-space:nowrap;border-color:#ff00cc;background:rgba(255,0,204,0.26)" onclick="spaceEndlessStart()">ENDLESS AGAIN</button>` : `<button class="whack-btn" style="width:100%;min-height:62px;white-space:nowrap;border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN AGAIN</button>`}
-            <button class="whack-btn" style="width:100%;min-height:62px;white-space:nowrap;border-color:#7b61ff;background:rgba(123,97,255,0.22)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
-            <button class="whack-btn" style="width:100%;min-height:62px;white-space:nowrap;border-color:#ff00cc;background:rgba(255,0,204,0.24)" onclick="nav('lobby')">BACK TO ARCADE</button>
+            ${spaceLeaderboardMode() === 'bossrun' ? `<button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#ffe61a;background:rgba(255,230,26,0.24)" onclick="spaceBossRunStart()">BOSS RUN AGAIN</button>` : spaceLeaderboardMode() === 'endless' ? `<button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#ff00cc;background:rgba(255,0,204,0.26)" onclick="spaceEndlessStart()">ENDLESS AGAIN</button>` : `<button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN AGAIN</button>`}
+            <button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#7b61ff;background:rgba(123,97,255,0.22)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
+            <button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#ff00cc;background:rgba(255,0,204,0.24)" onclick="nav('lobby')">BACK TO ARCADE</button>
           `,
         });
         loadRemoteBoard(boardKey, `${uid}-board`, '#33ff66', field);
@@ -6726,8 +6783,8 @@ function nextWave() {
     if (!overlay || !onSkip || overlay.querySelector('.intro-skip-btn')) return;
     const btn = document.createElement('button');
     btn.className = 'intro-skip-btn';
-    btn.textContent = 'SKIP';
-    btn.style.cssText = "position:fixed;top:max(10px, env(safe-area-inset-top, 10px));right:calc(max(10px, env(safe-area-inset-right, 10px)) + 44px);z-index:10000;pointer-events:auto;height:32px;min-height:32px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;font-family:'VCR',monospace;font-size:10px;letter-spacing:2px;background:none;border:1px solid rgba(242,239,232,0.2);border-radius:6px;padding:0 12px;color:rgba(242,239,232,0.5);cursor:pointer";
+    btn.textContent = 'SKIP TUTORIAL';
+    btn.style.cssText = "position:fixed;bottom:max(14px, env(safe-area-inset-bottom, 14px));left:50%;transform:translateX(-50%);z-index:10000;pointer-events:auto;height:32px;min-height:32px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;font-family:'VCR',monospace;font-size:10px;letter-spacing:2px;background:none;border:1px solid rgba(242,239,232,0.2);border-radius:6px;padding:0 12px;color:rgba(242,239,232,0.45);opacity:0.7;cursor:pointer";
     btn.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -7097,6 +7154,21 @@ function nextWave() {
       <div id="space-brief-card" style="width:min(94vw,430px);text-align:center;transform:scale(0.96);opacity:0;transition:transform 0.35s ease,opacity 0.35s ease">
       </div>`;
     document.body.appendChild(ov);
+    let storySkipped = false;
+    const skipStory = () => {
+      if (storySkipped || !document.body.contains(ov)) return;
+      storySkipped = true;
+      spaceBriefingTimers.forEach(clearTimeout);
+      spaceBriefingTimers = [];
+      ov.remove();
+      onDone();
+    };
+    const skipBtn = document.createElement('button');
+    skipBtn.className = 'intro-skip-btn';
+    skipBtn.textContent = 'SKIP STORY';
+    skipBtn.style.cssText = "position:fixed;bottom:max(14px, env(safe-area-inset-bottom, 14px));left:50%;transform:translateX(-50%);z-index:10000;pointer-events:auto;height:32px;min-height:32px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;font-family:'VCR',monospace;font-size:10px;letter-spacing:2px;background:none;border:1px solid rgba(242,239,232,0.2);border-radius:6px;padding:0 12px;color:rgba(242,239,232,0.45);opacity:0.7;cursor:pointer";
+    skipBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); skipStory(); };
+    ov.appendChild(skipBtn);
     const card = ov.querySelector('#space-brief-card');
     function setStage(html) {
       if (!document.body.contains(ov)) return;
@@ -7293,7 +7365,10 @@ function nextWave() {
     wave = SPACE_CAMPAIGN_FINAL_WAVE + 1;
     waveKills = 0;
     currentCfg = waveConfig(wave);
-    waveTheme = pickWaveTheme(wave, null);
+    // Endless's first wave skips the normal theme roll — landing on something like
+    // Blackout/EMP/Mirror with zero warmup reads as an unfair surprise. Open on a
+    // plain readable wave instead; pickWaveTheme resumes normally from wave 2 on.
+    waveTheme = 'asteroids';
     pendingBossCreature = (waveTheme === 'boss' || waveTheme === 'gizmo') ? pickBossCreature() : null;
     spawnsRemaining = 0;
     themeEffectsAt = waveTheme === 'blackout' ? Date.now() + 1400 : 0;
