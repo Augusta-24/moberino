@@ -136,6 +136,8 @@
   let academyTimers = [];
   let academyMysteryIndex = 0;
   let academyShieldNoticeAt = 0; // Space Tutorial safety net: lessons teach without causing campaign/game-over state
+  let academyGoalComplete = false;
+  let academyRetryNoticeAt = 0;
   // 'flip' (not 'reverse') for the wave theme key — the mystery outcome list below
   // already uses 'reverse' for reversed controls, an unrelated effect; same string
   // in both would be confusing to read even though they're different variables.
@@ -789,6 +791,64 @@
     }, 280);
   }
 
+  function updateHoldDriftEnemy(o, now) {
+    if (!o || o.behavior !== 'holdDrift' || waveTheme === 'flip') return false;
+    // Normal enemies are allowed to occupy more of the board now: roughly the
+    // upper 75% of the playfield, while still staying safely above the player line.
+    const safeMaxY = Math.max(132, Math.min(dangerY - 72, H * 0.75));
+    const targetY = o.holdY == null ? Math.min(safeMaxY, Math.max(118, H * 0.42)) : Math.min(o.holdY, safeMaxY);
+    if (!o.holdSettled) {
+      if (o.y < targetY) {
+        o.y += Math.max(1.2, Math.abs(o.vy || 1.8));
+        if (o.y > targetY) o.y = targetY;
+        return true;
+      }
+      o.y = targetY;
+      o.baseY = targetY;
+      o.holdSettled = true;
+      o.holdSettledAt = now;
+    }
+    if (o.baseY == null) o.baseY = targetY;
+    if (o.driftSeed == null) o.driftSeed = Math.random() * Math.PI * 2;
+    const age = now - (o.holdSettledAt || now);
+    const bob = Math.sin(age * 0.00125 + o.driftSeed) * (o.driftAmpY || 8);
+    // Ease toward the bob target instead of snapping y directly every frame. The
+    // direct assignment made the upward part of the bob look jittery/glitchy.
+    let driftTargetY = clamp(o.baseY + bob, o.r + 84, safeMaxY);
+
+    // Soft separation: hold/drift enemies repel each other if they clump. This keeps
+    // the lower hold band readable without turning the movement into hard snapping.
+    let repelX = 0, repelY = 0;
+    const minSep = Math.max(o.r * 2.45, 48);
+    for (const other of obstacles) {
+      if (!other || other === o || other.behavior !== 'holdDrift' || other.alive === false) continue;
+      if (!other.holdSettled || other.y < 0) continue;
+      const dx = o.x - other.x;
+      const dy = o.y - other.y;
+      const distSq = dx * dx + dy * dy;
+      if (distSq <= 0.01 || distSq > minSep * minSep) continue;
+      const dist = Math.sqrt(distSq);
+      const push = (minSep - dist) / minSep;
+      repelX += (dx / dist) * push;
+      repelY += (dy / dist) * push * 0.55;
+    }
+    if (repelX || repelY) {
+      o.vx = clamp(o.vx + repelX * 0.18, -1.15, 1.15);
+      o.x = clamp(o.x + repelX * 0.42, o.r, W - o.r);
+      driftTargetY = clamp(driftTargetY + repelY * 8, o.r + 84, safeMaxY);
+    }
+
+    o.y += (driftTargetY - o.y) * 0.075;
+    if (Math.abs(driftTargetY - o.y) < 0.05) o.y = driftTargetY;
+    if (Math.abs(o.vx) < 0.15) o.vx = (Math.random() < 0.5 ? -1 : 1) * 0.45;
+    if (now > (o.nextDriftTurnAt || 0)) {
+      o.vx += rand(-0.18, 0.18);
+      o.vx = clamp(o.vx, -1.0, 1.0);
+      o.nextDriftTurnAt = now + rand(1100, 1900);
+    }
+    return true;
+  }
+
   // REVERSE theme: spawns from the bottom moving upward instead of the normal
   // top-down fall. Rather than threading a flip through every push() site below
   // (asteroid/swarm/bomber/normal/mirror all have their own hardcoded y/vy), this
@@ -847,8 +907,8 @@
         // Many small, weak, fast enemies instead of a few tough ones. Faster now
         // that powerups are banked, not lost if you can't immediately catch one —
         // there's more of a safety net to draw on, so this can push harder.
-        const r = FACE_R * 0.6;
-        obstacles.push({ type:'face', x:rand(r,W-r), y:-r-10, vx:rand(-0.8,0.8)*cfg.speed, vy:cfg.speed*1.72, r, ci: nextMissionEnemyIndex(), hp:cfg.enemyHpOverride || 1, isTrapped:false, ringHp:0, pausedBurstDone:true, paused:false, pauseUntil:0, burstShotsLeft:0, lastBurstShot:0 });
+        const r = FACE_R * 0.56;
+        obstacles.push({ type:'face', behavior:'swarmer', x:rand(r,W-r), y:-r-10, vx:rand(-0.55,0.55)*cfg.speed, vy:cfg.speed*1.62, r, ci: nextMissionEnemyIndex(), hp:cfg.enemyHpOverride || 1, isTrapped:false, ringHp:0, pausedBurstDone:true, paused:false, pauseUntil:0, burstShotsLeft:0, lastBurstShot:0, swarmerFlashSeed: Math.random() * 1000 });
         return;
       }
       if (waveTheme === 'bomber') {
@@ -866,7 +926,20 @@
       }
       const faceVyMult = cfg.enemyVyMult == null ? 1 : cfg.enemyVyMult;
       const faceHp = isTrapped ? 1 : (cfg.enemyHpOverride || 3);
-      obstacles.push({ type:'face', x:rand(FACE_R,W-FACE_R), y:-FACE_R-10, vx:rand(-0.6,0.6)*cfg.speed, vy:cfg.speed*(0.7+Math.random()*0.5)*(isTrapped?0.82:0.6)*faceVyMult, r:FACE_R, ci, hp: faceHp, isTrapped, ringHp: isTrapped ? CAPTIVE_RING_HP : 0, maxRingHp: isTrapped ? CAPTIVE_RING_HP : 0, pausedBurstDone: isTrapped, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0 });
+      const faceR = FACE_R;
+      const holdMinY = Math.max(118, H * 0.26);
+      const holdMaxY = Math.max(holdMinY + 42, Math.min(dangerY - 78, H * 0.75));
+      const holdY = rand(holdMinY, holdMaxY);
+      const nearbyHold = obstacles.filter(o => o.behavior === 'holdDrift' && o.y > 0 && Math.abs(o.y - holdY) < FACE_R * 3.2).sort((a, b) => Math.abs(a.x - W / 2) - Math.abs(b.x - W / 2));
+      let spawnX = rand(faceR, W - faceR);
+      if (nearbyHold.length) {
+        for (let tries = 0; tries < 8; tries++) {
+          const candidate = rand(faceR, W - faceR);
+          const tooClose = nearbyHold.some(o => Math.abs(o.x - candidate) < FACE_R * 2.6);
+          if (!tooClose) { spawnX = candidate; break; }
+        }
+      }
+      obstacles.push({ type:'face', behavior: isTrapped ? 'captiveDrift' : 'holdDrift', x:spawnX, y:-faceR-10, vx:rand(-0.55,0.55)*cfg.speed*0.22, vy:cfg.speed*(0.7+Math.random()*0.5)*(isTrapped?0.82:0.38)*faceVyMult, r:faceR, ci, hp: faceHp, isTrapped, ringHp: isTrapped ? CAPTIVE_RING_HP : 0, maxRingHp: isTrapped ? CAPTIVE_RING_HP : 0, pausedBurstDone: true, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0, holdY, baseY: holdY, born: Date.now(), driftSeed: Math.random() * Math.PI * 2, driftAmpY: rand(5, 10), nextDriftTurnAt: Date.now() + rand(700, 1500) });
     }
   }
 
@@ -2265,14 +2338,15 @@
   }
 
   const SPACE_ACADEMY_LESSONS = [
-    { title: 'DRAG TO MOVE', detail: 'STAY BELOW THE DANGER LINE' },
-    { title: 'AUTO-FIRE IS ON', detail: 'LINE UP YOUR SHOTS' },
-    { title: 'CATCH POWERUPS', detail: 'LEFT SOCKETS STORE GUN / SHIELD / BOMB' },
-    { title: 'TAP A SOCKET', detail: 'BOMB SOCKET CLEARS DANGER' },
-    { title: 'SHOOT THE ? CRATE', detail: 'IT CAN HELP OR HURT' },
-    { title: 'BREAK THE BLUE LOCK', detail: 'SHOOT THE RING, NOT THE MOBE' },
-    { title: 'BOSS WARNINGS', detail: 'READ THE ATTACK CUE' },
-    { title: 'BLACKOUT', detail: 'SLOW DOWN. WATCH THE LINE.' },
+    { title: 'DRAG TO MOVE', detail: 'DODGE ROCKS AND STAY BELOW THE LINE', confirm: 'GOOD DODGING!' },
+    { title: 'NORMAL ENEMIES', detail: 'THEY HOLD, DRIFT, AND SHOOT', confirm: 'ENEMY CLEARED!' },
+    { title: 'RED SWARMERS', detail: 'FLASHING RED ENEMIES RUSH THE LINE', confirm: 'SWARMER STOPPED!' },
+    { title: 'CATCH POWERUPS', detail: 'LEFT SOCKETS STORE GUN / SHIELD / BOMB', confirm: 'SOCKETS STOCKED!' },
+    { title: 'TAP A SOCKET', detail: 'BOMB SOCKET CLEARS DANGER', confirm: 'BOMB DEPLOYED!' },
+    { title: 'SHOOT THE ? CRATE', detail: 'IT CAN HELP OR HURT', confirm: 'MYSTERY LEARNED!' },
+    { title: 'BREAK THE BLUE LOCK', detail: 'SHOOT THE RING, NOT THE MOBE', confirm: 'RESCUE UNLOCKED!' },
+    { title: 'BOSS WARNINGS', detail: 'READ THE ATTACK CUE', confirm: 'CUES READ!' },
+    { title: 'BLACKOUT', detail: 'SLOW DOWN. WATCH THE LINE.', confirm: 'TRAINING COMPLETE!' },
   ];
 
   function academyTimer(fn, delay) {
@@ -2283,17 +2357,30 @@
 
   function academyMessage(lesson) {
     showTopBanner(lesson.title, 'good');
-    addFloatText(lesson.title, W / 2, H * 0.24, '#33ff66', 28, { vy: -0.16, fade: 0.006 });
+    addFloatText(lesson.title, W / 2, H * 0.24, '#33ff66', 28, { vy: -0.16, fade: 0.006, holdMs: 650 });
     academyTimer(() => {
-      if (academyMode && state === 'playing') addFloatText(lesson.detail, W / 2, H * 0.32, '#ffe61a', 20, { vy: -0.12, fade: 0.006 });
+      if (academyMode && state === 'playing') addFloatText(lesson.detail, W / 2, H * 0.32, '#ffe61a', 20, { vy: -0.12, fade: 0.006, holdMs: 850 });
     }, 620);
+  }
+
+  function academyConfirm(text) {
+    if (!academyMode || state !== 'playing') return;
+    showTopBanner(text || 'NICE!', 'good');
+    addFloatText(text || 'NICE!', W / 2, H * 0.27, '#33ff66', 24, { vy: -0.10, fade: 0.007, holdMs: 600 });
+  }
+
+  function academyTryAgain(text) {
+    const now = Date.now();
+    if (now - academyRetryNoticeAt < 1200) return;
+    academyRetryNoticeAt = now;
+    addFloatText(text || 'TRY AGAIN!', W / 2, H * 0.34, '#ffe61a', 18, { vy: -0.10, fade: 0.01, holdMs: 450 });
   }
 
   function academySafeTimeoutMs(index) {
     // Checkpoint E: every Academy lesson has a deterministic escape hatch. The
     // player can finish by doing the mechanic, but missed pickups/crates/targets
     // never strand the tutorial or bleed into campaign state.
-    const lessonTimeouts = [10000, 10000, 11500, 10000, 11500, 10500, 8200, 9000];
+    const lessonTimeouts = [12500, 14000, 14000, 18000, 15000, 18000, 18000, 9800, 11200];
     return lessonTimeouts[index] || 10000;
   }
 
@@ -2307,8 +2394,15 @@
     obstacles.push({ type: 'asteroid', x, y, vx: 0, vy: speed, r, verts, rot: 0, rotSpeed: 0.01, hp: 1, shadeSeed: 0, rockStyle: 1, academyObstacle: true });
   }
 
-  function spawnAcademyEnemy(x, y, hp) {
-    obstacles.push({ type: 'face', x, y, vx: 0, vy: 0.42, r: FACE_R, ci: nextMissionEnemyIndex(), hp: hp || 1, isTrapped: false, ringHp: 0, pausedBurstDone: true, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0, academyObstacle: true });
+  function spawnAcademyEnemy(x, y, hp, behavior) {
+    const now = Date.now();
+    if (behavior === 'swarmer') {
+      const r = FACE_R * 0.56;
+      obstacles.push({ type: 'face', behavior: 'swarmer', x: clamp(x, r, W - r), y, vx: 0, vy: 2.45, r, ci: nextMissionEnemyIndex(), hp: hp || 1, isTrapped: false, ringHp: 0, pausedBurstDone: true, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0, swarmerFlashSeed: Math.random() * 1000, academyObstacle: true, academyGoal: 'swarmer' });
+      return;
+    }
+    const holdY = clamp(y > 0 ? y : H * 0.34, Math.max(118, H * 0.24), Math.min(dangerY - 86, H * 0.68));
+    obstacles.push({ type: 'face', behavior: 'holdDrift', x: clamp(x, FACE_R, W - FACE_R), y: -FACE_R - 10, vx: 0.34 * (x < W / 2 ? 1 : -1), vy: 1.18, r: FACE_R, ci: nextMissionEnemyIndex(), hp: hp || 1, isTrapped: false, ringHp: 0, pausedBurstDone: true, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0, holdY, baseY: holdY, born: now, holdSettled: false, driftSeed: Math.random() * Math.PI * 2, driftAmpY: 5, nextDriftTurnAt: now + 1200, academyObstacle: true, academyGoal: 'normalEnemy' });
   }
 
   function spawnAcademyPowerup(type, x, delay) {
@@ -2328,7 +2422,7 @@
   function spawnAcademyRescueLock() {
     const ci = missionTrappedChars[0] != null ? missionTrappedChars[0] : nextMissionEnemyIndex();
     const r = FACE_R * 1.08;
-    obstacles.push({ type: 'face', x: W / 2, y: Math.max(100, H * 0.18), vx: 0, vy: 0.18, r, ci, hp: 1, isTrapped: true, ringHp: 5, maxRingHp: 5, pausedBurstDone: true, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0, academyObstacle: true });
+    obstacles.push({ type: 'face', x: W / 2, y: Math.max(112, H * 0.20), vx: 0, vy: 0, r, ci, hp: 1, isTrapped: true, ringHp: 5, maxRingHp: 5, pausedBurstDone: true, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0, academyObstacle: true, academyGoal: 'rescueLock' });
   }
 
   function enterSpaceAcademyLesson(index) {
@@ -2336,7 +2430,9 @@
     academyStep = index;
     academyStepStarted = Date.now();
     academyStepArmed = false;
-    if (index === 4) academyMysteryIndex = 0;
+    academyGoalComplete = false;
+    academyRetryNoticeAt = 0;
+    if (index === 5) academyMysteryIndex = 0;
     bullets = [];
     enemyBullets = [];
     obstacles = [];
@@ -2344,37 +2440,41 @@
     blackoutHitFlashes = [];
     waveTheme = null;
     themeEffectsAt = 0;
-    currentCfg = Object.assign(waveConfig(1), { speed: 1.65, tier: 0, enemyFireMult: 0, allowHp: false, allowPowerups: false, allowMystery: false });
+    currentCfg = Object.assign(waveConfig(1), { speed: 1.65, tier: 0, enemyFireMult: 0.55, allowHp: false, allowPowerups: false, allowMystery: false });
     const lesson = SPACE_ACADEMY_LESSONS[index];
     if (!lesson) { completeSpaceAcademy(); return; }
     academyMessage(lesson);
     if (index === 0) {
-      [0.28, 0.5, 0.72].forEach((xp, i) => spawnAcademyAsteroid(W * xp, -40 - i * 120, 1.08));
+      [0.28, 0.5, 0.72].forEach((xp, i) => spawnAcademyAsteroid(W * xp, -40 - i * 130, 1.0));
     } else if (index === 1) {
-      [0.28, 0.5, 0.72].forEach((xp, i) => spawnAcademyEnemy(W * xp, -40 - i * 90, 1));
+      academyTimer(() => academyMode && addFloatText('THEY DO NOT CHARGE', W / 2, H * 0.40, '#00e5ff', 16, { vy: -0.08, fade: 0.007, holdMs: 650 }), 1250);
+      [0.32, 0.68].forEach((xp, i) => spawnAcademyEnemy(W * xp, H * (0.34 + i * 0.12), 1, 'holdDrift'));
     } else if (index === 2) {
-      academyTimer(() => academyMode && addFloatText('WATCH THE LEFT SOCKETS', SOCKET_X + SOCKET_SIZE + 74, socketRect(1).y + SOCKET_SIZE / 2, '#00e5ff', 16, { vy: -0.08, fade: 0.006 }), 1250);
+      academyTimer(() => academyMode && addFloatText('RED FLASH = RUSHER', W / 2, H * 0.40, '#ff4444', 18, { vy: -0.08, fade: 0.007, holdMs: 650 }), 850);
+      spawnAcademyEnemy(W * 0.5, -40, 1, 'swarmer');
+    } else if (index === 3) {
+      academyTimer(() => academyMode && addFloatText('WATCH THE LEFT SOCKETS', SOCKET_X + SOCKET_SIZE + 74, socketRect(1).y + SOCKET_SIZE / 2, '#00e5ff', 16, { vy: -0.08, fade: 0.006, holdMs: 650 }), 1250);
       spawnAcademyPowerup('gun', W * 0.28, 500);
       spawnAcademyPowerup('shield', W * 0.5, 1650);
       spawnAcademyPowerup('bomb', W * 0.72, 2800);
-    } else if (index === 3) {
-      inventory.bomb = true;
-      academyTimer(() => academyMode && addFloatText('TAP THE ORANGE BOMB SOCKET', SOCKET_X + SOCKET_SIZE + 112, socketRect(2).y + SOCKET_SIZE / 2, '#ff8800', 16, { vy: -0.08, fade: 0.006 }), 650);
-      for (let i = 0; i < 5; i++) spawnAcademyEnemy(W * (0.2 + i * 0.15), -35 - i * 42, 1);
     } else if (index === 4) {
+      inventory.bomb = true;
+      academyTimer(() => academyMode && addFloatText('TAP THE ORANGE BOMB SOCKET', SOCKET_X + SOCKET_SIZE + 112, socketRect(2).y + SOCKET_SIZE / 2, '#ff8800', 16, { vy: -0.08, fade: 0.006, holdMs: 650 }), 650);
+      for (let i = 0; i < 5; i++) spawnAcademyEnemy(W * (0.2 + i * 0.15), -35 - i * 42, 1, 'swarmer');
+    } else if (index === 5) {
       spawnAcademyMystery(W * 0.38, 0);
       spawnAcademyMystery(W * 0.62, 2600);
-    } else if (index === 5) {
-      academyTimer(() => academyMode && addFloatText('BLUE RING = RESCUE LOCK', W / 2, Math.max(150, H * 0.25), '#00e5ff', 16, { vy: -0.08, fade: 0.006 }), 900);
-      spawnAcademyRescueLock();
     } else if (index === 6) {
-      academyTimer(() => academyMode && showTopBanner('OGRE: HEE HAW MEANS CHARGE', 'bad'), 900);
-      academyTimer(() => academyMode && showTopBanner('KNIGHT: WHEN SWORD GLOWS, MOVE', 'bad'), 3000);
-      academyTimer(() => academyMode && showTopBanner('GIZMO: READ THE BOUNCE', 'bad'), 5100);
+      academyTimer(() => academyMode && addFloatText('BLUE RING = RESCUE LOCK', W / 2, Math.max(150, H * 0.25), '#00e5ff', 16, { vy: -0.08, fade: 0.006, holdMs: 650 }), 900);
+      spawnAcademyRescueLock();
     } else if (index === 7) {
+      academyTimer(() => academyMode && showTopBanner('OGRE: HEE HAW MEANS CHARGE', 'bad'), 900);
+      academyTimer(() => academyMode && showTopBanner('KNIGHT: WHEN SWORD GLOWS, MOVE', 'bad'), 3300);
+      academyTimer(() => academyMode && showTopBanner('GIZMO: READ THE BOUNCE', 'bad'), 5700);
+    } else if (index === 8) {
       waveTheme = 'blackout';
       themeEffectsAt = Date.now();
-      [0.34, 0.66].forEach((xp, i) => spawnAcademyAsteroid(W * xp, -35 - i * 150, 0.92));
+      [0.34, 0.66].forEach((xp, i) => spawnAcademyAsteroid(W * xp, -35 - i * 160, 0.86));
     }
   }
 
@@ -2393,23 +2493,77 @@
     showSpaceOverlay('select');
   }
 
+  function academyRespawnLessonObjects(elapsed) {
+    if (!academyMode || state !== 'playing' || academyStepArmed) return;
+    const activeAcademyObstacles = obstacles.filter(o => o.academyObstacle && o.alive !== false && !o._crossed);
+    const activeAcademyPowerups = powerups.filter(p => p.academyPowerup || p.academyMystery);
+    if (academyStep === 1) {
+      if (elapsed > 3200 && !academyGoalComplete && activeAcademyObstacles.length === 0) {
+        academyTryAgain('TRY AGAIN: CLEAR THE DRIFTER');
+        spawnAcademyEnemy(W * 0.5, H * 0.38, 1, 'holdDrift');
+      }
+      if (elapsed > 1700 && Date.now() - lastEnemyFire > 1150) {
+        const shooters = obstacles.filter(o => o.academyObstacle && o.behavior === 'holdDrift' && o.y > 0);
+        if (shooters.length) {
+          enemyFireAt(shooters[Math.floor(Math.random() * shooters.length)], 0.70, 'TRAINING SHOT');
+          lastEnemyFire = Date.now();
+        }
+      }
+    } else if (academyStep === 2) {
+      if (elapsed > 2300 && !academyGoalComplete && !obstacles.some(o => o.academyObstacle && o.behavior === 'swarmer')) {
+        academyTryAgain('TRY AGAIN: STOP THE RED SWARMER');
+        spawnAcademyEnemy(W * rand(0.35, 0.65), -40, 1, 'swarmer');
+      }
+    } else if (academyStep === 3) {
+      if (elapsed > 5600 && !(inventory.gun && inventory.shield && inventory.bomb) && activeAcademyPowerups.length === 0) {
+        academyTryAgain('MISSED ONE — NEW POWERUPS');
+        if (!inventory.gun) spawnAcademyPowerup('gun', W * 0.30, 0);
+        if (!inventory.shield) spawnAcademyPowerup('shield', W * 0.50, inventory.gun ? 0 : 900);
+        if (!inventory.bomb) spawnAcademyPowerup('bomb', W * 0.70, (inventory.gun && inventory.shield) ? 0 : 1800);
+      }
+    } else if (academyStep === 4) {
+      if (elapsed > 5200 && inventory.bomb && activeAcademyObstacles.length === 0) {
+        academyTryAgain('TRY AGAIN: TAP THE BOMB SOCKET');
+        for (let i = 0; i < 4; i++) spawnAcademyEnemy(W * (0.24 + i * 0.17), -35 - i * 38, 1, 'swarmer');
+      }
+    } else if (academyStep === 5) {
+      if (elapsed > 6200 && academyMysteryIndex < 2 && activeAcademyPowerups.length === 0) {
+        academyTryAgain('TRY AGAIN: SHOOT THE ? CRATE');
+        spawnAcademyMystery(W * 0.5, 0);
+      }
+    } else if (academyStep === 6) {
+      if (elapsed > 5200 && !academyGoalComplete && activeAcademyObstacles.length === 0) {
+        academyTryAgain('TRY AGAIN: BREAK THE BLUE LOCK');
+        spawnAcademyRescueLock();
+      }
+    }
+  }
+
   function updateSpaceAcademy() {
     if (!academyMode || state !== 'playing' || academyStepArmed) return;
     const elapsed = Date.now() - academyStepStarted;
+    academyRespawnLessonObjects(elapsed);
     let done = false;
-    if (academyStep === 0 || academyStep === 1 || academyStep === 3 || academyStep === 5) done = elapsed > 2200 && obstacles.length === 0;
-    else if (academyStep === 2) done = elapsed > 3500 && inventory.gun && inventory.shield && inventory.bomb;
-    else if (academyStep === 4) done = elapsed > 4200 && academyMysteryIndex >= 2 && powerups.length === 0;
-    else if (academyStep === 6) done = elapsed > 7200;
-    else if (academyStep === 7) done = elapsed > 8000;
-    if (!done && elapsed > academySafeTimeoutMs(academyStep)) done = true;
+    if (academyStep === 0) done = elapsed > 3000 && obstacles.length === 0;
+    else if (academyStep === 1 || academyStep === 2 || academyStep === 6) done = elapsed > 2600 && academyGoalComplete && obstacles.length === 0;
+    else if (academyStep === 3) done = elapsed > 4200 && inventory.gun && inventory.shield && inventory.bomb;
+    else if (academyStep === 4) done = elapsed > 3200 && !inventory.bomb && obstacles.length === 0;
+    else if (academyStep === 5) done = elapsed > 5200 && academyMysteryIndex >= 2 && powerups.length === 0;
+    else if (academyStep === 7) done = elapsed > 8800;
+    else if (academyStep === 8) done = elapsed > 10200;
+    // Only non-interactive read-only lessons use the deterministic timeout to advance.
+    if (!done && (academyStep === 0 || academyStep === 7 || academyStep === 8) && elapsed > academySafeTimeoutMs(academyStep)) done = true;
     if (!done) return;
     academyStepArmed = true;
+    const lesson = SPACE_ACADEMY_LESSONS[academyStep];
+    academyConfirm(lesson && lesson.confirm ? lesson.confirm : 'NICE!');
     academyTimer(() => {
       if (!academyMode || state !== 'playing') return;
-      enterSpaceAcademyLesson(academyStep + 1);
-    }, 900);
+      if (academyStep >= SPACE_ACADEMY_LESSONS.length - 1) completeSpaceAcademy();
+      else enterSpaceAcademyLesson(academyStep + 1);
+    }, academyStep >= SPACE_ACADEMY_LESSONS.length - 1 ? 1850 : 1450);
   }
+
 
   function beginConfiguredWave(startWave, forcedBossName) {
     academyMode = false;
@@ -3302,10 +3456,10 @@ function nextWave() {
         ctx.save();
         ctx.beginPath(); ctx.rect(-jailS/2, -jailS/2, jailS, jailS); ctx.clip();
       }
-      const faceScale = o.isTrapped ? 2.12 : 2.24;
+      const faceScale = o.isTrapped ? 2.12 : (o.behavior === 'swarmer' ? 2.05 : 2.24);
       drawCanvasMobe(gc, o.isTrapped ? 'sad' : 'normal', -o.r * faceScale / 2, -o.r * faceScale / 2, o.r * faceScale, o.r * faceScale, {
-        glowColor: o.isTrapped ? 'rgba(0,229,255,0.72)' : 'rgba(255,68,68,0.45)',
-        glowBlur: o.r * (o.isTrapped ? 0.35 : 0.18),
+        glowColor: o.isTrapped ? 'rgba(0,229,255,0.72)' : (o.behavior === 'swarmer' ? 'rgba(255,0,0,0.78)' : 'rgba(255,68,68,0.45)'),
+        glowBlur: o.r * (o.isTrapped ? 0.35 : (o.behavior === 'swarmer' ? 0.42 : 0.18)),
       });
       if (o.isTrapped) {
         ctx.restore();
@@ -3313,6 +3467,24 @@ function nextWave() {
         ctx.fillRect(-o.r, -o.r, o.r * 2, o.r * 2);
       }
       if (!o.isTrapped) {
+        if (o.behavior === 'swarmer') {
+          const flash = 0.55 + Math.sin(Date.now() * 0.018 + (o.swarmerFlashSeed || 0)) * 0.45;
+          ctx.save();
+          ctx.globalAlpha = 0.40 + flash * 0.42;
+          ctx.strokeStyle = '#ff0000';
+          ctx.fillStyle = 'rgba(255,0,0,0.16)';
+          ctx.lineWidth = 3.4;
+          ctx.beginPath();
+          ctx.arc(0, 0, o.r * (1.55 + flash * 0.22), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.strokeStyle = 'rgba(255,235,235,0.9)';
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.moveTo(-o.r * 0.72, -o.r * 1.18); ctx.lineTo(0, -o.r * 1.62); ctx.lineTo(o.r * 0.72, -o.r * 1.18);
+          ctx.stroke();
+          ctx.restore();
+        }
         // Enemy target lock: keep the red language outside the face so the character
         // art stays readable, then add small inward ticks that say "shoot this."
         ctx.lineCap = 'round';
@@ -4340,7 +4512,9 @@ function nextWave() {
       o.x+=o.vx;
       if(o.x<o.r&&o.vx<0) o.vx*=-1;
       if(o.x>W-o.r&&o.vx>0) o.vx*=-1;
-      if (o.blackoutHiddenEnemy && Date.now() < (o.blackoutHoldUntil || 0)) continue;
+      const nowMove = Date.now();
+      if (updateHoldDriftEnemy(o, nowMove)) continue;
+      if (o.blackoutHiddenEnemy && nowMove < (o.blackoutHoldUntil || 0)) continue;
 
       // Non-hero enemies pause once, partway down, for a quick burst of fire before
       // resuming their descent — see the note in spawnObstacle() for why.
@@ -4623,6 +4797,7 @@ function nextWave() {
                 o.alive=false;
                 SFX.win();
                 miniExplosion(o.x,o.y,'#00e5ff');
+                if (academyMode && o.academyGoal === 'rescueLock') academyGoalComplete = true;
                 rescueMissionChar(o.ci, o.x, o.y, '+150 RESCUED!');
                 const hpGain = Math.min(30, 100 - health);
                 if(hpGain > 0){ health = Math.min(100, health + 30); addFloatText(`+${hpGain} HP`, o.x, o.y - 30, '#33ff66', 18); }
@@ -4659,6 +4834,7 @@ function nextWave() {
                   miniExplosion(o.x, o.y, 'rgba(255,90,90,0.55)');
                 }
                 waveKills++;
+                if (academyMode && (o.academyGoal === 'normalEnemy' || o.academyGoal === 'swarmer')) academyGoalComplete = true;
                 o.alive=false;
               }
             }
@@ -4730,8 +4906,9 @@ function nextWave() {
     // Enemy fire ramps by campaign tier, not raw wave flood. Later chapters ask for
     // better dodging and target priority, but keep a readable cadence on mobile.
     const fireTier = currentCfg ? currentCfg.tier : campaignTier(wave);
-    if(!academyMode && Date.now() - lastEnemyFire > Math.max(420, 1280 - fireTier * 125 - Math.min(wave, 12) * 28 - Math.max(0, wave - 18) * 35)){
-      const shooters = obstacles.filter(o => o.type==='face' && !o.isTrapped && o.y > 0);
+    const enemyFireInterval = Math.max(420, 1280 - fireTier * 125 - Math.min(wave, 12) * 28 - Math.max(0, wave - 18) * 35) * 0.85;
+    if(!academyMode && Date.now() - lastEnemyFire > enemyFireInterval){
+      const shooters = obstacles.filter(o => o.type==='face' && o.behavior !== 'swarmer' && !o.isTrapped && o.y > 0);
       if(shooters.length > 0){
         let chosen;
         if (waveTheme === 'blackout') {
@@ -7521,6 +7698,8 @@ function nextWave() {
     academyShieldNoticeAt = 0;
     academyStep = 0;
     academyStepArmed = false;
+    academyGoalComplete = false;
+    academyRetryNoticeAt = 0;
     academyMysteryIndex = 0;
     state = 'playing';
     enterSpaceAcademyLesson(0);
