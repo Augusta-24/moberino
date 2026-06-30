@@ -2390,13 +2390,11 @@ body.main-scrolled .main-site-header .page-nav-btn.active::after {
   /* Keep the active fog readable on top of the darker scrolled header shield. */
   opacity: 0.62;
 }
-@media (max-width: 1023px) {
-  /* Below 1024px the bottom-tab nav is in charge (see #tabs media query above), so
-     the per-page header/nav is hidden here. At 1024px+ the desktop header now shows
-     for coarse-pointer tablets too (see .main-site-header query above), so this no
-     longer needs a separate landscape-coarse clause reaching up to 1400px — that used
-     to hide the header in the 1024-1400px tablet-landscape range with nothing left to
-     replace it, which is exactly the "no nav visible" bug. */
+@media (max-width: 1023px) and (pointer: coarse) {
+  /* Coarse-pointer (touch) devices below 1024px use bottom tabs — hide the desktop
+     per-page header here. Fine-pointer (mouse) desktops at any width always show the
+     desktop header regardless, so pointer:coarse is required to avoid hiding the nav
+     in a narrowed desktop browser window (768–1023px), which would leave no nav at all. */
   #pg-detail.active, #pg-timeline.active, #pg-search.active, #pg-shelf.active {
     padding-top: 0;
   }

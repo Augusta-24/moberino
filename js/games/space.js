@@ -593,6 +593,104 @@
 
   function rand(a,b){ return a + Math.random()*(b-a); }
   function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+  const SPACE_LEADERBOARD_CONFIG = {
+    campaign: { boardKey: 'space-campaign', bestKey: 'space-best-campaign', uid: 'space-campaign', color: '#33ff66', field: 'score', label: 'CAMPAIGN SCORE' },
+    bossrun: { boardKey: 'space-bossrun', bestKey: 'space-best-bossrun', uid: 'space-bossrun', color: '#ffe61a', field: 'bosses', label: 'BOSSES DEFEATED' },
+    endless: { boardKey: 'space-endless', bestKey: 'space-best-endless', uid: 'space-endless', color: '#ff00cc', field: 'wave', label: 'WAVE REACHED' }
+  };
+
+  function spaceLeaderboardMode() {
+    if (academyMode || spaceRunMode === 'academy' || spaceRunMode === 'debug') return null;
+    if (spaceRunMode === 'bossrun') return 'bossrun';
+    if (spaceRunMode === 'endless') return 'endless';
+    return 'campaign';
+  }
+
+  function spaceLeaderboardConfig(mode) {
+    return SPACE_LEADERBOARD_CONFIG[mode || spaceLeaderboardMode()] || null;
+  }
+
+  function getSpaceLeaderboardKey(mode) {
+    const cfg = spaceLeaderboardConfig(mode);
+    return cfg ? cfg.boardKey : 'space-campaign';
+  }
+
+  function getSpaceBestKey(mode) {
+    const cfg = spaceLeaderboardConfig(mode);
+    return cfg ? cfg.bestKey : 'space-best-campaign';
+  }
+
+  function spaceBossesDefeatedForResult() {
+    if (spaceRunMode !== 'bossrun') return 0;
+    return clamp(bossRunIndex || 0, 0, bossRunQueue.length || 0);
+  }
+
+  function spaceLeaderboardResult() {
+    const mode = spaceLeaderboardMode();
+    const cfg = spaceLeaderboardConfig(mode);
+    if (!cfg) return null;
+    if (mode === 'bossrun') {
+      const defeated = spaceBossesDefeatedForResult();
+      return Object.assign({}, cfg, {
+        mode,
+        title: defeated >= (bossRunQueue.length || 0) && defeated > 0 ? 'BOSS RUN COMPLETE' : 'BOSS RUN FAILED',
+        scoreLabel: 'BOSSES DEFEATED',
+        scoreValue: defeated,
+        saveValue: defeated,
+        extra: `SCORE ${score} / BOSS ${Math.min((bossRunIndex || 0) + 1, bossRunQueue.length || 1)}/${bossRunQueue.length || 1}${gameOverCauseHTML()}`,
+        buttons: `
+          <button class="whack-btn" style="border-color:#ffe61a;background:rgba(255,230,26,0.24)" onclick="spaceBossRunStart()">BOSS RUN AGAIN</button>
+          <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.24)" onclick="spaceStart()">PLAY CAMPAIGN</button>
+          <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="spaceEndlessStart()">ENDLESS</button>
+          <button class="whack-btn" style="border-color:rgba(242,239,232,0.35);background:rgba(242,239,232,0.08)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
+        `
+      });
+    }
+    if (mode === 'endless') {
+      return Object.assign({}, cfg, {
+        mode,
+        title: 'ENDLESS RUN OVER',
+        scoreLabel: 'WAVE REACHED',
+        scoreValue: wave || 0,
+        saveValue: wave || 0,
+        extra: `SCORE ${score}${gameOverCauseHTML()}`,
+        buttons: `
+          <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="spaceEndlessStart()">PLAY ENDLESS AGAIN</button>
+          <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.24)" onclick="spaceStart()">PLAY CAMPAIGN</button>
+          <button class="whack-btn" style="border-color:#ffe61a;background:rgba(255,230,26,0.20)" onclick="spaceBossRunStart()">BOSS RUN</button>
+          <button class="whack-btn" style="border-color:rgba(242,239,232,0.35);background:rgba(242,239,232,0.08)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
+        `
+      });
+    }
+    return Object.assign({}, cfg, {
+      mode,
+      title: 'CAMPAIGN FAILED',
+      scoreLabel: 'CAMPAIGN SCORE',
+      scoreValue: score,
+      saveValue: score,
+      extra: `RESCUED ${rescuedChars.size}/${missionTrappedChars.length || SPACE_RESCUE_TARGET_COUNT} / WAVE ${wave}${gameOverCauseHTML()}`,
+      buttons: `
+        <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN AGAIN</button>
+        <button class="whack-btn" style="border-color:#7c6bff;background:rgba(124,107,255,0.18)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
+        <button class="whack-btn" style="border-color:rgba(242,239,232,0.35);background:rgba(242,239,232,0.08)" onclick="nav('lobby')">BACK TO ARCADE</button>
+      `
+    });
+  }
+
+  function spaceNoLeaderboardGameOverHTML() {
+    return `<div class="whack-mode-shell" style="max-width:410px;margin-top:22px;text-align:center">
+      <div class="whack-mode-title" style="color:#ff6666;text-shadow:0 0 18px #ff444488">GAME OVER</div>
+      <div class="game-card whack-mode-card" style="border-color:#ff666677;cursor:default;min-height:0;padding:20px 18px;background:rgba(5,2,18,0.94)">
+        <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.62);margin-bottom:12px">DEBUG / TUTORIAL RUN — NO LEADERBOARD</div>
+        ${gameOverCauseHTML()}
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
+          <button class="whack-btn" style="border-color:#7c6bff;background:rgba(124,107,255,0.18)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
+          <button class="whack-btn" style="border-color:rgba(242,239,232,0.35);background:rgba(242,239,232,0.08)" onclick="nav('lobby')">BACK TO ARCADE</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
 
   function blackoutHeadlightGeometry() {
     if (!player) return null;
@@ -2124,7 +2222,7 @@
     socketAnchorY = H - SPACE_SOCKET_ANCHOR_BOTTOM_OFFSET;
     dangerY = socketAnchorY + (H - socketAnchorY) * 0.5;
     player.y = dangerY + player.r * 1.1;
-    highScore = parseInt(localStorage.getItem('space-best')||'0');
+    highScore = parseInt(localStorage.getItem(getSpaceBestKey())||'0');
     leftHeld=false; rightHeld=false; lastAutoFire=0; lastPizzaFire=0;
     mkStars();
     currentCfg = waveConfig(wave);
@@ -2326,7 +2424,7 @@
     clearSpaceAcademyTimers();
     clearSpaceRuntimeTimers();
     clearSpaceCinematicOverlays();
-    bullets = []; obstacles = []; enemyBullets = []; powerups = []; floatTexts = []; blackoutHitFlashes = []; blackoutShooterIndex = 0;
+    bullets = []; obstacles = []; enemyBullets = []; powerups = []; floatTexts = []; blackoutHitFlashes = []; topBanner = null; blackoutShooterIndex = 0;
     boss = null; miniBoss = null; rescueBanner = null; waveCaptivesSeen.clear();
     lastDamageCause=''; lastDamageAmount=0; lastDamageAt=0; lastDamageWave=0; deathCause=''; deathDamageAmount=0; deathWave=0; deathWaveTheme='';
     wave = startWave;
@@ -2916,7 +3014,7 @@ function nextWave() {
       addFloatText('FROZEN!', player.x, player.y - 60, '#66ddff', 16);
     }
     if (health <= 0 && state === 'playing') lockDeathCause(amount, cause);
-    if (health <= 0 && state === 'playing' && wave <= SPACE_CAMPAIGN_FINAL_WAVE && !campaignRebootUsed) {
+    if (health <= 0 && state === 'playing' && spaceRunMode === 'campaign' && wave <= SPACE_CAMPAIGN_FINAL_WAVE && !campaignRebootUsed) {
       if (triggerCampaignReboot()) return;
     }
     if (health <= 0) {
@@ -2925,13 +3023,15 @@ function nextWave() {
       // Cancelling the loop immediately here used to leave the death explosion's own
       // particle frames smeared on a canvas nothing was clearing anymore.
       state = 'dying';
+      waveTransitioning = false;
       clearTimeout(spawnTimer);
       SFX.over();
       triggerShake(18);
       bigExplosion(player.x, player.y, GAME_CHARS[activeChar].color);
-      if (score > highScore) { highScore = score; localStorage.setItem('space-best', score); }
+      if (spaceLeaderboardMode() === 'campaign' && score > highScore) { highScore = score; localStorage.setItem(getSpaceBestKey('campaign'), score); }
       // Freeze on the death frame for 3s before showing the game-over overlay
       setTimeout(() => {
+        waveTransitioning = false;
         state = 'over';
         cancelAnimationFrame(raf);
         showSpaceOverlay('over');
@@ -4536,7 +4636,7 @@ function nextWave() {
     // announcement covers the screen.
     // Boss beaten: play the held victory cinematic only once every enemy and
     // asteroid is gone, so the next scene never appears over a populated board.
-    if (pendingBossWin && obstacles.length === 0 && !boss && !miniBoss && state === 'playing') {
+    if (pendingBossWin && obstacles.length === 0 && enemyBullets.length === 0 && !boss && !miniBoss && state === 'playing') {
       const runWin = pendingBossWin; pendingBossWin = null; runWin();
     }
     if (!academyMode && spaceRunMode !== 'bossrun' && spawnsRemaining <= 0 && obstacles.length === 0 && !boss && !miniBoss && !mirrorSequenceActive && !pendingBossWin && state === 'playing') {
@@ -6328,9 +6428,11 @@ function nextWave() {
         <div style="font-family:'Bebas Neue',cursive;font-size:38px;letter-spacing:5px;line-height:1;color:#f2efe8;margin-bottom:10px">${detail}</div>
         <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.45);margin-bottom:18px">SCORE ${score}</div>
         <div style="display:flex;flex-direction:column;gap:10px">
+          <button class="whack-btn" style="border-color:#ffe61a;background:rgba(255,230,26,0.24)" onclick="spaceBossRunStart()">BOSS RUN AGAIN</button>
           <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN</button>
-          <button class="whack-btn" style="border-color:#00e5ff;background:rgba(0,229,255,0.22)" onclick="spaceBossRunStart()">BOSS RUN</button>
-          <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="nav('lobby')">BACK TO ARCADE</button>
+          <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="spaceEndlessStart()">ENDLESS</button>
+          <button class="whack-btn" style="border-color:#7c6bff;background:rgba(124,107,255,0.18)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
+          <button class="whack-btn" style="border-color:rgba(242,239,232,0.35);background:rgba(242,239,232,0.08)" onclick="nav('lobby')">BACK TO ARCADE</button>
         </div>
       </div>
     </div>`;
@@ -6410,8 +6512,8 @@ function nextWave() {
                 </div>
               </div>
               <div style="display:flex;flex-direction:column;gap:10px">
+                ${spaceModeButtonHTML('SPACE TUTORIAL', 'SAFE LESSONS', 'spaceAcademyStart()', '#7c6bff', '★')}
                 ${spaceModeButtonHTML('PLAY CAMPAIGN', '13 WAVES / 6 RESCUES', 'spaceStart()', '#33ff66', '▶')}
-                ${spaceModeButtonHTML('SPACE TUTORIAL', 'SAFE LESSONS', 'spaceAcademyStart()', '#00e5ff', '★')}
                 ${spaceModeButtonHTML('BOSS RUN', 'BOSSES ONLY', 'spaceBossRunStart()', '#ffe61a', '☠')}
                 ${spaceModeButtonHTML('ENDLESS', 'CHAOS MODE', 'spaceEndlessStart()', '#ff00cc', '∞')}
               </div>
@@ -6428,40 +6530,78 @@ function nextWave() {
     } else if(mode==='debug'){
       ov.innerHTML = spaceDebugHTML();
     } else if(mode==='mode-complete'){
-      ov.innerHTML = spaceModeCompleteHTML('BOSS RUN COMPLETE!', 'GIZMO DEFEATED', '#ffe61a');
+      const result = Object.assign({}, spaceLeaderboardConfig('bossrun'), {
+        uid: 'space-bossrun',
+        boardKey: getSpaceLeaderboardKey('bossrun'),
+        color: '#ffe61a',
+        field: 'bosses',
+        scoreLabel: 'BOSSES DEFEATED',
+        scoreValue: bossRunQueue.length || 0,
+        saveValue: bossRunQueue.length || 0,
+        extra: `SCORE ${score}`,
+        buttons: `
+          <button class="whack-btn" style="border-color:#ffe61a;background:rgba(255,230,26,0.24)" onclick="spaceBossRunStart()">BOSS RUN AGAIN</button>
+          <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN</button>
+          <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="spaceEndlessStart()">ENDLESS</button>
+          <button class="whack-btn" style="border-color:#7c6bff;background:rgba(124,107,255,0.18)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
+          <button class="whack-btn" style="border-color:rgba(242,239,232,0.35);background:rgba(242,239,232,0.08)" onclick="nav('lobby')">BACK TO ARCADE</button>
+        `
+      });
+      if (result.saveValue > parseInt(localStorage.getItem(result.bestKey)||'0')) localStorage.setItem(result.bestKey, result.saveValue);
+      ov.innerHTML = buildArcadeResultCard({
+        uid: result.uid,
+        boardKey: result.boardKey,
+        artGame: 'space',
+        color: result.color,
+        marquee: 'BOSS RUN COMPLETE!',
+        marqueeEnd: '#7a5d00',
+        scoreLabel: result.scoreLabel,
+        scoreValue: result.scoreValue,
+        saveValue: result.saveValue,
+        field: result.field,
+        extra: result.extra,
+        ascending: false,
+        maxWidth: 430,
+        minHeight: 330,
+        saveMarginTop: 18,
+        buttons: result.buttons,
+      });
+      loadRemoteBoard(result.boardKey, `${result.uid}-board`, result.color, result.field);
+      mountSelectionArt(`${result.uid}-art`, 'space');
     } else if(mode==='over'){
       setArcadeExitVisible(false);
       // Clear stale launch/select markup immediately; otherwise it can flash between
       // the in-game mission-failed beat and the leaderboard game-over card.
       ov.innerHTML = '';
       ov.classList.remove('hidden');
-      const isNew=score>=parseInt(localStorage.getItem('space-best')||'0');
-      const boardKey = getSpaceLeaderboardKey();
-      const uid = 'space';
+      const result = spaceLeaderboardResult();
+      const isNew = result ? result.saveValue >= parseInt(localStorage.getItem(result.bestKey)||'0') : false;
       showMissionFailedBeat(() => {
+        if (!result) {
+          ov.innerHTML = spaceNoLeaderboardGameOverHTML();
+          return;
+        }
+        if (result.saveValue > parseInt(localStorage.getItem(result.bestKey)||'0')) localStorage.setItem(result.bestKey, result.saveValue);
         ov.innerHTML = buildArcadeResultCard({
-          uid,
-          boardKey,
+          uid: result.uid,
+          boardKey: result.boardKey,
           artGame: 'space',
-          color: '#33ff66',
-          marquee: isNew && score > 0 ? 'GAME OVER' : 'GAME OVER',
+          color: result.color,
+          marquee: isNew && result.saveValue > 0 ? result.title : 'GAME OVER',
           marqueeEnd: '#006622',
-          scoreLabel: 'YOUR SCORE',
-          scoreValue: score,
-          saveValue: score,
-          field: 'score',
-          extra: `RESCUED ${rescuedChars.size}/${missionTrappedChars.length || SPACE_RESCUE_TARGET_COUNT} / WAVE ${wave}${gameOverCauseHTML()}`,
+          scoreLabel: result.scoreLabel,
+          scoreValue: result.scoreValue,
+          saveValue: result.saveValue,
+          field: result.field,
+          extra: result.extra,
           ascending: false,
           maxWidth: 410,
           minHeight: 330,
           saveMarginTop: 18,
-          buttons: `
-            <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY AGAIN</button>
-            <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="nav('lobby')">BACK TO ARCADE</button>
-          `,
+          buttons: result.buttons,
         });
-        loadRemoteBoard(boardKey, `${uid}-board`, '#33ff66', 'score');
-        mountSelectionArt(`${uid}-art`, 'space');
+        loadRemoteBoard(result.boardKey, `${result.uid}-board`, result.color, result.field);
+        mountSelectionArt(`${result.uid}-art`, 'space');
       });
     }
     ov.classList.remove('hidden');
@@ -7127,7 +7267,7 @@ function nextWave() {
     socketAnchorY = H - SPACE_SOCKET_ANCHOR_BOTTOM_OFFSET;
     dangerY = socketAnchorY + (H - socketAnchorY) * 0.5;
     player.y = dangerY + player.r * 1.1;
-    bullets = []; obstacles = []; enemyBullets = []; powerups = []; floatTexts = []; blackoutHitFlashes = [];
+    bullets = []; obstacles = []; enemyBullets = []; powerups = []; floatTexts = []; blackoutHitFlashes = []; topBanner = null;
     boss = null; miniBoss = null; pendingBossWin = null; rescueBanner = null; mirrorSequenceActive = false;
     score = 0; health = 100; wave = 0; waveKills = 0; spawnsRemaining = 0; lastEnemyFire = 0; lineFlashA = 0;
     lastDamageCause=''; lastDamageAmount=0; lastDamageAt=0; lastDamageWave=0; deathCause=''; deathDamageAmount=0; deathWave=0; deathWaveTheme='';
@@ -7503,7 +7643,7 @@ function nextWave() {
       el.appendChild(cv);
       const hiEl = document.getElementById(`gc-hi-${key}`);
       if (hiEl) {
-        const keys = {whack:'whack-best-survival',match:'match-best-score',space:'space-best'};
+        const keys = {whack:'whack-best-survival',match:'match-best-score',space:'space-best-campaign'};
         const val = localStorage.getItem(keys[key]);
         if (val) hiEl.textContent = `HI SCORE: ${val}`;
       }
