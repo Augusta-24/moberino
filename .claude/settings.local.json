@@ -48,7 +48,9 @@
       "Bash(mkdir -p monster1_extract)",
       "Bash(unzip -o -q monster1.zip -d monster1_extract)",
       "Bash(curl -sL --max-time 15 \"https://opengameart.org/content/voices-sound-effects-library\" -o /tmp/oga_voices.html -w \"%{http_code}\\\\n\")",
-      "Bash(curl -sL --max-time 15 \"https://pixabay.com/sound-effects/search/donkey/\" -o /tmp/pixabay_donkey.html -w \"%{http_code}\\\\n\")"
+      "Bash(curl -sL --max-time 15 \"https://pixabay.com/sound-effects/search/donkey/\" -o /tmp/pixabay_donkey.html -w \"%{http_code}\\\\n\")",
+      "Bash(awk '/const BOSS_CREATURES = \\\\[/,/^  \\\\];/' js/games/space.js)",
+      "Bash(node --check js/games/space.js)"
     ]
   }
 }

@@ -53,6 +53,30 @@
   cursor: pointer; padding: 0;
 }
 .space-boss-trigger:active { transform: translateY(1px); }
+/* Launch-screen-only: stacked icon-only triggers (info/bosses/debug), no box
+   around them, just the glyph — sits beside the pilot avatar. */
+.space-select-icon-col {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+}
+.space-select-icon-btn {
+  width: 32px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 19px;
+  background: none; border: none; padding: 0;
+  cursor: pointer;
+  filter: drop-shadow(0 0 6px currentColor);
+  opacity: 0.92;
+}
+.space-select-icon-btn:active { transform: translateY(1px); opacity: 1; }
+/* Launch-screen-only: small section captions above the mode-button groups. */
+.space-select-group-label {
+  font-family: 'VCR', monospace;
+  font-size: 9px;
+  letter-spacing: 2.4px;
+  color: rgba(242,239,232,0.5);
+  margin: 0 2px;
+  text-align: left;
+}
 .space-debug-row {
   display: flex; gap: 8px; align-items: center; justify-content: center;
   margin-top: 10px; flex-wrap: wrap;

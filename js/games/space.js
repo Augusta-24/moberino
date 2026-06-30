@@ -138,6 +138,7 @@
   let academyShieldNoticeAt = 0; // Space Tutorial safety net: lessons teach without causing campaign/game-over state
   let academyGoalComplete = false;
   let academyRetryNoticeAt = 0;
+  let academyBossPreviewName = null; // which boss sprite (if any) is on screen for the BOSS WARNINGS lesson
   // 'flip' (not 'reverse') for the wave theme key — the mystery outcome list below
   // already uses 'reverse' for reversed controls, an unrelated effect; same string
   // in both would be confusing to read even though they're different variables.
@@ -440,7 +441,8 @@
       fade: opts.fade != null ? opts.fade : 0.02,
       holdMs: opts.holdMs || 0,
       startedAt: Date.now(),
-      size: size || 20
+      size: size || 20,
+      tag: opts.tag || null
     });
   }
 
@@ -2355,25 +2357,72 @@
     return t;
   }
 
+  // ── Single-slot academy message panel ───────────────────────────────────
+  // Tutorial copy used to be independent floating texts (title/detail/hint),
+  // each fading on its own clock — title still fading while detail appeared,
+  // hint stacking on top of both. This is ONE slot: showing a new message always
+  // fully replaces whatever was on screen, so by construction only one message
+  // (or one title+detail pair) is ever visible — never stacked, never racing.
+  let academyMsgPanel = null; // {title, detail, kind, x, y, startedAt, holdMs}
+  const ACADEMY_MSG_FADE_IN = 180, ACADEMY_MSG_FADE_OUT = 260;
+  function academyShowMsg(title, detail, opts) {
+    opts = opts || {};
+    academyMsgPanel = {
+      title, detail: detail || '',
+      kind: opts.kind || 'good',
+      x: opts.x != null ? opts.x : W / 2,
+      y: opts.y != null ? opts.y : H * 0.26,
+      titleSize: opts.titleSize || 25,
+      detailSize: opts.detailSize || 16,
+      startedAt: Date.now(),
+      holdMs: opts.holdMs != null ? opts.holdMs : 1500,
+    };
+  }
+  function academyClearMsg() {
+    academyMsgPanel = null;
+  }
+  function drawAcademyMsgPanel() {
+    if (!academyMsgPanel) return;
+    const m = academyMsgPanel;
+    const elapsed = Date.now() - m.startedAt;
+    const total = ACADEMY_MSG_FADE_IN + m.holdMs + ACADEMY_MSG_FADE_OUT;
+    if (elapsed > total) { academyMsgPanel = null; return; }
+    let a;
+    if (elapsed < ACADEMY_MSG_FADE_IN) a = elapsed / ACADEMY_MSG_FADE_IN;
+    else if (elapsed < ACADEMY_MSG_FADE_IN + m.holdMs) a = 1;
+    else a = 1 - (elapsed - ACADEMY_MSG_FADE_IN - m.holdMs) / ACADEMY_MSG_FADE_OUT;
+    const titleColor = m.kind === 'bad' ? '#ff4444' : '#33ff66';
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, a);
+    ctx.textAlign = 'center';
+    ctx.shadowColor = titleColor;
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = titleColor;
+    ctx.font = `bold ${m.titleSize}px 'Bebas Neue', cursive`;
+    ctx.fillText(m.title, m.x, m.y);
+    if (m.detail) {
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#ffe61a';
+      ctx.font = `${m.detailSize}px 'Bebas Neue', cursive`;
+      ctx.fillText(m.detail, m.x, m.y + 26);
+    }
+    ctx.restore();
+  }
+
   function academyMessage(lesson) {
-    showTopBanner(lesson.title, 'good');
-    addFloatText(lesson.title, W / 2, H * 0.24, '#33ff66', 28, { vy: -0.16, fade: 0.006, holdMs: 650 });
-    academyTimer(() => {
-      if (academyMode && state === 'playing') addFloatText(lesson.detail, W / 2, H * 0.32, '#ffe61a', 20, { vy: -0.12, fade: 0.006, holdMs: 850 });
-    }, 620);
+    academyShowMsg(lesson.title, lesson.detail, { kind: 'good', holdMs: 1700 });
   }
 
   function academyConfirm(text) {
     if (!academyMode || state !== 'playing') return;
-    showTopBanner(text || 'NICE!', 'good');
-    addFloatText(text || 'NICE!', W / 2, H * 0.27, '#33ff66', 24, { vy: -0.10, fade: 0.007, holdMs: 600 });
+    academyShowMsg(text || 'NICE!', '', { kind: 'good', holdMs: 1100, titleSize: 27 });
   }
 
   function academyTryAgain(text) {
     const now = Date.now();
     if (now - academyRetryNoticeAt < 1200) return;
     academyRetryNoticeAt = now;
-    addFloatText(text || 'TRY AGAIN!', W / 2, H * 0.34, '#ffe61a', 18, { vy: -0.10, fade: 0.01, holdMs: 450 });
+    academyShowMsg(text || 'TRY AGAIN!', '', { kind: 'bad', holdMs: 900, titleSize: 21 });
   }
 
   function academySafeTimeoutMs(index) {
@@ -2440,37 +2489,69 @@
     blackoutHitFlashes = [];
     waveTheme = null;
     themeEffectsAt = 0;
+    academyBossPreviewName = null;
+    academyClearMsg();
     currentCfg = Object.assign(waveConfig(1), { speed: 1.65, tier: 0, enemyFireMult: 0.55, allowHp: false, allowPowerups: false, allowMystery: false });
     const lesson = SPACE_ACADEMY_LESSONS[index];
     if (!lesson) { completeSpaceAcademy(); return; }
     academyMessage(lesson);
+    // Every extra hint below waits until the lesson's title+detail message has
+    // had its own full, uninterrupted read (~2.1s) before replacing it — same
+    // single-slot panel, so this is purely about pacing/breathing room, not
+    // preventing overlap (the panel already guarantees that by construction).
     if (index === 0) {
       [0.28, 0.5, 0.72].forEach((xp, i) => spawnAcademyAsteroid(W * xp, -40 - i * 130, 1.0));
     } else if (index === 1) {
-      academyTimer(() => academyMode && addFloatText('THEY DO NOT CHARGE', W / 2, H * 0.40, '#00e5ff', 16, { vy: -0.08, fade: 0.007, holdMs: 650 }), 1250);
       [0.32, 0.68].forEach((xp, i) => spawnAcademyEnemy(W * xp, H * (0.34 + i * 0.12), 1, 'holdDrift'));
+      // "THEY DO NOT CHARGE" used to fire on a fixed timer regardless of whether
+      // the enemies had actually finished falling in. Poll until both have
+      // settled (capped so it can never hang), starting only after the lesson's
+      // own intro message has finished its read.
+      const announceCalm = (waited) => {
+        if (!academyMode || state !== 'playing') return;
+        const holdDrifters = obstacles.filter(o => o.academyObstacle && o.behavior === 'holdDrift');
+        const allSettled = holdDrifters.length === 0 || holdDrifters.every(o => o.holdSettled);
+        if (allSettled || waited >= 2600) {
+          academyShowMsg('THEY DO NOT CHARGE', '', { kind: 'good', holdMs: 1300 });
+        } else {
+          academyTimer(() => announceCalm(waited + 150), 150);
+        }
+      };
+      academyTimer(() => announceCalm(0), 2200);
     } else if (index === 2) {
-      academyTimer(() => academyMode && addFloatText('RED FLASH = RUSHER', W / 2, H * 0.40, '#ff4444', 18, { vy: -0.08, fade: 0.007, holdMs: 650 }), 850);
+      // Threat lessons (a live enemy is already rushing in) get their actionable
+      // hint fast — the 2.2s "let the intro breathe" delay used for calm/passive
+      // lessons left the player with zero guidance while something was already
+      // closing in. Quiet lessons keep the longer delay; urgent ones don't.
+      academyTimer(() => academyMode && academyShowMsg('RED FLASH = RUSHER', '', { kind: 'bad', holdMs: 1300 }), 700);
       spawnAcademyEnemy(W * 0.5, -40, 1, 'swarmer');
     } else if (index === 3) {
-      academyTimer(() => academyMode && addFloatText('WATCH THE LEFT SOCKETS', SOCKET_X + SOCKET_SIZE + 74, socketRect(1).y + SOCKET_SIZE / 2, '#00e5ff', 16, { vy: -0.08, fade: 0.006, holdMs: 650 }), 1250);
+      academyTimer(() => academyMode && academyShowMsg('WATCH THE LEFT SOCKETS', '', { kind: 'good', holdMs: 1300, x: SOCKET_X + SOCKET_SIZE + 74, y: socketRect(1).y + SOCKET_SIZE / 2, titleSize: 16 }), 2200);
       spawnAcademyPowerup('gun', W * 0.28, 500);
       spawnAcademyPowerup('shield', W * 0.5, 1650);
       spawnAcademyPowerup('bomb', W * 0.72, 2800);
     } else if (index === 4) {
       inventory.bomb = true;
-      academyTimer(() => academyMode && addFloatText('TAP THE ORANGE BOMB SOCKET', SOCKET_X + SOCKET_SIZE + 112, socketRect(2).y + SOCKET_SIZE / 2, '#ff8800', 16, { vy: -0.08, fade: 0.006, holdMs: 650 }), 650);
-      for (let i = 0; i < 5; i++) spawnAcademyEnemy(W * (0.2 + i * 0.15), -35 - i * 42, 1, 'swarmer');
+      // 5 swarmers used to all land in the same frame, instantly, with the only
+      // guidance (which socket to tap) arriving 2.2s later — by the time the
+      // player had any instruction, the screen was already a wall of enemies.
+      // Stagger the spawn and show the hint almost immediately instead.
+      academyTimer(() => academyMode && academyShowMsg('TAP THE ORANGE BOMB SOCKET', '', { kind: 'good', holdMs: 1500, x: SOCKET_X + SOCKET_SIZE + 112, y: socketRect(2).y + SOCKET_SIZE / 2, titleSize: 16 }), 500);
+      for (let i = 0; i < 5; i++) academyTimer(() => academyMode && spawnAcademyEnemy(W * (0.2 + i * 0.15), -35, 1, 'swarmer'), i * 260);
     } else if (index === 5) {
       spawnAcademyMystery(W * 0.38, 0);
       spawnAcademyMystery(W * 0.62, 2600);
     } else if (index === 6) {
-      academyTimer(() => academyMode && addFloatText('BLUE RING = RESCUE LOCK', W / 2, Math.max(150, H * 0.25), '#00e5ff', 16, { vy: -0.08, fade: 0.006, holdMs: 650 }), 900);
+      academyTimer(() => academyMode && academyShowMsg('BLUE RING = RESCUE LOCK', '', { kind: 'good', holdMs: 1300 }), 2200);
       spawnAcademyRescueLock();
     } else if (index === 7) {
-      academyTimer(() => academyMode && showTopBanner('OGRE: HEE HAW MEANS CHARGE', 'bad'), 900);
-      academyTimer(() => academyMode && showTopBanner('KNIGHT: WHEN SWORD GLOWS, MOVE', 'bad'), 3300);
-      academyTimer(() => academyMode && showTopBanner('GIZMO: READ THE BOUNCE', 'bad'), 5700);
+      // The lesson narrates boss tells but used to spawn nothing — text with no
+      // boss on screen to anchor it to. Show the actual boss sprite (calm preview
+      // pose, no live combat/attacks) alongside each name as it's called out, each
+      // waiting for the previous boss message's full read before replacing it.
+      academyTimer(() => { if (academyMode) { academyBossPreviewName = 'STAR OGRE'; academyShowMsg('OGRE: HEE HAW MEANS CHARGE', '', { kind: 'bad', holdMs: 1700 }); } }, 2200);
+      academyTimer(() => { if (academyMode) { academyBossPreviewName = 'DARK KNIGHT'; academyShowMsg('KNIGHT: WHEN SWORD GLOWS, MOVE', '', { kind: 'bad', holdMs: 1700 }); } }, 4350);
+      academyTimer(() => { if (academyMode) { academyBossPreviewName = 'GIZMO'; academyShowMsg('GIZMO: READ THE BOUNCE', '', { kind: 'bad', holdMs: 1700 }); } }, 6500);
     } else if (index === 8) {
       waveTheme = 'blackout';
       themeEffectsAt = Date.now();
@@ -2478,19 +2559,115 @@
     }
   }
 
+  // Reuses the same fade-in/hold/fade-out DOM-overlay pattern as the other
+  // cinematic beats (showBossDefeatedBeat etc.) instead of a canvas topBanner —
+  // the old code called showTopBanner() then immediately cancelled the render
+  // loop and swapped in the menu overlay on the same tick, so the "complete"
+  // message was set but never actually drawn; the tutorial just cut to the menu.
+  function showAcademyCompleteBeat(onDone) {
+    const flowToken = spaceFlowToken;
+    clearSpaceCinematicOverlays();
+    const el = document.createElement('div');
+    el.className = 'space-wave-cleared';
+    el.style.cssText = 'position:fixed;inset:0;z-index:9997;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity 0.25s ease;text-align:center';
+    el.innerHTML = `
+      <div style="text-align:center">
+        <div style="font-family:'Bebas Neue',cursive;font-size:clamp(32px,7.5vw,52px);letter-spacing:4px;line-height:1;color:#33ff66;text-shadow:0 0 22px #33ff6688,0 0 44px #33ff6644;transform:scale(0.85);transition:transform 0.35s cubic-bezier(.2,1.15,.35,1)">SPACE TUTORIAL COMPLETE</div>
+        <div style="margin-top:14px;font-family:'VCR',monospace;font-size:13px;letter-spacing:2px;color:rgba(242,239,232,0.75)">YOU ARE READY FOR THE CAMPAIGN</div>
+      </div>`;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => {
+      el.style.opacity = '1';
+      el.querySelector('div > div').style.transform = 'scale(1)';
+    });
+    setTimeout(() => {
+      if (flowToken !== spaceFlowToken) { el.remove(); return; }
+      el.style.opacity = '0';
+      setTimeout(() => {
+        el.remove();
+        if (onDone) onDone();
+      }, 260);
+    }, 2200);
+  }
+
   function completeSpaceAcademy() {
     clearSpaceAcademyTimers();
     academyMode = false;
     academyShieldNoticeAt = 0;
-    clearSpaceRuntimeTimers();
-    clearSpaceBonusObjects();
+    academyBossPreviewName = null;
+    academyClearMsg();
+    // Clear the board before the beat starts (not after) — academyMode is now
+    // false, so the training shield no longer blocks real damage, and the beat
+    // keeps state==='playing' (and the render loop running) for its duration.
     obstacles = [];
+    enemyBullets = [];
+    bullets = [];
+    powerups = [];
     blackoutHitFlashes = [];
     waveTheme = null;
-    state = 'idle';
-    cancelAnimationFrame(raf);
-    showTopBanner('SPACE TUTORIAL COMPLETE', 'good');
-    showSpaceOverlay('select');
+    showAcademyCompleteBeat(() => {
+      clearSpaceRuntimeTimers();
+      clearSpaceBonusObjects();
+      state = 'idle';
+      cancelAnimationFrame(raf);
+      showSpaceOverlay('select');
+    });
+  }
+
+  // BOSS WARNINGS lesson preview — the named boss on screen (calm pose, no live
+  // combat/attack-pattern object — see drawThemedBoss/drawGizmoOrb) PLUS a small
+  // looping, purely time-driven demo of its actual attack cue, drawn with the
+  // same projectile icons real combat uses. This never touches enemyBullets or
+  // the live boss/attack state machines — it cannot deal damage or interact with
+  // anything; it exists only so "read the attack cue" has something to read.
+  function drawAcademyBossPreview(name) {
+    // Pinned well below the title/detail text band (0.24H/0.32H) so the sprite's
+    // own footprint never crowds the lesson's two intro lines.
+    const size = BOSS_R * 2.05;
+    const cx = W / 2, cy = H * 0.50;
+    ctx.save();
+    ctx.translate(cx, cy);
+    if (name === 'GIZMO') {
+      drawGizmoOrb(size);
+    } else {
+      const creature = BOSS_CREATURES.find(c => c.name === name);
+      if (creature) drawThemedBoss(creature, size);
+    }
+    ctx.restore();
+    const t = Date.now();
+    if (name === 'STAR OGRE') {
+      // Brief glow-in-place (the telegraph), then charges straight down — the
+      // same "wait for it, then it charges" read the real fight asks for.
+      const cycle = t % 1500;
+      if (cycle < 350) {
+        ctx.save();
+        ctx.globalAlpha = 0.45 + Math.sin(t * 0.025) * 0.35;
+        drawProjectileImage('donkey', cx, cy + size * 0.5, 42, 0, '#c7a16b');
+        ctx.restore();
+      } else {
+        const chargeY = cy + size * 0.5 + ((cycle - 350) / 1150) * (H * 0.30);
+        drawProjectileImage('donkey', cx, chargeY, 42, 0, '#c7a16b');
+      }
+    } else if (name === 'DARK KNIGHT') {
+      // Sword glows brightly in place, THEN drops — matching "when sword glows, move".
+      const cycle = t % 1500;
+      if (cycle < 1000) {
+        const pulse = 0.55 + Math.sin(t * 0.02) * 0.45;
+        ctx.save();
+        ctx.globalAlpha = 0.65 + pulse * 0.35;
+        drawProjectileImage('sword', cx, cy + size * 0.5, 38, Math.PI, '#eaffff');
+        ctx.restore();
+      } else {
+        const dropY = cy + size * 0.5 + ((cycle - 1000) / 500) * (H * 0.24);
+        drawProjectileImage('sword', cx, dropY, 38, Math.PI);
+      }
+    } else if (name === 'GIZMO') {
+      // Tennis ball bouncing side to side — "read the bounce" made literal.
+      const cycle = (t % 1600) / 1600;
+      const bx = cx + Math.sin(cycle * Math.PI * 2) * size * 1.1;
+      const by = cy + size * 0.55 + Math.abs(Math.sin(cycle * Math.PI * 4)) * 26;
+      drawProjectileImage('tennis', bx, by, 32, t * 0.01, '#c6ff3a');
+    }
   }
 
   function academyRespawnLessonObjects(elapsed) {
@@ -2549,10 +2726,13 @@
     else if (academyStep === 3) done = elapsed > 4200 && inventory.gun && inventory.shield && inventory.bomb;
     else if (academyStep === 4) done = elapsed > 3200 && !inventory.bomb && obstacles.length === 0;
     else if (academyStep === 5) done = elapsed > 5200 && academyMysteryIndex >= 2 && powerups.length === 0;
-    else if (academyStep === 7) done = elapsed > 8800;
+    else if (academyStep === 7) done = elapsed > 9000;
     else if (academyStep === 8) done = elapsed > 10200;
-    // Only non-interactive read-only lessons use the deterministic timeout to advance.
-    if (!done && (academyStep === 0 || academyStep === 7 || academyStep === 8) && elapsed > academySafeTimeoutMs(academyStep)) done = true;
+    // Every lesson gets the same deterministic escape hatch, not just the three
+    // read-only ones — interactive lessons (1-6) previously had no fallback at
+    // all, so a player who couldn't land the required hit/catch/tap could be
+    // stuck on that step indefinitely with no way to advance or skip.
+    if (!done && elapsed > academySafeTimeoutMs(academyStep)) done = true;
     if (!done) return;
     academyStepArmed = true;
     const lesson = SPACE_ACADEMY_LESSONS[academyStep];
@@ -5335,6 +5515,7 @@ function nextWave() {
     ctx.restore();
 
     if (boss) drawBoss();
+    if (academyMode && academyBossPreviewName) drawAcademyBossPreview(academyBossPreviewName);
     if (miniBoss) drawMiniBoss();
     drawPlayer();
     if (twin) drawTwin();
@@ -5593,6 +5774,7 @@ function nextWave() {
     drawSockets();
     drawRescueBanner();
     drawTopBanner();
+    if (academyMode) drawAcademyMsgPanel();
   }
 
   // Unified callout for every power/advantage/HP event — one consistent place to
@@ -6892,7 +7074,7 @@ function nextWave() {
     if(mode==='select'){
       const gc=GAME_CHARS[activeChar];
       ov.innerHTML=`
-        <div class="whack-mode-shell" style="max-width:500px;margin-top:10px">
+        <div class="whack-mode-shell" style="max-width:410px;margin-top:10px;padding:0 10px;box-sizing:border-box">
           <div class="whack-mode-title">SPACE MOBE</div>
           <div class="game-card whack-mode-card" style="border-color:#33ff6677;cursor:default;min-height:0;overflow:hidden">
             <div class="game-card-art" style="background:#20222c;min-height:128px">
@@ -6910,14 +7092,16 @@ function nextWave() {
                     <div style="position:relative;font-family:'Bebas Neue',cursive;font-size:44px;letter-spacing:3.5px;color:${gc.color};text-shadow:0 0 10px ${gc.color}cc,0 1px 0 rgba(255,255,255,0.22);line-height:0.98;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px">${gc.name}</div>
                   </div>
                 </div>
-                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-                  <button class="space-boss-trigger" onclick="showSpaceOverlay('how-to-play')" aria-label="How to play" title="How to play" style="width:42px;height:42px;flex-basis:42px;font-size:20px;color:#00e5ff;border-color:rgba(0,229,255,0.52);background:rgba(0,229,255,0.07);box-shadow:0 0 12px rgba(0,229,255,0.18)">ⓘ</button>
-                  <button class="space-boss-trigger" onclick="showSpaceOverlay('boss-preview')" aria-label="Bosses" title="Bosses" style="width:42px;height:42px;flex-basis:42px;font-size:23px;background:rgba(51,255,102,0.07);box-shadow:0 0 12px rgba(51,255,102,0.18)">☠</button>
-                  <button class="space-boss-trigger" onclick="showSpaceOverlay('debug')" aria-label="Debug" title="Debug" style="width:42px;height:42px;flex-basis:42px;font-size:23px;color:#ffe61a;border-color:rgba(255,230,26,0.46);background:rgba(255,230,26,0.07);box-shadow:0 0 12px rgba(255,230,26,0.16)">⚙</button>
+                <div class="space-select-icon-col">
+                  <button class="space-select-icon-btn" onclick="showSpaceOverlay('how-to-play')" aria-label="How to play" title="How to play" style="color:#00e5ff">ⓘ</button>
+                  <button class="space-select-icon-btn" onclick="showSpaceOverlay('boss-preview')" aria-label="Bosses" title="Bosses" style="color:#33ff66">☠</button>
+                  <button class="space-select-icon-btn" onclick="showSpaceOverlay('debug')" aria-label="Debug" title="Debug" style="color:#ffe61a">⚙</button>
                 </div>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px">
+                <div class="space-select-group-label">LEARN</div>
                 ${spaceModeButtonHTML('SPACE TUTORIAL', 'SAFE LESSONS', 'spaceAcademyStart()', '#7b61ff', '★')}
+                <div class="space-select-group-label" style="margin-top:6px">PLAY</div>
                 ${spaceModeButtonHTML('PLAY CAMPAIGN', '13 WAVES / 6 RESCUES', 'spaceStart()', '#33ff66', '▶')}
                 ${spaceModeButtonHTML('BOSS RUN', 'BOSSES ONLY', 'spaceBossRunStart()', '#ffe61a', '☠')}
                 ${spaceModeButtonHTML('ENDLESS', 'CHAOS MODE', 'spaceEndlessStart()', '#ff00cc', '∞')}
