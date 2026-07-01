@@ -242,24 +242,23 @@ const SFX = (() => {
   }
   return {
     hit() {
-      // More solid than clanky: a short low chord with a brighter upper note, like
-      // a firm mallet hit on tuned bars rather than a metal clatter.
-      tone(196, 'triangle', 0, 0.12, 0.13, 147);
-      tone(294, 'triangle', 0.02, 0.10, 0.09, 220);
-      tone(392, 'sine', 0.05, 0.11, 0.045, 330);
-      tone(784, 'triangle', 0.09, 0.04, 0.018);
+      // Shared "good hit" language: tuned bars with a tiny sparkle, not a thud.
+      tone(196, 'triangle', 0, 0.11, 0.11, 220);
+      tone(294, 'triangle', 0.02, 0.09, 0.08, 330);
+      tone(392, 'sine', 0.05, 0.10, 0.04, 440);
+      tone(784, 'triangle', 0.08, 0.045, 0.016);
     },
         miss()     { tone(220,'sawtooth',0,0.14,0.07,100); },
-    match()    { tone(523,'square',0,0.11,0.07); tone(659,'square',0.08,0.11,0.07); tone(784,'square',0.16,0.17,0.08); },
+    match()    { tone(523,'triangle',0,0.10,0.06); tone(659,'triangle',0.08,0.10,0.06); tone(784,'sine',0.16,0.14,0.06); },
     mismatch() { tone(300,'sawtooth',0,0.08,0.06); tone(220,'sawtooth',0.06,0.14,0.07,140); },
-    win()      { [523,659,784,1047].forEach((f,i)=>tone(f,'square',i*0.09,0.14,0.07)); },
+    win()      { [523,659,784,1047].forEach((f,i)=>tone(f,'triangle',i*0.09,0.13,0.06)); },
     over()     { tone(330,'sawtooth',0,0.17,0.07,200); tone(200,'sawtooth',0.12,0.26,0.08,80); },
     // Space Mobe's blaster — softer waveform, lower pitch, deliberately quiet since
     // it fires at the auto-fire rate.
-    blaster()  { tone(260,'triangle',0,0.07,0.035,180); },
-    score()       { tone(784,'square',0,0.07,0.06); tone(1047,'square',0.05,0.10,0.07); },
-    menuSelect()  { tone(660,'square',0,0.05,0.05); tone(880,'square',0.03,0.06,0.05); },
-    charPick(i)   { const f = 300 + i * 40; tone(f,'square',0,0.04,0.05); tone(f*1.5,'square',0.025,0.05,0.04); },
+    blaster()  { tone(260,'triangle',0,0.06,0.032,196); tone(520,'sine',0.012,0.03,0.010,392); },
+    score()       { tone(784,'triangle',0,0.07,0.05); tone(1047,'sine',0.05,0.10,0.05); },
+    menuSelect()  { tone(660,'triangle',0,0.05,0.045); tone(880,'sine',0.03,0.06,0.04); },
+    charPick(i)   { const f = 300 + i * 40; tone(f,'triangle',0,0.04,0.045); tone(f*1.5,'sine',0.025,0.05,0.035); },
     whack()       { tone(180,'square',0,0.07,0.10,80); tone(120,'sawtooth',0.04,0.10,0.08,60); },
     imposter()    { tone(220,'sawtooth',0,0.19,0.10,100); tone(160,'sawtooth',0.13,0.22,0.11,80); tone(110,'sawtooth',0.28,0.34,0.10,60); },
     // Whacked yourself — a slow, soft descending sigh instead of a cartoon "wah-wah" fail

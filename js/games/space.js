@@ -6784,9 +6784,9 @@ function nextWave() {
       // The bright bell/piano overtones read as progress, without the old sub thud.
       const notes = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50]; // C D E G A C
       const f = notes[Math.floor(Math.random() * notes.length)];
-      playSpaceTone(f, 'triangle', 0, 0.115, 0.050, f * 1.006);
-      playSpaceTone(f * 2, 'sine', 0.004, 0.075, 0.018, f * 2.012);
-      playSpaceTone(f * 1.5, 'sine', 0.026, 0.055, 0.010, f * 1.505);
+      playSpaceTone(f, 'triangle', 0, 0.105, 0.048, f * 1.006);
+      playSpaceTone(f * 2, 'sine', 0.004, 0.070, 0.016, f * 2.012);
+      playSpaceTone(f * 1.5, 'sine', 0.024, 0.050, 0.010, f * 1.505);
       return;
     }
     if (SFX && SFX.pianoNote) { SFX.pianoNote(); return; }
@@ -6994,9 +6994,9 @@ function nextWave() {
 
   function playCoolSpaceBlaster() {
     // Lower, softer blaster: still sci-fi, less chirpy/repetitive than the guitar note.
-    playSpaceTone(320, 'triangle', 0, 0.055, 0.034, 175);
-    playSpaceTone(165, 'sawtooth', 0.006, 0.068, 0.018, 92);
-    playSpaceTone(640, 'sine', 0.004, 0.032, 0.012, 410);
+    playSpaceTone(320, 'triangle', 0, 0.050, 0.032, 175);
+    playSpaceTone(165, 'sawtooth', 0.006, 0.064, 0.016, 92);
+    playSpaceTone(640, 'sine', 0.004, 0.030, 0.011, 410);
     playSpaceNoiseBurst(0.035, 0.010, 620, 'lowpass');
   }
 
@@ -7004,8 +7004,8 @@ function nextWave() {
   function playMusicBoxArpeggio() {
     // Clean success language: tiny music-box run, bright but not as wide as the rescue flourish.
     [659.25, 783.99, 987.77, 1318.51].forEach((f, i) => {
-      playSpaceTone(f, 'triangle', i * 0.042, 0.105, 0.034 - i * 0.004, f * 1.004);
-      playSpaceTone(f * 2, 'sine', i * 0.042 + 0.003, 0.058, 0.010, f * 2.01);
+      playSpaceTone(f, 'triangle', i * 0.042, 0.100, 0.032 - i * 0.004, f * 1.004);
+      playSpaceTone(f * 2, 'sine', i * 0.042 + 0.003, 0.055, 0.009, f * 2.01);
     });
   }
 
@@ -7144,8 +7144,8 @@ function nextWave() {
       return;
     }
     // Flute-ish chirp for red direct shots.
-    playSpaceTone(880, 'sine', 0, 0.08, 0.045, 1180);
-    playSpaceTone(1320, 'triangle', 0.025, 0.07, 0.025, 980);
+    playSpaceTone(784, 'sine', 0, 0.075, 0.042, 1046.50);
+    playSpaceTone(1174.66, 'triangle', 0.022, 0.07, 0.024, 880.00);
   }
 
   function playTargetBreakSfx(kind) {
