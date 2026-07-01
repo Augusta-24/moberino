@@ -18,6 +18,15 @@
       return;
     }
 
+    // Lobby setup is sequential: resolve sound first, then offer installation.
+    // Showing this inline card while the fixed music card is active caused the two
+    // large prompts to occupy the same visual lane on wide and short viewports.
+    const musicResolved = typeof ArcadeMusic !== 'undefined' && (ArcadeMusic.playing || ArcadeMusic.muted);
+    if (!musicResolved) {
+      card.hidden = true;
+      return;
+    }
+
     const ua = navigator.userAgent || '';
     const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     card.hidden = false;
@@ -49,6 +58,7 @@
       card.hidden = true;
       card.setAttribute('hidden', '');
       card.style.display = 'none';
+      if (typeof updateArcadeInstallPrompt === 'function') updateArcadeInstallPrompt();
       return;
     }
 
@@ -59,6 +69,7 @@
       card.hidden = true;
       card.setAttribute('hidden', '');
       card.style.display = 'none';
+      if (typeof updateArcadeInstallPrompt === 'function') updateArcadeInstallPrompt();
       return;
     }
 
@@ -69,6 +80,7 @@
       liveCard.removeAttribute('hidden');
       liveCard.style.display = 'flex';
       document.body.classList.add('arcade-music-prompt-visible');
+      if (typeof updateArcadeInstallPrompt === 'function') updateArcadeInstallPrompt();
     };
     showCard();
     requestAnimationFrame(showCard);
@@ -114,7 +126,11 @@
     if (typeof SFX !== 'undefined' && typeof SFX.menuSelect === 'function') SFX.menuSelect();
     if (typeof ArcadeMusic !== 'undefined' && typeof ArcadeMusic.start === 'function') ArcadeMusic.start();
     updateArcadeMusicPrompt();
-    setTimeout(updateArcadeMusicPrompt, 160);
+    updateArcadeInstallPrompt();
+    setTimeout(() => {
+      updateArcadeMusicPrompt();
+      updateArcadeInstallPrompt();
+    }, 160);
   });
 
   function setArcadeExitVisible(show) {
@@ -539,6 +555,10 @@ const ArcadeMusic = (() => {
     sourceNode.loop = true;
     sourceNode.connect(gainNode);
     sourceNode.start(0);
+    requestAnimationFrame(() => {
+      if (typeof updateArcadeMusicPrompt === 'function') updateArcadeMusicPrompt();
+      if (typeof updateArcadeInstallPrompt === 'function') updateArcadeInstallPrompt();
+    });
   }
 
   function stopSource() {
@@ -1157,6 +1177,8 @@ window.toggleArcadeMute = function() {
   const muted = ArcadeMusic.toggleMute();
   const label = muted ? '♪ OFF' : '♪ ON';
   document.querySelectorAll('.arcade-mute-btn').forEach(btn => { btn.textContent = label; });
+  if (typeof updateArcadeMusicPrompt === 'function') updateArcadeMusicPrompt();
+  if (typeof updateArcadeInstallPrompt === 'function') updateArcadeInstallPrompt();
 };
 // ══════════════════════════════════════
 //  GAME CHARACTERS  (replace nulls with real image paths later)
