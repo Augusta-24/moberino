@@ -45,6 +45,7 @@
     const isStartup = document.body.classList.contains('on-char');
     const shouldShow = isLobby || isStartup;
     if (!shouldShow) {
+      document.body.classList.remove('arcade-music-prompt-visible');
       card.hidden = true;
       card.setAttribute('hidden', '');
       card.style.display = 'none';
@@ -54,6 +55,7 @@
     const playing = typeof ArcadeMusic !== 'undefined' && ArcadeMusic.playing;
     const muted = typeof ArcadeMusic !== 'undefined' && ArcadeMusic.muted;
     if (playing || muted) {
+      document.body.classList.remove('arcade-music-prompt-visible');
       card.hidden = true;
       card.setAttribute('hidden', '');
       card.style.display = 'none';
@@ -66,6 +68,7 @@
       liveCard.hidden = false;
       liveCard.removeAttribute('hidden');
       liveCard.style.display = 'flex';
+      document.body.classList.add('arcade-music-prompt-visible');
     };
     showCard();
     requestAnimationFrame(showCard);
@@ -1230,8 +1233,6 @@ function charFace(c, expr) {
 // ══════════════════════════════════════
 
 const _ROW_H = 56;
-const _WRAP_H = 280;
-const _SPACER_H = (_WRAP_H - _ROW_H) / 2; // 112 — lets first/last row reach center
 
 function _updateBar(i) {
   const bar = document.getElementById('char-scroll-bar');
@@ -1246,7 +1247,9 @@ function _renderCharList() {
   const list = document.getElementById('char-scroll-list');
   if (!list) return;
   const sel = getGlobalChar();
-  const spacer = `<div style="height:${_SPACER_H}px;flex-shrink:0"></div>`;
+  // The wheel is responsive, so center its first/last rows from its rendered height.
+  const spacerHeight = Math.max(0, (list.clientHeight - _ROW_H) / 2);
+  const spacer = `<div style="height:${spacerHeight}px;flex-shrink:0"></div>`;
   list.innerHTML = spacer +
     GAME_CHARS.map((c, i) => `<div class="cs-char-row" id="cs-row-${i}" data-idx="${i}"></div>`).join('') +
     spacer;

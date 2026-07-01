@@ -850,6 +850,30 @@
     return !!(o && o.traitorType === 'purple' && now < (o.purpleRainUntil || 0));
   }
 
+  function redShieldActive(o, now) {
+    return !!(o && o.traitorType === 'red' && now < (o.redShieldUntil || 0));
+  }
+
+  function updateRedTraitorShield(o, now) {
+    if (!o || o.traitorType !== 'red' || o.isTrapped || o.alive === false) return;
+    const tier = currentCfg && currentCfg.tier != null ? currentCfg.tier : campaignTier(wave);
+    const difficulty = clamp(tier, 0, 4);
+    if (!o.nextRedShieldAt) {
+      o.nextRedShieldAt = now + rand(1800 - difficulty * 180, 3400 - difficulty * 220);
+    }
+    if (now < o.nextRedShieldAt) return;
+    // The lesson scales cleanly: early shields are short with a generous attack
+    // window afterward; harder tiers hold longer and return a little sooner.
+    const minDuration = 850 + difficulty * 150;
+    const maxDuration = 1150 + difficulty * 175;
+    const minGap = 4200 - difficulty * 500;
+    const maxGap = 6200 - difficulty * 675;
+    o.redShieldStartedAt = now;
+    o.redShieldDuration = rand(minDuration, maxDuration);
+    o.redShieldUntil = now + o.redShieldDuration;
+    o.nextRedShieldAt = o.redShieldUntil + rand(minGap, maxGap);
+  }
+
   function firePurpleTraitorRain(shooter) {
     if (!shooter || shooter.alive === false || state !== 'playing' || waveTransitioning) return;
     const now = Date.now();
@@ -3869,9 +3893,10 @@ function nextWave() {
       }
       if (!o.isTrapped && o.traitorType === 'red') {
         const nowRed = Date.now();
+        const shielded = redShieldActive(o, nowRed);
         const echoLeft = Math.max(0, (o.redEchoMuzzleUntil || 0) - nowRed);
         const echoA = Math.max(0, Math.min(1, echoLeft / 380));
-        const spinRed = nowRed * 0.0105 + (o._pulseSeed || 0) * 0.7;
+        const spinRed = nowRed * 0.0024 + (o._pulseSeed || 0) * 0.7;
         ctx.save();
         ctx.globalAlpha = 0.28 + echoA * 0.48;
         ctx.strokeStyle = echoA > 0 ? 'rgba(255,132,110,0.96)' : 'rgba(255,96,96,0.62)';
@@ -3893,6 +3918,28 @@ function nextWave() {
           ctx.fill();
         }
         ctx.restore();
+        if (shielded) {
+          const shieldAge = nowRed - (o.redShieldStartedAt || nowRed);
+          // Breathe for the entire active window. The large, repeating expansion is
+          // the player's "dodge now" tell; it is deliberately unrelated to impacts.
+          const tier = currentCfg && currentCfg.tier != null ? currentCfg.tier : campaignTier(wave);
+          const pulseWave = 0.5 + Math.sin(shieldAge * (0.0082 + Math.min(4, tier) * 0.00045)) * 0.5;
+          const deployEase = 0.72 + Math.min(1, shieldAge / 120) * 0.28;
+          const shieldR = o.r * (1.27 + pulseWave * 0.24) * deployEase;
+          ctx.save();
+          ctx.globalAlpha = 0.72 + pulseWave * 0.22;
+          ctx.fillStyle = `rgba(255,76,58,${0.09 + pulseWave * 0.09})`;
+          ctx.shadowColor = '#ff503c';
+          ctx.shadowBlur = o.r * (0.30 + pulseWave * 0.34);
+          ctx.strokeStyle = 'rgba(255,126,100,0.96)';
+          ctx.lineWidth = 3.2 + pulseWave * 1.4;
+          ctx.beginPath(); ctx.arc(0, 0, shieldR, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          ctx.shadowBlur = 0;
+          ctx.strokeStyle = 'rgba(255,235,220,0.68)';
+          ctx.lineWidth = 1.4;
+          ctx.beginPath(); ctx.arc(0, 0, shieldR * 0.94, 0, Math.PI * 2); ctx.stroke();
+          ctx.restore();
+        }
       }
       if (o.isTrapped) {
         ctx.restore();
@@ -3940,7 +3987,7 @@ function nextWave() {
         ctx.strokeStyle = tickColor;
         ctx.lineWidth = 1.8;
         if (isRedTraitor) {
-          const t3 = Date.now() * 0.007 + (o._pulseSeed || 0) * 0.4;
+          const t3 = Date.now() * 0.0019 + (o._pulseSeed || 0) * 0.4;
           const ringR = o.r * 1.12;
           ctx.save();
           ctx.rotate(t3);
@@ -4979,6 +5026,7 @@ function nextWave() {
       if(o.x<o.r&&o.vx<0) o.vx*=-1;
       if(o.x>W-o.r&&o.vx>0) o.vx*=-1;
       const nowMove = Date.now();
+      updateRedTraitorShield(o, nowMove);
       if (updateHoldDriftEnemy(o, nowMove)) continue;
       if (o.blackoutHiddenEnemy && nowMove < (o.blackoutHoldUntil || 0)) continue;
 
@@ -5264,7 +5312,10 @@ function nextWave() {
       for(const o of obstacles){
         if(o.alive===false) continue;
         if (academyMode && o.academyObstacle && o.y < (o.academyArmY || academyTargetArmY())) continue;
-        const hitRadius = (o.type==='face' && o.isTrapped && o.ringHp > 0) ? o.r+12 : o.r+3;
+        const nowHit = Date.now();
+        const hitRadius = (o.type==='face' && o.isTrapped && o.ringHp > 0)
+          ? o.r + 12
+          : redShieldActive(o, nowHit) ? o.r * 1.56 : o.r + 3;
         if(Math.hypot(b.x-o.x,b.y-o.y)<hitRadius){
           b.vy=999;
           o.litUntil = Date.now() + 320;
@@ -5300,7 +5351,17 @@ function nextWave() {
               if(state==='over') return;
             } else {
               // Normal enemy face — takes 3 hits to clear
-              if (purpleRainActive(o, Date.now())) {
+              if (redShieldActive(o, nowHit)) {
+                b.vy = 999;
+                if (nowHit - (o.redShieldNoticeAt || 0) > 240) {
+                  o.redShieldNoticeAt = nowHit;
+                  addFloatText('SHIELDED', o.x, o.y - 18, '#ff8068', 13);
+                  playShieldBellPing();
+                }
+                miniExplosion(b.x, b.y, '#ff8068');
+                break;
+              }
+              if (purpleRainActive(o, nowHit)) {
                 b.vy = 999;
                 addFloatText('RAIN SHIELD', o.x, o.y - 18, '#a233ff', 13);
                 playShieldBellPing();
@@ -6687,8 +6748,13 @@ function nextWave() {
 
   function playBossImpactSound() {
     if (typeof playSpacePianoCluster === 'function' && typeof playSpaceTone === 'function') {
-      playSpacePianoCluster([174.61, 220.00, 261.63], 0, 0.065);
-      playSpaceTone(87.31, 'sine', 0.02, 0.10, 0.030, 65.41);
+      // Random notes from C major pentatonic keep rapid hits varied and consonant.
+      // The bright bell/piano overtones read as progress, without the old sub thud.
+      const notes = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50]; // C D E G A C
+      const f = notes[Math.floor(Math.random() * notes.length)];
+      playSpaceTone(f, 'triangle', 0, 0.115, 0.050, f * 1.006);
+      playSpaceTone(f * 2, 'sine', 0.004, 0.075, 0.018, f * 2.012);
+      playSpaceTone(f * 1.5, 'sine', 0.026, 0.055, 0.010, f * 1.505);
       return;
     }
     if (SFX && SFX.pianoNote) { SFX.pianoNote(); return; }
