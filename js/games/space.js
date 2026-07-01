@@ -7221,17 +7221,57 @@ function nextWave() {
   // Ogre's one-second bray can overlap several times in its 390ms charge cadence,
   // so its per-trigger gain is intentionally much lower than the one-shot attacks.
   const SPACE_SFX_VOLUME = {
+    'boss.ogre.voice': 0.68,
     'boss.ogre.projectile': 0.24,
+    'boss.dragon.voice': 0.70,
     'boss.dragon.projectile': 0.78,
+    'boss.knight.voice': 0.72,
     'boss.gray.projectile': 0.84,
+    'boss.gray.voice': 0.72,
+    'boss.shark.voice': 0.72,
     'boss.knight.projectile': 0.88,
     'boss.shark.projectile': 0.88,
+    'boss.taco.voice': 0.74,
     'boss.taco.projectile': 0.94,
+    'boss.octo.voice': 0.72,
     'boss.octo.projectile': 0.96,
+    'boss.gizmo.voice': 0.72,
     'boss.gizmo.projectile': 0.94,
+    'player.death': 0.76,
+  };
+  const SPACE_SFX_MASTER_VOLUME = 0.48;
+  const SPACE_SFX_MIN_GAP_MS = {
+    'boss.ogre.projectile': 170,
+    'boss.dragon.projectile': 130,
+    'boss.knight.projectile': 120,
+    'boss.gray.projectile': 140,
+    'boss.shark.projectile': 120,
+    'boss.taco.projectile': 120,
+    'boss.octo.projectile': 120,
+    'boss.gizmo.projectile': 140,
+  };
+  const SPACE_SFX_MAX_SIMULTANEOUS = {
+    'boss.ogre.projectile': 1,
+    'boss.dragon.projectile': 2,
+    'boss.knight.projectile': 2,
+    'boss.gray.projectile': 2,
+    'boss.shark.projectile': 2,
+    'boss.taco.projectile': 2,
+    'boss.octo.projectile': 2,
+    'boss.gizmo.projectile': 2,
   };
   const _spaceSfxAudioCache = {};
-  function _playSpaceSfxFile(path, fallback, volume) {
+  const _spaceSfxLastAt = Object.create(null);
+  const _spaceSfxActiveCount = Object.create(null);
+  function _spaceSfxInc(key) {
+    _spaceSfxActiveCount[key] = (_spaceSfxActiveCount[key] || 0) + 1;
+  }
+  function _spaceSfxDec(key) {
+    const n = _spaceSfxActiveCount[key] || 0;
+    if (n <= 1) delete _spaceSfxActiveCount[key];
+    else _spaceSfxActiveCount[key] = n - 1;
+  }
+  function _playSpaceSfxFile(key, path, fallback, volume) {
     let didFallback = false;
     const runFallback = () => {
       if (didFallback) return;
@@ -7239,6 +7279,17 @@ function nextWave() {
       if (fallback) fallback();
     };
     try {
+      const now = Date.now();
+      const minGap = SPACE_SFX_MIN_GAP_MS[key] || 0;
+      if (minGap > 0 && (now - (_spaceSfxLastAt[key] || 0)) < minGap) {
+        return true;
+      }
+      const maxSimultaneous = SPACE_SFX_MAX_SIMULTANEOUS[key] || 0;
+      if (maxSimultaneous > 0 && (_spaceSfxActiveCount[key] || 0) >= maxSimultaneous) {
+        return true;
+      }
+      _spaceSfxLastAt[key] = now;
+
       // Cache one loaded <audio> per path and clone it per play — cloning
       // (instead of replaying the same node) lets two overlapping triggers
       // (e.g. two donkeys charging close together) play on top of each other
@@ -7252,13 +7303,28 @@ function nextWave() {
       }
       const node = base.cloneNode(true);
       node.preload = 'auto';
-      node.volume = Math.max(0, Math.min(1, volume == null ? 1 : volume));
-      node.addEventListener('error', runFallback, { once: true });
+      const effectiveVolume = (volume == null ? 1 : volume) * SPACE_SFX_MASTER_VOLUME;
+      node.volume = Math.max(0, Math.min(1, effectiveVolume));
+      let cleaned = false;
+      const cleanup = () => {
+        if (cleaned) return;
+        cleaned = true;
+        _spaceSfxDec(key);
+      };
+      _spaceSfxInc(key);
+      node.addEventListener('ended', cleanup, { once: true });
+      node.addEventListener('error', () => {
+        cleanup();
+        runFallback();
+      }, { once: true });
       const p = node.play();
       // HTMLAudioElement.play() can reject after this function returns (autoplay,
       // decode/load timing, mobile media limits). Do not let that become silence:
       // fall back to the procedural SFX if the file path cannot actually play.
-      if (p && p.catch) p.catch(runFallback);
+      if (p && p.catch) p.catch(() => {
+        cleanup();
+        runFallback();
+      });
       return true;
     } catch (e) {
       return false;
@@ -7270,7 +7336,7 @@ function nextWave() {
       const playFallback = () => { if (fn) fn(); };
       if (SPACE_SFX_USE_FILES) {
         const path = SPACE_SFX_FILES[key];
-        if (path && _playSpaceSfxFile(path, playFallback, SPACE_SFX_VOLUME[key])) return;
+        if (path && _playSpaceSfxFile(key, path, playFallback, SPACE_SFX_VOLUME[key])) return;
       }
       playFallback();
     } catch (e) {}
