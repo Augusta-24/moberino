@@ -807,6 +807,18 @@
     return 'red';
   }
 
+  function purpleWaveProfileForWave(w) {
+    const waveNo = Math.max(1, w || wave || 1);
+    const bucket = waveNo <= 3 ? 0 : waveNo <= 6 ? 1 : waveNo <= 10 ? 2 : 3;
+    const profiles = [
+      { label: 'easy', driftMult: 1.16, dodgeMult: 1.18, rainDropsMin: 10, rainDropsMax: 12, rainGapMs: 1050 },
+      { label: 'mid', driftMult: 1.22, dodgeMult: 1.26, rainDropsMin: 11, rainDropsMax: 13, rainGapMs: 980 },
+      { label: 'hard', driftMult: 1.28, dodgeMult: 1.34, rainDropsMin: 12, rainDropsMax: 14, rainGapMs: 900 },
+      { label: 'harder', driftMult: 1.34, dodgeMult: 1.42, rainDropsMin: 13, rainDropsMax: 15, rainGapMs: 840 },
+    ];
+    return Object.assign({ screenCap: 2 }, profiles[bucket]);
+  }
+
   function purpleRainActive(o, now) {
     return !!(o && o.traitorType === 'purple' && now < (o.purpleRainUntil || 0));
   }
@@ -816,10 +828,11 @@
     const now = Date.now();
     if (now < (shooter.nextPurpleRainAt || 0) || purpleRainActive(shooter, now)) return;
     const tier = currentCfg ? currentCfg.tier : campaignTier(wave);
+    const purpleProfile = purpleWaveProfileForWave(wave);
     const duration = 1120;
-    const drops = 10 + Math.floor(Math.random() * 3);
+    const drops = Math.floor(rand(purpleProfile.rainDropsMin, purpleProfile.rainDropsMax + 1));
     shooter.purpleRainUntil = now + duration;
-    shooter.nextPurpleRainAt = now + duration + 1050;
+    shooter.nextPurpleRainAt = now + duration + purpleProfile.rainGapMs;
     for (let i = 0; i < drops; i++) {
       const token = spaceFlowToken;
       setTimeout(() => {
@@ -829,7 +842,7 @@
           x: Math.max(8, Math.min(W - 8, shooter.x + spread)),
           y: shooter.y + shooter.r * 0.82,
           vx: rand(-0.16, 0.16),
-          vy: 2.5 + tier * 0.08 + Math.random() * 0.22,
+          vy: 2.5 + tier * 0.08 + (purpleProfile.driftMult - 1) * 0.42 + Math.random() * 0.22,
           r: 2.4,
           theme: 'purpleRain',
           damage: 3,
@@ -1012,7 +1025,12 @@
       // rescue count feel noisy instead of intentional.
       const canRandomRescue = false;
       let isTrapped = false;
-      const traitorType = (opts && opts.forceTraitorType) || traitorTypeForWave(wave);
+      let traitorType = (opts && opts.forceTraitorType) || traitorTypeForWave(wave);
+      const purpleProfile = purpleWaveProfileForWave(wave);
+      if (traitorType === 'purple' && !(opts && opts.ignorePurpleCap)) {
+        const activePurple = obstacles.filter(o => o.type === 'face' && o.traitorType === 'purple' && !o.isTrapped && o.alive !== false).length;
+        if (activePurple >= purpleProfile.screenCap) traitorType = 'red';
+      }
       let ci = isTrapped ? nextMissionCaptiveIndex(waveCaptivesSeen) : missionTraitorIndexForType(traitorType);
       if (isTrapped && ci < 0) { isTrapped = false; ci = missionTraitorIndexForType(traitorType); }
       if (isTrapped) waveCaptivesSeen.add(ci);
@@ -1053,8 +1071,8 @@
       const personalityDrift = enemyPersonality === 'elusive' ? 1.64 : enemyPersonality === 'pesky' ? 1.44 : enemyPersonality === 'loose' ? 1.02 : 1.2;
       const personalityDodge = enemyPersonality === 'elusive' ? 2.06 : enemyPersonality === 'pesky' ? 1.72 : enemyPersonality === 'loose' ? 0.96 : 1.26;
       const personalityJuke = enemyPersonality === 'elusive' ? 0.36 : enemyPersonality === 'pesky' ? 0.46 : enemyPersonality === 'loose' ? 1.08 : 0.74;
-      const traitorDrift = traitorType === 'purple' ? 1.16 : 1;
-      const traitorDodge = traitorType === 'purple' ? 1.18 : 1;
+      const traitorDrift = traitorType === 'purple' ? purpleProfile.driftMult : 1;
+      const traitorDodge = traitorType === 'purple' ? purpleProfile.dodgeMult : 1;
       const faceHp = isTrapped ? 1 : (cfg.enemyHpOverride || 3);
       const faceR = FACE_R;
       const holdMinY = Math.max(118, H * 0.26);
@@ -2887,7 +2905,7 @@
         const activePurpleEnemies = obstacles.filter(o => o.type === 'face' && o.traitorType === 'purple' && !o.isTrapped && o.alive !== false).length;
         let spawned = false;
         if (enemiesRemaining > 0 && activePurpleEnemies < enemyScreenCap && now >= nextEnemyAt) {
-          spawnObstacle(cfg, { forceFace: true, forceTraitorType: 'purple' });
+          spawnObstacle(cfg, { forceFace: true, forceTraitorType: 'purple', ignorePurpleCap: true });
           enemiesRemaining--;
           spawnsRemaining--;
           nextEnemyAt = now + rand(760, 1120);
