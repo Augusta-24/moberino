@@ -453,10 +453,10 @@
         const c = getAudioCtx();
         const now = c.currentTime + 0.01;
         const notes = [
-          { f: 260, start: 0, dur: 0.18, end: 155, type: 'sawtooth', vol: 0.09 },
-          { f: 420, start: 0.08, dur: 0.12, end: 310, type: 'triangle', vol: 0.05 },
-          { f: 185, start: 0.24, dur: 0.28, end: 92, type: 'sawtooth', vol: 0.1 },
-          { f: 122, start: 0.34, dur: 0.22, end: 70, type: 'square', vol: 0.055 },
+          { f: 260, start: 0, dur: 0.18, end: 155, type: 'sawtooth', vol: 0.0225 },
+          { f: 420, start: 0.08, dur: 0.12, end: 310, type: 'triangle', vol: 0.013 },
+          { f: 185, start: 0.24, dur: 0.28, end: 92, type: 'sawtooth', vol: 0.025 },
+          { f: 122, start: 0.34, dur: 0.22, end: 70, type: 'square', vol: 0.014 },
         ];
         notes.forEach(n => {
           const osc = c.createOscillator();
@@ -589,9 +589,10 @@
   }
 
 
-  const P_SPEED = 5, B_SPEED = 9.45, O_SPEED_BASE = 2.0; // +10% over original 1.8; blaster +5% over 9
+  const P_SPEED = 5, B_SPEED = 9.9225, O_SPEED_BASE = 2.0; // blaster projectile speed +5% over 9.45
   const AUTO_FIRE_MS = 200;
   const FACE_R = 22, ASTEROID_R_MIN = 14, ASTEROID_R_MAX = 30;
+  const SPACE_HP_BAR_Y = 56, SPACE_HP_BAR_H = 14;
   const CAPTIVE_RING_HP = 15;
   const BOSS_R = FACE_R * 2.5, BOSS_HP = 35;
   const MINIBOSS_R = FACE_R * 1.6, MINIBOSS_HP = 6;
@@ -739,8 +740,8 @@
       // Wave 5 also staggers three normal enemies into fixed slots; the pool still
       // ends through spawnsRemaining/board-clear, so it cannot overlap nextWave().
       1: { spawnsRemaining: 40, speedOverride: 2.86, spawnMsOverride: 930, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [2600, 5200], spawnCadenceMult: 0.9, activeObstacleCap: 6, notes: 'Intro is dangerous: small rocks cost 5 HP and big rocks cost 10 HP, with early HP drops teaching recovery.' },
-      2: { spawnsRemaining: 14, speedOverride: 2.62, spawnMsOverride: 1030, asteroidRatioOverride: 0, enemyHpOverride: 3, enemyFireMult: 1.32, enemyFireRateMult: 0.62, enemyVyMult: 1.28, enemyDriftMult: 2.04, enemyDodgeMult: 1.36, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 1, powerupDelayRange: [1700, 2600], hpDelayRange: [2600, 5200], spawnCadenceMult: 0.94, activeObstacleCap: 4, notes: '14 normal enemies: faster, evasive, 3-hit duel targets with tighter red pressure.' },
-      3: { spawnsRemaining: 19, wave3EnemyTotal: 5, wave3EnemyScreenCap: 2, wave3AsteroidTotal: 14, speedOverride: 2.62, spawnMsOverride: 1180, asteroidRatioOverride: 0.70, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 0.86, enemyFireRateMult: 0.94, enemyVyMult: 1.14, enemyDriftMult: 1.58, enemyDodgeMult: 1.04, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, powerupDelayRange: [1600, 2400], hpDelayRange: [3000, 5600], spawnCadenceMult: 1.08, notes: 'Purple Rain intro: five solo rain enemies, asteroid-heavy spacing, shoot during rain pauses.' },
+      2: { spawnsRemaining: 21, mixedEnemyTotal: 7, mixedEnemyScreenCap: 2, mixedAsteroidTotal: 14, mixedTraitorType: 'red', speedOverride: 2.62, spawnMsOverride: 1030, asteroidRatioOverride: 0.67, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 1.32, enemyFireRateMult: 0.62, enemyVyMult: 1.28, enemyDriftMult: 2.04, enemyDodgeMult: 1.36, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 1, powerupDelayRange: [1700, 2600], hpDelayRange: [2600, 5200], spawnCadenceMult: 0.94, activeObstacleCap: 5, notes: 'Seven red duel targets interleaved with fourteen asteroids; shield openings carry the pressure instead of enemy count.' },
+      3: { spawnsRemaining: 19, mixedEnemyTotal: 5, mixedEnemyScreenCap: 2, mixedAsteroidTotal: 14, mixedTraitorType: 'purple', speedOverride: 2.62, spawnMsOverride: 1180, asteroidRatioOverride: 0.74, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 0.86, enemyFireRateMult: 0.94, enemyVyMult: 1.14, enemyDriftMult: 1.58, enemyDodgeMult: 1.04, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, powerupDelayRange: [1600, 2400], hpDelayRange: [3000, 5600], spawnCadenceMult: 1.08, activeObstacleCap: 5, notes: 'Purple Rain intro: five rain enemies evenly interleaved with fourteen asteroids; shoot during rain.' },
       4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [7600, 11600], enemyFireMult: 0.75 },
       5: { spawnsRemaining: 26, speedOverride: 2.72, spawnMsOverride: 1087, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.34, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 1, powerupDelayRange: [900, 1300], hpDelayRange: [2200, 4400], swarmCap: 5, activeObstacleCap: 5, spawnCadenceMult: 1.02, notes: 'Swarm moved from Wave 3 so traitors get clean introductions first.' },
       6: { spawnsRemaining: 14, speedOverride: 2.72, spawnMsOverride: 880, asteroidRatioOverride: 0.36, enemyHpOverride: 3, enemyFireMult: 0.94, enemyFireRateMult: 0.70, enemyVyMult: 1.24, enemyDriftMult: 1.86, enemyDodgeMult: 1.12, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, rescueRingHp: 30, powerupDelayRange: [3600, 6200], hpDelayRange: [4800, 7800], spawnCadenceMult: 0.86, activeObstacleCap: 4 },
@@ -800,25 +801,27 @@
       enemyBullets.push({ x: shooter.x, y: shooter.y + shooter.r, vx: (dx/dist)*bulletSpeed, vy: (dy/dist)*bulletSpeed, r: 4, damage: 3, damageCause: shotCause || 'ENEMY SHOT', traitorShot: shooter && shooter.traitorType });
     };
     if (shooter && shooter.traitorType === 'red' && cause !== 'BLACKOUT SHOT') {
+      const now = Date.now();
+      // Red uses a deterministic one-two rhythm: two aimed shots, then a per-enemy
+      // cooldown. The consistency makes the pause learnable instead of probabilistic.
+      shooter.redVulnerableUntil = Math.max(shooter.redVulnerableUntil || 0, now + 850);
       fireAimedEnemyBullet(speedMult, 'RED SHOT');
       playTraitorShotSfx('red');
-      const redEchoProfile = wave <= 2
-        ? { chance: 0.56, delayMs: 330, speedMult: 0.90 }
+      const redDoubleProfile = wave <= 2
+        ? { delayMs: 330, speedMult: 0.90 }
         : wave <= 5
-          ? { chance: 0.55, delayMs: 320, speedMult: 0.84 }
+          ? { delayMs: 320, speedMult: 0.84 }
           : wave <= 9
-            ? { chance: 0.72, delayMs: 290, speedMult: 0.90 }
-            : { chance: 0.82, delayMs: 260, speedMult: 0.96 };
-      const activeRed = obstacles.filter(o => o.type === 'face' && o.traitorType === 'red' && !o.isTrapped && o.alive !== false).length;
-      const echoChance = activeRed >= 3 ? redEchoProfile.chance * 0.55 : redEchoProfile.chance;
-      if (Math.random() >= echoChance) return;
-      const now = Date.now();
+            ? { delayMs: 290, speedMult: 0.90 }
+            : { delayMs: 260, speedMult: 0.96 };
       const token = spaceFlowToken;
-      const followDelayMs = redEchoProfile.delayMs;
-      shooter.redEchoMuzzleUntil = now + followDelayMs;
+      const followDelayMs = redDoubleProfile.delayMs;
+      shooter.redSecondShotAt = now + followDelayMs;
+      shooter.redNextAttackAt = now + followDelayMs + 1050;
+      shooter.redVulnerableUntil = Math.max(shooter.redVulnerableUntil, now + followDelayMs + 650);
       setTimeout(() => {
         if (token !== spaceFlowToken || state !== 'playing' || waveTransitioning || !shooter || shooter.alive === false) return;
-        fireAimedEnemyBullet((speedMult || 1) * redEchoProfile.speedMult, 'RED ECHO SHOT');
+        fireAimedEnemyBullet((speedMult || 1) * redDoubleProfile.speedMult, 'RED DOUBLE SHOT');
         playTraitorShotSfx('red');
       }, followDelayMs);
       return;
@@ -850,33 +853,91 @@
     return !!(o && o.traitorType === 'purple' && now < (o.purpleRainUntil || 0));
   }
 
-  function redShieldActive(o, now) {
-    return !!(o && o.traitorType === 'red' && now < (o.redShieldUntil || 0));
+  function traitorAttackArmY(o) {
+    // Keep the whole shield below the HP bar before allowing an attack/vulnerability
+    // window, rather than letting a newly spawned traitor change state inside the HUD.
+    return SPACE_HP_BAR_Y + SPACE_HP_BAR_H + ((o && o.r) || FACE_R) * 1.28;
   }
 
-  function updateRedTraitorShield(o, now) {
-    if (!o || o.traitorType !== 'red' || o.isTrapped || o.alive === false) return;
-    const tier = currentCfg && currentCfg.tier != null ? currentCfg.tier : campaignTier(wave);
-    const difficulty = clamp(tier, 0, 4);
-    if (!o.nextRedShieldAt) {
-      o.nextRedShieldAt = now + rand(1800 - difficulty * 180, 3400 - difficulty * 220);
+  function redVulnerableActive(o, now) {
+    if (o && now < (o.fakeoutCommitUntil || 0)) return false;
+    return !!(o && o.traitorType === 'red' && now < (o.redVulnerableUntil || 0));
+  }
+
+  function traitorFakeoutBusy(o, now) {
+    return !!(o && (o.traitorType === 'red' || o.traitorType === 'purple') && now < (o.fakeoutCommitUntil || 0));
+  }
+
+  function updateRedShieldCycle(o, now) {
+    if (!o || o.traitorType !== 'red' || o.isTrapped || o.alive === false || o.y < traitorAttackArmY(o)) return;
+    if (now < (o.fakeoutCommitUntil || 0)) return;
+    // Random openings are only a safety valve. If the player recently caused a
+    // fake-out, let that earned rhythm carry the encounter instead of layering
+    // another arbitrary shield drop on top of it.
+    if (o.lastFakeoutAt && now - o.lastFakeoutAt < 2800) {
+      o.nextRedShieldDropAt = Math.max(o.nextRedShieldDropAt || 0, o.lastFakeoutAt + 2800);
+      return;
     }
-    if (now < o.nextRedShieldAt) return;
-    // The lesson scales cleanly: early shields are short with a generous attack
-    // window afterward; harder tiers hold longer and return a little sooner.
-    const minDuration = 850 + difficulty * 150;
-    const maxDuration = 1150 + difficulty * 175;
-    const minGap = 4200 - difficulty * 500;
-    const maxGap = 6200 - difficulty * 675;
-    o.redShieldStartedAt = now;
-    o.redShieldDuration = rand(minDuration, maxDuration);
-    o.redShieldUntil = now + o.redShieldDuration;
-    o.nextRedShieldAt = o.redShieldUntil + rand(minGap, maxGap);
+    // Shield drops are independent from firing. Attacks still open the same window,
+    // but quiet openings keep red enemies from becoming a wait-for-the-gun grind.
+    if (redVulnerableActive(o, now)) {
+      if (!o.nextRedShieldDropAt || o.nextRedShieldDropAt <= now) {
+        o.nextRedShieldDropAt = o.redVulnerableUntil + rand(650, 1050);
+      }
+      return;
+    }
+    if (!o.nextRedShieldDropAt) o.nextRedShieldDropAt = now + rand(300, 600);
+    if (now < o.nextRedShieldDropAt) return;
+    o.redVulnerableUntil = now + rand(1150, 1500);
+    o.nextRedShieldDropAt = o.redVulnerableUntil + rand(650, 1050);
+  }
+
+  function beginTraitorFakeout(o, direction, now, awareness, driftMult) {
+    const tellMs = Math.max(90, 150 - awareness * 45);
+    const commitMs = Math.max(420, 580 - awareness * 110);
+    o.fakeoutCommitStartsAt = now + tellMs;
+    o.fakeoutTellUntil = o.fakeoutCommitStartsAt;
+    o.fakeoutCommitUntil = o.fakeoutCommitStartsAt + commitMs;
+    o.fakeoutCommitVx = direction * (1.42 + awareness * 0.72) * driftMult;
+    o.fakeoutResolved = false;
+    o.lastFakeoutAt = now;
+    o.nextDodgeAt = o.fakeoutCommitUntil + rand(620, 980);
+  }
+
+  function updateTraitorFakeoutState(o, now) {
+    if (!o || (o.traitorType !== 'red' && o.traitorType !== 'purple') || !o.fakeoutCommitUntil || o.fakeoutResolved || now < o.fakeoutCommitUntil) return;
+    const awareness = o.enemyAwareness == null ? normalEnemyAwarenessForWave(wave) : o.enemyAwareness;
+    o.fakeoutResolved = true;
+    // The committed dash spends its momentum. This is the earned shot window:
+    // still moving, but no immediate reversal or full-speed escape.
+    o.vx *= 0.40;
+    o.fakeoutRecoveryUntil = now + Math.max(350, 440 - awareness * 80);
+    if (o.traitorType === 'purple') {
+      // Purple's earned opening is its attack: the shield drops, the ring appears,
+      // and rain begins immediately, preserving the same lesson with extra dodging.
+      o.nextPurpleRainAt = 0;
+      firePurpleTraitorRain(o);
+    } else {
+      const openingMs = Math.max(800, 1100 - awareness * 250);
+      o.redVulnerableUntil = Math.max(o.redVulnerableUntil || 0, now + openingMs);
+      o.nextRedShieldDropAt = o.redVulnerableUntil + rand(650, 1050);
+    }
+  }
+
+  function traitorVulnerable(o, now) {
+    if (!o || o.y < traitorAttackArmY(o)) return false;
+    if (traitorFakeoutBusy(o, now)) return false;
+    return purpleRainActive(o, now) || redVulnerableActive(o, now);
+  }
+
+  function traitorShieldActive(o, now) {
+    return !!(o && !o.isTrapped && (o.traitorType === 'red' || o.traitorType === 'purple') && !traitorVulnerable(o, now));
   }
 
   function firePurpleTraitorRain(shooter) {
     if (!shooter || shooter.alive === false || state !== 'playing' || waveTransitioning) return;
     const now = Date.now();
+    if (traitorFakeoutBusy(shooter, now)) return;
     if (now < (shooter.nextPurpleRainAt || 0) || purpleRainActive(shooter, now)) return;
     const tier = currentCfg ? currentCfg.tier : campaignTier(wave);
     const purpleProfile = purpleWaveProfileForWave(wave);
@@ -978,10 +1039,41 @@
       driftTargetY = clamp(driftTargetY + repelY * 8, o.r + 84, safeMaxY);
     }
 
+    // Shared traitor fake-out lesson: react once to the first threatening bullet or
+    // an aligned ship, visibly brace, then commit without reconsidering direction.
+    const isFakeoutTraitor = o.traitorType === 'red' || o.traitorType === 'purple';
+    let fakeoutBusy = traitorFakeoutBusy(o, now);
+    if (isFakeoutTraitor && !fakeoutBusy && traitorShieldActive(o, now) && now > (o.nextDodgeAt || 0)) {
+      const threatX = o.r * (1.75 + awareness * 1.1);
+      const threatY = 180 + awareness * 110;
+      const threat = bullets.find(b => b && b.vy < 0 && b.y > o.y && Math.abs(b.x - o.x) < threatX && (b.y - o.y) < threatY);
+      const shipDy = player ? player.y - o.y : 0;
+      const shipBait = player && shipDy > 0 && shipDy < H * (0.44 + awareness * 0.10) && Math.abs(player.x - o.x) < o.r * (2.3 + awareness * 1.8);
+      if (threat || shipBait) {
+        // The bullet triggers the read, but the ship determines the committed lane.
+        // Moving to one side and reversing after the brace now genuinely fakes it out.
+        const baitX = player ? player.x : threat.x;
+        const away = baitX <= o.x ? 1 : -1;
+        const direction = o.x < o.r + 34 ? 1 : o.x > W - o.r - 34 ? -1 : away;
+        beginTraitorFakeout(o, direction, now, awareness, driftMult);
+        fakeoutBusy = true;
+      }
+    }
+    if (fakeoutBusy) {
+      if (now < (o.fakeoutCommitStartsAt || 0)) {
+        o.vx *= 0.76; // brief readable brace before choosing the lane
+      } else {
+        o.vx += ((o.fakeoutCommitVx || 0) - o.vx) * 0.32;
+        o.baseY = clamp(o.baseY - 0.16, o.r + 84, safeMaxY);
+      }
+    }
+    const fakeoutRecovering = isFakeoutTraitor && now < (o.fakeoutRecoveryUntil || 0);
+    if (fakeoutRecovering) o.vx *= 0.992;
+
     // Normal enemy awareness: early enemies still make readable mistakes, but late
     // enemies scan wider bullet lanes, dodge sooner, and sometimes retreat away
     // from the player's current lane. Cooldowns keep them hittable.
-    if (dodgeMult > 0 && now > (o.nextDodgeAt || 0)) {
+    if (!fakeoutBusy && !fakeoutRecovering && !isFakeoutTraitor && dodgeMult > 0 && now > (o.nextDodgeAt || 0)) {
       const threatX = o.r * (1.62 + awareness * 1.05);
       const threatY = 170 + awareness * 105;
       const threat = bullets.find(b => b && b.vy < 0 && b.y > o.y && Math.abs(b.x - o.x) < threatX && (b.y - o.y) < threatY);
@@ -996,7 +1088,7 @@
       }
     }
 
-    if (!o.academyObstacle && awareness > 0.32 && player && now > (o.nextRetreatAt || 0)) {
+    if (!fakeoutBusy && !fakeoutRecovering && !isFakeoutTraitor && !o.academyObstacle && awareness > 0.32 && player && now > (o.nextRetreatAt || 0)) {
       const dxp = o.x - player.x;
       const dyp = player.y - o.y;
       const laneDanger = Math.abs(dxp) < o.r * (2.0 + awareness * 2.0) && dyp > 0 && dyp < H * (0.42 + awareness * 0.13);
@@ -1012,13 +1104,13 @@
 
     o.y += (driftTargetY - o.y) * Math.min(0.12, 0.075 * driftMult);
     if (Math.abs(driftTargetY - o.y) < 0.05) o.y = driftTargetY;
-    if (Math.abs(o.vx) < 0.15) o.vx = (Math.random() < 0.5 ? -1 : 1) * 0.45 * driftMult;
-    if (now > (o.nextDriftTurnAt || 0)) {
+    if (!fakeoutBusy && !fakeoutRecovering && Math.abs(o.vx) < 0.15) o.vx = (Math.random() < 0.5 ? -1 : 1) * 0.45 * driftMult;
+    if (!fakeoutBusy && !fakeoutRecovering && now > (o.nextDriftTurnAt || 0)) {
       o.vx += rand(-0.18 - awareness * 0.10, 0.18 + awareness * 0.10) * driftMult;
       o.vx = clamp(o.vx, -1.0 * driftMult * (1 + awareness * 0.22), 1.0 * driftMult * (1 + awareness * 0.22));
       o.nextDriftTurnAt = now + rand(850 - awareness * 220, 1550 - awareness * 360) / Math.min(1.5, driftMult);
     }
-    if (now > (o.nextJukeAt || 0)) {
+    if (!fakeoutBusy && !fakeoutRecovering && now > (o.nextJukeAt || 0)) {
       o.vx = clamp(o.vx + rand(-0.48 - awareness * 0.22, 0.48 + awareness * 0.22) * driftMult, -1.65 * driftMult * (1 + awareness * 0.18), 1.65 * driftMult * (1 + awareness * 0.18));
       o.baseY = clamp(o.baseY + rand(-9 - awareness * 7, 8 + awareness * 4) * driftMult, o.r + 84, safeMaxY);
       o.nextJukeAt = now + (rand(760 - awareness * 220, 1450 - awareness * 420) * jukeMult) / Math.min(1.5, driftMult);
@@ -1043,15 +1135,21 @@
       o.pausedBurstDone = true;
     }
   }
-  function _spawnObstacleReal(cfg, opts) {
-    // Themed waves bend the asteroid/enemy mix and a few spawn stats without
-    // touching waveConfig(cfg) itself — purely a local override of this one roll.
+
+  function effectiveAsteroidRatio(cfg) {
     let ratio = cfg.asteroidRatio;
     if (waveTheme === 'asteroids' || waveTheme === 'ghost' || waveTheme === 'emp') ratio = 1;
     else if (waveTheme === 'enemies' && !cfg.allowEnemyAsteroids) ratio = 0;
     else if (waveTheme === 'swarm') ratio = 0.1;
     else if (waveTheme === 'goldrush') ratio = 0.85;
     else if (waveTheme === 'mirror') ratio = 1;
+    return clamp(ratio, 0, 1);
+  }
+
+  function _spawnObstacleReal(cfg, opts) {
+    // Themed waves bend the asteroid/enemy mix and a few spawn stats without
+    // touching waveConfig(cfg) itself — purely a local override of this one roll.
+    const ratio = effectiveAsteroidRatio(cfg);
     const activeFaceCap = cfg.activeFaceCap || 0;
     const faceCapReached = activeFaceCap && obstacles.filter(o => o.type === 'face' && !o.isTrapped && o.alive !== false).length >= activeFaceCap;
     const forceAsteroid = !!(opts && opts.forceAsteroid);
@@ -1126,7 +1224,7 @@
       const traitorDrift = traitorType === 'purple' ? purpleProfile.driftMult : 1;
       const traitorDodge = traitorType === 'purple' ? purpleProfile.dodgeMult : 1;
       const faceHp = isTrapped ? 1 : (cfg.enemyHpOverride || 3);
-      const faceR = FACE_R;
+      const faceR = isTrapped ? FACE_R : FACE_R * 0.90;
       const holdMinY = Math.max(118, H * 0.26);
       const holdMaxY = Math.max(holdMinY + 42, Math.min(dangerY - 78, H * 0.75));
       const holdY = rand(holdMinY, holdMaxY);
@@ -2567,7 +2665,7 @@
     return ACADEMY_MSG_FADE_IN + holdMs + ACADEMY_MSG_FADE_OUT;
   }
   function academyTargetArmY() {
-    return 56 + 14 + 24; // HP bar bottom plus enough room for the target to read.
+    return SPACE_HP_BAR_Y + SPACE_HP_BAR_H + 24; // HP bar bottom plus enough room for the target to read.
   }
   function academyShowMsg(title, detail, opts) {
     opts = opts || {};
@@ -2941,40 +3039,46 @@
   let spawnTimer = null;
   function startWaveSpawn(cfg) {
     clearTimeout(spawnTimer);
-    if (wave === 3) {
-      let enemiesRemaining = Math.max(0, cfg.wave3EnemyTotal || 5);
-      let asteroidsRemaining = Math.max(0, cfg.wave3AsteroidTotal || 14);
-      const enemyScreenCap = Math.max(1, cfg.wave3EnemyScreenCap || 2);
+    if (cfg.mixedEnemyTotal != null && cfg.mixedAsteroidTotal != null) {
+      let enemiesRemaining = Math.max(0, cfg.mixedEnemyTotal);
+      let asteroidsRemaining = Math.max(0, cfg.mixedAsteroidTotal);
+      const enemyTotal = enemiesRemaining;
+      const enemyScreenCap = Math.max(1, cfg.mixedEnemyScreenCap || 2);
       spawnsRemaining = enemiesRemaining + asteroidsRemaining;
       const totalSpawns = spawnsRemaining;
-      let nextEnemyAt = 0;
-      let nextAsteroidAt = 0;
-      function doWave3Spawn() {
+      const schedule = [];
+      for (let i = 0; i < totalSpawns; i++) {
+        // Even quota sampling distributes each type across the complete wave. A
+        // capped enemy slot waits instead of substituting a rock and front-loading
+        // the asteroid quota while the player is still fighting the first target.
+        const enemiesThroughHere = Math.floor(((i + 1) * enemyTotal) / totalSpawns);
+        const enemiesBeforeHere = Math.floor((i * enemyTotal) / totalSpawns);
+        schedule.push(enemiesThroughHere > enemiesBeforeHere ? 'enemy' : 'asteroid');
+      }
+      let scheduleIndex = 0;
+      function doMixedSpawn() {
         if (state !== 'playing') return;
-        if (boss || (miniBoss && miniBoss.kind === 'ghost')) { spawnTimer = setTimeout(doWave3Spawn, 500); return; }
+        if (boss || (miniBoss && miniBoss.kind === 'ghost')) { spawnTimer = setTimeout(doMixedSpawn, 500); return; }
         if (spawnsRemaining <= 0) return;
-        const now = Date.now();
-        const activePurpleEnemies = obstacles.filter(o => o.type === 'face' && o.traitorType === 'purple' && !o.isTrapped && o.alive !== false).length;
-        let spawned = false;
-        if (enemiesRemaining > 0 && activePurpleEnemies < enemyScreenCap && now >= nextEnemyAt) {
-          spawnObstacle(cfg, { forceFace: true, forceTraitorType: 'purple', ignorePurpleCap: true });
+        const activeEnemies = obstacles.filter(o => o.type === 'face' && o.traitorType === cfg.mixedTraitorType && !o.isTrapped && o.alive !== false).length;
+        const activeThreats = obstacles.filter(o => o.alive !== false && !o.isTrapped).length;
+        if (cfg.activeObstacleCap && activeThreats >= cfg.activeObstacleCap) { spawnTimer = setTimeout(doMixedSpawn, 260); return; }
+        const nextType = schedule[scheduleIndex];
+        if (nextType === 'enemy' && enemiesRemaining > 0) {
+          if (activeEnemies >= enemyScreenCap) { spawnTimer = setTimeout(doMixedSpawn, 260); return; }
+          spawnObstacle(cfg, { forceFace: true, forceTraitorType: cfg.mixedTraitorType, ignorePurpleCap: true });
           enemiesRemaining--;
-          spawnsRemaining--;
-          nextEnemyAt = now + rand(760, 1120);
-          spawned = true;
-        }
-        if (asteroidsRemaining > 0 && now >= nextAsteroidAt) {
+        } else if (asteroidsRemaining > 0) {
           spawnObstacle(cfg, { forceAsteroid: true });
           asteroidsRemaining--;
-          spawnsRemaining--;
-          nextAsteroidAt = now + rand(300, 620);
-          spawned = true;
         }
+        scheduleIndex++;
+        spawnsRemaining--;
         if (spawnsRemaining <= 0) return;
-        const wait = spawned ? 150 : 180;
-        spawnTimer = setTimeout(doWave3Spawn, wait);
+        const cadence = cfg.spawnMs * (cfg.spawnCadenceMult == null ? 1 : cfg.spawnCadenceMult);
+        spawnTimer = setTimeout(doMixedSpawn, cadence * (0.68 + Math.random() * 0.34));
       }
-      spawnTimer = setTimeout(doWave3Spawn, 900);
+      spawnTimer = setTimeout(doMixedSpawn, 900);
       return;
     }
     // Boss/captive waves are true encounter waves now: beat the boss, then advance
@@ -2988,6 +3092,7 @@
     else spawnsRemaining = cfg.poolSize;
     const totalSpawns = spawnsRemaining;
     const normalEnemySlots = Array.isArray(cfg.normalEnemySlots) ? cfg.normalEnemySlots : [];
+    const distributedAsteroidTotal = Math.round(totalSpawns * effectiveAsteroidRatio(cfg));
     function doSpawn() {
       if (state !== 'playing') return;
       // Paused entirely while a boss fight is active — it's deploying its own minions
@@ -3002,7 +3107,14 @@
       const activeThreats = obstacles.filter(o => o.alive !== false && !o.isTrapped).length;
       if (activeCap && activeThreats >= activeCap) { spawnTimer = setTimeout(doSpawn, 260); return; }
       const spawnIndex = totalSpawns - spawnsRemaining + 1;
-      spawnObstacle(cfg, { forceNormalEnemy: normalEnemySlots.includes(spawnIndex) });
+      const asteroidsThroughHere = Math.floor((spawnIndex * distributedAsteroidTotal) / Math.max(1, totalSpawns));
+      const asteroidsBeforeHere = Math.floor(((spawnIndex - 1) * distributedAsteroidTotal) / Math.max(1, totalSpawns));
+      const scheduledAsteroid = asteroidsThroughHere > asteroidsBeforeHere;
+      spawnObstacle(cfg, {
+        forceAsteroid: scheduledAsteroid,
+        forceFace: !scheduledAsteroid && distributedAsteroidTotal < totalSpawns,
+        forceNormalEnemy: !scheduledAsteroid && normalEnemySlots.includes(spawnIndex),
+      });
       spawnsRemaining--;
       // SWARM speeds up by cadence, not by screen-flooding. ALL ASTEROIDS now works
       // the same way: more total rocks across the wave, but no triple-dumps that
@@ -3776,6 +3888,56 @@ function nextWave() {
     ctx.restore();
   }
 
+  function drawTraitorBoundary(o, now) {
+    if (!o || o.isTrapped || (o.traitorType !== 'red' && o.traitorType !== 'purple')) return;
+    if (o._pulseSeed === undefined) o._pulseSeed = Math.random() * 1000;
+    const vulnerable = traitorVulnerable(o, now);
+    const seed = o._pulseSeed;
+    // Both states occupy one tight boundary: shield = octagon, attack window = ring.
+    const boundaryR = o.r * 1.25;
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    if (vulnerable) {
+      const spin = now * 0.0045 + seed;
+      ctx.shadowColor = o.traitorType === 'purple' ? '#a233ff' : '#ff5a3c';
+      ctx.shadowBlur = 5.5;
+      ctx.strokeStyle = o.traitorType === 'purple' ? '#c58aff' : '#ff765d';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.arc(0, 0, boundaryR, 0, Math.PI * 2); ctx.stroke();
+      // A solid circle cannot reveal rotation by itself, so both colors share the
+      // same quiet white orbit markers rather than bringing back a moving gap.
+      ctx.shadowBlur = 2.5;
+      ctx.fillStyle = '#fff8e8';
+      for (let i = 0; i < 3; i++) {
+        const a = spin + i * Math.PI * 2 / 3;
+        ctx.beginPath();
+        ctx.arc(Math.cos(a) * boundaryR, Math.sin(a) * boundaryR, 2.0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else {
+      const breathe = 1 + Math.sin(now * 0.0052 + seed) * 0.018;
+      const shieldR = boundaryR * breathe;
+      const impactAge = now - (o.traitorShieldImpactAt || 0);
+      const impact = impactAge >= 0 && impactAge < 220 ? 1 - impactAge / 220 : 0;
+      ctx.shadowColor = '#ffb52e';
+      ctx.shadowBlur = 7 + impact * 7;
+      const fakeoutTell = now < (o.fakeoutTellUntil || 0);
+      ctx.strokeStyle = (impact > 0 || fakeoutTell) ? '#fff0bd' : '#ffc45c';
+      ctx.lineWidth = 3.0 + impact * 1.8 + (fakeoutTell ? 1.0 : 0);
+      ctx.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const a = -Math.PI / 2 + i * Math.PI / 4;
+        const x = Math.cos(a) * shieldR;
+        const y = Math.sin(a) * shieldR;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   function drawObstacle(o) {
     ctx.save(); ctx.translate(o.x,o.y);
     if (o.isDeflected) {
@@ -3836,111 +3998,7 @@ function nextWave() {
         glowColor: o.isTrapped ? 'rgba(0,229,255,0.72)' : (o.behavior === 'swarmer' ? 'rgba(255,0,0,0.78)' : traitorGlow),
         glowBlur: o.r * (o.isTrapped ? 0.35 : (o.behavior === 'swarmer' ? 0.42 : 0.18)),
       });
-      if (!o.isTrapped && o.traitorType === 'purple') {
-        const spin = Date.now() * 0.011 + (o._pulseSeed || 0);
-        const pulse = 0.86 + Math.sin(Date.now() * 0.008 + (o._pulseSeed || 0)) * 0.14;
-        const raining = purpleRainActive(o, Date.now());
-        ctx.save();
-        ctx.globalAlpha = 0.86 + pulse * 0.14;
-        ctx.shadowColor = '#6f00ff';
-        ctx.shadowBlur = o.r * (1.1 + pulse * 0.6);
-        ctx.lineCap = 'round';
-
-        // Broken 2D rings make the spin readable; draw the gaps manually so the
-        // first purple enemy does not depend on canvas dash state.
-        const drawSpinSegments = (radius, phase, color, width, segments) => {
-          ctx.strokeStyle = color;
-          ctx.lineWidth = width;
-          for (let i = 0; i < segments; i++) {
-            const a = phase + i * Math.PI * 2 / segments;
-            ctx.beginPath();
-            ctx.arc(0, 0, radius, a, a + Math.PI * 0.28);
-            ctx.stroke();
-          }
-        };
-        drawSpinSegments(o.r * 1.28, spin, '#6f00ff', 4, 5);
-        drawSpinSegments(o.r * 1.55, -spin * 1.35, '#a233ff', 3, 6);
-        if (raining) {
-          for (let i = 0; i < 4; i++) {
-            const a = spin * (i % 2 ? -1.35 : 1.15) + i * Math.PI / 2;
-            const rr = i % 2 ? o.r * 1.55 : o.r * 1.28;
-            ctx.fillStyle = i % 2 ? 'rgba(235,216,255,0.95)' : 'rgba(162,51,255,0.98)';
-            ctx.beginPath();
-            ctx.arc(Math.cos(a) * rr, Math.sin(a) * rr, o.r * 0.11, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        }
-        if (raining) {
-          const rainGlow = 0.94 + Math.sin(Date.now() * 0.0026 + (o._pulseSeed || 0) * 0.7) * 0.06;
-          ctx.globalAlpha = 0.46 * rainGlow;
-          ctx.fillStyle = 'rgba(130,60,196,0.62)';
-          ctx.beginPath();
-          // Lightweight glow only around drizzle area.
-          ctx.ellipse(0, o.r * 1.20, o.r * 0.78, o.r * 0.30, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.globalAlpha = 0.70;
-          ctx.fillStyle = 'rgba(232,210,255,0.88)';
-          const rainDots = [[-0.54, 1.14], [-0.32, 1.26], [-0.10, 1.17], [0.12, 1.28], [0.34, 1.16], [0.56, 1.24]];
-          for (let i = 0; i < rainDots.length; i++) {
-            const x = rainDots[i][0] * o.r + Math.sin(spin + i * 0.7) * 0.9;
-            const y = rainDots[i][1] * o.r;
-            ctx.beginPath();
-            ctx.arc(x, y, o.r * 0.075, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        }
-        ctx.restore();
-      }
-      if (!o.isTrapped && o.traitorType === 'red') {
-        const nowRed = Date.now();
-        const shielded = redShieldActive(o, nowRed);
-        const echoLeft = Math.max(0, (o.redEchoMuzzleUntil || 0) - nowRed);
-        const echoA = Math.max(0, Math.min(1, echoLeft / 380));
-        const spinRed = nowRed * 0.0024 + (o._pulseSeed || 0) * 0.7;
-        ctx.save();
-        ctx.globalAlpha = 0.28 + echoA * 0.48;
-        ctx.strokeStyle = echoA > 0 ? 'rgba(255,132,110,0.96)' : 'rgba(255,96,96,0.62)';
-        ctx.lineWidth = 2.2;
-        for (let i = 0; i < 3; i++) {
-          const a = spinRed + i * (Math.PI * 2 / 3);
-          const r = o.r * (1.08 + i * 0.07);
-          const x = Math.cos(a) * r;
-          const y = Math.sin(a) * r;
-          ctx.beginPath();
-          ctx.moveTo(x * 0.66, y * 0.66);
-          ctx.lineTo(x, y);
-          ctx.stroke();
-        }
-        if (echoA > 0) {
-          ctx.fillStyle = 'rgba(255,108,88,0.24)';
-          ctx.beginPath();
-          ctx.arc(0, o.r * 0.84, o.r * (0.26 + (1 - echoA) * 0.22), 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.restore();
-        if (shielded) {
-          const shieldAge = nowRed - (o.redShieldStartedAt || nowRed);
-          // Breathe for the entire active window. The large, repeating expansion is
-          // the player's "dodge now" tell; it is deliberately unrelated to impacts.
-          const tier = currentCfg && currentCfg.tier != null ? currentCfg.tier : campaignTier(wave);
-          const pulseWave = 0.5 + Math.sin(shieldAge * (0.0082 + Math.min(4, tier) * 0.00045)) * 0.5;
-          const deployEase = 0.72 + Math.min(1, shieldAge / 120) * 0.28;
-          const shieldR = o.r * (1.27 + pulseWave * 0.24) * deployEase;
-          ctx.save();
-          ctx.globalAlpha = 0.72 + pulseWave * 0.22;
-          ctx.fillStyle = `rgba(255,76,58,${0.09 + pulseWave * 0.09})`;
-          ctx.shadowColor = '#ff503c';
-          ctx.shadowBlur = o.r * (0.30 + pulseWave * 0.34);
-          ctx.strokeStyle = 'rgba(255,126,100,0.96)';
-          ctx.lineWidth = 3.2 + pulseWave * 1.4;
-          ctx.beginPath(); ctx.arc(0, 0, shieldR, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-          ctx.shadowBlur = 0;
-          ctx.strokeStyle = 'rgba(255,235,220,0.68)';
-          ctx.lineWidth = 1.4;
-          ctx.beginPath(); ctx.arc(0, 0, shieldR * 0.94, 0, Math.PI * 2); ctx.stroke();
-          ctx.restore();
-        }
-      }
+      drawTraitorBoundary(o, Date.now());
       if (o.isTrapped) {
         ctx.restore();
         ctx.fillStyle = 'rgba(0,229,255,0.32)';
@@ -3965,53 +4023,26 @@ function nextWave() {
           ctx.stroke();
           ctx.restore();
         }
-        // Enemy target lock: keep the red language outside the face so the character
-        // art stays readable, then add small inward ticks that say "shoot this."
+        // Non-traitor enemies keep the ordinary target lock. Red/purple traitors
+        // use the mutually exclusive shield/ring boundary drawn above instead.
         ctx.lineCap = 'round';
         if (o._pulseSeed === undefined) o._pulseSeed = Math.random() * 1000;
         const pulse = 0.94 + Math.sin(Date.now() * 0.004 + o._pulseSeed) * 0.06;
         const isPurpleTraitor = o.traitorType === 'purple';
         const isRedTraitor = o.traitorType === 'red';
-        const lockSoft = isPurpleTraitor ? 'rgba(179,107,255,0.30)' : 'rgba(255,92,64,0.30)';
-        const lockHard = isPurpleTraitor ? '#b36bff' : '#ff5a3c';
-        const tickColor = isPurpleTraitor ? 'rgba(238,220,255,0.86)' : 'rgba(255,231,210,0.90)';
-        ctx.save();
-        ctx.scale(pulse, pulse);
-        ctx.beginPath();
-        ctx.arc(0, 0, o.r * 1.18, 0.12 * Math.PI, 1.88 * Math.PI);
-        ctx.strokeStyle = lockSoft; ctx.lineWidth = 9; ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(0, 0, o.r * 1.18, 0.12 * Math.PI, 1.88 * Math.PI);
-        ctx.strokeStyle = lockHard; ctx.lineWidth = 3.2; ctx.stroke();
-        ctx.restore();
-        ctx.strokeStyle = tickColor;
-        ctx.lineWidth = 1.8;
-        if (isRedTraitor) {
-          const t3 = Date.now() * 0.0019 + (o._pulseSeed || 0) * 0.4;
-          const ringR = o.r * 1.12;
+        const isTraitor = isRedTraitor || isPurpleTraitor;
+        if (!isTraitor) {
           ctx.save();
-          ctx.rotate(t3);
-          ctx.strokeStyle = 'rgba(255,108,88,0.92)';
-          ctx.lineWidth = 2.2;
-          for (let i = 0; i < 4; i++) {
-            const a = i * Math.PI * 0.5 + Math.PI * 0.08;
-            ctx.beginPath();
-            ctx.arc(0, 0, ringR, a, a + Math.PI * 0.24);
-            ctx.stroke();
-          }
+          ctx.scale(pulse, pulse);
+          ctx.beginPath();
+          ctx.arc(0, 0, o.r * 1.18, 0.12 * Math.PI, 1.88 * Math.PI);
+          ctx.strokeStyle = 'rgba(255,92,64,0.30)'; ctx.lineWidth = 9; ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(0, 0, o.r * 1.18, 0.12 * Math.PI, 1.88 * Math.PI);
+          ctx.strokeStyle = '#ff5a3c'; ctx.lineWidth = 3.2; ctx.stroke();
           ctx.restore();
-          ctx.strokeStyle = 'rgba(255,235,220,0.92)';
-          ctx.lineWidth = 1.9;
-          for (let i = 0; i < 3; i++) {
-            const a = t3 * 1.2 + i * (Math.PI * 2 / 3);
-            const x = Math.cos(a) * o.r * 1.22;
-            const y = Math.sin(a) * o.r * 1.22;
-            ctx.beginPath();
-            ctx.moveTo(x * 0.88, y * 0.88);
-            ctx.lineTo(x, y);
-            ctx.stroke();
-          }
-        } else {
+          ctx.strokeStyle = 'rgba(255,231,210,0.90)';
+          ctx.lineWidth = 1.8;
           ctx.beginPath(); ctx.moveTo(-o.r * 1.05, 0); ctx.lineTo(-o.r * 0.62, 0); ctx.moveTo(o.r * 0.62, 0); ctx.lineTo(o.r * 1.05, 0); ctx.stroke();
           ctx.beginPath(); ctx.moveTo(0, -o.r * 1.05); ctx.lineTo(0, -o.r * 0.68); ctx.moveTo(0, o.r * 0.68); ctx.lineTo(0, o.r * 1.05); ctx.stroke();
         }
@@ -4125,10 +4156,10 @@ function nextWave() {
 
     // Wave number / HP percent text both removed — the health bar fill is already
     // the at-a-glance signal, and wave number isn't something players read mid-action.
-    const barY = 56;
+    const barY = SPACE_HP_BAR_Y;
     const barW = W; // spans the full screen edge-to-edge, not inset
     const barX = 0;
-    const barH = 14;
+    const barH = SPACE_HP_BAR_H;
     const hp = Math.max(0, health) / 100;
 
     // Background track
@@ -5026,7 +5057,8 @@ function nextWave() {
       if(o.x<o.r&&o.vx<0) o.vx*=-1;
       if(o.x>W-o.r&&o.vx>0) o.vx*=-1;
       const nowMove = Date.now();
-      updateRedTraitorShield(o, nowMove);
+      updateTraitorFakeoutState(o, nowMove);
+      updateRedShieldCycle(o, nowMove);
       if (updateHoldDriftEnemy(o, nowMove)) continue;
       if (o.blackoutHiddenEnemy && nowMove < (o.blackoutHoldUntil || 0)) continue;
 
@@ -5315,7 +5347,7 @@ function nextWave() {
         const nowHit = Date.now();
         const hitRadius = (o.type==='face' && o.isTrapped && o.ringHp > 0)
           ? o.r + 12
-          : redShieldActive(o, nowHit) ? o.r * 1.56 : o.r + 3;
+          : traitorShieldActive(o, nowHit) ? o.r * 1.34 : o.r + 3;
         if(Math.hypot(b.x-o.x,b.y-o.y)<hitRadius){
           b.vy=999;
           o.litUntil = Date.now() + 320;
@@ -5351,20 +5383,14 @@ function nextWave() {
               if(state==='over') return;
             } else {
               // Normal enemy face — takes 3 hits to clear
-              if (redShieldActive(o, nowHit)) {
+              if (traitorShieldActive(o, nowHit)) {
                 b.vy = 999;
-                if (nowHit - (o.redShieldNoticeAt || 0) > 240) {
-                  o.redShieldNoticeAt = nowHit;
-                  addFloatText('SHIELDED', o.x, o.y - 18, '#ff8068', 13);
+                o.traitorShieldImpactAt = nowHit;
+                if (nowHit - (o.traitorShieldNoticeAt || 0) > 240) {
+                  o.traitorShieldNoticeAt = nowHit;
+                  addFloatText('SHIELDED', o.x, o.y - 18, '#ffc45c', 13);
                   playShieldBellPing();
                 }
-                miniExplosion(b.x, b.y, '#ff8068');
-                break;
-              }
-              if (purpleRainActive(o, nowHit)) {
-                b.vy = 999;
-                addFloatText('RAIN SHIELD', o.x, o.y - 18, '#a233ff', 13);
-                playShieldBellPing();
                 break;
               }
               o.hp--;
@@ -5459,7 +5485,13 @@ function nextWave() {
     const fireRateMult = currentCfg && currentCfg.enemyFireRateMult != null ? currentCfg.enemyFireRateMult : 1;
     const enemyFireInterval = Math.max(360, (1280 - fireTier * 125 - Math.min(wave, 12) * 28 - Math.max(0, wave - 18) * 35) * 0.85 * fireRateMult);
     if(!academyMode && Date.now() - lastEnemyFire > enemyFireInterval){
-      const shooters = obstacles.filter(o => o.type==='face' && o.behavior !== 'swarmer' && !o.isTrapped && o.y > 0);
+      const fireNow = Date.now();
+      const shooters = obstacles.filter(o => {
+        if (o.type !== 'face' || o.behavior === 'swarmer' || o.isTrapped) return false;
+        if (o.traitorType === 'red' && fireNow < (o.redNextAttackAt || 0)) return false;
+        const isTraitor = o.traitorType === 'red' || o.traitorType === 'purple';
+        return o.y > (isTraitor ? traitorAttackArmY(o) : 0);
+      });
       if(shooters.length > 0){
         let chosen;
         if (waveTheme === 'blackout') {
@@ -7185,8 +7217,21 @@ function nextWave() {
     'boss.gizmo.projectile': 'assets/space/sfx/boss_gizmo_projectile.mp3',
     'player.death': 'assets/space/sfx/player_death.mp3',
   };
+  // Playback trims compensate for both source loudness and in-game repetition.
+  // Ogre's one-second bray can overlap several times in its 390ms charge cadence,
+  // so its per-trigger gain is intentionally much lower than the one-shot attacks.
+  const SPACE_SFX_VOLUME = {
+    'boss.ogre.projectile': 0.24,
+    'boss.dragon.projectile': 0.78,
+    'boss.gray.projectile': 0.84,
+    'boss.knight.projectile': 0.88,
+    'boss.shark.projectile': 0.88,
+    'boss.taco.projectile': 0.94,
+    'boss.octo.projectile': 0.96,
+    'boss.gizmo.projectile': 0.94,
+  };
   const _spaceSfxAudioCache = {};
-  function _playSpaceSfxFile(path, fallback) {
+  function _playSpaceSfxFile(path, fallback, volume) {
     let didFallback = false;
     const runFallback = () => {
       if (didFallback) return;
@@ -7207,6 +7252,7 @@ function nextWave() {
       }
       const node = base.cloneNode(true);
       node.preload = 'auto';
+      node.volume = Math.max(0, Math.min(1, volume == null ? 1 : volume));
       node.addEventListener('error', runFallback, { once: true });
       const p = node.play();
       // HTMLAudioElement.play() can reject after this function returns (autoplay,
@@ -7224,7 +7270,7 @@ function nextWave() {
       const playFallback = () => { if (fn) fn(); };
       if (SPACE_SFX_USE_FILES) {
         const path = SPACE_SFX_FILES[key];
-        if (path && _playSpaceSfxFile(path, playFallback)) return;
+        if (path && _playSpaceSfxFile(path, playFallback, SPACE_SFX_VOLUME[key])) return;
       }
       playFallback();
     } catch (e) {}
