@@ -621,6 +621,12 @@
     SFX.whack();
   }
 
+  function playWhackSuccessHitSfx() {
+    SFX.whack();
+    if (SFX.powerupCollect) SFX.powerupCollect();
+    else SFX.hit();
+  }
+
   // Faded heart flash behind the board whenever a life is lost — easy to miss otherwise
   const BROKEN_HEART_HOLD_MS = 2600; // 4x the original 650ms — gives it room to register before the tap prompt shows up
   function flashBrokenHeart() {
@@ -713,7 +719,7 @@
       pop.className = 'whack-score-pop'; pop.textContent = '✓';
       pop.style.cssText = `left:${20+Math.random()*60}%;top:${20+Math.random()*40}%`;
       hole.appendChild(pop); setTimeout(() => pop.remove(), 700);
-      SFX.whack(); SFX.hit();
+      playWhackSuccessHitSfx();
 
       if (currentRoundType === 'clear') {
         // Clear rounds finish when every good target placed at round-start is hit —
@@ -1060,7 +1066,7 @@
     if (charEl) charEl.innerHTML = charHTML(moleChar, 'whack') + CRACK_SVG;
     if (holeEl) holeEl.classList.add('hit-success');
     clearTint(i);
-    SFX.whack(); SFX.hit();
+    playWhackSuccessHitSfx();
     const hitsEl = document.getElementById('classic-hits');
     if (hitsEl) hitsEl.textContent = classicHits;
 
@@ -1350,7 +1356,7 @@
       if (faceEl) faceEl.innerHTML = charHTML(moleChar, 'whack') + CRACK_SVG;
       const holeEl = document.getElementById(`wh-${i}`);
       if (holeEl) holeEl.classList.add('hit-success');
-      SFX.whack(); SFX.hit();
+      playWhackSuccessHitSfx();
       memoryHit++;
       if (memoryHit >= memoryTargets.length) {
         memoryPhase = null;
@@ -1664,7 +1670,7 @@
               if (state !== 'playing') return;
               const faceBox = document.getElementById('intro-mole-face');
               if (faceBox) faceBox.innerHTML = charFace(GAME_CHARS[moleChar], 'whack') + CRACK_SVG;
-              SFX.whack(); SFX.hit();
+              playWhackSuccessHitSfx();
             }, 1000);
           }},
           { duration: 1500, show: () => {
@@ -1814,7 +1820,7 @@
           if (state !== 'playing') return;
           const faceBox = document.getElementById('intro-mole-face');
           if (faceBox) faceBox.innerHTML = charFace(GAME_CHARS[moleChar], 'whack') + CRACK_SVG;
-          SFX.whack(); SFX.hit();
+          playWhackSuccessHitSfx();
         }, 1000);
       }},
       { duration: 1000, show: () => { ann.innerHTML = ''; } }, // blank beat

@@ -6991,13 +6991,28 @@ function nextWave() {
       playSpaceTone(f * 2, 'sine', i * 0.018 + 0.002, 0.045, 0.014, f * 2.01);
     });
   }
+  // A-minor pentatonic across multiple octaves. The blaster walks this ladder
+  // top-to-bottom like a pseudo-soundtrack motif, then reverses back down/up.
+  const BLASTER_FEEDBACK_SCALE = [
+    110.00, 130.81, 146.83, 164.81, 196.00, 220.00,
+    261.63, 293.66, 329.63, 392.00, 440.00,
+    523.25, 587.33, 659.25,
+  ];
+  let blasterScaleIdx = 0;
+  let blasterScaleDir = 1;
 
   function playCoolSpaceBlaster() {
-    // Lower, softer blaster: still sci-fi, less chirpy/repetitive than the guitar note.
-    playSpaceTone(320, 'triangle', 0, 0.050, 0.032, 175);
-    playSpaceTone(165, 'sawtooth', 0.006, 0.064, 0.016, 92);
-    playSpaceTone(640, 'sine', 0.004, 0.030, 0.011, 410);
-    playSpaceNoiseBurst(0.035, 0.010, 620, 'lowpass');
+    // Less busy: mostly one soft tone, with a tiny overtone tail. Pitch walks the
+    // scale up/down across shots so it feels alive without sounding random.
+    const root = BLASTER_FEEDBACK_SCALE[blasterScaleIdx];
+    if (blasterScaleIdx >= BLASTER_FEEDBACK_SCALE.length - 1) blasterScaleDir = -1;
+    else if (blasterScaleIdx <= 0) blasterScaleDir = 1;
+    blasterScaleIdx += blasterScaleDir;
+
+    playSpaceTone(root,       'sine', 0.000, 0.078, 0.0023, root * 0.994);
+    playSpaceTone(root * 2.0, 'sine', 0.014, 0.040, 0.00026, root * 1.982);
+    // Slight glassy sheen: tiny, high, short, and intentionally quiet.
+    playSpaceTone(root * 4.0, 'triangle', 0.010, 0.026, 0.00014, root * 4.04);
   }
 
 
