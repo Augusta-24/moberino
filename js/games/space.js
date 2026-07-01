@@ -107,6 +107,7 @@
   const missionEnemyChars = [];
   const missionRetryCaptives = [];
   const waveCaptivesSeen = new Set();
+  let traitorSpawnFlip = 0;
   // Phase 2 campaign structure: 8-character mission cast = 2 captors + 6 captured Mobes.
   // The authored campaign ends at Wave 13; Endless/Boss Run will branch from the menu later.
   const SPACE_MISSION_CAST_COUNT = 8;
@@ -165,11 +166,11 @@
     // first campaign pass. Six captives are tied to Waves 4, 6, 7, 9, 11, and 13.
     const campaign = {
       1: 'asteroids', // movement / dodge basics
-      2: 'enemies',   // shooting faces, no asteroid mix
-      3: 'swarm',     // first pressure wave / bomb lesson
+      2: 'enemies',   // red traitor intro: direct flute shots
+      3: 'enemies',   // purple traitor intro: Purple Rain
       4: 'boss',      // Star Ogre + captive 1
-      5: 'asteroids', // recovery / powerups / light rocks
-      6: 'captive',   // captive 2 lock rescue
+      5: 'swarm',     // first pressure wave / bomb lesson
+      6: 'captive',   // captive 2 lock rescue + both traitors
       7: 'boss',      // Dark Knight + captive 3
       8: 'blackout',  // authored special event, isolated
       9: 'boss',      // random mid boss + captive 4
@@ -653,6 +654,7 @@
     missionEnemyChars.splice(0, missionEnemyChars.length, ...cast.slice(0, SPACE_MISSION_CAPTOR_COUNT));
     missionTrappedChars.splice(0, missionTrappedChars.length, ...cast.slice(SPACE_MISSION_CAPTOR_COUNT, SPACE_MISSION_CAPTOR_COUNT + SPACE_RESCUE_TARGET_COUNT));
     missionRetryCaptives.splice(0, missionRetryCaptives.length);
+    traitorSpawnFlip = 0;
     campaignSeenBossNames.clear();
     rescuedChars.clear();
   }
@@ -679,6 +681,12 @@
   function nextMissionEnemyIndex() {
     const pool = missionEnemyChars.length ? missionEnemyChars : GAME_CHARS.map((_, i) => i).filter(i => i !== activeChar);
     return pool[Math.floor(Math.random() * pool.length)] || 0;
+  }
+  function missionTraitorIndexForType(type) {
+    // Keep one stable red traitor and one stable purple traitor for the full run.
+    if (!missionEnemyChars.length) return nextMissionEnemyIndex();
+    if (type === 'purple') return missionEnemyChars[1] == null ? missionEnemyChars[0] : missionEnemyChars[1];
+    return missionEnemyChars[0];
   }
 
   function rescueMissionChar(ci, x, y, label) {
@@ -732,15 +740,9 @@
       // ends through spawnsRemaining/board-clear, so it cannot overlap nextWave().
       1: { spawnsRemaining: 40, speedOverride: 2.86, spawnMsOverride: 930, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [2600, 5200], spawnCadenceMult: 0.9, activeObstacleCap: 6, notes: 'Intro is dangerous: small rocks cost 5 HP and big rocks cost 10 HP, with early HP drops teaching recovery.' },
       2: { spawnsRemaining: 12, speedOverride: 2.62, spawnMsOverride: 1030, asteroidRatioOverride: 0, enemyHpOverride: 3, enemyFireMult: 1.26, enemyFireRateMult: 0.66, enemyVyMult: 1.28, enemyDriftMult: 2.04, enemyDodgeMult: 1.36, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [1200, 1900], hpDelayRange: [2600, 5200], spawnCadenceMult: 0.94, activeObstacleCap: 3, notes: 'Only 12 normal enemies: faster, evasive, 3-hit duel targets.' },
-      // spawnMsOverride raised 710->1087: same 26-enemy pool, just stretched out.
-      // Actual per-spawn gap is spawnMs * 0.8 * 0.65 (swarm themeSpeedup) * 1.02
-      // (spawnCadenceMult) * a 0.7-1.3 random factor (see startWaveSpawn) — at
-      // 710 that averaged ~377ms/gap across the 25 gaps between 26 spawns
-      // (~9.4s); at 1087 it averages ~577ms/gap (~14.4s), adding ~5s overall
-      // without changing the enemy count or any other wave-3 tuning.
-      3: { spawnsRemaining: 26, speedOverride: 2.72, spawnMsOverride: 1087, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.34, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 1, powerupDelayRange: [900, 1300], hpDelayRange: [2200, 4400], swarmCap: 5, activeObstacleCap: 5, spawnCadenceMult: 1.02, notes: 'Swarm stays chaotic, but health drops earlier so it feels survivable/fun.' },
+      3: { spawnsRemaining: 16, normalEnemySlots: [1, 4, 8, 12, 16], speedOverride: 2.62, spawnMsOverride: 1180, asteroidRatioOverride: 0.62, allowEnemyAsteroids: true, activeFaceCap: 2, enemyHpOverride: 3, enemyFireMult: 0.86, enemyFireRateMult: 0.94, enemyVyMult: 1.14, enemyDriftMult: 1.58, enemyDodgeMult: 1.04, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, powerupDelayRange: [1600, 2400], hpDelayRange: [3000, 5600], spawnCadenceMult: 1.08, activeObstacleCap: 5, notes: 'Purple Rain intro: asteroid-heavy, max two purple enemies, shoot during rain pauses.' },
       4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [7600, 11600], enemyFireMult: 0.75 },
-      5: { spawnsRemaining: 33, normalEnemySlots: [9, 18, 27], speedOverride: 2.86, spawnMsOverride: 1048, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: true, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [3600, 6200], hpDelayRange: [3600, 6800], spawnCadenceMult: 0.9, activeObstacleCap: 7 },
+      5: { spawnsRemaining: 26, speedOverride: 2.72, spawnMsOverride: 1087, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.34, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 1, powerupDelayRange: [900, 1300], hpDelayRange: [2200, 4400], swarmCap: 5, activeObstacleCap: 5, spawnCadenceMult: 1.02, notes: 'Swarm moved from Wave 3 so traitors get clean introductions first.' },
       6: { spawnsRemaining: 14, speedOverride: 2.72, spawnMsOverride: 880, asteroidRatioOverride: 0.36, enemyHpOverride: 3, enemyFireMult: 0.94, enemyFireRateMult: 0.70, enemyVyMult: 1.24, enemyDriftMult: 1.86, enemyDodgeMult: 1.12, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, rescueRingHp: 30, powerupDelayRange: [3600, 6200], hpDelayRange: [4800, 7800], spawnCadenceMult: 0.86, activeObstacleCap: 4 },
       7: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [8000, 12000], enemyFireMult: 0.85 },
       8: { spawnsRemaining: 16, speedOverride: 2.76, spawnMsOverride: 820, asteroidRatioOverride: 1, enemyFireMult: 0.82, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [5600, 9000], spawnCadenceMult: 1.0, activeObstacleCap: 8 },
@@ -783,13 +785,60 @@
   }
 
   function enemyFireAt(shooter, speedMult, cause) {
+    if (shooter && shooter.traitorType === 'purple' && cause !== 'BLACKOUT SHOT') {
+      firePurpleTraitorRain(shooter);
+      return;
+    }
     const dx = player.x - shooter.x;
     const dy = player.y - shooter.y;
     const dist = Math.sqrt(dx*dx+dy*dy) || 1;
     const tier = currentCfg ? currentCfg.tier : campaignTier(wave);
     const balanceMult = currentCfg && currentCfg.enemyFireMult != null ? currentCfg.enemyFireMult : 1;
     const bulletSpeed = (3.0 + tier * 0.45 + Math.min(wave, 12) * 0.16 + Math.max(0, wave - 18) * 0.18) * (speedMult || 1) * balanceMult;
-    enemyBullets.push({ x: shooter.x, y: shooter.y + shooter.r, vx: (dx/dist)*bulletSpeed, vy: (dy/dist)*bulletSpeed, r: 4, damage: 3, damageCause: cause || 'ENEMY SHOT' });
+    enemyBullets.push({ x: shooter.x, y: shooter.y + shooter.r, vx: (dx/dist)*bulletSpeed, vy: (dy/dist)*bulletSpeed, r: 4, damage: 3, damageCause: shooter && shooter.traitorType === 'red' ? 'RED SHOT' : (cause || 'ENEMY SHOT'), traitorShot: shooter && shooter.traitorType });
+    if (shooter && shooter.traitorType === 'red') playTraitorShotSfx('red');
+  }
+
+  function traitorTypeForWave(w) {
+    // Authored intro order: Wave 2 red, Wave 3 purple, Wave 6 teaches both.
+    if (w === 3) return 'purple';
+    if (w === 6) return (traitorSpawnFlip++ % 2) ? 'purple' : 'red';
+    if (w > 6) return Math.random() < 0.48 ? 'purple' : 'red';
+    return 'red';
+  }
+
+  function purpleRainActive(o, now) {
+    return !!(o && o.traitorType === 'purple' && now < (o.purpleRainUntil || 0));
+  }
+
+  function firePurpleTraitorRain(shooter) {
+    if (!shooter || shooter.alive === false || state !== 'playing' || waveTransitioning) return;
+    const now = Date.now();
+    if (now < (shooter.nextPurpleRainAt || 0) || purpleRainActive(shooter, now)) return;
+    const tier = currentCfg ? currentCfg.tier : campaignTier(wave);
+    const duration = 1120;
+    const drops = 7 + Math.min(2, tier);
+    shooter.purpleRainUntil = now + duration;
+    shooter.nextPurpleRainAt = now + duration + 1050;
+    for (let i = 0; i < drops; i++) {
+      const token = spaceFlowToken;
+      setTimeout(() => {
+        if (token !== spaceFlowToken || state !== 'playing' || waveTransitioning || !purpleRainActive(shooter, Date.now())) return;
+        const spread = ((i % 3) - 1) * shooter.r * 0.28 + rand(-5, 5);
+        enemyBullets.push({
+          x: Math.max(8, Math.min(W - 8, shooter.x + spread)),
+          y: shooter.y + shooter.r * 0.82,
+          vx: rand(-0.16, 0.16),
+          vy: 2.5 + tier * 0.08 + Math.random() * 0.22,
+          r: 2.4,
+          theme: 'purpleRain',
+          damage: 3,
+          damageCause: 'PURPLE RAIN',
+          born: Date.now(),
+        });
+      }, i * 145);
+    }
+    playTraitorShotSfx('purple');
   }
 
   function warnAndFireBlackoutEnemy(shooter) {
@@ -801,6 +850,16 @@
       if (state !== 'playing' || waveTheme !== 'blackout' || shooter.alive === false || shooter._crossed) return;
       enemyFireAt(shooter, 1, 'BLACKOUT SHOT');
     }, 280);
+  }
+
+  function normalEnemyAwarenessForWave(w) {
+    // Normal enemies should feel teachable early, then increasingly spatially
+    // aware later: more dodges, more run-away movement, and fewer lazy drift rolls.
+    // This only affects normal hold/drift enemies; swarmers, bombers, captives,
+    // bosses, and tutorial spawns keep their authored behavior.
+    const tier = campaignTier(w || wave || 1);
+    const postCampaign = Math.max(0, (w || wave || 1) - SPACE_CAMPAIGN_FINAL_WAVE);
+    return clamp(0.16 + tier * 0.16 + Math.max(0, (w || wave || 1) - 5) * 0.035 + postCampaign * 0.025, 0.16, 0.92);
   }
 
   function updateHoldDriftEnemy(o, now) {
@@ -822,6 +881,7 @@
     }
     if (o.baseY == null) o.baseY = targetY;
     if (o.driftSeed == null) o.driftSeed = Math.random() * Math.PI * 2;
+    const awareness = o.academyObstacle ? 0.28 : (o.enemyAwareness != null ? o.enemyAwareness : normalEnemyAwarenessForWave(wave));
     const driftMult = o.enemyDriftMult || 1;
     const dodgeMult = o.enemyDodgeMult || 0;
     const jukeMult = o.enemyJukeMult || 1;
@@ -834,7 +894,7 @@
     // Soft separation: hold/drift enemies repel each other if they clump. This keeps
     // the lower hold band readable without turning the movement into hard snapping.
     let repelX = 0, repelY = 0;
-    const minSep = Math.max(o.r * 2.45, 48);
+    const minSep = Math.max(o.r * (2.45 + awareness * 0.42), 48 + awareness * 14);
     for (const other of obstacles) {
       if (!other || other === o || other.behavior !== 'holdDrift' || other.alive === false) continue;
       if (!other.holdSettled || other.y < 0) continue;
@@ -853,18 +913,35 @@
       driftTargetY = clamp(driftTargetY + repelY * 8, o.r + 84, safeMaxY);
     }
 
-    // Normal enemy awareness: a short, imperfect sidestep from nearby player
-    // bullets. Cooldown + small impulse keeps them lively without making them
-    // psychic or impossible to lead.
+    // Normal enemy awareness: early enemies still make readable mistakes, but late
+    // enemies scan wider bullet lanes, dodge sooner, and sometimes retreat away
+    // from the player's current lane. Cooldowns keep them hittable.
     if (dodgeMult > 0 && now > (o.nextDodgeAt || 0)) {
-      const threat = bullets.find(b => b && b.vy < 0 && b.y > o.y && Math.abs(b.x - o.x) < o.r * 1.86 && (b.y - o.y) < 190);
+      const threatX = o.r * (1.62 + awareness * 1.05);
+      const threatY = 170 + awareness * 105;
+      const threat = bullets.find(b => b && b.vy < 0 && b.y > o.y && Math.abs(b.x - o.x) < threatX && (b.y - o.y) < threatY);
       if (threat) {
         const away = threat.x <= o.x ? 1 : -1;
         const edgeBias = o.x < o.r + 26 ? 1 : o.x > W - o.r - 26 ? -1 : away;
-        o.vx = clamp(o.vx + edgeBias * (1.08 + Math.random() * 0.55) * dodgeMult, -2.32 * driftMult, 2.32 * driftMult);
-        o.baseY = clamp(o.baseY + rand(-9, 11) * dodgeMult, o.r + 84, safeMaxY);
-        o.nextDodgeAt = now + rand(360, 680);
+        const dodgeKick = (0.98 + awareness * 0.72 + Math.random() * 0.55) * dodgeMult;
+        o.vx = clamp(o.vx + edgeBias * dodgeKick, -2.18 * driftMult * (1 + awareness * 0.18), 2.18 * driftMult * (1 + awareness * 0.18));
+        o.baseY = clamp(o.baseY + rand(-11, 9) * dodgeMult * (0.85 + awareness * 0.32), o.r + 84, safeMaxY);
+        o.nextDodgeAt = now + rand(420 - awareness * 150, 760 - awareness * 190);
         o.dodgeWobbleUntil = now + 220;
+      }
+    }
+
+    if (!o.academyObstacle && awareness > 0.32 && player && now > (o.nextRetreatAt || 0)) {
+      const dxp = o.x - player.x;
+      const dyp = player.y - o.y;
+      const laneDanger = Math.abs(dxp) < o.r * (2.0 + awareness * 2.0) && dyp > 0 && dyp < H * (0.42 + awareness * 0.13);
+      if (laneDanger || (awareness > 0.62 && Math.random() < 0.018 * awareness)) {
+        const away = dxp >= 0 ? 1 : -1;
+        const edgeBias = o.x < o.r + 34 ? 1 : o.x > W - o.r - 34 ? -1 : away;
+        o.vx = clamp(o.vx + edgeBias * (0.58 + awareness * 0.92) * driftMult, -2.05 * driftMult, 2.05 * driftMult);
+        // "Run away" is mostly lateral, with a slight climb upward when possible.
+        o.baseY = clamp(o.baseY - rand(4, 15) * awareness, o.r + 84, safeMaxY);
+        o.nextRetreatAt = now + rand(520, 1040) * (1.05 - awareness * 0.34);
       }
     }
 
@@ -872,14 +949,14 @@
     if (Math.abs(driftTargetY - o.y) < 0.05) o.y = driftTargetY;
     if (Math.abs(o.vx) < 0.15) o.vx = (Math.random() < 0.5 ? -1 : 1) * 0.45 * driftMult;
     if (now > (o.nextDriftTurnAt || 0)) {
-      o.vx += rand(-0.18, 0.18) * driftMult;
-      o.vx = clamp(o.vx, -1.0 * driftMult, 1.0 * driftMult);
-      o.nextDriftTurnAt = now + rand(850, 1550) / Math.min(1.5, driftMult);
+      o.vx += rand(-0.18 - awareness * 0.10, 0.18 + awareness * 0.10) * driftMult;
+      o.vx = clamp(o.vx, -1.0 * driftMult * (1 + awareness * 0.22), 1.0 * driftMult * (1 + awareness * 0.22));
+      o.nextDriftTurnAt = now + rand(850 - awareness * 220, 1550 - awareness * 360) / Math.min(1.5, driftMult);
     }
     if (now > (o.nextJukeAt || 0)) {
-      o.vx = clamp(o.vx + rand(-0.48, 0.48) * driftMult, -1.65 * driftMult, 1.65 * driftMult);
-      o.baseY = clamp(o.baseY + rand(-8, 8) * driftMult, o.r + 84, safeMaxY);
-      o.nextJukeAt = now + (rand(760, 1450) * jukeMult) / Math.min(1.5, driftMult);
+      o.vx = clamp(o.vx + rand(-0.48 - awareness * 0.22, 0.48 + awareness * 0.22) * driftMult, -1.65 * driftMult * (1 + awareness * 0.18), 1.65 * driftMult * (1 + awareness * 0.18));
+      o.baseY = clamp(o.baseY + rand(-9 - awareness * 7, 8 + awareness * 4) * driftMult, o.r + 84, safeMaxY);
+      o.nextJukeAt = now + (rand(760 - awareness * 220, 1450 - awareness * 420) * jukeMult) / Math.min(1.5, driftMult);
     }
     return true;
   }
@@ -906,11 +983,13 @@
     // touching waveConfig(cfg) itself — purely a local override of this one roll.
     let ratio = cfg.asteroidRatio;
     if (waveTheme === 'asteroids' || waveTheme === 'ghost' || waveTheme === 'emp') ratio = 1;
-    else if (waveTheme === 'enemies') ratio = 0;
+    else if (waveTheme === 'enemies' && !cfg.allowEnemyAsteroids) ratio = 0;
     else if (waveTheme === 'swarm') ratio = 0.1;
     else if (waveTheme === 'goldrush') ratio = 0.85;
     else if (waveTheme === 'mirror') ratio = 1;
-    const isAsteroid = !(opts && opts.forceNormalEnemy) && Math.random() < ratio;
+    const activeFaceCap = cfg.activeFaceCap || 0;
+    const faceCapReached = activeFaceCap && obstacles.filter(o => o.type === 'face' && !o.isTrapped && o.alive !== false).length >= activeFaceCap;
+    const isAsteroid = faceCapReached || (!(opts && opts.forceNormalEnemy) && Math.random() < ratio);
     if (isAsteroid) {
       const r = rand(ASTEROID_R_MIN, ASTEROID_R_MAX);
       const sides = 7 + Math.floor(Math.random() * 5);
@@ -931,8 +1010,9 @@
       // rescue count feel noisy instead of intentional.
       const canRandomRescue = false;
       let isTrapped = false;
-      let ci = isTrapped ? nextMissionCaptiveIndex(waveCaptivesSeen) : nextMissionEnemyIndex();
-      if (isTrapped && ci < 0) { isTrapped = false; ci = nextMissionEnemyIndex(); }
+      const traitorType = traitorTypeForWave(wave);
+      let ci = isTrapped ? nextMissionCaptiveIndex(waveCaptivesSeen) : missionTraitorIndexForType(traitorType);
+      if (isTrapped && ci < 0) { isTrapped = false; ci = missionTraitorIndexForType(traitorType); }
       if (isTrapped) waveCaptivesSeen.add(ci);
       // Enemies take 3 hits to clear; trapped heroes still resolve via the ring, hp unused for them.
       // Non-hero enemies descend slower and pause partway down for a burst of fire before
@@ -960,13 +1040,19 @@
         }
       }
       const faceVyMult = cfg.enemyVyMult == null ? 1 : cfg.enemyVyMult;
-      const enemyDriftMult = cfg.enemyDriftMult == null ? 1 : cfg.enemyDriftMult;
-      const enemyDodgeMult = cfg.enemyDodgeMult == null ? 0 : cfg.enemyDodgeMult;
+      const enemyAwareness = normalEnemyAwarenessForWave(wave);
+      const enemyDriftMult = (cfg.enemyDriftMult == null ? 1 : cfg.enemyDriftMult) * (1 + enemyAwareness * 0.10);
+      const enemyDodgeMult = (cfg.enemyDodgeMult == null ? 0 : cfg.enemyDodgeMult) * (1 + enemyAwareness * 0.22);
       const personalityRoll = Math.random();
-      const enemyPersonality = personalityRoll > 0.58 ? 'pesky' : personalityRoll < 0.10 ? 'loose' : 'shifty';
-      const personalityDrift = enemyPersonality === 'pesky' ? 1.44 : enemyPersonality === 'loose' ? 1.02 : 1.2;
-      const personalityDodge = enemyPersonality === 'pesky' ? 1.72 : enemyPersonality === 'loose' ? 0.96 : 1.26;
-      const personalityJuke = enemyPersonality === 'pesky' ? 0.46 : enemyPersonality === 'loose' ? 1.08 : 0.74;
+      const looseCutoff = Math.max(0.02, 0.12 - enemyAwareness * 0.11);
+      const peskyCutoff = Math.max(looseCutoff + 0.28, 0.62 - enemyAwareness * 0.18);
+      const elusiveCutoff = Math.max(peskyCutoff + 0.18, 0.90 - enemyAwareness * 0.12);
+      const enemyPersonality = personalityRoll < looseCutoff ? 'loose' : personalityRoll < peskyCutoff ? 'shifty' : personalityRoll < elusiveCutoff ? 'pesky' : 'elusive';
+      const personalityDrift = enemyPersonality === 'elusive' ? 1.64 : enemyPersonality === 'pesky' ? 1.44 : enemyPersonality === 'loose' ? 1.02 : 1.2;
+      const personalityDodge = enemyPersonality === 'elusive' ? 2.06 : enemyPersonality === 'pesky' ? 1.72 : enemyPersonality === 'loose' ? 0.96 : 1.26;
+      const personalityJuke = enemyPersonality === 'elusive' ? 0.36 : enemyPersonality === 'pesky' ? 0.46 : enemyPersonality === 'loose' ? 1.08 : 0.74;
+      const traitorDrift = traitorType === 'purple' ? 1.16 : 1;
+      const traitorDodge = traitorType === 'purple' ? 1.18 : 1;
       const faceHp = isTrapped ? 1 : (cfg.enemyHpOverride || 3);
       const faceR = FACE_R;
       const holdMinY = Math.max(118, H * 0.26);
@@ -981,7 +1067,7 @@
           if (!tooClose) { spawnX = candidate; break; }
         }
       }
-      obstacles.push({ type:'face', behavior: isTrapped ? 'captiveDrift' : 'holdDrift', x:spawnX, y:-faceR-10, vx:rand(-0.55,0.55)*cfg.speed*0.22*enemyDriftMult*personalityDrift, vy:cfg.speed*(0.7+Math.random()*0.5)*(isTrapped?0.82:0.38)*faceVyMult, r:faceR, ci, hp: faceHp, isTrapped, ringHp: isTrapped ? CAPTIVE_RING_HP : 0, maxRingHp: isTrapped ? CAPTIVE_RING_HP : 0, pausedBurstDone: true, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0, holdY, baseY: holdY, born: Date.now(), driftSeed: Math.random() * Math.PI * 2, driftAmpY: rand(7, 12) * enemyDriftMult * personalityDrift, enemyDriftMult: enemyDriftMult * personalityDrift, enemyDodgeMult: enemyDodgeMult * personalityDodge, enemyJukeMult: personalityJuke, enemyPersonality, nextDodgeAt: Date.now() + rand(420, 980), nextDriftTurnAt: Date.now() + rand(580, 1220) / Math.min(1.55, enemyDriftMult * personalityDrift), nextJukeAt: Date.now() + rand(520, 1300) * personalityJuke });
+      obstacles.push({ type:'face', behavior: isTrapped ? 'captiveDrift' : 'holdDrift', x:spawnX, y:-faceR-10, vx:rand(-0.55,0.55)*cfg.speed*0.22*enemyDriftMult*personalityDrift*traitorDrift, vy:cfg.speed*(0.7+Math.random()*0.5)*(isTrapped?0.82:0.38)*faceVyMult, r:faceR, ci, hp: faceHp, isTrapped, ringHp: isTrapped ? CAPTIVE_RING_HP : 0, maxRingHp: isTrapped ? CAPTIVE_RING_HP : 0, pausedBurstDone: true, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0, holdY, baseY: holdY, born: Date.now(), driftSeed: Math.random() * Math.PI * 2, driftAmpY: rand(7, 12 + enemyAwareness * 7) * enemyDriftMult * personalityDrift * traitorDrift, enemyDriftMult: enemyDriftMult * personalityDrift * traitorDrift, enemyDodgeMult: enemyDodgeMult * personalityDodge * traitorDodge, enemyJukeMult: personalityJuke, enemyAwareness, enemyPersonality, traitorType, nextDodgeAt: Date.now() + rand(420 - enemyAwareness * 120, 980 - enemyAwareness * 260), nextDriftTurnAt: Date.now() + rand(580 - enemyAwareness * 120, 1220 - enemyAwareness * 260) / Math.min(1.55, enemyDriftMult * personalityDrift * traitorDrift), nextJukeAt: Date.now() + rand(520 - enemyAwareness * 130, 1300 - enemyAwareness * 300) * personalityJuke });
     }
   }
 
@@ -2744,6 +2830,7 @@
     boss = null; miniBoss = null; rescueBanner = null; waveCaptivesSeen.clear();
     lastDamageCause=''; lastDamageAmount=0; lastDamageAt=0; lastDamageWave=0; deathCause=''; deathDamageAmount=0; deathWave=0; deathWaveTheme='';
     wave = startWave;
+    traitorSpawnFlip = 0;
     waveKills = 0;
     health = 100;
     blasterDisabledUntil = 0;
@@ -3133,9 +3220,11 @@ function nextWave() {
 
   function skillCalloutForWave() {
     if (wave === 1) return 'CLEAR THE ROCKS';
-    if (wave === 2) return 'LINE UP YOUR SHOTS';
+    if (wave === 2) return 'RED TRAITOR. DODGE FLUTE SHOTS.';
+    if (wave === 3) return 'PURPLE RAIN. SHOOT BETWEEN BURSTS.';
     if (wave === 4) return 'FIRST CAPTIVE. BEAT THE BOSS.';
-    if (wave === 5) return 'BREATHE. STOCK UP.';
+    if (wave === 5) return 'SWARM. BOMB OR DODGE CLEAN.';
+    if (wave === 6) return 'BREAK THE LOCK. WATCH BOTH TRAITORS.';
     if (wave === 8) return 'BLACKOUT. FIND THE SHOOTERS.';
     if (wave === 10) return 'JAM SESSION. HAVE FUN.';
     if (wave === 12) return 'FINAL PREP. FILL SOCKETS.';
@@ -3336,6 +3425,7 @@ function nextWave() {
     if (b.theme === 'portalOrb') return 'TRACKING ORB';
     if (b.theme === 'shield') return 'SHIELD BURST';
     if (b.theme === 'rebound') return 'REBOUND SHOT';
+    if (b.theme === 'purpleRain') return 'PURPLE RAIN';
     if (b.isIce) return 'ICE SHOT';
     if (b.isZap) return 'EMP SHOT';
     return 'ENEMY SHOT';
@@ -3633,10 +3723,62 @@ function nextWave() {
         ctx.beginPath(); ctx.rect(-jailS/2, -jailS/2, jailS, jailS); ctx.clip();
       }
       const faceScale = o.isTrapped ? 2.12 : (o.behavior === 'swarmer' ? 2.05 : 2.24);
+      const traitorGlow = o.traitorType === 'purple' ? 'rgba(179,107,255,0.58)' : 'rgba(255,68,68,0.45)';
       drawCanvasMobe(gc, o.isTrapped ? 'sad' : 'normal', -o.r * faceScale / 2, -o.r * faceScale / 2, o.r * faceScale, o.r * faceScale, {
-        glowColor: o.isTrapped ? 'rgba(0,229,255,0.72)' : (o.behavior === 'swarmer' ? 'rgba(255,0,0,0.78)' : 'rgba(255,68,68,0.45)'),
+        glowColor: o.isTrapped ? 'rgba(0,229,255,0.72)' : (o.behavior === 'swarmer' ? 'rgba(255,0,0,0.78)' : traitorGlow),
         glowBlur: o.r * (o.isTrapped ? 0.35 : (o.behavior === 'swarmer' ? 0.42 : 0.18)),
       });
+      if (!o.isTrapped && o.traitorType === 'purple') {
+        const spin = Date.now() * 0.011 + (o._pulseSeed || 0);
+        const pulse = 0.86 + Math.sin(Date.now() * 0.008 + (o._pulseSeed || 0)) * 0.14;
+        const raining = purpleRainActive(o, Date.now());
+        ctx.save();
+        ctx.globalAlpha = 0.86 + pulse * 0.14;
+        ctx.shadowColor = '#6f00ff';
+        ctx.shadowBlur = o.r * (1.1 + pulse * 0.6);
+        ctx.lineCap = 'round';
+
+        // Broken 2D rings make the spin readable; draw the gaps manually so the
+        // first purple enemy does not depend on canvas dash state.
+        const drawSpinSegments = (radius, phase, color, width, segments) => {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = width;
+          for (let i = 0; i < segments; i++) {
+            const a = phase + i * Math.PI * 2 / segments;
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, a, a + Math.PI * 0.28);
+            ctx.stroke();
+          }
+        };
+        drawSpinSegments(o.r * 1.28, spin, '#6f00ff', 4, 5);
+        drawSpinSegments(o.r * 1.55, -spin * 1.35, '#a233ff', 3, 6);
+        for (let i = 0; i < 4; i++) {
+          const a = spin * (i % 2 ? -1.35 : 1.15) + i * Math.PI / 2;
+          const rr = i % 2 ? o.r * 1.55 : o.r * 1.28;
+          ctx.fillStyle = i % 2 ? 'rgba(235,216,255,0.95)' : 'rgba(162,51,255,0.98)';
+          ctx.beginPath();
+          ctx.arc(Math.cos(a) * rr, Math.sin(a) * rr, o.r * 0.11, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        if (raining) {
+          ctx.globalAlpha = 0.32 + pulse * 0.18;
+          ctx.fillStyle = 'rgba(80,20,132,0.46)';
+          ctx.beginPath();
+          ctx.arc(0, 0, o.r * 1.7, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 0.86;
+          ctx.strokeStyle = 'rgba(222,190,255,0.82)';
+          ctx.lineWidth = 2;
+          for (let i = 0; i < 5; i++) {
+            const x = (i - 2) * o.r * 0.28;
+            ctx.beginPath();
+            ctx.moveTo(x, o.r * 0.85);
+            ctx.lineTo(x + Math.sin(spin + i) * 2, o.r * 1.35);
+            ctx.stroke();
+          }
+        }
+        ctx.restore();
+      }
       if (o.isTrapped) {
         ctx.restore();
         ctx.fillStyle = 'rgba(0,229,255,0.32)';
@@ -3666,16 +3808,20 @@ function nextWave() {
         ctx.lineCap = 'round';
         if (o._pulseSeed === undefined) o._pulseSeed = Math.random() * 1000;
         const pulse = 0.94 + Math.sin(Date.now() * 0.004 + o._pulseSeed) * 0.06;
+        const isPurpleTraitor = o.traitorType === 'purple';
+        const lockSoft = isPurpleTraitor ? 'rgba(179,107,255,0.30)' : 'rgba(255,68,68,0.28)';
+        const lockHard = isPurpleTraitor ? '#b36bff' : '#ff4444';
+        const tickColor = isPurpleTraitor ? 'rgba(238,220,255,0.86)' : 'rgba(255,235,235,0.82)';
         ctx.save();
         ctx.scale(pulse, pulse);
         ctx.beginPath();
         ctx.arc(0, 0, o.r * 1.18, 0.12 * Math.PI, 1.88 * Math.PI);
-        ctx.strokeStyle = 'rgba(255,68,68,0.28)'; ctx.lineWidth = 9; ctx.stroke();
+        ctx.strokeStyle = lockSoft; ctx.lineWidth = 9; ctx.stroke();
         ctx.beginPath();
         ctx.arc(0, 0, o.r * 1.18, 0.12 * Math.PI, 1.88 * Math.PI);
-        ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 3.2; ctx.stroke();
+        ctx.strokeStyle = lockHard; ctx.lineWidth = 3.2; ctx.stroke();
         ctx.restore();
-        ctx.strokeStyle = 'rgba(255,235,235,0.82)';
+        ctx.strokeStyle = tickColor;
         ctx.lineWidth = 1.8;
         ctx.beginPath(); ctx.moveTo(-o.r * 1.05, 0); ctx.lineTo(-o.r * 0.62, 0); ctx.moveTo(o.r * 0.62, 0); ctx.lineTo(o.r * 1.05, 0); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0, -o.r * 1.05); ctx.lineTo(0, -o.r * 0.68); ctx.moveTo(0, o.r * 0.68); ctx.lineTo(0, o.r * 1.05); ctx.stroke();
@@ -4995,6 +5141,12 @@ function nextWave() {
               if(state==='over') return;
             } else {
               // Normal enemy face — takes 3 hits to clear
+              if (purpleRainActive(o, Date.now())) {
+                b.vy = 999;
+                addFloatText('RAIN SHIELD', o.x, o.y - 18, '#a233ff', 13);
+                playShieldBellPing();
+                break;
+              }
               o.hp--;
               if (o.hp > 0) {
                 playEnemyHitPairSfx(o.hp);
@@ -5148,6 +5300,7 @@ function nextWave() {
       if ((b.portalEnter || b.portalSeed) && now >= (b.expiresAt || now + 1)) { b._gone = true; return; }
       if (b.tacoGuard && now >= (b.expiresAt || now + 1)) { b._gone = true; return; }
       if (b.octoSpinShot && now >= (b.expiresAt || now + 1)) { b._gone = true; return; }
+      if (b.theme === 'purpleRain' && now - (b.born || now) > 3600) { b._gone = true; return; }
       if (b.portalExit && b.telegraph && now >= b.launchAt) {
         if (b.chosenPortal) {
           b.telegraph = false;
@@ -5387,6 +5540,25 @@ function nextWave() {
           ctx.beginPath(); ctx.arc(0,0,rr*1.35,0,Math.PI*2); ctx.fillStyle='rgba(204,102,255,0.26)'; ctx.fill();
           ctx.beginPath(); ctx.arc(0,0,rr*0.9,0,Math.PI*2); ctx.fillStyle='#8d32ff'; ctx.fill();
           ctx.beginPath(); ctx.arc(-rr*0.22,-rr*0.26,rr*0.28,0,Math.PI*2); ctx.fillStyle='rgba(255,235,255,0.72)'; ctx.fill();
+          ctx.restore();
+        } else if (b.theme === 'purpleRain') {
+          ctx.save();
+          ctx.shadowColor = '#a233ff';
+          ctx.shadowBlur = rr * 2.6;
+          const tail = ctx.createLinearGradient(0, -rr * 3.2, 0, rr * 1.2);
+          tail.addColorStop(0, 'rgba(162,51,255,0)');
+          tail.addColorStop(1, 'rgba(162,51,255,0.78)');
+          ctx.strokeStyle = tail;
+          ctx.lineWidth = Math.max(1.2, rr * 0.72);
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(0, -rr * 3.2);
+          ctx.lineTo(0, rr * 0.8);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(0, rr * 0.85, rr * 0.74, 0, Math.PI * 2);
+          ctx.fillStyle = '#d9b8ff';
+          ctx.fill();
           ctx.restore();
         } else if (b.theme === 'fish') {
           ctx.beginPath(); ctx.ellipse(0,0,rr*1.25,rr*0.62,0,0,Math.PI*2); ctx.fillStyle='#5ab1ff'; ctx.fill();
@@ -6695,6 +6867,25 @@ function nextWave() {
     try { if (SFX && SFX.powerupCollect) SFX.powerupCollect(); } catch (e) {}
   }
 
+  function playTraitorShotSfx(type) {
+    if (type === 'purple') {
+      // Handpan-ish purple rain bloom: soft metallic pentatonic taps, no harsh edge.
+      [
+        [146.83, 0.000, 0.150, 0.038],
+        [220.00, 0.035, 0.135, 0.030],
+        [293.66, 0.070, 0.120, 0.024],
+        [329.63, 0.105, 0.105, 0.018],
+      ].forEach(([f, t, d, v]) => {
+        playSpaceTone(f, 'triangle', t, d, v, f * 0.998);
+        playSpaceTone(f * 2.01, 'sine', t + 0.004, d * 0.58, v * 0.34, f * 2.006);
+      });
+      return;
+    }
+    // Flute-ish chirp for red direct shots.
+    playSpaceTone(880, 'sine', 0, 0.08, 0.045, 1180);
+    playSpaceTone(1320, 'triangle', 0.025, 0.07, 0.025, 980);
+  }
+
   function playTargetBreakSfx(kind) {
     if (kind === 'asteroid') playNormalInstrumentSfx('asteroid');
     else playNormalInstrumentSfx('enemyDefeat');
@@ -7353,7 +7544,7 @@ function nextWave() {
       <div class="game-card whack-mode-card" style="border-color:#ffe61a77;cursor:default;min-height:0;padding:16px;background:rgba(5,2,18,0.94)">
         <div style="font-family:'VCR',monospace;font-size:10px;letter-spacing:1.5px;color:rgba(242,239,232,0.5);margin-bottom:12px">TEMPORARY TEST JUMPS</div>
         <div class="space-debug-row" aria-label="Space campaign wave debug jumps 1 through 7">
-          <button class="space-debug-chip" onclick="spaceDebugJump(1)">W1 AST</button><button class="space-debug-chip" onclick="spaceDebugJump(2)">W2 ENEMY</button><button class="space-debug-chip" onclick="spaceDebugJump(3)">W3 SWARM</button><button class="space-debug-chip" onclick="spaceDebugJump(4)">W4 OGRE</button><button class="space-debug-chip" onclick="spaceDebugJump(5)">W5 RECOVER</button><button class="space-debug-chip" onclick="spaceDebugJump(6)">W6 RESCUE</button><button class="space-debug-chip" onclick="spaceDebugJump(7)">W7 KNIGHT</button>
+          <button class="space-debug-chip" onclick="spaceDebugJump(1)">W1 AST</button><button class="space-debug-chip" onclick="spaceDebugJump(2)">W2 RED</button><button class="space-debug-chip" onclick="spaceDebugJump(3)">W3 RAIN</button><button class="space-debug-chip" onclick="spaceDebugJump(4)">W4 OGRE</button><button class="space-debug-chip" onclick="spaceDebugJump(5)">W5 SWARM</button><button class="space-debug-chip" onclick="spaceDebugJump(6)">W6 RESCUE</button><button class="space-debug-chip" onclick="spaceDebugJump(7)">W7 KNIGHT</button>
         </div>
         <div class="space-debug-row" aria-label="Space campaign wave debug jumps 8 through 13">
           <button class="space-debug-chip" onclick="spaceDebugJump(8)">W8 BLACKOUT</button><button class="space-debug-chip" onclick="spaceDebugJump(9)">W9 BOSS</button><button class="space-debug-chip" onclick="spaceDebugJump(10)">W10 MUSIC</button><button class="space-debug-chip" onclick="spaceDebugJump(11)">W11 BOSS</button><button class="space-debug-chip" onclick="spaceDebugJump(12)">W12 PREP</button><button class="space-debug-chip" onclick="spaceDebugJump(13)">W13 FINAL</button>
@@ -7861,16 +8052,20 @@ function nextWave() {
 
   function spaceBriefingFace(ci, mode) {
     const gc = GAME_CHARS[ci];
-    const isCaptor = mode === 'captor';
+    const isPurpleCaptor = mode === 'purpleCaptor';
+    const isRedCaptor = mode === 'redCaptor' || mode === 'captor';
+    const isCaptor = isRedCaptor || isPurpleCaptor;
     const isZapped = mode === 'zapped';
     const isCarried = mode === 'carried';
-    const border = isCaptor ? '#ff4444' : (isZapped || isCarried) ? '#00e5ff' : 'rgba(225,245,255,0.85)';
-    const bg = isCaptor ? 'rgba(255,68,68,0.16)' : (isZapped || isCarried) ? 'rgba(0,229,255,0.11)' : 'rgba(120,210,255,0.1)';
-    const glow = isCaptor ? 'rgba(255,68,68,0.46)' : (isZapped || isCarried) ? 'rgba(0,229,255,0.42)' : 'rgba(170,225,255,0.55)';
+    const traitorColor = isPurpleCaptor ? '#b36bff' : '#ff4444';
+    const traitorGlow = isPurpleCaptor ? 'rgba(179,107,255,0.52)' : 'rgba(255,68,68,0.46)';
+    const border = isCaptor ? traitorColor : (isZapped || isCarried) ? '#00e5ff' : 'rgba(225,245,255,0.85)';
+    const bg = isCaptor ? (isPurpleCaptor ? 'rgba(179,107,255,0.16)' : 'rgba(255,68,68,0.16)') : (isZapped || isCarried) ? 'rgba(0,229,255,0.11)' : 'rgba(120,210,255,0.1)';
+    const glow = isCaptor ? traitorGlow : (isZapped || isCarried) ? 'rgba(0,229,255,0.42)' : 'rgba(170,225,255,0.55)';
     const anim = isCaptor ? 'sp-brief-traitor-pop 0.62s ease-out both' : isCarried ? 'sp-brief-captive-out 1.6s ease-in both' : 'sp-brief-rock 1.65s ease-in-out infinite';
     const wash = isCaptor
-      ? `<div style="position:absolute;inset:-6px;border-radius:15px;border:2px solid rgba(255,68,68,0.78);box-shadow:0 0 18px rgba(255,68,68,0.62);pointer-events:none"></div>
-         <div style="position:absolute;inset:-10px;border-radius:17px;border:1px solid rgba(255,68,68,0.28);box-shadow:0 0 22px rgba(255,68,68,0.3);pointer-events:none"></div>`
+      ? `<div style="position:absolute;inset:-6px;border-radius:15px;border:2px solid ${isPurpleCaptor ? 'rgba(179,107,255,0.82)' : 'rgba(255,68,68,0.78)'};box-shadow:0 0 18px ${traitorGlow};pointer-events:none"></div>
+         <div style="position:absolute;inset:-10px;border-radius:17px;border:1px solid ${isPurpleCaptor ? 'rgba(179,107,255,0.32)' : 'rgba(255,68,68,0.28)'};box-shadow:0 0 22px ${traitorGlow};pointer-events:none"></div>`
       : (isZapped || isCarried)
         ? `<div style="position:absolute;inset:0;background:rgba(0,229,255,0.16);mix-blend-mode:screen;pointer-events:none"></div>
            <div style="position:absolute;left:-18%;right:-18%;top:46%;height:3px;background:#eaffff;box-shadow:0 0 10px #00e5ff;transform:rotate(-16deg);pointer-events:none"></div>`
@@ -7878,7 +8073,7 @@ function nextWave() {
     const ring = (isZapped || isCarried)
       ? `<div style="position:absolute;inset:-5px;border-radius:50%;border:2px solid #00e5ff;box-shadow:0 0 14px rgba(0,229,255,0.75);animation:sp-ring-spin 2.2s linear infinite;pointer-events:none"></div>`
       : '';
-    const label = isCaptor ? 'TRAITOR' : '';
+    const label = isPurpleCaptor ? 'PURPLE' : isRedCaptor ? 'RED' : '';
     const faceExpr = (isZapped || isCarried) ? 'sad' : mode === 'happy' ? 'happy' : 'normal';
     const boxSize = isCaptor || isZapped || isCarried ? 68 : 62;
     const cellWidth = isCaptor || isZapped || isCarried ? 74 : 70;
@@ -8015,13 +8210,25 @@ function nextWave() {
       </div>`;
     const traitorLineStage = `
       <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:4px;color:#ff4444;text-shadow:0 0 12px #ff4444;animation:sp-brief-line-in 0.35s ease-out both">BUT TWO OF THEM WERE TRAITORS</div>`;
+    const traitorPairHTML = `
+      <div style="display:flex;justify-content:center;align-items:flex-start;gap:18px;margin:8px auto 14px">
+        ${missionEnemyChars[0] != null ? spaceBriefingFace(missionEnemyChars[0], 'redCaptor') : ''}
+        ${missionEnemyChars[1] != null ? spaceBriefingFace(missionEnemyChars[1], 'purpleCaptor') : ''}
+      </div>`;
     const captorStage = `
-      ${spaceBriefingLineupHTML({ captorMode: 'captor', captiveMode: 'normal', caption: 'THE TWO TRAITORS STEP OUT' })}
+      <div style="width:min(94vw,390px);margin:0 auto">
+        <div style="font-family:'VCR',monospace;font-size:9px;letter-spacing:2px;color:rgba(242,239,232,0.48);margin:0 0 10px">THE TWO TRAITORS STEP OUT</div>
+        ${traitorPairHTML}
+        <div style="display:grid;grid-template-columns:repeat(3,74px);justify-content:center;align-items:start;gap:15px 20px;margin:0 auto">${missionTrappedChars.map(ci => spaceBriefingFace(ci, 'normal')).join('')}</div>
+      </div>
       <div style="font-family:'Bebas Neue',cursive;font-size:52px;letter-spacing:5px;line-height:0.96;color:#ff4444;text-shadow:0 0 20px #ff444488;margin:16px 0 0;animation:sp-brief-line-in 0.35s ease-out both">"COME HERE, GIZMO"</div>`;
     const bossLineStage = `
       <div style="font-family:'Bebas Neue',cursive;font-size:48px;letter-spacing:5px;line-height:0.96;color:#cc66ff;text-shadow:0 0 18px #cc66ff88;animation:sp-brief-line-in 0.35s ease-out both">EVIL GIZMO TOOK THE MOBES CAPTIVE</div>`;
     const bossCaptureStage = `
-      <div style="display:flex;justify-content:center;gap:14px;margin-bottom:6px">${missionEnemyChars.map(ci => `<div style="transform:scale(0.78);transform-origin:center bottom">${spaceBriefingFace(ci, 'captor')}</div>`).join('')}</div>
+      <div style="display:flex;justify-content:center;gap:14px;margin-bottom:6px">
+        ${missionEnemyChars[0] != null ? `<div style="transform:scale(0.78);transform-origin:center bottom">${spaceBriefingFace(missionEnemyChars[0], 'redCaptor')}</div>` : ''}
+        ${missionEnemyChars[1] != null ? `<div style="transform:scale(0.78);transform-origin:center bottom">${spaceBriefingFace(missionEnemyChars[1], 'purpleCaptor')}</div>` : ''}
+      </div>
       <div style="display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:12px">${spaceBriefingBoss('in')}</div>
       <div style="font-family:'Bebas Neue',cursive;font-size:44px;letter-spacing:5px;line-height:1;color:#00e5ff;text-shadow:0 0 18px #00e5ff88;margin-bottom:12px;opacity:0;animation:sp-brief-line-in 0.42s ease-out 1.1s both">CAPTIVE RINGS LOCKED!</div>
       <div style="opacity:0;animation:sp-brief-line-in 0.42s ease-out 1.18s both">${spaceBriefingLineupHTML({ captorMode: 'captor', captiveMode: 'zapped', showCaptors: false })}</div>`;
