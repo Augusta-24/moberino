@@ -35,6 +35,50 @@
     }
   }
 
+  function updateArcadeMusicPrompt() {
+    const card = document.getElementById('arcade-music-card');
+    const text = document.getElementById('arcade-music-text');
+    const btn = document.getElementById('arcade-music-btn');
+    if (!card || !text || !btn) return;
+
+    const isLobby = document.body.classList.contains('on-lobby');
+    const isStartup = document.body.classList.contains('on-char');
+    const shouldShow = isLobby || isStartup;
+    if (!shouldShow) {
+      card.hidden = true;
+      card.setAttribute('hidden', '');
+      card.style.display = 'none';
+      return;
+    }
+
+    const playing = typeof ArcadeMusic !== 'undefined' && ArcadeMusic.playing;
+    const muted = typeof ArcadeMusic !== 'undefined' && ArcadeMusic.muted;
+    if (playing || muted) {
+      card.hidden = true;
+      card.setAttribute('hidden', '');
+      card.style.display = 'none';
+      return;
+    }
+
+    const showCard = () => {
+      const liveCard = document.getElementById('arcade-music-card');
+      if (!liveCard) return;
+      liveCard.hidden = false;
+      liveCard.removeAttribute('hidden');
+      liveCard.style.display = 'flex';
+    };
+    showCard();
+    requestAnimationFrame(showCard);
+    text.textContent = isStartup
+      ? 'If you do not hear music yet, tap here to wake the soundtrack.'
+      : 'No music yet. Tap here to start the lobby soundtrack.';
+    btn.textContent = 'START MUSIC';
+    btn.hidden = false;
+  }
+
+  window.updateArcadeInstallPrompt = updateArcadeInstallPrompt;
+  window.updateArcadeMusicPrompt = updateArcadeMusicPrompt;
+
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     arcadeInstallPromptEvent = e;
@@ -59,6 +103,15 @@
     } else {
       alert('On iPhone Safari: tap Share (square with up arrow), scroll, tap Add to Home Screen, then open the app from your Home Screen.');
     }
+  });
+
+  document.addEventListener('click', e => {
+    const btn = e.target.closest && e.target.closest('#arcade-music-btn');
+    if (!btn) return;
+    if (typeof SFX !== 'undefined' && typeof SFX.menuSelect === 'function') SFX.menuSelect();
+    if (typeof ArcadeMusic !== 'undefined' && typeof ArcadeMusic.start === 'function') ArcadeMusic.start();
+    updateArcadeMusicPrompt();
+    setTimeout(updateArcadeMusicPrompt, 160);
   });
 
   function setArcadeExitVisible(show) {
@@ -113,6 +166,7 @@
       if (typeof initCarousel === 'function') initCarousel();
     }
     updateArcadeInstallPrompt();
+    updateArcadeMusicPrompt();
     if (onWhack && typeof initWhack === 'function') initWhack();
     if (onMatch && typeof initMatch === 'function') initMatch();
     if (onSpace && typeof initSpace === 'function') initSpace();
@@ -125,6 +179,7 @@
     document.documentElement.classList.add('arcade-root');
     nav('lobby');
     updateArcadeInstallPrompt();
+    updateArcadeMusicPrompt();
   });
 })();
 
@@ -167,25 +222,13 @@ const SFX = (() => {
     o.start(t0); o.stop(t0 + dur + 0.01);
   }
   return {
-hit() {
-      // 1. THE SUB-BASS DROP: Extreme low-end weight that punches through the cabinet
-      tone(180, 'triangle', 0, 0.22, 0.60, 40); // Cascades down into heavy 40Hz sub-bass
-
-      // 2. THE MECHANICAL ACCELERATION: A whip-crack pitch slide that simulates high velocity
-      tone(900, 'sawtooth', 0, 0.05, 0.25, 200); // Massive instant pitch drop (900Hz -> 200Hz)
-      
-      // 3. THE CRUNCH: A tight acoustic snap for the physical mallet-on-mole contact
-      tone(600, 'square', 0, 0.04, 0.15, 300);
-
-      // --- THE ADDICTIVE "WAHOO" TRIAD FLARE ---
-      // A bright, major arpeggio that feels like collecting a rare coin
-      tone(523, 'square', 0.03, 0.04, 0.18); // Note 1 (C5)
-      tone(659, 'square', 0.06, 0.04, 0.18); // Note 2 (E5)
-      tone(784, 'square', 0.09, 0.06, 0.22); // Note 3 (G5) - Triumphant peak
-
-      // --- THE JUICE: HARMONIC ECHO SPARKLE ---
-      // A high-pitched, softer echo of the final note that mimics a glittering reward
-      tone(1568, 'square', 0.13, 0.04, 0.06); // Ultra-high G6 octave sparkle at a fraction of the volume
+    hit() {
+      // More solid than clanky: a short low chord with a brighter upper note, like
+      // a firm mallet hit on tuned bars rather than a metal clatter.
+      tone(196, 'triangle', 0, 0.12, 0.13, 147);
+      tone(294, 'triangle', 0.02, 0.10, 0.09, 220);
+      tone(392, 'sine', 0.05, 0.11, 0.045, 330);
+      tone(784, 'triangle', 0.09, 0.04, 0.018);
     },
         miss()     { tone(220,'sawtooth',0,0.14,0.07,100); },
     match()    { tone(523,'square',0,0.11,0.07); tone(659,'square',0.08,0.11,0.07); tone(784,'square',0.16,0.17,0.08); },
@@ -532,11 +575,17 @@ const ArcadeMusic = (() => {
 // ArcadeMusic.stop() from a game that's actively silencing music for gameplay.
 document.addEventListener('click', function() {
   const onArcade = document.body.matches('.on-lobby,.on-whack,.on-match,.on-space,.on-char');
-  if (onArcade && !ArcadeMusic.playing && !ArcadeMusic.muted && !ArcadeMusic.suppressAutoResume) ArcadeMusic.start();
+    if (onArcade && !ArcadeMusic.playing && !ArcadeMusic.muted && !ArcadeMusic.suppressAutoResume) {
+      ArcadeMusic.start();
+      updateArcadeMusicPrompt();
+    }
 }, { passive: true });
 document.addEventListener('touchstart', function() {
   const onArcade = document.body.matches('.on-lobby,.on-whack,.on-match,.on-space,.on-char');
-  if (onArcade && !ArcadeMusic.playing && !ArcadeMusic.muted && !ArcadeMusic.suppressAutoResume) ArcadeMusic.start();
+    if (onArcade && !ArcadeMusic.playing && !ArcadeMusic.muted && !ArcadeMusic.suppressAutoResume) {
+      ArcadeMusic.start();
+      updateArcadeMusicPrompt();
+    }
 }, { passive: true });
 
 // ══════════════════════════════════════
@@ -1236,6 +1285,8 @@ function openCharSelect(returnTo) {
   document.body.className = document.body.className
     .replace(/\bon-\S+/g, '').trim() + ' on-char';
   updateCharPreview(getGlobalChar());
+  if (typeof updateArcadeInstallPrompt === 'function') updateArcadeInstallPrompt();
+  if (typeof updateArcadeMusicPrompt === 'function') updateArcadeMusicPrompt();
   // rAF: page must be laid out (display:flex/active) before scrollTop sticks reliably
   requestAnimationFrame(() => _renderCharList());
 }

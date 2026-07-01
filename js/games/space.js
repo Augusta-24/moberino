@@ -5232,7 +5232,7 @@ function nextWave() {
             };
             break;
           } else {
-            SFX.hit();
+            playBossImpactSound();
           }
         }
       }
@@ -5246,7 +5246,7 @@ function nextWave() {
           b.vy = 999;
           miniBoss.hp--; miniBoss.hitFlash = 1;
           miniExplosion(b.x, b.y, '#ff8888');
-          SFX.miniBossHit();
+          playBossImpactSound();
           if (miniBoss.hp <= 0) {
             score += 150 + wave * 10;
             bigExplosion(miniBoss.x, miniBoss.y, '#ff4444');
@@ -6683,6 +6683,16 @@ function nextWave() {
   function playBossPreviewTone(freq, type, dur, vol, endFreq) {
     if (SFX && SFX.tone) SFX.tone(freq, type || 'square', 0, dur || 0.12, vol || 0.08, endFreq || freq);
     else if (SFX && SFX.hit) SFX.hit();
+  }
+
+  function playBossImpactSound() {
+    if (typeof playSpacePianoCluster === 'function' && typeof playSpaceTone === 'function') {
+      playSpacePianoCluster([174.61, 220.00, 261.63], 0, 0.065);
+      playSpaceTone(87.31, 'sine', 0.02, 0.10, 0.030, 65.41);
+      return;
+    }
+    if (SFX && SFX.pianoNote) { SFX.pianoNote(); return; }
+    if (SFX && SFX.hit) { SFX.hit(); return; }
   }
   function playSpaceNoiseBurst(dur, vol, filterFreq, filterType) {
     try {
