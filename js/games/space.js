@@ -24,7 +24,9 @@
   const SPACE_SHIP_BOTTOM_OFFSET = 40;
   const SPACE_SOCKET_ANCHOR_BOTTOM_OFFSET = 94;
   const SPACE_DANGER_LINE_GAP = 8;
-  const ASTEROID_LINE_HIT_CHANCE = 0.15;
+  const SHOW_DANGER_LINE = false;
+  const ASTEROID_LINE_HIT_CHANCE = 0.18;
+  const ASTEROIDS_REQUIRE_CLEAR = false;
   // REVERSE theme: a separate fixed "escape" line near the top, just below the
   // HUD/banner strip — kept independent of dangerY on purpose, since dangerY tracks
   // the player position and also drives the socket column's placement; repurposing
@@ -158,12 +160,112 @@
   const MID_SPECIALS = ['bomber', 'mirror', 'music', 'blackout'];
   const LATE_SPECIALS = ['ghost', 'emp', 'flip', 'rave'];
   const POST_BOSS_SPECIALS = ['swarm', 'bomber', 'asteroids', 'rave'];
+  const ENDLESS_THEME_CYCLE = ['asteroids', 'music', 'enemies', 'goldrush', 'swarm', 'asteroids', 'enemies', 'music'];
   function chapterPick(pool, w, previousTheme, offset) {
     const choices = pool.filter(t => t !== previousTheme);
     const list = choices.length ? choices : pool;
     return list[(Math.floor(w / 5) + (offset || 0)) % list.length];
   }
+  function endlessCycleIndex(w) {
+    return Math.max(0, w - (SPACE_CAMPAIGN_FINAL_WAVE + 1));
+  }
+  function endlessThemeForWave(w) {
+    return ENDLESS_THEME_CYCLE[endlessCycleIndex(w) % ENDLESS_THEME_CYCLE.length];
+  }
+  function endlessWaveConfig(w) {
+    const idx = endlessCycleIndex(w);
+    const lap = Math.floor(idx / ENDLESS_THEME_CYCLE.length);
+    const theme = endlessThemeForWave(w);
+    const pressure = Math.min(1, lap / 5);
+    const base = {
+      tier: 2,
+      allowMystery: true,
+      allowPowerups: true,
+      allowHp: true,
+      maxSocketPowerups: 4 + (lap >= 2 ? 1 : 0),
+      maxInstruments: theme === 'music' ? 12 : 7,
+      instrumentDelayRange: theme === 'music' ? [560, 820] : [1500, 2600],
+      powerupDelayRange: theme === 'goldrush' ? [800, 1300] : [1450, 2400],
+      hpDelayRange: theme === 'goldrush' ? [1800, 3200] : [2100, 3400],
+      mysteryDelayRange: [5200, 8600],
+      activeObstacleCap: theme === 'swarm' ? 6 : 5,
+    };
+    if (theme === 'asteroids') {
+      return Object.assign(base, {
+        poolSize: 20 + lap * 2,
+        spawnsRemaining: 20 + lap * 2,
+        speed: 2.22 + pressure * 0.38,
+        spawnMs: 860 - Math.min(120, lap * 20),
+        asteroidRatio: 1,
+        enemyFireMult: 0,
+        spawnCadenceMult: 0.92,
+      });
+    }
+    if (theme === 'music') {
+      return Object.assign(base, {
+        poolSize: 17 + lap * 2,
+        spawnsRemaining: 17 + lap * 2,
+        speed: 2.18 + pressure * 0.34,
+        spawnMs: 940 - Math.min(140, lap * 18),
+        asteroidRatio: 0.68,
+        enemyHpOverride: 2,
+        enemyFireMult: 0.58,
+        enemyFireRateMult: 1.08,
+        enemyVyMult: 1.0,
+        enemyDriftMult: 1.18,
+        enemyDodgeMult: 0.72,
+        spawnCadenceMult: 0.92,
+      });
+    }
+    if (theme === 'goldrush') {
+      return Object.assign(base, {
+        poolSize: 15 + lap * 2,
+        spawnsRemaining: 15 + lap * 2,
+        speed: 2.16 + pressure * 0.34,
+        spawnMs: 980 - Math.min(120, lap * 16),
+        asteroidRatio: 0.6,
+        enemyHpOverride: 2,
+        enemyFireMult: 0.42,
+        enemyFireRateMult: 1.12,
+        enemyVyMult: 0.96,
+        enemyDriftMult: 1.08,
+        enemyDodgeMult: 0.64,
+        spawnCadenceMult: 0.9,
+      });
+    }
+    if (theme === 'swarm') {
+      return Object.assign(base, {
+        poolSize: 20 + lap * 2,
+        spawnsRemaining: 20 + lap * 2,
+        speed: 2.4 + pressure * 0.48,
+        spawnMs: 840 - Math.min(130, lap * 18),
+        asteroidRatio: 0.14,
+        enemyHpOverride: 1,
+        enemyFireMult: 0.3,
+        swarmCap: 4,
+        activeObstacleCap: 4,
+        spawnCadenceMult: 1.14,
+        forcePowerupType: 'bomb',
+      });
+    }
+    return Object.assign(base, {
+      poolSize: 18 + lap * 2,
+      spawnsRemaining: 18 + lap * 2,
+      speed: 2.3 + pressure * 0.42,
+      spawnMs: 900 - Math.min(140, lap * 20),
+      asteroidRatio: 0.42,
+      enemyHpOverride: 2,
+      enemyFireMult: 0.72,
+      enemyFireRateMult: 1.04,
+      enemyVyMult: 1.02,
+      enemyDriftMult: 1.22,
+      enemyDodgeMult: 0.84,
+      spawnCadenceMult: 0.94,
+      mixedEnemyScreenCap: 2,
+    });
+  }
   function pickWaveTheme(w, previousTheme) {
+    if (spaceRunMode === 'endless') return endlessThemeForWave(w);
     // Phase 2 authored campaign: shorter, clearer, and rescue beats are intentional.
     // Random/chaos modes move later into Endless/Boss Run instead of appearing in the
     // first campaign pass. Six captives are tied to Waves 4, 6, 7, 9, 11, and 13.
@@ -489,12 +591,14 @@
   }
 
   function asteroidLateralVelocity(baseSpeed, prefersWideDrift) {
-    const wallRunner = Math.random() < ASTEROID_LINE_HIT_CHANCE;
+    const wallChanceMult = currentCfg && currentCfg.asteroidWallChanceMult != null ? currentCfg.asteroidWallChanceMult : 1;
+    const lateralMult = currentCfg && currentCfg.asteroidLateralMult != null ? currentCfg.asteroidLateralMult : 1;
+    const wallRunner = Math.random() < Math.min(0.42, ASTEROID_LINE_HIT_CHANCE * wallChanceMult);
     if (wallRunner) {
       const mag = prefersWideDrift ? rand(0.34, 0.56) : rand(0.070, 0.105);
-      return (Math.random() < 0.5 ? -1 : 1) * mag * baseSpeed;
+      return (Math.random() < 0.5 ? -1 : 1) * mag * baseSpeed * lateralMult;
     }
-    return prefersWideDrift ? rand(-0.12, 0.12) * baseSpeed : rand(-0.022, 0.022) * baseSpeed;
+    return (prefersWideDrift ? rand(-0.12, 0.12) : rand(-0.022, 0.022)) * baseSpeed * lateralMult;
   }
 
   function spawnOgreAsteroidSprinkle(count = 2) {
@@ -602,7 +706,7 @@
 
 
   const P_SPEED = 5, B_SPEED = 9.9225, O_SPEED_BASE = 2.0; // blaster projectile speed +5% over 9.45
-  const AUTO_FIRE_MS = 200;
+  const AUTO_FIRE_MS = 190;
   const FACE_R = 22, ASTEROID_R_MIN = 14, ASTEROID_R_MAX = 30;
   const SPACE_HP_BAR_Y = 56, SPACE_HP_BAR_H = 14;
   const CAPTIVE_RING_HP = 15;
@@ -751,19 +855,19 @@
       // Asteroid-field waves use slower cadence instead of dumping rocks faster.
       // Wave 5 also staggers three normal enemies into fixed slots; the pool still
       // ends through spawnsRemaining/board-clear, so it cannot overlap nextWave().
-      1: { spawnsRemaining: 40, speedOverride: 2.86, spawnMsOverride: 930, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [2600, 5200], spawnCadenceMult: 0.9, activeObstacleCap: 6, notes: 'Intro is dangerous: small rocks cost 5 HP and big rocks cost 10 HP, with early HP drops teaching recovery.' },
-      2: { spawnsRemaining: 21, mixedEnemyTotal: 7, mixedEnemyScreenCap: 2, mixedAsteroidTotal: 14, mixedTraitorType: 'red', speedOverride: 2.62, spawnMsOverride: 1030, asteroidRatioOverride: 0.67, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 1.32, enemyFireRateMult: 0.62, enemyVyMult: 1.28, enemyDriftMult: 2.04, enemyDodgeMult: 1.36, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 1, powerupDelayRange: [1700, 2600], hpDelayRange: [2600, 5200], spawnCadenceMult: 0.94, activeObstacleCap: 5, notes: 'Seven red duel targets interleaved with fourteen asteroids; shield openings carry the pressure instead of enemy count.' },
-      3: { spawnsRemaining: 19, mixedEnemyTotal: 5, mixedEnemyScreenCap: 2, mixedAsteroidTotal: 14, mixedTraitorType: 'purple', speedOverride: 2.62, spawnMsOverride: 1180, asteroidRatioOverride: 0.74, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 0.86, enemyFireRateMult: 0.94, enemyVyMult: 1.14, enemyDriftMult: 1.58, enemyDodgeMult: 1.04, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, powerupDelayRange: [1600, 2400], hpDelayRange: [3000, 5600], spawnCadenceMult: 1.08, activeObstacleCap: 5, notes: 'Purple Rain intro: five rain enemies evenly interleaved with fourteen asteroids; shoot during rain.' },
-      4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [7600, 11600], enemyFireMult: 0.75 },
-      5: { spawnsRemaining: 26, speedOverride: 2.72, spawnMsOverride: 1087, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.34, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 1, powerupDelayRange: [900, 1300], hpDelayRange: [2200, 4400], swarmCap: 5, activeObstacleCap: 5, spawnCadenceMult: 1.02, notes: 'Swarm moved from Wave 3 so traitors get clean introductions first.' },
-      6: { spawnsRemaining: 14, speedOverride: 2.72, spawnMsOverride: 880, asteroidRatioOverride: 0.36, enemyHpOverride: 3, enemyFireMult: 0.94, enemyFireRateMult: 0.70, enemyVyMult: 1.24, enemyDriftMult: 1.86, enemyDodgeMult: 1.12, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, rescueRingHp: 30, powerupDelayRange: [3600, 6200], hpDelayRange: [4800, 7800], spawnCadenceMult: 0.86, activeObstacleCap: 4 },
-      7: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [8000, 12000], enemyFireMult: 0.85 },
-      8: { spawnsRemaining: 16, speedOverride: 2.76, spawnMsOverride: 820, asteroidRatioOverride: 1, enemyFireMult: 0.82, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [5600, 9000], spawnCadenceMult: 1.0, activeObstacleCap: 8 },
-      9: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [6400, 9800], hpDelayRange: [7000, 11000], enemyFireMult: 0.9 },
-      10: { spawnsRemaining: 24, speedOverride: 3.08, spawnMsOverride: 780, asteroidRatioOverride: 0.52, enemyHpOverride: 3, enemyFireMult: 1.16, enemyFireRateMult: 0.68, enemyVyMult: 1.24, enemyDriftMult: 1.94, enemyDodgeMult: 1.2, allowMystery: true, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, maxInstruments: 9, instrumentDelayRange: [650, 980], powerupDelayRange: [4100, 6600], hpDelayRange: [4800, 8000], mysteryDelayRange: [6500, 10500], spawnCadenceMult: 0.82, activeObstacleCap: 5 },
-      11: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [7200, 10400], hpDelayRange: [7600, 11200], enemyFireMult: 1.0 },
-      12: { spawnsRemaining: 30, speedOverride: 3.06, spawnMsOverride: 820, asteroidRatioOverride: 0.70, enemyHpOverride: 3, enemyFireMult: 1.12, enemyFireRateMult: 0.70, enemyVyMult: 1.22, enemyDriftMult: 1.82, enemyDodgeMult: 1.08, allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 4, powerupDelayRange: [3000, 5000], hpDelayRange: [3600, 6000], mysteryDelayRange: [5200, 8800], spawnCadenceMult: 0.84, activeObstacleCap: 5, notes: 'Hard final prep with fewer, evasive normal enemies.' },
-      13: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [8500, 12500], enemyFireMult: 1.0, finalBossHpNote: 'Final Gizmo HP is tuned through BOSS_TUNING final override.' },
+      1: { spawnsRemaining: 50, speedOverride: 2.94, spawnMsOverride: 780, asteroidRatioOverride: 1, asteroidWallChanceMult: 1.55, asteroidLateralMult: 1.45, enemyFireMult: 0, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, powerupDelayRange: [2000, 3000], hpDelayRange: [1800, 3200], spawnCadenceMult: 0.88, activeObstacleCap: 8, notes: 'Intro now teaches dodge-or-clear with more lane texture and less dead time.' },
+      2: { spawnsRemaining: 20, mixedEnemyTotal: 7, mixedEnemyScreenCap: 2, mixedAsteroidTotal: 13, mixedTraitorType: 'red', speedOverride: 2.62, spawnMsOverride: 1030, asteroidRatioOverride: 0.64, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 1.32, enemyFireRateMult: 0.62, enemyVyMult: 1.28, enemyDriftMult: 2.04, enemyDodgeMult: 1.36, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [1400, 2200], hpDelayRange: [2200, 4200], spawnCadenceMult: 0.96, activeObstacleCap: 5, notes: 'Red stays mobile, but the wave is a little shorter and feeds more support.' },
+      3: { spawnsRemaining: 18, mixedEnemyTotal: 5, mixedEnemyScreenCap: 2, mixedAsteroidTotal: 13, mixedTraitorType: 'purple', speedOverride: 2.62, spawnMsOverride: 1180, asteroidRatioOverride: 0.72, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 0.92, enemyFireRateMult: 0.90, enemyVyMult: 1.14, enemyDriftMult: 1.38, enemyDodgeMult: 0.82, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 2, powerupDelayRange: [1400, 2200], hpDelayRange: [2400, 4600], spawnCadenceMult: 1.08, activeObstacleCap: 5, notes: 'Purple keeps the shield/rain identity, but now asks for a real dodge on the opening.' },
+      4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4200, 7000], hpDelayRange: [5000, 8000], enemyFireMult: 0.75 },
+      5: { spawnsRemaining: 24, speedOverride: 2.72, spawnMsOverride: 1087, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.34, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [850, 1200], hpDelayRange: [1800, 3600], swarmCap: 4, activeObstacleCap: 4, spawnCadenceMult: 1.16, notes: 'Swarm is shorter and still regularly throws helpful drops into the lane.' },
+      6: { spawnsRemaining: 13, speedOverride: 2.72, spawnMsOverride: 880, asteroidRatioOverride: 0.34, enemyHpOverride: 3, enemyFireMult: 0.94, enemyFireRateMult: 0.70, enemyVyMult: 1.24, enemyDriftMult: 1.62, enemyDodgeMult: 0.88, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 2, rescueRingHp: 30, powerupDelayRange: [2800, 4800], hpDelayRange: [3600, 6200], spawnCadenceMult: 0.88, activeObstacleCap: 4 },
+      7: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4600, 7600], hpDelayRange: [5600, 9000], enemyFireMult: 0.85 },
+      8: { spawnsRemaining: 16, speedOverride: 2.72, spawnMsOverride: 840, asteroidRatioOverride: 1, enemyFireMult: 0.82, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4800, 7600], hpDelayRange: [4200, 6800], spawnCadenceMult: 1.0, activeObstacleCap: 7 },
+      9: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [4600, 7600], hpDelayRange: [5200, 8200], enemyFireMult: 0.9 },
+      10: { spawnsRemaining: 22, speedOverride: 3.08, spawnMsOverride: 780, asteroidRatioOverride: 0.48, enemyHpOverride: 3, enemyFireMult: 1.16, enemyFireRateMult: 0.68, enemyVyMult: 1.24, enemyDriftMult: 1.86, enemyDodgeMult: 1.08, allowMystery: true, allowPowerups: true, allowHp: true, maxSocketPowerups: 3, maxInstruments: 10, instrumentDelayRange: [620, 920], powerupDelayRange: [3200, 5400], hpDelayRange: [3800, 6400], mysteryDelayRange: [5800, 9800], spawnCadenceMult: 0.86, activeObstacleCap: 5 },
+      11: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [5200, 8200], hpDelayRange: [5800, 9000], enemyFireMult: 1.0 },
+      12: { spawnsRemaining: 24, speedOverride: 3.00, spawnMsOverride: 840, asteroidRatioOverride: 0.62, enemyHpOverride: 3, enemyFireMult: 1.12, enemyFireRateMult: 0.70, enemyVyMult: 1.20, enemyDriftMult: 1.72, enemyDodgeMult: 0.96, allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 4, powerupDelayRange: [2200, 3800], hpDelayRange: [2800, 5000], mysteryDelayRange: [4600, 7600], spawnCadenceMult: 0.90, activeObstacleCap: 5, notes: 'Final prep is still busy, but with fewer heavy repeats and more refuel windows.' },
+      13: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [4200, 7000], hpDelayRange: [5200, 8600], enemyFireMult: 1.0, finalBossHpNote: 'Final Gizmo HP is tuned through BOSS_TUNING final override.' },
     };
     return tuning[w] || null;
   }
@@ -774,6 +878,7 @@
   }
 
   function waveConfig(w) {
+    if (spaceRunMode === 'endless') return endlessWaveConfig(w);
     const tier = campaignTier(w);
     const endless = Math.max(0, w - SPACE_CAMPAIGN_FINAL_WAVE);
     // Difficulty now rises by campaign tier first, wave number second. Campaign
@@ -853,10 +958,10 @@
     const waveNo = Math.max(1, w || wave || 1);
     const bucket = waveNo <= 3 ? 0 : waveNo <= 6 ? 1 : waveNo <= 10 ? 2 : 3;
     const profiles = [
-      { label: 'easy', driftMult: 1.16, dodgeMult: 1.18, rainDropsMin: 12, rainDropsMax: 14, rainGapMs: 1000 },
-      { label: 'mid', driftMult: 1.22, dodgeMult: 1.26, rainDropsMin: 13, rainDropsMax: 15, rainGapMs: 940 },
-      { label: 'hard', driftMult: 1.28, dodgeMult: 1.34, rainDropsMin: 14, rainDropsMax: 16, rainGapMs: 880 },
-      { label: 'harder', driftMult: 1.34, dodgeMult: 1.42, rainDropsMin: 15, rainDropsMax: 17, rainGapMs: 820 },
+      { label: 'easy', driftMult: 1.10, dodgeMult: 0.30, rainDropsMin: 13, rainDropsMax: 15, rainGapMs: 860, rainStartBurst: 3, rainSpeedBonus: 0.38 },
+      { label: 'mid', driftMult: 1.12, dodgeMult: 0.36, rainDropsMin: 14, rainDropsMax: 16, rainGapMs: 820, rainStartBurst: 3, rainSpeedBonus: 0.46 },
+      { label: 'hard', driftMult: 1.16, dodgeMult: 0.42, rainDropsMin: 15, rainDropsMax: 17, rainGapMs: 780, rainStartBurst: 4, rainSpeedBonus: 0.54 },
+      { label: 'harder', driftMult: 1.20, dodgeMult: 0.50, rainDropsMin: 16, rainDropsMax: 18, rainGapMs: 740, rainStartBurst: 4, rainSpeedBonus: 0.62 },
     ];
     return Object.assign({ screenCap: 2 }, profiles[bucket]);
   }
@@ -881,27 +986,9 @@
   }
 
   function updateRedShieldCycle(o, now) {
-    if (!o || o.traitorType !== 'red' || o.isTrapped || o.alive === false || o.y < traitorAttackArmY(o)) return;
-    if (now < (o.fakeoutCommitUntil || 0)) return;
-    // Random openings are only a safety valve. If the player recently caused a
-    // fake-out, let that earned rhythm carry the encounter instead of layering
-    // another arbitrary shield drop on top of it.
-    if (o.lastFakeoutAt && now - o.lastFakeoutAt < 2800) {
-      o.nextRedShieldDropAt = Math.max(o.nextRedShieldDropAt || 0, o.lastFakeoutAt + 2800);
-      return;
-    }
-    // Shield drops are independent from firing. Attacks still open the same window,
-    // but quiet openings keep red enemies from becoming a wait-for-the-gun grind.
-    if (redVulnerableActive(o, now)) {
-      if (!o.nextRedShieldDropAt || o.nextRedShieldDropAt <= now) {
-        o.nextRedShieldDropAt = o.redVulnerableUntil + rand(650, 1050);
-      }
-      return;
-    }
-    if (!o.nextRedShieldDropAt) o.nextRedShieldDropAt = now + rand(300, 600);
-    if (now < o.nextRedShieldDropAt) return;
-    o.redVulnerableUntil = now + rand(1150, 1500);
-    o.nextRedShieldDropAt = o.redVulnerableUntil + rand(650, 1050);
+    // Red no longer uses a shield cycle. It stays mobile, but when the player
+    // earns the shot there is no second "actually immune right now" layer.
+    return;
   }
 
   function beginTraitorFakeout(o, direction, now, awareness, driftMult) {
@@ -943,7 +1030,7 @@
   }
 
   function traitorShieldActive(o, now) {
-    return !!(o && !o.isTrapped && (o.traitorType === 'red' || o.traitorType === 'purple') && !traitorVulnerable(o, now));
+    return !!(o && !o.isTrapped && o.traitorType === 'purple' && !traitorVulnerable(o, now));
   }
 
   function firePurpleTraitorRain(shooter) {
@@ -960,21 +1047,23 @@
     shooter.nextPurpleRainAt = now + duration + purpleProfile.rainGapMs;
     for (let i = 0; i < drops; i++) {
       const token = spaceFlowToken;
+      const burstCount = Math.max(0, purpleProfile.rainStartBurst || 0);
       setTimeout(() => {
         if (token !== spaceFlowToken || state !== 'playing' || waveTransitioning || !purpleRainActive(shooter, Date.now())) return;
-        const spread = ((i % 3) - 1) * shooter.r * 0.28 + rand(-5, 5);
+        const spread = ((i % 3) - 1) * shooter.r * 0.32 + rand(-6, 6);
+        const startOffset = i < burstCount ? shooter.r * (0.42 + i * 0.12) : shooter.r * 0.82;
         enemyBullets.push({
           x: Math.max(8, Math.min(W - 8, shooter.x + spread)),
-          y: shooter.y + shooter.r * 0.82,
+          y: shooter.y + startOffset,
           vx: rand(-0.16, 0.16),
-          vy: 3.1 + tier * 0.10 + (purpleProfile.driftMult - 1) * 0.52 + Math.random() * 0.26,
+          vy: 3.25 + purpleProfile.rainSpeedBonus + tier * 0.10 + (purpleProfile.driftMult - 1) * 0.52 + Math.random() * 0.30,
           r: 2.4,
           theme: 'purpleRain',
           damage: 3,
           damageCause: 'PURPLE RAIN',
           born: Date.now(),
         });
-      }, i * rainDropSpacingMs);
+      }, i < burstCount ? 0 : i * rainDropSpacingMs);
     }
     playTraitorShotSfx('purple');
   }
@@ -1053,9 +1142,9 @@
 
     // Shared traitor fake-out lesson: react once to the first threatening bullet or
     // an aligned ship, visibly brace, then commit without reconsidering direction.
-    const isFakeoutTraitor = o.traitorType === 'red' || o.traitorType === 'purple';
+    const isFakeoutTraitor = o.traitorType === 'red';
     let fakeoutBusy = traitorFakeoutBusy(o, now);
-    if (isFakeoutTraitor && !fakeoutBusy && traitorShieldActive(o, now) && now > (o.nextDodgeAt || 0)) {
+    if (isFakeoutTraitor && !fakeoutBusy && o.y >= traitorAttackArmY(o) && now > (o.nextDodgeAt || 0)) {
       const threatX = o.r * (1.75 + awareness * 1.1);
       const threatY = 180 + awareness * 110;
       const threat = bullets.find(b => b && b.vy < 0 && b.y > o.y && Math.abs(b.x - o.x) < threatX && (b.y - o.y) < threatY);
@@ -1175,12 +1264,13 @@
         const rr = r * (0.7 + Math.random()*0.3);
         return [Math.cos(a)*rr, Math.sin(a)*rr];
       });
-      // ALL ASTEROIDS: controlled storm, not a single screen-flood. Same direction,
-      // slightly slower than normal rock speed, and tiny lane drift so it feels alive
-      // without creating impossible diagonal clumps.
+      // ALL ASTEROIDS: controlled storm, not a single screen-flood. They now read
+      // more as dodge pressure than mandatory cleanup, so vary their fall speeds
+      // more to create lane texture instead of one flat curtain.
       const jitter = waveTheme !== 'asteroids';
       const rockSpeedMult = cfg.asteroidSpeedMult == null ? 1 : cfg.asteroidSpeedMult;
-      obstacles.push({ type:'asteroid', x:rand(r,W-r), y:-r-10, vx: asteroidLateralVelocity(cfg.speed * rockSpeedMult, jitter), vy: (jitter ? cfg.speed*(0.8+Math.random()*0.4) : cfg.speed*0.82) * rockSpeedMult, r, verts, rot:0, rotSpeed:rand(-0.02,0.02), hp:1, shadeSeed: Math.random() * 1000, rockStyle: Math.floor(Math.random() * 3) });
+      const fallSpeed = jitter ? cfg.speed * rand(0.78, 1.22) : cfg.speed * rand(0.68, 1.04);
+      obstacles.push({ type:'asteroid', x:rand(r,W-r), y:-r-10, vx: asteroidLateralVelocity(cfg.speed * rockSpeedMult, jitter), vy: fallSpeed * rockSpeedMult, r, verts, rot:0, rotSpeed:rand(-0.02,0.02), hp:1, shadeSeed: Math.random() * 1000, rockStyle: Math.floor(Math.random() * 3) });
     } else {
       // Random trapped heroes in regular waves are disabled. The campaign already
       // has one rescue target per boss/chapter beat, so surprise hero spawns made the
@@ -1749,8 +1839,16 @@
   // enough that the player can make a real socket-inventory decision.
   function hpFallSpeed() { return (currentCfg ? currentCfg.speed : O_SPEED_BASE) * 1.35; }
   function powerupFallSpeed() { return hpFallSpeed() * 1.05; }
+  function activeWaveThreatsRemaining() {
+    return obstacles.some(o => o && o.alive !== false && (!o.isTrapped || o.type === 'asteroid'));
+  }
+  function regularDropWindowOpen() {
+    if (state !== 'playing' || waveTransitioning || boss || miniBoss) return false;
+    return spawnsRemaining > 0 || activeWaveThreatsRemaining();
+  }
 
   function spawnPowerup(forcedType) {
+    if (!forcedType && !regularDropWindowOpen()) return false;
     if (currentCfg && currentCfg.maxSocketPowerups != null) {
       currentCfg._socketPowerupsSpawned = currentCfg._socketPowerupsSpawned || 0;
       if (currentCfg._socketPowerupsSpawned >= currentCfg.maxSocketPowerups) return false;
@@ -1770,10 +1868,12 @@
   // Rare, risky pickup — could be great or could backfire. "Just enough to be
   // special": a much longer random interval than the other two schedules.
   function spawnMysteryBox() {
+    if (!regularDropWindowOpen()) return false;
     // Falls a lot slower than every other pickup — it's on a parachute, it's rare,
     // and now it's a shoot target (ringHp) rather than something to catch, so there's
     // no rush to intercept it before it lands.
     powerups.push({ type: 'mystery', x: rand(POWERUP_R, W - POWERUP_R), y: -POWERUP_R - 10, vy: powerupFallSpeed() * 0.2, r: POWERUP_R, bob: Math.random() * Math.PI * 2, ringHp: 5 });
+    return true;
   }
   function scheduleMysteryBox() {
     clearTimeout(mysteryTimer);
@@ -1795,6 +1895,7 @@
       if (currentCfg._instrumentsSpawned >= currentCfg.maxInstruments) return false;
     }
     const kind = INSTRUMENT_KINDS[Math.floor(Math.random() * INSTRUMENT_KINDS.length)];
+    if (!regularDropWindowOpen()) return false;
     powerups.push({ type: 'instrument', kind, x: rand(POWERUP_R, W - POWERUP_R), y: -POWERUP_R - 10, vy: powerupFallSpeed() * 0.55, r: POWERUP_R, bob: Math.random() * Math.PI * 2 });
     if (currentCfg) currentCfg._instrumentsSpawned = (currentCfg._instrumentsSpawned || 0) + 1;
     return true;
@@ -1823,7 +1924,7 @@
       : waveTheme === 'goldrush' ? [600, 1500] : [Math.max(8200, 10400 - tier * 420), Math.max(15000, 19500 - tier * 750)];
     powerupTimer = setTimeout(() => {
       if (state !== 'playing') return;
-      if (campaignAllows('allowPowerups') && !boss && !waveTransitioning) spawnPowerup();
+      if (campaignAllows('allowPowerups') && regularDropWindowOpen()) spawnPowerup();
       schedulePowerup();
     }, range[0] + Math.random() * (range[1] - range[0]));
   }
@@ -1832,10 +1933,12 @@
   // asteroid shape, so it's never visually confused with an actual (hostile) asteroid
   // at a glance.
   function spawnHpPowerup() {
+    if (!regularDropWindowOpen()) return false;
     const roll = Math.random();
     const hpValue = roll < 0.15 ? 5 : roll < 0.5 ? 3 : 2;
     const r = hpValue === 5 ? 18 : hpValue === 3 ? 13.5 : 11;
     powerups.push({ type:'hp', hpValue, x: rand(r, W-r), y: -r-10, vy: hpFallSpeed(), r, bob: Math.random() * Math.PI * 2 });
+    return true;
   }
 
   function spawnBossHpDrop(b) {
@@ -1901,7 +2004,7 @@
     const maxDelay = hpRange ? hpRange[1] : 6300 + Math.min(2600, tier * 520);
     hpPowerupTimer = setTimeout(() => {
       if (state !== 'playing') return;
-      if (campaignAllows('allowHp') && !boss && !waveTransitioning) spawnHpPowerup();
+      if (campaignAllows('allowHp') && regularDropWindowOpen()) spawnHpPowerup();
       scheduleHpPowerup();
     }, minDelay + Math.random() * (maxDelay - minDelay));
   }
@@ -2601,7 +2704,7 @@
     scheduleInstrument();
     const flowToken = spaceFlowToken;
     setTimeout(() => {
-      if (flowToken === spaceFlowToken && state === 'playing' && wave === 1) showTopBanner('CLEAR THE ROCKS', 'good');
+      if (flowToken === spaceFlowToken && state === 'playing' && wave === 1) showTopBanner('DODGE OR CLEAR THE ROCKS', 'good');
     }, 900);
     // Wave 1 starts at full HP, so the existing random HP-crate timer can land while
     // the player is already capped and never feel like real support. Guarantee one
@@ -2648,14 +2751,14 @@
   }
 
   const SPACE_ACADEMY_LESSONS = [
-    { title: 'DRAG TO MOVE', detail: 'DODGE ROCKS AND STAY BELOW THE LINE', confirm: 'GOOD DODGING!' },
+    { title: 'DRAG TO MOVE', detail: 'DODGE ROCKS AND KEEP YOUR SHIP CLEAR', confirm: 'GOOD DODGING!' },
     { title: 'NORMAL ENEMIES', detail: 'THEY HOLD, DRIFT, AND SHOOT', confirm: 'ENEMY CLEARED!' },
-    { title: 'RED SWARMERS', detail: 'FLASHING RED ENEMIES RUSH THE LINE', confirm: 'SWARMER STOPPED!' },
+    { title: 'RED SWARMERS', detail: 'FLASHING RED ENEMIES RUSH YOUR SPACE', confirm: 'SWARMER STOPPED!' },
     { title: 'CATCH POWERUPS', detail: 'LEFT SOCKETS STORE GUN / SHIELD / BOMB', confirm: 'SOCKETS STOCKED!' },
     { title: 'TAP A SOCKET', detail: 'BOMB SOCKET CLEARS DANGER', confirm: 'BOMB DEPLOYED!' },
     { title: 'SHOOT THE ? CRATE', detail: 'IT CAN HELP OR HURT', confirm: 'MYSTERY LEARNED!' },
     { title: 'BREAK THE BLUE LOCK', detail: 'SHOOT THE RING, NOT THE MOBE', confirm: 'RESCUE UNLOCKED!' },
-    { title: 'BLACKOUT', detail: 'SLOW DOWN. WATCH THE LINE.', confirm: 'TRAINING COMPLETE!' },
+    { title: 'BLACKOUT', detail: 'SLOW DOWN. WATCH FOR OPEN SPACE.', confirm: 'TRAINING COMPLETE!' },
   ];
 
   function academyTimer(fn, delay) {
@@ -3131,7 +3234,7 @@
       // SWARM speeds up by cadence, not by screen-flooding. ALL ASTEROIDS now works
       // the same way: more total rocks across the wave, but no triple-dumps that
       // make one bomb erase the whole mode or create impossible clumps.
-      const themeSpeedup = waveTheme === 'swarm' ? 0.65 : waveTheme === 'goldrush' ? 0.6 : waveTheme === 'asteroids' ? 0.95 : waveTheme === 'mirror' ? 1.25 : waveTheme === 'bomber' ? 1.18 : 1;
+      const themeSpeedup = waveTheme === 'swarm' ? 0.78 : waveTheme === 'goldrush' ? 0.6 : waveTheme === 'asteroids' ? 0.95 : waveTheme === 'mirror' ? 1.25 : waveTheme === 'bomber' ? 1.18 : 1;
       const balanceCadence = cfg.spawnCadenceMult == null ? 1 : cfg.spawnCadenceMult;
       spawnTimer = setTimeout(doSpawn, cfg.spawnMs * 0.8 * themeSpeedup * balanceCadence * (0.7 + Math.random()*0.6));
     }
@@ -3213,6 +3316,7 @@
   function showMissionFailedBeat(onDone) {
     const gc = GAME_CHARS[activeChar];
     const isBossRunFail = spaceRunMode === 'bossrun';
+    const isEndlessFail = spaceRunMode === 'endless';
     const rescued = rescuedChars.size;
     const total = missionTrappedChars.length || SPACE_RESCUE_TARGET_COUNT;
     const bossTotal = bossRunQueue.length || 8;
@@ -3234,18 +3338,18 @@
     el.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(3,1,16,0);opacity:1;transition:background 0.35s ease;pointer-events:none';
     el.innerHTML = `
       <div style="width:min(94vw,410px);text-align:center;opacity:0;transform:scale(0.96);transition:opacity 0.35s ease,transform 0.35s ease">
-        <div style="font-family:'Bebas Neue',cursive;font-size:52px;letter-spacing:6px;line-height:0.95;color:#ff4444;text-shadow:0 0 22px #ff444488;margin-bottom:18px">MISSION FAILED</div>
+        <div style="font-family:'Bebas Neue',cursive;font-size:52px;letter-spacing:6px;line-height:0.95;color:#ff4444;text-shadow:0 0 22px #ff444488;margin-bottom:18px">${isEndlessFail ? 'RUN OVER' : 'MISSION FAILED'}</div>
         <div style="width:110px;height:110px;margin:0 auto 14px;border-radius:18px;overflow:hidden;border:3px solid ${gc.color}66;background:${gc.color}11;box-shadow:0 0 18px ${gc.color}33">${charFace(gc, 'sad')}</div>
         <div style="font-family:'VCR',monospace;font-size:12px;letter-spacing:3px;color:rgba(242,239,232,0.5);margin-bottom:6px">${gc.name}</div>
-        <div style="font-family:'Bebas Neue',cursive;font-size:36px;letter-spacing:4px;line-height:1;color:${allSaved ? '#33ff66' : '#00e5ff'};text-shadow:0 0 14px ${allSaved ? '#33ff66' : '#00e5ff'}88;margin-bottom:6px">${isBossRunFail ? `${bossesDefeated}/${bossTotal} BOSSES DEFEATED` : `${rescued}/${total} HEROES SAVED`}</div>
+        <div style="font-family:'Bebas Neue',cursive;font-size:36px;letter-spacing:4px;line-height:1;color:${allSaved ? '#33ff66' : '#00e5ff'};text-shadow:0 0 14px ${allSaved ? '#33ff66' : '#00e5ff'}88;margin-bottom:6px">${isBossRunFail ? `${bossesDefeated}/${bossTotal} BOSSES DEFEATED` : isEndlessFail ? `WAVE ${wave} REACHED` : `${rescued}/${total} HEROES SAVED`}</div>
         <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.45);margin-bottom:12px">WAVE ${wave} · SCORE ${score}</div>
         <div style="width:min(92vw,360px);margin:0 auto 18px;padding:10px 12px;border:1px solid rgba(255,68,68,0.42);background:rgba(255,68,68,0.10);border-radius:12px;text-align:left;font-family:'VCR',monospace;line-height:1.35">
           <div style="font-size:9px;letter-spacing:2px;color:rgba(242,239,232,0.55);margin-bottom:4px">CAUSE OF DEFEAT</div>
           <div style="font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:3px;line-height:1;color:#ff6666;text-shadow:0 0 10px rgba(255,68,68,0.55)">${prettyDamageCause(deathCause || lastDamageCause || 'UNKNOWN HAZARD')}</div>
           <div style="font-size:10px;letter-spacing:1.4px;color:rgba(242,239,232,0.72);margin-top:5px">WAVE ${deathWave || wave} — ${deathWaveTheme || waveNameForDeath()}${(deathDamageAmount || lastDamageAmount) ? ` / -${deathDamageAmount || lastDamageAmount} HP` : ''}</div>
         </div>
-        ${(!isBossRunFail && captiveGrid) ? `<div style="display:grid;grid-template-columns:repeat(3,42px);justify-content:center;gap:10px 18px;margin:0 auto 20px">${captiveGrid}</div>` : ''}
-        <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.4)">${isBossRunFail ? 'THE BOSSES ARE STILL WAITING' : 'THEY STILL NEED YOU'}</div>
+        ${(!isBossRunFail && !isEndlessFail && captiveGrid) ? `<div style="display:grid;grid-template-columns:repeat(3,42px);justify-content:center;gap:10px 18px;margin:0 auto 20px">${captiveGrid}</div>` : ''}
+        <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.4)">${isBossRunFail ? 'THE BOSSES ARE STILL WAITING' : isEndlessFail ? 'JUMP BACK IN WHEN YOU WANT' : 'THEY STILL NEED YOU'}</div>
       </div>`;
     document.body.appendChild(el);
     const card = el.firstElementChild;
@@ -3451,7 +3555,15 @@ function nextWave() {
   }
 
   function skillCalloutForWave() {
-    if (wave === 1) return 'CLEAR THE ROCKS';
+    if (spaceRunMode === 'endless') {
+      if (waveTheme === 'music') return 'JAM WAVE. GRAB NOTES AND POWER.';
+      if (waveTheme === 'goldrush') return 'BONUS FLOW. STOCK UP.';
+      if (waveTheme === 'swarm') return 'SHORT BURST. STAY LOOSE.';
+      if (waveTheme === 'enemies') return 'DODGE, SHOOT, COLLECT.';
+      if (waveTheme === 'asteroids') return 'BREATHER. DODGE OR CLEAR.';
+      return 'KEEP THE RUN GOING.';
+    }
+    if (wave === 1) return 'DODGE OR CLEAR THE ROCKS';
     if (wave === 2) return 'RED TRAITOR. DODGE FLUTE SHOTS.';
     if (wave === 3) return 'PURPLE RAIN';
     if (wave === 4) return 'FIRST CAPTIVE. BEAT THE BOSS.';
@@ -3467,7 +3579,7 @@ function nextWave() {
     if (waveTheme === 'swarm') return 'BOMB NOW OR DODGE CLEAN';
     if (waveTheme === 'bomber') return 'KILL BOMBERS EARLY';
     if (waveTheme === 'mirror') return 'FIND THE TRIANGLE GAP';
-    if (waveTheme === 'asteroids') return 'CLEAR THE ROCKS';
+    if (waveTheme === 'asteroids') return 'DODGE OR CLEAR THE ROCKS';
     if (waveTheme === 'enemies') return 'SHOOT FACES. DODGE SHOTS.';
     if (waveTheme === 'blackout') return 'FIND THE SHOOTERS';
     if (waveTheme === 'emp') return 'DODGE THE ZAPS';
@@ -3486,7 +3598,7 @@ function nextWave() {
         addFloatText('BLACKOUT!', W / 2, H * 0.35, '#ffe61a', 32, { holdMs: 2200, fade: 0.012 });
         addFloatText('STAY IN THE LIGHT', W / 2, H * 0.35 + 30, '#33ff66', 20, { holdMs: 2200, fade: 0.012 });
       } else {
-        showTopBanner(text, waveTheme === 'boss' || waveTheme === 'gizmo' || waveTheme === 'captive' ? 'bad' : 'good', { holdMs: 1800 });
+        showTopBanner(text, waveTheme === 'boss' || waveTheme === 'gizmo' || waveTheme === 'captive' ? 'bad' : 'good', { holdMs: spaceRunMode === 'endless' ? 1300 : 1800 });
       }
     }, opts.delayMs != null ? opts.delayMs : 420);
   }
@@ -4300,6 +4412,17 @@ function nextWave() {
         ctx.restore();
       }
       ctx.textBaseline = 'alphabetic';
+    } else if (spaceRunMode === 'endless') {
+      const cyclePos = (endlessCycleIndex(wave) % ENDLESS_THEME_CYCLE.length) + 1;
+      ctx.textAlign = 'left';
+      ctx.font = `bold 13px 'Bebas Neue', cursive`;
+      ctx.fillStyle = '#ff00cc';
+      ctx.fillText(`ENDLESS ${cyclePos}/${ENDLESS_THEME_CYCLE.length}`, 10, barY + barH + 16);
+      ctx.fillStyle = 'rgba(255,255,255,0.28)';
+      ctx.fillRect(10, barY + barH + 23, 92, 4);
+      ctx.fillStyle = '#ff00cc';
+      ctx.fillRect(10, barY + barH + 23, 92 * (cyclePos / ENDLESS_THEME_CYCLE.length), 4);
+      ctx.textBaseline = 'alphabetic';
     } else if (missionTrappedChars.length) {
       const total = missionTrappedChars.length;
       const rescued = Math.min(rescuedChars.size, total);
@@ -4317,6 +4440,7 @@ function nextWave() {
   }
 
   function drawRescueBanner() {
+    if (spaceRunMode === 'endless') return;
     if (!rescueBanner) return;
     const age = Date.now() - rescueBanner.startedAt;
     const hold = 1850;
@@ -5108,11 +5232,15 @@ function nextWave() {
         o.alive = false;
         lineFlashA = 1.0;
         if(o.type==='asteroid'){
-          const rockDamage = o.r < 22 ? 5 : 10;
-          takeDamage(rockDamage, waveTheme === 'flip' ? 'REVERSE ASTEROID ESCAPE' : 'ASTEROID REACHED LINE');
-          bigExplosion(o.x, _lineY, '#aa8855');
-          playPlayerDamageThud(); // musical thud sound
-          waveKills++;
+          if (ASTEROIDS_REQUIRE_CLEAR) {
+            const rockDamage = o.r < 22 ? 5 : 10;
+            takeDamage(rockDamage, waveTheme === 'flip' ? 'REVERSE ASTEROID ESCAPE' : 'ASTEROID REACHED LINE');
+            bigExplosion(o.x, _lineY, '#aa8855');
+            playPlayerDamageThud(); // musical thud sound
+            waveKills++;
+          } else {
+            miniExplosion(o.x, _lineY, '#7a6a90');
+          }
         } else if(!o.isTrapped){
           // enemy crosses line — big damage
           takeDamage(30, 'ENEMY REACHED LINE');
@@ -5470,7 +5598,7 @@ function nextWave() {
             continue;
           }
           o.alive=false; playPlayerDamageThud();
-          takeDamage(o.type==='face' ? 30 : (o.r < 22 ? 5 : 10), o.type==='face' ? 'ENEMY COLLISION' : 'ASTEROID COLLISION');
+          takeDamage(o.type==='face' ? 30 : (o.r < 22 ? 3 : 5), o.type==='face' ? 'ENEMY COLLISION' : 'ASTEROID COLLISION');
           if(state==='over') return;
         }
       }
@@ -5486,7 +5614,7 @@ function nextWave() {
     if (pendingBossWin && obstacles.length === 0 && enemyBullets.length === 0 && !boss && !miniBoss && state === 'playing') {
       const runWin = pendingBossWin; pendingBossWin = null; runWin();
     }
-    if (!academyMode && !academyCompleting && spaceRunMode !== 'bossrun' && spawnsRemaining <= 0 && obstacles.length === 0 && !boss && !miniBoss && !mirrorSequenceActive && !pendingBossWin && state === 'playing') {
+    if (!academyMode && !academyCompleting && spaceRunMode !== 'bossrun' && spawnsRemaining <= 0 && obstacles.length === 0 && powerups.length === 0 && !boss && !miniBoss && !mirrorSequenceActive && !pendingBossWin && state === 'playing') {
       nextWave();
     }
     updateSpaceAcademy();
@@ -5948,25 +6076,26 @@ function nextWave() {
       ctx.restore();
     }
 
-    // Danger line — no shadowBlur; use a wider semi-transparent halo line instead.
-    // Drawn just under the socket stack so the ship sits higher and stays visible.
+    // Danger boundary stays mechanically active even when we hide the visual line.
     const _renderLineY = waveTheme === 'flip' ? REVERSE_LINE_Y : dangerY;
     if (lineFlashA > 0) lineFlashA = Math.max(0, lineFlashA - 0.04);
-    ctx.save();
-    ctx.setLineDash([6, 5]);
-    ctx.lineDashOffset = -(Date.now() / 90) % 11;
-    // halo
-    ctx.beginPath(); ctx.moveTo(0, _renderLineY); ctx.lineTo(W, _renderLineY);
-    ctx.strokeStyle = `rgba(51,255,100,${(0.28 + lineFlashA * 0.62) * 0.35})`;
-    ctx.lineWidth = 6 + lineFlashA * 4;
-    ctx.stroke();
-    // core line
-    ctx.beginPath(); ctx.moveTo(0, _renderLineY); ctx.lineTo(W, _renderLineY);
-    ctx.strokeStyle = `rgba(51,255,100,${0.28 + lineFlashA * 0.62})`;
-    ctx.lineWidth = 1.5 + lineFlashA;
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
+    if (SHOW_DANGER_LINE) {
+      ctx.save();
+      ctx.setLineDash([6, 5]);
+      ctx.lineDashOffset = -(Date.now() / 90) % 11;
+      // halo
+      ctx.beginPath(); ctx.moveTo(0, _renderLineY); ctx.lineTo(W, _renderLineY);
+      ctx.strokeStyle = `rgba(51,255,100,${(0.28 + lineFlashA * 0.62) * 0.35})`;
+      ctx.lineWidth = 6 + lineFlashA * 4;
+      ctx.stroke();
+      // core line
+      ctx.beginPath(); ctx.moveTo(0, _renderLineY); ctx.lineTo(W, _renderLineY);
+      ctx.strokeStyle = `rgba(51,255,100,${0.28 + lineFlashA * 0.62})`;
+      ctx.lineWidth = 1.5 + lineFlashA;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
 
     if (boss) drawBoss();
     if (miniBoss) drawMiniBoss();
@@ -6012,19 +6141,20 @@ function nextWave() {
       ctx.closePath();
       ctx.fillStyle = beam;
       ctx.fill();
-      // Keep the damage line visible during BLACKOUT. The darkness layer is drawn
-      // after the normal line, so redraw a softer version here as a survival cue.
-      ctx.save();
-      ctx.globalAlpha = 0.72;
-      ctx.setLineDash([10, 7]);
-      ctx.beginPath();
-      ctx.moveTo(0, _renderLineY);
-      ctx.lineTo(W, _renderLineY);
-      ctx.strokeStyle = 'rgba(51,255,100,0.78)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
+      if (SHOW_DANGER_LINE) {
+        // Optional redraw for BLACKOUT when the line is intentionally visible.
+        ctx.save();
+        ctx.globalAlpha = 0.72;
+        ctx.setLineDash([10, 7]);
+        ctx.beginPath();
+        ctx.moveTo(0, _renderLineY);
+        ctx.lineTo(W, _renderLineY);
+        ctx.strokeStyle = 'rgba(51,255,100,0.78)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
 
       // The darkness hole is only half of BLACKOUT: normal sprites also need to be
       // redrawn above the dark layer, clipped to the cone, or they stay dimmed by
@@ -7261,7 +7391,7 @@ function nextWave() {
   // so its per-trigger gain is intentionally much lower than the one-shot attacks.
   const SPACE_SFX_VOLUME = {
     'boss.ogre.voice': 0.68,
-    'boss.ogre.projectile': 0.07,
+    'boss.ogre.projectile': 0.08,
     'boss.dragon.voice': 0.70,
     'boss.dragon.projectile': 0.2,
     'boss.knight.voice': 0.72,
@@ -8292,14 +8422,13 @@ function nextWave() {
         }, 1050);
       }},
       { duration: 3000, show: () => {
-        ann.innerHTML = spIntroObjectiveHTML('BEFORE THEY CROSS THE LINE',
+        ann.innerHTML = spIntroObjectiveHTML('DODGE OR CLEAR THE ROCKS',
           `<div id="sp-intro-line-wrap" style="position:relative;width:140px;height:90px">
-            <div style="position:absolute;bottom:14px;left:0;width:100%;height:0;border-top:2px dashed rgba(51,255,100,0.7)"></div>
             <div id="sp-intro-rock2" style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:40px;height:40px;background:linear-gradient(135deg,#8b7fa3 0 22%,#5c526c 22% 60%,#362f42 60%);clip-path:polygon(48% 0,84% 12%,100% 46%,82% 84%,42% 100%,8% 74%,0 34%,18% 8%);box-shadow:0 0 0 4px #241f2d,0 0 0 6px #8b7fa3;transition:top 0.9s ease-in"></div>
-            <div id="sp-intro-dmg" style="position:absolute;bottom:18px;left:50%;transform:translateX(-50%) translateY(0);font-family:'Bebas Neue',cursive;font-size:24px;color:#ff4444;text-shadow:0 0 10px #ff4444;opacity:0;transition:opacity 0.2s,transform 0.4s">-10</div>
+            <div id="sp-intro-dmg" style="position:absolute;bottom:18px;left:50%;transform:translateX(-50%) translateY(0);font-family:'Bebas Neue',cursive;font-size:20px;color:#00e5ff;text-shadow:0 0 10px #00e5ff;opacity:0;transition:opacity 0.2s,transform 0.4s;white-space:nowrap">MAKE ROOM</div>
           </div>`);
-        // Asteroid falls all the way to the line and actually hits it — the danger
-        // isn't "it disappears," it's "it costs you health if you let it get there."
+        // This beat now teaches space control rather than "protect the line":
+        // let a rock fall into the player's lane, then prompt the player to make room.
         setTimeout(() => {
           const rock = document.getElementById('sp-intro-rock2');
           if (rock) rock.style.top = '36px';
@@ -8802,23 +8931,16 @@ function nextWave() {
     bullets = []; obstacles = []; enemyBullets = []; powerups = []; floatTexts = []; blackoutHitFlashes = []; blackoutShooterIndex = 0;
     boss = null; miniBoss = null; pendingBossWin = null; rescueBanner = null; mirrorSequenceActive = false;
     rescuedChars.clear(); missionRetryCaptives.splice(0, missionRetryCaptives.length); waveCaptivesSeen.clear();
+    missionEnemyChars.splice(0, missionEnemyChars.length);
+    missionTrappedChars.splice(0, missionTrappedChars.length);
     wave = SPACE_CAMPAIGN_FINAL_WAVE + 1;
     waveKills = 0;
     currentCfg = waveConfig(wave);
-    // Endless's first wave skips the normal theme roll — landing on something like
-    // Blackout/EMP/Mirror with zero warmup reads as an unfair surprise. Open on a
-    // plain readable wave instead; pickWaveTheme resumes normally from wave 2 on.
-    waveTheme = 'asteroids';
+    waveTheme = pickWaveTheme(wave, null);
     pendingBossCreature = (waveTheme === 'boss' || waveTheme === 'gizmo') ? pickBossCreature() : null;
     spawnsRemaining = 0;
     themeEffectsAt = waveTheme === 'blackout' ? Date.now() + 1400 : 0;
     startWaveSpawn(currentCfg);
-    if (waveTheme === 'blackout') { spawnBlackoutHiddenEnemies(); spaceSfx('wave.blackout'); }
-    if (waveTheme === 'boss') spawnBoss(false, { guardedRescue: false });
-    if (waveTheme === 'gizmo') spawnBoss(false, { guardedRescue: false, escape: false, final: false });
-    if (waveTheme === 'ghost' || waveTheme === 'emp') { spawnMiniBoss(waveTheme); if (waveTheme === 'emp') spaceSfx('status.emp'); }
-    if (waveTheme === 'mirror') spawnMirrorEnemy();
-    if (waveTheme === 'rave') playRaveDiscoStab();
     showTopBanner('ENDLESS MODE', 'good');
     showSkillCalloutForWave();
   }
