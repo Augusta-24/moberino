@@ -740,7 +740,7 @@
       // ends through spawnsRemaining/board-clear, so it cannot overlap nextWave().
       1: { spawnsRemaining: 40, speedOverride: 2.86, spawnMsOverride: 930, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [2600, 5200], spawnCadenceMult: 0.9, activeObstacleCap: 6, notes: 'Intro is dangerous: small rocks cost 5 HP and big rocks cost 10 HP, with early HP drops teaching recovery.' },
       2: { spawnsRemaining: 12, speedOverride: 2.62, spawnMsOverride: 1030, asteroidRatioOverride: 0, enemyHpOverride: 3, enemyFireMult: 1.26, enemyFireRateMult: 0.66, enemyVyMult: 1.28, enemyDriftMult: 2.04, enemyDodgeMult: 1.36, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [1200, 1900], hpDelayRange: [2600, 5200], spawnCadenceMult: 0.94, activeObstacleCap: 3, notes: 'Only 12 normal enemies: faster, evasive, 3-hit duel targets.' },
-      3: { spawnsRemaining: 21, normalEnemySlots: [1, 5, 9, 14, 19], speedOverride: 2.62, spawnMsOverride: 1180, asteroidRatioOverride: 0.70, allowEnemyAsteroids: true, activeFaceCap: 1, enemyHpOverride: 3, enemyFireMult: 0.86, enemyFireRateMult: 0.94, enemyVyMult: 1.14, enemyDriftMult: 1.58, enemyDodgeMult: 1.04, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, powerupDelayRange: [1600, 2400], hpDelayRange: [3000, 5600], spawnCadenceMult: 1.08, activeObstacleCap: 5, notes: 'Purple Rain intro: five solo rain enemies, asteroid-heavy spacing, shoot during rain pauses.' },
+      3: { spawnsRemaining: 19, wave3EnemyTotal: 5, wave3EnemyScreenCap: 2, wave3AsteroidTotal: 14, speedOverride: 2.62, spawnMsOverride: 1180, asteroidRatioOverride: 0.70, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 0.86, enemyFireRateMult: 0.94, enemyVyMult: 1.14, enemyDriftMult: 1.58, enemyDodgeMult: 1.04, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, powerupDelayRange: [1600, 2400], hpDelayRange: [3000, 5600], spawnCadenceMult: 1.08, notes: 'Purple Rain intro: five solo rain enemies, asteroid-heavy spacing, shoot during rain pauses.' },
       4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [7600, 11600], enemyFireMult: 0.75 },
       5: { spawnsRemaining: 26, speedOverride: 2.72, spawnMsOverride: 1087, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.34, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 1, powerupDelayRange: [900, 1300], hpDelayRange: [2200, 4400], swarmCap: 5, activeObstacleCap: 5, spawnCadenceMult: 1.02, notes: 'Swarm moved from Wave 3 so traitors get clean introductions first.' },
       6: { spawnsRemaining: 14, speedOverride: 2.72, spawnMsOverride: 880, asteroidRatioOverride: 0.36, enemyHpOverride: 3, enemyFireMult: 0.94, enemyFireRateMult: 0.70, enemyVyMult: 1.24, enemyDriftMult: 1.86, enemyDodgeMult: 1.12, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, rescueRingHp: 30, powerupDelayRange: [3600, 6200], hpDelayRange: [4800, 7800], spawnCadenceMult: 0.86, activeObstacleCap: 4 },
@@ -817,7 +817,7 @@
     if (now < (shooter.nextPurpleRainAt || 0) || purpleRainActive(shooter, now)) return;
     const tier = currentCfg ? currentCfg.tier : campaignTier(wave);
     const duration = 1120;
-    const drops = 7 + Math.min(2, tier);
+    const drops = 10 + Math.floor(Math.random() * 3);
     shooter.purpleRainUntil = now + duration;
     shooter.nextPurpleRainAt = now + duration + 1050;
     for (let i = 0; i < drops; i++) {
@@ -989,7 +989,9 @@
     else if (waveTheme === 'mirror') ratio = 1;
     const activeFaceCap = cfg.activeFaceCap || 0;
     const faceCapReached = activeFaceCap && obstacles.filter(o => o.type === 'face' && !o.isTrapped && o.alive !== false).length >= activeFaceCap;
-    const isAsteroid = faceCapReached || (!(opts && opts.forceNormalEnemy) && Math.random() < ratio);
+    const forceAsteroid = !!(opts && opts.forceAsteroid);
+    const forceFace = !!(opts && opts.forceFace);
+    const isAsteroid = !forceFace && (forceAsteroid || faceCapReached || (!(opts && opts.forceNormalEnemy) && Math.random() < ratio));
     if (isAsteroid) {
       const r = rand(ASTEROID_R_MIN, ASTEROID_R_MAX);
       const sides = 7 + Math.floor(Math.random() * 5);
@@ -1010,7 +1012,7 @@
       // rescue count feel noisy instead of intentional.
       const canRandomRescue = false;
       let isTrapped = false;
-      const traitorType = traitorTypeForWave(wave);
+      const traitorType = (opts && opts.forceTraitorType) || traitorTypeForWave(wave);
       let ci = isTrapped ? nextMissionCaptiveIndex(waveCaptivesSeen) : missionTraitorIndexForType(traitorType);
       if (isTrapped && ci < 0) { isTrapped = false; ci = missionTraitorIndexForType(traitorType); }
       if (isTrapped) waveCaptivesSeen.add(ci);
@@ -2869,6 +2871,42 @@
   let spawnTimer = null;
   function startWaveSpawn(cfg) {
     clearTimeout(spawnTimer);
+    if (wave === 3) {
+      let enemiesRemaining = Math.max(0, cfg.wave3EnemyTotal || 5);
+      let asteroidsRemaining = Math.max(0, cfg.wave3AsteroidTotal || 14);
+      const enemyScreenCap = Math.max(1, cfg.wave3EnemyScreenCap || 2);
+      spawnsRemaining = enemiesRemaining + asteroidsRemaining;
+      const totalSpawns = spawnsRemaining;
+      let nextEnemyAt = 0;
+      let nextAsteroidAt = 0;
+      function doWave3Spawn() {
+        if (state !== 'playing') return;
+        if (boss || (miniBoss && miniBoss.kind === 'ghost')) { spawnTimer = setTimeout(doWave3Spawn, 500); return; }
+        if (spawnsRemaining <= 0) return;
+        const now = Date.now();
+        const activePurpleEnemies = obstacles.filter(o => o.type === 'face' && o.traitorType === 'purple' && !o.isTrapped && o.alive !== false).length;
+        let spawned = false;
+        if (enemiesRemaining > 0 && activePurpleEnemies < enemyScreenCap && now >= nextEnemyAt) {
+          spawnObstacle(cfg, { forceFace: true, forceTraitorType: 'purple' });
+          enemiesRemaining--;
+          spawnsRemaining--;
+          nextEnemyAt = now + rand(760, 1120);
+          spawned = true;
+        }
+        if (asteroidsRemaining > 0 && now >= nextAsteroidAt) {
+          spawnObstacle(cfg, { forceAsteroid: true });
+          asteroidsRemaining--;
+          spawnsRemaining--;
+          nextAsteroidAt = now + rand(300, 620);
+          spawned = true;
+        }
+        if (spawnsRemaining <= 0) return;
+        const wait = spawned ? 150 : 180;
+        spawnTimer = setTimeout(doWave3Spawn, wait);
+      }
+      spawnTimer = setTimeout(doWave3Spawn, 900);
+      return;
+    }
     // Boss/captive waves are true encounter waves now: beat the boss, then advance
     // into the next chapter beat instead of resuming a hidden regular spawn pool.
     if (waveTheme === 'boss' || (waveTheme === 'captive' && wave !== 6) || waveTheme === 'gizmo') spawnsRemaining = 0;
@@ -3221,7 +3259,7 @@ function nextWave() {
   function skillCalloutForWave() {
     if (wave === 1) return 'CLEAR THE ROCKS';
     if (wave === 2) return 'RED TRAITOR. DODGE FLUTE SHOTS.';
-    if (wave === 3) return 'PURPLE RAIN. SHOOT BETWEEN BURSTS.';
+    if (wave === 3) return 'PURPLE RAIN';
     if (wave === 4) return 'FIRST CAPTIVE. BEAT THE BOSS.';
     if (wave === 5) return 'SWARM. BOMB OR DODGE CLEAN.';
     if (wave === 6) return 'BREAK THE LOCK. WATCH BOTH TRAITORS.';
@@ -3310,7 +3348,7 @@ function nextWave() {
     const typeEl = ann.querySelector('#sp-wave-type'), incomingEl = ann.querySelector('#sp-wave-incoming');
     // BOSS is now just another theme entry, with its own THEME_LABEL — no more
     // separate wave-number-based fallback needed.
-    const finalLabel = waveTheme === 'boss' && pendingBossCreature ? pendingBossCreature.name : (waveTheme ? THEME_LABEL[waveTheme] : 'SURVIVE');
+    const finalLabel = wave === 3 ? 'PURPLE RAIN' : (waveTheme === 'boss' && pendingBossCreature ? pendingBossCreature.name : (waveTheme ? THEME_LABEL[waveTheme] : 'SURVIVE'));
     const finalColor = waveTheme ? '#ff00cc' : '#33ff66';
     const spinDelays = [60,60,70,80,90,110,140,180,230,300,400];
     let i = 0;
