@@ -163,3 +163,12 @@ Font paths inside `css/arcade.css` should point back to the root font files usin
 ## Do not do next
 
 Avoid combining cleanup with gameplay changes. Do not refactor Arcade shell, rename classes, and rebalance games in the same pass.
+
+## 2026-07 QA + Carousel Responsiveness Pass
+
+- Space wave readability/balance pass landed in `js/games/space.js` (purple rain clarity + red identity effects).
+- Lobby carousel swipe responsiveness improved for touch devices:
+	- `js/arcade.js`: touch/coarse pointers now use a native-snap carousel path (no clone-wrap logic on mobile).
+	- `js/arcade.js`: reduced JS churn during swipe with rAF-throttled active-card updates.
+	- `css/arcade.css`: added `touch-action: pan-x` and `overscroll-behavior-x: contain` for `#game-carousel` on coarse pointers.
+- If carousel feels laggy again on mobile, first verify no scripted re-centering runs during momentum scroll before changing card styles.

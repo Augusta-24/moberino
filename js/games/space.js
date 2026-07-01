@@ -739,7 +739,7 @@
       // Wave 5 also staggers three normal enemies into fixed slots; the pool still
       // ends through spawnsRemaining/board-clear, so it cannot overlap nextWave().
       1: { spawnsRemaining: 40, speedOverride: 2.86, spawnMsOverride: 930, asteroidRatioOverride: 1, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [2600, 5200], spawnCadenceMult: 0.9, activeObstacleCap: 6, notes: 'Intro is dangerous: small rocks cost 5 HP and big rocks cost 10 HP, with early HP drops teaching recovery.' },
-      2: { spawnsRemaining: 12, speedOverride: 2.62, spawnMsOverride: 1030, asteroidRatioOverride: 0, enemyHpOverride: 3, enemyFireMult: 1.26, enemyFireRateMult: 0.66, enemyVyMult: 1.28, enemyDriftMult: 2.04, enemyDodgeMult: 1.36, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [1200, 1900], hpDelayRange: [2600, 5200], spawnCadenceMult: 0.94, activeObstacleCap: 3, notes: 'Only 12 normal enemies: faster, evasive, 3-hit duel targets.' },
+      2: { spawnsRemaining: 14, speedOverride: 2.62, spawnMsOverride: 1030, asteroidRatioOverride: 0, enemyHpOverride: 3, enemyFireMult: 1.32, enemyFireRateMult: 0.62, enemyVyMult: 1.28, enemyDriftMult: 2.04, enemyDodgeMult: 1.36, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 1, powerupDelayRange: [1700, 2600], hpDelayRange: [2600, 5200], spawnCadenceMult: 0.94, activeObstacleCap: 4, notes: '14 normal enemies: faster, evasive, 3-hit duel targets with tighter red pressure.' },
       3: { spawnsRemaining: 19, wave3EnemyTotal: 5, wave3EnemyScreenCap: 2, wave3AsteroidTotal: 14, speedOverride: 2.62, spawnMsOverride: 1180, asteroidRatioOverride: 0.70, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 0.86, enemyFireRateMult: 0.94, enemyVyMult: 1.14, enemyDriftMult: 1.58, enemyDodgeMult: 1.04, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, powerupDelayRange: [1600, 2400], hpDelayRange: [3000, 5600], spawnCadenceMult: 1.08, notes: 'Purple Rain intro: five solo rain enemies, asteroid-heavy spacing, shoot during rain pauses.' },
       4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: false, allowHp: true, hpDelayRange: [7600, 11600], enemyFireMult: 0.75 },
       5: { spawnsRemaining: 26, speedOverride: 2.72, spawnMsOverride: 1087, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.34, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 1, powerupDelayRange: [900, 1300], hpDelayRange: [2200, 4400], swarmCap: 5, activeObstacleCap: 5, spawnCadenceMult: 1.02, notes: 'Swarm moved from Wave 3 so traitors get clean introductions first.' },
@@ -789,14 +789,41 @@
       firePurpleTraitorRain(shooter);
       return;
     }
-    const dx = player.x - shooter.x;
-    const dy = player.y - shooter.y;
-    const dist = Math.sqrt(dx*dx+dy*dy) || 1;
-    const tier = currentCfg ? currentCfg.tier : campaignTier(wave);
-    const balanceMult = currentCfg && currentCfg.enemyFireMult != null ? currentCfg.enemyFireMult : 1;
-    const bulletSpeed = (3.0 + tier * 0.45 + Math.min(wave, 12) * 0.16 + Math.max(0, wave - 18) * 0.18) * (speedMult || 1) * balanceMult;
-    enemyBullets.push({ x: shooter.x, y: shooter.y + shooter.r, vx: (dx/dist)*bulletSpeed, vy: (dy/dist)*bulletSpeed, r: 4, damage: 3, damageCause: shooter && shooter.traitorType === 'red' ? 'RED SHOT' : (cause || 'ENEMY SHOT'), traitorShot: shooter && shooter.traitorType });
-    if (shooter && shooter.traitorType === 'red') playTraitorShotSfx('red');
+    const fireAimedEnemyBullet = (shotSpeedMult, shotCause) => {
+      if (!shooter || shooter.alive === false || !player) return;
+      const dx = player.x - shooter.x;
+      const dy = player.y - shooter.y;
+      const dist = Math.sqrt(dx*dx+dy*dy) || 1;
+      const tier = currentCfg ? currentCfg.tier : campaignTier(wave);
+      const balanceMult = currentCfg && currentCfg.enemyFireMult != null ? currentCfg.enemyFireMult : 1;
+      const bulletSpeed = (3.0 + tier * 0.45 + Math.min(wave, 12) * 0.16 + Math.max(0, wave - 18) * 0.18) * (shotSpeedMult || 1) * balanceMult;
+      enemyBullets.push({ x: shooter.x, y: shooter.y + shooter.r, vx: (dx/dist)*bulletSpeed, vy: (dy/dist)*bulletSpeed, r: 4, damage: 3, damageCause: shotCause || 'ENEMY SHOT', traitorShot: shooter && shooter.traitorType });
+    };
+    if (shooter && shooter.traitorType === 'red' && cause !== 'BLACKOUT SHOT') {
+      fireAimedEnemyBullet(speedMult, 'RED SHOT');
+      playTraitorShotSfx('red');
+      const redEchoProfile = wave <= 2
+        ? { chance: 0.56, delayMs: 330, speedMult: 0.90 }
+        : wave <= 5
+          ? { chance: 0.55, delayMs: 320, speedMult: 0.84 }
+          : wave <= 9
+            ? { chance: 0.72, delayMs: 290, speedMult: 0.90 }
+            : { chance: 0.82, delayMs: 260, speedMult: 0.96 };
+      const activeRed = obstacles.filter(o => o.type === 'face' && o.traitorType === 'red' && !o.isTrapped && o.alive !== false).length;
+      const echoChance = activeRed >= 3 ? redEchoProfile.chance * 0.55 : redEchoProfile.chance;
+      if (Math.random() >= echoChance) return;
+      const now = Date.now();
+      const token = spaceFlowToken;
+      const followDelayMs = redEchoProfile.delayMs;
+      shooter.redEchoMuzzleUntil = now + followDelayMs;
+      setTimeout(() => {
+        if (token !== spaceFlowToken || state !== 'playing' || waveTransitioning || !shooter || shooter.alive === false) return;
+        fireAimedEnemyBullet((speedMult || 1) * redEchoProfile.speedMult, 'RED ECHO SHOT');
+        playTraitorShotSfx('red');
+      }, followDelayMs);
+      return;
+    }
+    fireAimedEnemyBullet(speedMult, cause || 'ENEMY SHOT');
   }
 
   function traitorTypeForWave(w) {
@@ -811,10 +838,10 @@
     const waveNo = Math.max(1, w || wave || 1);
     const bucket = waveNo <= 3 ? 0 : waveNo <= 6 ? 1 : waveNo <= 10 ? 2 : 3;
     const profiles = [
-      { label: 'easy', driftMult: 1.16, dodgeMult: 1.18, rainDropsMin: 10, rainDropsMax: 12, rainGapMs: 1050 },
-      { label: 'mid', driftMult: 1.22, dodgeMult: 1.26, rainDropsMin: 11, rainDropsMax: 13, rainGapMs: 980 },
-      { label: 'hard', driftMult: 1.28, dodgeMult: 1.34, rainDropsMin: 12, rainDropsMax: 14, rainGapMs: 900 },
-      { label: 'harder', driftMult: 1.34, dodgeMult: 1.42, rainDropsMin: 13, rainDropsMax: 15, rainGapMs: 840 },
+      { label: 'easy', driftMult: 1.16, dodgeMult: 1.18, rainDropsMin: 12, rainDropsMax: 14, rainGapMs: 1000 },
+      { label: 'mid', driftMult: 1.22, dodgeMult: 1.26, rainDropsMin: 13, rainDropsMax: 15, rainGapMs: 940 },
+      { label: 'hard', driftMult: 1.28, dodgeMult: 1.34, rainDropsMin: 14, rainDropsMax: 16, rainGapMs: 880 },
+      { label: 'harder', driftMult: 1.34, dodgeMult: 1.42, rainDropsMin: 15, rainDropsMax: 17, rainGapMs: 820 },
     ];
     return Object.assign({ screenCap: 2 }, profiles[bucket]);
   }
@@ -829,7 +856,8 @@
     if (now < (shooter.nextPurpleRainAt || 0) || purpleRainActive(shooter, now)) return;
     const tier = currentCfg ? currentCfg.tier : campaignTier(wave);
     const purpleProfile = purpleWaveProfileForWave(wave);
-    const duration = 1120;
+    const rainDropSpacingMs = 116;
+    const duration = rainDropSpacingMs * Math.max(0, purpleProfile.rainDropsMax - 1) + 140;
     const drops = Math.floor(rand(purpleProfile.rainDropsMin, purpleProfile.rainDropsMax + 1));
     shooter.purpleRainUntil = now + duration;
     shooter.nextPurpleRainAt = now + duration + purpleProfile.rainGapMs;
@@ -842,14 +870,14 @@
           x: Math.max(8, Math.min(W - 8, shooter.x + spread)),
           y: shooter.y + shooter.r * 0.82,
           vx: rand(-0.16, 0.16),
-          vy: 2.5 + tier * 0.08 + (purpleProfile.driftMult - 1) * 0.42 + Math.random() * 0.22,
+          vy: 3.1 + tier * 0.10 + (purpleProfile.driftMult - 1) * 0.52 + Math.random() * 0.26,
           r: 2.4,
           theme: 'purpleRain',
           damage: 3,
           damageCause: 'PURPLE RAIN',
           born: Date.now(),
         });
-      }, i * 116);
+      }, i * rainDropSpacingMs);
     }
     playTraitorShotSfx('purple');
   }
@@ -3808,30 +3836,61 @@ function nextWave() {
         };
         drawSpinSegments(o.r * 1.28, spin, '#6f00ff', 4, 5);
         drawSpinSegments(o.r * 1.55, -spin * 1.35, '#a233ff', 3, 6);
-        for (let i = 0; i < 4; i++) {
-          const a = spin * (i % 2 ? -1.35 : 1.15) + i * Math.PI / 2;
-          const rr = i % 2 ? o.r * 1.55 : o.r * 1.28;
-          ctx.fillStyle = i % 2 ? 'rgba(235,216,255,0.95)' : 'rgba(162,51,255,0.98)';
-          ctx.beginPath();
-          ctx.arc(Math.cos(a) * rr, Math.sin(a) * rr, o.r * 0.11, 0, Math.PI * 2);
-          ctx.fill();
+        if (raining) {
+          for (let i = 0; i < 4; i++) {
+            const a = spin * (i % 2 ? -1.35 : 1.15) + i * Math.PI / 2;
+            const rr = i % 2 ? o.r * 1.55 : o.r * 1.28;
+            ctx.fillStyle = i % 2 ? 'rgba(235,216,255,0.95)' : 'rgba(162,51,255,0.98)';
+            ctx.beginPath();
+            ctx.arc(Math.cos(a) * rr, Math.sin(a) * rr, o.r * 0.11, 0, Math.PI * 2);
+            ctx.fill();
+          }
         }
         if (raining) {
-          ctx.globalAlpha = 0.32 + pulse * 0.18;
-          ctx.fillStyle = 'rgba(80,20,132,0.46)';
+          const rainGlow = 0.94 + Math.sin(Date.now() * 0.0026 + (o._pulseSeed || 0) * 0.7) * 0.06;
+          ctx.globalAlpha = 0.46 * rainGlow;
+          ctx.fillStyle = 'rgba(130,60,196,0.62)';
           ctx.beginPath();
-          ctx.arc(0, 0, o.r * 1.7, 0, Math.PI * 2);
+          // Lightweight glow only around drizzle area.
+          ctx.ellipse(0, o.r * 1.20, o.r * 0.78, o.r * 0.30, 0, 0, Math.PI * 2);
           ctx.fill();
-          ctx.globalAlpha = 0.86;
-          ctx.strokeStyle = 'rgba(222,190,255,0.82)';
-          ctx.lineWidth = 2;
-          for (let i = 0; i < 5; i++) {
-            const x = (i - 2) * o.r * 0.28;
+          ctx.globalAlpha = 0.70;
+          ctx.fillStyle = 'rgba(232,210,255,0.88)';
+          const rainDots = [[-0.54, 1.14], [-0.32, 1.26], [-0.10, 1.17], [0.12, 1.28], [0.34, 1.16], [0.56, 1.24]];
+          for (let i = 0; i < rainDots.length; i++) {
+            const x = rainDots[i][0] * o.r + Math.sin(spin + i * 0.7) * 0.9;
+            const y = rainDots[i][1] * o.r;
             ctx.beginPath();
-            ctx.moveTo(x, o.r * 0.85);
-            ctx.lineTo(x + Math.sin(spin + i) * 2, o.r * 1.35);
-            ctx.stroke();
+            ctx.arc(x, y, o.r * 0.075, 0, Math.PI * 2);
+            ctx.fill();
           }
+        }
+        ctx.restore();
+      }
+      if (!o.isTrapped && o.traitorType === 'red') {
+        const nowRed = Date.now();
+        const echoLeft = Math.max(0, (o.redEchoMuzzleUntil || 0) - nowRed);
+        const echoA = Math.max(0, Math.min(1, echoLeft / 380));
+        const spinRed = nowRed * 0.0105 + (o._pulseSeed || 0) * 0.7;
+        ctx.save();
+        ctx.globalAlpha = 0.28 + echoA * 0.48;
+        ctx.strokeStyle = echoA > 0 ? 'rgba(255,132,110,0.96)' : 'rgba(255,96,96,0.62)';
+        ctx.lineWidth = 2.2;
+        for (let i = 0; i < 3; i++) {
+          const a = spinRed + i * (Math.PI * 2 / 3);
+          const r = o.r * (1.08 + i * 0.07);
+          const x = Math.cos(a) * r;
+          const y = Math.sin(a) * r;
+          ctx.beginPath();
+          ctx.moveTo(x * 0.66, y * 0.66);
+          ctx.lineTo(x, y);
+          ctx.stroke();
+        }
+        if (echoA > 0) {
+          ctx.fillStyle = 'rgba(255,108,88,0.24)';
+          ctx.beginPath();
+          ctx.arc(0, o.r * 0.84, o.r * (0.26 + (1 - echoA) * 0.22), 0, Math.PI * 2);
+          ctx.fill();
         }
         ctx.restore();
       }
@@ -3865,9 +3924,10 @@ function nextWave() {
         if (o._pulseSeed === undefined) o._pulseSeed = Math.random() * 1000;
         const pulse = 0.94 + Math.sin(Date.now() * 0.004 + o._pulseSeed) * 0.06;
         const isPurpleTraitor = o.traitorType === 'purple';
-        const lockSoft = isPurpleTraitor ? 'rgba(179,107,255,0.30)' : 'rgba(255,68,68,0.28)';
-        const lockHard = isPurpleTraitor ? '#b36bff' : '#ff4444';
-        const tickColor = isPurpleTraitor ? 'rgba(238,220,255,0.86)' : 'rgba(255,235,235,0.82)';
+        const isRedTraitor = o.traitorType === 'red';
+        const lockSoft = isPurpleTraitor ? 'rgba(179,107,255,0.30)' : 'rgba(255,92,64,0.30)';
+        const lockHard = isPurpleTraitor ? '#b36bff' : '#ff5a3c';
+        const tickColor = isPurpleTraitor ? 'rgba(238,220,255,0.86)' : 'rgba(255,231,210,0.90)';
         ctx.save();
         ctx.scale(pulse, pulse);
         ctx.beginPath();
@@ -3879,8 +3939,35 @@ function nextWave() {
         ctx.restore();
         ctx.strokeStyle = tickColor;
         ctx.lineWidth = 1.8;
-        ctx.beginPath(); ctx.moveTo(-o.r * 1.05, 0); ctx.lineTo(-o.r * 0.62, 0); ctx.moveTo(o.r * 0.62, 0); ctx.lineTo(o.r * 1.05, 0); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, -o.r * 1.05); ctx.lineTo(0, -o.r * 0.68); ctx.moveTo(0, o.r * 0.68); ctx.lineTo(0, o.r * 1.05); ctx.stroke();
+        if (isRedTraitor) {
+          const t3 = Date.now() * 0.007 + (o._pulseSeed || 0) * 0.4;
+          const ringR = o.r * 1.12;
+          ctx.save();
+          ctx.rotate(t3);
+          ctx.strokeStyle = 'rgba(255,108,88,0.92)';
+          ctx.lineWidth = 2.2;
+          for (let i = 0; i < 4; i++) {
+            const a = i * Math.PI * 0.5 + Math.PI * 0.08;
+            ctx.beginPath();
+            ctx.arc(0, 0, ringR, a, a + Math.PI * 0.24);
+            ctx.stroke();
+          }
+          ctx.restore();
+          ctx.strokeStyle = 'rgba(255,235,220,0.92)';
+          ctx.lineWidth = 1.9;
+          for (let i = 0; i < 3; i++) {
+            const a = t3 * 1.2 + i * (Math.PI * 2 / 3);
+            const x = Math.cos(a) * o.r * 1.22;
+            const y = Math.sin(a) * o.r * 1.22;
+            ctx.beginPath();
+            ctx.moveTo(x * 0.88, y * 0.88);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+          }
+        } else {
+          ctx.beginPath(); ctx.moveTo(-o.r * 1.05, 0); ctx.lineTo(-o.r * 0.62, 0); ctx.moveTo(o.r * 0.62, 0); ctx.lineTo(o.r * 1.05, 0); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0, -o.r * 1.05); ctx.lineTo(0, -o.r * 0.68); ctx.moveTo(0, o.r * 0.68); ctx.lineTo(0, o.r * 1.05); ctx.stroke();
+        }
       }
       if (o.isTrapped && o.ringHp > 0) {
         // Same "special shoot target" language as the mystery crate, but blue:
@@ -5002,9 +5089,25 @@ function nextWave() {
         ctx.beginPath(); ctx.arc(0.5, -4.5, 1.4, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
       } else {
-        ctx.fillRect(b.x-2,b.y-12,4,14);
-        ctx.fillStyle='rgba(255,230,26,0.35)'; ctx.fillRect(b.x-4,b.y-14,8,18); // cheap glow
-        ctx.fillStyle=C('#ffe61a');
+        const rapidVisual = _now < buffGunUntil;
+        const coreColor = rapidVisual ? '#7df6ff' : C('#ffe61a');
+        const glowColor = rapidVisual ? 'rgba(125,246,255,0.34)' : 'rgba(255,230,26,0.34)';
+        // Keep the familiar line silhouette, but render as a rounded capsule so
+        // it reads smoother in motion than hard pixel-rect edges.
+        ctx.strokeStyle = glowColor;
+        ctx.lineWidth = rapidVisual ? 8 : 7;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(b.x, b.y - 14);
+        ctx.lineTo(b.x, b.y + 4);
+        ctx.stroke();
+        ctx.strokeStyle = coreColor;
+        ctx.lineWidth = rapidVisual ? 4.2 : 3.6;
+        ctx.beginPath();
+        ctx.moveTo(b.x, b.y - 12);
+        ctx.lineTo(b.x, b.y + 2);
+        ctx.stroke();
+        ctx.fillStyle = C('#ffe61a');
       }
     }
 
@@ -5599,21 +5702,16 @@ function nextWave() {
           ctx.restore();
         } else if (b.theme === 'purpleRain') {
           ctx.save();
-          ctx.shadowColor = '#a233ff';
-          ctx.shadowBlur = rr * 2.6;
-          const tail = ctx.createLinearGradient(0, -rr * 3.2, 0, rr * 1.2);
-          tail.addColorStop(0, 'rgba(162,51,255,0)');
-          tail.addColorStop(1, 'rgba(162,51,255,0.78)');
-          ctx.strokeStyle = tail;
-          ctx.lineWidth = Math.max(1.2, rr * 0.72);
-          ctx.lineCap = 'round';
-          ctx.beginPath();
-          ctx.moveTo(0, -rr * 3.2);
-          ctx.lineTo(0, rr * 0.8);
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.arc(0, rr * 0.85, rr * 0.74, 0, Math.PI * 2);
+          // Lightweight purple rain projectile for better frame pacing.
+          ctx.globalAlpha = 0.82;
           ctx.fillStyle = '#d9b8ff';
+          ctx.beginPath();
+          ctx.ellipse(0, rr * 0.30, rr * 0.58, rr * 0.90, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 0.54;
+          ctx.fillStyle = 'rgba(190,120,245,0.86)';
+          ctx.beginPath();
+          ctx.arc(0, -rr * 0.28, rr * 0.34, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
         } else if (b.theme === 'fish') {

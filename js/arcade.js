@@ -26,7 +26,7 @@
       btn.textContent = 'INSTALL';
       btn.hidden = false;
     } else if (isIOS) {
-      text.textContent = 'Tap Share, then Add to Home Screen for full-screen play.';
+      text.textContent = 'On iPhone Safari: tap Share (square with up arrow), then Add to Home Screen, then launch from Home Screen for full-screen play.';
       btn.textContent = 'HOW';
       btn.hidden = false;
     } else {
@@ -57,7 +57,7 @@
         updateArcadeInstallPrompt();
       });
     } else {
-      alert('On iPhone or iPad: tap Share, then choose Add to Home Screen.');
+      alert('On iPhone Safari: tap Share (square with up arrow), scroll, tap Add to Home Screen, then open the app from your Home Screen.');
     }
   });
 
@@ -905,6 +905,7 @@ function initCarousel() {
     return;
   }
   carousel.dataset.carouselReady = '1';
+  const prefersNativeSnap = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
   const originals = [...carousel.querySelectorAll('.carousel-item')];
   const N = originals.length;
   if (!N) return;
@@ -914,7 +915,7 @@ function initCarousel() {
     clone.dataset.clone = 'true';
   }
 
-  if (N > 1) {
+  if (N > 1 && !prefersNativeSnap) {
     const before = originals[N - 1].cloneNode(true);
     const after = originals[0].cloneNode(true);
     stripCloneIds(before);
@@ -924,11 +925,12 @@ function initCarousel() {
   }
 
   const items = [...carousel.querySelectorAll('.carousel-item')];
-  const firstReal = N > 1 ? 1 : 0;
+  const firstReal = (N > 1 && !prefersNativeSnap) ? 1 : 0;
 
   let logIdx = 0;
   let scrollEndTimer = null;
   let scrollAnimFrame = null;
+  let scrollRafPending = false;
 
   // Native scrollTo({behavior:'smooth'}) has no speed control — its duration is
   // fixed by the browser, which is what was actually reading as laggy. A short,
@@ -952,8 +954,14 @@ function initCarousel() {
     const item = items[idx];
     if (!item) return;
     const offset = item.offsetLeft - (carousel.offsetWidth - item.offsetWidth) / 2;
-    if (behavior === 'instant') carousel.scrollTo({ left: offset, behavior: 'instant' });
-    else animateScrollTo(offset, 360);
+    if (behavior === 'instant') {
+      carousel.scrollTo({ left: offset, behavior: 'auto' });
+    } else if (prefersNativeSnap) {
+      // On touch devices, native momentum + CSS snap feels crisper than scripted tweening.
+      carousel.scrollTo({ left: offset, behavior: 'smooth' });
+    } else {
+      animateScrollTo(offset, 360);
+    }
   }
 
   function syncActive(logicalIdx, visualIdx) {
@@ -971,8 +979,8 @@ function initCarousel() {
     return best;
   }
 
-  function settleToVisualIdx(visualIdx) {
-    if (N > 1 && visualIdx === 0) {
+  function settleToVisualIdx(visualIdx, fromNativeScroll) {
+    if (!prefersNativeSnap && N > 1 && visualIdx === 0) {
       logIdx = N - 1;
       _carouselIdx = logIdx;
       syncActive(logIdx);
@@ -980,7 +988,7 @@ function initCarousel() {
       scrollToVisualIdx(firstReal + logIdx, 'instant');
       return;
     }
-    if (N > 1 && visualIdx === items.length - 1) {
+    if (!prefersNativeSnap && N > 1 && visualIdx === items.length - 1) {
       logIdx = 0;
       _carouselIdx = logIdx;
       syncActive(logIdx);
@@ -992,16 +1000,30 @@ function initCarousel() {
     _carouselIdx = logIdx;
     syncActive(logIdx, visualIdx);
     updateCarouselDots(logIdx, N);
-    scrollToVisualIdx(visualIdx, 'smooth');
+    if (!fromNativeScroll) scrollToVisualIdx(visualIdx, 'smooth');
   }
 
   // Swipe/touch scroll doesn't call scrollCarousel(), so track scroll settling directly
   // and gently finish on the nearest centered card.
   carousel.addEventListener('scroll', () => {
+    if (prefersNativeSnap && !scrollRafPending) {
+      scrollRafPending = true;
+      requestAnimationFrame(() => {
+        scrollRafPending = false;
+        const visualIdx = closestVisualIdx();
+        const nextLog = Math.max(0, Math.min(N - 1, visualIdx - firstReal));
+        if (nextLog !== logIdx) {
+          logIdx = nextLog;
+          _carouselIdx = logIdx;
+          syncActive(logIdx, visualIdx);
+          updateCarouselDots(logIdx, N);
+        }
+      });
+    }
     clearTimeout(scrollEndTimer);
     scrollEndTimer = setTimeout(() => {
-      settleToVisualIdx(closestVisualIdx());
-    }, 120);
+      settleToVisualIdx(closestVisualIdx(), prefersNativeSnap);
+    }, prefersNativeSnap ? 90 : 120);
   }, { passive: true });
 
   requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -1017,8 +1039,8 @@ function initCarousel() {
     logIdx = (logIdx + dir + N) % N;
     _carouselIdx = logIdx;
     let visualIdx = firstReal + logIdx;
-    if (N > 1 && current === 0 && dir < 0) visualIdx = 0;
-    if (N > 1 && current === N - 1 && dir > 0) visualIdx = items.length - 1;
+    if (!prefersNativeSnap && N > 1 && current === 0 && dir < 0) visualIdx = 0;
+    if (!prefersNativeSnap && N > 1 && current === N - 1 && dir > 0) visualIdx = items.length - 1;
     scrollToVisualIdx(visualIdx, 'smooth');
     syncActive(logIdx, visualIdx);
     updateCarouselDots(logIdx, N);

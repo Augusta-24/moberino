@@ -617,6 +617,12 @@ body.on-match .mobe-face-img {
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
+@media (hover: none) and (pointer: coarse) {
+  #game-carousel {
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
+  }
+}
 #game-carousel.ready {
   opacity: 1;
   transition: opacity 0.16s ease-out;
