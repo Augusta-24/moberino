@@ -6991,28 +6991,34 @@ function nextWave() {
       playSpaceTone(f * 2, 'sine', i * 0.018 + 0.002, 0.045, 0.014, f * 2.01);
     });
   }
-  // A-minor pentatonic across multiple octaves. The blaster walks this ladder
-  // top-to-bottom like a pseudo-soundtrack motif, then reverses back down/up.
-  const BLASTER_FEEDBACK_SCALE = [
-    110.00, 130.81, 146.83, 164.81, 196.00, 220.00,
-    261.63, 293.66, 329.63, 392.00, 440.00,
-    523.25, 587.33, 659.25,
-  ];
+  // Blaster pseudo-soundtrack tuning lives in one place so future balancing can
+  // be done without hunting across multiple function arguments.
+  const BLASTER_AUDIO_TUNING = {
+    scale: [
+      110.00, 130.81, 146.83, 164.81, 196.00, 220.00,
+      261.63, 293.66, 329.63, 392.00, 440.00,
+      523.25, 587.33, 659.25,
+    ],
+    main: { type: 'sine', start: 0.000, dur: 0.078, vol: 0.0023, endMult: 0.994 },
+    overtone: { type: 'sine', start: 0.014, dur: 0.040, vol: 0.00026, freqMult: 2.0, endMult: 1.982 },
+    glass: { type: 'triangle', start: 0.010, dur: 0.026, vol: 0.00014, freqMult: 4.0, endMult: 4.04 },
+  };
   let blasterScaleIdx = 0;
   let blasterScaleDir = 1;
 
   function playCoolSpaceBlaster() {
     // Less busy: mostly one soft tone, with a tiny overtone tail. Pitch walks the
     // scale up/down across shots so it feels alive without sounding random.
-    const root = BLASTER_FEEDBACK_SCALE[blasterScaleIdx];
-    if (blasterScaleIdx >= BLASTER_FEEDBACK_SCALE.length - 1) blasterScaleDir = -1;
+    const t = BLASTER_AUDIO_TUNING;
+    const root = t.scale[blasterScaleIdx];
+    if (blasterScaleIdx >= t.scale.length - 1) blasterScaleDir = -1;
     else if (blasterScaleIdx <= 0) blasterScaleDir = 1;
     blasterScaleIdx += blasterScaleDir;
 
-    playSpaceTone(root,       'sine', 0.000, 0.078, 0.0023, root * 0.994);
-    playSpaceTone(root * 2.0, 'sine', 0.014, 0.040, 0.00026, root * 1.982);
+    playSpaceTone(root, t.main.type, t.main.start, t.main.dur, t.main.vol, root * t.main.endMult);
+    playSpaceTone(root * t.overtone.freqMult, t.overtone.type, t.overtone.start, t.overtone.dur, t.overtone.vol, root * t.overtone.endMult);
     // Slight glassy sheen: tiny, high, short, and intentionally quiet.
-    playSpaceTone(root * 4.0, 'triangle', 0.010, 0.026, 0.00014, root * 4.04);
+    playSpaceTone(root * t.glass.freqMult, t.glass.type, t.glass.start, t.glass.dur, t.glass.vol, root * t.glass.endMult);
   }
 
 
