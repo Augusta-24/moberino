@@ -6991,34 +6991,29 @@ function nextWave() {
       playSpaceTone(f * 2, 'sine', i * 0.018 + 0.002, 0.045, 0.014, f * 2.01);
     });
   }
-  // Blaster pseudo-soundtrack tuning lives in one place so future balancing can
-  // be done without hunting across multiple function arguments.
-  const BLASTER_AUDIO_TUNING = {
-    scale: [
-      110.00, 130.81, 146.83, 164.81, 196.00, 220.00,
-      261.63, 293.66, 329.63, 392.00, 440.00,
-      523.25, 587.33, 659.25,
-    ],
-    main: { type: 'sine', start: 0.000, dur: 0.078, vol: 0.0023, endMult: 0.994 },
-    overtone: { type: 'sine', start: 0.014, dur: 0.040, vol: 0.00026, freqMult: 2.0, endMult: 1.982 },
-    glass: { type: 'triangle', start: 0.010, dur: 0.026, vol: 0.00014, freqMult: 4.0, endMult: 4.04 },
-  };
+  // Single fixed note for blaster feedback (playtest-friendly, less busy).
+  const BLASTER_FEEDBACK_SCALE = [196.00];
   let blasterScaleIdx = 0;
   let blasterScaleDir = 1;
 
   function playCoolSpaceBlaster() {
-    // Less busy: mostly one soft tone, with a tiny overtone tail. Pitch walks the
-    // scale up/down across shots so it feels alive without sounding random.
-    const t = BLASTER_AUDIO_TUNING;
-    const root = t.scale[blasterScaleIdx];
-    if (blasterScaleIdx >= t.scale.length - 1) blasterScaleDir = -1;
-    else if (blasterScaleIdx <= 0) blasterScaleDir = 1;
-    blasterScaleIdx += blasterScaleDir;
+    // Minimal constant feedback: one soft fixed note with subtle overtones.
+    const scale = BLASTER_FEEDBACK_SCALE;
+    if (!scale || !scale.length) return;
+    blasterScaleIdx = Math.max(0, Math.min(scale.length - 1, blasterScaleIdx | 0));
+    const root = scale[blasterScaleIdx] || scale[0];
+    if (scale.length > 1) {
+      if (blasterScaleIdx >= scale.length - 1) blasterScaleDir = -1;
+      else if (blasterScaleIdx <= 0) blasterScaleDir = 1;
+      blasterScaleIdx += blasterScaleDir;
+    } else {
+      blasterScaleIdx = 0;
+    }
 
-    playSpaceTone(root, t.main.type, t.main.start, t.main.dur, t.main.vol, root * t.main.endMult);
-    playSpaceTone(root * t.overtone.freqMult, t.overtone.type, t.overtone.start, t.overtone.dur, t.overtone.vol, root * t.overtone.endMult);
+    playSpaceTone(root,       'sine', 0.000, 0.078, 0.0023, root * 0.994);
+    playSpaceTone(root * 2.0, 'sine', 0.014, 0.040, 0.00026, root * 1.982);
     // Slight glassy sheen: tiny, high, short, and intentionally quiet.
-    playSpaceTone(root * t.glass.freqMult, t.glass.type, t.glass.start, t.glass.dur, t.glass.vol, root * t.glass.endMult);
+    playSpaceTone(root * 4.0, 'triangle', 0.010, 0.026, 0.00014, root * 4.04);
   }
 
 
@@ -7281,6 +7276,28 @@ function nextWave() {
     'boss.octo.projectile': 2,
     'boss.gizmo.projectile': 2,
   };
+  const SPACE_SFX_DEBUG = (() => {
+    try {
+      if (typeof window !== 'undefined' && window.__SPACE_SFX_DEBUG) return true;
+      if (typeof localStorage !== 'undefined' && localStorage.getItem('space-sfx-debug') === '1') return true;
+      if (typeof location !== 'undefined' && /(?:\?|&)sfxdebug=1(?:&|$)/.test(location.search || '')) return true;
+    } catch (e) {}
+    return false;
+  })();
+  const _spaceSfxDebugEvents = [];
+  function _spaceSfxDebugLog(event, details) {
+    if (!SPACE_SFX_DEBUG) return;
+    try {
+      const row = Object.assign({
+        at: Date.now(),
+        event,
+      }, details || {});
+      _spaceSfxDebugEvents.push(row);
+      if (_spaceSfxDebugEvents.length > 200) _spaceSfxDebugEvents.shift();
+      if (typeof window !== 'undefined') window.__spaceSfxDebugEvents = _spaceSfxDebugEvents;
+      if (typeof console !== 'undefined' && console.warn) console.warn('[SPACE_SFX]', row);
+    } catch (e) {}
+  }
   const _spaceSfxAudioCache = {};
   const _spaceSfxLastAt = Object.create(null);
   const _spaceSfxActiveCount = Object.create(null);
@@ -7294,19 +7311,28 @@ function nextWave() {
   }
   function _playSpaceSfxFile(key, path, fallback, volume) {
     let didFallback = false;
-    const runFallback = () => {
+    const runFallback = (reason, err) => {
       if (didFallback) return;
       didFallback = true;
+      _spaceSfxDebugLog('fallback', {
+        key,
+        path,
+        reason: reason || 'unknown',
+        errorName: err && err.name ? err.name : '',
+        errorMessage: err && err.message ? err.message : '',
+      });
       if (fallback) fallback();
     };
     try {
       const now = Date.now();
       const minGap = SPACE_SFX_MIN_GAP_MS[key] || 0;
       if (minGap > 0 && (now - (_spaceSfxLastAt[key] || 0)) < minGap) {
+        _spaceSfxDebugLog('suppressed-min-gap', { key, path, minGap });
         return true;
       }
       const maxSimultaneous = SPACE_SFX_MAX_SIMULTANEOUS[key] || 0;
       if (maxSimultaneous > 0 && (_spaceSfxActiveCount[key] || 0) >= maxSimultaneous) {
+        _spaceSfxDebugLog('suppressed-polyphony', { key, path, maxSimultaneous });
         return true;
       }
       _spaceSfxLastAt[key] = now;
@@ -7326,6 +7352,7 @@ function nextWave() {
       node.preload = 'auto';
       const effectiveVolume = (volume == null ? 1 : volume) * SPACE_SFX_MASTER_VOLUME;
       node.volume = Math.max(0, Math.min(1, effectiveVolume));
+      _spaceSfxDebugLog('play-attempt', { key, path, effectiveVolume });
       let cleaned = false;
       const cleanup = () => {
         if (cleaned) return;
@@ -7336,18 +7363,24 @@ function nextWave() {
       node.addEventListener('ended', cleanup, { once: true });
       node.addEventListener('error', () => {
         cleanup();
-        runFallback();
+        runFallback('audio-error-event');
       }, { once: true });
       const p = node.play();
       // HTMLAudioElement.play() can reject after this function returns (autoplay,
       // decode/load timing, mobile media limits). Do not let that become silence:
       // fall back to the procedural SFX if the file path cannot actually play.
-      if (p && p.catch) p.catch(() => {
+      if (p && p.catch) p.catch((err) => {
         cleanup();
-        runFallback();
+        runFallback('play-reject', err);
       });
       return true;
     } catch (e) {
+      _spaceSfxDebugLog('play-exception', {
+        key,
+        path,
+        errorName: e && e.name ? e.name : '',
+        errorMessage: e && e.message ? e.message : '',
+      });
       return false;
     }
   }
@@ -7358,6 +7391,7 @@ function nextWave() {
       if (SPACE_SFX_USE_FILES) {
         const path = SPACE_SFX_FILES[key];
         if (path && _playSpaceSfxFile(key, path, playFallback, SPACE_SFX_VOLUME[key])) return;
+        if (!path) _spaceSfxDebugLog('missing-file-path', { key });
       }
       playFallback();
     } catch (e) {}
