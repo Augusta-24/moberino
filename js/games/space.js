@@ -23,7 +23,8 @@
   let dangerY = 0, socketAnchorY = 0, lineFlashA = 0;
   const SPACE_SHIP_BOTTOM_OFFSET = 40;
   const SPACE_SOCKET_ANCHOR_BOTTOM_OFFSET = 94;
-  const SPACE_DANGER_LINE_RAISE = 10;
+  const SPACE_DANGER_LINE_GAP = 8;
+  const ASTEROID_LINE_HIT_CHANCE = 0.15;
   // REVERSE theme: a separate fixed "escape" line near the top, just below the
   // HUD/banner strip — kept independent of dangerY on purpose, since dangerY tracks
   // the player position and also drives the socket column's placement; repurposing
@@ -68,8 +69,10 @@
     return { x: SOCKET_X, y: groupTop + i * (SOCKET_SIZE + SOCKET_GAP), w: SOCKET_SIZE, h: SOCKET_SIZE };
   }
   function spaceDangerLineY() {
-    // Raise only the safety line/ship lane; socket anchoring stays unchanged.
-    return socketAnchorY + (H - socketAnchorY) * 0.5 - SPACE_DANGER_LINE_RAISE;
+    // Keep the control lane tucked just below the socket stack so the ship reads
+    // higher on screen and the player's touch can live lower without covering it.
+    const lastSocket = socketRect(SOCKET_TYPES.length - 1);
+    return Math.min(H - 58, lastSocket.y + lastSocket.h + SPACE_DANGER_LINE_GAP);
   }
   // Returns the socket type hit by a canvas-space point, or null — used both for
   // touch (reserving that column from also moving the ship) and desktop clicks.
@@ -485,6 +488,15 @@
     return out;
   }
 
+  function asteroidLateralVelocity(baseSpeed, prefersWideDrift) {
+    const wallRunner = Math.random() < ASTEROID_LINE_HIT_CHANCE;
+    if (wallRunner) {
+      const mag = prefersWideDrift ? rand(0.34, 0.56) : rand(0.070, 0.105);
+      return (Math.random() < 0.5 ? -1 : 1) * mag * baseSpeed;
+    }
+    return prefersWideDrift ? rand(-0.12, 0.12) * baseSpeed : rand(-0.022, 0.022) * baseSpeed;
+  }
+
   function spawnOgreAsteroidSprinkle(count = 2) {
     if (!currentCfg) return;
     for (let k = 0; k < count; k++) {
@@ -499,7 +511,7 @@
         type: 'asteroid',
         x: rand(r, W - r),
         y: -r - 20 - k * 54,
-        vx: rand(-0.12, 0.12) * currentCfg.speed,
+        vx: asteroidLateralVelocity(currentCfg.speed, false),
         vy: currentCfg.speed * rand(0.58, 0.78),
         r, verts, rot: 0,
         rotSpeed: rand(-0.018, 0.018),
@@ -1168,7 +1180,7 @@
       // without creating impossible diagonal clumps.
       const jitter = waveTheme !== 'asteroids';
       const rockSpeedMult = cfg.asteroidSpeedMult == null ? 1 : cfg.asteroidSpeedMult;
-      obstacles.push({ type:'asteroid', x:rand(r,W-r), y:-r-10, vx: jitter ? rand(-0.4,0.4)*cfg.speed*rockSpeedMult : rand(-0.08,0.08)*cfg.speed*rockSpeedMult, vy: (jitter ? cfg.speed*(0.8+Math.random()*0.4) : cfg.speed*0.82) * rockSpeedMult, r, verts, rot:0, rotSpeed:rand(-0.02,0.02), hp:1, shadeSeed: Math.random() * 1000, rockStyle: Math.floor(Math.random() * 3) });
+      obstacles.push({ type:'asteroid', x:rand(r,W-r), y:-r-10, vx: asteroidLateralVelocity(cfg.speed * rockSpeedMult, jitter), vy: (jitter ? cfg.speed*(0.8+Math.random()*0.4) : cfg.speed*0.82) * rockSpeedMult, r, verts, rot:0, rotSpeed:rand(-0.02,0.02), hp:1, shadeSeed: Math.random() * 1000, rockStyle: Math.floor(Math.random() * 3) });
     } else {
       // Random trapped heroes in regular waves are disabled. The campaign already
       // has one rescue target per boss/chapter beat, so surprise hero spawns made the
@@ -5424,7 +5436,7 @@ function nextWave() {
                 obstacles.push({
                   type:'asteroid', alive:true,
                   x: o.x + (s===0?-1:1)*o.r*0.5, y: o.y,
-                  vx: (Math.random()-0.5)*currentCfg.speed*1.8,
+                  vx: asteroidLateralVelocity(currentCfg.speed * 1.8, true),
                   vy: currentCfg.speed*(0.6+Math.random()*0.4),
                   r: o.r*0.52,
                   verts: Array.from({length:6},(_,i)=>{
@@ -5911,9 +5923,33 @@ function nextWave() {
       ctx.restore();
     });
 
+    // Bottom control zone: gently tint the area where the player's finger can sit
+    // without covering the ship, so the intended touch lane reads at a glance.
+    const controlZoneTop = Math.min(H - 56, player.y + player.r * 0.35);
+    if (controlZoneTop < H - 12) {
+      const zoneGrad = ctx.createLinearGradient(0, controlZoneTop, 0, H);
+      zoneGrad.addColorStop(0, 'rgba(0,229,255,0)');
+      zoneGrad.addColorStop(0.35, 'rgba(0,229,255,0.055)');
+      zoneGrad.addColorStop(1, 'rgba(0,229,255,0.13)');
+      ctx.save();
+      ctx.fillStyle = zoneGrad;
+      ctx.fillRect(0, controlZoneTop, W, H - controlZoneTop);
+      ctx.strokeStyle = 'rgba(0,229,255,0.18)';
+      ctx.lineWidth = 1.25;
+      ctx.beginPath();
+      ctx.moveTo(0, controlZoneTop);
+      ctx.lineTo(W, controlZoneTop);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(185,247,255,0.65)';
+      ctx.font = `11px 'VCR', monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('DRAG HERE', W / 2, H - 18);
+      ctx.restore();
+    }
+
     // Danger line — no shadowBlur; use a wider semi-transparent halo line instead.
-    // Drawn at the actual danger boundary, which has been moved down while the
-    // sockets remain anchored to their original line.
+    // Drawn just under the socket stack so the ship sits higher and stays visible.
     const _renderLineY = waveTheme === 'flip' ? REVERSE_LINE_Y : dangerY;
     if (lineFlashA > 0) lineFlashA = Math.max(0, lineFlashA - 0.04);
     ctx.save();
@@ -6997,23 +7033,10 @@ function nextWave() {
   let blasterScaleDir = 1;
 
   function playCoolSpaceBlaster() {
-    // Minimal constant feedback: one soft fixed note with subtle overtones.
-    const scale = BLASTER_FEEDBACK_SCALE;
-    if (!scale || !scale.length) return;
-    blasterScaleIdx = Math.max(0, Math.min(scale.length - 1, blasterScaleIdx | 0));
-    const root = scale[blasterScaleIdx] || scale[0];
-    if (scale.length > 1) {
-      if (blasterScaleIdx >= scale.length - 1) blasterScaleDir = -1;
-      else if (blasterScaleIdx <= 0) blasterScaleDir = 1;
-      blasterScaleIdx += blasterScaleDir;
-    } else {
-      blasterScaleIdx = 0;
-    }
-
-    playSpaceTone(root,       'sine', 0.000, 0.078, 0.0023, root * 0.994);
-    playSpaceTone(root * 2.0, 'sine', 0.014, 0.040, 0.00026, root * 1.982);
-    // Slight glassy sheen: tiny, high, short, and intentionally quiet.
-    playSpaceTone(root * 4.0, 'triangle', 0.010, 0.026, 0.00014, root * 4.04);
+    // Intentionally silent for now — this keeps the autofire from crowding out
+    // the more important impact, danger, and reward cues.
+    blasterScaleIdx = 0;
+    blasterScaleDir = 1;
   }
 
 
