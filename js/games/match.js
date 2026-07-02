@@ -140,9 +140,9 @@
       // Timed modes draw a vertical countdown bar to the right of the board.
       // Reserve that gutter in the mobile card-size math so the bar sits BESIDE
       // the cards instead of being clamped back on top of the last column.
-      const _sideBarReserve = (window.innerWidth <= 600 && (matchMode === 'hard' || matchMode === 'challenge')) ? 28 : 0;
+      const _sideBarReserve = (window.innerWidth <= 600 && (matchMode === 'hard' || matchMode === 'challenge')) ? 30 : 0;
       const _ghp = (_gl.cols - 1) * _gap + 24 + _sideBarReserve;
-      const _vPad = window.innerWidth <= 600 ? (matchMode === 'challenge' ? 58 : 70) : 180;
+      const _vPad = window.innerWidth <= 600 ? (matchMode === 'challenge' ? 104 : 82) : 180;
       const _gStyle = `--card:min(calc((min(100vw,520px) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - ${_vPad}px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card));gap:${_gap}px`;
       wrap.innerHTML = `
         <div class="match-hud" style="padding:6px 16px">
@@ -168,9 +168,9 @@
       // Timed modes draw a vertical countdown bar to the right of the board.
       // Reserve that gutter in the mobile card-size math so the bar sits BESIDE
       // the cards instead of being clamped back on top of the last column.
-      const _sideBarReserve = (window.innerWidth <= 600 && (matchMode === 'hard' || matchMode === 'challenge')) ? 28 : 0;
+      const _sideBarReserve = (window.innerWidth <= 600 && (matchMode === 'hard' || matchMode === 'challenge')) ? 30 : 0;
       const _ghp = (_gl.cols - 1) * _gap + 24 + _sideBarReserve;
-      const _vPad = window.innerWidth <= 600 ? (matchMode === 'challenge' ? 58 : 70) : 180;
+      const _vPad = window.innerWidth <= 600 ? (matchMode === 'challenge' ? 104 : 82) : 180;
       const _gStyle = `--card:min(calc((min(100vw,520px) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - ${_vPad}px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card));gap:${_gap}px`;
       wrap.innerHTML = `
         <div class="match-hud" style="padding:6px 16px">
@@ -181,7 +181,7 @@
         <div class="match-grid" style="${_gStyle}">${
           cards.map((c,i) => {
             const gc = GAME_CHARS[c.ci];
-            return `<div class="match-card-wrap" onclick="matchFlip(${i})">
+            return `<div class="match-card-wrap" onpointerdown="matchFlip(${i}, event)" onclick="matchFlip(${i}, event)">
               <div class="match-card${c.flipped||c.matched?' flipped':''}${c.matched?' matched':''}" id="mc-${i}">
                 <div class="match-card-front"></div>
                 <div class="match-card-back" style="background:${gc.color}22;border-color:${gc.color}55">${charFace(gc,'normal')}</div>
@@ -269,7 +269,10 @@
     }
   }
 
-  window.matchFlip = function(i) {
+  window.matchFlip = function(i, evt) {
+    try {
+      if (evt && typeof evt.preventDefault === 'function') evt.preventDefault();
+    } catch (e) {}
     if (locked || cards[i].matched || cards[i].flipped || flipped.length >= 2) return;
     cards[i].flipped = true;
     flipped.push(i);

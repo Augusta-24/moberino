@@ -15,6 +15,10 @@
   let lastDamageAmount = 0;
   let lastDamageAt = 0;
   let lastDamageWave = 0;
+  let playerHitFlashUntil = 0;
+  let screenHitFlashUntil = 0;
+  let junkSpawnCursor = 0;
+  let asteroidSpawnCursor = 0;
   let deathCause = '';
   let deathDamageAmount = 0;
   let deathWave = 0;
@@ -506,6 +510,10 @@
     piano: 'projectiles/piano.png',
     saxophone: 'projectiles/saxophone.png',
     sword: 'projectiles/sword.png',
+    duck: 'projectiles/junk_duck.png',
+    boot: 'projectiles/junk_boot.png',
+    trashcan: 'projectiles/junk_trashcan.png',
+    basketball: 'projectiles/junk_basketball.png',
   };
   Object.values(PROJECTILE_IMAGE_SRC).forEach(src => _getImg(src));
 
@@ -593,12 +601,12 @@
   function asteroidLateralVelocity(baseSpeed, prefersWideDrift) {
     const wallChanceMult = currentCfg && currentCfg.asteroidWallChanceMult != null ? currentCfg.asteroidWallChanceMult : 1;
     const lateralMult = currentCfg && currentCfg.asteroidLateralMult != null ? currentCfg.asteroidLateralMult : 1;
-    const wallRunner = Math.random() < Math.min(0.38, ASTEROID_LINE_HIT_CHANCE * wallChanceMult);
+    const wallRunner = Math.random() < Math.min(0.52, ASTEROID_LINE_HIT_CHANCE * wallChanceMult);
     if (wallRunner) {
-      const mag = prefersWideDrift ? rand(0.28, 0.46) : rand(0.060, 0.095);
+      const mag = prefersWideDrift ? rand(0.40, 0.62) : rand(0.10, 0.145);
       return (Math.random() < 0.5 ? -1 : 1) * mag * baseSpeed * lateralMult;
     }
-    return (prefersWideDrift ? rand(-0.10, 0.10) : rand(-0.022, 0.022)) * baseSpeed * lateralMult;
+    return (prefersWideDrift ? rand(-0.15, 0.15) : rand(-0.040, 0.040)) * baseSpeed * lateralMult;
   }
 
   function spawnOgreAsteroidSprinkle(count = 2) {
@@ -724,6 +732,16 @@
 
   function rand(a,b){ return a + Math.random()*(b-a); }
   function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+  function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq <= 0.0001) return Math.hypot(px - x1, py - y1);
+    const t = clamp(((px - x1) * dx + (py - y1) * dy) / lenSq, 0, 1);
+    const sx = x1 + dx * t;
+    const sy = y1 + dy * t;
+    return Math.hypot(px - sx, py - sy);
+  }
 
   function blackoutHeadlightGeometry() {
     if (!player) return null;
@@ -855,8 +873,8 @@
       // Asteroid-field waves use slower cadence instead of dumping rocks faster.
       // Wave 5 also staggers three normal enemies into fixed slots; the pool still
       // ends through spawnsRemaining/board-clear, so it cannot overlap nextWave().
-      1: { spawnsRemaining: 50, speedOverride: 3.08, spawnMsOverride: 750, asteroidRatioOverride: 1, asteroidWallChanceMult: 1.32, asteroidLateralMult: 1.22, asteroidSpeedMult: 1.12, asteroidFallRange: [0.88, 1.38], enemyFireMult: 0, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, powerupDelayRange: [2000, 3000], hpDelayRange: [1800, 3200], spawnCadenceMult: 0.85, activeObstacleCap: 8, notes: 'Intro now teaches dodge-or-clear with faster rocks and stronger lane pressure.' },
-      2: { spawnsRemaining: 20, mixedEnemyTotal: 7, mixedEnemyScreenCap: 2, mixedAsteroidTotal: 13, mixedTraitorType: 'red', speedOverride: 2.62, spawnMsOverride: 1030, asteroidRatioOverride: 0.64, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 1.32, enemyFireRateMult: 0.62, enemyVyMult: 1.28, enemyDriftMult: 2.04, enemyDodgeMult: 1.36, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [1400, 2200], hpDelayRange: [2200, 4200], spawnCadenceMult: 0.96, activeObstacleCap: 5, notes: 'Red stays mobile, but the wave is a little shorter and feeds more support.' },
+      1: { spawnsRemaining: 66, speedOverride: 3.44, spawnMsOverride: 620, asteroidRatioOverride: 1, spaceJunkChance: 0.00, extraJunkChance: 0.15, asteroidWallChanceMult: 2.28, asteroidLateralMult: 2.24, asteroidSpeedMult: 1.34, asteroidFallRange: [0.70, 2.34], asteroidAimAtPlayerChance: 0.34, asteroidAimSpreadPx: 80, asteroidHeavyChance: 0.18, asteroidHeavyHp: 4, asteroidSpawnLanes: true, enemyFireMult: 0, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, powerupDelayRange: [2000, 3000], hpDelayRange: [1800, 3200], spawnCadenceMult: 0.82, activeObstacleCap: 8, notes: 'Intro now teaches dodge-or-clear with a denser asteroid field plus drifting junk sprinkled through the lane.' },
+      2: { spawnsRemaining: 24, mixedEnemyTotal: 8, mixedEnemyScreenCap: 2, mixedAsteroidTotal: 16, mixedTraitorType: 'red', speedOverride: 2.82, spawnMsOverride: 960, asteroidRatioOverride: 0.66, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 1.38, enemyFireRateMult: 0.52, enemyVyMult: 1.32, enemyDriftMult: 2.10, enemyDodgeMult: 1.36, asteroidWallChanceMult: 1.30, asteroidLateralMult: 1.26, asteroidSpeedMult: 1.22, asteroidFallRange: [0.78, 2.08], allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [1400, 2200], hpDelayRange: [2200, 4200], spawnCadenceMult: 0.88, activeObstacleCap: 6, notes: 'Red keeps pressure longer: more rocks, quicker cadence, and more frequent charged shots.' },
       3: { spawnsRemaining: 18, mixedEnemyTotal: 5, mixedEnemyScreenCap: 2, mixedAsteroidTotal: 13, mixedTraitorType: 'purple', speedOverride: 2.62, spawnMsOverride: 1180, asteroidRatioOverride: 0.72, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 0.92, enemyFireRateMult: 0.90, enemyVyMult: 1.14, enemyDriftMult: 1.38, enemyDodgeMult: 0.82, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 2, powerupDelayRange: [1400, 2200], hpDelayRange: [2400, 4600], spawnCadenceMult: 1.08, activeObstacleCap: 5, notes: 'Purple keeps the shield/rain identity, but now asks for a real dodge on the opening.' },
       4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4200, 7000], hpDelayRange: [5000, 8000], enemyFireMult: 0.75 },
       5: { spawnsRemaining: 24, speedOverride: 2.72, spawnMsOverride: 1087, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.34, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [850, 1200], hpDelayRange: [1800, 3600], swarmCap: 4, activeObstacleCap: 4, spawnCadenceMult: 1.16, notes: 'Swarm is shorter and still regularly throws helpful drops into the lane.' },
@@ -907,7 +925,7 @@
       firePurpleTraitorRain(shooter);
       return;
     }
-    const fireAimedEnemyBullet = (shotSpeedMult, shotCause) => {
+    const fireAimedEnemyBullet = (shotSpeedMult, shotCause, shotDamage, shotOpts) => {
       if (!shooter || shooter.alive === false || !player) return;
       const dx = player.x - shooter.x;
       const dy = player.y - shooter.y;
@@ -915,23 +933,57 @@
       const tier = currentCfg ? currentCfg.tier : campaignTier(wave);
       const balanceMult = currentCfg && currentCfg.enemyFireMult != null ? currentCfg.enemyFireMult : 1;
       const bulletSpeed = (3.0 + tier * 0.45 + Math.min(wave, 12) * 0.16 + Math.max(0, wave - 18) * 0.18) * (shotSpeedMult || 1) * balanceMult;
-      enemyBullets.push({ x: shooter.x, y: shooter.y + shooter.r, vx: (dx/dist)*bulletSpeed, vy: (dy/dist)*bulletSpeed, r: 4, damage: 3, damageCause: shotCause || 'ENEMY SHOT', traitorShot: shooter && shooter.traitorType });
+      enemyBullets.push(Object.assign({
+        x: shooter.x, y: shooter.y + shooter.r, vx: (dx/dist)*bulletSpeed, vy: (dy/dist)*bulletSpeed, r: 4,
+        damage: shotDamage == null ? 3 : shotDamage, damageCause: shotCause || 'ENEMY SHOT', traitorShot: shooter && shooter.traitorType
+      }, shotOpts || {}));
     };
     if (shooter && shooter.traitorType === 'red' && cause !== 'BLACKOUT SHOT') {
       const now = Date.now();
-      const chargeMs = wave <= 2 ? 560 : wave <= 6 ? 500 : wave <= 10 ? 450 : 400;
-      const cooldownMs = wave <= 2 ? 1050 : wave <= 6 ? 960 : wave <= 10 ? 860 : 760;
-      // Red now reads as shielded while idle, vulnerable only during the visible
-      // charge-up, then snaps out a very fast shot before shielding again.
+      if (now < (shooter.redNextAttackAt || 0) || now < (shooter.redShotHoldUntil || 0)) return;
+      const chargeMs = wave <= 2 ? 360 : wave <= 6 ? 330 : 300;
+      const extendMs = 48;
+      const holdMs = 250;
+      const retractMs = 90;
+      const cooldownMs = 520;
+      const shieldMs = 520;
+      const fireAt = now + chargeMs;
+      const beamExtendUntil = fireAt + extendMs;
+      const beamHoldUntil = beamExtendUntil + holdMs;
+      const beamRetractUntil = beamHoldUntil + retractMs;
+      const targetX = clamp(player ? player.x : shooter.x, 16, W - 16);
+      const targetY = waveTheme === 'flip' ? REVERSE_LINE_Y : dangerY;
+      // Red now follows one clean rhythm: charge, hold the loaded laser briefly
+      // while vulnerable, slam the baseline, hold, retract, then cool off and shield up.
       shooter.redShotChargeAt = now;
       shooter.redShotChargeUntil = now + chargeMs;
-      shooter.redVulnerableUntil = Math.max(shooter.redVulnerableUntil || 0, now + chargeMs);
+      shooter.redShotHoldUntil = beamHoldUntil;
+      shooter.redVulnerableUntil = Math.max(shooter.redVulnerableUntil || 0, beamRetractUntil + cooldownMs);
       const token = spaceFlowToken;
       shooter.redSecondShotAt = 0;
-      shooter.redNextAttackAt = now + chargeMs + cooldownMs;
+      shooter.redNextAttackAt = beamRetractUntil + cooldownMs + shieldMs;
+      playRedChargeSfx();
       setTimeout(() => {
         if (token !== spaceFlowToken || state !== 'playing' || waveTransitioning || !shooter || shooter.alive === false) return;
-        fireAimedEnemyBullet((speedMult || 1) * (wave <= 5 ? 1.46 : 1.58), 'RED SHOT');
+        enemyBullets.push({
+          x: shooter.x,
+          y: shooter.y + shooter.r,
+          vx: 0,
+          vy: 1,
+          theme: 'redBeam',
+          r: 7.4,
+          damage: 12,
+          damageCause: 'RED SHOT',
+          traitorShot: 'red',
+          beamTargetX: targetX,
+          beamTargetY: targetY,
+          beamStartAt: fireAt,
+          beamExtendUntil,
+          beamHoldUntil,
+          beamRetractUntil,
+          beamSource: shooter,
+          beamAnchorY: shooter.y + shooter.r,
+        });
         playTraitorShotSfx('red');
       }, chargeMs);
       return;
@@ -976,6 +1028,10 @@
 
   function redChargeActive(o, now) {
     return !!(o && o.traitorType === 'red' && now >= (o.redShotChargeAt || 0) && now < (o.redShotChargeUntil || 0));
+  }
+
+  function redHoldActive(o, now) {
+    return !!(o && o.traitorType === 'red' && now >= (o.redShotChargeUntil || 0) && now < (o.redShotHoldUntil || 0));
   }
 
   function traitorFakeoutBusy(o, now) {
@@ -1256,7 +1312,8 @@
     const faceCapReached = activeFaceCap && obstacles.filter(o => o.type === 'face' && !o.isTrapped && o.alive !== false).length >= activeFaceCap;
     const forceAsteroid = !!(opts && opts.forceAsteroid);
     const forceFace = !!(opts && opts.forceFace);
-    const isAsteroid = !forceFace && (forceAsteroid || faceCapReached || (!(opts && opts.forceNormalEnemy) && Math.random() < ratio));
+    const forceJunk = !!(opts && opts.forceJunk);
+    const isAsteroid = !forceFace && (forceJunk || forceAsteroid || faceCapReached || (!(opts && opts.forceNormalEnemy) && Math.random() < ratio));
     if (isAsteroid) {
       const r = rand(ASTEROID_R_MIN, ASTEROID_R_MAX);
       const sides = 7 + Math.floor(Math.random() * 5);
@@ -1270,9 +1327,47 @@
       // more to create lane texture instead of one flat curtain.
       const jitter = waveTheme !== 'asteroids';
       const rockSpeedMult = cfg.asteroidSpeedMult == null ? 1 : cfg.asteroidSpeedMult;
-      const fallRange = cfg.asteroidFallRange || (jitter ? [0.78, 1.22] : [0.68, 1.04]);
+      const fallRange = cfg.asteroidFallRange || (jitter ? [0.66, 1.42] : [0.58, 1.18]);
       const fallSpeed = cfg.speed * rand(fallRange[0], fallRange[1]);
-      obstacles.push({ type:'asteroid', x:rand(r,W-r), y:-r-10, vx: asteroidLateralVelocity(cfg.speed * rockSpeedMult, jitter), vy: fallSpeed * rockSpeedMult, r, verts, rot:0, rotSpeed:rand(-0.02,0.02), hp:1, shadeSeed: Math.random() * 1000, rockStyle: Math.floor(Math.random() * 3) });
+      const aimChance = cfg.asteroidAimAtPlayerChance || 0;
+      const aimSpread = cfg.asteroidAimSpreadPx == null ? 96 : cfg.asteroidAimSpreadPx;
+      const aimedAtPlayer = !!player && aimChance > 0 && Math.random() < aimChance;
+      const asteroidLanes = [0.12, 0.28, 0.44, 0.60, 0.76, 0.90];
+      const asteroidLane = cfg.asteroidSpawnLanes ? asteroidLanes[(asteroidSpawnCursor++) % asteroidLanes.length] : null;
+      const spreadSpawnX = asteroidLane == null
+        ? rand(r, W - r)
+        : clamp(W * asteroidLane + rand(-W * 0.04, W * 0.04), r, W - r);
+      const spawnX = aimedAtPlayer
+        ? clamp(player.x + rand(-aimSpread, aimSpread), r, W - r)
+        : spreadSpawnX;
+      const isJunk = forceJunk || Math.random() < (cfg.spaceJunkChance || 0);
+      const heavyChance = cfg.asteroidHeavyChance || 0;
+      const forceHeavy = !isJunk && Math.random() < heavyChance;
+      const spawnR = isJunk ? rand(19, 23) : (forceHeavy ? Math.max(r, ASTEROID_R_MAX * 0.88) : r);
+      const hp = isJunk ? 1 : (forceHeavy ? (cfg.asteroidHeavyHp || 4) : (r > 22 ? 3 : 1));
+      const junkKinds = ['duck', 'boot', 'trashcan', 'basketball'];
+      const junkKind = isJunk ? junkKinds[Math.floor(Math.random() * junkKinds.length)] : null;
+      const junkLanes = [0.10, 0.24, 0.38, 0.52, 0.66, 0.80, 0.92];
+      const junkLane = isJunk ? junkLanes[(junkSpawnCursor++) % junkLanes.length] : null;
+      const junkSpawnX = isJunk
+        ? clamp(W * junkLane + rand(-W * 0.018, W * 0.018), spawnR, W - spawnR)
+        : spawnX;
+      const junkDriftDir = isJunk ? [-1, 0, 1][Math.floor(Math.random() * 3)] : 0;
+      const junkVx = isJunk
+        ? (junkDriftDir === 0 ? rand(-0.012, 0.012) : junkDriftDir * rand(0.05, 0.10) * cfg.speed)
+        : asteroidLateralVelocity(cfg.speed * rockSpeedMult, jitter);
+      const junkVy = isJunk ? cfg.speed * rand(0.075, 0.12) : fallSpeed * rockSpeedMult;
+      obstacles.push({
+        type: isJunk ? 'junk' : 'asteroid',
+        x:isJunk ? junkSpawnX : spawnX, y:-spawnR-10, vx: junkVx, vy: junkVy, r: spawnR, verts, junkKind,
+        rot:0, rotSpeed: isJunk ? rand(-0.006, 0.006) : rand(-0.02,0.02), hp,
+        junkFloatSeed: isJunk ? Math.random() * Math.PI * 2 : null,
+        junkFloatAmpX: isJunk ? rand(0.10, 0.18) * spawnR : 0,
+        junkFloatAmpY: isJunk ? rand(0.04, 0.08) * spawnR : 0,
+        junkFloatSpeed: isJunk ? rand(0.0007, 0.0012) : 0,
+        junkDriftDir,
+        shadeSeed: Math.random() * 1000, rockStyle: Math.floor(Math.random() * 3)
+      });
     } else {
       // Random trapped heroes in regular waves are disabled. The campaign already
       // has one rescue target per boss/chapter beat, so surprise hero spawns made the
@@ -2236,6 +2331,10 @@
     piano: { glow: '#78b7ff', spin: -0.0008, wobble: 0.05, sparks: '#f5f3ec' },
     saxophone: { glow: '#ffd34a', spin: 0.0011, wobble: 0.08, sparks: '#ffe48a' },
     sword: { glow: '#c8d4ff', spin: 0, wobble: 0.02, sparks: '#ffffff' },
+    duck: { glow: '#ffd84a', spin: 0.0006, wobble: 0.08 },
+    boot: { glow: '#c48cff', spin: -0.0005, wobble: 0.06 },
+    trashcan: { glow: '#b9d7ff', spin: 0.0004, wobble: 0.05 },
+    basketball: { glow: '#ffaf55', spin: 0.0007, wobble: 0.07 },
   };
   function rgbaFromHex(hex, alpha) {
     const h = (hex || '#ffffff').replace('#', '');
@@ -3156,6 +3255,7 @@
   let spawnTimer = null;
   function startWaveSpawn(cfg) {
     clearTimeout(spawnTimer);
+    const configuredExtraJunkChance = cfg.extraJunkChance == null ? 0.15 : cfg.extraJunkChance;
     if (cfg.mixedEnemyTotal != null && cfg.mixedAsteroidTotal != null) {
       let enemiesRemaining = Math.max(0, cfg.mixedEnemyTotal);
       let asteroidsRemaining = Math.max(0, cfg.mixedAsteroidTotal);
@@ -3163,6 +3263,8 @@
       const enemyScreenCap = Math.max(1, cfg.mixedEnemyScreenCap || 2);
       spawnsRemaining = enemiesRemaining + asteroidsRemaining;
       const totalSpawns = spawnsRemaining;
+      const extraJunkTotal = Math.round(totalSpawns * configuredExtraJunkChance);
+      let extraJunkSpawned = 0;
       const schedule = [];
       for (let i = 0; i < totalSpawns; i++) {
         // Even quota sampling distributes each type across the complete wave. A
@@ -3189,6 +3291,12 @@
           spawnObstacle(cfg, { forceAsteroid: true });
           asteroidsRemaining--;
         }
+        const junkThroughHere = Math.floor((scheduleIndex + 1) * extraJunkTotal / Math.max(1, totalSpawns));
+        const canAddJunk = !cfg.activeObstacleCap || obstacles.filter(o => o.alive !== false && !o.isTrapped).length < cfg.activeObstacleCap + 1;
+        if (junkThroughHere > extraJunkSpawned && canAddJunk) {
+          spawnObstacle(cfg, { forceAsteroid: true, forceJunk: true });
+          extraJunkSpawned++;
+        }
         scheduleIndex++;
         spawnsRemaining--;
         if (spawnsRemaining <= 0) return;
@@ -3208,6 +3316,8 @@
     else if (waveTheme === 'bomber') spawnsRemaining = Math.max(4, Math.ceil(cfg.poolSize * 0.48));
     else spawnsRemaining = cfg.poolSize;
     const totalSpawns = spawnsRemaining;
+    const extraJunkTotal = Math.round(totalSpawns * configuredExtraJunkChance);
+    let extraJunkSpawned = 0;
     const normalEnemySlots = Array.isArray(cfg.normalEnemySlots) ? cfg.normalEnemySlots : [];
     const distributedAsteroidTotal = Math.round(totalSpawns * effectiveAsteroidRatio(cfg));
     function doSpawn() {
@@ -3232,6 +3342,12 @@
         forceFace: !scheduledAsteroid && distributedAsteroidTotal < totalSpawns,
         forceNormalEnemy: !scheduledAsteroid && normalEnemySlots.includes(spawnIndex),
       });
+      const junkThroughHere = Math.floor(spawnIndex * extraJunkTotal / Math.max(1, totalSpawns));
+      const canAddJunk = !activeCap || obstacles.filter(o => o.alive !== false && !o.isTrapped).length < activeCap + 1;
+      if (junkThroughHere > extraJunkSpawned && canAddJunk) {
+        spawnObstacle(cfg, { forceAsteroid: true, forceJunk: true });
+        extraJunkSpawned++;
+      }
       spawnsRemaining--;
       // SWARM speeds up by cadence, not by screen-flooding. ALL ASTEROIDS now works
       // the same way: more total rocks across the wave, but no triple-dumps that
@@ -3861,10 +3977,12 @@ function nextWave() {
     }
     recordDamageCause(amount, cause);
     health = Math.max(0, health - amount);
+    playerHitFlashUntil = Date.now() + 150;
+    screenHitFlashUntil = Date.now() + 180;
     addFloatText(`-${amount}`, player.x, player.y - 40, '#ff4444', 20);
     miniExplosion(player.x, player.y, '#ff4444');
     triggerShake(amount * 1.2);
-    spaceSfx('player.hit');
+    playPlayerDamageThud(amount);
     // Mystery "snowing" outcome — getting hit at all while it's snowing also
     // freezes you briefly, on top of the normal damage. Reuses the existing
     // FROZEN debuff (movement slow + snowflake bullets) rather than a new state.
@@ -3962,6 +4080,7 @@ function nextWave() {
 
   function drawPlayer() {
     const p = player, gc = GAME_CHARS[activeChar];
+    const hitFlash = Math.max(0, (playerHitFlashUntil - Date.now()) / 150);
     ctx.save(); ctx.translate(p.x, p.y);
     if (Date.now() < buffShieldUntil) {
       const t = Date.now() * 0.005;
@@ -4003,14 +4122,76 @@ function nextWave() {
     ctx.lineTo(-p.r*0.4, p.r*0.8);
     ctx.lineTo(-p.r*0.75,p.r*0.5);
     ctx.closePath();
-    ctx.fillStyle=gc.color; ctx.fill();
+    ctx.fillStyle = hitFlash > 0 ? `rgba(255,80,80,${0.78 + hitFlash * 0.18})` : gc.color;
+    ctx.fill();
     ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
     const fr = p.r*0.52;
     ctx.beginPath(); ctx.arc(0,-fr*0.3,fr+2,0,Math.PI*2);
     ctx.fillStyle='#fff'; ctx.fill();
     ctx.beginPath(); ctx.arc(0,-fr*0.3,fr,0,Math.PI*2);
-    ctx.fillStyle=gc.color; ctx.fill();
+    ctx.fillStyle = hitFlash > 0 ? `rgba(255,92,92,${0.82 + hitFlash * 0.14})` : gc.color;
+    ctx.fill();
+    if (hitFlash > 0) {
+      ctx.fillStyle = `rgba(255,70,70,${0.18 + hitFlash * 0.16})`;
+      ctx.beginPath(); ctx.arc(0, 0, p.r * (1.55 + hitFlash * 0.22), 0, Math.PI * 2); ctx.fill();
+    }
     drawCanvasMobe(gc, 'normal', -fr, -fr * 1.3, fr * 2, fr * 2);
+    ctx.restore();
+  }
+
+  function drawScreenHitFlash() {
+    const t = Math.max(0, (screenHitFlashUntil - Date.now()) / 180);
+    if (!t) return;
+    ctx.save();
+    const border = 16 + t * 12;
+    const alpha = 0.16 + t * 0.20;
+    const gTop = ctx.createLinearGradient(0, 0, 0, border);
+    gTop.addColorStop(0, `rgba(255,60,60,${alpha})`);
+    gTop.addColorStop(1, 'rgba(255,60,60,0)');
+    ctx.fillStyle = gTop; ctx.fillRect(0, 0, W, border);
+    const gBottom = ctx.createLinearGradient(0, H, 0, H - border);
+    gBottom.addColorStop(0, `rgba(255,60,60,${alpha})`);
+    gBottom.addColorStop(1, 'rgba(255,60,60,0)');
+    ctx.fillStyle = gBottom; ctx.fillRect(0, H - border, W, border);
+    const gLeft = ctx.createLinearGradient(0, 0, border, 0);
+    gLeft.addColorStop(0, `rgba(255,60,60,${alpha})`);
+    gLeft.addColorStop(1, 'rgba(255,60,60,0)');
+    ctx.fillStyle = gLeft; ctx.fillRect(0, 0, border, H);
+    const gRight = ctx.createLinearGradient(W, 0, W - border, 0);
+    gRight.addColorStop(0, `rgba(255,60,60,${alpha})`);
+    gRight.addColorStop(1, 'rgba(255,60,60,0)');
+    ctx.fillStyle = gRight; ctx.fillRect(W - border, 0, border, H);
+    ctx.restore();
+  }
+
+  function drawRedBeamAttack(b, opts) {
+    if (!b) return;
+    opts = opts || {};
+    const sx = b.x || 0;
+    const sy = b.y || 0;
+    const ex = b.beamTipX != null ? b.beamTipX : (sx + (b.vx || 0) * (b.visualLength || 0));
+    const ey = b.beamTipY != null ? b.beamTipY : (sy + (b.vy || 0) * (b.visualLength || 0));
+    const width = opts.width != null ? opts.width : Math.max(4.4, (b.r || 6) * 1.10);
+    const coreWidth = opts.coreWidth != null ? opts.coreWidth : Math.max(0.9, (b.r || 6) * 0.20);
+    const tipR = opts.tipR != null ? opts.tipR : Math.max(3.2, (b.r || 6) * 0.72);
+    const grad = ctx.createLinearGradient(sx, sy, ex, ey);
+    grad.addColorStop(0, opts.c0 || 'rgba(255,54,38,0.14)');
+    grad.addColorStop(0.14, opts.c1 || 'rgba(255,72,54,0.88)');
+    grad.addColorStop(0.50, opts.c2 || 'rgba(255,124,108,0.40)');
+    grad.addColorStop(0.86, opts.c3 || 'rgba(255,70,50,0.90)');
+    grad.addColorStop(1, opts.c4 || 'rgba(255,58,40,0.18)');
+    ctx.save();
+    ctx.strokeStyle = grad;
+    ctx.lineCap = 'round';
+    ctx.lineWidth = width;
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+    ctx.strokeStyle = opts.core || 'rgba(255,232,224,0.78)';
+    ctx.lineWidth = coreWidth;
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(ex, ey, tipR, 0, Math.PI * 2);
+    ctx.fillStyle = opts.tip || 'rgba(255,180,164,0.92)';
+    ctx.fill();
     ctx.restore();
   }
 
@@ -4025,47 +4206,70 @@ function nextWave() {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     if (vulnerable) {
-      const spin = now * 0.0045 + seed;
-      ctx.shadowColor = o.traitorType === 'purple' ? '#a233ff' : '#ff5a3c';
-      ctx.shadowBlur = 5.5;
-      ctx.strokeStyle = o.traitorType === 'purple' ? '#c58aff' : '#ff765d';
-      ctx.lineWidth = 2.4;
-      ctx.beginPath(); ctx.arc(0, 0, boundaryR, 0, Math.PI * 2); ctx.stroke();
-      // A solid circle cannot reveal rotation by itself, so both colors share the
-      // same quiet white orbit markers rather than bringing back a moving gap.
-      ctx.shadowBlur = 2.5;
-      ctx.fillStyle = '#fff8e8';
-      for (let i = 0; i < 3; i++) {
-        const a = spin + i * Math.PI * 2 / 3;
-        ctx.beginPath();
-        ctx.arc(Math.cos(a) * boundaryR, Math.sin(a) * boundaryR, 2.0, 0, Math.PI * 2);
-        ctx.fill();
-      }
       if (o.traitorType === 'red' && redChargeActive(o, now)) {
         const charge = Math.max(0, Math.min(1, (now - (o.redShotChargeAt || now)) / Math.max(1, (o.redShotChargeUntil || now + 1) - (o.redShotChargeAt || now))));
         const pulse = 1 + Math.sin(now * 0.034) * (0.06 + charge * 0.10);
-        const orbR = o.r * (0.34 + charge * 0.92) * pulse;
+        const orbR = o.r * (0.255 + charge * 0.69) * pulse;
+        ctx.shadowColor = '#ff6448';
+        ctx.shadowBlur = 9 + charge * 10;
+        ctx.strokeStyle = `rgba(255,120,92,${0.52 + charge * 0.34})`;
+        ctx.lineWidth = 2.2 + charge * 2.0;
+        ctx.beginPath(); ctx.arc(0, 0, boundaryR * (1.02 + charge * 0.18), 0, Math.PI * 2); ctx.stroke();
         ctx.shadowColor = '#ff3c28';
         ctx.shadowBlur = 16 + charge * 18;
         ctx.fillStyle = `rgba(255,64,42,${0.16 + charge * 0.24})`;
-        ctx.beginPath(); ctx.arc(0, 0, orbR * 1.9, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(0, boundaryR * 0.62, orbR * 1.9, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = `rgba(255,92,64,${0.34 + charge * 0.28})`;
-        ctx.beginPath(); ctx.arc(0, 0, orbR * 1.28, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = `rgba(255,230,210,${0.72 + charge * 0.18})`;
-        ctx.beginPath(); ctx.arc(0, 0, orbR * 0.72, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = `rgba(255,110,92,${0.58 + charge * 0.34})`;
-        ctx.lineWidth = 2.4 + charge * 2.2;
-        ctx.beginPath(); ctx.arc(0, 0, boundaryR * (1.06 + charge * 0.28), 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, boundaryR * 0.62, orbR * 1.28, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = `rgba(255,220,205,${0.28 + charge * 0.12})`;
+        ctx.beginPath(); ctx.arc(0, boundaryR * 0.62, orbR * 0.42, 0, Math.PI * 2); ctx.fill();
+      } else if (o.traitorType === 'red' && redHoldActive(o, now)) {
+        const holdPulse = 1 + Math.sin(now * 0.018 + seed) * 0.045;
+        ctx.shadowColor = '#ff4e36';
+        ctx.shadowBlur = 8;
+        ctx.strokeStyle = 'rgba(255,118,92,0.92)';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath(); ctx.arc(0, 0, boundaryR, 0, Math.PI * 2); ctx.stroke();
+        ctx.globalAlpha = 0.72;
+        ctx.strokeStyle = 'rgba(255,210,198,0.74)';
+        ctx.lineWidth = 1.3;
+        ctx.beginPath(); ctx.arc(0, 0, boundaryR * (0.88 + Math.sin(now * 0.022) * 0.02), 0, Math.PI * 2); ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.shadowColor = '#ff3826';
+        ctx.shadowBlur = 18;
+        ctx.fillStyle = 'rgba(255,72,46,0.22)';
+        ctx.beginPath(); ctx.arc(0, boundaryR * 0.62, o.r * 0.86 * holdPulse, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,90,64,0.48)';
+        ctx.beginPath(); ctx.arc(0, boundaryR * 0.62, o.r * 0.52 * holdPulse, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,216,205,0.24)';
+        ctx.beginPath(); ctx.arc(0, boundaryR * 0.62, o.r * 0.18, 0, Math.PI * 2); ctx.fill();
+      } else {
+        const spin = now * 0.0045 + seed;
+        ctx.shadowColor = o.traitorType === 'purple' ? '#a233ff' : '#ff5a3c';
+        ctx.shadowBlur = 5.5;
+        ctx.strokeStyle = o.traitorType === 'purple' ? '#c58aff' : '#ff765d';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath(); ctx.arc(0, 0, boundaryR, 0, Math.PI * 2); ctx.stroke();
+        ctx.shadowBlur = 2.5;
+        ctx.fillStyle = '#fff8e8';
+        for (let i = 0; i < 3; i++) {
+          const a = spin + i * Math.PI * 2 / 3;
+          ctx.beginPath();
+          ctx.arc(Math.cos(a) * boundaryR, Math.sin(a) * boundaryR, 2.0, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
     } else {
       const breathe = 1 + Math.sin(now * 0.0052 + seed) * 0.018;
       const shieldR = boundaryR * breathe;
       const impactAge = now - (o.traitorShieldImpactAt || 0);
       const impact = impactAge >= 0 && impactAge < 220 ? 1 - impactAge / 220 : 0;
-      ctx.shadowColor = '#ffb52e';
+      const shieldColor = o.traitorType === 'red' ? '#ff5440' : '#ffc45c';
+      const shieldHot = o.traitorType === 'red' ? '#ffd0c8' : '#fff0bd';
+      ctx.shadowColor = o.traitorType === 'red' ? '#ff5440' : '#ffb52e';
       ctx.shadowBlur = 7 + impact * 7;
       const fakeoutTell = now < (o.fakeoutTellUntil || 0);
-      ctx.strokeStyle = (impact > 0 || fakeoutTell) ? '#fff0bd' : '#ffc45c';
+      ctx.strokeStyle = (impact > 0 || fakeoutTell) ? shieldHot : shieldColor;
       ctx.lineWidth = 3.0 + impact * 1.8 + (fakeoutTell ? 1.0 : 0);
       ctx.beginPath();
       for (let i = 0; i < 8; i++) {
@@ -4087,12 +4291,31 @@ function nextWave() {
       ctx.rotate((Date.now() - (o.deflectStart || Date.now())) * 0.02 * (o.deflectSpin || 0.2));
       ctx.scale(Math.max(0.08, o.deflectScale || 1), Math.max(0.08, o.deflectScale || 1));
     }
+    if (o.type === 'junk') {
+      const junkGlow = o.junkKind === 'duck' ? 'rgba(255,216,74,0.44)'
+        : o.junkKind === 'boot' ? 'rgba(196,140,255,0.40)'
+        : o.junkKind === 'basketball' ? 'rgba(255,175,85,0.38)'
+        : 'rgba(185,215,255,0.38)';
+      if (!drawProjectileImage(o.junkKind || 'trashcan', 0, 0, o.r * 2.05, o.rot, junkGlow)) {
+        ctx.rotate(o.rot);
+        ctx.fillStyle = '#d7e5ff';
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.roundRect(-o.r * 0.48, -o.r * 0.48, o.r * 0.96, o.r * 0.96, o.r * 0.18);
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+      return;
+    }
     if (o.type==='asteroid') {
       ctx.rotate(o.rot);
       const rockStyle = o.rockStyle || 0;
-      const fill = rockStyle === 1 ? '#6a5b78' : rockStyle === 2 ? '#4f596f' : '#5c526c';
-      const stroke = rockStyle === 1 ? '#9b86a8' : rockStyle === 2 ? '#7f94a8' : '#8b7fa3';
-      const dark = rockStyle === 1 ? '#3c3048' : rockStyle === 2 ? '#2f3848' : '#362f42';
+      const largeRock = o.r > 22;
+      const fill = largeRock ? '#5f556c' : (rockStyle === 1 ? '#6a5b78' : rockStyle === 2 ? '#4f596f' : '#5c526c');
+      const stroke = largeRock ? '#8c78a4' : (rockStyle === 1 ? '#9b86a8' : rockStyle === 2 ? '#7f94a8' : '#8b7fa3');
+      const dark = largeRock ? '#32293d' : (rockStyle === 1 ? '#3c3048' : rockStyle === 2 ? '#2f3848' : '#362f42');
       ctx.beginPath();
       o.verts.forEach(([x,y],i)=>i===0?ctx.moveTo(x,y):ctx.lineTo(x,y));
       ctx.closePath();
@@ -5116,7 +5339,35 @@ function nextWave() {
     // outcome applies automatically), not something you fly into to catch.
     powerups = powerups.filter(p => p.y < H + 40);
     for (const p of powerups) {
+      if (!waveTransitioning && p.vx) {
+        p.x += p.vx;
+        p.vx *= 0.988;
+        if (Math.abs(p.vx) < 0.02) p.vx = 0;
+      }
       if (!waveTransitioning) p.y += p.vy;
+      if (!waveTransitioning && p.x != null) p.x = clamp(p.x, p.r, W - p.r);
+      if (!waveTransitioning) {
+        const nowPower = Date.now();
+        for (const o of obstacles) {
+          if (o.alive === false || o.type !== 'junk') continue;
+          if (nowPower < (p._junkBounceLockUntil || 0)) continue;
+          const dx = p.x - o.x;
+          const dy = p.y - o.y;
+          const dist = Math.hypot(dx, dy) || 0.001;
+          const minDist = p.r + o.r * 0.84;
+          if (dist >= minDist) continue;
+          const nx = dx / dist;
+          const ny = dy / dist;
+          const overlap = minDist - dist;
+          p.x += nx * overlap;
+          p.y += ny * overlap;
+          const pushX = nx === 0 ? (p.x < o.x ? -1 : 1) : nx;
+          p.vx = clamp(((p.vx || 0) * 0.68) + pushX * 1.15 + (o.vx || 0) * 0.28, -2.1, 2.1);
+          p.vy = Math.max(0.52, (p.vy || 0) * 0.88 + Math.abs(ny) * 0.24 + 0.08);
+          p._junkBounceLockUntil = nowPower + 90;
+          break;
+        }
+      }
       // Mystery boxes now fall straight like other pickups; the pulsing ring/crate art is the tell.
       if (!waveTransitioning && p.rotSpeed) p.rot += p.rotSpeed;
       drawPowerup(p);
@@ -5207,9 +5458,23 @@ function nextWave() {
         o.x += (targetX - o.x) * (o.mirrorEase || 0.12);
         continue;
       }
+      if (o.type === 'junk') {
+        const t = Date.now() * (o.junkFloatSpeed || 0.0012) + (o.junkFloatSeed || 0);
+        const kind = o.junkKind || 'trashcan';
+        const driftX = kind === 'duck' ? 0.11 : kind === 'trashcan' ? 0.08 : kind === 'basketball' ? 0.12 : 0.09;
+        const driftY = kind === 'duck' ? 0.040 : kind === 'trashcan' ? 0.032 : kind === 'basketball' ? 0.036 : 0.030;
+        const roll = kind === 'trashcan' ? 0.0026 : kind === 'basketball' ? 0.0030 : kind === 'duck' ? 0.0016 : 0.0022;
+        o.x += Math.sin(t) * driftX;
+        o.y += Math.cos(t * (kind === 'duck' ? 0.94 : 1.14)) * driftY + 0.010;
+        o.rot += Math.sin(t * (kind === 'basketball' ? 1.16 : 0.82)) * roll;
+      }
       o.x+=o.vx;
-      if(o.x<o.r&&o.vx<0) o.vx*=-1;
-      if(o.x>W-o.r&&o.vx>0) o.vx*=-1;
+      if (o.type === 'junk') {
+        if (o.x < -o.r * 2.2 || o.x > W + o.r * 2.2) { o.alive = false; continue; }
+      } else {
+        if(o.x<o.r&&o.vx<0) o.vx*=-1;
+        if(o.x>W-o.r&&o.vx>0) o.vx*=-1;
+      }
       const nowMove = Date.now();
       updateTraitorFakeoutState(o, nowMove);
       updateRedShieldCycle(o, nowMove);
@@ -5247,14 +5512,19 @@ function nextWave() {
       }
 
       o.y+=o.vy;
-      if(o.type==='asteroid') {
+      if(o.type==='asteroid' || o.type === 'junk') {
         const baseSpeed = (currentCfg ? currentCfg.speed : O_SPEED_BASE);
-        o.vx = clamp(o.vx || 0, -baseSpeed * 0.62, baseSpeed * 0.62);
-        o.vy = Math.max(baseSpeed * 0.72, o.vy || 0);
+        if (o.type === 'junk') {
+          o.vx = clamp((o.vx || 0) * 0.9992, -baseSpeed * 0.11, baseSpeed * 0.11);
+          o.vy = Math.max(baseSpeed * 0.06, Math.min(baseSpeed * 0.125, o.vy || 0));
+        } else {
+          o.vx = clamp(o.vx || 0, -baseSpeed * 0.62, baseSpeed * 0.62);
+          o.vy = Math.max(baseSpeed * 0.72, o.vy || 0);
+        }
         o.rot+=o.rotSpeed;
       }
     }
-    const liveAsteroids = obstacles.filter(o => o.type === 'asteroid' && o.alive !== false && !o.isDeflected);
+    const liveAsteroids = obstacles.filter(o => (o.type === 'asteroid' || o.type === 'junk') && o.alive !== false && !o.isDeflected);
     for (let i = 0; i < liveAsteroids.length; i++) {
       const a = liveAsteroids[i];
       for (let j = i + 1; j < liveAsteroids.length; j++) {
@@ -5278,6 +5548,20 @@ function nextWave() {
         const baseSpeed = (currentCfg ? currentCfg.speed : O_SPEED_BASE);
         a.vy = Math.max(baseSpeed * 0.74, (a.vy || baseSpeed) * 0.998);
         b.vy = Math.max(baseSpeed * 0.74, (b.vy || baseSpeed) * 0.998);
+        if (a.type === 'asteroid' && b.type === 'asteroid') {
+          const obstaclePush = 0.18 + overlap * 0.05;
+          a.vx = clamp((a.vx || 0) - nx * obstaclePush, -baseSpeed * 0.88, baseSpeed * 0.88);
+          b.vx = clamp((b.vx || 0) + nx * obstaclePush, -baseSpeed * 0.88, baseSpeed * 0.88);
+          a.vy = clamp((a.vy || baseSpeed) - ny * obstaclePush * 0.35, baseSpeed * 0.68, baseSpeed * 2.9);
+          b.vy = clamp((b.vy || baseSpeed) + ny * obstaclePush * 0.35, baseSpeed * 0.68, baseSpeed * 2.9);
+        }
+        if (a.type === 'asteroid' && b.type === 'junk') {
+          b.vy = Math.min(baseSpeed * 0.34, Math.max(baseSpeed * 0.12, (b.vy || baseSpeed * 0.10) + 0.22 + overlap * 0.03));
+          b.y += 1.2 + overlap * 0.12;
+        } else if (a.type === 'junk' && b.type === 'asteroid') {
+          a.vy = Math.min(baseSpeed * 0.34, Math.max(baseSpeed * 0.12, (a.vy || baseSpeed * 0.10) + 0.22 + overlap * 0.03));
+          a.y += 1.2 + overlap * 0.12;
+        }
         a.rotSpeed += rand(-0.006, 0.006);
         b.rotSpeed += rand(-0.006, 0.006);
       }
@@ -5293,22 +5577,30 @@ function nextWave() {
         o._crossed = true;
         o.alive = false;
         lineFlashA = 1.0;
-        if(o.type==='asteroid'){
+        if(o.type==='asteroid' || o.type === 'junk'){
           if (ASTEROIDS_REQUIRE_CLEAR) {
-            const rockDamage = o.r < 22 ? 5 : 10;
-            takeDamage(rockDamage, waveTheme === 'flip' ? 'REVERSE ASTEROID ESCAPE' : 'ASTEROID REACHED LINE');
-            bigExplosion(o.x, _lineY, '#aa8855');
-            playPlayerDamageThud(); // musical thud sound
+            const rockDamage = o.type === 'junk' ? (o.r < 18 ? 2 : 3) : (o.r < 22 ? 5 : 10);
+            takeDamage(rockDamage, waveTheme === 'flip' ? 'REVERSE ASTEROID ESCAPE' : (o.type === 'junk' ? 'SPACE JUNK REACHED LINE' : 'ASTEROID REACHED LINE'));
+            bigExplosion(o.x, _lineY, o.type === 'junk' ? '#8f93a8' : '#aa8855');
             waveKills++;
           } else {
-            miniExplosion(o.x, _lineY, '#7a6a90');
+            miniExplosion(o.x, _lineY, o.type === 'junk' ? '#7d879d' : '#7a6a90');
+            impactShockwave(o.x, _lineY, o.type === 'junk' ? '#d8e2ff' : '#cbb8ff', { maxR: o.r < 22 ? 42 : 62, lineWidth: o.r < 22 ? 3.6 : 5.0, life: o.r < 22 ? 14 : 18 });
+            if (player) {
+              const splashRadius = o.r + player.r * 1.2;
+              if (Math.hypot(o.x - player.x, _lineY - player.y) < splashRadius) {
+                const splashDamage = o.type === 'junk' ? (o.r < 18 ? 1 : 2) : (o.r < 22 ? 2 : 3);
+                takeDamage(splashDamage, o.type === 'junk' ? 'SPACE JUNK LINE IMPACT' : 'ASTEROID LINE IMPACT');
+                addFloatText(`-${splashDamage}`, player.x, player.y - 26, '#ff8888', 18);
+                if(state==='over') return;
+              }
+            }
           }
         } else if(!o.isTrapped){
           // enemy crosses line — big damage
           takeDamage(30, 'ENEMY REACHED LINE');
           bigExplosion(o.x, _lineY, GAME_CHARS[o.ci].color);
           if (!o.blackoutHiddenEnemy) faceFlash(o.ci, 'sad', o.x, _lineY - 30);
-          playPlayerDamageThud();
           waveKills++;
         } else {
           // trapped hero crosses line — not gone forever, queued back into the rescue pool
@@ -5554,6 +5846,12 @@ function nextWave() {
           b.vy=999;
           o.litUntil = Date.now() + 320;
           queueBlackoutHitFlash(o);
+          if (o.type === 'junk') {
+            miniExplosion(o.x, o.y, 'rgba(220,245,255,0.72)');
+            addFloatText('THUNK', o.x, o.y - 12, '#eefbff', 13);
+            playJunkItemSfx(o.junkKind);
+            break;
+          }
           if(o.type==='face'){
             if(o.isTrapped && o.ringHp > 0){
               // Hit the rescue ring
@@ -5576,7 +5874,6 @@ function nextWave() {
               }
             } else if(o.isTrapped && o.ringHp === 0){
               // Ring already destroyed but player shot the face — penalty!
-              playPlayerDamageThud();
               o.alive=false;
               addFloatText('OOPS!', o.x, o.y, '#ff4444', 24);
               miniExplosion(o.x, o.y, '#ff4444');
@@ -5617,30 +5914,37 @@ function nextWave() {
               }
             }
           } else {
-            // Asteroid
-            const pts = 10+(wave*2);
-            score+=pts; playTargetBreakSfx('asteroid');
-            miniExplosion(o.x,o.y,'#7a6a90');
-            if(o.r > 22 && currentCfg){
-              for(let s=0; s<2; s++){
-                obstacles.push({
-                  type:'asteroid', alive:true,
-                  x: o.x + (s===0?-1:1)*o.r*0.5, y: o.y,
-                  vx: asteroidLateralVelocity(currentCfg.speed * 1.8, true),
-                  vy: currentCfg.speed*(0.6+Math.random()*0.4),
-                  r: o.r*0.52,
-                  verts: Array.from({length:6},(_,i)=>{
-                    const a=(i/6)*Math.PI*2; const rr=o.r*0.52*(0.7+Math.random()*0.3);
-                    return [Math.cos(a)*rr, Math.sin(a)*rr];
-                  }),
-                  rot:0, rotSpeed:(Math.random()-0.5)*0.06, hp:1,
-                  shadeSeed: Math.random() * 1000,
-                  rockStyle: o.rockStyle == null ? Math.floor(Math.random() * 3) : o.rockStyle
-                });
+            // Asteroid / space junk
+            o.hp = (o.hp == null ? 1 : o.hp) - 1;
+            if (o.hp > 0) {
+              miniExplosion(o.x,o.y,o.type === 'junk' ? 'rgba(216,228,255,0.78)' : (o.r > 22 ? 'rgba(210,150,255,0.82)' : 'rgba(190,170,235,0.78)'));
+              addFloatText(o.type === 'junk' ? 'CLANG!' : 'CRACK!', o.x, o.y - 12, o.type === 'junk' ? '#e2ebff' : '#e8dcff', 14);
+              if (o.type === 'junk') playJunkItemSfx(o.junkKind);
+            } else {
+              const pts = o.type === 'junk' ? 8 + wave * 2 : 10 + (wave * 2);
+              score+=pts; playTargetBreakSfx(o.type === 'junk' ? 'junk' : 'asteroid');
+              miniExplosion(o.x,o.y,o.type === 'junk' ? '#8796b6' : '#7a6a90');
+              if(o.type === 'asteroid' && o.r > 22 && currentCfg){
+                for(let s=0; s<2; s++){
+                  obstacles.push({
+                    type:'asteroid', alive:true,
+                    x: o.x + (s===0?-1:1)*o.r*0.5, y: o.y,
+                    vx: asteroidLateralVelocity(currentCfg.speed * 1.8, true),
+                    vy: currentCfg.speed*(0.6+Math.random()*0.4),
+                    r: o.r*0.52,
+                    verts: Array.from({length:6},(_,i)=>{
+                      const a=(i/6)*Math.PI*2; const rr=o.r*0.52*(0.7+Math.random()*0.3);
+                      return [Math.cos(a)*rr, Math.sin(a)*rr];
+                    }),
+                    rot:0, rotSpeed:(Math.random()-0.5)*0.06, hp:1,
+                    shadeSeed: Math.random() * 1000,
+                    rockStyle: o.rockStyle == null ? Math.floor(Math.random() * 3) : o.rockStyle
+                  });
+                }
               }
+              waveKills++;
+              o.alive=false;
             }
-            waveKills++;
-            o.alive=false;
           }
           break;
         }
@@ -5659,8 +5963,8 @@ function nextWave() {
           if (Date.now() < buffShieldUntil && shieldDeflectObstacle(o)) {
             continue;
           }
-          o.alive=false; playPlayerDamageThud();
-          takeDamage(o.type==='face' ? 30 : (o.r < 22 ? 3 : 5), o.type==='face' ? 'ENEMY COLLISION' : 'ASTEROID COLLISION');
+          o.alive=false;
+          takeDamage(o.type==='face' ? 30 : (o.type === 'junk' ? (o.r < 18 ? 1 : 2) : (o.r < 22 ? 3 : 5)), o.type==='face' ? 'ENEMY COLLISION' : (o.type === 'junk' ? 'SPACE JUNK COLLISION' : 'ASTEROID COLLISION'));
           if(state==='over') return;
         }
       }
@@ -5673,10 +5977,11 @@ function nextWave() {
     // announcement covers the screen.
     // Boss beaten: play the held victory cinematic only once every enemy and
     // asteroid is gone, so the next scene never appears over a populated board.
-    if (pendingBossWin && obstacles.length === 0 && enemyBullets.length === 0 && !boss && !miniBoss && state === 'playing') {
+    const blockingObstacles = obstacles.filter(o => o.type !== 'junk');
+    if (pendingBossWin && blockingObstacles.length === 0 && enemyBullets.length === 0 && !boss && !miniBoss && state === 'playing') {
       const runWin = pendingBossWin; pendingBossWin = null; runWin();
     }
-    if (!academyMode && !academyCompleting && spaceRunMode !== 'bossrun' && spawnsRemaining <= 0 && obstacles.length === 0 && powerups.length === 0 && !boss && !miniBoss && !mirrorSequenceActive && !pendingBossWin && state === 'playing') {
+    if (!academyMode && !academyCompleting && spaceRunMode !== 'bossrun' && spawnsRemaining <= 0 && blockingObstacles.length === 0 && powerups.length === 0 && !boss && !miniBoss && !mirrorSequenceActive && !pendingBossWin && state === 'playing') {
       nextWave();
     }
     updateSpaceAcademy();
@@ -5845,9 +6150,35 @@ function nextWave() {
         }
         b._gone = true;
       }
+      if (b.beamRetractUntil) {
+        if (now >= b.beamRetractUntil) {
+          b._gone = true;
+        } else {
+          const source = b.beamSource;
+          const sx = source && source.alive !== false ? source.x : b.x;
+          const sy = source && source.alive !== false ? (source.y + (source.r || 0)) : (b.beamAnchorY != null ? b.beamAnchorY : b.y);
+          const tx = b.beamTargetX != null ? b.beamTargetX : sx;
+          const ty = b.beamTargetY != null ? b.beamTargetY : sy;
+          const dxBeam = tx - sx;
+          const dyBeam = ty - sy;
+          const distBeam = Math.hypot(dxBeam, dyBeam) || 1;
+          const extendProgress = now < (b.beamExtendUntil || 0)
+            ? Math.max(0, Math.min(1, (now - (b.beamStartAt || now)) / Math.max(1, (b.beamExtendUntil || now + 1) - (b.beamStartAt || now))))
+            : now < (b.beamHoldUntil || 0)
+              ? 1
+              : Math.max(0, Math.min(1, 1 - ((now - (b.beamHoldUntil || now)) / Math.max(1, (b.beamRetractUntil || now + 1) - (b.beamHoldUntil || now)))));
+          b.x = sx;
+          b.y = sy;
+          b.vx = dxBeam / distBeam;
+          b.vy = dyBeam / distBeam;
+          b.visualLength = distBeam * extendProgress;
+          b.beamTipX = sx + b.vx * b.visualLength;
+          b.beamTipY = sy + b.vy * b.visualLength;
+        }
+      }
       if (b.delayUntil && now < b.delayUntil) {
         // Staged boss shots stay parked and hidden until the visual cue finishes.
-      } else if (!b.telegraph && !(b.donkeyLine && b.donkeyState !== 'charge')) {
+      } else if (!b.beamRetractUntil && !b.telegraph && !(b.donkeyLine && b.donkeyState !== 'charge')) {
         b.x += b.vx; b.y += b.vy;
       }
       if (b.donkeyLine && b.donkeyState === 'charge' && (b.y > H + 18 || b.y < -18 || b.x < -18 || b.x > W + 18)) {
@@ -5861,6 +6192,22 @@ function nextWave() {
         else if (b.x > W - br) { b.x = W - br; b.vx = -Math.abs(b.vx); }
       }
       if (b.hideBeforeRelease && b.delayUntil && now < b.delayUntil) return;
+      if (b.theme === 'redBeam') {
+        drawRedBeamAttack(b);
+        if (b.telegraph) return;
+        if (b.beamRetractUntil) {
+          const sx = b.x;
+          const sy = b.y;
+          const ex = b.beamTipX != null ? b.beamTipX : (sx + (b.vx || 0) * (b.visualLength || 0));
+          const ey = b.beamTipY != null ? b.beamTipY : (sy + (b.vy || 0) * (b.visualLength || 0));
+          if (pointToSegmentDistance(player.x, player.y, sx, sy, ex, ey) < (b.r || 6) + player.r * 0.7) {
+            b._hit = true;
+            addFloatText('LASER! -12', player.x, player.y - 40, '#ff9f92', 18);
+            takeDamage(b.damage || 12, projectileDamageCause(b));
+          }
+        }
+        return;
+      }
       if (b.theme) {
         ctx.save();
         ctx.translate(b.x, b.y);
@@ -6069,19 +6416,15 @@ function nextWave() {
           playEmpKalimbaGlitch();
         } else if (b.isLock) {
           addFloatText('LOCK HIT!', player.x, player.y - 40, '#00e5ff', 16);
-          playPlayerDamageThud();
           takeDamage(b.damage || 7, projectileDamageCause(b));
         } else if (b.tennis) {
           addFloatText('SMASH! -20', player.x, player.y - 40, '#c6ff3a', 18);
-          playPlayerDamageThud();
           takeDamage(b.damage || 20, projectileDamageCause(b));
         } else if (b.theme === 'donkey') {
           addFloatText('HEE HAW! -20', player.x, player.y - 40, '#c7a16b', 18);
-          playPlayerDamageThud();
           takeDamage(b.damage || 20, projectileDamageCause(b));
         } else if (b.theme === 'sword') {
           addFloatText('SWORD! -35', player.x, player.y - 40, '#c8d4ff', 18);
-          playPlayerDamageThud();
           takeDamage(b.damage || 35, projectileDamageCause(b));
         } else if (b.splat || b.theme === 'ink') {
           bossInkBlindUntil = Date.now() + 2400;
@@ -6090,7 +6433,6 @@ function nextWave() {
           playRaveDiscoStab();
           takeDamage(b.damage || 5, projectileDamageCause(b));
         } else {
-          playPlayerDamageThud();
           takeDamage(b.damage || 5, projectileDamageCause(b));
         }
       }
@@ -6113,7 +6455,8 @@ function nextWave() {
     });
 
     // Bottom control zone: gently tint the area where the player's finger can sit
-    // without covering the ship, so the intended touch lane reads at a glance.
+    // without covering the ship. Keep the cue soft so the only strong lane line
+    // language on screen is the real safety line.
     const controlZoneTop = Math.min(H - 56, player.y + player.r * 0.35);
     if (controlZoneTop < H - 12) {
       const zoneGrad = ctx.createLinearGradient(0, controlZoneTop, 0, H);
@@ -6123,40 +6466,30 @@ function nextWave() {
       ctx.save();
       ctx.fillStyle = zoneGrad;
       ctx.fillRect(0, controlZoneTop, W, H - controlZoneTop);
-      ctx.strokeStyle = 'rgba(0,229,255,0.18)';
-      ctx.lineWidth = 1.25;
-      ctx.beginPath();
-      ctx.moveTo(0, controlZoneTop);
-      ctx.lineTo(W, controlZoneTop);
-      ctx.stroke();
-      ctx.fillStyle = 'rgba(185,247,255,0.65)';
-      ctx.font = `11px 'VCR', monospace`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('DRAG HERE', W / 2, H - 18);
       ctx.restore();
     }
 
-    // Danger boundary stays mechanically active even when we hide the visual line.
+    // Danger boundary stays mechanically active and also carries the visible line
+    // treatment, so the beam hits the same line the player reads on screen.
     const _renderLineY = waveTheme === 'flip' ? REVERSE_LINE_Y : dangerY;
     if (lineFlashA > 0) lineFlashA = Math.max(0, lineFlashA - 0.04);
-    if (SHOW_DANGER_LINE) {
-      ctx.save();
-      ctx.setLineDash([6, 5]);
-      ctx.lineDashOffset = -(Date.now() / 90) % 11;
-      // halo
-      ctx.beginPath(); ctx.moveTo(0, _renderLineY); ctx.lineTo(W, _renderLineY);
-      ctx.strokeStyle = `rgba(51,255,100,${(0.28 + lineFlashA * 0.62) * 0.35})`;
-      ctx.lineWidth = 6 + lineFlashA * 4;
-      ctx.stroke();
-      // core line
-      ctx.beginPath(); ctx.moveTo(0, _renderLineY); ctx.lineTo(W, _renderLineY);
-      ctx.strokeStyle = `rgba(51,255,100,${0.28 + lineFlashA * 0.62})`;
-      ctx.lineWidth = 1.5 + lineFlashA;
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
-    }
+    ctx.save();
+    ctx.setLineDash([6, 5]);
+    ctx.lineDashOffset = -(Date.now() / 90) % 11;
+    const lineGlow = ctx.createLinearGradient(0, _renderLineY - 10, 0, _renderLineY + 10);
+    lineGlow.addColorStop(0, 'rgba(51,255,100,0)');
+    lineGlow.addColorStop(0.5, `rgba(51,255,100,${(0.26 + lineFlashA * 0.62) * 0.38})`);
+    lineGlow.addColorStop(1, 'rgba(51,255,100,0)');
+    ctx.beginPath(); ctx.moveTo(0, _renderLineY); ctx.lineTo(W, _renderLineY);
+    ctx.strokeStyle = lineGlow;
+    ctx.lineWidth = 7 + lineFlashA * 4;
+    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, _renderLineY); ctx.lineTo(W, _renderLineY);
+    ctx.strokeStyle = `rgba(51,255,100,${0.26 + lineFlashA * 0.62})`;
+    ctx.lineWidth = 1.6 + lineFlashA;
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
 
     if (boss) drawBoss();
     if (miniBoss) drawMiniBoss();
@@ -6229,6 +6562,21 @@ function nextWave() {
       const drawBlackoutLitEnemyBullet = b => {
         if (b.theme === 'bulletPortal') return;
         const rr = b.r || 5;
+        if (b.theme === 'redBeam') {
+          drawRedBeamAttack(b, {
+            width: rr * 1.15,
+            coreWidth: Math.max(1.4, rr * 0.38),
+            tipR: Math.max(2.6, rr * 0.56),
+            c0: 'rgba(255,96,78,0.08)',
+            c1: 'rgba(255,122,92,0.56)',
+            c2: 'rgba(255,244,236,0.98)',
+            c3: 'rgba(255,112,84,0.56)',
+            c4: 'rgba(255,96,78,0.08)',
+            core: 'rgba(255,247,242,0.94)',
+            tip: 'rgba(255,234,224,0.94)',
+          });
+          return;
+        }
         const sp = Math.hypot(b.vx || 0, b.vy || 0) || 1;
         const tx = b.x - ((b.vx || 0) / sp) * rr * 5;
         const ty = b.y - ((b.vy || 0) / sp) * rr * 5;
@@ -6380,6 +6728,7 @@ function nextWave() {
       }
       ctx.restore();
     }
+    drawScreenHitFlash();
     if (Date.now() < bossInkBlindUntil) {
       const a = Math.min(0.82, (bossInkBlindUntil - Date.now()) / 2400 * 0.72);
       const inkGrad = ctx.createRadialGradient(player.x, player.y, player.r * 2.1, player.x, player.y, player.r * 7.2);
@@ -7169,6 +7518,38 @@ function nextWave() {
     playSpaceTone(f * 2.01, 'sine', 0.003, 0.062, 0.020, f * 1.98);
   }
 
+  function playJunkDrumHit() {
+    // Junk hit: quick electronic tom / drum hit so scrap feels punchy, not stony.
+    playSpaceTone(130.81, 'sine', 0.000, 0.085, 0.060, 92.50);
+    playSpaceTone(196.00, 'triangle', 0.004, 0.060, 0.022, 146.83);
+    playSpaceNoiseBurst(0.030, 0.012, 760, 'lowpass');
+  }
+
+  function playJunkItemSfx(kind) {
+    if (kind === 'duck') {
+      playSpaceTone(392.00, 'square', 0.000, 0.050, 0.030, 349.23);
+      playSpaceTone(523.25, 'triangle', 0.030, 0.055, 0.022, 440.00);
+      return;
+    }
+    if (kind === 'boot') {
+      playSpaceTone(220.00, 'sine', 0.000, 0.075, 0.028, 293.66);
+      playSpaceNoiseBurst(0.024, 0.006, 980, 'bandpass');
+      return;
+    }
+    if (kind === 'trashcan') {
+      playSpaceTone(185.00, 'triangle', 0.000, 0.055, 0.026, 155.56);
+      playSpaceTone(622.25, 'square', 0.010, 0.040, 0.010, 523.25);
+      playSpaceNoiseBurst(0.030, 0.007, 1900, 'bandpass');
+      return;
+    }
+    if (kind === 'basketball') {
+      playSpaceTone(123.47, 'sine', 0.000, 0.060, 0.038, 92.50);
+      playSpaceTone(196.00, 'triangle', 0.040, 0.045, 0.018, 164.81);
+      return;
+    }
+    playJunkDrumHit();
+  }
+
   function playMainPianoChord() {
     // The actual piano instrument is the more obvious chord hit.
     const voicings = [
@@ -7243,6 +7624,14 @@ function nextWave() {
     playSpaceNoiseBurst(0.040, 0.008, 1600, 'bandpass');
   }
 
+  function playRedChargeSfx() {
+    // Rising danger cue: more tension, less melody — like pressure winding up.
+    playSpaceTone(150, 'sawtooth', 0.000, 0.24, 0.028, 310);
+    playSpaceTone(210, 'square', 0.020, 0.22, 0.020, 460);
+    playSpaceTone(420, 'triangle', 0.090, 0.14, 0.013, 980);
+    playSpaceNoiseBurst(0.050, 0.006, 1200, 'bandpass');
+  }
+
 
   function playMusicBoxArpeggio() {
     // Clean success language: tiny music-box run, bright but not as wide as the rescue flourish.
@@ -7261,11 +7650,17 @@ function nextWave() {
     playSpaceNoiseBurst(0.055, 0.004, 2600, 'highpass');
   }
 
-  function playPlayerDamageThud() {
-    // Wrong-sounding musical impact: low piano/gong thump instead of a generic miss chirp.
-    playSpaceTone(82.41, 'triangle', 0, 0.18, 0.060, 73.42);
-    playSpaceTone(164.81, 'sine', 0.006, 0.12, 0.028, 146.83);
-    playSpaceNoiseBurst(0.060, 0.018, 420, 'lowpass');
+  function playPlayerDamageThud(amount) {
+    // Damage scales from a light sting up to a heavier body-hit thump.
+    const dmg = Math.max(1, amount == null ? 5 : amount);
+    const t = Math.max(0, Math.min(1, (dmg - 2) / 28));
+    const low = 98 - t * 28;
+    const mid = 196 - t * 46;
+    const snap = 310 - t * 90;
+    playSpaceTone(low, 'triangle', 0, 0.14 + t * 0.10, 0.040 + t * 0.030, low * 0.90);
+    playSpaceTone(mid, 'sine', 0.006, 0.090 + t * 0.06, 0.016 + t * 0.018, mid * 0.88);
+    playSpaceTone(snap, t > 0.45 ? 'square' : 'triangle', 0.000, 0.030 + t * 0.022, 0.010 + t * 0.014, snap * (0.72 - t * 0.10));
+    playSpaceNoiseBurst(0.032 + t * 0.040, 0.010 + t * 0.012, 560 - t * 220, 'lowpass');
   }
 
   function playShieldBellPing() {
@@ -7336,6 +7731,10 @@ function nextWave() {
         playRockPianoSoundscape();
         return;
       }
+      if (kind === 'junk') {
+        playJunkDrumHit();
+        return;
+      }
       if (kind === 'enemyDefeat') {
         playOldSaxEnemySound();
         return;
@@ -7386,13 +7785,16 @@ function nextWave() {
       });
       return;
     }
-    // Flute-ish chirp for red direct shots.
-    playSpaceTone(784, 'sine', 0, 0.075, 0.042, 1046.50);
-    playSpaceTone(1174.66, 'triangle', 0.022, 0.07, 0.024, 880.00);
+    // Red shot: lower, harder, and more blaster-beam than toy pew.
+    playSpaceTone(196.00, 'sawtooth', 0.000, 0.080, 0.030, 146.83);
+    playSpaceTone(293.66, 'square', 0.002, 0.070, 0.022, 220.00);
+    playSpaceTone(440.00, 'triangle', 0.006, 0.050, 0.012, 329.63);
+    playSpaceNoiseBurst(0.030, 0.004, 2600, 'bandpass');
   }
 
   function playTargetBreakSfx(kind) {
     if (kind === 'asteroid') playNormalInstrumentSfx('asteroid');
+    else if (kind === 'junk') playNormalInstrumentSfx('junk');
     else playNormalInstrumentSfx('enemyDefeat');
   }
   // ── Space SFX registry (lightweight, no audio files) ──────────────────────
@@ -8064,6 +8466,35 @@ function nextWave() {
         ctx.restore();
         requestAnimationFrame(tick);
       }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function impactShockwave(x, y, color, opts) {
+    const maxR = opts && opts.maxR ? opts.maxR : 54;
+    const width = opts && opts.lineWidth ? opts.lineWidth : 4;
+    const life = opts && opts.life ? opts.life : 16;
+    let age = 0;
+    function tick() {
+      age++;
+      if (!ctx || age > life) return;
+      const t = age / life;
+      const r = 10 + (maxR - 10) * t;
+      ctx.save();
+      ctx.globalAlpha = 0.58 * (1 - t);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = Math.max(1, width * (1 - t * 0.35));
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = 0.34 * (1 - t);
+      ctx.strokeStyle = '#fff4d8';
+      ctx.lineWidth = Math.max(1, width * 0.40 * (1 - t * 0.25));
+      ctx.beginPath(); ctx.arc(x, y, r * 0.78, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = 0.24 * (1 - t);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = Math.max(1, width * 0.28 * (1 - t * 0.18));
+      ctx.beginPath(); ctx.arc(x, y, r * 1.18, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+      requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
   }
