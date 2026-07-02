@@ -675,7 +675,7 @@ body.on-char.arcade-music-prompt-visible #char-select-screen {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 13px;
+  padding: 9px 13px;
   border: 1px solid rgba(0,229,255,0.34);
   border-radius: 8px;
   background: linear-gradient(135deg, rgba(0,229,255,0.14), rgba(123,97,255,0.10));
@@ -692,7 +692,8 @@ body.on-char.arcade-music-prompt-visible #char-select-screen {
   text-shadow: 0 0 12px rgba(0,229,255,0.45);
 }
 .arcade-install-text {
-  margin-top: 4px;
+  display: none;
+  margin-top: 0;
   font-family: 'VCR', monospace;
   font-size: 8px;
   letter-spacing: 1px;
@@ -715,11 +716,10 @@ body.on-char.arcade-music-prompt-visible #char-select-screen {
 }
 @media (max-width: 380px) {
   .arcade-install-card {
-    padding: 10px 11px;
+    padding: 8px 11px;
     gap: 9px;
   }
   .arcade-install-title { font-size: 19px; letter-spacing: 2.5px; }
-  .arcade-install-text { font-size: 7px; }
   .arcade-install-btn { min-width: 74px; font-size: 8px; }
 }
 
