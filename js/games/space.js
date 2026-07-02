@@ -25,7 +25,7 @@
   const SPACE_SOCKET_ANCHOR_BOTTOM_OFFSET = 94;
   const SPACE_DANGER_LINE_GAP = 8;
   const SHOW_DANGER_LINE = false;
-  const ASTEROID_LINE_HIT_CHANCE = 0.20;
+  const ASTEROID_LINE_HIT_CHANCE = 0.24;
   const ASTEROIDS_REQUIRE_CLEAR = false;
   // REVERSE theme: a separate fixed "escape" line near the top, just below the
   // HUD/banner strip — kept independent of dangerY on purpose, since dangerY tracks
@@ -593,12 +593,12 @@
   function asteroidLateralVelocity(baseSpeed, prefersWideDrift) {
     const wallChanceMult = currentCfg && currentCfg.asteroidWallChanceMult != null ? currentCfg.asteroidWallChanceMult : 1;
     const lateralMult = currentCfg && currentCfg.asteroidLateralMult != null ? currentCfg.asteroidLateralMult : 1;
-    const wallRunner = Math.random() < Math.min(0.42, ASTEROID_LINE_HIT_CHANCE * wallChanceMult);
+    const wallRunner = Math.random() < Math.min(0.56, ASTEROID_LINE_HIT_CHANCE * wallChanceMult);
     if (wallRunner) {
-      const mag = prefersWideDrift ? rand(0.34, 0.56) : rand(0.070, 0.105);
+      const mag = prefersWideDrift ? rand(0.40, 0.64) : rand(0.090, 0.130);
       return (Math.random() < 0.5 ? -1 : 1) * mag * baseSpeed * lateralMult;
     }
-    return (prefersWideDrift ? rand(-0.12, 0.12) : rand(-0.022, 0.022)) * baseSpeed * lateralMult;
+    return (prefersWideDrift ? rand(-0.15, 0.15) : rand(-0.032, 0.032)) * baseSpeed * lateralMult;
   }
 
   function spawnOgreAsteroidSprinkle(count = 2) {
@@ -855,14 +855,14 @@
       // Asteroid-field waves use slower cadence instead of dumping rocks faster.
       // Wave 5 also staggers three normal enemies into fixed slots; the pool still
       // ends through spawnsRemaining/board-clear, so it cannot overlap nextWave().
-      1: { spawnsRemaining: 50, speedOverride: 3.18, spawnMsOverride: 760, asteroidRatioOverride: 1, asteroidWallChanceMult: 1.65, asteroidLateralMult: 1.62, asteroidSpeedMult: 1.14, enemyFireMult: 0, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, powerupDelayRange: [2000, 3000], hpDelayRange: [1800, 3200], spawnCadenceMult: 0.86, activeObstacleCap: 8, notes: 'Intro now teaches dodge-or-clear with faster rocks and stronger lane pressure.' },
+      1: { spawnsRemaining: 50, speedOverride: 3.26, spawnMsOverride: 740, asteroidRatioOverride: 1, asteroidWallChanceMult: 1.85, asteroidLateralMult: 1.78, asteroidSpeedMult: 1.20, enemyFireMult: 0, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, powerupDelayRange: [2000, 3000], hpDelayRange: [1800, 3200], spawnCadenceMult: 0.84, activeObstacleCap: 8, notes: 'Intro now teaches dodge-or-clear with faster rocks and stronger lane pressure.' },
       2: { spawnsRemaining: 20, mixedEnemyTotal: 7, mixedEnemyScreenCap: 2, mixedAsteroidTotal: 13, mixedTraitorType: 'red', speedOverride: 2.62, spawnMsOverride: 1030, asteroidRatioOverride: 0.64, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 1.32, enemyFireRateMult: 0.62, enemyVyMult: 1.28, enemyDriftMult: 2.04, enemyDodgeMult: 1.36, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [1400, 2200], hpDelayRange: [2200, 4200], spawnCadenceMult: 0.96, activeObstacleCap: 5, notes: 'Red stays mobile, but the wave is a little shorter and feeds more support.' },
       3: { spawnsRemaining: 18, mixedEnemyTotal: 5, mixedEnemyScreenCap: 2, mixedAsteroidTotal: 13, mixedTraitorType: 'purple', speedOverride: 2.62, spawnMsOverride: 1180, asteroidRatioOverride: 0.72, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 0.92, enemyFireRateMult: 0.90, enemyVyMult: 1.14, enemyDriftMult: 1.38, enemyDodgeMult: 0.82, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 2, powerupDelayRange: [1400, 2200], hpDelayRange: [2400, 4600], spawnCadenceMult: 1.08, activeObstacleCap: 5, notes: 'Purple keeps the shield/rain identity, but now asks for a real dodge on the opening.' },
       4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4200, 7000], hpDelayRange: [5000, 8000], enemyFireMult: 0.75 },
       5: { spawnsRemaining: 24, speedOverride: 2.72, spawnMsOverride: 1087, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.34, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [850, 1200], hpDelayRange: [1800, 3600], swarmCap: 4, activeObstacleCap: 4, spawnCadenceMult: 1.16, notes: 'Swarm is shorter and still regularly throws helpful drops into the lane.' },
       6: { spawnsRemaining: 13, speedOverride: 2.72, spawnMsOverride: 880, asteroidRatioOverride: 0.34, enemyHpOverride: 3, enemyFireMult: 0.94, enemyFireRateMult: 0.70, enemyVyMult: 1.24, enemyDriftMult: 1.62, enemyDodgeMult: 0.88, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 2, rescueRingHp: 30, powerupDelayRange: [2800, 4800], hpDelayRange: [3600, 6200], spawnCadenceMult: 0.88, activeObstacleCap: 4 },
       7: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4600, 7600], hpDelayRange: [5600, 9000], enemyFireMult: 0.85 },
-      8: { spawnsRemaining: 16, speedOverride: 2.72, spawnMsOverride: 840, asteroidRatioOverride: 1, asteroidSpeedMult: 1.10, asteroidWallChanceMult: 1.28, asteroidLateralMult: 1.20, enemyFireMult: 0.82, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4800, 7600], hpDelayRange: [4200, 6800], spawnCadenceMult: 0.96, activeObstacleCap: 7 },
+      8: { spawnsRemaining: 16, speedOverride: 2.72, spawnMsOverride: 820, asteroidRatioOverride: 1, asteroidSpeedMult: 1.16, asteroidWallChanceMult: 1.46, asteroidLateralMult: 1.34, enemyFireMult: 0.82, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4800, 7600], hpDelayRange: [4200, 6800], spawnCadenceMult: 0.94, activeObstacleCap: 7 },
       9: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [4600, 7600], hpDelayRange: [5200, 8200], enemyFireMult: 0.9 },
       10: { spawnsRemaining: 22, speedOverride: 3.08, spawnMsOverride: 780, asteroidRatioOverride: 0.48, enemyHpOverride: 3, enemyFireMult: 1.16, enemyFireRateMult: 0.68, enemyVyMult: 1.24, enemyDriftMult: 1.86, enemyDodgeMult: 1.08, allowMystery: true, allowPowerups: true, allowHp: true, maxSocketPowerups: 3, maxInstruments: 10, instrumentDelayRange: [620, 920], powerupDelayRange: [3200, 5400], hpDelayRange: [3800, 6400], mysteryDelayRange: [5800, 9800], spawnCadenceMult: 0.86, activeObstacleCap: 5 },
       11: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [5200, 8200], hpDelayRange: [5800, 9000], enemyFireMult: 1.0 },
@@ -919,19 +919,19 @@
     };
     if (shooter && shooter.traitorType === 'red' && cause !== 'BLACKOUT SHOT') {
       const now = Date.now();
-      const chargeMs = wave <= 2 ? 320 : wave <= 6 ? 285 : wave <= 10 ? 255 : 225;
-      const cooldownMs = wave <= 2 ? 980 : wave <= 6 ? 900 : wave <= 10 ? 820 : 740;
-      // Red now always does the same readable beat: charge, fire one aimed shot,
-      // stay open for a moment, then charge again faster later in the campaign.
+      const chargeMs = wave <= 2 ? 560 : wave <= 6 ? 500 : wave <= 10 ? 450 : 400;
+      const cooldownMs = wave <= 2 ? 1050 : wave <= 6 ? 960 : wave <= 10 ? 860 : 760;
+      // Red now reads as shielded while idle, vulnerable only during the visible
+      // charge-up, then snaps out a very fast shot before shielding again.
       shooter.redShotChargeAt = now;
       shooter.redShotChargeUntil = now + chargeMs;
-      shooter.redVulnerableUntil = Math.max(shooter.redVulnerableUntil || 0, now + chargeMs + cooldownMs);
+      shooter.redVulnerableUntil = Math.max(shooter.redVulnerableUntil || 0, now + chargeMs);
       const token = spaceFlowToken;
       shooter.redSecondShotAt = 0;
       shooter.redNextAttackAt = now + chargeMs + cooldownMs;
       setTimeout(() => {
         if (token !== spaceFlowToken || state !== 'playing' || waveTransitioning || !shooter || shooter.alive === false) return;
-        fireAimedEnemyBullet((speedMult || 1) * (wave <= 5 ? 0.92 : 0.98), 'RED SHOT');
+        fireAimedEnemyBullet((speedMult || 1) * (wave <= 5 ? 1.46 : 1.58), 'RED SHOT');
         playTraitorShotSfx('red');
       }, chargeMs);
       return;
@@ -970,11 +970,11 @@
   }
 
   function redVulnerableActive(o, now) {
-    return !!(o && o.traitorType === 'red' && now >= (o.redShotChargeUntil || 0) && now < (o.redVulnerableUntil || 0));
+    return !!(o && o.traitorType === 'red' && now >= (o.redShotChargeAt || 0) && now < (o.redVulnerableUntil || 0));
   }
 
   function redChargeActive(o, now) {
-    return !!(o && o.traitorType === 'red' && now < (o.redShotChargeUntil || 0));
+    return !!(o && o.traitorType === 'red' && now >= (o.redShotChargeAt || 0) && now < (o.redShotChargeUntil || 0));
   }
 
   function traitorFakeoutBusy(o, now) {
@@ -1024,7 +1024,7 @@
   function traitorShieldActive(o, now) {
     if (!o || o.isTrapped) return false;
     if (o.traitorType === 'purple') return !traitorVulnerable(o, now);
-    if (o.traitorType === 'red') return redChargeActive(o, now);
+    if (o.traitorType === 'red') return !redVulnerableActive(o, now);
     return false;
   }
 
@@ -4039,14 +4039,19 @@ function nextWave() {
         ctx.arc(Math.cos(a) * boundaryR, Math.sin(a) * boundaryR, 2.0, 0, Math.PI * 2);
         ctx.fill();
       }
-      if (o.traitorType === 'red' && now < (o.redShotChargeUntil || 0)) {
+      if (o.traitorType === 'red' && redChargeActive(o, now)) {
         const charge = Math.max(0, Math.min(1, (now - (o.redShotChargeAt || now)) / Math.max(1, (o.redShotChargeUntil || now + 1) - (o.redShotChargeAt || now))));
-        const pulse = 1 + Math.sin(now * 0.03) * (0.08 + charge * 0.10);
-        ctx.shadowBlur = 8 + charge * 8;
-        ctx.strokeStyle = `rgba(255,245,220,${0.42 + charge * 0.44})`;
-        ctx.lineWidth = 2.0 + charge * 1.8;
-        ctx.beginPath(); ctx.arc(0, 0, boundaryR * (1.12 + charge * 0.30) * pulse, 0, Math.PI * 2); ctx.stroke();
-        ctx.beginPath(); ctx.arc(0, 0, boundaryR * (0.72 + charge * 0.16) * pulse, 0, Math.PI * 2); ctx.stroke();
+        const pulse = 1 + Math.sin(now * 0.03) * (0.05 + charge * 0.08);
+        const orbR = o.r * (0.30 + charge * 0.78) * pulse;
+        ctx.shadowColor = '#fff2d6';
+        ctx.shadowBlur = 10 + charge * 14;
+        ctx.fillStyle = `rgba(255,245,220,${0.22 + charge * 0.34})`;
+        ctx.beginPath(); ctx.arc(0, 0, orbR * 1.42, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = `rgba(255,155,120,${0.52 + charge * 0.28})`;
+        ctx.beginPath(); ctx.arc(0, 0, orbR, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = `rgba(255,245,220,${0.48 + charge * 0.42})`;
+        ctx.lineWidth = 1.8 + charge * 1.8;
+        ctx.beginPath(); ctx.arc(0, 0, boundaryR * (1.02 + charge * 0.16), 0, Math.PI * 2); ctx.stroke();
       }
     } else {
       const breathe = 1 + Math.sin(now * 0.0052 + seed) * 0.018;
@@ -5239,6 +5244,35 @@ function nextWave() {
 
       o.y+=o.vy;
       if(o.type==='asteroid') o.rot+=o.rotSpeed;
+    }
+    const liveAsteroids = obstacles.filter(o => o.type === 'asteroid' && o.alive !== false && !o.isDeflected);
+    for (let i = 0; i < liveAsteroids.length; i++) {
+      const a = liveAsteroids[i];
+      for (let j = i + 1; j < liveAsteroids.length; j++) {
+        const b = liveAsteroids[j];
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const minDist = a.r + b.r;
+        const distSq = dx * dx + dy * dy;
+        if (distSq <= 0.01 || distSq >= minDist * minDist) continue;
+        const dist = Math.sqrt(distSq);
+        const nx = dx / dist;
+        const ny = dy / dist;
+        const overlap = minDist - dist;
+        a.x -= nx * overlap * 0.5;
+        a.y -= ny * overlap * 0.5;
+        b.x += nx * overlap * 0.5;
+        b.y += ny * overlap * 0.5;
+        const aDot = (a.vx || 0) * nx + (a.vy || 0) * ny;
+        const bDot = (b.vx || 0) * nx + (b.vy || 0) * ny;
+        const exchange = (bDot - aDot) * 0.68;
+        a.vx = ((a.vx || 0) - nx * exchange) * 0.992;
+        a.vy = ((a.vy || 0) - ny * exchange * 0.38) * 0.998;
+        b.vx = ((b.vx || 0) + nx * exchange) * 0.992;
+        b.vy = ((b.vy || 0) + ny * exchange * 0.38) * 0.998;
+        a.rotSpeed += rand(-0.006, 0.006);
+        b.rotSpeed += rand(-0.006, 0.006);
+      }
     }
     // Danger line crossing — REVERSE flips both which line and which direction
     // counts as "crossed", since obstacles travel upward toward REVERSE_LINE_Y
