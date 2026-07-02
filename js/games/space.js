@@ -422,7 +422,7 @@
   const BOSS_TUNING = {
     'STAR OGRE':    { rMult: 1.10, hpMult: 1.22, attackDelayMult: 0.64, projectileSpeedMult: 1.10, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Large commander. Donkey dodging is the fight.' },
     'SKY DRAGON':   { rMult: 1.12, hpMult: 1.02, attackDelayMult: 0.52, projectileSpeedMult: 1.44, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Big readable target while reading fire split.' },
-    'DARK KNIGHT':  { rMult: 0.84, hpMult: 0.92, attackDelayMult: 0.76, projectileSpeedMult: 1.0, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Precise sword fight, not an HP sponge.' },
+    'DARK KNIGHT':  { rMult: 0.84, hpMult: 0.78, attackDelayMult: 0.76, projectileSpeedMult: 1.0, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Precise sword fight, not an HP sponge.' },
     'GRAY VISITOR': { rMult: 0.58, hpMult: 0.68, attackDelayMult: 0.92, projectileSpeedMult: 1.04, damageMult: 1.0, vulnerabilityWindowMult: 1.15, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Small glitch boss. Break the tether source to drop the forcefield.' },
     'SPACE SHARK':  { rMult: 0.95, hpMult: 0.92, attackDelayMult: 0.55, projectileSpeedMult: 1.08, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Aggressive pattern boss.' },
     'MEAN TACO':    { rMult: 1.12, hpMult: 1.08, attackDelayMult: 1.0, projectileSpeedMult: 1.0, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Large target, but defense windows justify some extra HP.' },
@@ -442,7 +442,7 @@
     return (b && b.tuning && typeof b.tuning[key] === 'number') ? b.tuning[key] : fallback;
   }
   function bossDamage(b, base) {
-    return Math.max(1, Math.round(base * bossTuneValue(b, 'damageMult', 1)));
+    return Math.max(1, Math.round(base * bossTuneValue(b, 'damageMult', 1) * 0.85));
   }
   function bossProjectileSpeed(b, base) {
     return base * bossTuneValue(b, 'projectileSpeedMult', 1);
@@ -718,8 +718,8 @@
   }
 
 
-  const P_SPEED = 5, B_SPEED = 9.9225, O_SPEED_BASE = 2.0; // blaster projectile speed +5% over 9.45
-  const AUTO_FIRE_MS = 190;
+  const P_SPEED = 5, B_SPEED = 10.915, O_SPEED_BASE = 2.0; // blaster projectile speed +10% over 9.9225
+  const AUTO_FIRE_MS = 171;
   const FACE_R = 22, ASTEROID_R_MIN = 14, ASTEROID_R_MAX = 30;
   const SPACE_HP_BAR_Y = 56, SPACE_HP_BAR_H = 14;
   const CAPTIVE_RING_HP = 15;
@@ -950,7 +950,7 @@
     if (shooter && shooter.traitorType === 'red' && cause !== 'BLACKOUT SHOT') {
       const now = Date.now();
       if (now < (shooter.redNextAttackAt || 0) || now < (shooter.redShotHoldUntil || 0)) return;
-      const chargeMs = (wave <= 2 ? 360 : wave <= 6 ? 330 : 300) + 500;
+      const chargeMs = (wave <= 2 ? 360 : wave <= 6 ? 330 : 300) + 750;
       const extendMs = 48;
       const holdMs = 450;
       const retractMs = 90;
@@ -1109,7 +1109,7 @@
     if (now < (shooter.nextPurpleRainAt || 0) || purpleRainActive(shooter, now)) return;
     const tier = currentCfg ? currentCfg.tier : campaignTier(wave);
     const purpleProfile = purpleWaveProfileForWave(wave);
-    const rainDropSpacingMs = 116;
+    const rainDropSpacingMs = 134;
     const duration = rainDropSpacingMs * Math.max(0, purpleProfile.rainDropsMax - 1) + 140;
     const drops = Math.floor(rand(purpleProfile.rainDropsMin, purpleProfile.rainDropsMax + 1));
     shooter.purpleRainUntil = now + duration;
@@ -1872,7 +1872,7 @@
     if (attackType === 'fire') {
       // Phase 3C.5: Dragon breath reads well now; make the boss sweep
       // side-to-side faster so the breath chain snakes across the arena.
-      boss.vx *= 2.15;
+      boss.vx *= 1.83;
     } else if (attackType === 'tether') {
       initGrayVisitorState(boss, Date.now());
     }
@@ -5476,7 +5476,7 @@ function nextWave() {
           // Gizmo lobs tennis balls that ricochet off the side walls and rain back
           // down on you — each ball is a single 20 HP hit (consumed on contact). He
           // barks on every deploy. Wave 10+ adds a ball and a touch more speed.
-          const ballCount = (boss.isFinalGizmo || wave >= 10) ? 3 : 2;
+          const ballCount = (boss.isFinalGizmo || wave >= 10) ? 2 : 1;
           const ballSpeed = bossProjectileSpeed(boss, (wave >= 10 ? 3.9 : 3.4) + Math.max(0, wave - 18) * 0.06); // medium-fast
           for (let k = 0; k < ballCount; k++) {
             // Aim each ball toward a side wall (alternating) on a downward angle, so
