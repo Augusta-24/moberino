@@ -418,7 +418,7 @@
   // Phase 2D: single tuning table for boss feel. Boss patterns say what the
   // boss does; these values say how demanding that fight should feel.
   const BOSS_TUNING = {
-    'STAR OGRE':    { rMult: 1.10, hpMult: 1.24, attackDelayMult: 0.64, projectileSpeedMult: 1.10, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Large commander. Donkey dodging is the fight.' },
+    'STAR OGRE':    { rMult: 1.10, hpMult: 1.22, attackDelayMult: 0.64, projectileSpeedMult: 1.10, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Large commander. Donkey dodging is the fight.' },
     'SKY DRAGON':   { rMult: 1.12, hpMult: 1.02, attackDelayMult: 0.52, projectileSpeedMult: 1.44, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Big readable target while reading fire split.' },
     'DARK KNIGHT':  { rMult: 0.84, hpMult: 0.92, attackDelayMult: 0.76, projectileSpeedMult: 1.0, damageMult: 1.0, vulnerabilityWindowMult: 1.0, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Precise sword fight, not an HP sponge.' },
     'GRAY VISITOR': { rMult: 0.58, hpMult: 0.68, attackDelayMult: 0.92, projectileSpeedMult: 1.04, damageMult: 1.0, vulnerabilityWindowMult: 1.15, spawnClutterAllowed: false, signatureClutterAllowed: false, notes: 'Small glitch boss. Break the tether source to drop the forcefield.' },
@@ -429,7 +429,7 @@
   };
   function bossTuningFor(creature, options) {
     const base = Object.assign({ rMult: 1, hpMult: 1, attackDelayMult: 1, projectileSpeedMult: 1, damageMult: 1, vulnerabilityWindowMult: 1, spawnClutterAllowed: false, signatureClutterAllowed: false }, BOSS_TUNING[creature && creature.name] || {});
-    if (creature && creature.isGizmo && options && options.final) return Object.assign({}, base, { rMult: 1.00, hpMult: 1.62, attackDelayMult: 0.95, notes: 'Final Gizmo should feel bigger and tougher, not endless.' });
+    if (creature && creature.isGizmo && options && options.final) return Object.assign({}, base, { rMult: 1.00, hpMult: 1.60, attackDelayMult: 0.95, notes: 'Final Gizmo should feel bigger and tougher, not endless.' });
     if (creature && creature.isGizmo && options && options.escape) return Object.assign({}, base, { rMult: 0.95, hpMult: 0.85, notes: 'Early/escape Gizmo should not be the real finale.' });
     return base;
   }
@@ -720,7 +720,7 @@
   const FACE_R = 22, ASTEROID_R_MIN = 14, ASTEROID_R_MAX = 30;
   const SPACE_HP_BAR_Y = 56, SPACE_HP_BAR_H = 14;
   const CAPTIVE_RING_HP = 15;
-  const BOSS_R = FACE_R * 2.5, BOSS_HP = 35;
+  const BOSS_R = FACE_R * 1.875, BOSS_HP = 35;
   const MINIBOSS_R = FACE_R * 1.6, MINIBOSS_HP = 6;
 
   // PARTY RAVE wave theme: a lookup-table + wrapper instead of refactoring every
@@ -876,18 +876,18 @@
       // Wave 5 also staggers three normal enemies into fixed slots; the pool still
       // ends through spawnsRemaining/board-clear, so it cannot overlap nextWave().
       1: { spawnsRemaining: 66, speedOverride: 3.44, spawnMsOverride: 620, asteroidRatioOverride: 1, spaceJunkChance: 0.00, extraJunkChance: 0.00, asteroidWallChanceMult: 2.28, asteroidLateralMult: 2.24, asteroidSpeedMult: 1.34, asteroidFallRange: [0.70, 2.34], asteroidAimAtPlayerChance: 0.34, asteroidAimSpreadPx: 80, asteroidHeavyChance: 0.18, asteroidHeavyHp: 4, asteroidSpawnLanes: true, enemyFireMult: 0, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, powerupDelayRange: [2000, 3000], hpDelayRange: [1800, 3200], spawnCadenceMult: 0.82, activeObstacleCap: 8, notes: 'Intro now teaches dodge-or-clear with a denser asteroid field plus ambient junk drifting through the lane.' },
-      2: { spawnsRemaining: 28, mixedEnemyTotal: 10, mixedEnemyScreenCap: 3, mixedAsteroidTotal: 18, mixedTraitorType: 'red', speedOverride: 2.86, spawnMsOverride: 930, asteroidRatioOverride: 0.66, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 1.46, enemyFireRateMult: 0.48, enemyVyMult: 1.36, enemyDriftMult: 2.18, enemyDodgeMult: 1.40, asteroidWallChanceMult: 1.34, asteroidLateralMult: 1.30, asteroidSpeedMult: 1.24, asteroidFallRange: [0.80, 2.12], allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [1400, 2200], hpDelayRange: [2200, 4200], spawnCadenceMult: 0.86, activeObstacleCap: 7, notes: 'Red keeps pressure longer with denser laser lanes and a little more live traffic.' },
-      3: { spawnsRemaining: 22, mixedEnemyTotal: 6, mixedEnemyScreenCap: 2, mixedAsteroidTotal: 16, mixedTraitorType: 'purple', speedOverride: 2.68, spawnMsOverride: 1120, asteroidRatioOverride: 0.72, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 0.98, enemyFireRateMult: 0.84, enemyVyMult: 1.18, enemyDriftMult: 1.46, enemyDodgeMult: 0.88, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 2, powerupDelayRange: [1400, 2200], hpDelayRange: [2400, 4600], spawnCadenceMult: 1.04, activeObstacleCap: 6, notes: 'Purple keeps the shield/rain identity, but with a longer lane read and more to dodge around.' },
-      4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4200, 7000], hpDelayRange: [5000, 8000], enemyFireMult: 0.75 },
-      5: { spawnsRemaining: 30, speedOverride: 2.80, spawnMsOverride: 1020, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.42, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [850, 1200], hpDelayRange: [1800, 3600], swarmCap: 5, activeObstacleCap: 5, spawnCadenceMult: 1.10, notes: 'Swarm stretches longer, but with more bodies instead of spongey cleanup.' },
-      6: { spawnsRemaining: 16, speedOverride: 2.80, spawnMsOverride: 840, asteroidRatioOverride: 0.34, enemyHpOverride: 3, enemyFireMult: 1.00, enemyFireRateMult: 0.66, enemyVyMult: 1.28, enemyDriftMult: 1.70, enemyDodgeMult: 0.92, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 2, rescueRingHp: 30, powerupDelayRange: [2800, 4800], hpDelayRange: [3600, 6200], spawnCadenceMult: 0.84, activeObstacleCap: 5 },
-      7: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4600, 7600], hpDelayRange: [5600, 9000], enemyFireMult: 0.85 },
-      8: { spawnsRemaining: 22, speedOverride: 2.82, spawnMsOverride: 790, asteroidRatioOverride: 1, asteroidSpeedMult: 1.18, asteroidWallChanceMult: 1.24, asteroidLateralMult: 1.20, enemyFireMult: 0.92, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4800, 7600], hpDelayRange: [4200, 6800], spawnCadenceMult: 0.90, activeObstacleCap: 8, notes: 'Blackout lasts longer and asks for more sustained tracking.' },
-      9: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [4600, 7600], hpDelayRange: [5200, 8200], enemyFireMult: 0.9 },
+      2: { spawnsRemaining: 28, mixedEnemyTotal: 10, mixedEnemyScreenCap: 3, mixedAsteroidTotal: 20, mixedTraitorType: 'red', speedOverride: 2.86, spawnMsOverride: 930, asteroidRatioOverride: 0.70, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 1.46, enemyFireRateMult: 0.48, enemyVyMult: 1.36, enemyDriftMult: 2.18, enemyDodgeMult: 1.40, asteroidWallChanceMult: 1.34, asteroidLateralMult: 1.30, asteroidSpeedMult: 1.24, asteroidFallRange: [0.80, 2.12], allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [1400, 2200], hpDelayRange: [2200, 4200], mysteryDelayRange: [3200, 5200], spawnCadenceMult: 0.86, activeObstacleCap: 7, notes: 'Red keeps pressure longer with denser laser lanes and a little more live traffic.' },
+      3: { spawnsRemaining: 22, mixedEnemyTotal: 6, mixedEnemyScreenCap: 2, mixedAsteroidTotal: 18, mixedTraitorType: 'purple', speedOverride: 2.68, spawnMsOverride: 1120, asteroidRatioOverride: 0.76, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 0.98, enemyFireRateMult: 0.84, enemyVyMult: 1.18, enemyDriftMult: 1.46, enemyDodgeMult: 0.88, allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 2, powerupDelayRange: [1400, 2200], hpDelayRange: [2400, 4600], mysteryDelayRange: [3600, 5600], spawnCadenceMult: 1.04, activeObstacleCap: 6, notes: 'Purple keeps the shield/rain identity, but with a longer lane read and more to dodge around.' },
+      4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4200, 7000], hpDelayRange: [3200, 5400], enemyFireMult: 0.75 },
+      5: { spawnsRemaining: 34, speedOverride: 2.92, spawnMsOverride: 980, asteroidRatioOverride: 0.08, enemyHpOverride: 2, enemyFireMult: 0.42, allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [850, 1200], hpDelayRange: [1800, 3600], mysteryDelayRange: [3200, 5200], swarmCap: 6, activeObstacleCap: 6, spawnCadenceMult: 1.06, notes: 'Swarm stretches longer, with more bodies, a little more life, and faster lane drops.' },
+      6: { spawnsRemaining: 16, speedOverride: 2.80, spawnMsOverride: 840, asteroidRatioOverride: 0.40, enemyHpOverride: 3, enemyFireMult: 1.00, enemyFireRateMult: 0.66, enemyVyMult: 1.28, enemyDriftMult: 1.70, enemyDodgeMult: 0.92, allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 2, rescueRingHp: 30, powerupDelayRange: [2800, 4800], hpDelayRange: [3600, 6200], mysteryDelayRange: [4200, 6200], spawnCadenceMult: 0.84, activeObstacleCap: 5 },
+      7: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4600, 7600], hpDelayRange: [3400, 5600], enemyFireMult: 0.85 },
+      8: { spawnsRemaining: 22, speedOverride: 2.82, spawnMsOverride: 790, asteroidRatioOverride: 1, asteroidSpeedMult: 1.18, asteroidWallChanceMult: 1.24, asteroidLateralMult: 1.20, enemyFireMult: 0.92, allowMystery: true, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4800, 7600], hpDelayRange: [4200, 6800], mysteryDelayRange: [4200, 6200], spawnCadenceMult: 0.90, activeObstacleCap: 8, notes: 'Blackout lasts longer and asks for more sustained tracking.' },
+      9: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [4600, 7600], hpDelayRange: [3400, 5600], enemyFireMult: 0.9 },
       10: { spawnsRemaining: 28, speedOverride: 3.14, spawnMsOverride: 740, asteroidRatioOverride: 0.48, enemyHpOverride: 3, enemyFireMult: 1.24, enemyFireRateMult: 0.64, enemyVyMult: 1.28, enemyDriftMult: 1.94, enemyDodgeMult: 1.12, allowMystery: true, allowPowerups: true, allowHp: true, maxSocketPowerups: 3, maxInstruments: 10, instrumentDelayRange: [620, 920], powerupDelayRange: [3200, 5400], hpDelayRange: [3800, 6400], mysteryDelayRange: [5800, 9800], spawnCadenceMult: 0.82, activeObstacleCap: 6 },
-      11: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [5200, 8200], hpDelayRange: [5800, 9000], enemyFireMult: 1.0 },
-      12: { spawnsRemaining: 30, speedOverride: 3.08, spawnMsOverride: 790, asteroidRatioOverride: 0.62, enemyHpOverride: 3, enemyFireMult: 1.20, enemyFireRateMult: 0.66, enemyVyMult: 1.24, enemyDriftMult: 1.80, enemyDodgeMult: 1.00, allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 4, powerupDelayRange: [2200, 3800], hpDelayRange: [2800, 5000], mysteryDelayRange: [4600, 7600], spawnCadenceMult: 0.86, activeObstacleCap: 6, notes: 'Final prep is busier and longer, but still pays out recovery windows.' },
-      13: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [4200, 7000], hpDelayRange: [5200, 8600], enemyFireMult: 1.0, finalBossHpNote: 'Final Gizmo HP is tuned through BOSS_TUNING final override.' },
+      11: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [5200, 8200], hpDelayRange: [3600, 6000], enemyFireMult: 1.0 },
+      12: { spawnsRemaining: 30, speedOverride: 3.08, spawnMsOverride: 790, asteroidRatioOverride: 0.62, enemyHpOverride: 3, enemyFireMult: 1.20, enemyFireRateMult: 0.66, enemyVyMult: 1.24, enemyDriftMult: 1.80, enemyDodgeMult: 1.00, allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 4, powerupDelayRange: [2200, 3800], hpDelayRange: [2600, 4600], mysteryDelayRange: [4600, 7600], spawnCadenceMult: 0.86, activeObstacleCap: 6, notes: 'Final prep is busier and longer, but still pays out recovery windows.' },
+      13: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [4200, 7000], hpDelayRange: [3600, 6000], enemyFireMult: 1.0, finalBossHpNote: 'Final Gizmo HP is tuned through BOSS_TUNING final override.' },
     };
     return tuning[w] || null;
   }
@@ -945,7 +945,7 @@
       if (now < (shooter.redNextAttackAt || 0) || now < (shooter.redShotHoldUntil || 0)) return;
       const chargeMs = wave <= 2 ? 360 : wave <= 6 ? 330 : 300;
       const extendMs = 48;
-      const holdMs = 250;
+      const holdMs = 360;
       const retractMs = 90;
       const cooldownMs = 520;
       const shieldMs = 520;
@@ -961,6 +961,8 @@
       shooter.redShotChargeUntil = now + chargeMs;
       shooter.redShotHoldUntil = beamHoldUntil;
       shooter.redVulnerableUntil = Math.max(shooter.redVulnerableUntil || 0, beamRetractUntil + cooldownMs);
+      shooter.redTelegraphX = targetX;
+      shooter.redTelegraphY = targetY;
       const token = spaceFlowToken;
       shooter.redSecondShotAt = 0;
       shooter.redNextAttackAt = beamRetractUntil + cooldownMs + shieldMs;
@@ -1303,6 +1305,7 @@
     else if (waveTheme === 'swarm') ratio = 0.1;
     else if (waveTheme === 'goldrush') ratio = 0.85;
     else if (waveTheme === 'mirror') ratio = 1;
+    else if (waveTheme !== 'boss' && waveTheme !== 'gizmo' && waveTheme !== 'captive') ratio += 0.06;
     return clamp(ratio, 0, 1);
   }
 
@@ -1394,7 +1397,7 @@
         // that powerups are banked, not lost if you can't immediately catch one —
         // there's more of a safety net to draw on, so this can push harder.
         const r = FACE_R * 0.56;
-        obstacles.push({ type:'face', behavior:'swarmer', x:rand(r,W-r), y:-r-10, vx:rand(-0.55,0.55)*cfg.speed, vy:cfg.speed*1.62, r, ci: nextMissionEnemyIndex(), hp:cfg.enemyHpOverride || 1, isTrapped:false, ringHp:0, pausedBurstDone:true, paused:false, pauseUntil:0, burstShotsLeft:0, lastBurstShot:0, swarmerFlashSeed: Math.random() * 1000 });
+        obstacles.push({ type:'face', behavior:'swarmer', x:rand(r,W-r), y:-r-10, vx:rand(-0.62,0.62)*cfg.speed, vy:cfg.speed*1.82, r, ci: nextMissionEnemyIndex(), hp:cfg.enemyHpOverride || 1, isTrapped:false, ringHp:0, pausedBurstDone:true, paused:false, pauseUntil:0, burstShotsLeft:0, lastBurstShot:0, swarmerFlashSeed: Math.random() * 1000 });
         return;
       }
       if (waveTheme === 'bomber') {
@@ -1977,11 +1980,17 @@
   function scheduleMysteryBox() {
     clearTimeout(mysteryTimer);
     const range = currentCfg && currentCfg.mysteryDelayRange ? currentCfg.mysteryDelayRange : [9000, 15000];
+    const liveMysteries = powerups.filter(p => p.type === 'mystery').length;
+    const normalDelay = range[0] + Math.random() * (range[1] - range[0]);
+    const fastIntroDelay = Math.max(900, range[0] * 0.45);
+    const nextDelay = (campaignAllows('allowMystery') && !boss && !waveTransitioning && regularDropWindowOpen() && liveMysteries === 0)
+      ? Math.min(normalDelay, fastIntroDelay)
+      : normalDelay;
     mysteryTimer = setTimeout(() => {
       if (state !== 'playing') return;
       if (campaignAllows('allowMystery') && !boss && !waveTransitioning) spawnMysteryBox();
       scheduleMysteryBox();
-    }, range[0] + Math.random() * (range[1] - range[0]));
+    }, nextDelay);
   }
 
   // MUSIC ("JAM SESSION") theme — purely fun, no extra danger: asteroids/enemies
@@ -2800,7 +2809,6 @@
     waveTheme = pickWaveTheme(wave, null);
     startWaveSpawn(currentCfg);
     if (waveTheme === 'blackout') { spawnBlackoutHiddenEnemies(); spaceSfx('wave.blackout'); }
-    if (waveTheme === 'captive' && wave === 6) spawnCampaignRescueLock();
     scheduleHpPowerup();
     schedulePowerup();
     scheduleMysteryBox();
@@ -2833,7 +2841,7 @@
   function spawnAmbientJunk(cfg) {
     if (state !== 'playing' || academyMode) return;
     const activeJunk = obstacles.filter(o => o.type === 'junk' && o.alive !== false).length;
-    const cap = waveTheme === 'asteroids' ? 5 : 3;
+    const cap = waveTheme === 'asteroids' ? 6 : 4;
     if (activeJunk >= cap) return;
     const sideRoll = Math.random();
     const spawnR = rand(15, 19);
@@ -2878,8 +2886,8 @@
     clearTimeout(ambientJunkTimer);
     if (state !== 'playing' || academyMode) return;
     const delay = waveTheme === 'asteroids'
-      ? 1200 + Math.random() * 700
-      : 1750 + Math.random() * 1200;
+      ? 980 + Math.random() * 620
+      : 1420 + Math.random() * 980;
     ambientJunkTimer = setTimeout(() => {
       if (state !== 'playing' || academyMode) return;
       spawnAmbientJunk(cfg || currentCfg);
@@ -3297,7 +3305,6 @@
     pendingBossWin = null;
     startWaveSpawn(currentCfg);
     if (waveTheme === 'blackout') { spawnBlackoutHiddenEnemies(); spaceSfx('wave.blackout'); }
-    if (waveTheme === 'captive' && wave === 6) spawnCampaignRescueLock();
     scheduleHpPowerup();
     schedulePowerup();
     scheduleMysteryBox();
@@ -3721,7 +3728,6 @@ function nextWave() {
           scheduleMysteryBox();
           scheduleInstrument();
           if (waveTheme === 'blackout') { spawnBlackoutHiddenEnemies(); spaceSfx('wave.blackout'); }
-          if (waveTheme === 'captive' && wave === 6) spawnCampaignRescueLock();
           if (waveTheme === 'boss') spawnBoss(false, { guardedRescue: [4,7,9,11].includes(wave) && hasUnrescuedMissionCaptive() });
           if (waveTheme === 'gizmo') spawnBoss(false, { guardedRescue: hasUnrescuedMissionCaptive(), escape: wave !== SPACE_FINAL_GIZMO_WAVE, final: wave === SPACE_FINAL_GIZMO_WAVE });
           if (waveTheme === 'captive' && wave !== 6) spawnBoss(true);
@@ -3743,7 +3749,7 @@ function nextWave() {
       return 'KEEP THE RUN GOING.';
     }
     if (wave === 1) return 'DODGE ROCKS AND JUNK';
-    if (wave === 2) return 'DODGE THE LASERS';
+    if (wave === 2) return 'DODGE LASERS';
     if (wave === 3) return 'PURPLE RAIN';
     if (wave === 4) return 'FIRST CAPTIVE. BEAT THE BOSS.';
     if (wave === 5) return 'SWARM. BOMB OR DODGE CLEAN.';
@@ -4269,21 +4275,27 @@ function nextWave() {
     if (vulnerable) {
       if (o.traitorType === 'red' && redChargeActive(o, now)) {
         const charge = Math.max(0, Math.min(1, (now - (o.redShotChargeAt || now)) / Math.max(1, (o.redShotChargeUntil || now + 1) - (o.redShotChargeAt || now))));
-        const pulse = 1 + Math.sin(now * 0.034) * (0.06 + charge * 0.10);
-        const orbR = o.r * (0.255 + charge * 0.69) * pulse;
-        ctx.shadowColor = '#ff6448';
-        ctx.shadowBlur = 9 + charge * 10;
-        ctx.strokeStyle = `rgba(255,120,92,${0.52 + charge * 0.34})`;
-        ctx.lineWidth = 2.2 + charge * 2.0;
-        ctx.beginPath(); ctx.arc(0, 0, boundaryR * (1.02 + charge * 0.18), 0, Math.PI * 2); ctx.stroke();
-        ctx.shadowColor = '#ff3c28';
-        ctx.shadowBlur = 16 + charge * 18;
-        ctx.fillStyle = `rgba(255,64,42,${0.16 + charge * 0.24})`;
-        ctx.beginPath(); ctx.arc(0, boundaryR * 0.62, orbR * 1.9, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = `rgba(255,92,64,${0.34 + charge * 0.28})`;
-        ctx.beginPath(); ctx.arc(0, boundaryR * 0.62, orbR * 1.28, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = `rgba(255,220,205,${0.28 + charge * 0.12})`;
-        ctx.beginPath(); ctx.arc(0, boundaryR * 0.62, orbR * 0.42, 0, Math.PI * 2); ctx.fill();
+        const telegraphX = (o.redTelegraphX == null ? 0 : (o.redTelegraphX - o.x));
+        const telegraphY = (o.redTelegraphY == null ? boundaryR * 4.8 : (o.redTelegraphY - o.y));
+        const dots = 6;
+        const pulse = 0.52 + charge * 0.42;
+        ctx.shadowColor = '#ff5a42';
+        ctx.shadowBlur = 8 + charge * 8;
+        ctx.strokeStyle = `rgba(255,112,84,${0.62 + charge * 0.20})`;
+        ctx.lineWidth = 2.0 + charge * 1.1;
+        ctx.beginPath(); ctx.arc(0, 0, boundaryR * (1.01 + charge * 0.06), 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = '#ffd9cf';
+        for (let i = 0; i < dots; i++) {
+          const t = (i + 1) / (dots + 1);
+          const px = telegraphX * t;
+          const py = telegraphY * t;
+          const pr = (2.0 + charge * 1.4) * (1 + Math.sin(now * 0.02 + i * 0.9) * 0.10);
+          ctx.globalAlpha = pulse * (0.48 + t * 0.52);
+          ctx.beginPath();
+          ctx.arc(px, py, pr, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
       } else if (o.traitorType === 'red' && redHoldActive(o, now)) {
         const holdPulse = 1 + Math.sin(now * 0.018 + seed) * 0.045;
         ctx.shadowColor = '#ff4e36';
@@ -6063,6 +6075,10 @@ function nextWave() {
     }
     if (!academyMode && !academyCompleting && spaceRunMode !== 'bossrun' && spawnsRemaining <= 0 && blockingObstacles.length === 0 && powerups.length === 0 && !boss && !miniBoss && !mirrorSequenceActive && !pendingBossWin && state === 'playing') {
       nextWave();
+    }
+    if (waveTheme === 'captive' && wave === 6 && !waveCaptivesSeen.has('campaign-lock')) {
+      const liveEnemyFaces = obstacles.filter(o => o.type === 'face' && !o.isTrapped && o.alive !== false);
+      if (liveEnemyFaces.length > 0) spawnCampaignRescueLock();
     }
     updateSpaceAcademy();
 
