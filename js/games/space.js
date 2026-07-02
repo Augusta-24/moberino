@@ -95,6 +95,7 @@
     applyPowerup(type);
   }
   let mysteryTimer = null;
+  let ambientJunkTimer = null;
   let shakeMag = 0; // screen shake on big hits — decays each frame
   function triggerShake(amount) { shakeMag = Math.max(shakeMag, amount); }
   // Rescued hero escort — temporary wingman, cap 1 (rescuing again refreshes/replaces it).
@@ -695,9 +696,10 @@
         const dx = player.x - d.x;
         const dy = player.y - d.y;
         const dist = Math.hypot(dx, dy) || 1;
-        const speed = (9.1 + Math.min(1.9, campaignTier(wave) * 0.34)) * bossProjectileSpeed(boss, 1);
+        const speed = (9.1 + Math.min(1.9, campaignTier(wave) * 0.34)) * bossProjectileSpeed(boss, 1.10);
         d.vx = (dx / dist) * speed;
         d.vy = (dy / dist) * speed;
+        d.homing = 0.0042;
         d.donkeyState = 'charge';
         d.chargeBorn = now;
         line.nextChargeAt = now + 390;
@@ -873,18 +875,18 @@
       // Asteroid-field waves use slower cadence instead of dumping rocks faster.
       // Wave 5 also staggers three normal enemies into fixed slots; the pool still
       // ends through spawnsRemaining/board-clear, so it cannot overlap nextWave().
-      1: { spawnsRemaining: 66, speedOverride: 3.44, spawnMsOverride: 620, asteroidRatioOverride: 1, spaceJunkChance: 0.00, extraJunkChance: 0.15, asteroidWallChanceMult: 2.28, asteroidLateralMult: 2.24, asteroidSpeedMult: 1.34, asteroidFallRange: [0.70, 2.34], asteroidAimAtPlayerChance: 0.34, asteroidAimSpreadPx: 80, asteroidHeavyChance: 0.18, asteroidHeavyHp: 4, asteroidSpawnLanes: true, enemyFireMult: 0, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, powerupDelayRange: [2000, 3000], hpDelayRange: [1800, 3200], spawnCadenceMult: 0.82, activeObstacleCap: 8, notes: 'Intro now teaches dodge-or-clear with a denser asteroid field plus drifting junk sprinkled through the lane.' },
-      2: { spawnsRemaining: 24, mixedEnemyTotal: 8, mixedEnemyScreenCap: 2, mixedAsteroidTotal: 16, mixedTraitorType: 'red', speedOverride: 2.82, spawnMsOverride: 960, asteroidRatioOverride: 0.66, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 1.38, enemyFireRateMult: 0.52, enemyVyMult: 1.32, enemyDriftMult: 2.10, enemyDodgeMult: 1.36, asteroidWallChanceMult: 1.30, asteroidLateralMult: 1.26, asteroidSpeedMult: 1.22, asteroidFallRange: [0.78, 2.08], allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [1400, 2200], hpDelayRange: [2200, 4200], spawnCadenceMult: 0.88, activeObstacleCap: 6, notes: 'Red keeps pressure longer: more rocks, quicker cadence, and more frequent charged shots.' },
-      3: { spawnsRemaining: 18, mixedEnemyTotal: 5, mixedEnemyScreenCap: 2, mixedAsteroidTotal: 13, mixedTraitorType: 'purple', speedOverride: 2.62, spawnMsOverride: 1180, asteroidRatioOverride: 0.72, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 0.92, enemyFireRateMult: 0.90, enemyVyMult: 1.14, enemyDriftMult: 1.38, enemyDodgeMult: 0.82, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 2, powerupDelayRange: [1400, 2200], hpDelayRange: [2400, 4600], spawnCadenceMult: 1.08, activeObstacleCap: 5, notes: 'Purple keeps the shield/rain identity, but now asks for a real dodge on the opening.' },
+      1: { spawnsRemaining: 66, speedOverride: 3.44, spawnMsOverride: 620, asteroidRatioOverride: 1, spaceJunkChance: 0.00, extraJunkChance: 0.00, asteroidWallChanceMult: 2.28, asteroidLateralMult: 2.24, asteroidSpeedMult: 1.34, asteroidFallRange: [0.70, 2.34], asteroidAimAtPlayerChance: 0.34, asteroidAimSpreadPx: 80, asteroidHeavyChance: 0.18, asteroidHeavyHp: 4, asteroidSpawnLanes: true, enemyFireMult: 0, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, powerupDelayRange: [2000, 3000], hpDelayRange: [1800, 3200], spawnCadenceMult: 0.82, activeObstacleCap: 8, notes: 'Intro now teaches dodge-or-clear with a denser asteroid field plus ambient junk drifting through the lane.' },
+      2: { spawnsRemaining: 28, mixedEnemyTotal: 10, mixedEnemyScreenCap: 3, mixedAsteroidTotal: 18, mixedTraitorType: 'red', speedOverride: 2.86, spawnMsOverride: 930, asteroidRatioOverride: 0.66, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 1.46, enemyFireRateMult: 0.48, enemyVyMult: 1.36, enemyDriftMult: 2.18, enemyDodgeMult: 1.40, asteroidWallChanceMult: 1.34, asteroidLateralMult: 1.30, asteroidSpeedMult: 1.24, asteroidFallRange: [0.80, 2.12], allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [1400, 2200], hpDelayRange: [2200, 4200], spawnCadenceMult: 0.86, activeObstacleCap: 7, notes: 'Red keeps pressure longer with denser laser lanes and a little more live traffic.' },
+      3: { spawnsRemaining: 22, mixedEnemyTotal: 6, mixedEnemyScreenCap: 2, mixedAsteroidTotal: 16, mixedTraitorType: 'purple', speedOverride: 2.68, spawnMsOverride: 1120, asteroidRatioOverride: 0.72, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 0.98, enemyFireRateMult: 0.84, enemyVyMult: 1.18, enemyDriftMult: 1.46, enemyDodgeMult: 0.88, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 2, powerupDelayRange: [1400, 2200], hpDelayRange: [2400, 4600], spawnCadenceMult: 1.04, activeObstacleCap: 6, notes: 'Purple keeps the shield/rain identity, but with a longer lane read and more to dodge around.' },
       4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4200, 7000], hpDelayRange: [5000, 8000], enemyFireMult: 0.75 },
-      5: { spawnsRemaining: 24, speedOverride: 2.72, spawnMsOverride: 1087, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.34, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [850, 1200], hpDelayRange: [1800, 3600], swarmCap: 4, activeObstacleCap: 4, spawnCadenceMult: 1.16, notes: 'Swarm is shorter and still regularly throws helpful drops into the lane.' },
-      6: { spawnsRemaining: 13, speedOverride: 2.72, spawnMsOverride: 880, asteroidRatioOverride: 0.34, enemyHpOverride: 3, enemyFireMult: 0.94, enemyFireRateMult: 0.70, enemyVyMult: 1.24, enemyDriftMult: 1.62, enemyDodgeMult: 0.88, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 2, rescueRingHp: 30, powerupDelayRange: [2800, 4800], hpDelayRange: [3600, 6200], spawnCadenceMult: 0.88, activeObstacleCap: 4 },
+      5: { spawnsRemaining: 30, speedOverride: 2.80, spawnMsOverride: 1020, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.42, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [850, 1200], hpDelayRange: [1800, 3600], swarmCap: 5, activeObstacleCap: 5, spawnCadenceMult: 1.10, notes: 'Swarm stretches longer, but with more bodies instead of spongey cleanup.' },
+      6: { spawnsRemaining: 16, speedOverride: 2.80, spawnMsOverride: 840, asteroidRatioOverride: 0.34, enemyHpOverride: 3, enemyFireMult: 1.00, enemyFireRateMult: 0.66, enemyVyMult: 1.28, enemyDriftMult: 1.70, enemyDodgeMult: 0.92, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 2, rescueRingHp: 30, powerupDelayRange: [2800, 4800], hpDelayRange: [3600, 6200], spawnCadenceMult: 0.84, activeObstacleCap: 5 },
       7: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4600, 7600], hpDelayRange: [5600, 9000], enemyFireMult: 0.85 },
-      8: { spawnsRemaining: 16, speedOverride: 2.72, spawnMsOverride: 830, asteroidRatioOverride: 1, asteroidSpeedMult: 1.12, asteroidWallChanceMult: 1.20, asteroidLateralMult: 1.16, enemyFireMult: 0.82, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4800, 7600], hpDelayRange: [4200, 6800], spawnCadenceMult: 0.95, activeObstacleCap: 7 },
+      8: { spawnsRemaining: 22, speedOverride: 2.82, spawnMsOverride: 790, asteroidRatioOverride: 1, asteroidSpeedMult: 1.18, asteroidWallChanceMult: 1.24, asteroidLateralMult: 1.20, enemyFireMult: 0.92, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4800, 7600], hpDelayRange: [4200, 6800], spawnCadenceMult: 0.90, activeObstacleCap: 8, notes: 'Blackout lasts longer and asks for more sustained tracking.' },
       9: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [4600, 7600], hpDelayRange: [5200, 8200], enemyFireMult: 0.9 },
-      10: { spawnsRemaining: 22, speedOverride: 3.08, spawnMsOverride: 780, asteroidRatioOverride: 0.48, enemyHpOverride: 3, enemyFireMult: 1.16, enemyFireRateMult: 0.68, enemyVyMult: 1.24, enemyDriftMult: 1.86, enemyDodgeMult: 1.08, allowMystery: true, allowPowerups: true, allowHp: true, maxSocketPowerups: 3, maxInstruments: 10, instrumentDelayRange: [620, 920], powerupDelayRange: [3200, 5400], hpDelayRange: [3800, 6400], mysteryDelayRange: [5800, 9800], spawnCadenceMult: 0.86, activeObstacleCap: 5 },
+      10: { spawnsRemaining: 28, speedOverride: 3.14, spawnMsOverride: 740, asteroidRatioOverride: 0.48, enemyHpOverride: 3, enemyFireMult: 1.24, enemyFireRateMult: 0.64, enemyVyMult: 1.28, enemyDriftMult: 1.94, enemyDodgeMult: 1.12, allowMystery: true, allowPowerups: true, allowHp: true, maxSocketPowerups: 3, maxInstruments: 10, instrumentDelayRange: [620, 920], powerupDelayRange: [3200, 5400], hpDelayRange: [3800, 6400], mysteryDelayRange: [5800, 9800], spawnCadenceMult: 0.82, activeObstacleCap: 6 },
       11: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [5200, 8200], hpDelayRange: [5800, 9000], enemyFireMult: 1.0 },
-      12: { spawnsRemaining: 24, speedOverride: 3.00, spawnMsOverride: 840, asteroidRatioOverride: 0.62, enemyHpOverride: 3, enemyFireMult: 1.12, enemyFireRateMult: 0.70, enemyVyMult: 1.20, enemyDriftMult: 1.72, enemyDodgeMult: 0.96, allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 4, powerupDelayRange: [2200, 3800], hpDelayRange: [2800, 5000], mysteryDelayRange: [4600, 7600], spawnCadenceMult: 0.90, activeObstacleCap: 5, notes: 'Final prep is still busy, but with fewer heavy repeats and more refuel windows.' },
+      12: { spawnsRemaining: 30, speedOverride: 3.08, spawnMsOverride: 790, asteroidRatioOverride: 0.62, enemyHpOverride: 3, enemyFireMult: 1.20, enemyFireRateMult: 0.66, enemyVyMult: 1.24, enemyDriftMult: 1.80, enemyDodgeMult: 1.00, allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 4, powerupDelayRange: [2200, 3800], hpDelayRange: [2800, 5000], mysteryDelayRange: [4600, 7600], spawnCadenceMult: 0.86, activeObstacleCap: 6, notes: 'Final prep is busier and longer, but still pays out recovery windows.' },
       13: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [4200, 7000], hpDelayRange: [5200, 8600], enemyFireMult: 1.0, finalBossHpNote: 'Final Gizmo HP is tuned through BOSS_TUNING final override.' },
     };
     return tuning[w] || null;
@@ -2805,7 +2807,7 @@
     scheduleInstrument();
     const flowToken = spaceFlowToken;
     setTimeout(() => {
-      if (flowToken === spaceFlowToken && state === 'playing' && wave === 1) showTopBanner('DODGE OR CLEAR THE ROCKS', 'good');
+      if (flowToken === spaceFlowToken && state === 'playing' && wave === 1) showTopBanner('DODGE ROCKS AND JUNK', 'good');
     }, 900);
     // Wave 1 starts at full HP, so the existing random HP-crate timer can land while
     // the player is already capped and never feel like real support. Guarantee one
@@ -2822,9 +2824,67 @@
     clearTimeout(powerupTimer);
     clearTimeout(mysteryTimer);
     clearTimeout(instrumentTimer);
+    clearTimeout(ambientJunkTimer);
     mirrorStageTimers.forEach(clearTimeout);
     mirrorStageTimers = [];
     mirrorSequenceActive = false;
+  }
+
+  function spawnAmbientJunk(cfg) {
+    if (state !== 'playing' || academyMode) return;
+    const activeJunk = obstacles.filter(o => o.type === 'junk' && o.alive !== false).length;
+    const cap = waveTheme === 'asteroids' ? 5 : 3;
+    if (activeJunk >= cap) return;
+    const sideRoll = Math.random();
+    const spawnR = rand(15, 19);
+    const junkKinds = ['duck', 'boot', 'trashcan', 'basketball'];
+    const junkKind = junkKinds[Math.floor(Math.random() * junkKinds.length)];
+    let x = W * rand(0.14, 0.86);
+    let y = -spawnR - 14;
+    let vx = rand(-0.12, 0.12);
+    let vy = Math.max(0.18, (cfg ? cfg.speed : O_SPEED_BASE) * rand(0.045, 0.085));
+    if (sideRoll < 0.34) {
+      x = -spawnR - 18;
+      y = H * rand(0.12, 0.62);
+      vx = rand(0.24, 0.50);
+      vy = Math.max(0.14, (cfg ? cfg.speed : O_SPEED_BASE) * rand(0.025, 0.055));
+    } else if (sideRoll < 0.68) {
+      x = W + spawnR + 18;
+      y = H * rand(0.12, 0.62);
+      vx = -rand(0.24, 0.50);
+      vy = Math.max(0.14, (cfg ? cfg.speed : O_SPEED_BASE) * rand(0.025, 0.055));
+    }
+    const verts = Array.from({ length: 8 }, (_, i) => {
+      const a = (i / 8) * Math.PI * 2;
+      const rr = spawnR * (0.76 + Math.random() * 0.18);
+      return [Math.cos(a) * rr, Math.sin(a) * rr];
+    });
+    obstacles.push({
+      type: 'junk',
+      x, y, vx, vy, r: spawnR, verts, junkKind,
+      rot: rand(-0.12, 0.12), rotSpeed: rand(-0.008, 0.008), hp: 1,
+      junkFloatSeed: Math.random() * Math.PI * 2,
+      junkFloatAmpX: rand(0.18, 0.28) * spawnR,
+      junkFloatAmpY: rand(0.08, 0.14) * spawnR,
+      junkFloatSpeed: rand(0.00055, 0.00092),
+      junkDriftDir: vx < -0.02 ? -1 : vx > 0.02 ? 1 : 0,
+      shadeSeed: Math.random() * 1000,
+      rockStyle: Math.floor(Math.random() * 3),
+      ambientJunk: true
+    });
+  }
+
+  function scheduleAmbientJunk(cfg) {
+    clearTimeout(ambientJunkTimer);
+    if (state !== 'playing' || academyMode) return;
+    const delay = waveTheme === 'asteroids'
+      ? 1200 + Math.random() * 700
+      : 1750 + Math.random() * 1200;
+    ambientJunkTimer = setTimeout(() => {
+      if (state !== 'playing' || academyMode) return;
+      spawnAmbientJunk(cfg || currentCfg);
+      scheduleAmbientJunk(cfg || currentCfg);
+    }, delay);
   }
 
   function clearSpaceBonusObjects() {
@@ -2852,7 +2912,7 @@
   }
 
   const SPACE_ACADEMY_LESSONS = [
-    { title: 'DRAG TO MOVE', detail: 'DODGE ROCKS AND KEEP YOUR SHIP CLEAR', confirm: 'GOOD DODGING!' },
+    { title: 'DRAG TO MOVE', detail: 'DODGE ROCKS, DODGE JUNK, KEEP YOUR SHIP CLEAR', confirm: 'GOOD DODGING!' },
     { title: 'NORMAL ENEMIES', detail: 'THEY HOLD, DRIFT, AND SHOOT', confirm: 'ENEMY CLEARED!' },
     { title: 'RED SWARMERS', detail: 'FLASHING RED ENEMIES RUSH YOUR SPACE', confirm: 'SWARMER STOPPED!' },
     { title: 'CATCH POWERUPS', detail: 'LEFT SOCKETS STORE GUN / SHIELD / BOMB', confirm: 'SOCKETS STOCKED!' },
@@ -3248,6 +3308,7 @@
     if (waveTheme === 'ghost' || waveTheme === 'emp') { spawnMiniBoss(waveTheme); if (waveTheme === 'emp') spaceSfx('status.emp'); }
     if (waveTheme === 'mirror') spawnMirrorEnemy();
     if (waveTheme === 'rave') playRaveDiscoStab();
+    scheduleAmbientJunk(currentCfg);
     if (waveTheme !== 'blackout' && waveTheme !== 'music') showTopBanner(forcedBossName ? `TEST ${forcedBossName}` : `DEBUG WAVE ${wave}`, 'good');
     showSkillCalloutForWave();
   }
@@ -3255,7 +3316,7 @@
   let spawnTimer = null;
   function startWaveSpawn(cfg) {
     clearTimeout(spawnTimer);
-    const configuredExtraJunkChance = cfg.extraJunkChance == null ? 0.15 : cfg.extraJunkChance;
+    const configuredExtraJunkChance = cfg.extraJunkChance == null ? 0.00 : cfg.extraJunkChance;
     if (cfg.mixedEnemyTotal != null && cfg.mixedAsteroidTotal != null) {
       let enemiesRemaining = Math.max(0, cfg.mixedEnemyTotal);
       let asteroidsRemaining = Math.max(0, cfg.mixedAsteroidTotal);
@@ -3681,8 +3742,8 @@ function nextWave() {
       if (waveTheme === 'asteroids') return 'BREATHER. DODGE OR CLEAR.';
       return 'KEEP THE RUN GOING.';
     }
-    if (wave === 1) return 'DODGE OR CLEAR THE ROCKS';
-    if (wave === 2) return 'RED TRAITOR. DODGE FLUTE SHOTS.';
+    if (wave === 1) return 'DODGE ROCKS AND JUNK';
+    if (wave === 2) return 'DODGE THE LASERS';
     if (wave === 3) return 'PURPLE RAIN';
     if (wave === 4) return 'FIRST CAPTIVE. BEAT THE BOSS.';
     if (wave === 5) return 'SWARM. BOMB OR DODGE CLEAN.';
@@ -3697,7 +3758,7 @@ function nextWave() {
     if (waveTheme === 'swarm') return 'BOMB NOW OR DODGE CLEAN';
     if (waveTheme === 'bomber') return 'KILL BOMBERS EARLY';
     if (waveTheme === 'mirror') return 'FIND THE TRIANGLE GAP';
-    if (waveTheme === 'asteroids') return 'DODGE OR CLEAR THE ROCKS';
+    if (waveTheme === 'asteroids') return 'DODGE ROCKS AND JUNK';
     if (waveTheme === 'enemies') return 'SHOOT FACES. DODGE SHOTS.';
     if (waveTheme === 'blackout') return 'FIND THE SHOOTERS';
     if (waveTheme === 'emp') return 'DODGE THE ZAPS';
@@ -5030,12 +5091,31 @@ function nextWave() {
 
       // A jail cell shouldn't be dispatching reinforcements — captive fights are just
       // rescue + dodge attacks, no minions.
-      if (!boss.isCaptive && bossAllowsClutter(boss, false) && boss.attackType !== 'donkey' && Date.now() > bossDeployTimer) {
+      if (!boss.isCaptive && bossAllowsClutter(boss, false) && Date.now() > bossDeployTimer) {
         // Spawns from right behind the boss, not a random spot at the top — reads as
         // the boss actually deploying it rather than an unrelated arrival.
-        const side = Math.random() < 0.5 ? -1 : 1;
-        obstacles.push({ type:'face', x: Math.max(FACE_R, Math.min(W-FACE_R, boss.x + side*boss.r*0.7)), y: boss.y + boss.r*0.5, vx:rand(-0.6,0.6)*currentCfg.speed, vy:currentCfg.speed*0.55, r:FACE_R, ci: nextMissionEnemyIndex(), hp:3, isTrapped:false, ringHp:0, pausedBurstDone:false, paused:false, pauseUntil:0, burstShotsLeft:0, lastBurstShot:0 });
-        bossDeployTimer = Date.now() + 4000 + Math.random()*1500;
+        const addSupportFace = (side) => {
+          obstacles.push({
+            type:'face',
+            x: Math.max(FACE_R, Math.min(W - FACE_R, boss.x + side * boss.r * rand(0.52, 0.82))),
+            y: boss.y + boss.r * rand(0.28, 0.55),
+            vx: rand(-0.45, 0.45) * currentCfg.speed,
+            vy: currentCfg.speed * rand(0.52, 0.68),
+            r: FACE_R,
+            ci: nextMissionEnemyIndex(),
+            hp: 3,
+            isTrapped: false,
+            ringHp: 0,
+            pausedBurstDone: false,
+            paused: false,
+            pauseUntil: 0,
+            burstShotsLeft: 0,
+            lastBurstShot: 0
+          });
+        };
+        addSupportFace(-1);
+        addSupportFace(1);
+        bossDeployTimer = Date.now() + 3000 + Math.random() * 1100;
       }
 
       updateOgreDonkeyLine();
@@ -5134,7 +5214,7 @@ function nextWave() {
           // Phase 3C.1 Shark: continuous tooth deployment, not a single wave.
           // Each attack tick adds a few teeth, then the reload is short so the
           // player reads a steady stream.
-          const count = bt >= 2 ? 3 : 2;
+          const count = bt >= 2 ? 4 : 3;
           const lanes = 6;
           const speed = bossProjectileSpeed(boss, 3.75 + bt * 0.2 + Math.max(0, wave - 18) * 0.06);
           const left = W * 0.14, right = W * 0.86;
@@ -5144,7 +5224,7 @@ function nextWave() {
             enemyBullets.push({
               x, y: boss.y + boss.r * 0.62 - seq * 20,
               vx: (seq % 2 ? -1 : 1) * speed * 0.36, vy: speed,
-              r: 7.9, theme: 'fish', damage: bossDamage(boss, 22), displayRotation: 0, fixedRotation: true,
+              r: 7.9, theme: 'fish', damage: bossDamage(boss, 15), displayRotation: 0, fixedRotation: true,
               zigZagTooth: true, nextZigAt: Date.now() + 300 + seq * 45, zigMs: 300,
               laneMin: Math.max(20, x - W * 0.12), laneMax: Math.min(W - 20, x + W * 0.12),
               born: Date.now()
@@ -8927,10 +9007,10 @@ function nextWave() {
         }, 1050);
       }},
       { duration: 3000, show: () => {
-        ann.innerHTML = spIntroObjectiveHTML('DODGE OR CLEAR THE ROCKS',
+        ann.innerHTML = spIntroObjectiveHTML('DODGE ROCKS AND JUNK',
           `<div id="sp-intro-line-wrap" style="position:relative;width:140px;height:90px">
             <div id="sp-intro-rock2" style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:40px;height:40px;background:linear-gradient(135deg,#8b7fa3 0 22%,#5c526c 22% 60%,#362f42 60%);clip-path:polygon(48% 0,84% 12%,100% 46%,82% 84%,42% 100%,8% 74%,0 34%,18% 8%);box-shadow:0 0 0 4px #241f2d,0 0 0 6px #8b7fa3;transition:top 0.9s ease-in"></div>
-            <div id="sp-intro-dmg" style="position:absolute;bottom:18px;left:50%;transform:translateX(-50%) translateY(0);font-family:'Bebas Neue',cursive;font-size:20px;color:#00e5ff;text-shadow:0 0 10px #00e5ff;opacity:0;transition:opacity 0.2s,transform 0.4s;white-space:nowrap">MAKE ROOM</div>
+            <div id="sp-intro-dmg" style="position:absolute;bottom:18px;left:50%;transform:translateX(-50%) translateY(0);font-family:'Bebas Neue',cursive;font-size:20px;color:#00e5ff;text-shadow:0 0 10px #00e5ff;opacity:0;transition:opacity 0.2s,transform 0.4s;white-space:nowrap">MAKE ROOM - DODGE JUNK TOO</div>
           </div>`);
         // This beat now teaches space control rather than "protect the line":
         // let a rock fall into the player's lane, then prompt the player to make room.
