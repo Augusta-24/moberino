@@ -25,7 +25,7 @@
   const SPACE_SOCKET_ANCHOR_BOTTOM_OFFSET = 94;
   const SPACE_DANGER_LINE_GAP = 8;
   const SHOW_DANGER_LINE = false;
-  const ASTEROID_LINE_HIT_CHANCE = 0.18;
+  const ASTEROID_LINE_HIT_CHANCE = 0.20;
   const ASTEROIDS_REQUIRE_CLEAR = false;
   // REVERSE theme: a separate fixed "escape" line near the top, just below the
   // HUD/banner strip — kept independent of dangerY on purpose, since dangerY tracks
@@ -855,14 +855,14 @@
       // Asteroid-field waves use slower cadence instead of dumping rocks faster.
       // Wave 5 also staggers three normal enemies into fixed slots; the pool still
       // ends through spawnsRemaining/board-clear, so it cannot overlap nextWave().
-      1: { spawnsRemaining: 50, speedOverride: 2.94, spawnMsOverride: 780, asteroidRatioOverride: 1, asteroidWallChanceMult: 1.55, asteroidLateralMult: 1.45, enemyFireMult: 0, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, powerupDelayRange: [2000, 3000], hpDelayRange: [1800, 3200], spawnCadenceMult: 0.88, activeObstacleCap: 8, notes: 'Intro now teaches dodge-or-clear with more lane texture and less dead time.' },
+      1: { spawnsRemaining: 50, speedOverride: 3.18, spawnMsOverride: 760, asteroidRatioOverride: 1, asteroidWallChanceMult: 1.65, asteroidLateralMult: 1.62, asteroidSpeedMult: 1.14, enemyFireMult: 0, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, powerupDelayRange: [2000, 3000], hpDelayRange: [1800, 3200], spawnCadenceMult: 0.86, activeObstacleCap: 8, notes: 'Intro now teaches dodge-or-clear with faster rocks and stronger lane pressure.' },
       2: { spawnsRemaining: 20, mixedEnemyTotal: 7, mixedEnemyScreenCap: 2, mixedAsteroidTotal: 13, mixedTraitorType: 'red', speedOverride: 2.62, spawnMsOverride: 1030, asteroidRatioOverride: 0.64, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 1.32, enemyFireRateMult: 0.62, enemyVyMult: 1.28, enemyDriftMult: 2.04, enemyDodgeMult: 1.36, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [1400, 2200], hpDelayRange: [2200, 4200], spawnCadenceMult: 0.96, activeObstacleCap: 5, notes: 'Red stays mobile, but the wave is a little shorter and feeds more support.' },
       3: { spawnsRemaining: 18, mixedEnemyTotal: 5, mixedEnemyScreenCap: 2, mixedAsteroidTotal: 13, mixedTraitorType: 'purple', speedOverride: 2.62, spawnMsOverride: 1180, asteroidRatioOverride: 0.72, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 0.92, enemyFireRateMult: 0.90, enemyVyMult: 1.14, enemyDriftMult: 1.38, enemyDodgeMult: 0.82, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 2, powerupDelayRange: [1400, 2200], hpDelayRange: [2400, 4600], spawnCadenceMult: 1.08, activeObstacleCap: 5, notes: 'Purple keeps the shield/rain identity, but now asks for a real dodge on the opening.' },
       4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4200, 7000], hpDelayRange: [5000, 8000], enemyFireMult: 0.75 },
       5: { spawnsRemaining: 24, speedOverride: 2.72, spawnMsOverride: 1087, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0.34, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 2, powerupDelayRange: [850, 1200], hpDelayRange: [1800, 3600], swarmCap: 4, activeObstacleCap: 4, spawnCadenceMult: 1.16, notes: 'Swarm is shorter and still regularly throws helpful drops into the lane.' },
       6: { spawnsRemaining: 13, speedOverride: 2.72, spawnMsOverride: 880, asteroidRatioOverride: 0.34, enemyHpOverride: 3, enemyFireMult: 0.94, enemyFireRateMult: 0.70, enemyVyMult: 1.24, enemyDriftMult: 1.62, enemyDodgeMult: 0.88, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 2, rescueRingHp: 30, powerupDelayRange: [2800, 4800], hpDelayRange: [3600, 6200], spawnCadenceMult: 0.88, activeObstacleCap: 4 },
       7: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4600, 7600], hpDelayRange: [5600, 9000], enemyFireMult: 0.85 },
-      8: { spawnsRemaining: 16, speedOverride: 2.72, spawnMsOverride: 840, asteroidRatioOverride: 1, enemyFireMult: 0.82, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4800, 7600], hpDelayRange: [4200, 6800], spawnCadenceMult: 1.0, activeObstacleCap: 7 },
+      8: { spawnsRemaining: 16, speedOverride: 2.72, spawnMsOverride: 840, asteroidRatioOverride: 1, asteroidSpeedMult: 1.10, asteroidWallChanceMult: 1.28, asteroidLateralMult: 1.20, enemyFireMult: 0.82, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4800, 7600], hpDelayRange: [4200, 6800], spawnCadenceMult: 0.96, activeObstacleCap: 7 },
       9: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [4600, 7600], hpDelayRange: [5200, 8200], enemyFireMult: 0.9 },
       10: { spawnsRemaining: 22, speedOverride: 3.08, spawnMsOverride: 780, asteroidRatioOverride: 0.48, enemyHpOverride: 3, enemyFireMult: 1.16, enemyFireRateMult: 0.68, enemyVyMult: 1.24, enemyDriftMult: 1.86, enemyDodgeMult: 1.08, allowMystery: true, allowPowerups: true, allowHp: true, maxSocketPowerups: 3, maxInstruments: 10, instrumentDelayRange: [620, 920], powerupDelayRange: [3200, 5400], hpDelayRange: [3800, 6400], mysteryDelayRange: [5800, 9800], spawnCadenceMult: 0.86, activeObstacleCap: 5 },
       11: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [5200, 8200], hpDelayRange: [5800, 9000], enemyFireMult: 1.0 },
@@ -919,28 +919,21 @@
     };
     if (shooter && shooter.traitorType === 'red' && cause !== 'BLACKOUT SHOT') {
       const now = Date.now();
-      // Red uses a deterministic one-two rhythm: two aimed shots, then a per-enemy
-      // cooldown. The consistency makes the pause learnable instead of probabilistic.
-      shooter.redVulnerableUntil = Math.max(shooter.redVulnerableUntil || 0, now + 850);
-      fireAimedEnemyBullet(speedMult, 'RED SHOT');
-      playTraitorShotSfx('red');
-      const redDoubleProfile = wave <= 2
-        ? { delayMs: 330, speedMult: 0.90 }
-        : wave <= 5
-          ? { delayMs: 320, speedMult: 0.84 }
-          : wave <= 9
-            ? { delayMs: 290, speedMult: 0.90 }
-            : { delayMs: 260, speedMult: 0.96 };
+      const chargeMs = wave <= 2 ? 320 : wave <= 6 ? 285 : wave <= 10 ? 255 : 225;
+      const cooldownMs = wave <= 2 ? 980 : wave <= 6 ? 900 : wave <= 10 ? 820 : 740;
+      // Red now always does the same readable beat: charge, fire one aimed shot,
+      // stay open for a moment, then charge again faster later in the campaign.
+      shooter.redShotChargeAt = now;
+      shooter.redShotChargeUntil = now + chargeMs;
+      shooter.redVulnerableUntil = Math.max(shooter.redVulnerableUntil || 0, now + chargeMs + cooldownMs);
       const token = spaceFlowToken;
-      const followDelayMs = redDoubleProfile.delayMs;
-      shooter.redSecondShotAt = now + followDelayMs;
-      shooter.redNextAttackAt = now + followDelayMs + 1050;
-      shooter.redVulnerableUntil = Math.max(shooter.redVulnerableUntil, now + followDelayMs + 650);
+      shooter.redSecondShotAt = 0;
+      shooter.redNextAttackAt = now + chargeMs + cooldownMs;
       setTimeout(() => {
         if (token !== spaceFlowToken || state !== 'playing' || waveTransitioning || !shooter || shooter.alive === false) return;
-        fireAimedEnemyBullet((speedMult || 1) * redDoubleProfile.speedMult, 'RED DOUBLE SHOT');
+        fireAimedEnemyBullet((speedMult || 1) * (wave <= 5 ? 0.92 : 0.98), 'RED SHOT');
         playTraitorShotSfx('red');
-      }, followDelayMs);
+      }, chargeMs);
       return;
     }
     fireAimedEnemyBullet(speedMult, cause || 'ENEMY SHOT');
@@ -977,8 +970,11 @@
   }
 
   function redVulnerableActive(o, now) {
-    if (o && now < (o.fakeoutCommitUntil || 0)) return false;
-    return !!(o && o.traitorType === 'red' && now < (o.redVulnerableUntil || 0));
+    return !!(o && o.traitorType === 'red' && now >= (o.redShotChargeUntil || 0) && now < (o.redVulnerableUntil || 0));
+  }
+
+  function redChargeActive(o, now) {
+    return !!(o && o.traitorType === 'red' && now < (o.redShotChargeUntil || 0));
   }
 
   function traitorFakeoutBusy(o, now) {
@@ -986,8 +982,8 @@
   }
 
   function updateRedShieldCycle(o, now) {
-    // Red no longer uses a shield cycle. It stays mobile, but when the player
-    // earns the shot there is no second "actually immune right now" layer.
+    // Red now communicates a simple loop: shield up while charging, then open while
+    // firing/cooling down. Timing is driven by enemyFireAt()/redVulnerableActive().
     return;
   }
 
@@ -1016,10 +1012,6 @@
       // and rain begins immediately, preserving the same lesson with extra dodging.
       o.nextPurpleRainAt = 0;
       firePurpleTraitorRain(o);
-    } else {
-      const openingMs = Math.max(800, 1100 - awareness * 250);
-      o.redVulnerableUntil = Math.max(o.redVulnerableUntil || 0, now + openingMs);
-      o.nextRedShieldDropAt = o.redVulnerableUntil + rand(650, 1050);
     }
   }
 
@@ -1030,7 +1022,10 @@
   }
 
   function traitorShieldActive(o, now) {
-    return !!(o && !o.isTrapped && o.traitorType === 'purple' && !traitorVulnerable(o, now));
+    if (!o || o.isTrapped) return false;
+    if (o.traitorType === 'purple') return !traitorVulnerable(o, now);
+    if (o.traitorType === 'red') return redChargeActive(o, now);
+    return false;
   }
 
   function firePurpleTraitorRain(shooter) {
@@ -1109,8 +1104,9 @@
     if (o.baseY == null) o.baseY = targetY;
     if (o.driftSeed == null) o.driftSeed = Math.random() * Math.PI * 2;
     const awareness = o.academyObstacle ? 0.28 : (o.enemyAwareness != null ? o.enemyAwareness : normalEnemyAwarenessForWave(wave));
-    const driftMult = o.enemyDriftMult || 1;
-    const dodgeMult = o.enemyDodgeMult || 0;
+    const isRedCadenceTraitor = o.traitorType === 'red';
+    const driftMult = isRedCadenceTraitor ? Math.min(1.12, o.enemyDriftMult || 1) : (o.enemyDriftMult || 1);
+    const dodgeMult = isRedCadenceTraitor ? 0 : (o.enemyDodgeMult || 0);
     const jukeMult = o.enemyJukeMult || 1;
     const age = now - (o.holdSettledAt || now);
     const bob = Math.sin(age * 0.00125 * Math.min(1.8, driftMult) + o.driftSeed) * (o.driftAmpY || 8);
@@ -1142,7 +1138,7 @@
 
     // Shared traitor fake-out lesson: react once to the first threatening bullet or
     // an aligned ship, visibly brace, then commit without reconsidering direction.
-    const isFakeoutTraitor = o.traitorType === 'red';
+    const isFakeoutTraitor = false;
     let fakeoutBusy = traitorFakeoutBusy(o, now);
     if (isFakeoutTraitor && !fakeoutBusy && o.y >= traitorAttackArmY(o) && now > (o.nextDodgeAt || 0)) {
       const threatX = o.r * (1.75 + awareness * 1.1);
@@ -1189,7 +1185,7 @@
       }
     }
 
-    if (!fakeoutBusy && !fakeoutRecovering && !isFakeoutTraitor && !o.academyObstacle && awareness > 0.32 && player && now > (o.nextRetreatAt || 0)) {
+    if (!fakeoutBusy && !fakeoutRecovering && !isFakeoutTraitor && !isRedCadenceTraitor && !o.academyObstacle && awareness > 0.32 && player && now > (o.nextRetreatAt || 0)) {
       const dxp = o.x - player.x;
       const dyp = player.y - o.y;
       const laneDanger = Math.abs(dxp) < o.r * (2.0 + awareness * 2.0) && dyp > 0 && dyp < H * (0.42 + awareness * 0.13);
@@ -1215,6 +1211,10 @@
       o.vx = clamp(o.vx + rand(-0.48 - awareness * 0.22, 0.48 + awareness * 0.22) * driftMult, -1.65 * driftMult * (1 + awareness * 0.18), 1.65 * driftMult * (1 + awareness * 0.18));
       o.baseY = clamp(o.baseY + rand(-9 - awareness * 7, 8 + awareness * 4) * driftMult, o.r + 84, safeMaxY);
       o.nextJukeAt = now + (rand(760 - awareness * 220, 1450 - awareness * 420) * jukeMult) / Math.min(1.5, driftMult);
+    }
+    if (isRedCadenceTraitor) {
+      o.vx = clamp(o.vx, -0.95, 0.95);
+      o.baseY = clamp(o.baseY, o.r + 92, safeMaxY - 6);
     }
     return true;
   }
@@ -4039,6 +4039,15 @@ function nextWave() {
         ctx.arc(Math.cos(a) * boundaryR, Math.sin(a) * boundaryR, 2.0, 0, Math.PI * 2);
         ctx.fill();
       }
+      if (o.traitorType === 'red' && now < (o.redShotChargeUntil || 0)) {
+        const charge = Math.max(0, Math.min(1, (now - (o.redShotChargeAt || now)) / Math.max(1, (o.redShotChargeUntil || now + 1) - (o.redShotChargeAt || now))));
+        const pulse = 1 + Math.sin(now * 0.03) * (0.08 + charge * 0.10);
+        ctx.shadowBlur = 8 + charge * 8;
+        ctx.strokeStyle = `rgba(255,245,220,${0.42 + charge * 0.44})`;
+        ctx.lineWidth = 2.0 + charge * 1.8;
+        ctx.beginPath(); ctx.arc(0, 0, boundaryR * (1.12 + charge * 0.30) * pulse, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, boundaryR * (0.72 + charge * 0.16) * pulse, 0, Math.PI * 2); ctx.stroke();
+      }
     } else {
       const breathe = 1 + Math.sin(now * 0.0052 + seed) * 0.018;
       const shieldR = boundaryR * breathe;
@@ -5197,6 +5206,17 @@ function nextWave() {
       updateRedShieldCycle(o, nowMove);
       if (updateHoldDriftEnemy(o, nowMove)) continue;
       if (o.blackoutHiddenEnemy && nowMove < (o.blackoutHoldUntil || 0)) continue;
+      if (o.behavior === 'swarmer' && player) {
+        const dx = player.x - o.x;
+        const dy = player.y - o.y;
+        const seek = clamp(dx * 0.022, -2.2, 2.2);
+        const closeLane = Math.abs(dx) < o.r * 2.8;
+        o.vx += (seek - o.vx) * 0.22;
+        o.vx = clamp(o.vx, -2.7, 2.7);
+        if (dy > 0) {
+          o.vy = Math.max(o.vy, (currentCfg ? currentCfg.speed : O_SPEED_BASE) * (closeLane ? 1.92 : 1.72));
+        }
+      }
 
       // Non-hero enemies pause once, partway down, for a quick burst of fire before
       // resuming their descent — see the note in spawnObstacle() for why.
