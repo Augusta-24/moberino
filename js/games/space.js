@@ -122,11 +122,11 @@
   const waveCaptivesSeen = new Set();
   let traitorSpawnFlip = 0;
   // Phase 2 campaign structure: 8-character mission cast = 2 captors + 6 captured Mobes.
-  // The authored campaign ends at Wave 13; Endless/Boss Run will branch from the menu later.
+  // The authored campaign is an intentionally tight 11-wave rescue run.
   const SPACE_MISSION_CAST_COUNT = 8;
   const SPACE_MISSION_CAPTOR_COUNT = 2;
   const SPACE_RESCUE_TARGET_COUNT = 6;
-  const SPACE_CAMPAIGN_FINAL_WAVE = 13;
+  const SPACE_CAMPAIGN_FINAL_WAVE = 11;
   const SPACE_FINAL_GIZMO_WAVE = SPACE_CAMPAIGN_FINAL_WAVE;
   // Final campaign-pacing checklist for the campaign-order pass:
   // audit wave-cleared beat duration, announcement hold, boss-rescue unlock, Gizmo escape,
@@ -139,6 +139,13 @@
   let waveTransitioning = false; // true from nextWave() through the short instruction read window before hazards resume
   let pendingBossWin = null; // boss defeated, but the victory cinematic is held until the board (minions/asteroids) is clear
   let mirrorSequenceActive = false, mirrorStageTimers = [];
+  // Waves 1-3 are authored mini-encounters rather than random spawn pools. Keeping
+  // their state and timers separate makes their teaching beats deterministic and
+  // lets every transition/failure cancel them cleanly.
+  let earlyEncounter = null;
+  let earlyEncounterTimers = [];
+  let authoredCampaignEncounter = null;
+  let authoredCampaignTimers = [];
   let spaceBriefingTimers = [];
   let spaceFlowToken = 0;
   const SPACE_WAVE_ANNOUNCE_MS = 4200;
@@ -277,7 +284,7 @@
     if (spaceRunMode === 'endless') return endlessThemeForWave(w);
     // Phase 2 authored campaign: shorter, clearer, and rescue beats are intentional.
     // Random/chaos modes move later into Endless/Boss Run instead of appearing in the
-    // first campaign pass. Six captives are tied to Waves 4, 6, 7, 9, 11, and 13.
+    // first campaign pass. Six captives are tied to Waves 4, 6, 7, 9, 10, and 11.
     const campaign = {
       1: 'asteroids', // movement / dodge basics
       2: 'enemies',   // red traitor intro: direct flute shots
@@ -288,10 +295,8 @@
       7: 'boss',      // Dark Knight + captive 3
       8: 'blackout',  // authored special event, isolated
       9: 'boss',      // random mid boss + captive 4
-      10: 'music',    // fun/reward wave
-      11: 'boss',     // random late boss + captive 5
-      12: 'goldrush', // final prep: stock sockets / HP
-      13: 'gizmo',    // final Gizmo + captive 6
+      10: 'boss',     // random late boss + captive 5
+      11: 'gizmo',    // final Gizmo + captive 6
     };
     if (Object.prototype.hasOwnProperty.call(campaign, w)) return campaign[w];
 
@@ -896,7 +901,7 @@
   }
 
   function campaignWaveTuning(w) {
-    // Phase 2B: explicit campaign balance layer. The authored 13-wave campaign
+    // Explicit balance for the authored 11-wave campaign.
     // should teach one main threat at a time; Endless can keep the chaotic mixes.
     // spawnsRemaining is exact for these campaign waves so startWaveSpawn() does
     // not re-inflate them with the older theme multipliers.
@@ -904,19 +909,17 @@
       // Asteroid-field waves use slower cadence instead of dumping rocks faster.
       // Wave 5 also staggers three normal enemies into fixed slots; the pool still
       // ends through spawnsRemaining/board-clear, so it cannot overlap nextWave().
-      1: { spawnsRemaining: 82, speedOverride: 3.50, spawnMsOverride: 560, asteroidRatioOverride: 1, spaceJunkChance: 0.00, extraJunkChance: 0.00, asteroidWallChanceMult: 2.42, asteroidLateralMult: 2.36, asteroidSpeedMult: 1.40, asteroidFallRange: [0.72, 2.46], asteroidAimAtPlayerChance: 0.38, asteroidAimSpreadPx: 72, asteroidHeavyChance: 0.20, asteroidHeavyHp: 4, asteroidSpawnLanes: true, enemyFireMult: 0, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, powerupDelayRange: [2000, 3000], hpDelayRange: [1800, 3200], spawnCadenceMult: 0.78, activeObstacleCap: 10, notes: 'Intro now teaches dodge-or-clear with a true asteroid storm plus ambient junk drifting through the lane.' },
-      2: { spawnsRemaining: 32, mixedEnemyTotal: 10, mixedEnemyScreenCap: 3, mixedAsteroidTotal: 22, mixedTraitorType: 'red', speedOverride: 3.10, spawnMsOverride: 1040, asteroidRatioOverride: 0.70, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 1.46, enemyFireRateMult: 0.68, enemyVyMult: 1.36, enemyDriftMult: 2.18, enemyDodgeMult: 1.40, asteroidWallChanceMult: 1.34, asteroidLateralMult: 1.30, asteroidSpeedMult: 1.24, asteroidFallRange: [0.80, 2.12], allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', guaranteeEarlyGun: true, maxSocketPowerups: 3, maxMysteryCrates: 1, powerupDelayRange: [1400, 2200], hpDelayRange: [1050, 2100], mysteryDelayRange: [5200, 8200], spawnCadenceMult: 0.92, activeObstacleCap: 7, notes: 'Red keeps pressure longer with denser laser lanes and a little more live traffic.' },
-      3: { spawnsRemaining: 22, mixedEnemyTotal: 6, mixedEnemyScreenCap: 2, mixedAsteroidTotal: 18, mixedTraitorType: 'purple', speedOverride: 2.68, spawnMsOverride: 1120, asteroidRatioOverride: 0.76, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 0.98, enemyFireRateMult: 0.84, enemyVyMult: 1.18, enemyDriftMult: 1.46, enemyDodgeMult: 0.88, allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', guaranteeEarlyGun: true, maxSocketPowerups: 3, maxMysteryCrates: 1, powerupDelayRange: [1400, 2200], hpDelayRange: [1200, 2400], mysteryDelayRange: [5600, 8600], spawnCadenceMult: 1.04, activeObstacleCap: 6, notes: 'Purple keeps the shield/rain identity, but with a longer lane read and more to dodge around.' },
+      1: { spawnsRemaining: 1, speedOverride: 3.0, asteroidRatioOverride: 1, spaceJunkChance: 0, extraJunkChance: 0, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: false, activeObstacleCap: 18, authoredEncounter: true, notes: 'Meteor Gauntlet (30 s): destructible rocks with high speed and density. Authored drops only.' },
+      2: { spawnsRemaining: 1, speedOverride: 2.85, asteroidRatioOverride: 0, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: false, activeObstacleCap: 3, authoredEncounter: true, notes: 'Three charged-shot Red duels with one ambient junk prop and no random traffic.' },
+      3: { spawnsRemaining: 1, speedOverride: 2.70, asteroidRatioOverride: 0, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: false, activeObstacleCap: 3, authoredEncounter: true, notes: 'Two cloud acts: follow the moving safety eye, break each rain source, and dodge serialized Purple shots.' },
       4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4200, 7000], hpDelayRange: [2400, 4000], enemyFireMult: 0.75 },
       5: { spawnsRemaining: 34, speedOverride: 2.92, spawnMsOverride: 980, asteroidRatioOverride: 0.08, enemyHpOverride: 2, enemyFireMult: 0.42, allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', guaranteeEarlyGun: true, maxSocketPowerups: 3, maxMysteryCrates: 1, powerupDelayRange: [850, 1200], hpDelayRange: [1300, 2600], mysteryDelayRange: [5200, 8200], swarmCap: 6, activeObstacleCap: 6, spawnCadenceMult: 1.06, notes: 'Swarm stretches longer, with more bodies, a little more life, and faster lane drops.' },
-      6: { spawnsRemaining: 16, speedOverride: 2.80, spawnMsOverride: 840, asteroidRatioOverride: 0.40, enemyHpOverride: 3, enemyFireMult: 1.00, enemyFireRateMult: 0.66, enemyVyMult: 1.28, enemyDriftMult: 1.70, enemyDodgeMult: 0.92, allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 2, maxMysteryCrates: 1, rescueRingHp: 30, powerupDelayRange: [2800, 4800], hpDelayRange: [3600, 6200], mysteryDelayRange: [6200, 9200], spawnCadenceMult: 0.84, activeObstacleCap: 5 },
+      6: { spawnsRemaining: 1, speedOverride: 2.80, asteroidRatioOverride: 0, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: false, rescueRingHp: 18, activeObstacleCap: 4, authoredRescue: true },
       7: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4600, 7600], hpDelayRange: [3400, 5600], enemyFireMult: 0.85 },
-      8: { spawnsRemaining: 22, speedOverride: 2.82, spawnMsOverride: 790, asteroidRatioOverride: 1, asteroidSpeedMult: 1.18, asteroidWallChanceMult: 1.24, asteroidLateralMult: 1.20, enemyFireMult: 0.92, allowMystery: true, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, maxMysteryCrates: 1, powerupDelayRange: [4800, 7600], hpDelayRange: [4200, 6800], mysteryDelayRange: [6200, 9200], spawnCadenceMult: 0.90, activeObstacleCap: 8, notes: 'Blackout lasts longer and asks for more sustained tracking.' },
+      8: { spawnsRemaining: 1, speedOverride: 2.82, asteroidRatioOverride: 0, enemyFireMult: 1, allowMystery: false, allowPowerups: false, allowHp: false, activeObstacleCap: 3, authoredBlackout: true, notes: 'Five sequential search, dodge, and punish duels.' },
       9: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [4600, 7600], hpDelayRange: [3400, 5600], enemyFireMult: 0.9 },
-      10: { spawnsRemaining: 28, speedOverride: 3.14, spawnMsOverride: 740, asteroidRatioOverride: 0.48, enemyHpOverride: 3, enemyFireMult: 1.24, enemyFireRateMult: 0.64, enemyVyMult: 1.28, enemyDriftMult: 1.94, enemyDodgeMult: 1.12, allowMystery: true, allowPowerups: true, allowHp: true, maxSocketPowerups: 3, maxMysteryCrates: 2, maxInstruments: 10, instrumentDelayRange: [620, 920], powerupDelayRange: [3200, 5400], hpDelayRange: [3800, 6400], mysteryDelayRange: [7600, 11000], spawnCadenceMult: 0.82, activeObstacleCap: 6 },
-      11: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [5200, 8200], hpDelayRange: [3600, 6000], enemyFireMult: 1.0 },
-      12: { spawnsRemaining: 30, speedOverride: 3.08, spawnMsOverride: 790, asteroidRatioOverride: 0.62, enemyHpOverride: 3, enemyFireMult: 1.20, enemyFireRateMult: 0.66, enemyVyMult: 1.24, enemyDriftMult: 1.80, enemyDodgeMult: 1.00, allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', maxSocketPowerups: 4, maxMysteryCrates: 2, powerupDelayRange: [2200, 3800], hpDelayRange: [2600, 4600], mysteryDelayRange: [7200, 10800], spawnCadenceMult: 0.86, activeObstacleCap: 6, notes: 'Final prep is busier and longer, but still pays out recovery windows.' },
-      13: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [4200, 7000], hpDelayRange: [3600, 6000], enemyFireMult: 1.0, finalBossHpNote: 'Final Gizmo HP is tuned through BOSS_TUNING final override.' },
+      10: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [5200, 8200], hpDelayRange: [3600, 6000], enemyFireMult: 1.0 },
+      11: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [4200, 7000], hpDelayRange: [3600, 6000], enemyFireMult: 1.0, finalBossHpNote: 'Final Gizmo HP is tuned through BOSS_TUNING final override.' },
     };
     return tuning[w] || null;
   }
@@ -1016,7 +1019,7 @@
   }
 
   function redVulnerableActive(o, now) {
-    return !!(o && o.traitorType === 'red' && now >= (o.redShotChargeAt || 0) && now < (o.redVulnerableUntil || 0));
+    return !!(o && o.traitorType === 'red' && now >= (o.redShotChargeUntil || Infinity) && now < (o.redVulnerableUntil || 0));
   }
 
   function redChargeActive(o, now) {
@@ -1068,13 +1071,17 @@
   function traitorVulnerable(o, now) {
     if (!o || o.y < traitorAttackArmY(o)) return false;
     if (traitorFakeoutBusy(o, now)) return false;
+    if (o.traitorType === 'purple' && o.authoredAttack === 'purpleRain') {
+      return now >= (o.purpleVulnerableAt || Infinity) && now < (o.purpleVulnerableUntil || 0);
+    }
     return purpleRainActive(o, now) || redVulnerableActive(o, now);
   }
 
   function traitorShieldActive(o, now) {
     if (!o || o.isTrapped) return false;
+    if (o.rainGuardian) return false;
     if (o.traitorType === 'purple') return !traitorVulnerable(o, now);
-    if (o.traitorType === 'red') return false;
+    if (o.traitorType === 'red') return o.authoredAttack === 'redCharge' && !redVulnerableActive(o, now);
     return false;
   }
 
@@ -1085,16 +1092,52 @@
     if (now < (shooter.nextPurpleRainAt || 0) || purpleRainActive(shooter, now)) return;
     const tier = currentCfg ? currentCfg.tier : campaignTier(wave);
     const purpleProfile = purpleWaveProfileForWave(wave);
-    const rainDropSpacingMs = 134;
-    const duration = rainDropSpacingMs * Math.max(0, purpleProfile.rainDropsMax - 1) + 140;
-    const drops = Math.floor(rand(purpleProfile.rainDropsMin, purpleProfile.rainDropsMax + 1));
+    const authored = shooter.authoredAttack === 'purpleRain';
+    const rainDropSpacingMs = authored ? 300 : 134;
+    const drops = authored
+      ? 6
+      : Math.floor(rand(purpleProfile.rainDropsMin, purpleProfile.rainDropsMax + 1));
+    const duration = rainDropSpacingMs * Math.max(0, drops - 1) + 180;
     shooter.purpleRainUntil = now + duration;
     shooter.nextPurpleRainAt = now + duration + purpleProfile.rainGapMs;
+    if (authored) {
+      // The dodge earns a genuine counterattack phase. Keep the shield down after
+      // the last drop so the player's returning autofire has time to reach Purple.
+      shooter.purpleVulnerableAt = now;
+      shooter.purpleVulnerableUntil = shooter.purpleRainUntil + 1050;
+      shooter.preRainDodgeMult = shooter.enemyDodgeMult;
+      shooter.enemyDodgeMult = 0;
+      shooter.vx *= 0.38;
+      addFloatText('SHIELD DOWN — FIRE!', shooter.x, shooter.y + shooter.r + 24, '#d7a4ff', 16, { vy: 0, holdMs: 900, fade: 0.014 });
+    }
+    if (authored) shooter.authoredRainPhrase = (shooter.authoredRainPhrase || 0) + 1;
+    const authoredTargetX = clamp(shooter.purpleRainTargetX == null ? W / 2 : shooter.purpleRainTargetX, 32, W - 32);
     for (let i = 0; i < drops; i++) {
       const token = spaceFlowToken;
-      const burstCount = Math.max(0, purpleProfile.rainStartBurst || 0);
+      const burstCount = authored ? 0 : Math.max(0, purpleProfile.rainStartBurst || 0);
       setTimeout(() => {
+        // Once Purple commits, the rain finishes even if autofire defeats her during
+        // the opening. Otherwise the entire attack silently disappears.
         if (token !== spaceFlowToken || state !== 'playing' || waveTransitioning || !purpleRainActive(shooter, Date.now())) return;
+        if (authored) {
+          // Six broad rain rows leave one readable gap. The gap advances from the
+          // far side toward Purple in three two-row beats, so surviving the pattern
+          // naturally lines the player up for the shield-down counterattack.
+          const gapSequence = shooter.purpleGapSequence || [authoredTargetX / W, 0.5, shooter.x / W];
+          const safeLane = gapSequence[Math.min(gapSequence.length - 1, Math.floor(i / 2))];
+          const rainLanes = [0.05, 0.16, 0.27, 0.38, 0.50, 0.62, 0.73, 0.84, 0.95];
+          rainLanes.forEach(lane => {
+            if (Math.abs(lane - safeLane) < 0.145) return;
+            enemyBullets.push({
+              x: clamp(W * lane, 8, W - 8), y: shooter.y + shooter.r * 0.82,
+              vx: 0, vy: 4.15 + purpleProfile.rainSpeedBonus + tier * 0.10,
+              r: 3.0, theme: 'purpleRain', damage: 5,
+              damageCause: 'PURPLE RAIN', born: Date.now(),
+            });
+          });
+          playPurpleRainDropTick(i);
+          return;
+        }
         const spread = ((i % 3) - 1) * shooter.r * 0.32 + rand(-6, 6);
         const startOffset = i < burstCount ? shooter.r * (0.42 + i * 0.12) : shooter.r * 0.82;
         enemyBullets.push({
@@ -1104,7 +1147,7 @@
           vy: 3.25 + purpleProfile.rainSpeedBonus + tier * 0.10 + (purpleProfile.driftMult - 1) * 0.52 + Math.random() * 0.30,
           r: 2.4,
           theme: 'purpleRain',
-          damage: 2,
+          damage: authored ? 7 : 2,
           damageCause: 'PURPLE RAIN',
           born: Date.now(),
         });
@@ -1277,6 +1320,11 @@
     if (isRedCadenceTraitor) {
       o.vx = clamp(o.vx, -0.95, 0.95);
       o.baseY = clamp(o.baseY, o.r + 92, safeMaxY - 6);
+    }
+    if (o.authoredStationary) {
+      o.vx = 0;
+      o.baseY = targetY;
+      o.y += (targetY - o.y) * 0.18;
     }
     if (o.traitorType === 'purple') {
       o.y = Math.min(o.y, safeMaxY);
@@ -1456,7 +1504,7 @@
   }
 
   function spawnBlackoutHiddenEnemies() {
-    if (waveTheme !== 'blackout' || !currentCfg || obstacles.some(o => o.blackoutHiddenEnemy)) return;
+    if (waveTheme !== 'blackout' || !currentCfg || currentCfg.authoredBlackout || obstacles.some(o => o.blackoutHiddenEnemy)) return;
     [0.16, 0.33, 0.5, 0.67, 0.84].forEach((xp, i) => {
       obstacles.push({
         type: 'face',
@@ -1939,7 +1987,7 @@
     const r = FACE_R * 1.08;
     const ringHp = currentCfg && currentCfg.rescueRingHp ? currentCfg.rescueRingHp : 24;
     obstacles.push({
-      type:'face', x: W / 2, y: Math.max(92, H * 0.18), vx: 0, vy: (currentCfg ? currentCfg.speed : O_SPEED_BASE) * 0.12,
+      type:'face', x: W / 2, y: Math.max(270, H * 0.40), vx: 0, vy: 0,
       r, ci, hp: 1, isTrapped: true, ringHp, maxRingHp: ringHp,
       pausedBurstDone: true, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0,
       campaignRescueLock: true
@@ -1947,6 +1995,349 @@
     const rescueName = GAME_CHARS[ci] && GAME_CHARS[ci].name ? GAME_CHARS[ci].name.toUpperCase() : 'THE MOBE';
     addFloatText(`HELP FREE ${rescueName}!`, W / 2, H * 0.31, '#00e5ff', 44, { vy: -0.18, fade: 0.0038 });
     showTopBanner(`HELP FREE ${rescueName}`, 'good');
+  }
+
+  function rainEyeAnchors() {
+    const narrow = W < 360;
+    const edge = narrow ? 0.18 : 0.14;
+    return [edge, 0.32, 0.50, 0.68, 1 - edge].map(v => W * v);
+  }
+
+  function createRainEye(now, rescue) {
+    return {
+      x: W * 0.5, fromX: W * 0.5, toX: W * 0.5, lane: 2,
+      radius: Math.max(32, Math.min(36, W * 0.095)),
+      tellAt: now + 900, moveAt: 0, arriveAt: 0, nextMoveAt: now + 900,
+      step: 0, sequence: rescue ? [3, 2, 1, 2] : [1, 2, 3, 2], seed: rescue ? 7 : 3,
+    };
+  }
+
+  function spawnRainCloud(encounter, hp, side) {
+    const cloudR = Math.max(31, Math.min(38, W * 0.105));
+    const cloud = {
+      type: 'rainCloud', x: W / 2, y: SPACE_HP_BAR_Y + SPACE_HP_BAR_H + cloudR + 12,
+      vx: 0, vy: 0, r: cloudR,
+      hp, maxHp: hp, alive: true, rainCloudEncounter: encounter.kind,
+      cloudSide: side || 0, litUntil: 0,
+      dancePhase: side < 0 ? Math.PI : 0, danceStartedAt: Date.now(),
+    };
+    obstacles.push(cloud);
+    encounter.cloud = cloud;
+    return cloud;
+  }
+
+  function spawnRainGuardian(lane, holdBand, hp) {
+    const o = spawnAuthoredTraitor('purple', {
+      lane, holdY: H * holdBand, hp: hp || 5, driftMult: 0.82, attackDelay: 999999,
+    });
+    o.authoredAttack = 'rainGuardian';
+    o.rainGuardian = true;
+    o.enemyDodgeMult = 0.24;
+    o.enemyAwareness = 0.28;
+    o.driftAmpY = 12;
+    return o;
+  }
+
+  function beginRainEyeMove(encounter, now) {
+    const eye = encounter.eye;
+    const anchors = rainEyeAnchors();
+    let lane;
+    if (eye.step < eye.sequence.length) lane = eye.sequence[eye.step];
+    else {
+      // Seeded adjacent choice: alive enough to vary, bounded enough to learn.
+      eye.seed = (eye.seed * 17 + 11) % 97;
+      const direction = (eye.seed % 2) ? 1 : -1;
+      lane = clamp(eye.lane + direction, 0, anchors.length - 1);
+      if (lane === eye.lane) lane = clamp(eye.lane - direction, 0, anchors.length - 1);
+    }
+    eye.step++;
+    eye.fromX = eye.x;
+    eye.toX = anchors[lane];
+    eye.nextLane = lane;
+    eye.moveAt = now + (encounter.cloudIndex > 1 ? 420 : 520);
+    const distance = Math.abs(eye.toX - eye.fromX);
+    eye.arriveAt = eye.moveAt + clamp(1750 + distance * 2.0, 1900, 2400);
+    eye.nextMoveAt = Infinity;
+  }
+
+  function updateRainEye(encounter, now) {
+    const eye = encounter.eye;
+    if (!eye) return;
+    if (!eye.moveAt && now >= eye.nextMoveAt) beginRainEyeMove(encounter, now);
+    if (eye.moveAt && now >= eye.moveAt) {
+      const t = clamp((now - eye.moveAt) / Math.max(1, eye.arriveAt - eye.moveAt), 0, 1);
+      const eased = t * t * (3 - 2 * t);
+      eye.x = eye.fromX + (eye.toX - eye.fromX) * eased;
+      if (t >= 1) {
+        eye.x = eye.toX;
+        eye.lane = eye.nextLane;
+        eye.moveAt = 0;
+        eye.arriveAt = 0;
+        eye.nextMoveAt = now + (encounter.cloudIndex > 1 ? 500 : 700);
+      }
+    }
+  }
+
+  function updateRainCloudDance(encounter, now) {
+    const cloud = encounter.cloud;
+    if (!cloud || cloud.alive === false) return;
+    const margin = cloud.r + 12;
+    const amplitude = Math.max(0, (W - margin * 2) / 2);
+    cloud.x = W / 2 + Math.sin((now - cloud.danceStartedAt) * 0.0009 + (cloud.dancePhase || 0)) * amplitude;
+  }
+
+  function fireRainGuardianShot(guardian, targetX, targetY, now) {
+    if (!guardian || guardian.alive === false) return;
+    const dx = targetX - guardian.x;
+    const dy = targetY - guardian.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const speed = 5.6;
+    enemyBullets.push({
+      x: guardian.x, y: guardian.y + guardian.r * 0.72,
+      vx: dx / dist * speed, vy: dy / dist * speed,
+      r: 5.5, theme: 'purpleOrb', damage: 10,
+      damageCause: 'PURPLE GUARDIAN SHOT', born: now,
+    });
+    playTraitorShotSfx('purple');
+  }
+
+  function updateRainEncounter(encounter, now) {
+    if (!encounter || !encounter.eye) return;
+    updateRainEye(encounter, now);
+    updateRainCloudDance(encounter, now);
+    if (!encounter.rainActive) return;
+
+    const safe = player && Math.abs(player.x - encounter.eye.x) <= encounter.eye.radius - 4;
+    if (safe) encounter.outsideEyeSince = 0;
+    else if (!encounter.outsideEyeSince) encounter.outsideEyeSince = now;
+    if (now >= (encounter.rainArmedAt || 0) && !safe && now - encounter.outsideEyeSince >= 110 && now >= (encounter.nextRainDamageAt || 0)) {
+      takeDamage(5, 'PURPLE RAIN');
+      encounter.nextRainDamageAt = now + 450;
+    }
+
+    const guardians = (encounter.guardians || []).filter(o => o && o.alive !== false);
+    // The active Purple bodyguard weaves across the cloud's firing line. It never
+    // snaps directly onto the target: the broad oscillation creates readable
+    // moments where shots are blocked and moments where the cloud is exposed.
+    if (encounter.cloud && encounter.cloud.alive !== false && guardians.length) {
+      const blocker = guardians[guardians.length - 1];
+      const weave = Math.sin(now * 0.00175 + (blocker.driftSeed || 0)) * Math.min(64, W * 0.16);
+      const blockX = clamp(encounter.cloud.x + weave, blocker.r, W - blocker.r);
+      blocker.x += (blockX - blocker.x) * 0.045;
+      blocker.baseY = Math.max(traitorAttackArmY(blocker) + 12, encounter.cloud.y + encounter.cloud.r + blocker.r + 18);
+      blocker.holdY = blocker.baseY;
+    }
+    if (encounter.pendingGuardianShot) {
+      const shot = encounter.pendingGuardianShot;
+      if (now >= shot.fireAt) {
+        fireRainGuardianShot(shot.guardian, shot.x, shot.y, now);
+        encounter.pendingGuardianShot = null;
+      }
+    } else if (guardians.length && now >= (encounter.nextGuardianShotAt || 0)) {
+      const guardian = guardians[encounter.guardianTurn % guardians.length];
+      encounter.guardianTurn++;
+      // Attack the safe space itself: the player must briefly dodge toward the
+      // eye's edge (or accept a rain tick) instead of parking in its center.
+      guardian.rainShotTargetX = encounter.eye ? encounter.eye.x : (player ? player.x : W / 2);
+      guardian.rainShotTargetY = player ? player.y : dangerY;
+      guardian.rainShotWarningUntil = now + 320;
+      encounter.pendingGuardianShot = { guardian, x: guardian.rainShotTargetX, y: guardian.rainShotTargetY, fireAt: now + 320 };
+      const cadence = encounter.cloudIndex > 1 ? 1100 : (encounter.kind === 'rescue' ? 1500 : 1300);
+      encounter.nextGuardianShotAt = now + cadence;
+    }
+  }
+
+  function finishRainCloud(cloud) {
+    const now = Date.now();
+    const waveThree = earlyEncounter && earlyEncounter.kind === 'purpleStorm' && earlyEncounter.cloud === cloud;
+    const rescue = authoredCampaignEncounter && authoredCampaignEncounter.kind === 'rescue' && authoredCampaignEncounter.cloud === cloud;
+    const encounter = waveThree ? earlyEncounter : rescue ? authoredCampaignEncounter : null;
+    if (!encounter) return;
+    encounter.cloud = null;
+    encounter.rainActive = false;
+    encounter.pendingGuardianShot = null;
+    enemyBullets = enemyBullets.filter(b => b.damageCause !== 'PURPLE GUARDIAN SHOT');
+    bigExplosion(cloud.x, cloud.y, '#c984ff');
+    playMusicBoxArpeggio();
+
+    if (waveThree && encounter.cloudIndex === 1) {
+      encounter.phase = 'punish';
+      encounter.punishUntil = now + 2200;
+      addFloatText('CLEAR SKY — TAKE THE SHOT!', W / 2, H * 0.30, '#d7a4ff', 19, { vy: 0, holdMs: 1500, fade: 0.012 });
+    } else if (waveThree) {
+      encounter.finished = true;
+      (encounter.guardians || []).forEach(o => { if (o) o.alive = false; });
+      enemyBullets = enemyBullets.filter(b => b.damageCause !== 'PURPLE GUARDIAN SHOT');
+      spawnsRemaining = 0;
+      addFloatText('STORM BROKEN!', W / 2, H * 0.30, '#33ff66', 24, { vy: 0, holdMs: 1200, fade: 0.012 });
+    } else if (rescue) {
+      encounter.phase = 'red';
+      encounter.eye = null;
+      (encounter.guardians || []).forEach(o => { if (o) o.alive = false; });
+      encounter.guardians = [];
+      encounter.red = spawnAuthoredTraitor('red', { lane: 0.18, holdY: H * 0.30, hp: 99, driftMult: 0.72, attackDelay: 999999 });
+      encounter.red.campaignRescueGuardian = true;
+      encounter.red.authoredAttack = 'rescueRed';
+      encounter.nextAttackAt = now + 900;
+      addFloatText('DODGE RED — BREAK THE LOCK!', W / 2, H * 0.40, '#7dffff', 20, { vy: 0, holdMs: 1800, fade: 0.012 });
+    }
+  }
+
+  function scheduleAuthoredCampaign(delay, fn) {
+    const token = spaceFlowToken;
+    const expectedWave = wave;
+    const timer = setTimeout(() => {
+      if (token !== spaceFlowToken || state !== 'playing' || wave !== expectedWave || !authoredCampaignEncounter) return;
+      fn();
+    }, delay);
+    authoredCampaignTimers.push(timer);
+  }
+
+  function spawnNextAuthoredBlackoutShooter() {
+    const encounter = authoredCampaignEncounter;
+    if (!encounter || encounter.kind !== 'blackout' || encounter.active || encounter.nextIndex >= encounter.positions.length) return;
+    const index = encounter.nextIndex++;
+    const pos = encounter.positions[index];
+    const o = {
+      type: 'face', behavior: 'holdDrift', x: W * pos.x, y: H * pos.y,
+      vx: 0, vy: 0, r: FACE_R * 0.92, ci: nextMissionEnemyIndex(), hp: index === 4 ? 4 : 3,
+      isTrapped: false, ringHp: 0, pausedBurstDone: true, paused: false,
+      pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0,
+      holdY: H * pos.y, baseY: H * pos.y, holdSettled: true, holdSettledAt: Date.now(),
+      driftSeed: index, driftAmpY: 4, enemyDriftMult: 0.45, enemyDodgeMult: 0,
+      enemyJukeMult: 2, enemyAwareness: 0.25, enemyPersonality: 'authored',
+      nextDodgeAt: Infinity, nextDriftTurnAt: Infinity, nextJukeAt: Infinity,
+      blackoutHiddenEnemy: true, authoredBlackout: true,
+      blackoutNextChargeAt: Date.now() + 900, blackoutVulnerableUntil: 0,
+    };
+    obstacles.push(o);
+    encounter.active = o;
+    if (index > 0) {
+      scheduleAuthoredCampaign(650, () => authoredAsteroid({
+        x: index % 2 ? W * 0.12 : W * 0.88,
+        vx: index % 2 ? 0.75 : -0.75, vy: 4.1, r: 16, hp: 2, damage: 10,
+      }));
+    }
+  }
+
+  function fireAuthoredBlackoutShot(shooter, targetX, targetY, cause) {
+    if (!shooter || shooter.alive === false) return;
+    const dx = targetX - shooter.x;
+    const dy = targetY - shooter.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const speed = 5.35;
+    enemyBullets.push({
+      x: shooter.x, y: shooter.y + shooter.r * 0.72,
+      vx: dx / dist * speed, vy: dy / dist * speed,
+      r: 5, damage: 12, damageCause: cause || 'BLACKOUT SHOT', born: Date.now(),
+    });
+    playEnemyBlasterBurst();
+  }
+
+  function startAuthoredBlackoutEncounter() {
+    obstacles = [];
+    enemyBullets = [];
+    authoredCampaignEncounter = {
+      kind: 'blackout', active: null, nextIndex: 0,
+      positions: [
+        { x: 0.22, y: 0.25 }, { x: 0.78, y: 0.31 }, { x: 0.28, y: 0.37 },
+        { x: 0.72, y: 0.24 }, { x: 0.50, y: 0.32 },
+      ],
+    };
+    spawnsRemaining = 1;
+    spawnNextAuthoredBlackoutShooter();
+  }
+
+  function startAuthoredRescueEncounter() {
+    obstacles = [];
+    enemyBullets = [];
+    const now = Date.now();
+    authoredCampaignEncounter = {
+      kind: 'rescue', phase: 'rain', ringOpenUntil: 0,
+      eye: createRainEye(now, true), rainActive: true, rainArmedAt: now + 1500,
+      nextRainDamageAt: now + 1500, outsideEyeSince: 0,
+      cloudIndex: 1, guardians: [], guardianTurn: 0,
+      nextGuardianShotAt: now + 2100, pendingGuardianShot: null,
+      nextAttackAt: 0, attackPending: false,
+    };
+    spawnsRemaining = 1;
+    spawnCampaignRescueLock();
+    const lock = obstacles.find(o => o.campaignRescueLock);
+    if (lock) { lock.ringHp = 18; lock.maxRingHp = 18; }
+    const purple = spawnRainGuardian(0.82, 0.36, 8);
+    purple.campaignRescueGuardian = true;
+    authoredCampaignEncounter.guardians.push(purple);
+    spawnRainCloud(authoredCampaignEncounter, 27, -1);
+  }
+
+  function updateAuthoredCampaignEncounter(now) {
+    const encounter = authoredCampaignEncounter;
+    if (!encounter || state !== 'playing' || waveTransitioning) return;
+    if (encounter.kind === 'blackout') {
+      const shooter = encounter.active;
+      if (!shooter || shooter.alive === false) {
+        encounter.active = null;
+        if (encounter.nextIndex < encounter.positions.length) {
+          if (!encounter.spawnQueued) {
+            encounter.spawnQueued = true;
+            scheduleAuthoredCampaign(650, () => { encounter.spawnQueued = false; spawnNextAuthoredBlackoutShooter(); });
+          }
+        } else if (!enemyBullets.length && !obstacles.some(o => o.type === 'asteroid')) {
+          spawnsRemaining = 0;
+        }
+        return;
+      }
+      if (now >= (shooter.blackoutNextChargeAt || 0) && !shooter.blackoutChargeUntil) {
+        shooter.blackoutMuzzleUntil = now + 650;
+        shooter.blackoutChargeUntil = now + 650;
+        shooter.blackoutHoldUntil = now + 720;
+        shooter.blackoutTargetX = player ? player.x : W / 2;
+        shooter.blackoutTargetY = player ? player.y : dangerY;
+      }
+      if (shooter.blackoutChargeUntil && now >= shooter.blackoutChargeUntil) {
+        shooter.blackoutChargeUntil = 0;
+        fireAuthoredBlackoutShot(shooter, shooter.blackoutTargetX, shooter.blackoutTargetY, 'BLACKOUT SHOT');
+        if (encounter.nextIndex === encounter.positions.length) {
+          scheduleAuthoredCampaign(700, () => {
+            if (!shooter || shooter.alive === false) return;
+            const offset = shooter.blackoutTargetX < W / 2 ? 68 : -68;
+            fireAuthoredBlackoutShot(shooter, clamp(shooter.blackoutTargetX + offset, 24, W - 24), shooter.blackoutTargetY, 'BLACKOUT FOLLOW-UP');
+          });
+        }
+        shooter.blackoutVulnerableUntil = now + 1300;
+        shooter.blackoutNextChargeAt = now + 2650;
+      }
+      return;
+    }
+    if (encounter.kind !== 'rescue') return;
+    const lock = obstacles.find(o => o.campaignRescueLock && o.alive !== false);
+    if (!lock) {
+      obstacles.forEach(o => { if (o.campaignRescueGuardian) o.alive = false; });
+      if (!enemyBullets.length) spawnsRemaining = 0;
+      return;
+    }
+    if (encounter.phase === 'rain') {
+      updateRainEncounter(encounter, now);
+      return;
+    }
+    if (encounter.phase !== 'red') return;
+    if (encounter.attackPending || now < encounter.nextAttackAt) return;
+    const guardian = encounter.red;
+    if (!guardian || guardian.alive === false) return;
+    encounter.attackPending = true;
+    guardian.redShotChargeAt = now;
+    guardian.redAimLocksAt = now + 620;
+    guardian.redShotChargeUntil = now + 900;
+    guardian.redTelegraphX = player ? player.x : guardian.x;
+    guardian.redTelegraphY = player ? player.y : dangerY;
+    playRedChargeCue();
+    scheduleAuthoredCampaign(900, () => {
+      fireAuthoredRedShot(guardian, Date.now());
+      encounter.ringOpenUntil = Date.now() + 1600;
+      encounter.attackPending = false;
+      encounter.nextAttackAt = Date.now() + 2200;
+      addFloatText('LOCK OPEN!', lock.x, lock.y - lock.r - 24, '#7dffff', 18);
+    });
   }
 
 
@@ -2829,6 +3220,8 @@
     boss=null; rescuedChars.clear(); rescueBanner = null; missionRetryCaptives.splice(0, missionRetryCaptives.length); campaignSeenBossNames.clear(); waveCaptivesSeen.clear();
     waveTheme = null; miniBoss = null; themeEffectsAt = 0; waveTransitioning = false; pendingBossWin = null;
     mirrorSequenceActive = false; mirrorStageTimers.forEach(clearTimeout); mirrorStageTimers = [];
+    earlyEncounterTimers.forEach(clearTimeout); earlyEncounterTimers = []; earlyEncounter = null;
+    authoredCampaignTimers.forEach(clearTimeout); authoredCampaignTimers = []; authoredCampaignEncounter = null;
     buffFrozenUntil = 0; buffZappedUntil = 0; blasterDisabledUntil = 0; controlsReversedUntil = 0; twin = null; rebound = null; buffPizzaUntil = 0; snowingUntil = 0; snowParticles = [];
     inventory = { gun: false, shield: false, bomb: false };
     socketAnchorY = H - SPACE_SOCKET_ANCHOR_BOTTOM_OFFSET;
@@ -2847,14 +3240,8 @@
     scheduleInstrument();
     const flowToken = spaceFlowToken;
     setTimeout(() => {
-      if (flowToken === spaceFlowToken && state === 'playing' && wave === 1) showTopBanner('DODGE ROCKS AND JUNK', 'good');
-    }, 900);
-    // Wave 1 starts at full HP, so the existing random HP-crate timer can land while
-    // the player is already capped and never feel like real support. Guarantee one
-    // extra, clearly-timed HP crate after the player has likely taken an early hit.
-    setTimeout(() => {
-      if (flowToken === spaceFlowToken && state === 'playing' && wave === 1 && !boss && !waveTransitioning) spawnHpPowerup();
-    }, 4200);
+      if (flowToken === spaceFlowToken && state === 'playing' && wave === 1) showSkillCalloutForWave({ delayMs: 0 });
+    }, 260);
   }
 
   function clearSpaceRuntimeTimers() {
@@ -2869,6 +3256,12 @@
     mirrorStageTimers.forEach(clearTimeout);
     mirrorStageTimers = [];
     mirrorSequenceActive = false;
+    earlyEncounterTimers.forEach(clearTimeout);
+    earlyEncounterTimers = [];
+    earlyEncounter = null;
+    authoredCampaignTimers.forEach(clearTimeout);
+    authoredCampaignTimers = [];
+    authoredCampaignEncounter = null;
   }
 
   function spawnAmbientJunk(cfg, options) {
@@ -2939,6 +3332,9 @@
   function scheduleAmbientJunk(cfg) {
     clearTimeout(ambientJunkTimer);
     if (state !== 'playing' || academyMode) return;
+    // The authored opening encounters seed exactly one deliberate prop in Waves 2
+    // and 3. Recurring ambient junk would blur their target/attack language.
+    if (wave <= 3 && currentCfg && currentCfg.authoredEncounter) return;
     if (wave <= 2 && !obstacles.some(o => o && o.type === 'junk' && o.alive !== false)) {
       spawnAmbientJunk(cfg || currentCfg);
     }
@@ -3368,7 +3764,7 @@
     schedulePowerup();
     scheduleMysteryBox();
     scheduleInstrument();
-    if (waveTheme === 'boss') spawnBoss(false, { guardedRescue: [4,7,9,11].includes(wave) && hasUnrescuedMissionCaptive() });
+    if (waveTheme === 'boss') spawnBoss(false, { guardedRescue: [4,7,9,10].includes(wave) && hasUnrescuedMissionCaptive() });
     if (waveTheme === 'gizmo') spawnBoss(false, { guardedRescue: hasUnrescuedMissionCaptive(), escape: !forcedBossName && wave !== SPACE_FINAL_GIZMO_WAVE, final: !forcedBossName && wave === SPACE_FINAL_GIZMO_WAVE });
     if (waveTheme === 'captive' && wave !== 6) spawnBoss(true);
     if (waveTheme === 'ghost' || waveTheme === 'emp') { spawnMiniBoss(waveTheme); if (waveTheme === 'emp') spaceSfx('status.emp'); }
@@ -3380,8 +3776,580 @@
   }
 
   let spawnTimer = null;
+
+  function scheduleEarlyEncounter(delay, fn) {
+    const token = spaceFlowToken;
+    const expectedWave = wave;
+    const timer = setTimeout(() => {
+      if (token !== spaceFlowToken || state !== 'playing' || wave !== expectedWave || !earlyEncounter) return;
+      fn();
+    }, delay);
+    earlyEncounterTimers.push(timer);
+    return timer;
+  }
+
+  function authoredAsteroid(options) {
+    const opts = options || {};
+    const r = opts.r || 22;
+    const sides = 8;
+    const verts = Array.from({ length: sides }, (_, i) => {
+      const a = (i / sides) * Math.PI * 2;
+      const rr = r * (0.78 + Math.random() * 0.20);
+      return [Math.cos(a) * rr, Math.sin(a) * rr];
+    });
+    obstacles.push({
+      type: 'asteroid',
+      x: opts.x == null ? W / 2 : opts.x,
+      y: opts.y == null ? -r - 12 : opts.y,
+      vx: opts.vx || 0,
+      vy: opts.vy || 3.5,
+      r, verts,
+      rot: rand(-0.18, 0.18),
+      rotSpeed: rand(-0.035, 0.035),
+      hp: opts.hp || 3,
+      shadeSeed: Math.random() * 1000,
+      rockStyle: Math.floor(Math.random() * 3),
+      authoredEarly: true,
+      authoredRicochet: !!opts.ricochet,
+      allowFastVx: !!opts.ricochet,
+      collisionDamage: opts.damage || (r >= 24 ? 20 : 15),
+    });
+  }
+
+  function authoredAsteroidGate(gapCenter, speed, damage, options) {
+    const opts = options || {};
+    const lanes = [0.06, 0.205, 0.35, 0.50, 0.65, 0.795, 0.94];
+    const r = clamp(W * 0.058, 19, 24);
+    lanes.forEach((lane, i) => {
+      if (Math.abs(lane - gapCenter) < (opts.tight ? 0.105 : 0.135)) return;
+      authoredAsteroid({
+        x: W * lane,
+        y: -r - 14 - (i % 2) * 4,
+        vy: speed,
+        vx: opts.drift ? (lane < gapCenter ? -0.18 : 0.18) : 0,
+        r,
+        hp: opts.heavy ? 4 : 3,
+        damage,
+      });
+    });
+  }
+
+  function spawnAuthoredTraitor(type, options) {
+    const opts = options || {};
+    const r = FACE_R * (opts.small ? 0.82 : 0.90);
+    const x = W * (opts.lane == null ? 0.5 : opts.lane);
+    const holdY = opts.holdY || Math.max(128, H * (type === 'purple' ? 0.29 : 0.32));
+    const now = Date.now();
+    const fromSide = type === 'red' && opts.lane != null;
+    const spawnX = fromSide ? (opts.lane < 0.5 ? r + 6 : W - r - 6) : x;
+    const entryVx = fromSide ? (opts.lane < 0.5 ? 2.8 : -2.8) : (opts.vx == null ? 0 : opts.vx);
+    const o = {
+      type: 'face', behavior: 'holdDrift', x: spawnX, y: -r - 18,
+      vx: entryVx, vy: 5.0, r,
+      ci: missionTraitorIndexForType(type), hp: opts.hp || 3,
+      isTrapped: false, ringHp: 0, pausedBurstDone: true, paused: false,
+      pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0,
+      holdY, baseY: holdY, born: now, driftSeed: Math.random() * Math.PI * 2,
+      driftAmpY: opts.stationary ? 0 : (opts.driftAmpY || 7),
+      enemyDriftMult: opts.stationary ? 0 : (opts.driftMult || 0.72),
+      enemyDodgeMult: 0, enemyJukeMult: 1.4, enemyAwareness: 0.18,
+      enemyPersonality: 'authored', traitorType: type,
+      authoredEarly: true,
+      authoredAttack: type === 'red' ? 'redCharge' : 'purpleRain',
+      authoredStationary: !!opts.stationary,
+      redState: 'idle',
+      redNextAttackAt: now + (opts.attackDelay || 1150),
+      purpleAttackState: 'idle',
+      nextAuthoredAttackAt: now + (opts.attackDelay || 1050),
+      nextDodgeAt: now + rand(620, 900),
+      nextDriftTurnAt: now + rand(420, 700),
+      nextJukeAt: now + rand(780, 1120),
+    };
+    obstacles.push(o);
+    return o;
+  }
+
+  function startAuthoredAsteroidEncounter() {
+    const leadMs = 900;
+    const durationMs = 30000;
+    const startsAt = Date.now() + leadMs;
+    earlyEncounter = { wave: 1, phase: 1, finished: false, startsAt, endsAt: startsAt + durationMs };
+    spawnsRemaining = 1;
+
+    // Helper: spawn a wall-bouncing ricochet rock.
+    function scheduleRicochet(atMs, fromLeft, speed, vy, r) {
+      scheduleEarlyEncounter(leadMs + atMs, () => {
+        authoredAsteroid({
+          x: fromLeft ? r + 2 : W - r - 2,
+          vx: fromLeft ? speed : -speed,
+          vy, r, hp: 6, damage: 18, ricochet: true,
+        });
+      });
+    }
+
+    // Helper: spawn a rock aimed at the player's current x-position (locks on spawn, never tracks).
+    function scheduleAimed(atMs, fromLane, speed, r) {
+      scheduleEarlyEncounter(leadMs + atMs, () => {
+        const startX = W * fromLane;
+        const vy = speed;
+        const framesToDanger = Math.max(72, dangerY / vy);
+        const vx = player ? clamp((player.x - startX) / framesToDanger, -3.6, 3.6) : 0;
+        authoredAsteroid({ x: startX, vx, vy, r: r || 22, hp: 3, damage: 18 });
+      });
+    }
+
+    // Inline drop helper — bypasses the campaignAllows gate so authored waves
+    // can place specific pickups at authored moments.
+    function dropHp(atMs, hpValue) {
+      scheduleEarlyEncounter(leadMs + atMs, () => {
+        const r = hpValue >= 5 ? 18 : hpValue >= 3 ? 13.5 : 11;
+        powerups.push({ type: 'hp', hpValue, x: rand(r + 8, W - r - 8), y: -r - 10, vy: hpFallSpeed(), r, bob: Math.random() * Math.PI * 2 });
+      });
+    }
+    function dropPowerup(atMs, type) {
+      scheduleEarlyEncounter(leadMs + atMs, () => {
+        powerups.push({ type, x: rand(POWERUP_R + 8, W - POWERUP_R - 8), y: -POWERUP_R - 10, vy: powerupFallSpeed(), r: POWERUP_R, bob: Math.random() * Math.PI * 2 });
+      });
+    }
+
+    // ── Act 1: First contact (0–3 s) ──────────────────────────────────────
+
+    scheduleEarlyEncounter(leadMs + 0, () => {
+      authoredAsteroid({ x: W * 0.12, vx: 6.2,  vy: 6.0, r: 30, hp: 7, damage: 18 });
+      authoredAsteroid({ x: W * 0.88, vx: -6.2, vy: 6.0, r: 30, hp: 7, damage: 18 });
+      authoredAsteroid({ x: W * 0.50, vx: 0,    vy: 5.6, r: 22, hp: 4, damage: 14 });
+    });
+    scheduleEarlyEncounter(leadMs + 600, () => {
+      authoredAsteroid({ x: W * 0.07, vx: 1.6,  vy: 6.5, r: 28, hp: 6, damage: 16 });
+      authoredAsteroid({ x: W * 0.50, vx: 0,    vy: 5.8, r: 33, hp: 8, damage: 18 });
+      authoredAsteroid({ x: W * 0.93, vx: -1.6, vy: 6.5, r: 28, hp: 6, damage: 16 });
+    });
+    scheduleEarlyEncounter(leadMs + 1200, () => {
+      authoredAsteroid({ x: W * 0.30, vx: -2.8, vy: 6.8, r: 28, hp: 6, damage: 16 });
+      authoredAsteroid({ x: W * 0.70, vx: 2.8,  vy: 6.4, r: 26, hp: 5, damage: 16 });
+      authoredAsteroid({ x: W * 0.50, vx: 1.4,  vy: 7.0, r: 20, hp: 4, damage: 14 });
+    });
+    scheduleEarlyEncounter(leadMs + 1900, () => {
+      authoredAsteroid({ x: W * 0.18, vx: 4.8,  vy: 7.0, r: 24, hp: 5, damage: 16 });
+      authoredAsteroid({ x: W * 0.50, vx: 0,    vy: 6.2, r: 22, hp: 4, damage: 14 });
+      authoredAsteroid({ x: W * 0.82, vx: -4.8, vy: 7.0, r: 24, hp: 5, damage: 16 });
+    });
+    scheduleEarlyEncounter(leadMs + 2600, () => {
+      authoredAsteroid({ x: W * 0.40, vx: -3.2, vy: 7.2, r: 26, hp: 5, damage: 16 });
+      authoredAsteroid({ x: W * 0.60, vx: 3.2,  vy: 7.2, r: 26, hp: 5, damage: 16 });
+    });
+
+    // ── Act 2: Full pressure (3–14 s) ─────────────────────────────────────
+
+    scheduleEarlyEncounter(leadMs + 3200, () => {
+      authoredAsteroid({ x: W * 0.50, vx: 1.0,  vy: 6.4, r: 30, hp: 7, damage: 18 });
+      authoredAsteroid({ x: W * 0.15, vx: 3.8,  vy: 6.8, r: 22, hp: 4, damage: 14 });
+    });
+    scheduleAimed(3800, 0.09, 8.5, 20);
+
+    scheduleEarlyEncounter(leadMs + 4400, () => {
+      authoredAsteroid({ x: W * 0.24, vx: -0.6, vy: 6.6, r: 24, hp: 5, damage: 14 });
+      authoredAsteroid({ x: W * 0.76, vx: 0.6,  vy: 6.6, r: 24, hp: 5, damage: 14 });
+      authoredAsteroid({ x: W * 0.50, vx: 0,    vy: 7.2, r: 20, hp: 4, damage: 14 });
+    });
+    scheduleRicochet(5000, true, 9.0, 5.5, 22);
+
+    scheduleEarlyEncounter(leadMs + 5600, () => {
+      authoredAsteroid({ x: W * 0.14, vx: 5.5,  vy: 6.8, r: 28, hp: 7, damage: 18 });
+      authoredAsteroid({ x: W * 0.86, vx: -5.5, vy: 6.8, r: 28, hp: 7, damage: 18 });
+    });
+    scheduleAimed(6200, 0.91, 9.0, 20);
+
+    scheduleEarlyEncounter(leadMs + 6900, () => {
+      authoredAsteroid({ x: W * 0.40, vx: -0.8, vy: 6.5, r: 28, hp: 6, damage: 16 });
+      authoredAsteroid({ x: W * 0.70, vx: 1.2,  vy: 7.0, r: 22, hp: 4, damage: 14 });
+    });
+    dropHp(7000, 3);
+
+    scheduleEarlyEncounter(leadMs + 7700, () => {
+      authoredAsteroid({ x: W * 0.60, vx: 0.9,  vy: 6.4, r: 30, hp: 7, damage: 18 });
+      authoredAsteroid({ x: W * 0.30, vx: -1.4, vy: 7.2, r: 20, hp: 4, damage: 14 });
+    });
+    scheduleRicochet(8000, false, 9.4, 5.8, 23);
+    scheduleAimed(8400, 0.08, 9.2, 20);
+
+    scheduleEarlyEncounter(leadMs + 9000, () => {
+      authoredAsteroid({ x: W * 0.20, vx: -0.5, vy: 6.8, r: 22, hp: 5, damage: 14 });
+      authoredAsteroid({ x: W * 0.50, vx: 0,    vy: 6.0, r: 30, hp: 7, damage: 16 });
+      authoredAsteroid({ x: W * 0.80, vx: 0.5,  vy: 6.8, r: 22, hp: 5, damage: 14 });
+    });
+    dropPowerup(9200, 'shield');
+
+    scheduleAimed(9900, 0.92, 9.5, 20);
+    scheduleEarlyEncounter(leadMs + 10200, () => {
+      authoredAsteroid({ x: W * 0.12, vx: 4.6,  vy: 7.4, r: 24, hp: 5, damage: 16 });
+    });
+    scheduleEarlyEncounter(leadMs + 10600, () => {
+      authoredAsteroid({ x: W * 0.35, vx: 0.7,  vy: 6.6, r: 26, hp: 6, damage: 16 });
+      authoredAsteroid({ x: W * 0.65, vx: -0.7, vy: 6.6, r: 26, hp: 6, damage: 16 });
+    });
+    scheduleRicochet(11200, true, 9.8, 6.0, 24);
+
+    scheduleEarlyEncounter(leadMs + 11900, () => {
+      authoredAsteroid({ x: W * 0.10, vx: 5.8,  vy: 7.0, r: 28, hp: 7, damage: 18 });
+      authoredAsteroid({ x: W * 0.90, vx: -5.8, vy: 7.0, r: 28, hp: 7, damage: 18 });
+      authoredAsteroid({ x: W * 0.50, vx: 0,    vy: 6.6, r: 22, hp: 4, damage: 14 });
+    });
+    scheduleAimed(12500, 0.09, 9.8, 20);
+    dropHp(12800, 2);
+    dropPowerup(13400, 'gun');
+
+    // ── Act 3: No mercy (14–30 s) ──────────────────────────────────────────
+
+    scheduleEarlyEncounter(leadMs + 14000, () => {
+      authoredAsteroid({ x: W * 0.07, vx: 4.2,  vy: 7.4, r: 28, hp: 6, damage: 18 });
+      authoredAsteroid({ x: W * 0.50, vx: -0.7, vy: 7.0, r: 24, hp: 5, damage: 16 });
+      authoredAsteroid({ x: W * 0.93, vx: -4.2, vy: 7.4, r: 28, hp: 6, damage: 18 });
+    });
+    scheduleRicochet(14600, false, 10.0, 6.2, 22);
+    scheduleAimed(15000, 0.88, 10.0, 20);
+
+    scheduleEarlyEncounter(leadMs + 15500, () => {
+      authoredAsteroid({ x: W * 0.50, vx: 0, vy: 6.8, r: 34, hp: 9, damage: 18 });
+      authoredAsteroid({ x: W * 0.20, vx: 2.6, vy: 7.6, r: 22, hp: 4, damage: 14 });
+    });
+    scheduleAimed(16200, 0.08, 10.2, 20);
+
+    scheduleEarlyEncounter(leadMs + 16800, () => {
+      authoredAsteroid({ x: W * 0.15, vx: 5.2,  vy: 7.2, r: 30, hp: 7, damage: 16 });
+      authoredAsteroid({ x: W * 0.85, vx: -5.2, vy: 7.2, r: 30, hp: 7, damage: 16 });
+    });
+    scheduleEarlyEncounter(leadMs + 17400, () => {
+      authoredAsteroid({ x: W * 0.33, vx: 1.2,  vy: 8.0, r: 20, hp: 4, damage: 14 });
+      authoredAsteroid({ x: W * 0.67, vx: -1.2, vy: 8.0, r: 20, hp: 4, damage: 14 });
+      authoredAsteroid({ x: W * 0.50, vx: 0,    vy: 7.6, r: 26, hp: 6, damage: 16 });
+    });
+    scheduleRicochet(18300, true, 10.4, 6.4, 23);
+    dropHp(18000, 3);
+
+    scheduleAimed(19000, 0.12, 10.5, 20);
+    scheduleAimed(19500, 0.88, 10.5, 20);
+    scheduleEarlyEncounter(leadMs + 19800, () => {
+      authoredAsteroid({ x: W * 0.08, vx: 6.0,  vy: 7.5, r: 28, hp: 7, damage: 18 });
+      authoredAsteroid({ x: W * 0.50, vx: 0,    vy: 6.8, r: 26, hp: 6, damage: 16 });
+      authoredAsteroid({ x: W * 0.92, vx: -6.0, vy: 7.5, r: 28, hp: 7, damage: 18 });
+    });
+    scheduleEarlyEncounter(leadMs + 20500, () => {
+      authoredAsteroid({ x: W * 0.35, vx: 2.4,  vy: 7.8, r: 22, hp: 5, damage: 14 });
+      authoredAsteroid({ x: W * 0.65, vx: -2.4, vy: 7.8, r: 22, hp: 5, damage: 14 });
+    });
+    scheduleAimed(20900, 0.50, 10.0, 22);
+    dropPowerup(21000, 'gun');
+
+    scheduleRicochet(21700, false, 10.8, 6.6, 24);
+    scheduleEarlyEncounter(leadMs + 22000, () => {
+      authoredAsteroid({ x: W * 0.26, vx: -0.8, vy: 7.8, r: 26, hp: 6, damage: 16 });
+      authoredAsteroid({ x: W * 0.74, vx: 0.8,  vy: 7.8, r: 26, hp: 6, damage: 16 });
+      authoredAsteroid({ x: W * 0.50, vx: 0,    vy: 8.2, r: 20, hp: 4, damage: 14 });
+    });
+    scheduleAimed(23000, 0.09, 10.8, 20);
+    scheduleAimed(23400, 0.91, 10.8, 20);
+    dropHp(23500, 2);
+
+    scheduleRicochet(24000, true, 11.0, 6.8, 22);
+    scheduleEarlyEncounter(leadMs + 24600, () => {
+      authoredAsteroid({ x: W * 0.12, vx: 5.8,  vy: 8.0, r: 28, hp: 7, damage: 18 });
+      authoredAsteroid({ x: W * 0.50, vx: -1.0, vy: 7.5, r: 24, hp: 5, damage: 16 });
+      authoredAsteroid({ x: W * 0.88, vx: -5.8, vy: 8.0, r: 28, hp: 7, damage: 18 });
+    });
+    scheduleAimed(25200, 0.50, 11.0, 20);
+    scheduleEarlyEncounter(leadMs + 25800, () => {
+      authoredAsteroid({ x: W * 0.40, vx: 3.6,  vy: 8.4, r: 22, hp: 5, damage: 16 });
+      authoredAsteroid({ x: W * 0.60, vx: -3.6, vy: 8.4, r: 22, hp: 5, damage: 16 });
+    });
+
+    // Finale (27 s) — diamond closing in fast
+    scheduleEarlyEncounter(leadMs + 27000, () => {
+      authoredAsteroid({ x: W * 0.18, y: -58, vx: 0.7,  vy: 7.8, r: 30, hp: 7, damage: 18 });
+      authoredAsteroid({ x: W * 0.82, y: -58, vx: -0.7, vy: 7.8, r: 30, hp: 7, damage: 18 });
+      authoredAsteroid({ x: W * 0.30, y: -24, vx: 0.6,  vy: 7.4, r: 28, hp: 6, damage: 16 });
+      authoredAsteroid({ x: W * 0.70, y: -24, vx: -0.6, vy: 7.4, r: 28, hp: 6, damage: 16 });
+      authoredAsteroid({ x: W * 0.50, y: -40, vx: 0,    vy: 8.0, r: 24, hp: 5, damage: 16 });
+    });
+    scheduleAimed(28000, 0.50, 11.0, 20);
+    scheduleEarlyEncounter(leadMs + 28600, () => {
+      authoredAsteroid({ x: W * 0.18, vx: 4.8, vy: 8.0, r: 22, hp: 4, damage: 14 });
+      authoredAsteroid({ x: W * 0.82, vx: -4.8, vy: 8.0, r: 22, hp: 4, damage: 14 });
+    });
+    scheduleEarlyEncounter(leadMs + 29300, () => {
+      authoredAsteroid({ x: W * 0.28, vx: 1.8, vy: 8.2, r: 24, hp: 5, damage: 16 });
+      authoredAsteroid({ x: W * 0.72, vx: -1.8, vy: 8.2, r: 24, hp: 5, damage: 16 });
+      authoredAsteroid({ x: W * 0.50, vx: 0, vy: 8.6, r: 20, hp: 4, damage: 14 });
+    });
+
+    scheduleEarlyEncounter(leadMs + durationMs, () => {
+      score += 250;
+      // Stop spawning at the bell, but let the finale finish crossing the board.
+      // Clearing it here made the last seconds feel as though the storm suddenly
+      // switched off; normal board-clear logic will end the wave naturally.
+      spawnsRemaining = 0;
+      earlyEncounter.finished = true;
+    });
+  }
+
+  function spawnNextQueuedEnemy() {
+    if (!earlyEncounter || earlyEncounter.finished || !earlyEncounter.spawnQueue) return;
+    const liveCount = obstacles.filter(o => o.authoredAttack && o.alive !== false).length;
+    if (liveCount >= 2 || earlyEncounter.spawnQueue.length === 0) return;
+    const cfg = earlyEncounter.spawnQueue.shift();
+    const e = spawnAuthoredTraitor(cfg.type, cfg.opts);
+    e.enemyDodgeMult = cfg.dodge;
+    e.enemyAwareness = cfg.awareness;
+    e.driftAmpY = cfg.driftAmpY;
+    earlyEncounter.lastSpawnAt = Date.now();
+  }
+
+  function startPurpleRainEncounter() {
+    const now = Date.now();
+    earlyEncounter = {
+      wave: 3, kind: 'purpleStorm', phase: 'storm', finished: false,
+      eye: createRainEye(now, false), rainActive: true, rainArmedAt: now + 1500,
+      nextRainDamageAt: now + 1500, outsideEyeSince: 0,
+      cloudIndex: 1, cloud: null, guardians: [], guardianTurn: 0,
+      nextGuardianShotAt: now + 2100, pendingGuardianShot: null,
+      startedAt: now,
+    };
+    spawnsRemaining = 1;
+    earlyEncounter.guardians.push(spawnRainGuardian(0.82, 0.34, 8));
+    spawnRainCloud(earlyEncounter, 30, -1);
+  }
+
+  function startAuthoredTraitorEncounter(w) {
+    if (w === 3) {
+      startPurpleRainEncounter();
+      return;
+    }
+    // Alternate side entrances so the opening instruction remains unobstructed.
+    // The varied hold bands keep each pair from flattening into one firing line.
+    const lanes = [0.18, 0.82, 0.24, 0.76, 0.14, 0.86, 0.28, 0.72];
+    const holdBands = [0.27, 0.36, 0.31, 0.40, 0.34, 0.28, 0.39, 0.32];
+    function randDelay(lo, hi) { return lo + Math.random() * (hi - lo); }
+
+    const queue = [];
+    if (w === 2) {
+      const rDodge  = [0.42, 0.48, 0.55, 0.60, 0.65, 0.72, 0.80, 0.88];
+      const rAware  = [0.40, 0.42, 0.48, 0.50, 0.52, 0.55, 0.58, 0.62];
+      const rDriftY = [14,   15,   16,   17,   18,   20,   22,   24  ];
+      for (let i = 0; i < 8; i++) {
+        const ln = lanes[i];
+        queue.push({
+          type: 'red',
+          opts: { lane: ln, holdY: H * holdBands[i], hp: 3, vx: ln < 0.5 ? rand(0.8, 1.5) : -rand(0.8, 1.5), driftMult: 1.08, attackDelay: randDelay(420, 780) },
+          dodge: rDodge[i], awareness: rAware[i], driftAmpY: rDriftY[i],
+        });
+      }
+    } else {
+      const pDodge  = [0.22, 0.25, 0.29, 0.32, 0.36, 0.39, 0.43, 0.46];
+      const pAware  = [0.24, 0.27, 0.30, 0.34, 0.38, 0.42, 0.46, 0.50];
+      const pDriftY = [14,   15,   16,   18,   19,   20,   22,   23  ];
+      const pDrift  = [0.90, 0.94, 0.98, 1.02, 1.06, 1.10, 1.15, 1.20];
+      for (let i = 0; i < 8; i++) {
+        const ln = lanes[i];
+        queue.push({
+          type: 'purple',
+          opts: { lane: ln, hp: i < 4 ? 4 : 5, vx: ln < 0.5 ? rand(0.8, 1.4) : -rand(0.8, 1.4), driftMult: pDrift[i], attackDelay: randDelay(420, 760), holdY: Math.min(dangerY - 68, H * holdBands[i]) },
+          dodge: pDodge[i], awareness: pAware[i], driftAmpY: pDriftY[i],
+        });
+      }
+    }
+
+    earlyEncounter = { wave: w, finished: false, spawnQueue: queue, totalToSpawn: queue.length, redHits: 0, shieldHits: 0, startedAt: Date.now(), adaptiveHintShown: false, lastSpawnAt: 0, spawnGateMs: 1450 };
+    spawnsRemaining = 1;
+    spawnNextQueuedEnemy();
+
+    scheduleEarlyEncounter(1400, () => {
+      const before = obstacles.length;
+      spawnAmbientJunk(currentCfg, { visible: true, lane: w === 2 ? 0.84 : 0.14, depth: 0.10, kind: w === 2 ? 'boot' : 'duck' });
+      obstacles.slice(before).forEach(o => { o.authoredEarlyJunk = true; });
+    });
+
+    function dropPickup(delayMs, type, hpValue) {
+      scheduleEarlyEncounter(delayMs, () => {
+        if (type === 'hp') {
+          const r = hpValue >= 5 ? 18 : hpValue >= 3 ? 13.5 : 11;
+          powerups.push({ type: 'hp', hpValue, x: rand(r + 8, W - r - 8), y: -r - 10, vy: hpFallSpeed(), r, bob: Math.random() * Math.PI * 2 });
+        } else {
+          powerups.push({ type, x: rand(POWERUP_R + 8, W - POWERUP_R - 8), y: -POWERUP_R - 10, vy: powerupFallSpeed(), r: POWERUP_R, bob: Math.random() * Math.PI * 2 });
+        }
+      });
+    }
+
+    function scheduleRock(atMs, x, vx, vy, r, hp) {
+      scheduleEarlyEncounter(atMs, () => { authoredAsteroid({ x: W * x, vx, vy, r, hp, damage: r >= 26 ? 18 : 14 }); });
+    }
+
+    if (w === 2) {
+      dropPickup(3200, 'hp', 2);  dropPickup(6800, 'hp', 3);
+      dropPickup(10400, 'hp', 2); dropPickup(14000, 'hp', 3);
+      dropPickup(18000, 'hp', 2); dropPickup(8600, 'shield');
+      scheduleRock(1800,  0.15, 1.1, 4.8, 18, 3);
+      scheduleRock(3000,  0.85, -0.9, 4.6, 16, 2);
+      scheduleRock(4600,  0.50, 0.6, 4.5, 20, 3);
+      scheduleRock(6200,  0.10, 1.4, 5.0, 15, 2);
+      scheduleRock(7800,  0.90, -1.2, 4.7, 19, 3);
+      scheduleRock(9400,  0.40, -0.7, 5.1, 17, 2);
+      scheduleRock(11000, 0.70, 0.8, 4.6, 18, 3);
+      scheduleRock(13000, 0.20, 1.5, 5.2, 20, 3);
+      scheduleRock(15000, 0.80, -1.3, 4.8, 16, 2);
+      scheduleRock(17000, 0.50, -0.6, 5.1, 19, 3);
+    } else {
+      // Purple Rain is intentionally a clean duel. Extra rocks turned the locked
+      // rain lane into noise and made successful dodges feel accidental.
+      dropPickup(7200, 'shield');
+    }
+  }
+
+  function startAuthoredEarlyEncounter(w) {
+    earlyEncounterTimers.forEach(clearTimeout);
+    earlyEncounterTimers = [];
+    earlyEncounter = null;
+    obstacles = obstacles.filter(o => !o.authoredEarlyJunk);
+    if (w === 1) startAuthoredAsteroidEncounter();
+    else startAuthoredTraitorEncounter(w);
+  }
+
+  function fireAuthoredRedShot(o, now) {
+    const tx = o.redTelegraphX == null ? (player ? player.x : o.x) : o.redTelegraphX;
+    const ty = o.redTelegraphY == null ? (player ? player.y : dangerY) : o.redTelegraphY;
+    const dx = tx - o.x;
+    const dy = ty - o.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const speed = 16.4;
+    enemyBullets.push({
+      x: o.x, y: o.y + o.r * 0.72,
+      vx: dx / dist * speed, vy: dy / dist * speed,
+      r: 7, theme: 'redCharged', damage: 20,
+      damageCause: 'CHARGED RED SHOT', traitorShot: 'red', born: now,
+    });
+    playTraitorShotSfx('red');
+    triggerShake(3.5);
+  }
+
+  function updateAuthoredTraitorAttacks(now) {
+    if (!earlyEncounter || (wave !== 2 && wave !== 3)) return;
+    const actors = obstacles.filter(o => o.authoredAttack && o.alive !== false);
+    let attackBusy = actors.some(o =>
+      o.redState === 'charging' || o.purpleAttackState === 'warning' || o.purpleAttackState === 'raining'
+    );
+    for (const o of actors) {
+      if (o.y < traitorAttackArmY(o)) continue;
+      if (o.authoredAttack === 'redCharge') {
+        if (o.redState === 'charging') {
+          if (now < (o.redAimLocksAt || 0) && player) {
+            o.redTelegraphX = player.x;
+            o.redTelegraphY = player.y;
+          }
+          if (now >= (o.redShotChargeUntil || Infinity)) {
+            fireAuthoredRedShot(o, now);
+            o.redState = 'recover';
+            o.redShotHoldUntil = now + 1050;
+            o.redVulnerableUntil = now + 1050;
+            o.redNextAttackAt = now + 1750;
+          }
+        } else if (o.redState === 'recover') {
+          if (now >= (o.redVulnerableUntil || 0)) o.redState = 'idle';
+        } else if (!attackBusy && now >= (o.redNextAttackAt || 0)) {
+          o.redState = 'charging';
+          o.redShotChargeAt = now;
+          o.redAimLocksAt = now + 700;
+          o.redShotChargeUntil = now + 920;
+          o.redTelegraphX = player ? player.x : o.x;
+          o.redTelegraphY = player ? player.y : dangerY;
+          playRedChargeCue();
+          attackBusy = true;
+        }
+      } else if (o.authoredAttack === 'purpleRain') {
+        if (o.purpleAttackState === 'warning') {
+          if (now >= (o.purpleWarningUntil || Infinity)) {
+            o.purpleAttackState = 'raining';
+            firePurpleTraitorRain(o);
+            o.nextAuthoredAttackAt = (o.purpleVulnerableUntil || o.purpleRainUntil || now + 1600) + 700;
+          }
+        } else if (o.purpleAttackState === 'raining') {
+          if (now >= (o.purpleVulnerableUntil || o.purpleRainUntil || 0)) {
+            o.purpleAttackState = 'idle';
+            o.enemyDodgeMult = o.preRainDodgeMult == null ? o.enemyDodgeMult : o.preRainDodgeMult;
+            o.preRainDodgeMult = null;
+          }
+        } else if (!attackBusy && now >= (o.nextAuthoredAttackAt || 0)) {
+          o.purpleAttackState = 'warning';
+          o.purpleWarningUntil = now + 900;
+          o.purpleWarningDuration = 900;
+          // Start away from Purple, pass through center, then finish directly
+          // beneath her. The route is fixed when the warning begins.
+          const enemyLane = clamp(o.x / W, 0.16, 0.84);
+          const farLane = enemyLane < 0.5 ? 0.80 : 0.20;
+          o.purpleGapSequence = [farLane, 0.50, enemyLane];
+          o.purpleRainTargetX = W * farLane;
+          playPurpleRainWarningCue();
+          attackBusy = true;
+        }
+      }
+    }
+  }
+
+  function updateAuthoredEarlyEncounter(now) {
+    if (!earlyEncounter || earlyEncounter.wave !== wave || earlyEncounter.finished) return;
+    if (wave === 3 && earlyEncounter.kind === 'purpleStorm') {
+      if (earlyEncounter.phase === 'punish') {
+        if (now >= earlyEncounter.punishUntil) {
+          earlyEncounter.phase = 'storm';
+          earlyEncounter.cloudIndex = 2;
+          earlyEncounter.rainActive = true;
+          earlyEncounter.rainArmedAt = now + 650;
+          earlyEncounter.nextRainDamageAt = now + 650;
+          earlyEncounter.outsideEyeSince = 0;
+          earlyEncounter.nextGuardianShotAt = now + 900;
+          earlyEncounter.guardians.push(spawnRainGuardian(0.18, 0.28, 10));
+          spawnRainCloud(earlyEncounter, 42, 1);
+          addFloatText('THE STORM RETURNS!', W / 2, H * 0.30, '#d7a4ff', 20, { vy: 0, holdMs: 1000, fade: 0.012 });
+        }
+      } else {
+        updateRainEncounter(earlyEncounter, now);
+      }
+      return;
+    }
+    if (wave === 2 || wave === 3) {
+      updateAuthoredTraitorAttacks(now);
+      const liveActors = obstacles.filter(o => o.authoredAttack && o.alive !== false);
+      const liveCount = liveActors.length;
+      const queueEmpty = !earlyEncounter.spawnQueue || earlyEncounter.spawnQueue.length === 0;
+      if (queueEmpty && liveCount === 0) {
+        const liveShots = enemyBullets.some(b => b.theme === 'redCharged' || b.theme === 'purpleRain');
+        if (!liveShots) {
+          earlyEncounter.finished = true;
+          spawnsRemaining = 0;
+        }
+      } else if (!queueEmpty && liveCount < 2) {
+        const sinceLastSpawn = now - (earlyEncounter.lastSpawnAt || 0);
+        const gate = earlyEncounter.spawnGateMs || 1600;
+        if (sinceLastSpawn >= gate) {
+          spawnNextQueuedEnemy();
+          earlyEncounter.spawnGateMs = 1450;
+        }
+      }
+    }
+  }
+
   function startWaveSpawn(cfg) {
     clearTimeout(spawnTimer);
+    if ((spaceRunMode === 'campaign' || spaceRunMode === 'debug') && cfg && cfg.authoredRescue) {
+      startAuthoredRescueEncounter();
+      return;
+    }
+    if ((spaceRunMode === 'campaign' || spaceRunMode === 'debug') && cfg && cfg.authoredBlackout) {
+      startAuthoredBlackoutEncounter();
+      return;
+    }
+    if ((spaceRunMode === 'campaign' || spaceRunMode === 'debug') && wave >= 1 && wave <= 3) {
+      startAuthoredEarlyEncounter(wave);
+      return;
+    }
     const configuredExtraJunkChance = cfg.extraJunkChance == null ? 0.00 : cfg.extraJunkChance;
     if (cfg.mixedEnemyTotal != null && cfg.mixedAsteroidTotal != null) {
       let enemiesRemaining = Math.max(0, cfg.mixedEnemyTotal);
@@ -3519,7 +4487,7 @@
   function showGizmoEscapeBeat(rescuedCi, onDone) {
     const flowToken = spaceFlowToken;
     waveTransitioning = true;
-    const isEarlyWave = (wave <= 2 || wave === 10 || wave === 11);
+    const isEarlyWave = wave <= 2;
     const holdMs = isEarlyWave ? 7800 : 3300;
     const flyDur = isEarlyWave ? 1.8 : 1.45;
     const flyDelay = isEarlyWave ? 5.2 : 0.25;
@@ -3756,7 +4724,7 @@
     scheduleInstrument();
     scheduleAmbientJunk(currentCfg);
     if (waveTheme === 'blackout') { spawnBlackoutHiddenEnemies(); spaceSfx('wave.blackout'); }
-    if (waveTheme === 'boss') spawnBoss(false, { guardedRescue: [4,7,9,11].includes(wave) && hasUnrescuedMissionCaptive() });
+    if (waveTheme === 'boss') spawnBoss(false, { guardedRescue: [4,7,9,10].includes(wave) && hasUnrescuedMissionCaptive() });
     if (waveTheme === 'gizmo') spawnBoss(false, { guardedRescue: hasUnrescuedMissionCaptive(), escape: wave !== SPACE_FINAL_GIZMO_WAVE, final: wave === SPACE_FINAL_GIZMO_WAVE });
     if (waveTheme === 'captive' && wave !== 6) spawnBoss(true);
     if (waveTheme === 'ghost' || waveTheme === 'emp') { spawnMiniBoss(waveTheme); if (waveTheme === 'emp') spaceSfx('status.emp'); }
@@ -3810,15 +4778,13 @@ function nextWave() {
       if (waveTheme === 'asteroids') return 'BREATHER. DODGE OR CLEAR.';
       return 'KEEP THE RUN GOING.';
     }
-    if (wave === 1) return 'DODGE ROCKS AND JUNK';
-    if (wave === 2) return 'DODGE LASERS';
-    if (wave === 3) return 'PURPLE RAIN';
+    if (wave === 1) return 'FIND THE GAP';
+    if (wave === 2) return 'LET IT LOCK. THEN MOVE.';
+    if (wave === 3) return 'STAY IN THE EYE. BREAK THE CLOUDS.';
     if (wave === 4) return 'FIRST CAPTIVE. BEAT THE BOSS.';
     if (wave === 5) return 'SWARM. BOMB OR DODGE CLEAN.';
-    if (wave === 6) return 'BREAK THE LOCK. WATCH BOTH TRAITORS.';
-    if (wave === 8) return 'BLACKOUT. FIND THE SHOOTERS.';
-    if (wave === 10) return 'JAM SESSION. HAVE FUN.';
-    if (wave === 12) return 'FINAL PREP. FILL SOCKETS.';
+    if (wave === 6) return 'BREAK THE RAIN. THEN BREAK THE LOCK.';
+    if (wave === 8) return 'BLACKOUT. FIND THE FLASH.';
     if (wave === SPACE_FINAL_GIZMO_WAVE) return 'FINAL GIZMO. USE EVERYTHING.';
     if (waveTheme === 'boss' && boss && boss.creature && boss.creature.name === 'DARK KNIGHT') return 'WATCH THE SWORD GLOW';
     if (waveTheme === 'boss') return 'SAVE RAPID FIRE FOR BOSS';
@@ -3843,7 +4809,19 @@ function nextWave() {
       if (flowToken !== spaceFlowToken || state !== 'playing' || (waveTransitioning && !opts.allowDuringTransition)) return;
       if (waveTheme === 'blackout') {
         addFloatText('BLACKOUT!', W / 2, H * 0.35, '#ffe61a', 32, { holdMs: 2200, fade: 0.012 });
-        addFloatText('STAY IN THE LIGHT', W / 2, H * 0.35 + 30, '#33ff66', 20, { holdMs: 2200, fade: 0.012 });
+        addFloatText('FIND THE FLASH', W / 2, H * 0.35 + 30, '#33ff66', 20, { holdMs: 2200, fade: 0.012 });
+      } else if (wave === 6 && currentCfg && currentCfg.authoredRescue) {
+        addFloatText('STAY IN THE EYE', W / 2, H * 0.42, '#7dffff', 28, { vy: 0, holdMs: 2400, fade: 0.012 });
+        addFloatText('BREAK THE CLOUD · THEN THE LOCK', W / 2, H * 0.42 + 30, '#33ff66', 19, { vy: 0, holdMs: 2400, fade: 0.012 });
+      } else if (wave >= 1 && wave <= 3 && currentCfg && currentCfg.authoredEncounter) {
+        const openingInstruction = {
+          1: ['SURVIVE 30 SECONDS', 'FIND THE GAP'],
+          2: ['RED CHARGED SHOT', 'LET IT LOCK. THEN MOVE.'],
+          3: ['PURPLE RAIN', 'STAY IN THE EYE. BREAK THE CLOUDS.'],
+        }[wave];
+        const instructionHold = wave === 1 ? 1650 : 2600;
+        addFloatText(openingInstruction[0], W / 2, H * 0.35, wave === 1 ? '#ffe61a' : wave === 2 ? '#ff765d' : '#d7a4ff', 30, { vy: 0, holdMs: instructionHold, fade: 0.012 });
+        addFloatText(openingInstruction[1], W / 2, H * 0.35 + 30, '#33ff66', 19, { vy: 0, holdMs: instructionHold, fade: 0.012 });
       } else {
         showTopBanner(text, waveTheme === 'boss' || waveTheme === 'gizmo' || waveTheme === 'captive' ? 'bad' : 'good', { holdMs: spaceRunMode === 'endless' ? 1300 : 1800 });
       }
@@ -4124,13 +5102,21 @@ function nextWave() {
       return; // shield fully absorbs the hit — no health loss
     }
     recordDamageCause(amount, cause);
+    if (earlyEncounter && wave === 2 && cause === 'CHARGED RED SHOT') {
+      earlyEncounter.redHits = (earlyEncounter.redHits || 0) + 1;
+      if (earlyEncounter.redHits >= 2 && !earlyEncounter.adaptiveHintShown && Date.now() - (earlyEncounter.startedAt || 0) > 2800) {
+        earlyEncounter.adaptiveHintShown = true;
+        addFloatText('MOVE AFTER THE LOCK', W / 2, H * 0.42, '#ff9a86', 20, { vy: 0, holdMs: 2200, fade: 0.012 });
+      }
+    }
     health = Math.max(0, health - amount);
     playerHitFlashUntil = Date.now() + 150;
     screenHitFlashUntil = Date.now() + 180;
     addFloatText(`-${amount}`, player.x, player.y - 40, '#ff4444', 20);
     miniExplosion(player.x, player.y, '#ff4444');
     triggerShake(amount * 1.2);
-    playPlayerDamageThud(amount);
+    if (/ASTEROID|ROCK/.test(String(cause || '').toUpperCase())) playRockPianoSoundscape();
+    else playPlayerDamageThud(amount);
     // Mystery "snowing" outcome — getting hit at all while it's snowing also
     // freezes you briefly, on top of the normal damage. Reuses the existing
     // FROZEN debuff (movement slow + snowflake bullets) rather than a new state.
@@ -4345,7 +5331,27 @@ function nextWave() {
 
   function drawTraitorBoundary(o, now) {
     if (!o || o.isTrapped || (o.traitorType !== 'red' && o.traitorType !== 'purple')) return;
-    if (o.traitorType === 'red') {
+    if (o.rainGuardian) {
+      ctx.save();
+      ctx.strokeStyle = '#c58aff';
+      ctx.shadowColor = '#a233ff';
+      ctx.shadowBlur = 7;
+      ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.arc(0, 0, o.r * 1.22, 0, Math.PI * 2); ctx.stroke();
+      if (now < (o.rainShotWarningUntil || 0)) {
+        const tx = (o.rainShotTargetX || o.x) - o.x;
+        const ty = (o.rainShotTargetY || dangerY) - o.y;
+        ctx.setLineDash([6, 5]);
+        ctx.strokeStyle = '#f1d6ff';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(tx, ty); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath(); ctx.arc(tx, ty, 13, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.restore();
+      return;
+    }
+    if (o.traitorType === 'red' && o.authoredAttack !== 'redCharge' && o.authoredAttack !== 'rescueRed') {
       ctx.save();
       const boundaryR = o.r * 1.25;
       const pulse = 0.94 + Math.sin(Date.now() * 0.006 + (o._pulseSeed || 0)) * 0.06;
@@ -4366,32 +5372,42 @@ function nextWave() {
     ctx.save();
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    if (vulnerable) {
+    const redCharging = o.traitorType === 'red' && redChargeActive(o, now);
+    if (vulnerable || redCharging) {
       if (o.traitorType === 'red' && redChargeActive(o, now)) {
-        o.redTelegraphX = clamp(player ? player.x : (o.redTelegraphX != null ? o.redTelegraphX : o.x), 16, W - 16);
+        if (now < (o.redAimLocksAt || 0)) {
+          o.redTelegraphX = clamp(player ? player.x : (o.redTelegraphX != null ? o.redTelegraphX : o.x), 16, W - 16);
+          o.redTelegraphY = player ? player.y : (o.redTelegraphY || dangerY);
+        }
         const charge = Math.max(0, Math.min(1, (now - (o.redShotChargeAt || now)) / Math.max(1, (o.redShotChargeUntil || now + 1) - (o.redShotChargeAt || now))));
         const telegraphX = (o.redTelegraphX == null ? 0 : (o.redTelegraphX - o.x));
         const telegraphY = (o.redTelegraphY == null ? boundaryR * 4.8 : (o.redTelegraphY - o.y));
-        const dashes = 10;
         const pulse = 0.52 + charge * 0.42;
+        const locked = now >= (o.redAimLocksAt || Infinity);
         ctx.shadowColor = '#ff3e2c';
         ctx.shadowBlur = 7 + charge * 7;
-        ctx.strokeStyle = `rgba(255,72,54,${0.78 + charge * 0.18})`;
+        ctx.strokeStyle = locked ? 'rgba(255,238,218,0.98)' : `rgba(255,72,54,${0.78 + charge * 0.18})`;
         ctx.lineWidth = 1.45 + charge * 0.45;
         ctx.beginPath(); ctx.arc(0, 0, boundaryR * (1.01 + charge * 0.06), 0, Math.PI * 2); ctx.stroke();
-        for (let i = 0; i < dashes; i++) {
-          const t0 = (i + 0.14) / (dashes + 0.20);
-          const t1 = Math.min(1, t0 + 0.045 + charge * 0.012);
-          const x0 = telegraphX * t0;
-          const y0 = telegraphY * t0;
-          const x1 = telegraphX * t1;
-          const y1 = telegraphY * t1;
-          ctx.globalAlpha = pulse * (0.42 + t0 * 0.56);
-          ctx.beginPath();
-          ctx.moveTo(x0, y0);
-          ctx.lineTo(x1, y1);
-          ctx.stroke();
-        }
+        // A target reticle reads as "a shot is coming" without looking like the
+        // old damaging laser. It tracks briefly, then turns white and freezes.
+        const reticleR = 13 + charge * 7;
+        ctx.globalAlpha = 0.72 + charge * 0.26;
+        ctx.beginPath(); ctx.arc(telegraphX, telegraphY, reticleR, 0, Math.PI * 2); ctx.stroke();
+        const arm = reticleR + 8;
+        ctx.beginPath();
+        ctx.moveTo(telegraphX - arm, telegraphY); ctx.lineTo(telegraphX - reticleR * 0.45, telegraphY);
+        ctx.moveTo(telegraphX + reticleR * 0.45, telegraphY); ctx.lineTo(telegraphX + arm, telegraphY);
+        ctx.moveTo(telegraphX, telegraphY - arm); ctx.lineTo(telegraphX, telegraphY - reticleR * 0.45);
+        ctx.moveTo(telegraphX, telegraphY + reticleR * 0.45); ctx.lineTo(telegraphX, telegraphY + arm);
+        ctx.stroke();
+        ctx.globalAlpha = pulse * 0.72;
+        ctx.strokeStyle = locked ? 'rgba(255,238,218,0.88)' : `rgba(255,72,54,${0.58 + charge * 0.32})`;
+        ctx.lineWidth = 1.6 + charge * 0.6;
+        ctx.setLineDash([6, 4]);
+        ctx.lineDashOffset = -((Date.now() / 48) % 10);
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(telegraphX, telegraphY); ctx.stroke();
+        ctx.setLineDash([]);
         ctx.globalAlpha = 1;
       } else if (o.traitorType === 'red' && redHoldActive(o, now)) {
         const holdPulse = 1 + Math.sin(now * 0.018 + seed) * 0.045;
@@ -4480,11 +5496,58 @@ function nextWave() {
       }
       ctx.globalAlpha = 1;
     }
+    if (o.traitorType === 'purple' && now < (o.purpleWarningUntil || 0)) {
+      const warningLeft = Math.max(0, (o.purpleWarningUntil - now) / (o.purpleWarningDuration || 780));
+      const pulse = 1 + Math.sin(now * 0.030) * 0.10;
+      if (o.authoredAttack === 'purpleRain' && o.purpleRainTargetX != null) {
+        const targetX = o.purpleRainTargetX - o.x;
+        const curtainW = 64;
+        ctx.globalAlpha = 0.12 + (1 - warningLeft) * 0.17;
+        ctx.fillStyle = '#33ff99';
+        ctx.fillRect(targetX - curtainW / 2, -o.y, curtainW, H);
+        ctx.globalAlpha = 0.62 + (1 - warningLeft) * 0.24;
+        ctx.strokeStyle = '#9effc6';
+        ctx.lineWidth = 1.8;
+        ctx.setLineDash([8, 7]);
+        ctx.strokeRect(targetX - curtainW / 2, -o.y, curtainW, H);
+        ctx.setLineDash([]);
+      }
+      ctx.globalAlpha = 0.82;
+      ctx.strokeStyle = '#d7a4ff';
+      ctx.shadowColor = '#a63cff';
+      ctx.shadowBlur = 12;
+      ctx.lineWidth = 2.5 + (1 - warningLeft) * 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, boundaryR * (1.25 + (1 - warningLeft) * 0.30) * pulse, 0, Math.PI * 2);
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
   function drawObstacle(o) {
     ctx.save(); ctx.translate(o.x,o.y);
+    if (o.type === 'rainCloud') {
+      const pulse = 1 + Math.sin(Date.now() * 0.006) * 0.035;
+      ctx.scale(pulse, pulse);
+      ctx.shadowColor = '#9f54ff';
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = '#5b3678';
+      ctx.strokeStyle = '#d7a4ff';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(-o.r * 0.46, 3, o.r * 0.46, Math.PI * 0.75, Math.PI * 2.2);
+      ctx.arc(-o.r * 0.05, -o.r * 0.22, o.r * 0.55, Math.PI, Math.PI * 2.05);
+      ctx.arc(o.r * 0.47, 2, o.r * 0.43, Math.PI * 1.05, Math.PI * 2.35);
+      ctx.lineTo(-o.r * 0.66, o.r * 0.38);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.font = `bold 12px 'Bebas Neue', cursive`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(`${Math.max(0, o.hp)}/${o.maxHp}`, 0, o.r * 0.72);
+      ctx.restore();
+      return;
+    }
     if (o.isDeflected) {
       ctx.globalAlpha *= Math.max(0, o.deflectScale == null ? 1 : o.deflectScale);
       ctx.rotate((Date.now() - (o.deflectStart || Date.now())) * 0.02 * (o.deflectSpin || 0.2));
@@ -4619,13 +5682,16 @@ function nextWave() {
         const t2 = Date.now() * 0.003;
         const seed = o._pulseSeed || 0;
         const ringPulse = 1 + Math.sin(Date.now() * 0.008 + seed) * 0.05;
+        const lockOpen = o.campaignRescueLock && authoredCampaignEncounter && authoredCampaignEncounter.kind === 'rescue'
+          ? Date.now() < (authoredCampaignEncounter.ringOpenUntil || 0)
+          : true;
         ctx.save();
         ctx.rotate(t2);
         ctx.beginPath(); ctx.arc(0, 0, ringR * 1.14 * ringPulse, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(90,190,255,0.26)'; ctx.lineWidth = 8; ctx.stroke();
+        ctx.strokeStyle = lockOpen ? 'rgba(51,255,102,0.30)' : 'rgba(90,190,255,0.48)'; ctx.lineWidth = lockOpen ? 7 : 11; ctx.stroke();
         const ringGrad = ctx.createLinearGradient(-ringR, -ringR, ringR, ringR);
-        ringGrad.addColorStop(0, '#5ab1ff');
-        ringGrad.addColorStop(0.48, '#00e5ff');
+        ringGrad.addColorStop(0, lockOpen ? '#33ff66' : '#5ab1ff');
+        ringGrad.addColorStop(0.48, lockOpen ? '#baffca' : '#00e5ff');
         ringGrad.addColorStop(1, '#b9f7ff');
         ctx.beginPath(); ctx.arc(0, 0, ringR * 1.02 * ringPulse, 0, Math.PI * 2);
         ctx.strokeStyle = ringGrad; ctx.lineWidth = 2.8; ctx.stroke();
@@ -4646,6 +5712,61 @@ function nextWave() {
         }
       }
     }
+    ctx.restore();
+  }
+
+  function activeRainEncounter() {
+    if (earlyEncounter && earlyEncounter.kind === 'purpleStorm' && !earlyEncounter.finished && earlyEncounter.rainActive) return earlyEncounter;
+    if (authoredCampaignEncounter && authoredCampaignEncounter.kind === 'rescue' && authoredCampaignEncounter.phase === 'rain' && authoredCampaignEncounter.rainActive) return authoredCampaignEncounter;
+    return null;
+  }
+
+  function drawPurpleStormWeather() {
+    const encounter = activeRainEncounter();
+    if (!encounter || !encounter.eye) return;
+    const now = Date.now();
+    const eyeY = player ? player.y : H * 0.82;
+    if (encounter.rainActive) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(194,143,255,0.66)';
+      ctx.lineWidth = 2.2;
+      ctx.lineCap = 'round';
+      const count = Math.max(54, Math.floor(W / 5.5));
+      for (let i = 0; i < count; i++) {
+        const x = ((i * 47.3 + (i % 4) * 13.7) % (W + 30)) - 15;
+        const y = ((now * (0.42 + (i % 5) * 0.035) + i * 83) % (H + 70)) - 35;
+        ctx.globalAlpha = 0.42 + (i % 4) * 0.11;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 5, y + 23 + (i % 3) * 5); ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    const eye = encounter.eye;
+    if (eye.moveAt && now < eye.moveAt) {
+      ctx.save();
+      ctx.globalAlpha = 0.48 + Math.sin(now * 0.022) * 0.14;
+      ctx.strokeStyle = '#a8ffcf';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([7, 6]);
+      ctx.beginPath(); ctx.arc(eye.toX, eyeY, eye.radius, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(eye.x, eyeY); ctx.lineTo(eye.toX, eyeY); ctx.stroke();
+      ctx.setLineDash([]);
+      if (eye.step <= 1) {
+        ctx.font = `bold 12px 'Bebas Neue', cursive`;
+        ctx.textAlign = 'center'; ctx.fillStyle = '#baffd4';
+        ctx.fillText('FOLLOW', eye.toX, eyeY - eye.radius - 10);
+      }
+      ctx.restore();
+    }
+
+    ctx.save();
+    const safe = player && Math.abs(player.x - eye.x) <= eye.radius - 4;
+    ctx.fillStyle = safe ? 'rgba(80,255,160,0.18)' : 'rgba(80,230,170,0.11)';
+    ctx.strokeStyle = safe ? '#66ffad' : '#92ffd0';
+    ctx.shadowColor = '#55ffad';
+    ctx.shadowBlur = safe ? 18 : 10;
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(eye.x, eyeY, eye.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.restore();
   }
 
@@ -4742,6 +5863,19 @@ function nextWave() {
     for (let i = 1; i < 10; i++) {
       const sx = barX + barW * (i / 10);
       ctx.beginPath(); ctx.moveTo(sx, barY); ctx.lineTo(sx, barY + barH); ctx.stroke();
+    }
+
+    if (earlyEncounter && earlyEncounter.wave === 1 && !earlyEncounter.finished && earlyEncounter.endsAt) {
+      const secondsLeft = Math.max(0, Math.ceil((earlyEncounter.endsAt - Date.now()) / 1000));
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.font = `bold 17px 'Bebas Neue', cursive`;
+      ctx.fillStyle = secondsLeft <= 10 ? '#ff765d' : '#ffe61a';
+      ctx.shadowColor = secondsLeft <= 10 ? 'rgba(255,68,68,0.68)' : 'rgba(255,230,26,0.52)';
+      ctx.shadowBlur = 8;
+      ctx.fillText(`SURVIVE ${secondsLeft}s`, W / 2, barY + barH + 7);
+      ctx.restore();
     }
 
     // Active buff indicators (top right, under the health bar now). Right-aligned at
@@ -5044,6 +6178,7 @@ function nextWave() {
       if (Date.now() - lastRaveConfetti > 2800) { ticketConfetti(true); lastRaveConfetti = Date.now(); }
     }
     drawCaptiveWaveBackdrop();
+    drawPurpleStormWeather();
 
     // Mystery "snowing" outcome — ambient, not overly dense, purely atmospheric on
     // its own. takeDamage() is what actually punishes getting hit while this is up.
@@ -5740,8 +6875,14 @@ function nextWave() {
       if (o.type === 'junk') {
         if (o.x < -o.r * 2.2 || o.x > W + o.r * 2.2) { o.alive = false; continue; }
       } else {
-        if(o.x<o.r&&o.vx<0) o.vx*=-1;
-        if(o.x>W-o.r&&o.vx>0) o.vx*=-1;
+        let wallBounce = false;
+        if(o.x<o.r&&o.vx<0) { o.x = o.r; o.vx = Math.abs(o.vx); wallBounce = true; }
+        if(o.x>W-o.r&&o.vx>0) { o.x = W-o.r; o.vx = -Math.abs(o.vx); wallBounce = true; }
+        if (wallBounce && o.authoredRicochet) {
+          o.wallBounceFlashUntil = Date.now() + 180;
+          impactShockwave(o.x, o.y, '#cbb8ff', { maxR: 36, lineWidth: 3, life: 10 });
+          playRockPianoSoundscape();
+        }
       }
       const nowMove = Date.now();
       updateTraitorFakeoutState(o, nowMove);
@@ -5793,7 +6934,8 @@ function nextWave() {
           o.vx = clamp((o.vx || 0) * 0.9992, -baseSpeed * 0.11, baseSpeed * 0.11);
           o.vy = Math.max(baseSpeed * 0.06, Math.min(baseSpeed * 0.125, o.vy || 0));
         } else {
-          o.vx = clamp(o.vx || 0, -baseSpeed * 0.62, baseSpeed * 0.62);
+          const lateralLimit = o.allowFastVx ? baseSpeed * 1.62 : baseSpeed * 0.62;
+          o.vx = clamp(o.vx || 0, -lateralLimit, lateralLimit);
           o.vy = Math.max(baseSpeed * 0.72, o.vy || 0);
         }
         o.rot+=o.rotSpeed;
@@ -5804,6 +6946,7 @@ function nextWave() {
       const a = liveAsteroids[i];
       for (let j = i + 1; j < liveAsteroids.length; j++) {
         const b = liveAsteroids[j];
+        if (a.authoredRicochet || b.authoredRicochet) continue;
         const dx = b.x - a.x;
         const dy = b.y - a.y;
         const minDist = a.r + b.r;
@@ -5865,9 +7008,11 @@ function nextWave() {
             if (player) {
               const splashRadius = o.r + player.r * 1.2;
               if (circlesOverlap(o.x, _lineY, splashRadius, player.x, player.y, 0)) {
-                const splashDamage = o.type === 'junk' ? (o.r < 18 ? 1 : 2) : (o.r < 22 ? 2 : 3);
+                const splashDamage = o.collisionDamage != null
+                  ? o.collisionDamage
+                  : (o.type === 'junk' ? (o.r < 18 ? 1 : 2) : (o.r < 22 ? 2 : 3));
                 takeDamage(splashDamage, o.type === 'junk' ? 'SPACE JUNK LINE IMPACT' : 'ASTEROID LINE IMPACT');
-                addFloatText(`-${splashDamage}`, player.x, player.y - 26, '#ff8888', 18);
+                if (o.collisionDamage == null) addFloatText(`-${splashDamage}`, player.x, player.y - 26, '#ff8888', 18);
                 if(state==='over') return;
               }
             }
@@ -6124,6 +7269,18 @@ function nextWave() {
           b.vy=999;
           o.litUntil = Date.now() + 320;
           queueBlackoutHitFlash(o);
+          if (o.type === 'rainCloud') {
+            o.hp--;
+            miniExplosion(b.x, b.y, '#d7a4ff');
+            playEnemyHitPairSfx(Math.max(1, o.hp));
+            if (o.hp <= 0) {
+              o.alive = false;
+              finishRainCloud(o);
+            } else if (o.hp % 3 === 0) {
+              addFloatText('CLOUD BREAKING!', o.x, o.y + o.r, '#e7c8ff', 13);
+            }
+            break;
+          }
           if (o.type === 'junk') {
             miniExplosion(o.x, o.y, 'rgba(220,245,255,0.72)');
             addFloatText('THUNK', o.x, o.y - 12, '#eefbff', 13);
@@ -6133,6 +7290,15 @@ function nextWave() {
           if(o.type==='face'){
             if(o.isTrapped && o.ringHp > 0){
               // Hit the rescue ring
+              if (o.campaignRescueLock && authoredCampaignEncounter && authoredCampaignEncounter.kind === 'rescue' && nowHit >= (authoredCampaignEncounter.ringOpenUntil || 0)) {
+                o.traitorShieldImpactAt = nowHit;
+                if (nowHit - (o.lockShieldNoticeAt || 0) > 320) {
+                  o.lockShieldNoticeAt = nowHit;
+                  addFloatText('GUARDED', o.x, o.y - o.r - 18, '#7dffff', 13);
+                  playShieldBellPing();
+                }
+                break;
+              }
               o.ringHp--;
               if(o.ringHp <= 0){
                 // Ring destroyed — rescued! Becomes a temporary escort (cap 1 — rescuing
@@ -6160,12 +7326,20 @@ function nextWave() {
               if(state==='over') return;
             } else {
               // Normal enemy face — takes 3 hits to clear
-              if (traitorShieldActive(o, nowHit)) {
+              const blackoutShielded = o.authoredBlackout && nowHit >= (o.blackoutVulnerableUntil || 0);
+              if (traitorShieldActive(o, nowHit) || blackoutShielded) {
                 b.vy = 999;
                 o.traitorShieldImpactAt = nowHit;
+                if (earlyEncounter && (wave === 2 || wave === 3)) {
+                  earlyEncounter.shieldHits = (earlyEncounter.shieldHits || 0) + 1;
+                  if (earlyEncounter.shieldHits >= 3 && !earlyEncounter.adaptiveHintShown && nowHit - (earlyEncounter.startedAt || 0) > 3200) {
+                    earlyEncounter.adaptiveHintShown = true;
+                    addFloatText(wave === 2 ? 'DODGE, THEN LINE UP' : 'WAIT FOR THE RAIN', W / 2, H * 0.42, wave === 2 ? '#ff9a86' : '#d7a4ff', 20, { vy: 0, holdMs: 2200, fade: 0.012 });
+                  }
+                }
                 if (nowHit - (o.traitorShieldNoticeAt || 0) > 240) {
                   o.traitorShieldNoticeAt = nowHit;
-                  addFloatText('SHIELDED', o.x, o.y - 18, '#ffc45c', 13);
+                  addFloatText(o.authoredBlackout ? 'WAIT FOR THE FLASH' : 'SHIELDED', o.x, o.y - 18, '#ffc45c', 13);
                   playShieldBellPing();
                 }
                 break;
@@ -6193,6 +7367,7 @@ function nextWave() {
             }
           } else {
             // Asteroid / space junk
+            if (o.type === 'asteroid') playRockPianoSoundscape();
             o.hp = (o.hp == null ? 1 : o.hp) - 1;
             if (o.hp > 0) {
               miniExplosion(o.x,o.y,o.type === 'junk' ? 'rgba(216,228,255,0.78)' : (o.r > 22 ? 'rgba(210,150,255,0.82)' : 'rgba(190,170,235,0.78)'));
@@ -6200,7 +7375,8 @@ function nextWave() {
               if (o.type === 'junk') playJunkItemSfx(o.junkKind);
             } else {
               const pts = o.type === 'junk' ? 8 + wave * 2 : 10 + (wave * 2);
-              score+=pts; playTargetBreakSfx(o.type === 'junk' ? 'junk' : 'asteroid');
+              score+=pts;
+              if (o.type === 'junk') playTargetBreakSfx('junk');
               miniExplosion(o.x,o.y,o.type === 'junk' ? '#8796b6' : '#7a6a90');
               if(o.type === 'asteroid' && o.r > 22 && currentCfg){
                 for(let s=0; s<2; s++){
@@ -6216,7 +7392,8 @@ function nextWave() {
                     }),
                     rot:0, rotSpeed:(Math.random()-0.5)*0.06, hp:1,
                     shadeSeed: Math.random() * 1000,
-                    rockStyle: o.rockStyle == null ? Math.floor(Math.random() * 3) : o.rockStyle
+                    rockStyle: o.rockStyle == null ? Math.floor(Math.random() * 3) : o.rockStyle,
+                    authoredEarly: !!o.authoredEarly,
                   });
                 }
               }
@@ -6242,12 +7419,18 @@ function nextWave() {
             continue;
           }
           o.alive=false;
-          takeDamage(o.type==='face' ? 30 : (o.type === 'junk' ? (o.r < 18 ? 1 : 2) : (o.r < 22 ? 3 : 5)), o.type==='face' ? 'ENEMY COLLISION' : (o.type === 'junk' ? 'SPACE JUNK COLLISION' : 'ASTEROID COLLISION'));
+          const collisionDamage = o.collisionDamage != null
+            ? o.collisionDamage
+            : (o.type === 'face' ? 30 : (o.type === 'junk' ? (o.r < 18 ? 1 : 2) : (o.r < 22 ? 3 : 5)));
+          takeDamage(collisionDamage, o.type==='face' ? 'ENEMY COLLISION' : (o.type === 'junk' ? 'SPACE JUNK COLLISION' : 'ASTEROID COLLISION'));
           if(state==='over') return;
         }
       }
       compactInPlace(obstacles, o => o.alive !== false);
     }
+
+    updateAuthoredEarlyEncounter(Date.now());
+    updateAuthoredCampaignEncounter(Date.now());
 
     // Wave ends naturally once the spawn pool is exhausted, the board has cleared,
     // AND every falling powerup has resolved (caught, broken, or fallen off-screen)
@@ -6277,6 +7460,7 @@ function nextWave() {
       const fireNow = Date.now();
       const shooters = obstacles.filter(o => {
         if (o.type !== 'face' || o.behavior === 'swarmer' || o.isTrapped) return false;
+        if (o.authoredAttack || o.authoredBlackout || o.campaignRescueGuardian) return false;
         if (o.traitorType === 'red' && fireNow < (o.redNextAttackAt || 0)) return false;
         const isTraitor = o.traitorType === 'red' || o.traitorType === 'purple';
         return o.y > (isTraitor ? traitorAttackArmY(o) : 0);
@@ -6622,6 +7806,25 @@ function nextWave() {
           ctx.beginPath(); ctx.arc(0,0,rr*1.35,0,Math.PI*2); ctx.fillStyle='rgba(204,102,255,0.26)'; ctx.fill();
           ctx.beginPath(); ctx.arc(0,0,rr*0.9,0,Math.PI*2); ctx.fillStyle='#8d32ff'; ctx.fill();
           ctx.beginPath(); ctx.arc(-rr*0.22,-rr*0.26,rr*0.28,0,Math.PI*2); ctx.fillStyle='rgba(255,235,255,0.72)'; ctx.fill();
+          ctx.restore();
+        } else if (b.theme === 'redCharged') {
+          ctx.save();
+          const speed = Math.hypot(b.vx || 0, b.vy || 0) || 1;
+          const tailX = -(b.vx || 0) / speed * rr * 5.2;
+          const tailY = -(b.vy || 0) / speed * rr * 5.2;
+          const tail = ctx.createLinearGradient(tailX, tailY, 0, 0);
+          tail.addColorStop(0, 'rgba(255,45,30,0)');
+          tail.addColorStop(1, 'rgba(255,90,58,0.92)');
+          ctx.strokeStyle = tail;
+          ctx.lineWidth = rr * 1.15;
+          ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(tailX, tailY); ctx.lineTo(0, 0); ctx.stroke();
+          ctx.shadowColor = '#ff3826';
+          ctx.shadowBlur = rr * 2.8;
+          ctx.fillStyle = '#ff4935';
+          ctx.beginPath(); ctx.arc(0, 0, rr * 1.16, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#fff1dc';
+          ctx.beginPath(); ctx.arc(-rr * 0.12, -rr * 0.18, rr * 0.42, 0, Math.PI * 2); ctx.fill();
           ctx.restore();
         } else if (b.theme === 'purpleRain') {
           ctx.save();
@@ -7837,8 +9040,7 @@ function nextWave() {
   }
 
   function playRockPianoSoundscape() {
-    // Asteroids are quick single piano notes in A minor pentatonic. The repeated
-    // clears should feel darker/moodier, while avoiding sour random chromatic hits.
+    // Every rock impact gets its own A-minor pentatonic piano note.
     const notes = [110.00, 130.81, 146.83, 164.81, 196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00]; // A minor pentatonic: A C D E G
     const f = notes[Math.floor(Math.random() * notes.length)];
     playSpaceTone(f, 'triangle', 0, 0.145, 0.070, f * 0.992);
@@ -8117,6 +9319,58 @@ function nextWave() {
     playSpaceTone(293.66, 'square', 0.002, 0.070, 0.022, 220.00);
     playSpaceTone(440.00, 'triangle', 0.006, 0.050, 0.012, 329.63);
     playSpaceNoiseBurst(0.030, 0.004, 2600, 'bandpass');
+  }
+
+  function playRedChargeCue() {
+    // Two rising pulses, followed later by the existing hard Red shot sound. The
+    // pitch change marks the moment to prepare; the visual lock marks when to move.
+    playSpaceTone(132, 'sawtooth', 0.000, 0.16, 0.026, 176);
+    playSpaceTone(176, 'triangle', 0.230, 0.18, 0.030, 264);
+    playSpaceNoiseBurst(0.022, 0.006, 1800, 'bandpass');
+  }
+
+  function playPurpleRainWarningCue() {
+    // An unmistakable three-note rise before the shield opens. It is deliberately
+    // brighter than the old soft handpan bloom so it survives under music.
+    [196, 246.94, 329.63].forEach((f, i) => {
+      playSpaceTone(f, 'triangle', i * 0.115, 0.16, 0.042 - i * 0.004, f * 1.012);
+      playSpaceTone(f * 2, 'sine', i * 0.115 + 0.006, 0.09, 0.012, f * 2.01);
+    });
+  }
+
+  function playPurpleRainDropTick(index) {
+    const notes = [523.25, 587.33, 659.25, 783.99];
+    const f = notes[Math.floor(index / 3) % notes.length];
+    playSpaceTone(f, 'sine', 0, 0.055, 0.020, f * 0.996);
+    playSpaceTone(f * 0.5, 'triangle', 0.004, 0.070, 0.012, f * 0.498);
+  }
+
+  function playAsteroidWallBounceSfx() {
+    playSpaceTone(118, 'triangle', 0, 0.075, 0.022, 92);
+    playSpaceNoiseBurst(0.020, 0, 900, 'lowpass');
+  }
+
+  function playRockImpactSfx() {
+    // Short muted piano note on bullet-hits-indestructible-rock; throttled to prevent noise soup.
+    const now = Date.now();
+    if (now - (playRockImpactSfx._last || 0) < 80) return;
+    playRockImpactSfx._last = now;
+    const notes = [110.00, 130.81, 146.83, 164.81, 196.00, 220.00];
+    const f = notes[Math.floor(Math.random() * notes.length)];
+    playSpaceTone(f, 'triangle', 0, 0.052, 0.022, f * 0.990);
+  }
+
+  function playRockRicochetSfx() {
+    // Low piano octave + higher reflected note — no generic noise burst.
+    playSpaceTone(110.00, 'triangle', 0, 0.082, 0.036, 82.41);
+    playSpaceTone(220.00, 'sine', 0.014, 0.060, 0.026, 246.94);
+  }
+
+  function playRockPlayerHitSfx() {
+    // Low physical thud with a dissonant piano accent (rock-hits-player feel).
+    playSpaceTone(73.42, 'sine', 0, 0.088, 0.036, 55.00);
+    playSpaceNoiseBurst(0.026, 0.005, 320, 'lowpass');
+    playSpaceTone(146.83, 'triangle', 0.022, 0.050, 0.016, 138.59);
   }
 
   function playTargetBreakSfx(kind) {
@@ -8932,8 +10186,8 @@ function nextWave() {
         <div class="space-debug-row" aria-label="Space campaign wave debug jumps 1 through 7">
           <button class="space-debug-chip" onclick="spaceDebugJump(1)">W1 AST</button><button class="space-debug-chip" onclick="spaceDebugJump(2)">W2 RED</button><button class="space-debug-chip" onclick="spaceDebugJump(3)">W3 RAIN</button><button class="space-debug-chip" onclick="spaceDebugJump(4)">W4 OGRE</button><button class="space-debug-chip" onclick="spaceDebugJump(5)">W5 SWARM</button><button class="space-debug-chip" onclick="spaceDebugJump(6)">W6 RESCUE</button><button class="space-debug-chip" onclick="spaceDebugJump(7)">W7 KNIGHT</button>
         </div>
-        <div class="space-debug-row" aria-label="Space campaign wave debug jumps 8 through 13">
-          <button class="space-debug-chip" onclick="spaceDebugJump(8)">W8 BLACKOUT</button><button class="space-debug-chip" onclick="spaceDebugJump(9)">W9 BOSS</button><button class="space-debug-chip" onclick="spaceDebugJump(10)">W10 MUSIC</button><button class="space-debug-chip" onclick="spaceDebugJump(11)">W11 BOSS</button><button class="space-debug-chip" onclick="spaceDebugJump(12)">W12 PREP</button><button class="space-debug-chip" onclick="spaceDebugJump(13)">W13 FINAL</button>
+        <div class="space-debug-row" aria-label="Space campaign wave debug jumps 8 through 11">
+          <button class="space-debug-chip" onclick="spaceDebugJump(8)">W8 BLACKOUT</button><button class="space-debug-chip" onclick="spaceDebugJump(9)">W9 BOSS</button><button class="space-debug-chip" onclick="spaceDebugJump(10)">W10 BOSS</button><button class="space-debug-chip" onclick="spaceDebugJump(11)">W11 FINAL</button>
         </div>
         <div class="space-debug-row" aria-label="Space boss playtests">
           <button class="space-debug-chip" onclick="spaceDebugBoss('STAR OGRE')">OGRE</button><button class="space-debug-chip" onclick="spaceDebugBoss('SKY DRAGON')">DRAGON</button><button class="space-debug-chip" onclick="spaceDebugBoss('DARK KNIGHT')">KNIGHT</button><button class="space-debug-chip" onclick="spaceDebugBoss('GRAY VISITOR')">VISITOR</button><button class="space-debug-chip" onclick="spaceDebugBoss('SPACE SHARK')">SHARK</button><button class="space-debug-chip" onclick="spaceDebugBoss('MEAN TACO')">TACO</button><button class="space-debug-chip" onclick="spaceDebugBoss('COSMIC OCTO')">OCTO</button><button class="space-debug-chip" onclick="spaceDebugBoss('GIZMO')">GIZMO</button>
@@ -8986,11 +10240,11 @@ function nextWave() {
       <div class="whack-mode-shell" style="max-width:430px;margin-top:22px;text-align:center">
         <div class="whack-mode-title" style="color:${perfectRun ? '#ffe61a' : '#33ff66'};text-shadow:0 0 18px ${perfectRun ? '#ffe61a88' : '#33ff6688'}">${perfectRun ? 'PERFECT RUN!' : 'MISSION COMPLETE!'}</div>
         <div class="game-card whack-mode-card" style="border-color:#33ff6677;cursor:default;min-height:0;padding:20px 18px;background:rgba(5,2,18,0.92)">
-          <div style="font-family:'Bebas Neue',cursive;font-size:40px;letter-spacing:5px;line-height:1;color:#f2efe8;margin-bottom:16px">${perfectRun ? 'ALL 13 WAVES CLEARED' : finalCleared ? 'GIZMO DEFEATED' : 'ALL 13 WAVES PLAYED'}</div>
+          <div style="font-family:'Bebas Neue',cursive;font-size:40px;letter-spacing:5px;line-height:1;color:#f2efe8;margin-bottom:16px">${perfectRun ? `ALL ${SPACE_CAMPAIGN_FINAL_WAVE} WAVES CLEARED` : finalCleared ? 'GIZMO DEFEATED' : `ALL ${SPACE_CAMPAIGN_FINAL_WAVE} WAVES PLAYED`}</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
             <div style="padding:13px 8px;border:1px solid rgba(51,255,102,0.35);border-radius:12px;background:rgba(51,255,102,0.08)">
               <div style="font-family:'VCR',monospace;font-size:9px;letter-spacing:1.7px;color:rgba(242,239,232,0.58);margin-bottom:5px">WAVES CLEARED</div>
-              <div style="font-family:'Bebas Neue',cursive;font-size:42px;letter-spacing:4px;line-height:1;color:#33ff66;text-shadow:0 0 14px #33ff6688">${wavesCleared}/13</div>
+              <div style="font-family:'Bebas Neue',cursive;font-size:42px;letter-spacing:4px;line-height:1;color:#33ff66;text-shadow:0 0 14px #33ff6688">${wavesCleared}/${SPACE_CAMPAIGN_FINAL_WAVE}</div>
             </div>
             <div style="padding:13px 8px;border:1px solid rgba(0,229,255,0.35);border-radius:12px;background:rgba(0,229,255,0.08)">
               <div style="font-family:'VCR',monospace;font-size:9px;letter-spacing:1.7px;color:rgba(242,239,232,0.58);margin-bottom:5px">HEROES RESCUED</div>
@@ -9054,7 +10308,7 @@ function nextWave() {
                 <div class="space-select-group-label">LEARN</div>
                 ${spaceModeButtonHTML('SPACE TUTORIAL', 'SAFE LESSONS', 'spaceAcademyStart()', '#7b61ff', '★')}
                 <div class="space-select-group-label" style="margin-top:6px">PLAY</div>
-                ${spaceModeButtonHTML('PLAY CAMPAIGN', '13 WAVES / 6 RESCUES', 'spaceStart()', '#33ff66', '▶')}
+                ${spaceModeButtonHTML('PLAY CAMPAIGN', `${SPACE_CAMPAIGN_FINAL_WAVE} WAVES / 6 RESCUES`, 'spaceStart()', '#33ff66', '▶')}
                 ${spaceModeButtonHTML('BOSS RUN', 'BOSSES ONLY', 'spaceBossRunStart()', '#ffe61a', '☠')}
                 ${spaceModeButtonHTML('ENDLESS', 'CHAOS MODE', 'spaceEndlessStart()', '#ff00cc', '∞')}
               </div>
