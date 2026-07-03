@@ -2038,6 +2038,15 @@
     return o;
   }
 
+  function spawnRainGuardianForEncounter(encounter, lane, holdBand, hp) {
+    const guardian = spawnRainGuardian(lane, holdBand, hp);
+    if (encounter) {
+      encounter.guardians = (encounter.guardians || []).filter(o => o && o.alive !== false);
+      encounter.guardians.push(guardian);
+    }
+    return guardian;
+  }
+
   function beginRainEyeMove(encounter, now) {
     const eye = encounter.eye;
     const anchors = rainEyeAnchors();
@@ -2144,6 +2153,21 @@
       encounter.pendingGuardianShot = { guardian, x: guardian.rainShotTargetX, y: guardian.rainShotTargetY, fireAt: now + 320 };
       const cadence = encounter.cloudIndex > 1 ? 1100 : (encounter.kind === 'rescue' ? 1500 : 1300);
       encounter.nextGuardianShotAt = now + cadence;
+    }
+
+    if (encounter.cloud && encounter.cloud.alive !== false) {
+      const liveGuardians = guardians.length;
+      const desiredGuardians = encounter.cloudIndex > 1 ? 2 : 1;
+      const respawnDelay = encounter.cloudIndex > 1 ? 240 : 120;
+      if (liveGuardians < desiredGuardians && now >= (encounter.nextGuardianSpawnAt || 0)) {
+        const lane = liveGuardians ? (guardians[0].lane < 0.5 ? 0.82 : 0.18) : 0.82;
+        const holdBand = encounter.cloudIndex > 1 ? 0.28 : 0.34;
+        const hp = encounter.cloudIndex > 1 ? 10 : 8;
+        spawnRainGuardianForEncounter(encounter, lane, holdBand, hp);
+        encounter.nextGuardianSpawnAt = now + respawnDelay;
+      } else if (!liveGuardians) {
+        encounter.nextGuardianSpawnAt = Math.min(encounter.nextGuardianSpawnAt || Infinity, now + respawnDelay);
+      }
     }
   }
 
@@ -4111,11 +4135,11 @@
       eye: createRainEye(now, false), rainActive: true, rainArmedAt: now + 1500,
       nextRainDamageAt: now + 1500, outsideEyeSince: 0,
       cloudIndex: 1, cloud: null, guardians: [], guardianTurn: 0,
-      nextGuardianShotAt: now + 2100, pendingGuardianShot: null,
+      nextGuardianShotAt: now + 2100, nextGuardianSpawnAt: now + 420, pendingGuardianShot: null,
       startedAt: now,
     };
     spawnsRemaining = 1;
-    earlyEncounter.guardians.push(spawnRainGuardian(0.82, 0.34, 8));
+    spawnRainGuardianForEncounter(earlyEncounter, 0.82, 0.34, 8);
     spawnRainCloud(earlyEncounter, 30, -1);
   }
 
@@ -4305,7 +4329,8 @@
           earlyEncounter.nextRainDamageAt = now + 650;
           earlyEncounter.outsideEyeSince = 0;
           earlyEncounter.nextGuardianShotAt = now + 900;
-          earlyEncounter.guardians.push(spawnRainGuardian(0.18, 0.28, 10));
+          earlyEncounter.nextGuardianSpawnAt = now + 220;
+          spawnRainGuardianForEncounter(earlyEncounter, 0.18, 0.28, 10);
           spawnRainCloud(earlyEncounter, 42, 1);
           addFloatText('THE STORM RETURNS!', W / 2, H * 0.30, '#d7a4ff', 20, { vy: 0, holdMs: 1000, fade: 0.012 });
         }
