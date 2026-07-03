@@ -27,6 +27,7 @@
   let deathWave = 0;
   let deathWaveTheme = '';
   let blackoutShooterIndex = 0;
+  let blackoutTestMode = null; // debug-only BLACKOUT prototype: 'batteries'
   let dangerY = 0, socketAnchorY = 0, lineFlashA = 0;
   const SPACE_SHIP_BOTTOM_OFFSET = 40;
   const SPACE_SOCKET_ANCHOR_BOTTOM_OFFSET = 94;
@@ -778,10 +779,41 @@
 
   function blackoutHeadlightGeometry() {
     if (!player) return null;
-    const coneTopY = Math.max(115, player.y - Math.min(H * 0.36, 255));
-    const coneHalfW = Math.min(W * 0.24, 76 + H * 0.036);
+    const blackoutBatteryTest = authoredCampaignEncounter && authoredCampaignEncounter.kind === 'blackoutTestBatteries';
+    const headlightScale = blackoutBatteryTest ? 0.24 : 1;
+    const coneTopY = Math.max(115, player.y - Math.min(H * 0.36, 255) * (blackoutBatteryTest ? 0.70 : 1));
+    const coneHalfW = Math.min(W * 0.24, 76 + H * 0.036) * headlightScale;
     const beamBaseY = player.y - player.r * 0.8;
     return { coneTopY, coneHalfW, beamBaseY };
+  }
+
+  function blackoutBatteryLights() {
+    const e = authoredCampaignEncounter;
+    if (!e || e.kind !== 'blackoutTestBatteries') return [];
+    const now = Date.now();
+    const drift = (e.lightDriftSeed || 0) + now * 0.00055;
+    const bob = (e.lightDriftSeed || 0) + now * 0.0008;
+    const base = e.lights || [
+      { x: 0.22, y: 0.22, r: 54, phase: 0 },
+      { x: 0.54, y: 0.36, r: 58, phase: 2.1 },
+      { x: 0.78, y: 0.56, r: 52, phase: 4.2 },
+    ];
+    return base.map((l, i) => ({
+      x: clamp(W * l.x + Math.sin(drift + l.phase) * W * 0.075, l.r + 10, W - l.r - 10),
+      y: clamp(H * l.y + Math.cos(bob + l.phase * 0.7) * H * 0.035, SPACE_HP_BAR_Y + SPACE_HP_BAR_H + l.r + 8, player.y - player.r * 1.7),
+      r: l.r,
+      phase: l.phase || i,
+    }));
+  }
+
+  function isPointInBlackoutBatteryLight(x, y, radius) {
+    const r = radius || 0;
+    return blackoutBatteryLights().some(l => {
+      const rr = l.r + r;
+      const dx = x - l.x;
+      const dy = y - l.y;
+      return dx * dx + dy * dy <= rr * rr;
+    });
   }
 
   function isPointInBlackoutHeadlight(x, y, radius) {
@@ -918,7 +950,7 @@
       3: { spawnsRemaining: 1, speedOverride: 2.70, asteroidRatioOverride: 0, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: false, activeObstacleCap: 3, authoredEncounter: true, notes: 'Two cloud acts: follow the moving safety eye, break each rain source, and dodge serialized Purple shots.' },
       4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4200, 7000], hpDelayRange: [2400, 4000], enemyFireMult: 0.75 },
       5: { spawnsRemaining: 46, speedOverride: 4.0, spawnMsOverride: 390, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: false, swarmCap: 11, activeObstacleCap: 11, spawnCadenceMult: 0.80, notes: 'Blaster Down: dense shield-only bomber rain using old Swarm scale, fast fall speed, and catchable lane spacing. 20 HP per miss.' },
-      6: { spawnsRemaining: 1, speedOverride: 2.80, asteroidRatioOverride: 0, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: false, rescueRingHp: 18, activeObstacleCap: 4, authoredRescue: true },
+      6: { spawnsRemaining: 1, speedOverride: 2.80, asteroidRatioOverride: 0, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: false, rescueRingHp: 72, activeObstacleCap: 4, authoredRescue: true },
       7: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4600, 7600], hpDelayRange: [3400, 5600], enemyFireMult: 0.85 },
       8: { spawnsRemaining: 1, speedOverride: 2.82, asteroidRatioOverride: 0, enemyFireMult: 1, allowMystery: false, allowPowerups: false, allowHp: false, activeObstacleCap: 3, authoredBlackout: true, notes: 'Five sequential search, dodge, and punish duels.' },
       9: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 2, powerupDelayRange: [4600, 7600], hpDelayRange: [3400, 5600], enemyFireMult: 0.9 },
@@ -2022,7 +2054,7 @@
       type:'face', x: W / 2, y: Math.max(270, H * 0.40), vx: 0, vy: 0,
       r, ci, hp: 1, isTrapped: true, ringHp, maxRingHp: ringHp,
       pausedBurstDone: true, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0,
-      campaignRescueLock: true
+      campaignRescueLock: true, rescueRingAlwaysOpen: true
     });
     const rescueName = GAME_CHARS[ci] && GAME_CHARS[ci].name ? GAME_CHARS[ci].name.toUpperCase() : 'THE MOBE';
     addFloatText(`HELP FREE ${rescueName}!`, W / 2, H * 0.31, '#00e5ff', 44, { vy: -0.18, fade: 0.0038 });
@@ -2235,7 +2267,7 @@
       encounter.red.campaignRescueGuardian = true;
       encounter.red.authoredAttack = 'rescueRed';
       encounter.nextAttackAt = now + 900;
-      addFloatText('DODGE RED — BREAK THE LOCK!', W / 2, H * 0.40, '#7dffff', 20, { vy: 0, holdMs: 1800, fade: 0.012 });
+      addFloatText('DODGE RED — KEEP BREAKING THE LOCK!', W / 2, H * 0.40, '#7dffff', 20, { vy: 0, holdMs: 1800, fade: 0.012 });
     }
   }
 
@@ -2247,6 +2279,256 @@
       fn();
     }, delay);
     authoredCampaignTimers.push(timer);
+  }
+
+
+  function drawBlackoutBatteryIcon(p) {
+    const rr = p.r || 14;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot || 0);
+    const pulse = 0.75 + Math.sin(Date.now() * 0.014 + (p.bob || 0)) * 0.25;
+    ctx.shadowColor = '#ffe61a';
+    ctx.shadowBlur = 10 + pulse * 12;
+    ctx.fillStyle = 'rgba(255,230,26,0.18)';
+    ctx.beginPath(); ctx.roundRect(-rr * 0.82, -rr * 0.52, rr * 1.64, rr * 1.04, 5); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#ffe61a';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.roundRect(-rr * 0.82, -rr * 0.52, rr * 1.64, rr * 1.04, 5); ctx.stroke();
+    ctx.fillStyle = '#ffe61a';
+    ctx.beginPath(); ctx.roundRect(rr * 0.82, -rr * 0.22, rr * 0.20, rr * 0.44, 2); ctx.fill();
+    ctx.fillStyle = 'rgba(51,255,102,0.86)';
+    ctx.beginPath(); ctx.roundRect(-rr * 0.62, -rr * 0.32, rr * 1.02 * Math.max(0.35, pulse), rr * 0.64, 3); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.font = `bold ${Math.max(11, rr * 0.78)}px 'VCR', monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('+', 0, 1);
+    ctx.restore();
+  }
+
+  function spawnBlackoutBattery(encounter) {
+    if (!encounter || encounter.kind !== 'blackoutTestBatteries') return;
+    const lanes = encounter.batteryLanes || [0.16, 0.36, 0.58, 0.78, 0.48, 0.24, 0.68];
+    const i = encounter.batteriesSpawned || 0;
+    const x = W * lanes[i % lanes.length] + rand(-W * 0.035, W * 0.035);
+    powerups.push({
+      type: 'blackoutBattery', blackoutBattery: true,
+      x: clamp(x, 18, W - 18), y: -24,
+      vx: rand(-0.16, 0.16), vy: rand(1.45, 1.78), r: 15,
+      bob: Math.random() * Math.PI * 2,
+      litUntil: 0,
+    });
+    encounter.batteriesSpawned = i + 1;
+  }
+
+  function spawnBlackoutTestRock(encounter) {
+    if (!encounter || encounter.kind !== 'blackoutTestBatteries') return;
+    const lanes = [0.12, 0.28, 0.44, 0.62, 0.82];
+    const i = encounter.rocksSpawned || 0;
+    authoredAsteroid({
+      x: W * lanes[(i + Math.floor(Math.random() * lanes.length)) % lanes.length] + rand(-W * 0.035, W * 0.035),
+      y: -30,
+      vx: rand(-0.22, 0.22),
+      vy: rand(1.90, 2.45),
+      r: rand(15, 21),
+      hp: 99,
+      damage: 14,
+    });
+    const rock = obstacles[obstacles.length - 1];
+    if (rock) {
+      rock.blackoutBatteryRock = true;
+      rock.litUntil = 0;
+      rock.hp = 99;
+    }
+    encounter.rocksSpawned = i + 1;
+  }
+
+  function spawnBlackoutBatteryJunk(encounter) {
+    const specs = [
+      { lane: 0.34, depth: 0.46, kind: 'trashcan' },
+      { lane: 0.70, depth: 0.30, kind: 'basketball' },
+    ];
+    specs.forEach((spec, i) => {
+      spawnAmbientJunk(currentCfg || {}, { visible: true, lane: spec.lane, depth: spec.depth, kind: spec.kind });
+      const j = obstacles[obstacles.length - 1];
+      if (j) {
+        j.blackoutBatteryJunk = true;
+        j.ambientJunk = false;
+        j.hp = 99;
+        j.vx = i === 0 ? 0.10 : -0.10;
+        j.vy = i === 0 ? 0.035 : -0.025;
+        j.litUntil = 0;
+      }
+    });
+  }
+
+  function startBlackoutBatteryTestEncounter() {
+    obstacles = [];
+    enemyBullets = [];
+    powerups = [];
+    bullets = [];
+    const now = Date.now();
+    authoredCampaignEncounter = {
+      kind: 'blackoutTestBatteries',
+      startedAt: now,
+      lightDriftSeed: Math.random() * 100,
+      lights: [
+        { x: 0.22, y: 0.22, r: 50, phase: 0.0 },
+        { x: 0.54, y: 0.38, r: 58, phase: 2.15 },
+        { x: 0.78, y: 0.55, r: 52, phase: 4.35 },
+      ],
+      batteryGoal: 5,
+      batteryTotal: 7,
+      batteriesSpawned: 0,
+      batteriesCaught: 0,
+      batteriesMissed: 0,
+      rocksSpawned: 0,
+      nextBatteryAt: now + 950,
+      nextRockAt: now + 1450,
+      nextLightKickAt: now + 4200,
+      complete: false,
+    };
+    spawnsRemaining = 1;
+    blasterDisabledUntil = now + 90000;
+    spawnBlackoutBatteryJunk(authoredCampaignEncounter);
+    addFloatText('BLACKOUT TEST C', W / 2, H * 0.25, '#ffe61a', 25, { vy: 0, holdMs: 1500, fade: 0.012 });
+    addFloatText('TINY HEADLIGHT — BLASTER OFF', W / 2, H * 0.25 + 32, '#00e5ff', 18, { vy: 0, holdMs: 2400, fade: 0.012 });
+    addFloatText('CATCH 5 BATTERIES / AVOID ROCKS', W / 2, H * 0.25 + 58, '#33ff66', 18, { vy: 0, holdMs: 2600, fade: 0.012 });
+  }
+
+  function startBlackoutTestEncounter(mode) {
+    startBlackoutBatteryTestEncounter();
+  }
+
+  function updateBlackoutBatteryTestEncounter(encounter, now) {
+    if (!encounter || encounter.kind !== 'blackoutTestBatteries') return false;
+    blasterDisabledUntil = Math.max(blasterDisabledUntil || 0, now + 800);
+    bullets.length = 0;
+
+    if (!encounter.complete && now > (encounter.nextBatteryAt || 0) && encounter.batteriesSpawned < encounter.batteryTotal) {
+      spawnBlackoutBattery(encounter);
+      encounter.nextBatteryAt = now + rand(1250, 1750);
+    }
+    if (!encounter.complete && now > (encounter.nextRockAt || 0) && encounter.rocksSpawned < 9) {
+      spawnBlackoutTestRock(encounter);
+      encounter.nextRockAt = now + rand(900, 1350);
+    }
+    if (now > (encounter.nextLightKickAt || 0)) {
+      const i = Math.floor(Math.random() * encounter.lights.length);
+      encounter.lights[i].x = clamp(encounter.lights[i].x + rand(-0.16, 0.16), 0.18, 0.82);
+      encounter.lights[i].y = clamp(encounter.lights[i].y + rand(-0.10, 0.10), 0.20, 0.62);
+      addFloatText('LIGHTS SHIFT', W / 2, SPACE_HP_BAR_Y + SPACE_HP_BAR_H + 26, '#f2efe8', 13, { vy: 0, holdMs: 420, fade: 0.04 });
+      encounter.nextLightKickAt = now + rand(3600, 5200);
+    }
+
+    const lights = blackoutBatteryLights();
+    const inLight = (x, y, r) => isPointInBlackoutHeadlight(x, y, r || 0) || isPointInBlackoutBatteryLight(x, y, r || 0);
+    for (const p of powerups) {
+      if (!p.blackoutBattery || p._collected) continue;
+      if (inLight(p.x, p.y, p.r)) p.litUntil = now + 180;
+      if (circlesOverlap(p.x, p.y, p.r, player.x, player.y, player.r * 0.92)) {
+        p._collected = true;
+        encounter.batteriesCaught++;
+        score += 250;
+        lineFlashA = 1;
+        miniExplosion(p.x, p.y, '#ffe61a');
+        addFloatText(`BATTERY ${encounter.batteriesCaught}/${encounter.batteryGoal}`, player.x, player.y - 42, '#33ff66', 19, { vy: -0.6, holdMs: 700, fade: 0.018 });
+        playNormalInstrumentSfx('powerup');
+      } else if (p.y > H + 26 && !p._missed) {
+        p._missed = true;
+        p._collected = true;
+        encounter.batteriesMissed++;
+        addFloatText('BATTERY LOST', W / 2, H * 0.42, '#ff8a66', 17, { vy: 0, holdMs: 650, fade: 0.024 });
+      }
+    }
+    for (const o of obstacles) {
+      if (!o || o.alive === false) continue;
+      if (o.blackoutBatteryRock || o.blackoutBatteryJunk) {
+        if (inLight(o.x, o.y, o.r)) o.litUntil = now + 170;
+      }
+      if (o.blackoutBatteryRock) {
+        for (const j of obstacles) {
+          if (!j.blackoutBatteryJunk || j.alive === false) continue;
+          if (now < (o._junkBounceLockUntil || 0)) continue;
+          const dx = o.x - j.x, dy = o.y - j.y;
+          const minDist = o.r + j.r * 0.88;
+          if (Math.abs(dx) >= minDist || Math.abs(dy) >= minDist || dx * dx + dy * dy >= minDist * minDist) continue;
+          const dist = Math.hypot(dx, dy) || 1;
+          const nx = dx / dist;
+          o.x += nx * (minDist - dist + 1);
+          o.vx = clamp((o.vx || 0) * 0.55 + nx * 1.25 + (j.vx || 0) * 0.35, -2.0, 2.0);
+          o.vy = Math.max(1.15, (o.vy || 1.8) * 0.86);
+          o._junkBounceLockUntil = now + 130;
+          o.litUntil = now + 520;
+          j.litUntil = now + 520;
+          addFloatText('CLANG', o.x, o.y - 14, '#e2ebff', 13, { vy: -0.4, holdMs: 260, fade: 0.05 });
+          break;
+        }
+      }
+    }
+
+    const resolved = (encounter.batteriesCaught || 0) + (encounter.batteriesMissed || 0);
+    if (!encounter.complete && (encounter.batteriesCaught >= encounter.batteryGoal || resolved >= encounter.batteryTotal)) {
+      encounter.complete = true;
+      blasterDisabledUntil = 0;
+      if (encounter.batteriesCaught >= encounter.batteryGoal) {
+        addFloatText('POWER RESTORED!', W / 2, H * 0.30, '#33ff66', 30, { vy: 0, holdMs: 1400, fade: 0.012 });
+        score += 500;
+        spawnsRemaining = 0;
+        powerups = [];
+        obstacles.forEach(o => { if (o.blackoutBatteryRock || o.blackoutBatteryJunk) o.alive = false; });
+      } else {
+        addFloatText('BLACKOUT FAILED', W / 2, H * 0.30, '#ff6666', 28, { vy: 0, holdMs: 1500, fade: 0.012 });
+        takeDamage(25, 'POWER FAILURE');
+        spawnsRemaining = 0;
+        powerups = [];
+        obstacles.forEach(o => { if (o.blackoutBatteryRock || o.blackoutBatteryJunk) o.alive = false; });
+      }
+    }
+    return true;
+  }
+
+  function updateBlackoutPowerTestEncounter(encounter, now) {
+    return updateBlackoutBatteryTestEncounter(encounter, now);
+  }
+
+  function updateBlackoutLaneTestEncounter(encounter, now) {
+    return updateBlackoutBatteryTestEncounter(encounter, now);
+  }
+
+  function drawBlackoutTestOverlay() {
+    const encounter = authoredCampaignEncounter;
+    if (!encounter || encounter.kind.indexOf('blackoutTest') !== 0) return;
+    const now = Date.now();
+    ctx.save();
+    if (encounter.kind === 'blackoutTestBatteries') {
+      const caught = encounter.batteriesCaught || 0;
+      const goal = encounter.batteryGoal || 5;
+      const total = encounter.batteryTotal || 7;
+      const missed = encounter.batteriesMissed || 0;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.font = `bold 15px 'Bebas Neue', cursive`;
+      ctx.fillStyle = caught >= goal ? '#33ff66' : '#ffe61a';
+      ctx.fillText(`POWER ${caught}/${goal}   MISSES ${missed}/${Math.max(0, total - goal)}`, W / 2, SPACE_HP_BAR_Y + SPACE_HP_BAR_H + 8);
+      for (const l of blackoutBatteryLights()) {
+        const pulse = 0.78 + Math.sin(now * 0.004 + l.phase) * 0.22;
+        const grad = ctx.createRadialGradient(l.x, l.y, 4, l.x, l.y, l.r * (1.08 + pulse * 0.10));
+        grad.addColorStop(0, 'rgba(255,246,180,0.22)');
+        grad.addColorStop(0.62, 'rgba(255,230,120,0.10)');
+        grad.addColorStop(1, 'rgba(255,230,120,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(l.x, l.y, l.r * (1.15 + pulse * 0.08), 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = `rgba(255,230,120,${0.20 + pulse * 0.18})`;
+        ctx.lineWidth = 1.4;
+        ctx.setLineDash([4, 7]);
+        ctx.beginPath(); ctx.arc(l.x, l.y, l.r, 0, Math.PI * 2); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+    ctx.restore();
   }
 
   function spawnNextAuthoredBlackoutShooter() {
@@ -2344,8 +2626,6 @@
     };
     spawnsRemaining = 1;
     spawnCampaignRescueLock();
-    const lock = obstacles.find(o => o.campaignRescueLock);
-    if (lock) { lock.ringHp = 18; lock.maxRingHp = 18; }
     const purple = spawnRainGuardian(0.82, 0.36, 8);
     purple.campaignRescueGuardian = true;
     authoredCampaignEncounter.guardians.push(purple);
@@ -2355,6 +2635,10 @@
   function updateAuthoredCampaignEncounter(now) {
     const encounter = authoredCampaignEncounter;
     if (!encounter || state !== 'playing' || waveTransitioning) return;
+    if (encounter.kind === 'blackoutTestBatteries') {
+      updateBlackoutBatteryTestEncounter(encounter, now);
+      return;
+    }
     if (encounter.kind === 'blackout') {
       const shooter = encounter.active;
       if (!shooter || shooter.alive === false) {
@@ -2440,7 +2724,7 @@
       encounter.ringOpenUntil = Date.now() + 1600;
       encounter.attackPending = false;
       encounter.nextAttackAt = Date.now() + 2200;
-      addFloatText('LOCK OPEN!', lock.x, lock.y - lock.r - 24, '#7dffff', 18);
+      addFloatText('KEEP FIRING!', lock.x, lock.y - lock.r - 24, '#7dffff', 18);
     });
   }
 
@@ -3036,6 +3320,7 @@
   }
 
   function drawPowerup(p) {
+    if (p.blackoutBattery || p.type === 'blackoutBattery') { drawBlackoutBatteryIcon(p); return; }
     if (p.type === 'mystery') { drawMysteryBox(p); return; }
     if (p.type === 'instrument') { drawInstrument(p); return; }
     if (p.type === 'hp') {
@@ -3337,7 +3622,7 @@
     currentCfg = waveConfig(wave);
     waveTheme = pickWaveTheme(wave, null);
     startWaveSpawn(currentCfg);
-    if (waveTheme === 'blackout') { spawnBlackoutHiddenEnemies(); spaceSfx('wave.blackout'); }
+    if (waveTheme === 'blackout' && !blackoutTestMode) { spawnBlackoutHiddenEnemies(); spaceSfx('wave.blackout'); }
     scheduleHpPowerup();
     schedulePowerup();
     scheduleMysteryBox();
@@ -4446,6 +4731,10 @@
 
   function startWaveSpawn(cfg) {
     clearTimeout(spawnTimer);
+    if (spaceRunMode === 'debug' && blackoutTestMode) {
+      startBlackoutTestEncounter(blackoutTestMode);
+      return;
+    }
     if ((spaceRunMode === 'campaign' || spaceRunMode === 'debug') && cfg && cfg.authoredRescue) {
       startAuthoredRescueEncounter();
       return;
@@ -4924,6 +5213,16 @@ function nextWave() {
 
   function showSkillCalloutForWave(opts) {
     opts = opts || {};
+    if (waveTheme === 'swarm') {
+      const flowToken = spaceFlowToken;
+      setTimeout(() => {
+        if (flowToken !== spaceFlowToken || state !== 'playing' || (waveTransitioning && !opts.allowDuringTransition)) return;
+        addFloatText('BLASTER DISABLED', W / 2, H * 0.34, '#ff3030', 30, { vy: 0, holdMs: 2600, fade: 0.012 });
+        addFloatText('EMERGENCY SHIELD UP', W / 2, H * 0.34 + 34, '#00e5ff', 22, { vy: 0, holdMs: 2600, fade: 0.012 });
+        addFloatText('RAM SWARMERS TO DEFLECT THEM', W / 2, H * 0.34 + 62, '#33ff66', 18, { vy: 0, holdMs: 2600, fade: 0.012 });
+      }, opts.delayMs != null ? opts.delayMs : 420);
+      return;
+    }
     const text = skillCalloutForWave();
     if (!text) return;
     const flowToken = spaceFlowToken;
@@ -4934,7 +5233,7 @@ function nextWave() {
         addFloatText('FIND THE FLASH', W / 2, H * 0.35 + 30, '#33ff66', 20, { holdMs: 2200, fade: 0.012 });
       } else if (wave === 6 && currentCfg && currentCfg.authoredRescue) {
         addFloatText('STAY IN THE EYE', W / 2, H * 0.42, '#7dffff', 28, { vy: 0, holdMs: 2400, fade: 0.012 });
-        addFloatText('BREAK THE CLOUD · THEN THE LOCK', W / 2, H * 0.42 + 30, '#33ff66', 19, { vy: 0, holdMs: 2400, fade: 0.012 });
+        addFloatText('SHOOT THE LOCK WHILE YOU SURVIVE', W / 2, H * 0.42 + 30, '#33ff66', 19, { vy: 0, holdMs: 2400, fade: 0.012 });
       } else if (wave >= 1 && wave <= 3 && currentCfg && currentCfg.authoredEncounter) {
         const openingInstruction = {
           1: ['SURVIVE 30 SECONDS', 'FIND THE GAP'],
@@ -4989,14 +5288,10 @@ function nextWave() {
     // the slot-machine text up a bit too — the taller block still centers as a whole.
     const captiveGridHTML = missionTrappedChars.length ? `
       <div style="margin-top:22px;display:grid;grid-template-columns:repeat(3,54px);justify-content:center;gap:12px 16px">${missionTrappedChars.map(waveCaptiveFace).join('')}</div>` : '';
-    const waveSubtitleHTML = waveTheme === 'swarm'
-      ? `<div style="font-family:'Bebas Neue',cursive;font-size:clamp(18px, 4vh, 30px);letter-spacing:4px;color:#00e5ff;text-shadow:0 0 14px #00e5ff88;margin-top:12px">EMERGENCY SHIELD ACTIVATED</div>`
-      : '';
     ann.innerHTML=`<div style="text-align:center;animation:wave-announce ${ds}s ease-out forwards">
       <div id="sp-wave-incoming" style="font-family:'VCR',monospace;font-size:11px;letter-spacing:5px;color:#33ff66">INCOMING</div>
       <div id="sp-wave-type" style="font-family:'Bebas Neue',cursive;font-size:clamp(30px, 8vh, 60px);letter-spacing:6px;color:#33ff66;text-shadow:0 0 20px #33ff66,0 0 40px #33ff6688;line-height:1;transition:transform 0.3s ease-out">SURVIVE</div>
       <div style="font-family:'Bebas Neue',cursive;font-size:clamp(17px, 3.4vh, 26px);letter-spacing:4px;color:#33ff66;text-shadow:0 0 10px #33ff6688;margin-top:6px">WAVE ${w}</div>
-      ${waveSubtitleHTML}
       ${captiveGridHTML}
     </div>`;
     document.body.appendChild(ann);
@@ -5828,9 +6123,9 @@ function nextWave() {
         const t2 = Date.now() * 0.003;
         const seed = o._pulseSeed || 0;
         const ringPulse = 1 + Math.sin(Date.now() * 0.008 + seed) * 0.05;
-        const lockOpen = o.campaignRescueLock && authoredCampaignEncounter && authoredCampaignEncounter.kind === 'rescue'
+        const lockOpen = o.rescueRingAlwaysOpen || (o.campaignRescueLock && authoredCampaignEncounter && authoredCampaignEncounter.kind === 'rescue'
           ? Date.now() < (authoredCampaignEncounter.ringOpenUntil || 0)
-          : true;
+          : true);
         ctx.save();
         ctx.rotate(t2);
         ctx.beginPath(); ctx.arc(0, 0, ringR * 1.14 * ringPulse, 0, Math.PI * 2);
@@ -6965,6 +7260,7 @@ function nextWave() {
         }
         if (p._collected) continue;
       }
+      if (p.blackoutBattery || p.type === 'blackoutBattery') continue;
       let gotIt = p.type !== 'mystery' && p.type !== 'instrument' && circlesOverlap(p.x, p.y, p.r, player.x, player.y, player.r * 0.9);
       // An active escort can also catch pickups itself, not just the player ship —
       // it's right there next to you, no reason it should be unable to grab one.
@@ -7449,7 +7745,7 @@ function nextWave() {
           if(o.type==='face'){
             if(o.isTrapped && o.ringHp > 0){
               // Hit the rescue ring
-              if (o.campaignRescueLock && authoredCampaignEncounter && authoredCampaignEncounter.kind === 'rescue' && nowHit >= (authoredCampaignEncounter.ringOpenUntil || 0)) {
+              if (!o.rescueRingAlwaysOpen && o.campaignRescueLock && authoredCampaignEncounter && authoredCampaignEncounter.kind === 'rescue' && nowHit >= (authoredCampaignEncounter.ringOpenUntil || 0)) {
                 o.traitorShieldImpactAt = nowHit;
                 if (nowHit - (o.lockShieldNoticeAt || 0) > 320) {
                   o.lockShieldNoticeAt = nowHit;
@@ -7521,6 +7817,7 @@ function nextWave() {
                   miniExplosion(o.x, o.y, 'rgba(255,90,90,0.55)');
                 }
                 waveKills++;
+                if (o.blackoutTestLaneTarget && authoredCampaignEncounter && authoredCampaignEncounter.kind === 'blackoutTestLanes') authoredCampaignEncounter.targetsCleared = (authoredCampaignEncounter.targetsCleared || 0) + 1;
                 if (academyMode && (o.academyGoal === 'normalEnemy' || o.academyGoal === 'swarmer')) academyGoalComplete = true;
                 o.alive=false;
               }
@@ -8195,6 +8492,18 @@ function nextWave() {
         ctx.fillStyle = erase;
         ctx.fill();
       }
+      if (authoredCampaignEncounter && authoredCampaignEncounter.kind === 'blackoutTestBatteries') {
+        for (const l of blackoutBatteryLights()) {
+          const hole = ctx.createRadialGradient(l.x, l.y, 0, l.x, l.y, l.r);
+          hole.addColorStop(0, 'rgba(255,255,255,0.34)');
+          hole.addColorStop(0.58, 'rgba(255,255,255,0.20)');
+          hole.addColorStop(1, 'rgba(255,255,255,0)');
+          ctx.beginPath();
+          ctx.arc(l.x, l.y, l.r, 0, Math.PI * 2);
+          ctx.fillStyle = hole;
+          ctx.fill();
+        }
+      }
       ctx.globalCompositeOperation = 'source-over';
       const beam = ctx.createLinearGradient(player.x, beamBaseY, player.x, coneTopY);
       beam.addColorStop(0, 'rgba(255,246,180,0.16)');
@@ -8398,6 +8707,7 @@ function nextWave() {
           ctx.restore();
         }
       }
+      drawBlackoutTestOverlay();
       ctx.restore();
     }
     drawSpaceFx();
@@ -10351,6 +10661,9 @@ function nextWave() {
         <div class="space-debug-row" aria-label="Space campaign wave debug jumps 8 through 11">
           <button class="space-debug-chip" onclick="spaceDebugJump(8)">W8 BLACKOUT</button><button class="space-debug-chip" onclick="spaceDebugJump(9)">W9 BOSS</button><button class="space-debug-chip" onclick="spaceDebugJump(10)">W10 BOSS</button><button class="space-debug-chip" onclick="spaceDebugJump(11)">W11 FINAL</button>
         </div>
+        <div class="space-debug-row" aria-label="Blackout prototype tests">
+          <button class="space-debug-chip" onclick="spaceDebugBlackoutTest('batteries')">TEST BLACKOUT C</button>
+        </div>
         <div class="space-debug-row" aria-label="Space boss playtests">
           <button class="space-debug-chip" onclick="spaceDebugBoss('STAR OGRE')">OGRE</button><button class="space-debug-chip" onclick="spaceDebugBoss('SKY DRAGON')">DRAGON</button><button class="space-debug-chip" onclick="spaceDebugBoss('DARK KNIGHT')">KNIGHT</button><button class="space-debug-chip" onclick="spaceDebugBoss('GRAY VISITOR')">VISITOR</button><button class="space-debug-chip" onclick="spaceDebugBoss('SPACE SHARK')">SHARK</button><button class="space-debug-chip" onclick="spaceDebugBoss('MEAN TACO')">TACO</button><button class="space-debug-chip" onclick="spaceDebugBoss('COSMIC OCTO')">OCTO</button><button class="space-debug-chip" onclick="spaceDebugBoss('GIZMO')">GIZMO</button>
         </div>
@@ -11134,6 +11447,7 @@ function nextWave() {
     prepareSpaceMission();
     hideSpaceOverlayForRun();
     cancelAnimationFrame(raf);
+    blackoutTestMode = null;
     spaceRunMode = mode || 'campaign';
     academyCompleting = false;
     state = 'idle';
@@ -11303,6 +11617,7 @@ function nextWave() {
     raf=requestAnimationFrame(loop);
   };
   window.spaceDebugJump=function(startWave){
+    blackoutTestMode = null;
     spaceRunMode = 'debug';
     ArcadeMusic.stop();
     clearSpaceCinematicOverlays();
@@ -11327,7 +11642,31 @@ function nextWave() {
   window.spaceBossPreviewSound=function(bossName, part){
     playBossPreviewSound(bossName, part);
   };
+  window.spaceDebugBlackoutTest=function(mode){
+    blackoutTestMode = 'batteries';
+    spaceRunMode = 'debug';
+    ArcadeMusic.stop();
+    clearSpaceCinematicOverlays();
+    clearSpaceAcademyTimers();
+    activeChar=getGlobalChar();
+    prepareSpaceMission();
+    const ov=document.getElementById('space-overlay');
+    document.body.classList.remove('arcade-selection-open');
+    if(ov) {
+      ov.classList.add('hidden');
+      ov.classList.remove('space-boss-preview');
+    }
+    cancelAnimationFrame(bossPreviewRaf);
+    bossPreviewRaf = null;
+    cancelAnimationFrame(raf);
+    reset();
+    clearSpaceRuntimeTimers();
+    beginConfiguredWave(8);
+    state='playing';
+    raf=requestAnimationFrame(loop);
+  };
   window.spaceDebugBoss=function(bossName){
+    blackoutTestMode = null;
     spaceRunMode = 'debug';
     ArcadeMusic.stop();
     clearSpaceCinematicOverlays();
