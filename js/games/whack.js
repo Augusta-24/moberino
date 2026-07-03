@@ -45,7 +45,8 @@
   // Classic is a standalone 30s score-attack sibling to the wave-based game (now
   // labeled "Frenzy" in the UI) — gameMode persists across replays the same way
   // difficulty already does, only defaulting to 'frenzy' on script init.
-  let gameMode = 'frenzy'; // 'classic' | 'frenzy'
+  let gameMode = 'frenzy'; // 'classic' | 'frenzy' | 'whack'
+  let whackLives = 3, whackMolesHit = 0; // WHACK mode only
   let classicHits = 0, classicPieces = [], classicTimeLeft = 30, classicInterval = null;
   let activeChar = getGlobalChar(); // user's char — to AVOID
   let moleChar = -1;               // random other char — to WHACK
@@ -218,7 +219,7 @@
 
     if (state === 'mode-select') {
       wrap.innerHTML = `
-<div class="whack-mode-shell" style="transform:translateY(54px)">          <div class="whack-mode-title">CHOOSE MODE</div>
+<div class="whack-mode-shell">          <div class="whack-mode-title">CHOOSE MODE</div>
           <div class="whack-mode-grid">
             <div class="game-card whack-mode-card" style="border-color:#b884ff66;cursor:default">
               <div class="game-card-art" style="background:#0d0a1e">
@@ -299,6 +300,35 @@
                 </div>
               </div>
             </div>
+
+            <div class="game-card whack-mode-card" style="border-color:#33cc6666;cursor:default">
+              <div class="game-card-art" style="background:#0d0a1e">
+                <svg viewBox="0 0 200 120" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0">
+                  <rect width="200" height="120" fill="#0d0a1e"/>
+                  <line x1="0" y1="24" x2="200" y2="24" stroke="#33cc66" stroke-width="0.4" opacity="0.09"/>
+                  <line x1="0" y1="48" x2="200" y2="48" stroke="#33cc66" stroke-width="0.4" opacity="0.09"/>
+                  <line x1="0" y1="72" x2="200" y2="72" stroke="#33cc66" stroke-width="0.4" opacity="0.09"/>
+                  <line x1="0" y1="96" x2="200" y2="96" stroke="#33cc66" stroke-width="0.4" opacity="0.09"/>
+                  <line x1="50" y1="0" x2="50" y2="120" stroke="#33cc66" stroke-width="0.4" opacity="0.09"/>
+                  <line x1="100" y1="0" x2="100" y2="120" stroke="#33cc66" stroke-width="0.4" opacity="0.09"/>
+                  <line x1="150" y1="0" x2="150" y2="120" stroke="#33cc66" stroke-width="0.4" opacity="0.09"/>
+                  <text x="128" y="88" font-family="sans-serif" font-size="72" fill="#33cc66" opacity="0.78" text-anchor="middle">✓</text>
+                  <text x="36" y="55" font-family="sans-serif" font-size="32" fill="#ff4444" opacity="0.52" text-anchor="middle">✗</text>
+                  <text x="64" y="22" font-size="13" fill="#33ff66" opacity="0.68">✦</text>
+                  <text x="180" y="16" font-size="10" fill="#33ff66" opacity="0.48">✦</text>
+                  <text x="22" y="14" font-size="8" fill="#00e5ff" opacity="0.32">✦</text>
+                </svg>
+                <div class="whack-mode-name" style="text-shadow:0 0 8px rgba(51,204,102,0.62)">WHACK</div>
+              </div>
+              <div class="game-card-info">
+                <div class="game-card-marquee" style="color:#33cc66;text-shadow:0 0 15px rgba(51,204,102,0.62)">3 LIVES · ENDLESS</div>
+                <div class="game-card-desc">HOW LONG CAN YOU LAST?</div>
+                <div class="whack-mode-diff">
+                  <button class="whack-btn" style="border-color:#66dd99;background:rgba(102,221,153,0.22);color:#e6fff0" onclick="whackSelectModeDifficulty('whack','easy')">NORMAL</button>
+                  <button class="whack-btn" style="border-color:#22aa55;background:rgba(34,170,85,0.28);color:#ccffdd" onclick="whackSelectModeDifficulty('whack','hard')">HARD</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>`;
       return;
@@ -357,6 +387,39 @@
       return;
     }
 
+    if (state === 'playing' && gameMode === 'whack') {
+      const youGc = GAME_CHARS[activeChar], moleGc = GAME_CHARS[moleChar];
+      wrap.innerHTML = `
+        <div class="whack-hud" id="whack-hud-bar" style="flex-direction:column;justify-content:flex-start;gap:6px;padding:8px 14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+            <div id="whack-lives" style="font-size:22px;letter-spacing:1px;line-height:1">${'❤️'.repeat(whackLives)}</div>
+            <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;color:#33cc66;text-shadow:0 0 10px #33cc6688">WHACK</div>
+            <div style="font-family:'VCR',monospace;font-size:12px;letter-spacing:2px;color:rgba(242,239,232,0.65)">HITS <span id="whack-mode-score" style="color:#33ff66;font-size:14px">0</span></div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding-top:4px;border-top:1px solid rgba(242,239,232,0.1)">
+            <div style="width:40px;height:40px;border-radius:8px;overflow:hidden;border:2px solid #33ff66;background:#33ff6622;box-shadow:0 0 10px #33ff6655;flex-shrink:0">${charFace(youGc,'normal')}</div>
+            <div style="flex:1;text-align:left;font-family:'Bebas Neue',cursive;font-size:12px;letter-spacing:1.5px;color:#33ff66;text-shadow:0 0 7px #33ff6688;line-height:1.2">DON'T<br>WHACK</div>
+            <div style="font-family:'Bebas Neue',cursive;font-size:16px;letter-spacing:2px;color:#ffe61a;text-shadow:0 0 8px #ffe61a;flex-shrink:0;padding:0 2px">VS</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;text-align:right;font-family:'Bebas Neue',cursive;font-size:12px;letter-spacing:1.5px;color:#ff4444;text-shadow:0 0 7px #ff444488;line-height:1.2">WHACK</div>
+            <div style="width:40px;height:40px;border-radius:8px;overflow:hidden;border:2px solid #ff4444;background:#ff444422;box-shadow:0 0 10px #ff444455;transform:scaleX(-1);flex-shrink:0">${charFace(moleGc,'normal')}</div>
+          </div>
+        </div>
+        <div class="whack-grid" id="whack-grid" style="--cols:${GRID_COLS};--rows:${GRID_ROWS}">${
+          Array.from({length:HOLES},(_,i)=>
+            `<div class="whack-hole" id="wh-${i}" onpointerdown="whackHit(${i})">
+               <div class="whack-char" id="wc-${i}"></div>
+               <div class="whack-tint" id="wt-${i}"></div>
+               <div class="whack-miss-x" id="wx-${i}">✕</div>
+             </div>`
+          ).join('')
+        }</div>
+        <div id="whack-status" style="font-family:'VCR',monospace;font-size:18px;letter-spacing:2px;color:#ff4444;text-align:center;min-height:24px;margin-top:8px;opacity:0;transition:opacity 0.4s;text-shadow:0 0 10px #ff444488"></div>`;
+      holeStates = Array(HOLES).fill('empty');
+      holeCharIdx = Array(HOLES).fill(-1);
+      holeGrace = Array(HOLES).fill(false);
+      return;
+    }
+
     if (state === 'playing') {
       const youGc = GAME_CHARS[activeChar], moleGc = GAME_CHARS[moleChar];
       const vs = vsLabels();
@@ -389,6 +452,39 @@
       // clearWaveTransition() after the wave-start overlay finishes — never here. This
       // used to call scheduleAll() unconditionally, which fired immediately and could
       // show a mole while the "WAVE 1" text was still on screen.
+      return;
+    }
+
+    if (state === 'over' && gameMode === 'whack') {
+      setArcadeExitVisible(false);
+      const boardKey = getWhackLeaderboardKey({ mode: 'whack', difficulty });
+      const bestKey = `whack-best-whack-${difficulty}`;
+      const best = parseInt(localStorage.getItem(bestKey)||'0');
+      const isNew = whackMolesHit > best;
+      if (isNew) localStorage.setItem(bestKey, whackMolesHit);
+      const uid = `whack-whack-${difficulty}`;
+      wrap.innerHTML = buildArcadeResultCard({
+        uid,
+        boardKey,
+        artGame: 'whack',
+        color: '#33cc66',
+        marquee: isNew ? '🏆 NEW BEST!' : 'GAME OVER',
+        marqueeEnd: '#1a6633',
+        scoreLabel: 'MOLES WHACKED',
+        scoreValue: whackMolesHit,
+        saveValue: whackMolesHit,
+        field: 'score',
+        extra: difficulty.toUpperCase(),
+        ascending: false,
+        saveMarginTop: 12,
+        buttons: `
+          <button class="whack-btn" style="border-color:#33cc66;background:rgba(51,204,102,0.30)" onclick="whackPlay()">PLAY AGAIN</button>
+          <button class="whack-btn" style="border-color:#33cc66;background:rgba(51,204,102,0.30)" onclick="whackChangeMode()">CHANGE MODE</button>
+          <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="nav('lobby')">BACK TO ARCADE</button>
+        `,
+      });
+      loadRemoteBoard(boardKey, `${uid}-board`, '#33cc66', 'score');
+      mountSelectionArt(`${uid}-art`, 'whack');
       return;
     }
 
@@ -473,7 +569,7 @@
     }
     // Starting pace nudged harder (790->720) and the ramp rate brought back down a
     // bit (0.15->0.11) — last pass made the climb too steep again chasing "too easy."
-    const adventureHard = gameMode === 'frenzy';
+    const adventureHard = gameMode === 'frenzy' || gameMode === 'whack';
     const decay = 1 + (wave - 1) * (adventureHard ? 0.15 : 0.11) + waveHits * (adventureHard ? 0.022 : 0.017);
     const popDelay = (adventureHard ? 180 : 200) + ((adventureHard ? 640 : 720) - (adventureHard ? 180 : 200)) / decay;
     return popDelay + Math.random() * (adventureHard ? 45 : 60);
@@ -493,7 +589,7 @@
     // tasks actually take even for skilled players, so it stays masterable rather than
     // becoming a wall no amount of practice gets past. Starting pace nudged harder
     // (1100->1000), ramp rate brought back down a bit (0.13->0.10) for a smoother climb.
-    const adventureHard = gameMode === 'frenzy';
+    const adventureHard = gameMode === 'frenzy' || gameMode === 'whack';
     const decay = 1 + (wave - 1) * (adventureHard ? 0.13 : 0.10) + waveHits * (adventureHard ? 0.019 : 0.015);
     let upTime = (adventureHard ? 450 : 480) + ((adventureHard ? 900 : 1000) - (adventureHard ? 450 : 480)) / decay;
     // More moles up at once means more to visually track — give each one a little extra
@@ -503,7 +599,7 @@
   }
   // How many moles can be up/scheduled at once — this is what makes "overlapping moles" real
   function concurrencyForWave(w) {
-    const adventureHard = gameMode === 'frenzy' && difficulty === 'hard';
+    const adventureHard = (gameMode === 'frenzy' || gameMode === 'whack') && difficulty === 'hard';
     if (adventureHard) {
       if (w >= 8) return 3;
       return 2;
@@ -533,7 +629,7 @@
 
 
   function popUp(i) {
-    if (state !== 'playing' || currentRoundType !== 'whack') return; // stray call from a round that's since moved on
+    if (state !== 'playing' || waveTransitioning || currentRoundType !== 'whack') return; // stray call from a round that's since moved on
     if (holeStates[i] !== 'empty') {
       scheduleSurvivalNext();
       return;
@@ -645,6 +741,37 @@
   }
 
 
+  function updateWhackHUD() {
+    const livesEl = document.getElementById('whack-lives');
+    if (livesEl) {
+      let html = '';
+      for (let k = 0; k < 3; k++) {
+        html += k < whackLives
+          ? '<span style="opacity:1">❤️</span>'
+          : '<span style="opacity:0.22;filter:grayscale(1)">❤️</span>';
+      }
+      livesEl.innerHTML = html;
+    }
+    const scoreEl = document.getElementById('whack-mode-score');
+    if (scoreEl) scoreEl.textContent = whackMolesHit;
+  }
+
+  function whackLoseLife(reason) {
+    whackLives--;
+    updateWhackHUD();
+    if (whackLives <= 0) {
+      holeTimers.forEach(clearTimeout);
+      flashBrokenHeart();
+      showStatus(reason);
+      SFX.over();
+      setTimeout(() => showWhackGameOver(), BROKEN_HEART_HOLD_MS);
+      return;
+    }
+    flashBrokenHeart();
+    showStatus(reason);
+    SFX.moleEscaped ? SFX.moleEscaped() : SFX.over();
+  }
+
   function popDown(i, wasHit) {
     const prev = holeCharIdx[i];
     // Grace window: the very first time the up-time timeout fires for a genuine miss,
@@ -673,13 +800,23 @@
     hole.classList.remove('up', 'hit', 'hit-success', 'wrong-hit');
 
     if (!wasHit && prev === moleChar && currentRoundType === 'whack') {
-      // Missed the mole — sad state, then instant fail under zero-tolerance.
       const charEl = document.getElementById(`wc-${i}`);
       if (charEl) charEl.innerHTML = charHTML(moleChar, 'sad');
       hole.classList.add('up', 'missed');
       showMissX(i);
       SFX.moleEscaped();
-      setTimeout(() => failWave('💔 MISSED MOLE'), 700);
+      if (gameMode === 'whack') {
+        setTimeout(() => {
+          hole.classList.remove('up', 'missed');
+          hideMissX(i);
+          clearTint(i);
+          if (charEl) charEl.innerHTML = '';
+          whackLoseLife('💔 MISSED MOLE');
+          if (state === 'playing') scheduleSurvivalNext();
+        }, 700);
+      } else {
+        setTimeout(() => failWave('💔 MISSED MOLE'), 700);
+      }
       return;
     }
 
@@ -698,6 +835,7 @@
   window.whackHit = function(i) {
     if (state !== 'playing') return;
     if (gameMode === 'classic') { classicHit(i); return; }
+    if (gameMode === 'whack') { whackModeHitHandler(i); return; }
     if (currentRoundType === 'memory' && memoryPhase === 'recall') { handleMemoryClick(i); return; }
     if (holeStates[i] !== 'up') {
       if (currentRoundType === 'whack') flashWhackEmptyTap(i);
@@ -971,6 +1109,48 @@
         });
       }
     });
+  }
+
+  // ── WHACK mode ── 3-lives endless whack: moles only, no wave structures, score = total hit.
+  function whackModeHitHandler(i) {
+    if (holeStates[i] !== 'up') { flashWhackEmptyTap(i); return; }
+    const ci = holeCharIdx[i];
+    holeStates[i] = 'hit';
+    clearTimeout(holeTimers[i]);
+    const hole = document.getElementById(`wh-${i}`), charEl = document.getElementById(`wc-${i}`);
+    if (!hole || !charEl) return;
+
+    if (ci === moleChar) {
+      charEl.innerHTML = charHTML(moleChar, 'whack') + CRACK_SVG;
+      hole.classList.add('hit-success');
+      clearTint(i);
+      const pop = document.createElement('div');
+      pop.className = 'whack-score-pop'; pop.textContent = '✓';
+      pop.style.cssText = `left:${20+Math.random()*60}%;top:${20+Math.random()*40}%`;
+      hole.appendChild(pop); setTimeout(() => pop.remove(), 700);
+      playWhackSuccessHitSfx();
+
+      whackMolesHit++;
+      updateWhackHUD();
+
+      // Silently increment wave every N hits so timing functions ramp naturally.
+      waveHits++;
+      const waveThreshold = difficulty === 'easy' ? 10 : 8;
+      if (waveHits >= waveThreshold) { waveHits = 0; wave++; }
+
+      // Introduce self-character gradually after a warmup stretch.
+      if (!selfActive && whackMolesHit >= (difficulty === 'easy' ? 18 : 12)) addSelf();
+
+      setTimeout(() => popDown(i, true), 350);
+    } else if (ci === activeChar) {
+      charEl.innerHTML = charHTML(ci, 'sad');
+      hole.classList.add('wrong-hit');
+      SFX.selfWhack();
+      setTimeout(() => {
+        popDown(i, true);
+        whackLoseLife('💔 YOU WHACKED YOURSELF');
+      }, 600);
+    }
   }
 
   // ── Classic mode ── standalone 30s score-attack: no waves, no self-character to
@@ -1399,7 +1579,7 @@
     adventureIntroShown = false;
     activeChar = getGlobalChar();
     moleChar = pickMole();
-    wave = 1; waveHits = 0;
+    wave = 1; waveHits = 0; whackLives = 3; whackMolesHit = 0;
     selfActive = false; selfIntroWave = 0; waveTransitioning = false;
     currentRoundType = 'whack'; clearInterval(clearRoundInterval); clearInterval(clearRoundMoveInterval); memoryPhase = null; removeClearTimerOverlay(); removeSideBar(); memoryAppearances = 0; clearRoundAppearances = 0;
     classicPieces.forEach(p => clearTimeout(p.timer)); classicPieces = []; clearInterval(classicInterval); classicHits = 0;
@@ -1860,6 +2040,21 @@
     requestAnimationFrame(tick);
   }
 
+  function whackCountdown(onDone) {
+    const ann = document.createElement('div');
+    ann.className = 'whack-intro-overlay';
+    ann.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;pointer-events:none;background:rgba(5,2,18,0.6)';
+    document.body.appendChild(ann);
+    const show = (text, color) => {
+      ann.innerHTML = `<div style="font-family:'Bebas Neue',cursive;font-size:min(38vw,170px);color:${color};text-shadow:0 0 40px ${color}88;line-height:1">${text}</div>`;
+    };
+    show('3', '#ffe61a');
+    setTimeout(() => show('2', '#ffe61a'), 750);
+    setTimeout(() => show('1', '#ff4444'), 1500);
+    setTimeout(() => { show('GO!', '#33ff66'); SFX.win && SFX.win(); }, 2250);
+    setTimeout(() => { ann.remove(); onDone(); }, 2900);
+  }
+
   // Inline onclick="..." attributes run with the GLOBAL scope as their lexical parent
   // — they cannot see this IIFE's own `let` variables (gameMode/difficulty/state) or
   // call its plain `render()`. Every screen-transition triggered from markup must go
@@ -1904,6 +2099,21 @@
       classicIntroSteps(classicStart);
       return;
     }
+    if (gameMode === 'whack') {
+      const _mob = window.innerWidth <= 600;
+      if (difficulty === 'easy') { GRID_COLS = _mob ? 3 : 4; GRID_ROWS = _mob ? 5 : 4; }
+      else                        { GRID_COLS = 4; GRID_ROWS = 5; }
+      HOLES = GRID_COLS * GRID_ROWS;
+      state = 'playing'; render();
+      waveTransitioning = true;
+      whackCountdown(() => {
+        if (state !== 'playing') return;
+        waveTransitioning = false;
+        const n = concurrencyForWave(wave);
+        for (let k = 0; k < n; k++) scheduleSurvivalNext();
+      });
+      return;
+    }
     applyDifficultyGridSize();
     state = 'playing'; render();
     waveTransitioning = true;
@@ -1922,7 +2132,7 @@
     adventureIntroShown = false;
     activeChar = getGlobalChar();
     moleChar = pickMole();
-    state = 'mode-select'; wave = 1; waveHits = 0;
+    state = 'mode-select'; wave = 1; waveHits = 0; whackLives = 3; whackMolesHit = 0;
     selfActive = false; selfIntroWave = 0; waveTransitioning = false;
     currentRoundType = 'whack'; clearInterval(clearRoundInterval); clearInterval(clearRoundMoveInterval); memoryPhase = null; removeClearTimerOverlay(); removeSideBar(); memoryAppearances = 0; clearRoundAppearances = 0;
     classicPieces.forEach(p => clearTimeout(p.timer)); classicPieces = []; clearInterval(classicInterval); classicHits = 0;

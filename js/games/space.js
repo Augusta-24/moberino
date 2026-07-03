@@ -12,6 +12,7 @@
   const campaignRescuedHeroes = new Set();
   let leftHeld = false, rightHeld = false, lastAutoFire = 0, lastPizzaFire = 0, activeChar = getGlobalChar();
   let enemyBullets = [], lastEnemyFire = 0;
+  let spaceFx = []; // explosions, shockwaves, and face flashes updated by the main loop
   let blackoutHitFlashes = []; // short-lived full-color snapshots shown above BLACKOUT darkness
   let lastDamageCause = '';
   let lastDamageAmount = 0;
@@ -2842,6 +2843,7 @@
     clearTimeout(mysteryTimer);
     clearTimeout(instrumentTimer);
     clearTimeout(ambientJunkTimer);
+    spaceFx = [];
     mirrorStageTimers.forEach(clearTimeout);
     mirrorStageTimers = [];
     mirrorSequenceActive = false;
@@ -4986,6 +4988,7 @@ function nextWave() {
       if (boss) drawBoss();
       if (escort) drawEscort();
       drawPlayer();
+      drawSpaceFx();
       drawHUD();
       return;
     }
@@ -6783,8 +6786,10 @@ function nextWave() {
       ctx.fillStyle = 'rgba(3,1,16,0.965)';
       ctx.fillRect(0, 0, W, H);
       ctx.globalCompositeOperation = 'destination-out';
-      for (let i = 0; i < 9; i++) {
-        const t = i / 8;
+      // Five feather layers preserve the soft cone while cutting the previous
+      // nine full-screen compositing passes nearly in half on high-DPI phones.
+      for (let i = 0; i < 5; i++) {
+        const t = i / 4;
         const half = coneHalfW * (1 - t * 0.55);
         const alpha = 0.035 + t * 0.075;
         const erase = ctx.createLinearGradient(player.x, beamBaseY, player.x, coneTopY);
@@ -7004,6 +7009,7 @@ function nextWave() {
       }
       ctx.restore();
     }
+    drawSpaceFx();
     drawScreenHitFlash();
     if (Date.now() < bossInkBlindUntil) {
       const a = Math.min(0.82, (bossInkBlindUntil - Date.now()) / 2400 * 0.72);
@@ -8745,53 +8751,14 @@ function nextWave() {
       sides: Math.random() < 0.45 ? 4 : 5,
       flat: 0.65 + Math.random() * 0.35,
     }));
-    let age = 0;
-    function tick() {
-      age++;
-      parts.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.16; p.rot += p.vr; p.a -= 0.058; p.r *= 0.965; });
-      if (ctx && parts[0].a > 0) {
-        ctx.save();
-        if (age < 9) drawJaggedBurstRing(x, y, 8 + age * 3.4, color, 0.5 - age * 0.045);
-        parts.forEach(p => {
-          if (p.a <= 0) return;
-          ctx.globalAlpha = p.a;
-          drawChunkShard(p);
-        });
-        ctx.globalAlpha = 1;
-        ctx.restore();
-        requestAnimationFrame(tick);
-      }
-    }
-    requestAnimationFrame(tick);
+    queueSpaceFx({ kind: 'burst', size: 'mini', x, y, color, parts, age: 0 });
   }
 
   function impactShockwave(x, y, color, opts) {
     const maxR = opts && opts.maxR ? opts.maxR : 54;
     const width = opts && opts.lineWidth ? opts.lineWidth : 4;
     const life = opts && opts.life ? opts.life : 16;
-    let age = 0;
-    function tick() {
-      age++;
-      if (!ctx || age > life) return;
-      const t = age / life;
-      const r = 10 + (maxR - 10) * t;
-      ctx.save();
-      ctx.globalAlpha = 0.58 * (1 - t);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = Math.max(1, width * (1 - t * 0.35));
-      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
-      ctx.globalAlpha = 0.34 * (1 - t);
-      ctx.strokeStyle = '#fff4d8';
-      ctx.lineWidth = Math.max(1, width * 0.40 * (1 - t * 0.25));
-      ctx.beginPath(); ctx.arc(x, y, r * 0.78, 0, Math.PI * 2); ctx.stroke();
-      ctx.globalAlpha = 0.24 * (1 - t);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = Math.max(1, width * 0.28 * (1 - t * 0.18));
-      ctx.beginPath(); ctx.arc(x, y, r * 1.18, 0, Math.PI * 2); ctx.stroke();
-      ctx.restore();
-      requestAnimationFrame(tick);
-    }
-    requestAnimationFrame(tick);
+    queueSpaceFx({ kind: 'shockwave', x, y, color, maxR, width, life, age: 0 });
   }
 
   function bigExplosion(x, y, color) {
@@ -8807,50 +8774,93 @@ function nextWave() {
       sides: Math.random() < 0.4 ? 4 : 6,
       flat: 0.58 + Math.random() * 0.38,
     }));
-    let age = 0;
-    function tick() {
-      age++;
-      parts.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.13; p.rot += p.vr; p.a -= 0.035; p.r *= 0.955; });
-      if (ctx && parts[0].a > 0) {
-        ctx.save();
-        if (age < 14) {
-          drawJaggedBurstRing(x, y, 16 + age * 5.4, '#ffe61a', 0.52 - age * 0.032);
-          drawJaggedBurstRing(x, y, 7 + age * 3.1, color, 0.44 - age * 0.028);
-        }
-        parts.forEach(p => {
-          if (p.a <= 0) return;
-          ctx.globalAlpha = p.a;
-          drawChunkShard(p);
-        });
-        ctx.globalAlpha = 1;
-        ctx.restore();
-        requestAnimationFrame(tick);
-      }
-    }
-    requestAnimationFrame(tick);
+    queueSpaceFx({ kind: 'burst', size: 'big', x, y, color, parts, age: 0 });
   }
 
   function faceFlash(ci, mood, x, y) {
     const gc = GAME_CHARS[ci];
     const imgSrc = mood === 'happy' ? gc.imgHappy : gc.imgSad;
     const img = _getImg(imgSrc);
-    let a = 1.0, size = 52;
-    function tick() {
-      a -= 0.038; size += 0.6;
-      if (!ctx || a <= 0) return;
-      ctx.save();
-      ctx.globalAlpha = a;
-      if (img && img.complete && img.naturalWidth) {
-        ctx.drawImage(img, x - size / 2, y - size / 2, size, size);
-      } else {
-        ctx.font = `${Math.round(size * 0.7)}px serif`;
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(mood === 'happy' ? gc.happy : gc.sad, x, y);
-      }
-      ctx.restore();
-      requestAnimationFrame(tick);
+    queueSpaceFx({ kind: 'face', gc, img, mood, x, y, a: 1, size: 52 });
+  }
+
+  function queueSpaceFx(fx) {
+    const cap = 28;
+    if (spaceFx.length >= cap) {
+      const miniIndex = spaceFx.findIndex(item => item.kind === 'burst' && item.size === 'mini');
+      spaceFx.splice(miniIndex >= 0 ? miniIndex : 0, 1);
     }
-    requestAnimationFrame(tick);
+    spaceFx.push(fx);
+  }
+
+  function drawSpaceFx() {
+    if (!ctx || !spaceFx.length) return;
+    const survivors = [];
+    for (const fx of spaceFx) {
+      if (fx.kind === 'burst') {
+        fx.age++;
+        const big = fx.size === 'big';
+        fx.parts.forEach(p => {
+          p.x += p.vx; p.y += p.vy;
+          p.vy += big ? 0.13 : 0.16;
+          p.rot += p.vr;
+          p.a -= big ? 0.035 : 0.058;
+          p.r *= big ? 0.955 : 0.965;
+        });
+        ctx.save();
+        if (big && fx.age < 14) {
+          drawJaggedBurstRing(fx.x, fx.y, 16 + fx.age * 5.4, '#ffe61a', Math.max(0, 0.52 - fx.age * 0.032));
+          drawJaggedBurstRing(fx.x, fx.y, 7 + fx.age * 3.1, fx.color, Math.max(0, 0.44 - fx.age * 0.028));
+        } else if (!big && fx.age < 9) {
+          drawJaggedBurstRing(fx.x, fx.y, 8 + fx.age * 3.4, fx.color, Math.max(0, 0.5 - fx.age * 0.045));
+        }
+        fx.parts.forEach(p => {
+          if (p.a <= 0) return;
+          ctx.globalAlpha = p.a;
+          drawChunkShard(p);
+        });
+        ctx.restore();
+        if (fx.parts.some(p => p.a > 0)) survivors.push(fx);
+      } else if (fx.kind === 'shockwave') {
+        fx.age++;
+        if (fx.age <= fx.life) {
+          const t = fx.age / fx.life;
+          const r = 10 + (fx.maxR - 10) * t;
+          ctx.save();
+          ctx.globalAlpha = 0.58 * (1 - t);
+          ctx.strokeStyle = fx.color;
+          ctx.lineWidth = Math.max(1, fx.width * (1 - t * 0.35));
+          ctx.beginPath(); ctx.arc(fx.x, fx.y, r, 0, Math.PI * 2); ctx.stroke();
+          ctx.globalAlpha = 0.34 * (1 - t);
+          ctx.strokeStyle = '#fff4d8';
+          ctx.lineWidth = Math.max(1, fx.width * 0.40 * (1 - t * 0.25));
+          ctx.beginPath(); ctx.arc(fx.x, fx.y, r * 0.78, 0, Math.PI * 2); ctx.stroke();
+          ctx.globalAlpha = 0.24 * (1 - t);
+          ctx.strokeStyle = fx.color;
+          ctx.lineWidth = Math.max(1, fx.width * 0.28 * (1 - t * 0.18));
+          ctx.beginPath(); ctx.arc(fx.x, fx.y, r * 1.18, 0, Math.PI * 2); ctx.stroke();
+          ctx.restore();
+          survivors.push(fx);
+        }
+      } else if (fx.kind === 'face') {
+        fx.a -= 0.038;
+        fx.size += 0.6;
+        if (fx.a > 0) {
+          ctx.save();
+          ctx.globalAlpha = fx.a;
+          if (fx.img && fx.img.complete && fx.img.naturalWidth) {
+            ctx.drawImage(fx.img, fx.x - fx.size / 2, fx.y - fx.size / 2, fx.size, fx.size);
+          } else {
+            ctx.font = `${Math.round(fx.size * 0.7)}px serif`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(fx.mood === 'happy' ? fx.gc.happy : fx.gc.sad, fx.x, fx.y);
+          }
+          ctx.restore();
+          survivors.push(fx);
+        }
+      }
+    }
+    spaceFx = survivors;
   }
 
   function spaceModeButtonHTML(label, detail, onclick, color, glyph) {
