@@ -50,7 +50,9 @@
       "Bash(curl -sL --max-time 15 \"https://opengameart.org/content/voices-sound-effects-library\" -o /tmp/oga_voices.html -w \"%{http_code}\\\\n\")",
       "Bash(curl -sL --max-time 15 \"https://pixabay.com/sound-effects/search/donkey/\" -o /tmp/pixabay_donkey.html -w \"%{http_code}\\\\n\")",
       "Bash(awk '/const BOSS_CREATURES = \\\\[/,/^  \\\\];/' js/games/space.js)",
-      "Bash(node --check js/games/space.js)"
+      "Bash(node --check js/games/space.js)",
+      "Bash(git -C /Users/kevinseverino/Documents/moberino log --oneline --follow js/games/space.js)",
+      "Bash(git -C /Users/kevinseverino/Documents/moberino show daf80b1:js/games/space.js)"
     ]
   }
 }

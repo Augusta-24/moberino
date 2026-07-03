@@ -431,7 +431,7 @@
   };
   function bossTuningFor(creature, options) {
     const base = Object.assign({ rMult: 1, hpMult: 1, attackDelayMult: 1, projectileSpeedMult: 1, damageMult: 1, vulnerabilityWindowMult: 1, spawnClutterAllowed: false, signatureClutterAllowed: false }, BOSS_TUNING[creature && creature.name] || {});
-    if (creature && creature.isGizmo && options && options.final) return Object.assign({}, base, { rMult: 1.00, hpMult: 1.60, attackDelayMult: 0.95, notes: 'Final Gizmo should feel bigger and tougher, not endless.' });
+    if (creature && creature.isGizmo && options && options.final) return Object.assign({}, base, { rMult: 1.00, hpMult: 1.60, attackDelayMult: 1.15, notes: 'Final Gizmo should feel bigger and tougher, not endless.' });
     if (creature && creature.isGizmo && options && options.escape) return Object.assign({}, base, { rMult: 0.95, hpMult: 0.85, notes: 'Early/escape Gizmo should not be the real finale.' });
     return base;
   }
@@ -442,7 +442,7 @@
     return (b && b.tuning && typeof b.tuning[key] === 'number') ? b.tuning[key] : fallback;
   }
   function bossDamage(b, base) {
-    return Math.max(1, Math.round(base * bossTuneValue(b, 'damageMult', 1) * 0.85));
+    return Math.max(1, Math.round(base * bossTuneValue(b, 'damageMult', 1) * 0.90));
   }
   function bossProjectileSpeed(b, base) {
     return base * bossTuneValue(b, 'projectileSpeedMult', 1);
@@ -883,7 +883,7 @@
       // Wave 5 also staggers three normal enemies into fixed slots; the pool still
       // ends through spawnsRemaining/board-clear, so it cannot overlap nextWave().
       1: { spawnsRemaining: 82, speedOverride: 3.50, spawnMsOverride: 560, asteroidRatioOverride: 1, spaceJunkChance: 0.00, extraJunkChance: 0.00, asteroidWallChanceMult: 2.42, asteroidLateralMult: 2.36, asteroidSpeedMult: 1.40, asteroidFallRange: [0.72, 2.46], asteroidAimAtPlayerChance: 0.38, asteroidAimSpreadPx: 72, asteroidHeavyChance: 0.20, asteroidHeavyHp: 4, asteroidSpawnLanes: true, enemyFireMult: 0, allowMystery: false, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', maxSocketPowerups: 1, powerupDelayRange: [2000, 3000], hpDelayRange: [1800, 3200], spawnCadenceMult: 0.78, activeObstacleCap: 10, notes: 'Intro now teaches dodge-or-clear with a true asteroid storm plus ambient junk drifting through the lane.' },
-      2: { spawnsRemaining: 32, mixedEnemyTotal: 10, mixedEnemyScreenCap: 3, mixedAsteroidTotal: 22, mixedTraitorType: 'red', speedOverride: 2.86, spawnMsOverride: 1040, asteroidRatioOverride: 0.70, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 1.46, enemyFireRateMult: 0.48, enemyVyMult: 1.36, enemyDriftMult: 2.18, enemyDodgeMult: 1.40, asteroidWallChanceMult: 1.34, asteroidLateralMult: 1.30, asteroidSpeedMult: 1.24, asteroidFallRange: [0.80, 2.12], allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', guaranteeEarlyGun: true, maxSocketPowerups: 3, maxMysteryCrates: 1, powerupDelayRange: [1400, 2200], hpDelayRange: [1050, 2100], mysteryDelayRange: [5200, 8200], spawnCadenceMult: 0.92, activeObstacleCap: 7, notes: 'Red keeps pressure longer with denser laser lanes and a little more live traffic.' },
+      2: { spawnsRemaining: 32, mixedEnemyTotal: 10, mixedEnemyScreenCap: 3, mixedAsteroidTotal: 22, mixedTraitorType: 'red', speedOverride: 3.10, spawnMsOverride: 1040, asteroidRatioOverride: 0.70, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 1.46, enemyFireRateMult: 0.68, enemyVyMult: 1.36, enemyDriftMult: 2.18, enemyDodgeMult: 1.40, asteroidWallChanceMult: 1.34, asteroidLateralMult: 1.30, asteroidSpeedMult: 1.24, asteroidFallRange: [0.80, 2.12], allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', guaranteeEarlyGun: true, maxSocketPowerups: 3, maxMysteryCrates: 1, powerupDelayRange: [1400, 2200], hpDelayRange: [1050, 2100], mysteryDelayRange: [5200, 8200], spawnCadenceMult: 0.92, activeObstacleCap: 7, notes: 'Red keeps pressure longer with denser laser lanes and a little more live traffic.' },
       3: { spawnsRemaining: 22, mixedEnemyTotal: 6, mixedEnemyScreenCap: 2, mixedAsteroidTotal: 18, mixedTraitorType: 'purple', speedOverride: 2.68, spawnMsOverride: 1120, asteroidRatioOverride: 0.76, allowEnemyAsteroids: true, enemyHpOverride: 3, enemyFireMult: 0.98, enemyFireRateMult: 0.84, enemyVyMult: 1.18, enemyDriftMult: 1.46, enemyDodgeMult: 0.88, allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'shield', guaranteeEarlyGun: true, maxSocketPowerups: 3, maxMysteryCrates: 1, powerupDelayRange: [1400, 2200], hpDelayRange: [1200, 2400], mysteryDelayRange: [5600, 8600], spawnCadenceMult: 1.04, activeObstacleCap: 6, notes: 'Purple keeps the shield/rain identity, but with a longer lane read and more to dodge around.' },
       4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4200, 7000], hpDelayRange: [2400, 4000], enemyFireMult: 0.75 },
       5: { spawnsRemaining: 34, speedOverride: 2.92, spawnMsOverride: 980, asteroidRatioOverride: 0.08, enemyHpOverride: 2, enemyFireMult: 0.42, allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', guaranteeEarlyGun: true, maxSocketPowerups: 3, maxMysteryCrates: 1, powerupDelayRange: [850, 1200], hpDelayRange: [1300, 2600], mysteryDelayRange: [5200, 8200], swarmCap: 6, activeObstacleCap: 6, spawnCadenceMult: 1.06, notes: 'Swarm stretches longer, with more bodies, a little more life, and faster lane drops.' },
@@ -948,54 +948,8 @@
       }, shotOpts || {}));
     };
     if (shooter && shooter.traitorType === 'red' && cause !== 'BLACKOUT SHOT') {
-      const now = Date.now();
-      if (now < (shooter.redNextAttackAt || 0) || now < (shooter.redShotHoldUntil || 0)) return;
-      const chargeMs = (wave <= 2 ? 360 : wave <= 6 ? 330 : 300) + 750;
-      const extendMs = 48;
-      const holdMs = 450;
-      const retractMs = 90;
-      const cooldownMs = 1020;
-      const shieldMs = 520;
-      const fireAt = now + chargeMs;
-      const beamExtendUntil = fireAt + extendMs;
-      const beamHoldUntil = beamExtendUntil + holdMs;
-      const beamRetractUntil = beamHoldUntil + retractMs;
-      const targetY = waveTheme === 'flip' ? REVERSE_LINE_Y : dangerY;
-      // Red now follows one clean rhythm: charge, hold the loaded laser briefly
-      // while vulnerable, slam the baseline, hold, retract, then cool off and shield up.
-      shooter.redShotChargeAt = now;
-      shooter.redShotChargeUntil = now + chargeMs;
-      shooter.redShotHoldUntil = beamHoldUntil;
-      shooter.redVulnerableUntil = Math.max(shooter.redVulnerableUntil || 0, beamRetractUntil + cooldownMs);
-      shooter.redTelegraphX = clamp(player ? player.x : shooter.x, 16, W - 16);
-      shooter.redTelegraphY = targetY;
-      const token = spaceFlowToken;
-      shooter.redSecondShotAt = 0;
-      shooter.redNextAttackAt = beamRetractUntil + cooldownMs + shieldMs;
-      playRedChargeSfx();
-      setTimeout(() => {
-        if (token !== spaceFlowToken || state !== 'playing' || waveTransitioning || !shooter || shooter.alive === false) return;
-        enemyBullets.push({
-          x: shooter.x,
-          y: shooter.y + shooter.r,
-          vx: 0,
-          vy: 1,
-          theme: 'redBeam',
-          r: 7.4,
-          damage: 12,
-          damageCause: 'RED SHOT',
-          traitorShot: 'red',
-          beamTargetX: clamp(shooter.redTelegraphX != null ? shooter.redTelegraphX : (player ? player.x : shooter.x), 16, W - 16),
-          beamTargetY: targetY,
-          beamStartAt: fireAt,
-          beamExtendUntil,
-          beamHoldUntil,
-          beamRetractUntil,
-          beamSource: shooter,
-          beamAnchorY: shooter.y + shooter.r,
-        });
-        playTraitorShotSfx('red');
-      }, chargeMs);
+      fireAimedEnemyBullet(speedMult, 'RED SHOT', 10, { traitorShot: 'red', r: 5 });
+      playEnemyBlasterBurst();
       return;
     }
     fireAimedEnemyBullet(speedMult, cause || 'ENEMY SHOT');
@@ -1098,7 +1052,7 @@
   function traitorShieldActive(o, now) {
     if (!o || o.isTrapped) return false;
     if (o.traitorType === 'purple') return !traitorVulnerable(o, now);
-    if (o.traitorType === 'red') return !redVulnerableActive(o, now);
+    if (o.traitorType === 'red') return false;
     return false;
   }
 
@@ -1128,7 +1082,7 @@
           vy: 3.25 + purpleProfile.rainSpeedBonus + tier * 0.10 + (purpleProfile.driftMult - 1) * 0.52 + Math.random() * 0.30,
           r: 2.4,
           theme: 'purpleRain',
-          damage: 3,
+          damage: 2,
           damageCause: 'PURPLE RAIN',
           born: Date.now(),
         });
@@ -1166,9 +1120,14 @@
     const safeMaxY = o.traitorType === 'purple'
       ? Math.min(normalSafeMaxY, purpleEnemyMaxY(o))
       : normalSafeMaxY;
+    const purpleSafeMinY = o.traitorType === 'purple' ? H * 0.30 : 0;
     if (o.traitorType === 'purple' && o.y > safeMaxY) {
       o.y = safeMaxY;
       o.vy = 0;
+    }
+    if (o.traitorType === 'purple' && o.holdSettled && o.y < purpleSafeMinY) {
+      o.y = purpleSafeMinY;
+      o.vy = Math.max(0, o.vy);
     }
     const targetY = o.holdY == null ? Math.min(safeMaxY, Math.max(118, H * 0.42)) : Math.min(o.holdY, safeMaxY);
     if (!o.holdSettled) {
@@ -1187,7 +1146,7 @@
     const awareness = o.academyObstacle ? 0.28 : (o.enemyAwareness != null ? o.enemyAwareness : normalEnemyAwarenessForWave(wave));
     const isRedCadenceTraitor = o.traitorType === 'red';
     const driftMult = isRedCadenceTraitor ? Math.min(1.12, o.enemyDriftMult || 1) : (o.enemyDriftMult || 1);
-    const dodgeMult = isRedCadenceTraitor ? 0 : (o.enemyDodgeMult || 0);
+    const dodgeMult = o.enemyDodgeMult || 0;
     const jukeMult = o.enemyJukeMult || 1;
     const age = now - (o.holdSettledAt || now);
     const bob = Math.sin(age * 0.00125 * Math.min(1.8, driftMult) + o.driftSeed) * (o.driftAmpY || 8);
@@ -1433,7 +1392,7 @@
           const dx = (player ? player.x - x : 0);
           // Faster dive and more HP than before — same "banked powerups give more
           // safety net" reasoning as SWARM.
-          obstacles.push({ type:'face', x, y:-FACE_R-10, vx: dx*0.008, vy: cfg.speed*1.45, r:FACE_R, ci: nextMissionEnemyIndex(), hp:4, isTrapped:false, ringHp:0, pausedBurstDone:true, paused:false, pauseUntil:0, burstShotsLeft:0, lastBurstShot:0, isBomber:true });
+          obstacles.push({ type:'face', x, y:-FACE_R-10, vx: dx*0.008, vy: cfg.speed*1.305, r:FACE_R, ci: nextMissionEnemyIndex(), hp:4, isTrapped:false, ringHp:0, pausedBurstDone:true, paused:false, pauseUntil:0, burstShotsLeft:0, lastBurstShot:0, isBomber:true });
           SFX.bomberDive();
           return;
         }
@@ -1455,11 +1414,12 @@
       const faceHp = isTrapped ? 1 : (cfg.enemyHpOverride || 3);
       const faceR = isTrapped ? FACE_R : FACE_R * 0.90;
       const holdMinY = Math.max(118, H * 0.26);
+      const purpleHoldMinY = traitorType === 'purple' ? Math.max(holdMinY, H * 0.30) : holdMinY;
       const normalHoldMaxY = Math.max(holdMinY + 42, Math.min(dangerY - 78, H * 0.75));
       const holdMaxY = traitorType === 'purple'
-        ? Math.max(holdMinY, Math.min(normalHoldMaxY, purpleEnemyMaxY({ r: faceR })))
+        ? Math.max(purpleHoldMinY, Math.min(normalHoldMaxY, purpleEnemyMaxY({ r: faceR })))
         : normalHoldMaxY;
-      const holdY = rand(Math.min(holdMinY, holdMaxY), holdMaxY);
+      const holdY = rand(Math.min(purpleHoldMinY, holdMaxY), holdMaxY);
       const nearbyHold = obstacles.filter(o => o.behavior === 'holdDrift' && o.y > 0 && Math.abs(o.y - holdY) < FACE_R * 3.2).sort((a, b) => Math.abs(a.x - W / 2) - Math.abs(b.x - W / 2));
       let spawnX = rand(faceR, W - faceR);
       if (nearbyHold.length) {
@@ -2078,7 +2038,7 @@
       if (state !== 'playing') return;
       if (campaignAllows('allowPowerups') && regularDropWindowOpen()) spawnPowerup();
       schedulePowerup();
-    }, range[0] + Math.random() * (range[1] - range[0]));
+    }, (range[0] + Math.random() * (range[1] - range[0])) * 0.85);
   }
 
   // Small green orb HP pickup with a plus sign — a smooth circle rather than a jagged
@@ -2130,9 +2090,9 @@
       boss.support = {
         hpDrops: 0,
         powerupDrops: 0,
-        maxHp: boss.isFinalGizmo ? 3 : boss.attackType === 'sword' ? 3 : wave >= 2 && wave <= 5 ? 3 : 2,
+        maxHp: boss.isFinalGizmo ? 5 : boss.attackType === 'sword' ? 4 : wave >= 2 && wave <= 5 ? 4 : 3,
         maxPowerups: 1,
-        nextHpAt: now + (boss.isFinalGizmo ? 5200 : wave >= 2 && wave <= 5 ? 2800 : 3600),
+        nextHpAt: now + (boss.isFinalGizmo ? 4400 : wave >= 2 && wave <= 5 ? 2400 : 3000),
         nextPowerupAt: now + (boss.isFinalGizmo ? 7200 : wave >= 2 && wave <= 5 ? 3600 : 5400),
       };
     }
@@ -2147,7 +2107,7 @@
     if (sup.hpDrops < sup.maxHp && now >= sup.nextHpAt) {
       spawnBossHpDrop(boss);
       sup.hpDrops++;
-      sup.nextHpAt = now + (boss.isFinalGizmo ? 5400 : 4300);
+      sup.nextHpAt = now + (boss.isFinalGizmo ? 4600 : 3600);
     }
   }
 
@@ -2612,7 +2572,8 @@
       return;
     }
     const pickupType = p.type === 'gun' ? 'gun' : p.type === 'bomb' ? 'bomb' : null;
-    if (pickupType && drawPickupImage(pickupType, p, p.r * 2.25, p.type === 'bomb' ? 'rgba(255,136,0,0.18)' : 'rgba(255,230,26,0.18)')) return;
+    if (pickupType === 'gun' && drawPickupImage('gun', p, p.r * 1.8, 'rgba(255,230,26,0.18)')) return;
+    if (pickupType === 'bomb' && drawPickupImage('bomb', p, p.r * 2.25, 'rgba(255,136,0,0.18)')) return;
     ctx.save(); ctx.translate(p.x, p.y);
     const pulse = 0.85 + Math.sin(Date.now() * 0.006 + p.bob) * 0.15;
     const ringColor = p.type === 'bomb' ? '#ff8800' : '#ffe61a';
@@ -2621,7 +2582,7 @@
     ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2);
     ctx.fillStyle = '#1a1530'; ctx.fill();
     ctx.strokeStyle = C(ringColor); ctx.lineWidth = 2; ctx.stroke();
-    ctx.font = `${p.r * 1.3}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = `${p.type === 'gun' ? p.r * 1.04 : p.r * 1.3}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(p.type === 'gun' ? '⚡' : '💣', 0, 1);
     ctx.restore();
   }
@@ -2955,8 +2916,8 @@
     }
     const earlyWave = wave <= 3;
     const delay = waveTheme === 'asteroids'
-      ? (earlyWave ? 360 + Math.random() * 240 : 980 + Math.random() * 620)
-      : (earlyWave ? 620 + Math.random() * 340 : 1420 + Math.random() * 980);
+      ? (earlyWave ? 430 + Math.random() * 290 : 1175 + Math.random() * 745)
+      : (earlyWave ? 745 + Math.random() * 410 : 1705 + Math.random() * 1175);
     ambientJunkTimer = setTimeout(() => {
       if (state !== 'playing' || academyMode) return;
       spawnAmbientJunk(cfg || currentCfg);
@@ -4358,6 +4319,7 @@ function nextWave() {
 
   function drawTraitorBoundary(o, now) {
     if (!o || o.isTrapped || (o.traitorType !== 'red' && o.traitorType !== 'purple')) return;
+    if (o.traitorType === 'red') return;
     if (o._pulseSeed === undefined) o._pulseSeed = Math.random() * 1000;
     const vulnerable = traitorVulnerable(o, now);
     const seed = o._pulseSeed;
@@ -5391,7 +5353,7 @@ function nextWave() {
         } else if (boss.attackType === 'sombrero') {
           const now = Date.now();
           const shieldMs = 1100;
-          const openMs = 1150;
+          const openMs = 1600;
           boss.tacoGuardUntil = now + shieldMs;
           boss.tacoOpenUntil = now + shieldMs + openMs;
           boss.tacoGuardFlashUntil = now + shieldMs;
@@ -5489,13 +5451,17 @@ function nextWave() {
           addFloatText('TENNIS SMASH!', boss.x, boss.y + boss.r + 18, '#c6ff3a', 16);
           spaceSfx('boss.gizmo.projectile');
           if (boss.isFinalGizmo) {
-            // FINAL GIZMO: the tennis barrage AND the classic bone shotgun together.
-            const boneCount = 6;
-            const boneSpeed = bossProjectileSpeed(boss, 2.9 + bt * 0.24 + Math.max(0, wave - 18) * 0.08);
-            for (let k = 0; k < boneCount; k++) {
-              const spread = (k - (boneCount - 1) / 2) / ((boneCount - 1) / 2);
-              enemyBullets.push({ x: boss.x + spread * boss.r * 0.58, y: boss.y + boss.r * 0.5, vx: spread * boneSpeed * 0.45, vy: boneSpeed, r: 7.8, isLock: true, damage: bossDamage(boss, 14), visualScale: 4.1, homing: 0.012, maxSpeed: boneSpeed + 0.55, born: Date.now() });
-            }
+            // FINAL GIZMO: bones follow the tennis barrage after a short delay.
+            const boneToken = spaceFlowToken;
+            setTimeout(() => {
+              if (boneToken !== spaceFlowToken || state !== 'playing' || waveTransitioning || !boss) return;
+              const boneCount = 6;
+              const boneSpeed = bossProjectileSpeed(boss, 2.9 + bt * 0.24 + Math.max(0, wave - 18) * 0.08);
+              for (let k = 0; k < boneCount; k++) {
+                const spread = (k - (boneCount - 1) / 2) / ((boneCount - 1) / 2);
+                enemyBullets.push({ x: boss.x + spread * boss.r * 0.58, y: boss.y + boss.r * 0.5, vx: spread * boneSpeed * 0.45, vy: boneSpeed, r: 7.8, isLock: true, damage: bossDamage(boss, 14), visualScale: 4.1, homing: 0.012, maxSpeed: boneSpeed + 0.55, born: Date.now() });
+              }
+            }, 550);
           }
           boss.nextAttack = Date.now() + (boss.attackDelay || 2200);
         } else if (boss.attackType === 'laser') {

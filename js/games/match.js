@@ -146,7 +146,7 @@
       const _gStyle = `--card:min(calc((min(100vw,520px) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - ${_vPad}px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card));gap:${_gap}px`;
       wrap.innerHTML = `
         <div class="match-hud" style="padding:6px 16px">
-          <div style="font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:5px;color:#ffe61a;text-shadow:0 0 14px #ffe61a88" id="match-preview-cd">MEMORIZE!  ${matchMode === 'impossible' ? 7 : matchMode === 'challenge' ? 4 : 3}</div>
+          <div style="font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:5px;color:#ffe61a;text-shadow:0 0 14px #ffe61a88" id="match-preview-cd">MEMORIZE!  ${matchMode === 'impossible' ? 13 : matchMode === 'challenge' ? 7 : 3}</div>
         </div>
         <div class="match-grid" style="${_gStyle}">${
           cards.map((c,i) => {
@@ -522,7 +522,7 @@
     // Impossible gets longer to actually take in a 21-pair/42-card board.
     locked = true;
     state = 'preview'; render();
-    let countdown = matchMode === 'impossible' ? 10 : matchMode === 'challenge' ? 4 : 3;
+    let countdown = matchMode === 'impossible' ? 13 : matchMode === 'challenge' ? 7 : 3;
     previewInt = setInterval(() => {
       countdown--;
       const cd = document.getElementById('match-preview-cd');
