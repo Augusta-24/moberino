@@ -2853,28 +2853,31 @@
     const activeJunk = obstacles.filter(o => o.type === 'junk' && o.alive !== false).length;
     const cap = waveTheme === 'asteroids' ? 6 : 4;
     if (activeJunk >= cap) return;
-    const sideRoll = opts.visible ? 1 : Math.random();
+    const sideRoll = opts.visible ? 3 : Math.floor(Math.random() * 4);
     const spawnR = rand(15, 19);
     const junkKinds = ['duck', 'boot', 'trashcan', 'basketball'];
     const junkKind = opts.kind || junkKinds[Math.floor(Math.random() * junkKinds.length)];
-    let x = opts.visible
-      ? W * clamp(opts.lane == null ? rand(0.14, 0.86) : opts.lane, 0.10, 0.90)
-      : W * rand(0.14, 0.86);
-    let y = opts.visible
-      ? H * clamp(opts.depth == null ? rand(0.08, 0.24) : opts.depth, 0.06, 0.30)
-      : -spawnR - 14;
-    let vx = rand(-0.12, 0.12);
-    let vy = Math.max(0.18, (cfg ? cfg.speed : O_SPEED_BASE) * rand(0.045, 0.085));
-    if (sideRoll < 0.34) {
-      x = -spawnR - 18;
-      y = H * rand(0.12, 0.62);
-      vx = rand(0.24, 0.50);
-      vy = Math.max(0.14, (cfg ? cfg.speed : O_SPEED_BASE) * rand(0.025, 0.055));
-    } else if (sideRoll < 0.68) {
-      x = W + spawnR + 18;
-      y = H * rand(0.12, 0.62);
-      vx = -rand(0.24, 0.50);
-      vy = Math.max(0.14, (cfg ? cfg.speed : O_SPEED_BASE) * rand(0.025, 0.055));
+    let x, y, vx, vy;
+    const drift = rand(0.22, 0.44);
+    const nudge = rand(-0.08, 0.08);
+    if (sideRoll === 0) {
+      // from left, drifting right
+      x = -spawnR - 18; y = H * rand(0.08, 0.88); vx = drift; vy = nudge;
+    } else if (sideRoll === 1) {
+      // from right, drifting left
+      x = W + spawnR + 18; y = H * rand(0.08, 0.88); vx = -drift; vy = nudge;
+    } else if (sideRoll === 2) {
+      // from bottom, drifting up
+      x = W * rand(0.08, 0.92); y = H + spawnR + 14; vx = nudge; vy = -drift;
+    } else {
+      // from top, drifting down (also used for seeded visible junk)
+      x = opts.visible
+        ? W * clamp(opts.lane == null ? rand(0.14, 0.86) : opts.lane, 0.10, 0.90)
+        : W * rand(0.08, 0.92);
+      y = opts.visible
+        ? H * clamp(opts.depth == null ? rand(0.08, 0.24) : opts.depth, 0.06, 0.30)
+        : -spawnR - 14;
+      vx = nudge; vy = drift;
     }
     const verts = Array.from({ length: 8 }, (_, i) => {
       const a = (i / 8) * Math.PI * 2;
@@ -2916,8 +2919,8 @@
     }
     const earlyWave = wave <= 3;
     const delay = waveTheme === 'asteroids'
-      ? (earlyWave ? 430 + Math.random() * 290 : 1175 + Math.random() * 745)
-      : (earlyWave ? 745 + Math.random() * 410 : 1705 + Math.random() * 1175);
+      ? (earlyWave ? 470 + Math.random() * 310 : 1275 + Math.random() * 800)
+      : (earlyWave ? 800 + Math.random() * 440 : 1850 + Math.random() * 1275);
     ambientJunkTimer = setTimeout(() => {
       if (state !== 'playing' || academyMode) return;
       spawnAmbientJunk(cfg || currentCfg);
@@ -4319,7 +4322,19 @@ function nextWave() {
 
   function drawTraitorBoundary(o, now) {
     if (!o || o.isTrapped || (o.traitorType !== 'red' && o.traitorType !== 'purple')) return;
-    if (o.traitorType === 'red') return;
+    if (o.traitorType === 'red') {
+      ctx.save();
+      const boundaryR = o.r * 1.25;
+      const pulse = 0.94 + Math.sin(Date.now() * 0.006 + (o._pulseSeed || 0)) * 0.06;
+      ctx.shadowColor = '#ff5a3c';
+      ctx.shadowBlur = 6;
+      ctx.strokeStyle = '#ff765d';
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = 0.78;
+      ctx.beginPath(); ctx.arc(0, 0, boundaryR * pulse, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+      return;
+    }
     if (o._pulseSeed === undefined) o._pulseSeed = Math.random() * 1000;
     const vulnerable = traitorVulnerable(o, now);
     const seed = o._pulseSeed;

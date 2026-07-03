@@ -52,7 +52,8 @@
       "Bash(awk '/const BOSS_CREATURES = \\\\[/,/^  \\\\];/' js/games/space.js)",
       "Bash(node --check js/games/space.js)",
       "Bash(git -C /Users/kevinseverino/Documents/moberino log --oneline --follow js/games/space.js)",
-      "Bash(git -C /Users/kevinseverino/Documents/moberino show daf80b1:js/games/space.js)"
+      "Bash(git -C /Users/kevinseverino/Documents/moberino show daf80b1:js/games/space.js)",
+      "Bash(awk -F: '$2 > 4450 && $2 < 4535')"
     ]
   }
 }
