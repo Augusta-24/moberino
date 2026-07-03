@@ -52,6 +52,8 @@
   // mystery box's bad outcomes — one timer each, regardless of source.
   let buffFrozenUntil = 0, buffZappedUntil = 0;
   let blasterDisabledUntil = 0;
+  let swarmRainIndex = 0;
+  let lastHapticAt = 0;
   let buffPizzaUntil = 0; // mystery "pizza blast" — fires a shotgun spread of pizza-slice bullets instead of one straight shot
   let snowingUntil = 0; // mystery "negative one" — ambient snow; any hit taken while it's active also freezes for 2s
   let bossInkBlindUntil = 0; // Cosmic Octo ink hit: brief screen-ink vignette during boss fights
@@ -167,7 +169,7 @@
   const WAVE_THEMES = ['asteroids','enemies','ghost','captive','rave','swarm','blackout','mirror','bomber','emp','goldrush','boss','gizmo','music','flip'];
   const THEME_LABEL = {
     asteroids: 'ASTEROID FIELD', enemies: 'ENEMY ATTACK', ghost: 'GHOST ATTACK', captive: 'RESCUE MISSION',
-    rave: 'PARTY RAVE MODE', swarm: 'SWARM', blackout: 'BLACKOUT', mirror: 'MIRROR ENEMY',
+    rave: 'PARTY RAVE MODE', swarm: 'BLASTER DOWN', blackout: 'BLACKOUT', mirror: 'MIRROR ENEMY',
     bomber: 'BOMBER RUN', emp: 'EMP WARNING', goldrush: 'GOLD RUSH', boss: 'BOSS',
     gizmo: 'GIZMO',
     music: 'JAM SESSION', flip: 'REVERSE',
@@ -204,7 +206,7 @@
       powerupDelayRange: theme === 'goldrush' ? [800, 1300] : [1450, 2400],
       hpDelayRange: theme === 'goldrush' ? [1800, 3200] : [2100, 3400],
       mysteryDelayRange: [5200, 8600],
-      activeObstacleCap: theme === 'swarm' ? 6 : 5,
+      activeObstacleCap: theme === 'swarm' ? 11 : 5,
     };
     if (theme === 'asteroids') {
       return Object.assign(base, {
@@ -251,17 +253,19 @@
     }
     if (theme === 'swarm') {
       return Object.assign(base, {
-        poolSize: 20 + lap * 2,
-        spawnsRemaining: 20 + lap * 2,
-        speed: 2.4 + pressure * 0.48,
-        spawnMs: 840 - Math.min(130, lap * 18),
-        asteroidRatio: 0.14,
+        poolSize: 46 + lap * 4,
+        spawnsRemaining: 46 + lap * 4,
+        speed: 3.92 + pressure * 0.50,
+        spawnMs: 390 - Math.min(60, lap * 10),
+        asteroidRatio: 0,
         enemyHpOverride: 1,
-        enemyFireMult: 0.3,
-        swarmCap: 4,
-        activeObstacleCap: 4,
-        spawnCadenceMult: 1.14,
-        forcePowerupType: 'bomb',
+        enemyFireMult: 0,
+        swarmCap: 11,
+        activeObstacleCap: 11,
+        spawnCadenceMult: 0.80,
+        allowMystery: false,
+        allowPowerups: false,
+        allowHp: false,
       });
     }
     return Object.assign(base, {
@@ -913,7 +917,7 @@
       2: { spawnsRemaining: 1, speedOverride: 2.85, asteroidRatioOverride: 0, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: false, activeObstacleCap: 3, authoredEncounter: true, notes: 'Three charged-shot Red duels with one ambient junk prop and no random traffic.' },
       3: { spawnsRemaining: 1, speedOverride: 2.70, asteroidRatioOverride: 0, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: false, activeObstacleCap: 3, authoredEncounter: true, notes: 'Two cloud acts: follow the moving safety eye, break each rain source, and dodge serialized Purple shots.' },
       4: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4200, 7000], hpDelayRange: [2400, 4000], enemyFireMult: 0.75 },
-      5: { spawnsRemaining: 34, speedOverride: 2.92, spawnMsOverride: 980, asteroidRatioOverride: 0.08, enemyHpOverride: 2, enemyFireMult: 0.42, allowMystery: true, allowPowerups: true, allowHp: true, forcePowerupType: 'bomb', guaranteeEarlyGun: true, maxSocketPowerups: 3, maxMysteryCrates: 1, powerupDelayRange: [850, 1200], hpDelayRange: [1300, 2600], mysteryDelayRange: [5200, 8200], swarmCap: 6, activeObstacleCap: 6, spawnCadenceMult: 1.06, notes: 'Swarm stretches longer, with more bodies, a little more life, and faster lane drops.' },
+      5: { spawnsRemaining: 46, speedOverride: 4.0, spawnMsOverride: 390, asteroidRatioOverride: 0, enemyHpOverride: 1, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: false, swarmCap: 11, activeObstacleCap: 11, spawnCadenceMult: 0.80, notes: 'Blaster Down: dense shield-only bomber rain using old Swarm scale, fast fall speed, and catchable lane spacing. 20 HP per miss.' },
       6: { spawnsRemaining: 1, speedOverride: 2.80, asteroidRatioOverride: 0, enemyFireMult: 0, allowMystery: false, allowPowerups: false, allowHp: false, rescueRingHp: 18, activeObstacleCap: 4, authoredRescue: true },
       7: { spawnsRemaining: 0, allowMystery: false, allowPowerups: true, allowHp: true, maxSocketPowerups: 1, powerupDelayRange: [4600, 7600], hpDelayRange: [3400, 5600], enemyFireMult: 0.85 },
       8: { spawnsRemaining: 1, speedOverride: 2.82, asteroidRatioOverride: 0, enemyFireMult: 1, allowMystery: false, allowPowerups: false, allowHp: false, activeObstacleCap: 3, authoredBlackout: true, notes: 'Five sequential search, dodge, and punish duels.' },
@@ -927,6 +931,14 @@
   function campaignAllows(kind) {
     if (!currentCfg || currentCfg[kind] == null) return true;
     return !!currentCfg[kind];
+  }
+
+  function spaceHaptic(pattern, minGapMs) {
+    if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') return;
+    const now = Date.now();
+    if (now - lastHapticAt < (minGapMs == null ? 45 : minGapMs)) return;
+    lastHapticAt = now;
+    navigator.vibrate(pattern);
   }
 
   function waveConfig(w) {
@@ -1447,11 +1459,31 @@
       // continuing — a middle ground between "charges the line" and "just hovers and shoots":
       // keeps some advance pressure but spaces out how much is closing in on the player at once.
       if (waveTheme === 'swarm') {
-        // Many small, weak, fast enemies instead of a few tough ones. Faster now
-        // that powerups are banked, not lost if you can't immediately catch one —
-        // there's more of a safety net to draw on, so this can push harder.
+        // BLASTER DOWN: old Swarm scale and speed language, but shield-only. The
+        // lane pattern is intentionally catchable: no long cross-screen cuts, and
+        // consecutive beats stay close enough for the ship to physically reach.
         const r = FACE_R * 0.56;
-        obstacles.push({ type:'face', behavior:'swarmer', x:rand(r,W-r), y:-r-10, vx:rand(-0.62,0.62)*cfg.speed, vy:cfg.speed*1.82, r, ci: nextMissionEnemyIndex(), hp:cfg.enemyHpOverride || 1, isTrapped:false, ringHp:0, pausedBurstDone:true, paused:false, pauseUntil:0, burstShotsLeft:0, lastBurstShot:0, swarmerFlashSeed: Math.random() * 1000 });
+        const pattern = [
+          [0.18,  1], [0.34,  1], [0.52, -1], [0.70, -1],
+          [0.84, -1], [0.62, -1], [0.42,  1], [0.24,  1],
+          [0.38,  1], [0.58, -1], [0.76, -1], [0.50,  1],
+        ];
+        const beat = pattern[swarmRainIndex % pattern.length];
+        const lap = Math.floor(swarmRainIndex / pattern.length);
+        swarmRainIndex++;
+        const laneX = clamp(beat[0] * W, r, W - r);
+        const side = beat[1];
+        const speed = cfg.speed || O_SPEED_BASE;
+        obstacles.push({
+          type:'face', behavior:'shieldBomber', x:laneX, y:-r-10,
+          vx: side * speed * (0.22 + Math.min(0.09, lap * 0.012)),
+          vy: speed * (2.02 + Math.min(0.20, lap * 0.022)),
+          r, ci: nextMissionEnemyIndex(), hp: 99, isTrapped:false, ringHp:0,
+          pausedBurstDone:true, paused:false, pauseUntil:0, burstShotsLeft:0,
+          lastBurstShot:0, isBomber:true, isShieldBomber:true, collisionDamage:20,
+          missDamage:20, swarmerFlashSeed: Math.random() * 1000
+        });
+        SFX.bomberDive();
         return;
       }
       if (waveTheme === 'bomber') {
@@ -2258,6 +2290,32 @@
     playEnemyBlasterBurst();
   }
 
+  function relocateAuthoredBlackoutShooter(shooter, now, reason) {
+    if (!shooter || shooter.alive === false) return;
+    const choices = [
+      { x: 0.18, y: 0.23 }, { x: 0.34, y: 0.34 }, { x: 0.52, y: 0.26 },
+      { x: 0.70, y: 0.36 }, { x: 0.84, y: 0.24 }, { x: 0.42, y: 0.43 },
+      { x: 0.62, y: 0.20 },
+    ].filter(p => Math.hypot(W * p.x - shooter.x, H * p.y - shooter.y) > FACE_R * 4.4);
+    const pick = choices.length
+      ? choices[(blackoutShooterIndex++ + (shooter.blackoutHopCount || 0)) % choices.length]
+      : { x: 0.5, y: 0.28 };
+    shooter.blackoutHopCount = (shooter.blackoutHopCount || 0) + 1;
+    shooter.blackoutMoveFromX = shooter.x;
+    shooter.blackoutMoveFromY = shooter.y;
+    shooter.blackoutMoveToX = clamp(W * pick.x, FACE_R, W - FACE_R);
+    shooter.blackoutMoveToY = clamp(H * pick.y, SPACE_HP_BAR_Y + SPACE_HP_BAR_H + FACE_R * 1.2, H * 0.48);
+    shooter.blackoutRelocateStartedAt = now;
+    shooter.blackoutRelocatingUntil = now + 620;
+    shooter.blackoutVulnerableUntil = 0;
+    shooter.blackoutChargeUntil = 0;
+    shooter.blackoutHoldUntil = now + 680;
+    shooter.blackoutMuzzleUntil = reason === 'hit' ? now + 260 : shooter.blackoutMuzzleUntil;
+    shooter.blackoutNextChargeAt = shooter.blackoutRelocatingUntil + Math.max(520, 940 - (shooter.blackoutHopCount || 0) * 70);
+    shooter.litUntil = now + 420;
+    queueBlackoutHitFlash(shooter, 420, false);
+  }
+
   function startAuthoredBlackoutEncounter() {
     obstacles = [];
     enemyBullets = [];
@@ -2311,6 +2369,21 @@
         }
         return;
       }
+      if (shooter.blackoutRelocatingUntil) {
+        const t = Math.max(0, Math.min(1, (now - (shooter.blackoutRelocateStartedAt || now)) / Math.max(1, (shooter.blackoutRelocatingUntil - (shooter.blackoutRelocateStartedAt || now)))));
+        const ease = t * t * (3 - 2 * t);
+        shooter.x = (shooter.blackoutMoveFromX || shooter.x) + ((shooter.blackoutMoveToX || shooter.x) - (shooter.blackoutMoveFromX || shooter.x)) * ease;
+        shooter.y = (shooter.blackoutMoveFromY || shooter.y) + ((shooter.blackoutMoveToY || shooter.y) - (shooter.blackoutMoveFromY || shooter.y)) * ease;
+        shooter.holdY = shooter.y;
+        shooter.baseY = shooter.y;
+        if (now < shooter.blackoutRelocatingUntil) return;
+        shooter.blackoutRelocatingUntil = 0;
+        shooter.x = shooter.blackoutMoveToX || shooter.x;
+        shooter.y = shooter.blackoutMoveToY || shooter.y;
+        shooter.holdY = shooter.y;
+        shooter.baseY = shooter.y;
+        shooter.litUntil = now + 360;
+      }
       if (now >= (shooter.blackoutNextChargeAt || 0) && !shooter.blackoutChargeUntil) {
         shooter.blackoutMuzzleUntil = now + 650;
         shooter.blackoutChargeUntil = now + 650;
@@ -2321,15 +2394,22 @@
       if (shooter.blackoutChargeUntil && now >= shooter.blackoutChargeUntil) {
         shooter.blackoutChargeUntil = 0;
         fireAuthoredBlackoutShot(shooter, shooter.blackoutTargetX, shooter.blackoutTargetY, 'BLACKOUT SHOT');
-        if (encounter.nextIndex === encounter.positions.length) {
+        if (encounter.nextIndex >= 3) {
           scheduleAuthoredCampaign(700, () => {
             if (!shooter || shooter.alive === false) return;
             const offset = shooter.blackoutTargetX < W / 2 ? 68 : -68;
             fireAuthoredBlackoutShot(shooter, clamp(shooter.blackoutTargetX + offset, 24, W - 24), shooter.blackoutTargetY, 'BLACKOUT FOLLOW-UP');
           });
         }
-        shooter.blackoutVulnerableUntil = now + 1300;
-        shooter.blackoutNextChargeAt = now + 2650;
+        shooter.blackoutVulnerableUntil = now + 760;
+        shooter.blackoutNextChargeAt = now + 1850;
+        if (shooter.hp > 1) {
+          const vulnerableUntil = shooter.blackoutVulnerableUntil;
+          scheduleAuthoredCampaign(840, () => {
+            if (!shooter || shooter.alive === false || shooter.blackoutRelocatingUntil || shooter.blackoutVulnerableUntil !== vulnerableUntil) return;
+            relocateAuthoredBlackoutShooter(shooter, Date.now(), 'timeout');
+          });
+        }
       }
       return;
     }
@@ -3359,6 +3439,7 @@
     // The authored opening encounters seed exactly one deliberate prop in Waves 2
     // and 3. Recurring ambient junk would blur their target/attack language.
     if (wave <= 3 && currentCfg && currentCfg.authoredEncounter) return;
+    if (waveTheme === 'swarm') return;
     if (wave <= 2 && !obstacles.some(o => o && o.type === 'junk' && o.alive !== false)) {
       spawnAmbientJunk(cfg || currentCfg);
     }
@@ -3764,6 +3845,7 @@
     lastDamageCause=''; lastDamageAmount=0; lastDamageAt=0; lastDamageWave=0; deathCause=''; deathDamageAmount=0; deathWave=0; deathWaveTheme='';
     wave = startWave;
     traitorSpawnFlip = 0;
+    swarmRainIndex = 0;
     waveKills = 0;
     health = 100;
     blasterDisabledUntil = 0;
@@ -3782,6 +3864,7 @@
     themeEffectsAt = waveTheme === 'blackout' ? Date.now() + SPACE_BLACKOUT_VISUAL_READ_MS : 0;
     waveTransitioning = false;
     pendingBossWin = null;
+    if (waveTheme === 'swarm') activateSwarmEmergencyShield();
     startWaveSpawn(currentCfg);
     if (waveTheme === 'blackout') { spawnBlackoutHiddenEnemies(); spaceSfx('wave.blackout'); }
     scheduleHpPowerup();
@@ -4476,7 +4559,7 @@
       const balanceCadence = cfg.spawnCadenceMult == null ? 1 : cfg.spawnCadenceMult;
       spawnTimer = setTimeout(doSpawn, cfg.spawnMs * 0.8 * themeSpeedup * balanceCadence * (0.7 + Math.random()*0.6));
     }
-    spawnTimer = setTimeout(doSpawn, 1500);
+    spawnTimer = setTimeout(doSpawn, waveTheme === 'swarm' ? 420 : 1500);
   }
 
   // Phase 2B transition/pacing audit note:
@@ -4724,6 +4807,7 @@
   function configureNextCampaignWave(previousTheme) {
     wave++;
     waveKills = 0;
+    swarmRainIndex = 0;
     blackoutShooterIndex = 0;
     waveCaptivesSeen.clear();
     currentCfg = waveConfig(wave);
@@ -4742,6 +4826,7 @@
 
   function startPreparedCampaignWave() {
     waveTransitioning = false;
+    if (waveTheme === 'swarm') activateSwarmEmergencyShield();
     startWaveSpawn(currentCfg);
     scheduleHpPowerup();
     schedulePowerup();
@@ -4755,6 +4840,18 @@
     if (waveTheme === 'ghost' || waveTheme === 'emp') { spawnMiniBoss(waveTheme); if (waveTheme === 'emp') spaceSfx('status.emp'); }
     if (waveTheme === 'mirror') spawnMirrorEnemy();
     if (waveTheme === 'rave') playRaveDiscoStab();
+  }
+
+  function activateSwarmEmergencyShield() {
+    const now = Date.now();
+    buffShieldUntil = Math.max(buffShieldUntil, now + 1600);
+    blasterDisabledUntil = Math.max(blasterDisabledUntil, now + 1600);
+    inventory.shield = false;
+    inventory.gun = false;
+    bullets = [];
+    enemyBullets = [];
+    if (player) addFloatText('SHIELD ONLINE', player.x, player.y - 54, '#00e5ff', 18, { vy: 0, holdMs: 900, fade: 0.014 });
+    playShieldBellPing();
   }
 
 function nextWave() {
@@ -4798,7 +4895,7 @@ function nextWave() {
     if (spaceRunMode === 'endless') {
       if (waveTheme === 'music') return 'JAM WAVE. GRAB NOTES AND POWER.';
       if (waveTheme === 'goldrush') return 'BONUS FLOW. STOCK UP.';
-      if (waveTheme === 'swarm') return 'SHORT BURST. STAY LOOSE.';
+      if (waveTheme === 'swarm') return null;
       if (waveTheme === 'enemies') return 'DODGE, SHOOT, COLLECT.';
       if (waveTheme === 'asteroids') return 'BREATHER. DODGE OR CLEAR.';
       return 'KEEP THE RUN GOING.';
@@ -4807,14 +4904,14 @@ function nextWave() {
     if (wave === 2) return 'LET IT LOCK. THEN MOVE.';
     if (wave === 3) return 'STAY IN THE EYE. BREAK THE CLOUDS.';
     if (wave === 4) return 'FIRST CAPTIVE. BEAT THE BOSS.';
-    if (wave === 5) return 'SWARM. BOMB OR DODGE CLEAN.';
+    if (wave === 5) return null;
     if (wave === 6) return 'BREAK THE RAIN. THEN BREAK THE LOCK.';
     if (wave === 8) return 'BLACKOUT. FIND THE FLASH.';
     if (wave === SPACE_FINAL_GIZMO_WAVE) return 'FINAL GIZMO. USE EVERYTHING.';
     if (waveTheme === 'boss' && boss && boss.creature && boss.creature.name === 'DARK KNIGHT') return 'WATCH THE SWORD GLOW';
     if (waveTheme === 'boss') return 'SAVE RAPID FIRE FOR BOSS';
     if (waveTheme === 'captive') return 'BREAK THE LOCK FIRST';
-    if (waveTheme === 'swarm') return 'BOMB NOW OR DODGE CLEAN';
+    if (waveTheme === 'swarm') return null;
     if (waveTheme === 'bomber') return 'KILL BOMBERS EARLY';
     if (waveTheme === 'mirror') return 'FIND THE TRIANGLE GAP';
     if (waveTheme === 'asteroids') return 'DODGE ROCKS AND JUNK';
@@ -4892,10 +4989,14 @@ function nextWave() {
     // the slot-machine text up a bit too — the taller block still centers as a whole.
     const captiveGridHTML = missionTrappedChars.length ? `
       <div style="margin-top:22px;display:grid;grid-template-columns:repeat(3,54px);justify-content:center;gap:12px 16px">${missionTrappedChars.map(waveCaptiveFace).join('')}</div>` : '';
+    const waveSubtitleHTML = waveTheme === 'swarm'
+      ? `<div style="font-family:'Bebas Neue',cursive;font-size:clamp(18px, 4vh, 30px);letter-spacing:4px;color:#00e5ff;text-shadow:0 0 14px #00e5ff88;margin-top:12px">EMERGENCY SHIELD ACTIVATED</div>`
+      : '';
     ann.innerHTML=`<div style="text-align:center;animation:wave-announce ${ds}s ease-out forwards">
       <div id="sp-wave-incoming" style="font-family:'VCR',monospace;font-size:11px;letter-spacing:5px;color:#33ff66">INCOMING</div>
       <div id="sp-wave-type" style="font-family:'Bebas Neue',cursive;font-size:clamp(30px, 8vh, 60px);letter-spacing:6px;color:#33ff66;text-shadow:0 0 20px #33ff66,0 0 40px #33ff6688;line-height:1;transition:transform 0.3s ease-out">SURVIVE</div>
       <div style="font-family:'Bebas Neue',cursive;font-size:clamp(17px, 3.4vh, 26px);letter-spacing:4px;color:#33ff66;text-shadow:0 0 10px #33ff6688;margin-top:6px">WAVE ${w}</div>
+      ${waveSubtitleHTML}
       ${captiveGridHTML}
     </div>`;
     document.body.appendChild(ann);
@@ -4905,7 +5006,7 @@ function nextWave() {
     // BOSS is now just another theme entry, with its own THEME_LABEL — no more
     // separate wave-number-based fallback needed.
     const finalLabel = wave === 3 ? 'PURPLE RAIN' : (waveTheme === 'boss' && pendingBossCreature ? pendingBossCreature.name : (waveTheme ? THEME_LABEL[waveTheme] : 'SURVIVE'));
-    const finalColor = waveTheme ? '#ff00cc' : '#33ff66';
+    const finalColor = waveTheme === 'swarm' ? '#ff3030' : (waveTheme ? '#ff00cc' : '#33ff66');
     const spinDelays = [60,60,70,80,90,110,140,180,230,300,400];
     let i = 0;
     function spin() {
@@ -5120,7 +5221,10 @@ function nextWave() {
       }
       return;
     }
-    if (Date.now() < buffShieldUntil) {
+    if (waveTheme === 'swarm' && cause === 'ENEMY COLLISION') {
+      return;
+    }
+    if (Date.now() < buffShieldUntil && cause !== 'BOMBER MISSED') {
       addFloatText('BLOCKED!', player.x, player.y - 40, '#00e5ff', 18);
       miniExplosion(player.x, player.y, '#00e5ff');
       playShieldBellPing();
@@ -5197,7 +5301,12 @@ function nextWave() {
     addFloatText('DEFLECT!', o.x, o.y - 10, '#00e5ff', 18);
     miniExplosion(o.x, o.y, '#00e5ff');
     playShieldBellPing();
+    if (o.isShieldBomber) spaceHaptic(24, 35);
     return true;
+  }
+
+  function swarmShieldDeflectActive(o) {
+    return !!(o && o.isShieldBomber && waveTheme === 'swarm' && state === 'playing' && !waveTransitioning);
   }
 
   function drawCanvasMobe(gc, expr, x, y, w, h, options) {
@@ -5644,11 +5753,11 @@ function nextWave() {
         ctx.save();
         ctx.beginPath(); ctx.rect(-jailS/2, -jailS/2, jailS, jailS); ctx.clip();
       }
-      const faceScale = o.isTrapped ? 2.12 : (o.behavior === 'swarmer' ? 2.05 : 2.24);
+      const faceScale = o.isTrapped ? 2.12 : (o.behavior === 'swarmer' ? 2.05 : o.behavior === 'shieldBomber' ? 2.1 : 2.24);
       const traitorGlow = o.traitorType === 'purple' ? 'rgba(179,107,255,0.58)' : 'rgba(255,68,68,0.45)';
       drawCanvasMobe(gc, o.isTrapped ? 'sad' : 'normal', -o.r * faceScale / 2, -o.r * faceScale / 2, o.r * faceScale, o.r * faceScale, {
-        glowColor: o.isTrapped ? 'rgba(0,229,255,0.72)' : (o.behavior === 'swarmer' ? 'rgba(255,0,0,0.78)' : traitorGlow),
-        glowBlur: o.r * (o.isTrapped ? 0.35 : (o.behavior === 'swarmer' ? 0.42 : 0.18)),
+        glowColor: o.isTrapped ? 'rgba(0,229,255,0.72)' : (o.behavior === 'swarmer' ? 'rgba(255,0,0,0.78)' : o.behavior === 'shieldBomber' ? 'rgba(255,0,0,0.86)' : traitorGlow),
+        glowBlur: o.r * (o.isTrapped ? 0.35 : (o.behavior === 'swarmer' || o.behavior === 'shieldBomber' ? 0.46 : 0.18)),
       });
       drawTraitorBoundary(o, Date.now());
       if (o.isTrapped) {
@@ -5674,6 +5783,18 @@ function nextWave() {
           ctx.moveTo(-o.r * 0.72, -o.r * 1.18); ctx.lineTo(0, -o.r * 1.62); ctx.lineTo(o.r * 0.72, -o.r * 1.18);
           ctx.stroke();
           ctx.restore();
+        } else if (o.behavior === 'shieldBomber') {
+          const flash = 0.55 + Math.sin(Date.now() * 0.018 + (o.swarmerFlashSeed || 0)) * 0.45;
+          ctx.save();
+          ctx.globalAlpha = 0.46 + flash * 0.34;
+          ctx.strokeStyle = '#ff0000';
+          ctx.fillStyle = 'rgba(255,0,0,0.12)';
+          ctx.lineWidth = 3.2;
+          ctx.beginPath();
+          ctx.arc(0, 0, o.r * (1.48 + flash * 0.16), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
         }
         // Non-traitor enemies keep the ordinary target lock. Red/purple traitors
         // use the mutually exclusive shield/ring boundary drawn above instead.
@@ -5683,7 +5804,7 @@ function nextWave() {
         const isPurpleTraitor = o.traitorType === 'purple';
         const isRedTraitor = o.traitorType === 'red';
         const isTraitor = isRedTraitor || isPurpleTraitor;
-        if (!isTraitor) {
+        if (!isTraitor && o.behavior !== 'shieldBomber') {
           ctx.save();
           ctx.scale(pulse, pulse);
           ctx.beginPath();
@@ -5948,7 +6069,7 @@ function nextWave() {
       buffY += 18;
     }
     if (now < buffShieldUntil) {
-      drawBuffIconLine('powerShield', `SHIELD ${Math.ceil((buffShieldUntil - now) / 1000)}s`, buffY, '#00e5ff', 13);
+      drawBuffIconLine('powerShield', waveTheme === 'swarm' ? 'SHIELD ACTIVE' : `SHIELD ${Math.ceil((buffShieldUntil - now) / 1000)}s`, buffY, '#00e5ff', 13);
       buffY += 18;
     }
     if (now < buffFrozenUntil) {
@@ -5960,7 +6081,7 @@ function nextWave() {
       buffY += 18;
     }
     if (now < blasterDisabledUntil) {
-      drawBuffLine(`BLASTER JAM ${Math.ceil((blasterDisabledUntil - now) / 1000)}s`, buffY, '#ff76d2', 13);
+      drawBuffLine(waveTheme === 'swarm' ? 'BLASTER DOWN' : `BLASTER JAM ${Math.ceil((blasterDisabledUntil - now) / 1000)}s`, buffY, waveTheme === 'swarm' ? '#ff3030' : '#ff76d2', 13);
       buffY += 18;
     }
     if (now < controlsReversedUntil) {
@@ -6221,6 +6342,11 @@ function nextWave() {
     }
 
     const _now = Date.now();
+    if (waveTheme === 'swarm' && state === 'playing' && !waveTransitioning) {
+      buffShieldUntil = Math.max(buffShieldUntil, _now + 900);
+      blasterDisabledUntil = Math.max(blasterDisabledUntil, _now + 900);
+      if (enemyBullets.length) enemyBullets = [];
+    }
     const _frozen = _now < buffFrozenUntil, _zapped = _now < buffZappedUntil, _blasterJammed = _now < blasterDisabledUntil;
     const _pizza = _now < buffPizzaUntil;
     const curFireMs = _now < buffGunUntil ? AUTO_FIRE_MS * 0.4 : AUTO_FIRE_MS;
@@ -7018,6 +7144,11 @@ function nextWave() {
       if (o.isDeflected) continue;
       const _crossedLine = waveTheme === 'flip' ? o.y < _lineY : o.y > _lineY;
       if(!o._crossed && _crossedLine){
+        if (swarmShieldDeflectActive(o) && player) {
+          const shieldCatchR = player.r * 1.55;
+          const crossedNearShip = Math.abs(o.x - player.x) <= o.r + shieldCatchR && o.y <= player.y + player.r * 1.4;
+          if (crossedNearShip && shieldDeflectObstacle(o)) continue;
+        }
         o._crossed = true;
         o.alive = false;
         lineFlashA = 1.0;
@@ -7043,8 +7174,11 @@ function nextWave() {
             }
           }
         } else if(!o.isTrapped){
-          // enemy crosses line — big damage
-          takeDamage(30, 'ENEMY REACHED LINE');
+          // enemy crosses line — Swarm's shield-only bomber rain is calibrated to
+          // exactly five misses from full health; other enemy waves keep old damage.
+          const enemyLineDamage = o.missDamage != null ? o.missDamage : 30;
+          if (o.isShieldBomber) spaceHaptic([45, 28, 35], 120);
+          takeDamage(enemyLineDamage, o.isShieldBomber ? 'BOMBER MISSED' : 'ENEMY REACHED LINE');
           bigExplosion(o.x, _lineY, GAME_CHARS[o.ci].color);
           if (!o.blackoutHiddenEnemy) faceFlash(o.ci, 'sad', o.x, _lineY - 30);
           waveKills++;
@@ -7351,7 +7485,7 @@ function nextWave() {
               if(state==='over') return;
             } else {
               // Normal enemy face — takes 3 hits to clear
-              const blackoutShielded = o.authoredBlackout && nowHit >= (o.blackoutVulnerableUntil || 0);
+              const blackoutShielded = o.authoredBlackout && (o.blackoutRelocatingUntil || nowHit >= (o.blackoutVulnerableUntil || 0));
               if (traitorShieldActive(o, nowHit) || blackoutShielded) {
                 b.vy = 999;
                 o.traitorShieldImpactAt = nowHit;
@@ -7373,7 +7507,8 @@ function nextWave() {
               if (o.hp > 0) {
                 playEnemyHitPairSfx(o.hp);
                 miniExplosion(o.x, o.y, 'rgba(255,255,255,0.7)'); // hurt flicker, not destroyed yet
-                addFloatText('HIT!', o.x, o.y - 14, '#ffffff', 14);
+                addFloatText(o.authoredBlackout ? 'VANISHED!' : 'HIT!', o.x, o.y - 14, o.authoredBlackout ? '#ffe61a' : '#ffffff', 14);
+                if (o.authoredBlackout) relocateAuthoredBlackoutShooter(o, nowHit, 'hit');
               } else {
                 const pts = 25+(wave*5);
                 score+=pts; playTargetBreakSfx('enemy');
@@ -7439,8 +7574,10 @@ function nextWave() {
     // this check) is the only way they actually do anything to the player.
     if (waveTheme !== 'flip') {
       for(const o of obstacles){
-        if(circlesOverlap(o.x, o.y, o.r, player.x, player.y, player.r * 0.7)){
-          if (Date.now() < buffShieldUntil && shieldDeflectObstacle(o)) {
+        const shieldContactActive = Date.now() < buffShieldUntil || swarmShieldDeflectActive(o);
+        const playerContactR = shieldContactActive ? player.r * (o.isShieldBomber ? 1.38 : 1.65) : player.r * 0.7;
+        if(circlesOverlap(o.x, o.y, o.r, player.x, player.y, playerContactR)){
+          if (shieldContactActive && shieldDeflectObstacle(o)) {
             continue;
           }
           o.alive=false;
@@ -8274,7 +8411,7 @@ function nextWave() {
       ctx.fillStyle = inkGrad;
       ctx.fillRect(0, 0, W, H);
     }
-    if (Date.now() < blasterDisabledUntil) {
+    if (Date.now() < blasterDisabledUntil && waveTheme !== 'swarm') {
       const left = Math.max(0, blasterDisabledUntil - Date.now());
       const a = Math.min(1, left / 2600);
       ctx.save();
@@ -10433,6 +10570,10 @@ function nextWave() {
   });
   window.spaceShoot=function(){
     if(state!=='playing')return;
+    if(Date.now() < blasterDisabledUntil) {
+      if (waveTheme === 'swarm') addFloatText('BLASTER DOWN', player.x, player.y - 44, '#ff3030', 16, { vy: 0, holdMs: 420, fade: 0.04 });
+      return;
+    }
     bullets.push({x:player.x,y:player.y-player.r*1.2,vy:-B_SPEED});
     playNormalInstrumentSfx('blaster');
   };
