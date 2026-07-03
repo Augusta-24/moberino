@@ -141,7 +141,8 @@
   let mirrorSequenceActive = false, mirrorStageTimers = [];
   let spaceBriefingTimers = [];
   let spaceFlowToken = 0;
-  const SPACE_WAVE_INSTRUCTION_READ_MS = 1500;
+  const SPACE_WAVE_ANNOUNCE_MS = 4200;
+  const SPACE_WAVE_INSTRUCTION_READ_MS = 800;
   const SPACE_BLACKOUT_VISUAL_READ_MS = 2600;
   let academyMode = false;
   let academyStep = 0;
@@ -738,6 +739,23 @@
 
   function rand(a,b){ return a + Math.random()*(b-a); }
   function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+  function circlesOverlap(ax, ay, ar, bx, by, br) {
+    const radius = ar + br;
+    const dx = ax - bx;
+    if (dx <= -radius || dx >= radius) return false;
+    const dy = ay - by;
+    if (dy <= -radius || dy >= radius) return false;
+    return dx * dx + dy * dy < radius * radius;
+  }
+  function compactInPlace(list, keep) {
+    let write = 0;
+    for (let read = 0; read < list.length; read++) {
+      const item = list[read];
+      if (keep(item)) list[write++] = item;
+    }
+    list.length = write;
+    return list;
+  }
   function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
     const dx = x2 - x1;
     const dy = y2 - y1;
@@ -814,11 +832,14 @@
     const excluded = excludeSet || new Set();
     const activeCaptives = new Set(obstacles.filter(o => o.isTrapped).map(o => o.ci));
     const open = unrescuedMissionCaptives().filter(ci => !excluded.has(ci) && !activeCaptives.has(ci));
-    while (missionRetryCaptives.length) {
-      const retry = missionRetryCaptives.shift();
-      if (open.includes(retry)) return retry;
+    // The roster is randomized once when the campaign begins, then rescued from
+    // left to right in that fixed order so every intermission grid tells the truth.
+    if (open.length) {
+      const next = open[0];
+      const retryIndex = missionRetryCaptives.indexOf(next);
+      if (retryIndex >= 0) missionRetryCaptives.splice(retryIndex, 1);
+      return next;
     }
-    if (open.length) return open[Math.floor(Math.random() * open.length)];
     return -1;
   }
 
@@ -1649,7 +1670,7 @@
   function grayHandleTetherSourceHit(shot, b, now) {
     const src = b && b.tetherSource;
     if (!src || !b.tetherShieldActive || shot.vy === 999) return false;
-    if (Math.hypot(shot.x - src.x, shot.y - src.y) >= src.r + 6) return false;
+    if (!circlesOverlap(shot.x, shot.y, 0, src.x, src.y, src.r + 6)) return false;
     shot.vy = 999;
     src.hp--;
     src.hitUntil = now + 220;
@@ -2088,10 +2109,11 @@
     if (!boss || boss.isCaptive || waveTransitioning || state !== 'playing') return;
     const now = Date.now();
     if (!boss.support) {
+      const baseMaxHp = boss.isFinalGizmo ? 5 : boss.attackType === 'sword' ? 4 : wave >= 2 && wave <= 5 ? 4 : 3;
       boss.support = {
         hpDrops: 0,
         powerupDrops: 0,
-        maxHp: boss.isFinalGizmo ? 5 : boss.attackType === 'sword' ? 4 : wave >= 2 && wave <= 5 ? 4 : 3,
+        maxHp: spaceRunMode === 'campaign' ? Math.ceil(baseMaxHp * 0.5) : baseMaxHp,
         maxPowerups: 1,
         nextHpAt: now + (boss.isFinalGizmo ? 4400 : wave >= 2 && wave <= 5 ? 2400 : 3000),
         nextPowerupAt: now + (boss.isFinalGizmo ? 7200 : wave >= 2 && wave <= 5 ? 3600 : 5400),
@@ -2117,8 +2139,9 @@
     clearTimeout(hpPowerupTimer);
     const tier = campaignTier(wave);
     const hpRange = currentCfg && currentCfg.hpDelayRange ? currentCfg.hpDelayRange : null;
-    const minDelay = hpRange ? hpRange[0] : 3150 + Math.min(1800, tier * 360);
-    const maxDelay = hpRange ? hpRange[1] : 6300 + Math.min(2600, tier * 520);
+    const campaignDelayMult = spaceRunMode === 'campaign' ? 2 : 1;
+    const minDelay = (hpRange ? hpRange[0] : 3150 + Math.min(1800, tier * 360)) * campaignDelayMult;
+    const maxDelay = (hpRange ? hpRange[1] : 6300 + Math.min(2600, tier * 520)) * campaignDelayMult;
     hpPowerupTimer = setTimeout(() => {
       if (state !== 'playing') return;
       if (campaignAllows('allowHp') && regularDropWindowOpen()) spawnHpPowerup();
@@ -2615,8 +2638,7 @@
       let cleared = 0;
       obstacles.forEach(o => {
         if (o.isTrapped || o.alive === false) return;
-        const dist = Math.hypot(o.x - player.x, o.y - player.y);
-        if (dist <= radius + (o.r || 0)) {
+        if (circlesOverlap(o.x, o.y, o.r || 0, player.x, player.y, radius)) {
           miniExplosion(o.x, o.y, o.type === 'asteroid' ? '#7a6a90' : GAME_CHARS[o.ci].color);
           score += o.type === 'asteroid' ? 12 : 25;
           waveKills++;
@@ -2624,8 +2646,8 @@
           o.alive = false;
         }
       });
-      obstacles = obstacles.filter(o => o.alive !== false);
-      enemyBullets = enemyBullets.filter(b => Math.hypot(b.x - player.x, b.y - player.y) > radius + (b.r || 0));
+      compactInPlace(obstacles, o => o.alive !== false);
+      compactInPlace(enemyBullets, b => !circlesOverlap(b.x, b.y, b.r || 0, player.x, player.y, radius));
       triggerShake(4);
       miniExplosion(player.x, player.y, '#ff8800');
       addFloatText(`EXTRA BOMB POP! +${cleared}`, W / 2, H * 0.38, '#ff8800', 24);
@@ -2661,7 +2683,7 @@
         waveKills++; cleared++;
         o.alive = false;
       });
-      obstacles = obstacles.filter(o => o.alive !== false);
+      compactInPlace(obstacles, o => o.alive !== false);
       if (boss && !boss.isCaptive) {
         const bossBombDamage = boss.isFinalGizmo ? 7 : 6;
         boss.hp = Math.max(1, boss.hp - bossBombDamage);
@@ -2853,7 +2875,8 @@
     if (state !== 'playing' || academyMode) return;
     const opts = options || {};
     const activeJunk = obstacles.filter(o => o.type === 'junk' && o.alive !== false).length;
-    const cap = waveTheme === 'asteroids' ? 6 : 4;
+    const campaignJunk = spaceRunMode === 'campaign';
+    const cap = campaignJunk ? (waveTheme === 'asteroids' ? 3 : 2) : (waveTheme === 'asteroids' ? 6 : 4);
     if (activeJunk >= cap) return;
     const sideRoll = opts.visible ? 3 : Math.floor(Math.random() * 4);
     const spawnR = rand(15, 19);
@@ -2904,7 +2927,7 @@
   function seedVisibleAmbientJunk(cfg) {
     if (state !== 'playing' || academyMode) return;
     const liveJunk = obstacles.filter(o => o && o.type === 'junk' && o.alive !== false);
-    const target = wave === 1 ? 3 : 1;
+    const target = wave === 1 ? 2 : 1;
     const lanes = [0.18, 0.72, 0.44];
     const depths = [0.10, 0.20, 0.06];
     const kinds = ['duck', 'trashcan', 'basketball'];
@@ -2920,9 +2943,10 @@
       spawnAmbientJunk(cfg || currentCfg);
     }
     const earlyWave = wave <= 3;
-    const delay = waveTheme === 'asteroids'
+    const baseDelay = waveTheme === 'asteroids'
       ? (earlyWave ? 470 + Math.random() * 310 : 1275 + Math.random() * 800)
       : (earlyWave ? 800 + Math.random() * 440 : 1850 + Math.random() * 1275);
+    const delay = baseDelay * (spaceRunMode === 'campaign' ? 1.8 : 1);
     ambientJunkTimer = setTimeout(() => {
       if (state !== 'playing' || academyMode) return;
       spawnAmbientJunk(cfg || currentCfg);
@@ -3481,6 +3505,7 @@
     el.innerHTML = `
       <div style="font-size:min(30vw,120px);color:#33ff66;text-shadow:0 0 30px #33ff66,0 0 60px #33ff6688;line-height:1">✓</div>
       <div style="font-family:'Bebas Neue',cursive;font-size:26px;letter-spacing:4px;color:#33ff66;text-shadow:0 0 14px #33ff66;margin-top:8px">WAVE ${clearedWave} CLEARED</div>
+      ${spaceRunMode === 'campaign' ? `<div style="font-family:'VCR',monospace;font-size:9px;letter-spacing:2px;color:#b9f7ff;margin-top:8px">HEALTH RESTORED</div>` : ''}
     `;
     document.body.appendChild(el);
     requestAnimationFrame(() => { el.style.opacity = '1'; });
@@ -3748,16 +3773,12 @@ function nextWave() {
     blackoutHitFlashes = [];
     themeEffectsAt = 0;
 
-    // Reward player for clearing a wave
-    health = Math.min(100, health + 5);
-    addFloatText('+5 HP', player.x, player.y - 50, '#33ff66', 22);
-    showTopBanner('+5 HP', 'good');
-
     const clearedWave = wave;
     const previousTheme = waveTheme;
     if (spaceRunMode === 'campaign' && clearedWave <= SPACE_CAMPAIGN_FINAL_WAVE) campaignClearedWaves.add(clearedWave);
     configureNextCampaignWave(previousTheme);
-    const announceMs = 7000;
+    if (spaceRunMode === 'campaign') health = 100;
+    const announceMs = SPACE_WAVE_ANNOUNCE_MS;
     clearSpaceCinematicOverlays();
     rescueBanner = null;
     showWaveClearedBeat(clearedWave, () => {
@@ -4038,7 +4059,7 @@ function nextWave() {
         <div style="font-family:'VCR',monospace;font-size:clamp(11px,3vw,17px);letter-spacing:2px;color:#ff9a9a;text-shadow:0 0 12px #ff4444;margin-top:16px">${prettyDamageCause(deathCause || lastDamageCause || 'PILOT DOWN')}</div>
       </div>` : `<div style="font-family:'Bebas Neue',cursive;color:#33ff66;text-shadow:0 0 22px #33ff66,0 0 44px #33ff6688;letter-spacing:5px;line-height:1;transform:translateY(24px);animation:sp-reboot-rise 0.55s cubic-bezier(.2,1.15,.35,1) forwards">
         <div style="font-size:clamp(36px,12vw,76px)">${finalWaveFailed ? 'CAMPAIGN COMPLETE' : 'PILOT BACK ONLINE'}</div>
-        <div style="font-family:'VCR',monospace;font-size:clamp(14px,3.8vw,22px);letter-spacing:3px;color:#ffe61a;text-shadow:0 0 12px #ffe61a;margin-top:14px">${finalWaveFailed ? 'CALCULATING RESULTS' : `60 HP · NEXT: WAVE ${failedWave + 1}`}</div>
+        <div style="font-family:'VCR',monospace;font-size:clamp(14px,3.8vw,22px);letter-spacing:3px;color:#ffe61a;text-shadow:0 0 12px #ffe61a;margin-top:14px">${finalWaveFailed ? 'CALCULATING RESULTS' : `FULL HEALTH · NEXT: WAVE ${failedWave + 1}`}</div>
       </div>`;
     };
     if (!document.getElementById('space-reboot-keyframes')) {
@@ -4065,10 +4086,10 @@ function nextWave() {
           return;
         }
         configureNextCampaignWave(previousTheme);
-        health = 60;
+        health = 100;
         state = 'playing';
         raf = requestAnimationFrame(loop);
-        const announceMs = 7000;
+        const announceMs = SPACE_WAVE_ANNOUNCE_MS;
         themeEffectsAt = Date.now() + announceMs;
         announceWave(wave, announceMs, () => {
           if (state !== 'playing') return;
@@ -4666,7 +4687,7 @@ function nextWave() {
     for (let row = -cols; row <= cols; row++) {
       for (let col = -cols; col <= cols; col++) {
         const tx = col * (r * 2 / cols), ty = row * (r * 2 / cols);
-        if (Math.hypot(tx, ty) > r + 4) continue;
+        if (tx * tx + ty * ty > (r + 4) * (r + 4)) continue;
         const shade = (row + col + Math.floor(t * 2)) % 2 === 0 ? 'rgba(255,255,255,0.35)' : 'rgba(40,40,60,0.35)';
         ctx.fillStyle = shade;
         ctx.fillRect(tx - r/cols + 0.5, ty - r/cols + 0.5, r*2/cols - 1, r*2/cols - 1);
@@ -5116,9 +5137,11 @@ function nextWave() {
       for (const o of obstacles) {
         if (o.alive === false) continue;
         const odx = rebound.x - o.x, ody = rebound.y - o.y;
-        const dist = Math.hypot(odx, ody);
         const minDist = rebound.r + o.r;
-        if (dist > 0 && dist < minDist) {
+        if (Math.abs(odx) >= minDist || Math.abs(ody) >= minDist) continue;
+        const distSq = odx * odx + ody * ody;
+        if (distSq > 0 && distSq < minDist * minDist) {
+          const dist = Math.sqrt(distSq);
           const nx = odx / dist, ny = ody / dist;
           const dot = rebound.vx * nx + rebound.vy * ny;
           rebound.vx -= 2 * dot * nx; rebound.vy -= 2 * dot * ny;
@@ -5127,7 +5150,7 @@ function nextWave() {
           break; // one bounce per frame is plenty
         }
       }
-      if (Math.hypot(rebound.x - player.x, rebound.y - player.y) < rebound.r + player.r * 0.8) {
+      if (circlesOverlap(rebound.x, rebound.y, rebound.r, player.x, player.y, player.r * 0.8)) {
         takeDamage(15, 'REBOUND HIT');
         miniExplosion(rebound.x, rebound.y, '#ff4444');
         rebound = null;
@@ -5555,7 +5578,7 @@ function nextWave() {
       }
     }
 
-    bullets=bullets.filter(b=>b.y>-10);
+    compactInPlace(bullets, b => b.y > -10);
     bullets.forEach(b=>{
       if (_frozen) {
         // Was moving at full normal speed despite the icy snowflake skin implying
@@ -5579,7 +5602,8 @@ function nextWave() {
     // also collect them blurred that distinction. Mystery is the one deliberate
     // exception now — it's a shoot target (ring takes 7 hits to break, then the
     // outcome applies automatically), not something you fly into to catch.
-    powerups = powerups.filter(p => p.y < H + 40);
+    compactInPlace(powerups, p => p.y < H + 40);
+    const frameJunk = obstacles.filter(o => o.alive !== false && o.type === 'junk');
     for (const p of powerups) {
       if (!waveTransitioning && p.vx) {
         p.x += p.vx;
@@ -5590,14 +5614,16 @@ function nextWave() {
       if (!waveTransitioning && p.x != null) p.x = clamp(p.x, p.r, W - p.r);
       if (!waveTransitioning) {
         const nowPower = Date.now();
-        for (const o of obstacles) {
-          if (o.alive === false || o.type !== 'junk') continue;
+        for (const o of frameJunk) {
+          if (o.alive === false) continue;
           if (nowPower < (p._junkBounceLockUntil || 0)) continue;
           const dx = p.x - o.x;
           const dy = p.y - o.y;
-          const dist = Math.hypot(dx, dy) || 0.001;
           const minDist = p.r + o.r * 0.84;
-          if (dist >= minDist) continue;
+          if (Math.abs(dx) >= minDist || Math.abs(dy) >= minDist) continue;
+          const distSq = dx * dx + dy * dy;
+          if (distSq >= minDist * minDist) continue;
+          const dist = Math.sqrt(distSq) || 0.001;
           const nx = dx / dist;
           const ny = dy / dist;
           const overlap = minDist - dist;
@@ -5618,7 +5644,7 @@ function nextWave() {
         if (academyMode && p.academyMystery && p.y < (p.academyArmY || academyTargetArmY())) continue;
         for (const b of bullets) {
           if (b.vy === 999) continue; // already spent on something else this frame
-          if (Math.hypot(b.x - p.x, b.y - p.y) < p.r * 1.1) {
+          if (circlesOverlap(b.x, b.y, 0, p.x, p.y, p.r * 1.1)) {
             b.vy = 999;
             p.litUntil = Date.now() + 320;
             p.ringHp--;
@@ -5638,7 +5664,7 @@ function nextWave() {
         // One hit and it's gone — pure fun, no ring/HP, just a note + points.
         for (const b of bullets) {
           if (b.vy === 999) continue;
-          if (Math.hypot(b.x - p.x, b.y - p.y) < p.r * 1.1) {
+          if (circlesOverlap(b.x, b.y, 0, p.x, p.y, p.r * 1.1)) {
             b.vy = 999;
             p.litUntil = Date.now() + 320;
             score += 20;
@@ -5653,11 +5679,11 @@ function nextWave() {
         }
         if (p._collected) continue;
       }
-      let gotIt = p.type !== 'mystery' && p.type !== 'instrument' && Math.hypot(p.x - player.x, p.y - player.y) < p.r + player.r * 0.9;
+      let gotIt = p.type !== 'mystery' && p.type !== 'instrument' && circlesOverlap(p.x, p.y, p.r, player.x, player.y, player.r * 0.9);
       // An active escort can also catch pickups itself, not just the player ship —
       // it's right there next to you, no reason it should be unable to grab one.
       if (!gotIt && p.type !== 'mystery' && p.type !== 'instrument' && escort && escort.state === 'active') {
-        gotIt = Math.hypot(p.x - escort.x, p.y - escort.y) < p.r + 16 * 0.9;
+        gotIt = circlesOverlap(p.x, p.y, p.r, escort.x, escort.y, 16 * 0.9);
       }
       if (gotIt) {
         if (SOCKET_TYPES.includes(p.type)) {
@@ -5677,9 +5703,9 @@ function nextWave() {
         p._collected = true;
       }
     }
-    powerups = powerups.filter(p => !p._collected);
+    compactInPlace(powerups, p => !p._collected);
 
-    obstacles=obstacles.filter(o=>o.y<H+60&&o.x>-60&&o.x<W+60);
+    compactInPlace(obstacles, o => o.y < H + 60 && o.x > -60 && o.x < W + 60);
     for(const o of obstacles){
       if (o.isDeflected) {
         const elapsed = Date.now() - (o.deflectStart || Date.now());
@@ -5781,6 +5807,7 @@ function nextWave() {
         const dx = b.x - a.x;
         const dy = b.y - a.y;
         const minDist = a.r + b.r;
+        if (Math.abs(dx) >= minDist || Math.abs(dy) >= minDist) continue;
         const distSq = dx * dx + dy * dy;
         if (distSq <= 0.01 || distSq >= minDist * minDist) continue;
         const dist = Math.sqrt(distSq);
@@ -5837,7 +5864,7 @@ function nextWave() {
             impactShockwave(o.x, _lineY, o.type === 'junk' ? '#d8e2ff' : '#cbb8ff', { maxR: o.r < 22 ? 42 : 62, lineWidth: o.r < 22 ? 3.6 : 5.0, life: o.r < 22 ? 14 : 18 });
             if (player) {
               const splashRadius = o.r + player.r * 1.2;
-              if (Math.hypot(o.x - player.x, _lineY - player.y) < splashRadius) {
+              if (circlesOverlap(o.x, _lineY, splashRadius, player.x, player.y, 0)) {
                 const splashDamage = o.type === 'junk' ? (o.r < 18 ? 1 : 2) : (o.r < 22 ? 2 : 3);
                 takeDamage(splashDamage, o.type === 'junk' ? 'SPACE JUNK LINE IMPACT' : 'ASTEROID LINE IMPACT');
                 addFloatText(`-${splashDamage}`, player.x, player.y - 26, '#ff8888', 18);
@@ -5862,7 +5889,7 @@ function nextWave() {
         if(state==='over') return;
       }
     }
-    obstacles=obstacles.filter(o=>!o._crossed);
+    compactInPlace(obstacles, o => !o._crossed);
 
     obstacles.forEach(o => { if (!o.blackoutHiddenEnemy) drawObstacle(o); });
 
@@ -5943,7 +5970,7 @@ function nextWave() {
         if (b.vy === 999 || b.tacoDeflected || b.octoDeflected) continue;
         for (const g of activeTacoGuards) {
           const blockR = (g.r || 8) * 5.4;
-          if (Math.hypot(b.x - g.x, b.y - g.y) < blockR) {
+          if (circlesOverlap(b.x, b.y, 0, g.x, g.y, blockR)) {
             const side = g.tacoSide || (b.x < g.x ? -1 : 1);
             b.x += side * 6;
             b.vx = side * (4.7 + Math.random() * 1.3);
@@ -5966,7 +5993,7 @@ function nextWave() {
         if (b.vy === 999 || b.tacoDeflected || b.octoDeflected) continue;
         const hitGrayTetherSource = boss.attackType === 'tether' && grayHandleTetherSourceHit(b, boss, Date.now());
         if (hitGrayTetherSource) continue;
-        if (Math.hypot(b.x - boss.x, b.y - boss.y) < boss.r + 3) {
+        if (circlesOverlap(b.x, b.y, 0, boss.x, boss.y, boss.r + 3)) {
           if (boss.attackType === 'tether' && grayShieldBlocksBossHit(boss, Date.now())) {
             grayBounceShieldShot(b, boss, Date.now());
             continue;
@@ -6067,7 +6094,7 @@ function nextWave() {
     if (miniBoss && !_zapped && miniBoss.phase === 'active') {
       for (const b of bullets) {
         if (b.vy === 999) continue;
-        if (Math.hypot(b.x - miniBoss.x, b.y - miniBoss.y) < miniBoss.r + 3) {
+        if (circlesOverlap(b.x, b.y, 0, miniBoss.x, miniBoss.y, miniBoss.r + 3)) {
           b.vy = 999;
           miniBoss.hp--; miniBoss.hitFlash = 1;
           miniExplosion(b.x, b.y, '#ff8888');
@@ -6093,7 +6120,7 @@ function nextWave() {
         const hitRadius = (o.type==='face' && o.isTrapped && o.ringHp > 0)
           ? o.r + 12
           : traitorShieldActive(o, nowHit) ? o.r * 1.34 : o.r + 3;
-        if(Math.hypot(b.x-o.x,b.y-o.y)<hitRadius){
+        if(circlesOverlap(b.x, b.y, 0, o.x, o.y, hitRadius)){
           b.vy=999;
           o.litUntil = Date.now() + 320;
           queueBlackoutHitFlash(o);
@@ -6201,8 +6228,8 @@ function nextWave() {
         }
       }
     }
-    obstacles=obstacles.filter(o=>o.alive!==false);
-    bullets=bullets.filter(b=>b.vy!==999);
+    compactInPlace(obstacles, o => o.alive !== false);
+    compactInPlace(bullets, b => b.vy !== 999);
 
     // REVERSE: obstacles spawn right next to the ship and immediately retreat
     // upward — they're not "attacking" by being close, so simple contact doesn't
@@ -6210,7 +6237,7 @@ function nextWave() {
     // this check) is the only way they actually do anything to the player.
     if (waveTheme !== 'flip') {
       for(const o of obstacles){
-        if(Math.hypot(o.x-player.x,o.y-player.y)<o.r+player.r*0.7){
+        if(circlesOverlap(o.x, o.y, o.r, player.x, player.y, player.r * 0.7)){
           if (Date.now() < buffShieldUntil && shieldDeflectObstacle(o)) {
             continue;
           }
@@ -6219,7 +6246,7 @@ function nextWave() {
           if(state==='over') return;
         }
       }
-      obstacles=obstacles.filter(o=>o.alive!==false);
+      compactInPlace(obstacles, o => o.alive !== false);
     }
 
     // Wave ends naturally once the spawn pool is exhausted, the board has cleared,
@@ -6228,11 +6255,11 @@ function nextWave() {
     // announcement covers the screen.
     // Boss beaten: play the held victory cinematic only once every enemy and
     // asteroid is gone, so the next scene never appears over a populated board.
-    const blockingObstacles = obstacles.filter(o => o.type !== 'junk');
-    if (pendingBossWin && blockingObstacles.length === 0 && enemyBullets.length === 0 && !boss && !miniBoss && state === 'playing') {
+    const hasBlockingObstacles = obstacles.some(o => o.type !== 'junk');
+    if (pendingBossWin && !hasBlockingObstacles && enemyBullets.length === 0 && !boss && !miniBoss && state === 'playing') {
       const runWin = pendingBossWin; pendingBossWin = null; runWin();
     }
-    if (!academyMode && !academyCompleting && spaceRunMode !== 'bossrun' && spawnsRemaining <= 0 && blockingObstacles.length === 0 && powerups.length === 0 && !boss && !miniBoss && !mirrorSequenceActive && !pendingBossWin && state === 'playing') {
+    if (!academyMode && !academyCompleting && spaceRunMode !== 'bossrun' && spawnsRemaining <= 0 && !hasBlockingObstacles && powerups.length === 0 && !boss && !miniBoss && !mirrorSequenceActive && !pendingBossWin && state === 'playing') {
       nextWave();
     }
     if (waveTheme === 'captive' && wave === 6 && !waveCaptivesSeen.has('campaign-lock')) {
@@ -6682,8 +6709,7 @@ function nextWave() {
         }
       }
       if (b.telegraph) return;
-      const dx=b.x-player.x, dy=b.y-player.y;
-      if(Math.sqrt(dx*dx+dy*dy) < (b.r||4) + player.r*0.8){
+      if(circlesOverlap(b.x, b.y, b.r || 4, player.x, player.y, player.r * 0.8)){
         b._hit=true;
         if (b.isIce) {
           buffFrozenUntil = Date.now() + 5000;
@@ -6716,11 +6742,11 @@ function nextWave() {
         }
       }
     });
-    enemyBullets = enemyBullets.filter(b => !b._hit && !b._gone && b.y < H + 20 && b.y > -20 && b.x > -20 && b.x < W + 20);
+    compactInPlace(enemyBullets, b => !b._hit && !b._gone && b.y < H + 20 && b.y > -20 && b.x > -20 && b.x < W + 20);
     if(state==='over') return;
 
     // Float texts
-    floatTexts = floatTexts.filter(t => t.a > 0.02);
+    compactInPlace(floatTexts, t => t.a > 0.02);
     floatTexts.forEach(t => {
       t.y += t.vy;
       if (!t.holdMs || Date.now() - (t.startedAt || 0) > t.holdMs) t.a -= (t.fade || 0.02);
@@ -6977,7 +7003,7 @@ function nextWave() {
       for (const o of obstacles) {
         if (o.blackoutHiddenEnemy && o.blackoutMuzzleUntil && o.blackoutMuzzleUntil > litNow) drawBlackoutMuzzleSpark(o);
       }
-      blackoutHitFlashes = blackoutHitFlashes.filter(o => o.litUntil && o.litUntil > litNow);
+      compactInPlace(blackoutHitFlashes, o => o.litUntil && o.litUntil > litNow);
       for (const o of blackoutHitFlashes) {
         const a = drawBlackoutHitGlow(o.x, o.y, o.r || 18, o.type === 'asteroid' ? 'rgba(190,170,220,0.46)' : 'rgba(255,90,90,0.48)', o.litUntil);
         if (o.blackoutHiddenEnemy) {
