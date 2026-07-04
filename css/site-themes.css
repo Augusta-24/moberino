@@ -117,9 +117,9 @@ html.site-theme-classic {
 
   --theme-font-body: 'VCR', monospace;
   --theme-font-body-alt: 'VCR', 'Share Tech Mono', monospace;
-  --theme-font-title: 'Bebas Neue', cursive;
+  --theme-font-title: 'Bebas Neue', 'Arial Narrow', Impact, sans-serif;
   --theme-font-brand: 'Russo One', sans-serif;
-  --theme-font-marker: 'Permanent Marker', cursive;
+  --theme-font-marker: 'Permanent Marker', 'Arial Narrow', Impact, sans-serif;
 }
 
 html.site-theme-retro {

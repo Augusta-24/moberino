@@ -120,9 +120,9 @@
   --theme-polaroid-text: #17120a;
   --theme-font-body: 'VCR', monospace;
   --theme-font-body-alt: 'VCR', 'Share Tech Mono', monospace;
-  --theme-font-title: 'Bebas Neue', cursive;
+  --theme-font-title: 'Bebas Neue', 'Arial Narrow', Impact, sans-serif;
   --theme-font-brand: 'Russo One', sans-serif;
-  --theme-font-marker: 'Permanent Marker', cursive;
+  --theme-font-marker: 'Permanent Marker', 'Arial Narrow', Impact, sans-serif;
   --desktop-nav-width: min(calc(100vw - 32px), 920px);
   --desktop-nav-pad: 10px 16px 8px;
   --desktop-nav-slot: 96px;
@@ -2240,6 +2240,11 @@ body.rec-open { overflow-y: auto; }
   transform: translateY(16px);
   transition: opacity 0.25s ease, transform 0.25s ease;
 }
+@media (display-mode: standalone) {
+  #spot-overlay {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
+  }
+}
 #spot-overlay.is-shown { display: flex; }
 #spot-overlay.open { opacity: 1; transform: translateY(0); }
 /* Normal flow now (not position:fixed) — a plain flex child above #spot-results,
@@ -2470,6 +2475,11 @@ body.main-scrolled .main-site-header .page-nav-btn.active::after {
   flex-shrink: 0;
   border-bottom: 1px solid var(--theme-line-08);
 }
+@media (display-mode: standalone) {
+  .rec-drawer-hdr {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 20px);
+  }
+}
 .rec-drawer-title {
   font-family: var(--theme-font-title);
   font-size: 22px; letter-spacing: 4px;
@@ -2696,6 +2706,11 @@ button.cats-search-wrap {
      capped-and-centered 920px column, with text flush left inside it. */
   width: 100%;
   box-sizing: border-box;
+}
+@media (display-mode: standalone) {
+  .sub-page-title {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
+  }
 }
 /* Thin cinematic fade-out rule under each page title — solid at the left edge,
    gone well before the title column's right edge. Lives on the title's own
