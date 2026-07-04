@@ -42,7 +42,7 @@
   const REVERSE_LINE_Y = 92;
   let floatTexts = []; // {text, x, y, color, a, vy, size}
   let currentCfg = null;
-  let spaceRunMode = 'campaign'; // campaign | academy | bossrun | endless | debug
+  let spaceRunMode = 'campaign'; // campaign | academy | bossrun | debug
   let bossRunQueue = [];
   let bossRunIndex = 0;
   let powerups = []; // {type:'speed'|'gun'|'bomb'|'shield'|'hp'|'mystery', x, y, vy, r}
@@ -154,7 +154,7 @@
   let spaceFlowToken = 0;
   const SPACE_WAVE_ANNOUNCE_MS = 4200;
   const SPACE_WAVE_INSTRUCTION_READ_MS = 800;
-  const SPACE_BLACKOUT_VISUAL_READ_MS = 2600;
+  const SPACE_BLACKOUT_VISUAL_READ_MS = 3600;
   let academyMode = false;
   let academyStep = 0;
   let academyStepStarted = 0;
@@ -180,116 +180,14 @@
   const MID_SPECIALS = ['bomber', 'mirror', 'music', 'blackout'];
   const LATE_SPECIALS = ['ghost', 'emp', 'flip', 'rave'];
   const POST_BOSS_SPECIALS = ['swarm', 'bomber', 'asteroids', 'rave'];
-  const ENDLESS_THEME_CYCLE = ['asteroids', 'music', 'enemies', 'goldrush', 'swarm', 'asteroids', 'enemies', 'music'];
   function chapterPick(pool, w, previousTheme, offset) {
     const choices = pool.filter(t => t !== previousTheme);
     const list = choices.length ? choices : pool;
     return list[(Math.floor(w / 5) + (offset || 0)) % list.length];
   }
-  function endlessCycleIndex(w) {
-    return Math.max(0, w - (SPACE_CAMPAIGN_FINAL_WAVE + 1));
-  }
-  function endlessThemeForWave(w) {
-    return ENDLESS_THEME_CYCLE[endlessCycleIndex(w) % ENDLESS_THEME_CYCLE.length];
-  }
-  function endlessWaveConfig(w) {
-    const idx = endlessCycleIndex(w);
-    const lap = Math.floor(idx / ENDLESS_THEME_CYCLE.length);
-    const theme = endlessThemeForWave(w);
-    const pressure = Math.min(1, lap / 5);
-    const base = {
-      tier: 2,
-      allowMystery: true,
-      allowPowerups: true,
-      allowHp: true,
-      maxSocketPowerups: 4 + (lap >= 2 ? 1 : 0),
-      maxInstruments: theme === 'music' ? 12 : 7,
-      instrumentDelayRange: theme === 'music' ? [560, 820] : [1500, 2600],
-      powerupDelayRange: theme === 'goldrush' ? [800, 1300] : [1450, 2400],
-      hpDelayRange: theme === 'goldrush' ? [1800, 3200] : [2100, 3400],
-      mysteryDelayRange: [5200, 8600],
-      activeObstacleCap: theme === 'swarm' ? 11 : 5,
-    };
-    if (theme === 'asteroids') {
-      return Object.assign(base, {
-        poolSize: 20 + lap * 2,
-        spawnsRemaining: 20 + lap * 2,
-        speed: 2.22 + pressure * 0.38,
-        spawnMs: 860 - Math.min(120, lap * 20),
-        asteroidRatio: 1,
-        enemyFireMult: 0,
-        spawnCadenceMult: 0.92,
-      });
-    }
-    if (theme === 'music') {
-      return Object.assign(base, {
-        poolSize: 17 + lap * 2,
-        spawnsRemaining: 17 + lap * 2,
-        speed: 2.18 + pressure * 0.34,
-        spawnMs: 940 - Math.min(140, lap * 18),
-        asteroidRatio: 0.68,
-        enemyHpOverride: 2,
-        enemyFireMult: 0.58,
-        enemyFireRateMult: 1.08,
-        enemyVyMult: 1.0,
-        enemyDriftMult: 1.18,
-        enemyDodgeMult: 0.72,
-        spawnCadenceMult: 0.92,
-      });
-    }
-    if (theme === 'goldrush') {
-      return Object.assign(base, {
-        poolSize: 15 + lap * 2,
-        spawnsRemaining: 15 + lap * 2,
-        speed: 2.16 + pressure * 0.34,
-        spawnMs: 980 - Math.min(120, lap * 16),
-        asteroidRatio: 0.6,
-        enemyHpOverride: 2,
-        enemyFireMult: 0.42,
-        enemyFireRateMult: 1.12,
-        enemyVyMult: 0.96,
-        enemyDriftMult: 1.08,
-        enemyDodgeMult: 0.64,
-        spawnCadenceMult: 0.9,
-      });
-    }
-    if (theme === 'swarm') {
-      return Object.assign(base, {
-        poolSize: 46 + lap * 4,
-        spawnsRemaining: 46 + lap * 4,
-        speed: 3.92 + pressure * 0.50,
-        spawnMs: 390 - Math.min(60, lap * 10),
-        asteroidRatio: 0,
-        enemyHpOverride: 1,
-        enemyFireMult: 0,
-        swarmCap: 11,
-        activeObstacleCap: 11,
-        spawnCadenceMult: 0.80,
-        allowMystery: false,
-        allowPowerups: false,
-        allowHp: false,
-      });
-    }
-    return Object.assign(base, {
-      poolSize: 18 + lap * 2,
-      spawnsRemaining: 18 + lap * 2,
-      speed: 2.3 + pressure * 0.42,
-      spawnMs: 900 - Math.min(140, lap * 20),
-      asteroidRatio: 0.42,
-      enemyHpOverride: 2,
-      enemyFireMult: 0.72,
-      enemyFireRateMult: 1.04,
-      enemyVyMult: 1.02,
-      enemyDriftMult: 1.22,
-      enemyDodgeMult: 0.84,
-      spawnCadenceMult: 0.94,
-      mixedEnemyScreenCap: 2,
-    });
-  }
   function pickWaveTheme(w, previousTheme) {
-    if (spaceRunMode === 'endless') return endlessThemeForWave(w);
     // Phase 2 authored campaign: shorter, clearer, and rescue beats are intentional.
-    // Random/chaos modes move later into Endless/Boss Run instead of appearing in the
+    // Random/chaos modes move later into Boss Run/debug instead of appearing in the
     // first campaign pass. Six captives are tied to Waves 4, 6, 7, 9, 10, and 11.
     const campaign = {
       1: 'asteroids', // movement / dodge basics
@@ -306,7 +204,7 @@
     };
     if (Object.prototype.hasOwnProperty.call(campaign, w)) return campaign[w];
 
-    // Post-campaign / debug endless fallback keeps the old variety available after
+    // Post-campaign / debug fallback keeps the old variety available after
     // the authored rescue run. This is intentionally separate from the campaign.
     if (previousTheme === 'boss' || previousTheme === 'captive' || previousTheme === 'gizmo') return chapterPick(POST_BOSS_SPECIALS, w, previousTheme, 0);
     if (w % 9 === 0) return 'boss';
@@ -444,7 +342,7 @@
   };
   function bossTuningFor(creature, options) {
     const base = Object.assign({ rMult: 1, hpMult: 1, attackDelayMult: 1, projectileSpeedMult: 1, damageMult: 1, vulnerabilityWindowMult: 1, spawnClutterAllowed: false, signatureClutterAllowed: false }, BOSS_TUNING[creature && creature.name] || {});
-    if (creature && creature.isGizmo && options && options.final) return Object.assign({}, base, { rMult: 1.00, hpMult: 1.60, attackDelayMult: 1.15, notes: 'Final Gizmo should feel bigger and tougher, not endless.' });
+    if (creature && creature.isGizmo && options && options.final) return Object.assign({}, base, { rMult: 1.00, hpMult: 1.60, attackDelayMult: 1.15, notes: 'Final Gizmo should feel bigger and tougher than a normal boss.' });
     if (creature && creature.isGizmo && options && options.escape) return Object.assign({}, base, { rMult: 0.95, hpMult: 0.85, notes: 'Early/escape Gizmo should not be the real finale.' });
     return base;
   }
@@ -962,12 +860,12 @@
     if (w < 8) return 1;                          // first boss/rescue loop
     if (w < SPACE_CAMPAIGN_FINAL_WAVE) return 2;  // mid/late campaign pressure
     if (w === SPACE_CAMPAIGN_FINAL_WAVE) return 3; // final Gizmo
-    return 4;                                     // post-campaign endless/debug ramp
+    return 4;                                     // post-campaign/debug ramp
   }
 
   function campaignWaveTuning(w) {
     // Explicit balance for the authored 11-wave campaign.
-    // should teach one main threat at a time; Endless can keep the chaotic mixes.
+    // should teach one main threat at a time; later debug waves can keep the chaotic mixes.
     // spawnsRemaining is exact for these campaign waves so startWaveSpawn() does
     // not re-inflate them with the older theme multipliers.
     const tuning = {
@@ -1003,17 +901,16 @@
   }
 
   function waveConfig(w) {
-    if (spaceRunMode === 'endless') return endlessWaveConfig(w);
     const tier = campaignTier(w);
-    const endless = Math.max(0, w - SPACE_CAMPAIGN_FINAL_WAVE);
+    const postCampaign = Math.max(0, w - SPACE_CAMPAIGN_FINAL_WAVE);
     // Difficulty now rises by campaign tier first, wave number second. Campaign
     // waves are then overlaid with explicit tuning so early waves teach one skill
     // at a time instead of mixing every threat immediately.
     const base = {
-      poolSize: 10 + w * 3 + tier * 3 + endless * 2,
-      speed: O_SPEED_BASE + Math.min(w, 10) * 0.13 + tier * 0.22 + endless * 0.18,
-      spawnMs: Math.max(390, 1760 - Math.min(w, 12) * 62 - tier * 70 - endless * 34),
-      asteroidRatio: Math.max(0.2, 0.64 - tier * 0.055 - endless * 0.012),
+      poolSize: 10 + w * 3 + tier * 3 + postCampaign * 2,
+      speed: O_SPEED_BASE + Math.min(w, 10) * 0.13 + tier * 0.22 + postCampaign * 0.18,
+      spawnMs: Math.max(390, 1760 - Math.min(w, 12) * 62 - tier * 70 - postCampaign * 34),
+      asteroidRatio: Math.max(0.2, 0.64 - tier * 0.055 - postCampaign * 0.012),
       tier,
       allowMystery: true,
       allowPowerups: true,
@@ -2431,8 +2328,8 @@
     spawnsRemaining = 1;
     blasterDisabledUntil = now + 1500;
     spawnBlackoutBatteryJunk(authoredCampaignEncounter);
-    addFloatText(campaignBlackout ? 'BLACKOUT' : 'BLACKOUT TEST C', W / 2, H * 0.25, '#ffe61a', 25, { vy: 0, holdMs: 3000, fade: 0.010 });
-    addFloatText('CATCH 5 OF 10 TO PASS!', W / 2, H * 0.25 + 34, '#33ff66', 24, { vy: 0, holdMs: 3000, fade: 0.010 });
+    addFloatText(campaignBlackout ? 'BLACKOUT' : 'BLACKOUT TEST C', W / 2, H * 0.25, '#ffe61a', 25, { vy: 0, holdMs: 4200, fade: 0.010 });
+    addFloatText('CATCH 5 OF 10 TO PASS!', W / 2, H * 0.25 + 34, '#33ff66', 24, { vy: 0, holdMs: 4200, fade: 0.010 });
   }
 
   function startBlackoutTestEncounter(mode) {
@@ -5056,7 +4953,6 @@
   function showMissionFailedBeat(onDone) {
     const gc = GAME_CHARS[activeChar];
     const isBossRunFail = spaceRunMode === 'bossrun';
-    const isEndlessFail = spaceRunMode === 'endless';
     const rescued = rescuedChars.size;
     const total = missionTrappedChars.length || SPACE_RESCUE_TARGET_COUNT;
     const bossTotal = bossRunQueue.length || 8;
@@ -5078,18 +4974,18 @@
     el.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(3,1,16,0);opacity:1;transition:background 0.35s ease;pointer-events:none';
     el.innerHTML = `
       <div style="width:min(94vw,410px);text-align:center;opacity:0;transform:scale(0.96);transition:opacity 0.35s ease,transform 0.35s ease">
-        <div style="font-family:'Bebas Neue',cursive;font-size:52px;letter-spacing:6px;line-height:0.95;color:#ff4444;text-shadow:0 0 22px #ff444488;margin-bottom:18px">${isEndlessFail ? 'RUN OVER' : 'MISSION FAILED'}</div>
+        <div style="font-family:'Bebas Neue',cursive;font-size:52px;letter-spacing:6px;line-height:0.95;color:#ff4444;text-shadow:0 0 22px #ff444488;margin-bottom:18px">MISSION FAILED</div>
         <div style="width:110px;height:110px;margin:0 auto 14px;border-radius:18px;overflow:hidden;border:3px solid ${gc.color}66;background:${gc.color}11;box-shadow:0 0 18px ${gc.color}33">${charFace(gc, 'sad')}</div>
         <div style="font-family:'VCR',monospace;font-size:12px;letter-spacing:3px;color:rgba(242,239,232,0.5);margin-bottom:6px">${gc.name}</div>
-        <div style="font-family:'Bebas Neue',cursive;font-size:36px;letter-spacing:4px;line-height:1;color:${allSaved ? '#33ff66' : '#00e5ff'};text-shadow:0 0 14px ${allSaved ? '#33ff66' : '#00e5ff'}88;margin-bottom:6px">${isBossRunFail ? `${bossesDefeated}/${bossTotal} BOSSES DEFEATED` : isEndlessFail ? `WAVE ${wave} REACHED` : `${rescued}/${total} HEROES SAVED`}</div>
+        <div style="font-family:'Bebas Neue',cursive;font-size:36px;letter-spacing:4px;line-height:1;color:${allSaved ? '#33ff66' : '#00e5ff'};text-shadow:0 0 14px ${allSaved ? '#33ff66' : '#00e5ff'}88;margin-bottom:6px">${isBossRunFail ? `${bossesDefeated}/${bossTotal} BOSSES DEFEATED` : `${rescued}/${total} HEROES SAVED`}</div>
         <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.45);margin-bottom:12px">WAVE ${wave} · SCORE ${score}</div>
         <div style="width:min(92vw,360px);margin:0 auto 18px;padding:10px 12px;border:1px solid rgba(255,68,68,0.42);background:rgba(255,68,68,0.10);border-radius:12px;text-align:left;font-family:'VCR',monospace;line-height:1.35">
           <div style="font-size:9px;letter-spacing:2px;color:rgba(242,239,232,0.55);margin-bottom:4px">CAUSE OF DEFEAT</div>
           <div style="font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:3px;line-height:1;color:#ff6666;text-shadow:0 0 10px rgba(255,68,68,0.55)">${prettyDamageCause(deathCause || lastDamageCause || 'UNKNOWN HAZARD')}</div>
           <div style="font-size:10px;letter-spacing:1.4px;color:rgba(242,239,232,0.72);margin-top:5px">WAVE ${deathWave || wave} — ${deathWaveTheme || waveNameForDeath()}${(deathDamageAmount || lastDamageAmount) ? ` / -${deathDamageAmount || lastDamageAmount} HP` : ''}</div>
         </div>
-        ${(!isBossRunFail && !isEndlessFail && captiveGrid) ? `<div style="display:grid;grid-template-columns:repeat(3,42px);justify-content:center;gap:10px 18px;margin:0 auto 20px">${captiveGrid}</div>` : ''}
-        <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.4)">${isBossRunFail ? 'THE BOSSES ARE STILL WAITING' : isEndlessFail ? 'JUMP BACK IN WHEN YOU WANT' : 'THEY STILL NEED YOU'}</div>
+        ${(!isBossRunFail && captiveGrid) ? `<div style="display:grid;grid-template-columns:repeat(3,42px);justify-content:center;gap:10px 18px;margin:0 auto 20px">${captiveGrid}</div>` : ''}
+        <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,239,232,0.4)">${isBossRunFail ? 'THE BOSSES ARE STILL WAITING' : 'THEY STILL NEED YOU'}</div>
       </div>`;
     document.body.appendChild(el);
     const card = el.firstElementChild;
@@ -5230,7 +5126,7 @@
     waveCaptivesSeen.clear();
     currentCfg = waveConfig(wave);
     waveTheme = pickWaveTheme(wave, previousTheme);
-    // Post-campaign/Endless Blackout otherwise inherits the unbounded endless
+    // Post-campaign/debug Blackout otherwise inherits the unbounded late-wave
     // spawn ramp. Keep it at the authored, readable campaign pressure.
     if (waveTheme === 'blackout' && wave !== 8) {
       currentCfg = Object.assign({}, currentCfg, {
@@ -5310,14 +5206,6 @@ function nextWave() {
   }
 
   function skillCalloutForWave() {
-    if (spaceRunMode === 'endless') {
-      if (waveTheme === 'music') return 'JAM WAVE. GRAB NOTES AND POWER.';
-      if (waveTheme === 'goldrush') return 'BONUS FLOW. STOCK UP.';
-      if (waveTheme === 'swarm') return null;
-      if (waveTheme === 'enemies') return 'DODGE, SHOOT, COLLECT.';
-      if (waveTheme === 'asteroids') return 'BREATHER. DODGE OR CLEAR.';
-      return 'KEEP THE RUN GOING.';
-    }
     if (wave === 1) return 'FIND THE GAP';
     if (wave === 2) return 'LET IT LOCK. THEN MOVE.';
     if (wave === 3) return 'STAY IN THE EYE. BREAK THE CLOUDS.';
@@ -5359,8 +5247,8 @@ function nextWave() {
     setTimeout(() => {
       if (flowToken !== spaceFlowToken || state !== 'playing' || (waveTransitioning && !opts.allowDuringTransition)) return;
       if (waveTheme === 'blackout') {
-        addFloatText('BLACKOUT!', W / 2, H * 0.35, '#ffe61a', 32, { holdMs: 2200, fade: 0.012 });
-        addFloatText('FIND THE FLASH', W / 2, H * 0.35 + 30, '#33ff66', 20, { holdMs: 2200, fade: 0.012 });
+        addFloatText('BLACKOUT!', W / 2, H * 0.35, '#ffe61a', 32, { holdMs: 3400, fade: 0.012 });
+        addFloatText('FIND THE FLASH', W / 2, H * 0.35 + 30, '#33ff66', 20, { holdMs: 3400, fade: 0.012 });
       } else if (wave === 6 && currentCfg && currentCfg.authoredRescue) {
         addFloatText('STAY IN THE EYE', W / 2, H * 0.42, '#7dffff', 28, { vy: 0, holdMs: 2400, fade: 0.012 });
         addFloatText('SHOOT THE LOCK WHILE YOU SURVIVE', W / 2, H * 0.42 + 30, '#33ff66', 19, { vy: 0, holdMs: 2400, fade: 0.012 });
@@ -5374,7 +5262,7 @@ function nextWave() {
         addFloatText(openingInstruction[0], W / 2, H * 0.35, wave === 1 ? '#ffe61a' : wave === 2 ? '#ff765d' : '#d7a4ff', 30, { vy: 0, holdMs: instructionHold, fade: 0.012 });
         addFloatText(openingInstruction[1], W / 2, H * 0.35 + 30, '#33ff66', 19, { vy: 0, holdMs: instructionHold, fade: 0.012 });
       } else {
-        showTopBanner(text, waveTheme === 'boss' || waveTheme === 'gizmo' || waveTheme === 'captive' ? 'bad' : 'good', { holdMs: spaceRunMode === 'endless' ? 1300 : 1800 });
+        showTopBanner(text, waveTheme === 'boss' || waveTheme === 'gizmo' || waveTheme === 'captive' ? 'bad' : 'good', { holdMs: 1800 });
       }
     }, opts.delayMs != null ? opts.delayMs : 420);
   }
@@ -5470,7 +5358,6 @@ function nextWave() {
 
   function spaceLeaderboardMode() {
     if (spaceRunMode === 'bossrun') return 'bossrun';
-    if (spaceRunMode === 'endless') return 'endless';
     if (spaceRunMode === 'academy' || spaceRunMode === 'debug') return null;
     return 'campaign';
   }
@@ -5478,42 +5365,36 @@ function nextWave() {
   function getSpaceLeaderboardKey() {
     const mode = spaceLeaderboardMode();
     if (mode === 'bossrun') return 'space-bossrun';
-    if (mode === 'endless') return 'space-endless';
     return 'space-campaign';
   }
 
   function getSpaceBestKey() {
     const mode = spaceLeaderboardMode();
     if (mode === 'bossrun') return 'space-best-bossrun';
-    if (mode === 'endless') return 'space-best-endless';
     return 'space-best-campaign';
   }
 
   function getSpaceResultField() {
     const mode = spaceLeaderboardMode();
     if (mode === 'bossrun') return 'bosses';
-    if (mode === 'endless') return 'wave';
     return 'score';
   }
 
   function getSpaceResultLabel() {
     const mode = spaceLeaderboardMode();
     if (mode === 'bossrun') return 'BOSSES DEFEATED';
-    if (mode === 'endless') return 'WAVE REACHED';
     return 'CAMPAIGN SCORE';
   }
 
   function getSpaceResultValue() {
     const mode = spaceLeaderboardMode();
     if (mode === 'bossrun') return Math.max(0, bossRunIndex || 0);
-    if (mode === 'endless') return Math.max(0, wave || 0);
     return Math.max(0, score || 0);
   }
 
   function getSpaceResultExtraLine() {
     const mode = spaceLeaderboardMode();
     if (mode === 'bossrun') return `${Math.max(0, bossRunIndex || 0)}/${bossRunQueue.length || 8} BOSSES DEFEATED / SCORE ${score}`;
-    if (mode === 'endless') return `SCORE ${score}`;
     return `RESCUED ${rescuedChars.size}/${missionTrappedChars.length || SPACE_RESCUE_TARGET_COUNT} / WAVE ${wave}`;
   }
 
@@ -6562,17 +6443,6 @@ function nextWave() {
         ctx.restore();
       }
       ctx.textBaseline = 'alphabetic';
-    } else if (spaceRunMode === 'endless') {
-      const cyclePos = (endlessCycleIndex(wave) % ENDLESS_THEME_CYCLE.length) + 1;
-      ctx.textAlign = 'left';
-      ctx.font = `bold 13px 'Bebas Neue', cursive`;
-      ctx.fillStyle = '#ff00cc';
-      ctx.fillText(`ENDLESS ${cyclePos}/${ENDLESS_THEME_CYCLE.length}`, 10, barY + barH + 16);
-      ctx.fillStyle = 'rgba(255,255,255,0.28)';
-      ctx.fillRect(10, barY + barH + 23, 92, 4);
-      ctx.fillStyle = '#ff00cc';
-      ctx.fillRect(10, barY + barH + 23, 92 * (cyclePos / ENDLESS_THEME_CYCLE.length), 4);
-      ctx.textBaseline = 'alphabetic';
     } else if (missionTrappedChars.length) {
       const total = missionTrappedChars.length;
       const rescued = Math.min(rescuedChars.size, total);
@@ -6590,7 +6460,6 @@ function nextWave() {
   }
 
   function drawRescueBanner() {
-    if (spaceRunMode === 'endless') return;
     if (!rescueBanner) return;
     const age = Date.now() - rescueBanner.startedAt;
     const hold = 1850;
@@ -10837,7 +10706,6 @@ function nextWave() {
         <div style="display:flex;flex-direction:column;gap:10px">
           <button class="whack-btn" style="border-color:#ffe61a;background:rgba(255,230,26,0.24)" onclick="spaceBossRunStart()">BOSS RUN AGAIN</button>
           <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN</button>
-          <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="spaceEndlessStart()">ENDLESS</button>
           <button class="whack-btn" style="border-color:#7b61ff;background:rgba(123,97,255,0.22)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
           <button class="whack-btn" style="border-color:rgba(242,239,232,0.35);background:rgba(242,239,232,0.08)" onclick="nav('lobby')">BACK TO ARCADE</button>
         </div>
@@ -10887,7 +10755,6 @@ function nextWave() {
             <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN AGAIN</button>
             <button class="whack-btn" style="border-color:#00e5ff;background:rgba(0,229,255,0.22)" onclick="spaceAcademyStart()">SPACE TUTORIAL</button>
             <button class="whack-btn" style="border-color:#ffe61a;background:rgba(255,230,26,0.20)" onclick="spaceBossRunStart()">BOSS RUN</button>
-            <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="spaceEndlessStart()">ENDLESS</button>
             <button class="whack-btn" style="border-color:rgba(242,239,232,0.35);background:rgba(242,239,232,0.08)" onclick="nav('lobby')">BACK TO ARCADE</button>
           </div>
         </div>
@@ -10941,7 +10808,6 @@ function nextWave() {
                 <div class="space-select-group-label" style="margin-top:6px">PLAY</div>
                 ${spaceModeButtonHTML('PLAY CAMPAIGN', `${SPACE_CAMPAIGN_FINAL_WAVE} WAVES / 6 RESCUES`, 'spaceStart()', '#33ff66', '▶')}
                 ${spaceModeButtonHTML('BOSS RUN', 'BOSSES ONLY', 'spaceBossRunStart()', '#ffe61a', '☠')}
-                ${spaceModeButtonHTML('ENDLESS', 'CHAOS MODE', 'spaceEndlessStart()', '#ff00cc', '∞')}
               </div>
             </div>
           </div>
@@ -10977,7 +10843,6 @@ function nextWave() {
         buttons: `
           <button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#ffe61a;background:rgba(255,230,26,0.24)" onclick="spaceBossRunStart()">BOSS RUN AGAIN</button>
           <button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN</button>
-          <button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="spaceEndlessStart()">ENDLESS</button>
           <button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#7b61ff;background:rgba(123,97,255,0.22)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
           <button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:rgba(242,239,232,0.35);background:rgba(242,239,232,0.08)" onclick="nav('lobby')">BACK TO ARCADE</button>
         `,
@@ -11014,7 +10879,7 @@ function nextWave() {
           minHeight: 220,
           saveMarginTop: 18,
           buttons: `
-            ${spaceLeaderboardMode() === 'bossrun' ? `<button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#ffe61a;background:rgba(255,230,26,0.24)" onclick="spaceBossRunStart()">BOSS RUN AGAIN</button>` : spaceLeaderboardMode() === 'endless' ? `<button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#ff00cc;background:rgba(255,0,204,0.26)" onclick="spaceEndlessStart()">ENDLESS AGAIN</button>` : `<button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN AGAIN</button>`}
+            ${spaceLeaderboardMode() === 'bossrun' ? `<button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#ffe61a;background:rgba(255,230,26,0.24)" onclick="spaceBossRunStart()">BOSS RUN AGAIN</button>` : `<button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN AGAIN</button>`}
             <button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#7b61ff;background:rgba(123,97,255,0.22)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
             <button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#ff00cc;background:rgba(255,0,204,0.24)" onclick="nav('lobby')">BACK TO ARCADE</button>
           `,
@@ -11661,28 +11526,6 @@ function nextWave() {
     }, 1500);
   }
 
-  function beginEndlessRun() {
-    reset();
-    clearSpaceRuntimeTimers();
-    clearSpaceCinematicOverlays();
-    clearSpaceAcademyTimers();
-    bullets = []; obstacles = []; enemyBullets = []; powerups = []; floatTexts = []; blackoutHitFlashes = []; blackoutShooterIndex = 0;
-    boss = null; miniBoss = null; pendingBossWin = null; rescueBanner = null; mirrorSequenceActive = false;
-    rescuedChars.clear(); missionRetryCaptives.splice(0, missionRetryCaptives.length); waveCaptivesSeen.clear();
-    missionEnemyChars.splice(0, missionEnemyChars.length);
-    missionTrappedChars.splice(0, missionTrappedChars.length);
-    wave = SPACE_CAMPAIGN_FINAL_WAVE + 1;
-    waveKills = 0;
-    currentCfg = waveConfig(wave);
-    waveTheme = pickWaveTheme(wave, null);
-    pendingBossCreature = (waveTheme === 'boss' || waveTheme === 'gizmo') ? pickBossCreature() : null;
-    spawnsRemaining = 0;
-    themeEffectsAt = waveTheme === 'blackout' ? Date.now() + 1400 : 0;
-    startWaveSpawn(currentCfg);
-    showTopBanner('ENDLESS MODE', 'good');
-    showSkillCalloutForWave();
-  }
-
   window.spaceStart=function(){
     prepareSpaceModeRun('campaign');
     const beginRun = () => {
@@ -11762,14 +11605,6 @@ function nextWave() {
     health = 100;
     state='playing';
     beginBossRunWave();
-    raf=requestAnimationFrame(loop);
-  };
-  window.spaceEndlessStart=function(){
-    prepareSpaceModeRun('endless');
-    beginEndlessRun();
-    state='playing';
-    seedVisibleAmbientJunk(currentCfg);
-    scheduleAmbientJunk(currentCfg);
     raf=requestAnimationFrame(loop);
   };
   window.spaceDebugJump=function(startWave){

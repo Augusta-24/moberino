@@ -2494,6 +2494,14 @@ body.theme-july4     #collage::after {
 }
 body.theme-halloween #collage::after { background: rgba(52,18,0,0.90); }
 body.theme-xmas      #collage::after { background: rgba(0,52,18,0.88); }
+body.theme-winter    #collage::after { background: rgba(10,28,58,0.88); }
+body.theme-valentine #collage::after { background: rgba(68,8,34,0.88); }
+body.theme-stPatricks #collage::after { background: rgba(0,52,24,0.88); }
+body.theme-golf      #collage::after { background: rgba(18,62,28,0.86); }
+body.theme-mayFlowers #collage::after { background: rgba(42,28,66,0.86); }
+body.theme-lateSummer #collage::after { background: rgba(18,20,24,0.88); }
+body.theme-september #collage::after { background: rgba(64,10,18,0.88); }
+body.theme-thanksgiving #collage::after { background: rgba(62,28,8,0.90); }
 body.theme-july4.on-detail     #collage::after,
 body.theme-july4.on-timeline   #collage::after {
   background: repeating-linear-gradient(
@@ -2506,6 +2514,22 @@ body.theme-halloween.on-detail   #collage::after,
 body.theme-halloween.on-timeline #collage::after { background: rgba(52,18,0,0.98); }
 body.theme-xmas.on-detail   #collage::after,
 body.theme-xmas.on-timeline #collage::after { background: rgba(0,52,18,0.98); }
+body.theme-winter.on-detail #collage::after,
+body.theme-winter.on-timeline #collage::after { background: rgba(10,28,58,0.96); }
+body.theme-valentine.on-detail #collage::after,
+body.theme-valentine.on-timeline #collage::after { background: rgba(68,8,34,0.96); }
+body.theme-stPatricks.on-detail #collage::after,
+body.theme-stPatricks.on-timeline #collage::after { background: rgba(0,52,24,0.96); }
+body.theme-golf.on-detail #collage::after,
+body.theme-golf.on-timeline #collage::after { background: rgba(18,62,28,0.95); }
+body.theme-mayFlowers.on-detail #collage::after,
+body.theme-mayFlowers.on-timeline #collage::after { background: rgba(42,28,66,0.95); }
+body.theme-lateSummer.on-detail #collage::after,
+body.theme-lateSummer.on-timeline #collage::after { background: rgba(18,20,24,0.97); }
+body.theme-september.on-detail #collage::after,
+body.theme-september.on-timeline #collage::after { background: rgba(64,10,18,0.96); }
+body.theme-thanksgiving.on-detail #collage::after,
+body.theme-thanksgiving.on-timeline #collage::after { background: rgba(62,28,8,0.98); }
 
 /* Seasonal icon button */
 #seasonBtn { position: relative; overflow: hidden; }
@@ -4896,10 +4920,11 @@ buildDecadeBar();
   // the edges, so it fills the (pill-shaped) button without a hard rim. Always gold
   // regardless of which season is active (the button's own "magic" identity).
   const SPARKLE_GLOW = 'radial-gradient(ellipse at center, rgba(255,208,92,0.32) 0%, rgba(255,176,48,0.14) 55%, rgba(255,150,30,0) 100%)';
+  const SEASON_KEYS = ['winter','valentine','stPatricks','golf','mayFlowers','july4','lateSummer','september','halloween','thanksgiving','xmas'];
 
   function getSeasonOverride() {
     const value = new URLSearchParams(window.location.search).get('season');
-    if (value === 'july4' || value === 'halloween' || value === 'xmas') return value;
+    if (SEASON_KEYS.includes(value)) return value;
     if (value === 'off') return null;
     return undefined;
   }
@@ -4909,9 +4934,17 @@ buildDecadeBar();
     if (override !== undefined) return override;
 
     const now = new Date(), m = now.getMonth() + 1, d = now.getDate();
-    if (m === 12) return 'xmas';
+    if (m === 1) return 'winter';
+    if (m === 2) return 'valentine';
+    if (m === 3) return 'stPatricks';
+    if (m === 4) return 'golf';
+    if (m === 5) return 'mayFlowers';
+    if (m === 6 || (m === 7 && d <= 11)) return 'july4';
+    if ((m === 7 && d >= 12) || m === 8) return 'lateSummer';
+    if (m === 9) return 'september';
     if (m === 10) return 'halloween';
-    if (m === 6 || (m === 7 && d <= 4)) return 'july4';
+    if (m === 11) return 'thanksgiving';
+    if (m === 12) return 'xmas';
     return null;
   }
 
@@ -4948,6 +4981,45 @@ buildDecadeBar();
         r: 1 + Math.random() * 2.8, vx: (Math.random() - 0.5) * 0.35,
         vy: 0.4 + Math.random() * 1.2, a: 0.3 + Math.random() * 0.5, t: Math.random() * 100,
       }));
+      const stars = Array.from({length: 28}, () => ({
+        x: Math.random() * innerWidth, y: Math.random() * innerHeight,
+        r: 4 + Math.random() * 7, t: Math.random() * Math.PI * 2,
+        a: 0.22 + Math.random() * 0.28,
+      }));
+      const candyCanes = Array.from({length: 12}, () => ({
+        x: Math.random() * innerWidth, y: -80 - Math.random() * innerHeight,
+        s: 22 + Math.random() * 18, vx: (Math.random() - 0.5) * 0.22,
+        vy: 0.25 + Math.random() * 0.5, rot: (Math.random() - 0.5) * 0.7,
+        rotV: (Math.random() - 0.5) * 0.008, a: 0.38 + Math.random() * 0.26,
+      }));
+      function drawHolidayStar(x, y, r, a) {
+        ctx.save(); ctx.translate(x, y); ctx.globalAlpha = a;
+        ctx.fillStyle = '#fff4b8'; ctx.shadowColor = '#fff4b8'; ctx.shadowBlur = 12;
+        ctx.beginPath();
+        for (let i = 0; i < 10; i++) {
+          const rr = i % 2 ? r * 0.38 : r;
+          const ang = i * Math.PI / 5 - Math.PI / 2;
+          if (i === 0) ctx.moveTo(Math.cos(ang) * rr, Math.sin(ang) * rr);
+          else ctx.lineTo(Math.cos(ang) * rr, Math.sin(ang) * rr);
+        }
+        ctx.closePath(); ctx.fill(); ctx.restore();
+      }
+      function drawCandyCane(p) {
+        const s = p.s;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.globalAlpha = p.a;
+        ctx.lineCap = 'round'; ctx.lineWidth = s * 0.22;
+        ctx.strokeStyle = 'rgba(255,255,255,0.76)'; ctx.shadowColor = 'rgba(255,255,255,0.42)'; ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.moveTo(0, s * 0.48);
+        ctx.lineTo(0, -s * 0.18);
+        ctx.bezierCurveTo(0, -s * 0.56, s * 0.48, -s * 0.56, s * 0.48, -s * 0.18);
+        ctx.stroke();
+        ctx.shadowBlur = 0; ctx.strokeStyle = 'rgba(198,20,34,0.78)'; ctx.lineWidth = s * 0.08;
+        for (let y = s * 0.36; y > -s * 0.28; y -= s * 0.22) {
+          ctx.beginPath(); ctx.moveTo(-s * 0.09, y); ctx.lineTo(s * 0.09, y - s * 0.10); ctx.stroke();
+        }
+        ctx.restore();
+      }
       (function tick() {
         ctx.clearRect(0, 0, W, H);
         flakes.forEach(f => {
@@ -4956,37 +5028,140 @@ buildDecadeBar();
           ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(255,255,255,${f.a})`; ctx.fill();
         });
+        stars.forEach(s => {
+          s.t += 0.028;
+          drawHolidayStar(s.x, s.y, s.r, s.a * (0.55 + 0.45 * Math.sin(s.t)));
+        });
+        candyCanes.forEach(p => {
+          p.x += p.vx; p.y += p.vy; p.rot += p.rotV;
+          if (p.y > H + 80) { p.y = -80; p.x = Math.random() * W; }
+          drawCandyCane(p);
+        });
+        raf = requestAnimationFrame(tick);
+      })();
+
+    } else if (currentSeason === 'winter') {
+      const confetti = Array.from({length: 95}, () => ({
+        x: Math.random() * innerWidth, y: -30 - Math.random() * innerHeight,
+        w: 4 + Math.random() * 5, h: 9 + Math.random() * 12,
+        vx: (Math.random() - 0.5) * 0.9, vy: 0.55 + Math.random() * 1.35,
+        rot: Math.random() * Math.PI * 2, rotV: (Math.random() - 0.5) * 0.12,
+        color: ['#ffd24a','#e84a5f','#34d1bf','#f8f7ff','#7f7cff'][Math.floor(Math.random() * 5)],
+        a: 0.48 + Math.random() * 0.38,
+      }));
+      (function tick() {
+        ctx.clearRect(0, 0, W, H);
+        confetti.forEach(p => {
+          p.x += p.vx + Math.sin(p.y * 0.012) * 0.22; p.y += p.vy; p.rot += p.rotV;
+          if (p.y > H + 30) { p.y = -30; p.x = Math.random() * W; }
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.globalAlpha = p.a;
+          ctx.fillStyle = p.color; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          ctx.restore();
+        });
+        ctx.globalAlpha = 1;
         raf = requestAnimationFrame(tick);
       })();
 
     } else if (currentSeason === 'halloween') {
-      const pumpkins = Array.from({length: 22}, () => ({
-        x: Math.random() * innerWidth, y: -50 - Math.random() * innerHeight,
-        s: 16 + Math.random() * 22, vx: (Math.random() - 0.5) * 0.55,
-        vy: 0.45 + Math.random() * 0.85, rot: Math.random() * Math.PI * 2,
-        rotV: (Math.random() - 0.5) * 0.025, a: 0.55 + Math.random() * 0.4,
+      const ART_STYLE = {
+        ink: 'rgba(255,206,142,0.74)',
+        wash: 'rgba(255,132,46,0.08)',
+        ghostWash: 'rgba(244,230,208,0.08)',
+        line: 2.1,
+        shadow: 'rgba(255,142,54,0.42)',
+      };
+      const figures = Array.from({length: 14}, (_, i) => ({
+        kind: i % 3 === 1 ? 'ghost' : 'pumpkin',
+        x: Math.random() * innerWidth,
+        y: Math.random() * innerHeight - 180,
+        s: 58 + Math.random() * 54,
+        vx: (Math.random() - 0.5) * 0.24,
+        vy: 0.18 + Math.random() * 0.34,
+        rot: (Math.random() - 0.5) * 0.22,
+        rotV: (Math.random() - 0.5) * 0.004,
+        a: 0.46 + Math.random() * 0.26,
+        phase: Math.random() * Math.PI * 2,
       }));
-      function drawPumpkin(x, y, s, rot, alpha) {
-        ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.globalAlpha = alpha;
-        ctx.beginPath(); ctx.ellipse(0, 2, s * 0.48, s * 0.38, 0, 0, Math.PI * 2);
-        ctx.fillStyle = '#c85800'; ctx.fill();
-        for (let i = -1; i <= 1; i++) {
-          ctx.beginPath(); ctx.ellipse(i * s * 0.18, 2, s * 0.13, s * 0.35, 0, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.fill();
-        }
-        ctx.fillStyle = '#3a1c00'; ctx.fillRect(-s * 0.05, -s * 0.38, s * 0.1, s * 0.2);
-        ctx.fillStyle = 'rgba(0,0,0,0.65)';
-        ctx.beginPath(); ctx.arc(-s * 0.16, s * 0.02, s * 0.075, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(s * 0.16, s * 0.02, s * 0.075, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(-s * 0.22, s * 0.16); ctx.quadraticCurveTo(0, s * 0.3, s * 0.22, s * 0.16);
-        ctx.fill(); ctx.globalAlpha = 1; ctx.restore();
+      function beginSeasonArt(p) {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.globalAlpha = p.a;
+        ctx.lineWidth = Math.max(1.3, ART_STYLE.line * (p.s / 88));
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = ART_STYLE.ink;
+        ctx.shadowColor = ART_STYLE.shadow;
+        ctx.shadowBlur = 14;
+      }
+      function drawElegantPumpkin(p) {
+        const s = p.s;
+        beginSeasonArt(p);
+        ctx.fillStyle = ART_STYLE.wash;
+        ctx.beginPath();
+        ctx.ellipse(0, 6, s * 0.48, s * 0.36, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        [-0.24, 0, 0.24].forEach((x, i) => {
+          ctx.beginPath();
+          ctx.ellipse(x * s, 7, s * (i === 1 ? 0.17 : 0.12), s * 0.34, 0, 0, Math.PI * 2);
+          ctx.stroke();
+        });
+        ctx.beginPath();
+        ctx.moveTo(-s * 0.04, -s * 0.29);
+        ctx.bezierCurveTo(-s * 0.02, -s * 0.44, s * 0.16, -s * 0.42, s * 0.10, -s * 0.25);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(8,8,10,0.38)';
+        ctx.beginPath();
+        ctx.moveTo(-s * 0.18, s * 0.00); ctx.lineTo(-s * 0.09, -s * 0.07); ctx.lineTo(-s * 0.03, s * 0.03); ctx.closePath(); ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(s * 0.18, s * 0.00); ctx.lineTo(s * 0.09, -s * 0.07); ctx.lineTo(s * 0.03, s * 0.03); ctx.closePath(); ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-s * 0.18, s * 0.17);
+        ctx.quadraticCurveTo(0, s * 0.28, s * 0.18, s * 0.17);
+        ctx.lineTo(s * 0.11, s * 0.23);
+        ctx.quadraticCurveTo(0, s * 0.16, -s * 0.11, s * 0.23);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+      function drawElegantGhost(p) {
+        const s = p.s;
+        beginSeasonArt(p);
+        ctx.fillStyle = ART_STYLE.ghostWash;
+        ctx.beginPath();
+        ctx.moveTo(-s * 0.34, s * 0.36);
+        ctx.bezierCurveTo(-s * 0.42, s * 0.02, -s * 0.34, -s * 0.34, 0, -s * 0.38);
+        ctx.bezierCurveTo(s * 0.34, -s * 0.34, s * 0.42, s * 0.02, s * 0.34, s * 0.36);
+        ctx.quadraticCurveTo(s * 0.22, s * 0.27, s * 0.12, s * 0.38);
+        ctx.quadraticCurveTo(0, s * 0.27, -s * 0.12, s * 0.38);
+        ctx.quadraticCurveTo(-s * 0.22, s * 0.27, -s * 0.34, s * 0.36);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(8,8,10,0.34)';
+        ctx.beginPath(); ctx.ellipse(-s * 0.12, -s * 0.08, s * 0.035, s * 0.055, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(s * 0.12, -s * 0.08, s * 0.035, s * 0.055, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath();
+        ctx.arc(0, s * 0.08, s * 0.045, 0, Math.PI);
+        ctx.strokeStyle = 'rgba(8,8,10,0.30)';
+        ctx.stroke();
+        ctx.restore();
       }
       (function tick() {
         ctx.clearRect(0, 0, W, H);
-        pumpkins.forEach(p => {
-          p.x += p.vx; p.y += p.vy; p.rot += p.rotV;
-          if (p.y > H + 70) { p.y = -70; p.x = Math.random() * W; }
-          drawPumpkin(p.x, p.y, p.s, p.rot, p.a);
+        figures.forEach(p => {
+          p.phase += 0.012;
+          p.x += p.vx + Math.sin(p.phase) * 0.08;
+          p.y += p.vy;
+          p.rot += p.rotV;
+          if (p.y > H + 180) { p.y = -180; p.x = Math.random() * W; }
+          if (p.x < -160) p.x = W + 160;
+          if (p.x > W + 160) p.x = -160;
+          if (p.kind === 'ghost') drawElegantGhost(p);
+          else drawElegantPumpkin(p);
         });
         raf = requestAnimationFrame(tick);
       })();
@@ -5094,6 +5269,347 @@ buildDecadeBar();
         ctx.globalAlpha = 1;
         raf = requestAnimationFrame(tick);
       })();
+    } else {
+      if (currentSeason === 'golf') {
+        const pieces = Array.from({length: 34}, (_, i) => ({
+          kind: i % 5 === 0 ? 'flag' : i % 5 === 1 ? 'azalea' : 'club',
+          x: Math.random() * innerWidth, y: -70 - Math.random() * innerHeight,
+          s: 14 + Math.random() * 22, vx: (Math.random() - 0.5) * 0.26,
+          vy: 0.34 + Math.random() * 0.72, rot: (Math.random() - 0.5) * 0.35,
+          rotV: (Math.random() - 0.5) * 0.012, a: 0.46 + Math.random() * 0.30,
+        }));
+        function drawGolfClub(p) {
+          const s = p.s * 1.35;
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.globalAlpha = p.a;
+          ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+          ctx.strokeStyle = 'rgba(236,245,230,0.72)';
+          ctx.lineWidth = Math.max(1.4, s * 0.055);
+          ctx.shadowColor = 'rgba(210,255,180,0.30)';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.moveTo(-s * 0.18, -s * 0.55);
+          ctx.quadraticCurveTo(-s * 0.04, -s * 0.05, s * 0.16, s * 0.43);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = 'rgba(215,225,212,0.64)';
+          ctx.strokeStyle = 'rgba(245,255,235,0.72)';
+          ctx.lineWidth = Math.max(1.1, s * 0.035);
+          ctx.beginPath();
+          ctx.moveTo(s * 0.12, s * 0.38);
+          ctx.quadraticCurveTo(s * 0.40, s * 0.45, s * 0.42, s * 0.58);
+          ctx.quadraticCurveTo(s * 0.18, s * 0.63, -s * 0.10, s * 0.51);
+          ctx.quadraticCurveTo(-s * 0.02, s * 0.39, s * 0.12, s * 0.38);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+          ctx.restore();
+        }
+        function drawGolfFlag(p) {
+          const s = p.s * 1.35;
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.globalAlpha = p.a;
+          ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(245,255,235,0.72)'; ctx.lineWidth = 1.8;
+          ctx.shadowColor = 'rgba(180,255,140,0.28)'; ctx.shadowBlur = 8;
+          ctx.beginPath(); ctx.moveTo(0, -s * 0.58); ctx.lineTo(0, s * 0.52); ctx.stroke();
+          ctx.fillStyle = 'rgba(255,235,88,0.70)';
+          ctx.beginPath(); ctx.moveTo(0, -s * 0.58); ctx.lineTo(s * 0.54, -s * 0.43); ctx.lineTo(0, -s * 0.28); ctx.closePath(); ctx.fill();
+          ctx.restore();
+        }
+        function drawAzalea(p) {
+          const s = p.s;
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.globalAlpha = p.a;
+          ctx.fillStyle = 'rgba(255,133,194,0.66)'; ctx.shadowColor = 'rgba(255,133,194,0.36)'; ctx.shadowBlur = 9;
+          for (let i = 0; i < 5; i++) {
+            const a = i * Math.PI * 2 / 5;
+            ctx.beginPath(); ctx.ellipse(Math.cos(a) * s * 0.18, Math.sin(a) * s * 0.18, s * 0.16, s * 0.28, a, 0, Math.PI * 2); ctx.fill();
+          }
+          ctx.fillStyle = 'rgba(255,234,96,0.72)'; ctx.beginPath(); ctx.arc(0, 0, s * 0.08, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        }
+        (function tick() {
+          ctx.clearRect(0, 0, W, H);
+          pieces.forEach(p => {
+            p.x += p.vx; p.y += p.vy; p.rot += p.rotV;
+            if (p.y > H + 80) { p.y = -80; p.x = Math.random() * W; }
+            if (p.kind === 'flag') drawGolfFlag(p);
+            else if (p.kind === 'azalea') drawAzalea(p);
+            else drawGolfClub(p);
+          });
+          raf = requestAnimationFrame(tick);
+        })();
+        particleStop = () => {
+          cancelAnimationFrame(raf); ro.disconnect();
+          clearTimeout(burstTimer);
+          if (clearSeedBursts) clearSeedBursts();
+          c.remove(); particleStop = null;
+        };
+        return;
+      }
+
+      if (currentSeason === 'lateSummer') {
+        const drops = Array.from({length: 170}, () => ({
+          x: Math.random() * innerWidth, y: Math.random() * innerHeight,
+          len: 16 + Math.random() * 28, vy: 5.6 + Math.random() * 4.4,
+          vx: -1.2 - Math.random() * 0.9, a: 0.18 + Math.random() * 0.28,
+        }));
+        let flash = 0, nextFlash = Date.now() + 900 + Math.random() * 1600;
+        (function tick() {
+          ctx.clearRect(0, 0, W, H);
+          drops.forEach(r => {
+            r.x += r.vx; r.y += r.vy;
+            if (r.y > H + r.len) { r.y = -r.len; r.x = Math.random() * W; }
+            if (r.x < -30) r.x = W + 30;
+            ctx.beginPath(); ctx.moveTo(r.x, r.y); ctx.lineTo(r.x + r.vx * 2.4, r.y + r.len);
+            ctx.strokeStyle = `rgba(180,198,220,${r.a})`; ctx.lineWidth = 1.25; ctx.stroke();
+          });
+          const now = Date.now();
+          if (now > nextFlash) {
+            flash = 1;
+            nextFlash = now + 1200 + Math.random() * 2400;
+          }
+          if (flash > 0) {
+            ctx.fillStyle = `rgba(215,225,245,${flash * 0.18})`;
+            ctx.fillRect(0, 0, W, H);
+            flash *= 0.72;
+          }
+          raf = requestAnimationFrame(tick);
+        })();
+        particleStop = () => {
+          cancelAnimationFrame(raf); ro.disconnect();
+          clearTimeout(burstTimer);
+          if (clearSeedBursts) clearSeedBursts();
+          c.remove(); particleStop = null;
+        };
+        return;
+      }
+
+      if (currentSeason === 'september') {
+        const harvest = Array.from({length: 34}, (_, i) => ({
+          kind: i % 3 === 0 ? 'apple' : 'leaf',
+          x: Math.random() * innerWidth, y: -50 - Math.random() * innerHeight,
+          s: 34 + Math.random() * 34, vx: (Math.random() - 0.5) * 0.38,
+          vy: 0.28 + Math.random() * 0.68, rot: Math.random() * Math.PI * 2,
+          rotV: (Math.random() - 0.5) * 0.016, a: 0.44 + Math.random() * 0.26,
+        }));
+        const SEPT_STYLE = {
+          ink: 'rgba(255,204,128,0.62)',
+          appleWash: 'rgba(190,36,32,0.18)',
+          appleInk: 'rgba(238,74,52,0.70)',
+          leafInk: 'rgba(235,142,54,0.66)',
+          leafWash: ['rgba(202,82,34,0.18)','rgba(224,138,42,0.17)','rgba(128,72,34,0.18)'],
+          shadow: 'rgba(255,126,42,0.30)',
+        };
+        function drawApple(p) {
+          const s = p.s;
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.globalAlpha = p.a;
+          ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+          ctx.lineWidth = Math.max(1.4, s * 0.035);
+          ctx.strokeStyle = SEPT_STYLE.appleInk;
+          ctx.fillStyle = SEPT_STYLE.appleWash;
+          ctx.shadowColor = SEPT_STYLE.shadow;
+          ctx.shadowBlur = 12;
+          ctx.beginPath();
+          ctx.moveTo(0, -s * 0.28);
+          ctx.bezierCurveTo(-s * 0.34, -s * 0.48, -s * 0.58, -s * 0.08, -s * 0.44, s * 0.24);
+          ctx.bezierCurveTo(-s * 0.30, s * 0.60, -s * 0.04, s * 0.52, 0, s * 0.42);
+          ctx.bezierCurveTo(s * 0.04, s * 0.52, s * 0.30, s * 0.60, s * 0.44, s * 0.24);
+          ctx.bezierCurveTo(s * 0.58, -s * 0.08, s * 0.34, -s * 0.48, 0, -s * 0.28);
+          ctx.closePath(); ctx.fill(); ctx.stroke();
+          ctx.shadowBlur = 0;
+          ctx.strokeStyle = 'rgba(108,56,24,0.70)';
+          ctx.beginPath(); ctx.moveTo(-s * 0.03, -s * 0.29); ctx.quadraticCurveTo(s * 0.04, -s * 0.52, s * 0.18, -s * 0.45); ctx.stroke();
+          ctx.fillStyle = 'rgba(86,150,54,0.54)';
+          ctx.beginPath(); ctx.ellipse(s * 0.25, -s * 0.39, s * 0.15, s * 0.07, -0.45, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = 'rgba(255,220,150,0.22)';
+          ctx.beginPath(); ctx.moveTo(-s * 0.18, -s * 0.18); ctx.bezierCurveTo(-s * 0.34, s * 0.02, -s * 0.24, s * 0.24, -s * 0.08, s * 0.34); ctx.stroke();
+          ctx.restore();
+        }
+        function drawMapleLeaf(p) {
+          const s = p.s;
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.globalAlpha = p.a;
+          ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+          ctx.fillStyle = SEPT_STYLE.leafWash[Math.floor((p.s * 10) % SEPT_STYLE.leafWash.length)];
+          ctx.strokeStyle = SEPT_STYLE.leafInk;
+          ctx.lineWidth = Math.max(1.2, s * 0.028);
+          ctx.shadowColor = SEPT_STYLE.shadow; ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.moveTo(0, -s * 0.55);
+          ctx.bezierCurveTo(s * 0.05, -s * 0.40, s * 0.13, -s * 0.30, s * 0.25, -s * 0.42);
+          ctx.bezierCurveTo(s * 0.24, -s * 0.25, s * 0.38, -s * 0.18, s * 0.52, -s * 0.22);
+          ctx.bezierCurveTo(s * 0.40, -s * 0.06, s * 0.48, s * 0.08, s * 0.62, s * 0.16);
+          ctx.bezierCurveTo(s * 0.40, s * 0.17, s * 0.30, s * 0.26, s * 0.36, s * 0.46);
+          ctx.bezierCurveTo(s * 0.17, s * 0.34, s * 0.08, s * 0.39, 0, s * 0.62);
+          ctx.bezierCurveTo(-s * 0.08, s * 0.39, -s * 0.17, s * 0.34, -s * 0.36, s * 0.46);
+          ctx.bezierCurveTo(-s * 0.30, s * 0.26, -s * 0.40, s * 0.17, -s * 0.62, s * 0.16);
+          ctx.bezierCurveTo(-s * 0.48, s * 0.08, -s * 0.40, -s * 0.06, -s * 0.52, -s * 0.22);
+          ctx.bezierCurveTo(-s * 0.38, -s * 0.18, -s * 0.24, -s * 0.25, -s * 0.25, -s * 0.42);
+          ctx.bezierCurveTo(-s * 0.13, -s * 0.30, -s * 0.05, -s * 0.40, 0, -s * 0.55);
+          ctx.closePath(); ctx.fill(); ctx.stroke();
+          ctx.shadowBlur = 0;
+          ctx.strokeStyle = 'rgba(255,218,145,0.30)';
+          ctx.lineWidth = Math.max(0.9, s * 0.016);
+          ctx.beginPath(); ctx.moveTo(0, -s * 0.42); ctx.lineTo(0, s * 0.50); ctx.stroke();
+          [[0.25,-0.22],[0.44,0.02],[0.25,0.24],[-0.25,-0.22],[-0.44,0.02],[-0.25,0.24]].forEach(([x,y]) => {
+            ctx.beginPath(); ctx.moveTo(0, y * s * 0.65); ctx.lineTo(x * s, y * s); ctx.stroke();
+          });
+          ctx.restore();
+        }
+        (function tick() {
+          ctx.clearRect(0, 0, W, H);
+          harvest.forEach(p => {
+            p.x += p.vx + Math.sin(p.y * 0.01) * 0.14; p.y += p.vy; p.rot += p.rotV;
+            if (p.y > H + 70) { p.y = -70; p.x = Math.random() * W; }
+            if (p.kind === 'apple') drawApple(p);
+            else drawMapleLeaf(p);
+          });
+          raf = requestAnimationFrame(tick);
+        })();
+        particleStop = () => {
+          cancelAnimationFrame(raf); ro.disconnect();
+          clearTimeout(burstTimer);
+          if (clearSeedBursts) clearSeedBursts();
+          c.remove(); particleStop = null;
+        };
+        return;
+      }
+
+      if (currentSeason === 'thanksgiving') {
+        const table = Array.from({length: 30}, (_, i) => ({
+          kind: i % 3 === 0 ? 'pie' : 'turkey',
+          x: Math.random() * innerWidth, y: -70 - Math.random() * innerHeight,
+          s: 38 + Math.random() * 36, vx: (Math.random() - 0.5) * 0.32,
+          vy: 0.30 + Math.random() * 0.66, rot: (Math.random() - 0.5) * 0.48,
+          rotV: (Math.random() - 0.5) * 0.014, a: 0.44 + Math.random() * 0.28,
+        }));
+        const THANKS_STYLE = {
+          ink: 'rgba(255,198,128,0.66)',
+          turkeyWash: 'rgba(142,72,28,0.16)',
+          featherWash: ['rgba(196,76,34,0.16)','rgba(224,132,42,0.15)','rgba(112,64,32,0.16)'],
+          pieWash: 'rgba(218,132,48,0.17)',
+          crustInk: 'rgba(255,206,132,0.62)',
+          shadow: 'rgba(255,132,42,0.30)',
+        };
+        function prepThanksgivingArt(p) {
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.globalAlpha = p.a;
+          ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+          ctx.lineWidth = Math.max(1.35, p.s * 0.03);
+          ctx.strokeStyle = THANKS_STYLE.ink;
+          ctx.shadowColor = THANKS_STYLE.shadow;
+          ctx.shadowBlur = 10;
+        }
+        function drawTurkey(p) {
+          const s = p.s;
+          prepThanksgivingArt(p);
+          for (let i = -3; i <= 3; i++) {
+            const a = -Math.PI / 2 + i * 0.22;
+            ctx.fillStyle = THANKS_STYLE.featherWash[Math.abs(i) % THANKS_STYLE.featherWash.length];
+            ctx.beginPath();
+            ctx.ellipse(Math.cos(a) * s * 0.10, -s * 0.05 + Math.sin(a) * s * 0.30, s * 0.13, s * 0.38, a, 0, Math.PI * 2);
+            ctx.fill(); ctx.stroke();
+          }
+          ctx.fillStyle = THANKS_STYLE.turkeyWash;
+          ctx.beginPath();
+          ctx.ellipse(0, s * 0.12, s * 0.30, s * 0.34, 0, 0, Math.PI * 2);
+          ctx.fill(); ctx.stroke();
+          ctx.beginPath();
+          ctx.ellipse(s * 0.28, -s * 0.05, s * 0.14, s * 0.17, 0.18, 0, Math.PI * 2);
+          ctx.fill(); ctx.stroke();
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = 'rgba(255,180,72,0.64)';
+          ctx.beginPath(); ctx.moveTo(s * 0.41, -s * 0.05); ctx.lineTo(s * 0.56, -s * 0.01); ctx.lineTo(s * 0.41, s * 0.04); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = 'rgba(105,32,24,0.48)';
+          ctx.beginPath(); ctx.ellipse(s * 0.35, s * 0.07, s * 0.035, s * 0.09, 0.2, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = 'rgba(8,8,10,0.42)';
+          ctx.beginPath(); ctx.arc(s * 0.32, -s * 0.09, s * 0.025, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        }
+        function drawPie(p) {
+          const s = p.s;
+          prepThanksgivingArt(p);
+          ctx.fillStyle = THANKS_STYLE.pieWash;
+          ctx.beginPath();
+          ctx.moveTo(-s * 0.48, s * 0.18);
+          ctx.quadraticCurveTo(0, -s * 0.18, s * 0.48, s * 0.18);
+          ctx.quadraticCurveTo(0, s * 0.46, -s * 0.48, s * 0.18);
+          ctx.closePath(); ctx.fill(); ctx.stroke();
+          ctx.strokeStyle = THANKS_STYLE.crustInk;
+          ctx.beginPath();
+          for (let i = -4; i <= 4; i++) {
+            const x = i * s * 0.12;
+            const y = s * 0.18 - Math.abs(i) * s * 0.012;
+            if (i === -4) ctx.moveTo(x, y);
+            else ctx.quadraticCurveTo(x - s * 0.06, y - s * 0.09, x, y);
+          }
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = 'rgba(255,238,204,0.62)';
+          for (let i = -1; i <= 1; i++) {
+            ctx.beginPath(); ctx.ellipse(i * s * 0.09, s * 0.08, s * 0.055, s * 0.024, i * 0.4, 0, Math.PI * 2); ctx.fill();
+          }
+          ctx.restore();
+        }
+        (function tick() {
+          ctx.clearRect(0, 0, W, H);
+          table.forEach(p => {
+            p.x += p.vx + Math.sin(p.y * 0.01) * 0.10; p.y += p.vy; p.rot += p.rotV;
+            if (p.y > H + 90) { p.y = -90; p.x = Math.random() * W; }
+            if (p.kind === 'pie') drawPie(p);
+            else drawTurkey(p);
+          });
+          raf = requestAnimationFrame(tick);
+        })();
+        particleStop = () => {
+          cancelAnimationFrame(raf); ro.disconnect();
+          clearTimeout(burstTimer);
+          if (clearSeedBursts) clearSeedBursts();
+          c.remove(); particleStop = null;
+        };
+        return;
+      }
+
+      const FALLING_THEME = {
+        valentine: { glyphs: ['♥'], colors: ['#ff5a9d','#ff9ac2','#ffd1e0'], count: 34, wind: 0.42, speed: [0.32, 0.88], size: [16, 30] },
+        stPatricks: { glyphs: ['♣'], colors: ['#44ff88','#21c95f','#b7ff63'], count: 42, wind: 0.34, speed: [0.36, 0.92], size: [15, 27] },
+        mayFlowers: { glyphs: ['✿','✽'], colors: ['#ffb7df','#ffe28a','#b8ffda','#caa7ff'], count: 44, wind: 0.44, speed: [0.34, 0.86], size: [15, 27] },
+      }[currentSeason];
+
+      if (FALLING_THEME) {
+        const items = Array.from({length: FALLING_THEME.count}, () => ({
+          x: Math.random() * innerWidth,
+          y: -40 - Math.random() * innerHeight,
+          s: FALLING_THEME.size[0] + Math.random() * (FALLING_THEME.size[1] - FALLING_THEME.size[0]),
+          vx: (Math.random() - 0.5) * FALLING_THEME.wind,
+          vy: FALLING_THEME.speed[0] + Math.random() * (FALLING_THEME.speed[1] - FALLING_THEME.speed[0]),
+          rot: Math.random() * Math.PI * 2,
+          rotV: (Math.random() - 0.5) * 0.018,
+          a: 0.42 + Math.random() * 0.36,
+          glyph: FALLING_THEME.glyphs[Math.floor(Math.random() * FALLING_THEME.glyphs.length)],
+          color: FALLING_THEME.colors[Math.floor(Math.random() * FALLING_THEME.colors.length)],
+        }));
+        (function tick() {
+          ctx.clearRect(0, 0, W, H);
+          items.forEach(p => {
+            p.x += p.vx + Math.sin((p.y + p.s) * 0.01) * 0.08;
+            p.y += p.vy;
+            p.rot += p.rotV;
+            if (p.y > H + 60) { p.y = -60; p.x = Math.random() * W; }
+            if (p.x < -60) p.x = W + 60;
+            if (p.x > W + 60) p.x = -60;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            ctx.globalAlpha = p.a;
+            ctx.font = `${p.s}px serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = p.color;
+            ctx.shadowColor = p.color;
+            ctx.shadowBlur = 10;
+            ctx.fillText(p.glyph, 0, 0);
+            ctx.restore();
+          });
+          ctx.globalAlpha = 1;
+          raf = requestAnimationFrame(tick);
+        })();
+      }
     }
 
     particleStop = () => {
