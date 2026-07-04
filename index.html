@@ -1205,6 +1205,11 @@ body.rec-open { overflow-y: auto; }
   align-items: center;
   gap: 14px;
 }
+@media (display-mode: standalone) {
+  .srch-top {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 18px);
+  }
+}
 .srch-logo-btn {
   background: none;
   border: none;
@@ -2659,6 +2664,11 @@ button.cats-search-wrap {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+@media (display-mode: standalone) {
+  .detail-breadcrumb {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
+  }
 }
 .detail-back-link {
   background: none; border: none; cursor: pointer; padding: 6px 0 14px;
