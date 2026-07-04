@@ -166,6 +166,11 @@ body.on-home {
   display: flex; align-items: center; gap: 10px;
   padding: max(11px, env(safe-area-inset-top, 0px)) 16px 11px;
 }
+@media (display-mode: standalone) {
+  #hdr {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 11px);
+  }
+}
 #logo {
   font-family: var(--theme-font-brand);
   font-size: 24px;
@@ -894,6 +899,11 @@ body.rec-open { overflow-y: auto; }
   position: relative;
   z-index: 2;
   border-bottom: 1px solid var(--theme-line-08);
+}
+@media (display-mode: standalone) {
+  .cats-header {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+  }
 }
 .main-site-header {
   display: none;
