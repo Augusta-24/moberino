@@ -21,6 +21,7 @@
 <link rel="stylesheet" href="css/games/whack.css">
 <link rel="stylesheet" href="css/games/space.css">
 <link rel="stylesheet" href="css/games/match.css">
+<link rel="stylesheet" href="css/games/snoob.css">
 <script>
 
 // Locks #pg-home's height to a JS-measured pixel value instead of letting the browser
@@ -270,6 +271,73 @@
 </div>
 </div>
 </div>
+<div class="carousel-item" id="ci-snoob">
+<div class="game-card" onclick="SFX.menuSelect();nav('snoob')" style="border-color:#e4b65f66;cursor:pointer">
+<div class="game-card-art" style="background:transparent">
+<svg height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0" viewBox="0 0 200 240" width="100%">
+<defs>
+  <linearGradient id="snoobDome" x1="0" x2="1" y1="0" y2="1">
+    <stop offset="0" stop-color="#fff"/>
+    <stop offset=".55" stop-color="#f5f1ef" stop-opacity=".78"/>
+    <stop offset="1" stop-color="#d6d2d8" stop-opacity=".48"/>
+  </linearGradient>
+  <filter id="snoobSoftShadow" x="-30%" y="-30%" width="160%" height="170%">
+    <feDropShadow dx="0" dy="7" flood-color="#000" flood-opacity=".34" stdDeviation="3"/>
+  </filter>
+</defs>
+<rect fill="rgba(5,2,18,.18)" height="240" width="200"/>
+<g opacity=".16" stroke="#f7f1df" stroke-width="2">
+  <path d="M27 40 C70 23 142 22 177 42"/>
+  <path d="M18 196 C62 214 139 216 185 195"/>
+</g>
+<g filter="url(#snoobSoftShadow)">
+  <g transform="translate(57 75) rotate(-18)">
+    <path d="M-25 6 C-25 -25 25 -25 25 6 Z" fill="url(#snoobDome)" stroke="#151318" stroke-opacity=".58" stroke-width="2"/>
+    <path d="M-25 6 H25 Q28 25 17 33 Q0 40 -17 33 Q-28 25 -25 6 Z" fill="#ff1f3f" stroke="#151318" stroke-width="2"/>
+    <rect x="-32" y="2" width="64" height="13" rx="4" fill="#ff3a54" stroke="#151318" stroke-width="2"/>
+    <ellipse cx="-11" cy="-12" rx="10" ry="4" fill="#fff" opacity=".66" transform="rotate(-28)"/>
+  </g>
+  <g transform="translate(114 66) rotate(12)">
+    <path d="M-25 6 C-25 -25 25 -25 25 6 Z" fill="url(#snoobDome)" stroke="#151318" stroke-opacity=".58" stroke-width="2"/>
+    <path d="M-25 6 H25 Q28 25 17 33 Q0 40 -17 33 Q-28 25 -25 6 Z" fill="#00a8ff" stroke="#151318" stroke-width="2"/>
+    <rect x="-32" y="2" width="64" height="13" rx="4" fill="#15b9ff" stroke="#151318" stroke-width="2"/>
+    <ellipse cx="-11" cy="-12" rx="10" ry="4" fill="#fff" opacity=".66" transform="rotate(-28)"/>
+  </g>
+  <g transform="translate(86 116) rotate(20)">
+    <path d="M-28 7 C-28 -27 28 -27 28 7 Z" fill="url(#snoobDome)" stroke="#151318" stroke-opacity=".58" stroke-width="2"/>
+    <path d="M-28 7 H28 Q31 28 19 37 Q0 45 -19 37 Q-31 28 -28 7 Z" fill="#ffe000" stroke="#151318" stroke-width="2"/>
+    <rect x="-36" y="2" width="72" height="15" rx="4" fill="#ffea35" stroke="#151318" stroke-width="2"/>
+    <ellipse cx="-12" cy="-13" rx="11" ry="4" fill="#fff" opacity=".66" transform="rotate(-28)"/>
+  </g>
+  <g transform="translate(142 123) rotate(-14)">
+    <path d="M-25 6 C-25 -25 25 -25 25 6 Z" fill="url(#snoobDome)" stroke="#151318" stroke-opacity=".58" stroke-width="2"/>
+    <path d="M-25 6 H25 Q28 25 17 33 Q0 40 -17 33 Q-28 25 -25 6 Z" fill="#10b84a" stroke="#151318" stroke-width="2"/>
+    <rect x="-32" y="2" width="64" height="13" rx="4" fill="#24cf60" stroke="#151318" stroke-width="2"/>
+    <ellipse cx="-11" cy="-12" rx="10" ry="4" fill="#fff" opacity=".66" transform="rotate(-28)"/>
+  </g>
+  <g transform="translate(48 151) rotate(11)">
+    <path d="M-24 6 C-24 -24 24 -24 24 6 Z" fill="url(#snoobDome)" stroke="#151318" stroke-opacity=".58" stroke-width="2"/>
+    <path d="M-24 6 H24 Q27 24 16 32 Q0 39 -16 32 Q-27 24 -24 6 Z" fill="#ff2aa3" stroke="#151318" stroke-width="2"/>
+    <rect x="-31" y="2" width="62" height="13" rx="4" fill="#ff4bb0" stroke="#151318" stroke-width="2"/>
+    <ellipse cx="-10" cy="-11" rx="10" ry="4" fill="#fff" opacity=".66" transform="rotate(-28)"/>
+  </g>
+  <g transform="translate(116 170) rotate(-8)">
+    <path d="M-27 7 C-27 -26 27 -26 27 7 Z" fill="url(#snoobDome)" stroke="#151318" stroke-opacity=".58" stroke-width="2"/>
+    <path d="M-27 7 H27 Q30 27 18 35 Q0 43 -18 35 Q-30 27 -27 7 Z" fill="#ff6f00" stroke="#151318" stroke-width="2"/>
+    <rect x="-35" y="2" width="70" height="14" rx="4" fill="#ff851f" stroke="#151318" stroke-width="2"/>
+    <ellipse cx="-12" cy="-12" rx="11" ry="4" fill="#fff" opacity=".66" transform="rotate(-28)"/>
+  </g>
+</g>
+</svg>
+</div>
+<div class="game-card-info">
+<div class="game-card-badge" style="background:#e4b65f22;color:#e4b65f;border:1px solid #e4b65f66">PUZZLE</div>
+<div class="game-card-marquee" style="color:#e4b65f;text-shadow:0 0 20px #e4b65f88">SNOOB</div>
+<div class="game-card-desc">AIM · MATCH 3 · DROP THE STACK</div>
+<div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#e4b65f22;border:1.5px solid #e4b65f;border-radius:5px;padding:10px 24px;color:#e4b65f;width:100%;text-shadow:0 0 8px #e4b65f66;text-align:center">▶ PLAY</div>
+</div>
+</div>
+</div>
 </div>
 <div class="carousel-nav-row" style="justify-content:space-between;align-items:center;padding:6px 14px 0">
 <button onclick="scrollCarousel(-1)" style="font-size:22px;background:none;border:none;color:rgba(242,239,232,0.4);cursor:pointer;padding:8px">◀</button>
@@ -326,6 +394,19 @@
 </div>
 </div>
 
+<div class="page" id="pg-snoob">
+<div class="cats-header">
+<button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE MENU</button>
+<div class="arcade-header-actions" style="display:flex;align-items:center;gap:8px">
+<button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
+<button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
+</div>
+</div>
+<div class="snoob-wrap" id="snoob-wrap">
+<!-- Filled by JS -->
+</div>
+</div>
+
 <div id="arcade-float"></div>
 
 <button aria-label="Exit game" class="arcade-exit-btn" id="arcade-game-exit" onclick="confirmExitArcade()">✕</button>
@@ -353,5 +434,6 @@
 <script src="js/games/whack.js"></script>
 <script src="js/games/match.js"></script>
 <script src="js/games/space.js"></script>
+<script src="js/games/snoob.js"></script>
 </body>
 </html>

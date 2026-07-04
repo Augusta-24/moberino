@@ -160,18 +160,20 @@
     const onWhack = p === 'whack';
     const onMatch = p === 'match';
     const onSpace = p === 'space';
+    const onSnoob = p === 'snoob';
     document.body.classList.toggle('on-lobby', onLobby);
     document.body.classList.toggle('on-char', onCharSelect);
     document.body.classList.toggle('on-whack', onWhack);
     document.body.classList.toggle('on-match', onMatch);
     document.body.classList.toggle('on-space', onSpace);
+    document.body.classList.toggle('on-snoob', onSnoob);
     document.documentElement.classList.add('arcade-root');
 
     try {
-      if ((onLobby || onCharSelect || onWhack || onMatch || onSpace) && typeof ArcadeMusic !== 'undefined' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
+      if ((onLobby || onCharSelect || onWhack || onMatch || onSpace || onSnoob) && typeof ArcadeMusic !== 'undefined' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
       if (typeof ArcadeMusic !== 'undefined') {
         if (onLobby || onCharSelect) ArcadeMusic.unduck();
-        if (onWhack || onMatch || onSpace) ArcadeMusic.duck();
+        if (onWhack || onMatch || onSpace || onSnoob) ArcadeMusic.duck();
       }
     } catch(e) {}
 
@@ -189,9 +191,11 @@
     if (onWhack && typeof initWhack === 'function') initWhack();
     if (onMatch && typeof initMatch === 'function') initMatch();
     if (onSpace && typeof initSpace === 'function') initSpace();
+    if (onSnoob && typeof initSnoob === 'function') initSnoob();
     if (!onSpace && typeof spacePause === 'function') spacePause();
     if (!onWhack && typeof whackBack === 'function') whackBack();
     if (!onMatch && typeof matchBack === 'function') matchBack();
+    if (!onSnoob && typeof snoobBack === 'function') snoobBack();
   };
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -596,14 +600,14 @@ const ArcadeMusic = (() => {
 // autoplay (cold load / browser blocked it), never to fight a deliberate
 // ArcadeMusic.stop() from a game that's actively silencing music for gameplay.
 document.addEventListener('click', function() {
-  const onArcade = document.body.matches('.on-lobby,.on-whack,.on-match,.on-space,.on-char');
+  const onArcade = document.body.matches('.on-lobby,.on-whack,.on-match,.on-space,.on-snoob,.on-char');
     if (onArcade && !ArcadeMusic.playing && !ArcadeMusic.muted && !ArcadeMusic.suppressAutoResume) {
       ArcadeMusic.start();
       updateArcadeMusicPrompt();
     }
 }, { passive: true });
 document.addEventListener('touchstart', function() {
-  const onArcade = document.body.matches('.on-lobby,.on-whack,.on-match,.on-space,.on-char');
+  const onArcade = document.body.matches('.on-lobby,.on-whack,.on-match,.on-space,.on-snoob,.on-char');
     if (onArcade && !ArcadeMusic.playing && !ArcadeMusic.muted && !ArcadeMusic.suppressAutoResume) {
       ArcadeMusic.start();
       updateArcadeMusicPrompt();
@@ -695,6 +699,7 @@ function getLeaderboardKey(game, options) {
   if (game === 'whack') return opts.key || getWhackLeaderboardKey();
   if (game === 'match') return opts.key || getMatchLeaderboardKey();
   if (game === 'space') return opts.key || getSpaceLeaderboardKey();
+  if (game === 'snoob') return opts.key || 'snoob';
   return opts.key || game;
 }
 
@@ -708,6 +713,7 @@ function getLeaderboardBoards() {
     { key: 'match-challenge', label: 'MATCH · CHALLENGE', color: '#ff9933', field: 'seconds' },
     { key: 'match-impossible', label: 'MATCH · IMPOSSIBLE', color: '#ff4444', field: 'score' },
     { key: 'space', label: 'SPACE MOBE', color: '#33ff66', field: 'score' },
+    { key: 'snoob', label: 'SNOOB', color: '#e4b65f', field: 'score' },
   ];
 }
 
@@ -717,6 +723,7 @@ function getLeaderboardGroups() {
     { title: 'WHACK', keys: ['whack-classic-easy', 'whack-classic-hard', 'whack-frenzy-easy', 'whack-frenzy-hard'] },
     { title: 'MATCH', keys: ['match-hard', 'match-challenge', 'match-impossible'] },
     { title: 'SPACE', keys: ['space'] },
+    { title: 'SNOOB', keys: ['snoob'] },
   ].map(group => ({ ...group, boards: group.keys.map(key => boards.find(b => b.key === key)).filter(Boolean) }));
 }
 
@@ -724,7 +731,7 @@ function getLeaderboardBoardMeta(game, options) {
   const key = getLeaderboardKey(game, options);
   const board = getLeaderboardBoards().find(b => b.key === key);
   if (board) return board;
-  const fallbackColor = game === 'whack' ? '#ff00cc' : game === 'match' ? '#ffe61a' : '#33ff66';
+  const fallbackColor = game === 'whack' ? '#ff00cc' : game === 'match' ? '#ffe61a' : game === 'snoob' ? '#e4b65f' : '#33ff66';
   return { key, label: key.toUpperCase(), color: fallbackColor, field: 'score' };
 }
 
@@ -768,6 +775,7 @@ const RemoteLB = (() => {
     'match-challenge':   { col: 'seconds', dir: 'asc'  },
     'match-impossible':  { col: 'score',   dir: 'asc'  },
     space:                { col: 'score',   dir: 'desc' },
+    snoob:                { col: 'score',   dir: 'desc' },
   };
 
   function isConfigured(game) { return !!SORT[game]; }
@@ -836,6 +844,7 @@ function mountSelectionArt(targetId, game) {
     whack: 'position:absolute;left:50%;top:50%;width:132%;height:132%;transform:translate(-50%,-56%) scale(1.08);transform-origin:center center',
     match: 'position:absolute;left:50%;top:50%;width:130%;height:130%;transform:translate(-50%,-53%) scale(1.08);transform-origin:center center',
     space: 'position:absolute;left:50%;top:50%;width:130%;height:130%;transform:translate(-50%,-54%) scale(1.08);transform-origin:center center',
+    snoob: 'position:absolute;left:50%;top:50%;width:130%;height:130%;transform:translate(-50%,-53%) scale(1.08);transform-origin:center center',
   };
   art.style.cssText = artFrames[game] || artFrames.whack;
   artFrame.appendChild(art);
@@ -1132,7 +1141,12 @@ window.openLeaderboard = function() {
   const ov = document.getElementById('lb-overlay');
   if (!ov) return;
   ov.style.display = 'flex';
-  const active = window._lbActiveTab || (document.body.classList.contains('on-match') ? getMatchLeaderboardKey() : document.body.classList.contains('on-space') ? 'space' : getWhackLeaderboardKey());
+  const active = window._lbActiveTab || (
+    document.body.classList.contains('on-match') ? getMatchLeaderboardKey()
+      : document.body.classList.contains('on-space') ? 'space'
+        : document.body.classList.contains('on-snoob') ? 'snoob'
+          : getWhackLeaderboardKey()
+  );
   renderLbTabs(active);
 };
 window.closeLbOverlay = function() {

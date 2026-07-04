@@ -50,7 +50,7 @@ body.on-home {
   padding-bottom: 0;
 }
 /* Neon arcade floor — even diamond grid, fills full viewport */
-body.on-lobby, body.on-char, body.on-whack, body.on-match, body.on-space {
+body.on-lobby, body.on-char, body.on-whack, body.on-match, body.on-space, body.on-snoob {
   min-height: var(--app-vh, 100dvh);
   background-color: #02040e;
   overflow: hidden;
@@ -58,7 +58,8 @@ body.on-lobby, body.on-char, body.on-whack, body.on-match, body.on-space {
 }
 body.on-whack,
 body.on-match,
-body.on-space {
+body.on-space,
+body.on-snoob {
   padding-bottom: 0 !important;
   background:
     linear-gradient(180deg, rgba(3,6,18,1) 0%, rgba(2,4,14,1) 100%),
@@ -82,7 +83,7 @@ body.on-char {
     repeating-linear-gradient(-45deg, rgba(0,229,255,0.04) 0px, rgba(0,229,255,0.04) 1px, transparent 1px, transparent 31px);
   background-size: auto, 44px 44px, 44px 44px;
 }
-#pg-lobby, #pg-charselect, #pg-whack, #pg-match, #pg-space {
+#pg-lobby, #pg-charselect, #pg-whack, #pg-match, #pg-space, #pg-snoob {
   background: transparent;
 }
 
@@ -134,14 +135,14 @@ body.on-char {
   border-radius: 4px; padding: 5px 10px; color: #ff00cc; cursor: pointer;
   text-shadow: 0 0 8px #ff00cc66; white-space: nowrap;
 }
-body.on-lobby button, body.on-char button, body.on-whack button, body.on-match button, body.on-space button,
-body.on-lobby .game-card, body.on-char .game-card, body.on-whack .game-card, body.on-match .game-card, body.on-space .game-card {
+body.on-lobby button, body.on-char button, body.on-whack button, body.on-match button, body.on-space button, body.on-snoob button,
+body.on-lobby .game-card, body.on-char .game-card, body.on-whack .game-card, body.on-match .game-card, body.on-space .game-card, body.on-snoob .game-card {
   touch-action: manipulation;
 }
 /* ── Arcade page header: compact ── */
 body.on-lobby .cats-header, body.on-char .cats-header,
 body.on-whack .cats-header,
-body.on-match .cats-header, body.on-space .cats-header {
+body.on-match .cats-header, body.on-space .cats-header, body.on-snoob .cats-header {
   height: 56px !important;
   padding: 8px 16px !important;
   background: transparent !important;
@@ -150,25 +151,26 @@ body.on-match .cats-header, body.on-space .cats-header {
 }
 body.on-lobby .arcade-exit-btn, body.on-char .arcade-exit-btn,
 body.on-whack .arcade-exit-btn,
-body.on-match .arcade-exit-btn, body.on-space .arcade-exit-btn {
+body.on-match .arcade-exit-btn, body.on-space .arcade-exit-btn, body.on-snoob .arcade-exit-btn {
   font-size: 12px !important; letter-spacing: 1.5px !important;
   padding: 6px 10px !important; border-radius: 5px !important;
 }
 body.on-lobby .arcade-lb-btn, body.on-char .arcade-lb-btn,
 body.on-whack .arcade-lb-btn,
-body.on-match .arcade-lb-btn, body.on-space .arcade-lb-btn {
+body.on-match .arcade-lb-btn, body.on-space .arcade-lb-btn, body.on-snoob .arcade-lb-btn {
   font-size: 14px !important; padding: 5px 9px !important; border-radius: 4px !important;
 }
 body.on-lobby .arcade-mute-btn, body.on-char .arcade-mute-btn,
 body.on-whack .arcade-mute-btn,
-body.on-match .arcade-mute-btn, body.on-space .arcade-mute-btn {
+body.on-match .arcade-mute-btn, body.on-space .arcade-mute-btn, body.on-snoob .arcade-mute-btn {
   font-size: 11px !important; letter-spacing: 1px !important;
   padding: 5px 9px !important; border-radius: 4px !important;
 }
 /* Game pages use a minimal floating exit button instead of the page header. */
 body.on-whack .cats-header,
 body.on-match .cats-header,
-body.on-space .cats-header {
+body.on-space .cats-header,
+body.on-snoob .cats-header {
   display: none !important;
 }
 #arcade-game-exit {
@@ -191,13 +193,14 @@ body.on-space .cats-header {
 }
 body.on-whack #arcade-game-exit,
 body.on-match #arcade-game-exit,
-body.on-space #arcade-game-exit {
+body.on-space #arcade-game-exit,
+body.on-snoob #arcade-game-exit {
   display: inline-flex;
 }
 /* All arcade header buttons: uniform height */
 body.on-lobby .cats-header button, body.on-char .cats-header button,
 body.on-whack .cats-header button,
-body.on-match .cats-header button, body.on-space .cats-header button {
+body.on-match .cats-header button, body.on-space .cats-header button, body.on-snoob .cats-header button {
   height: 32px !important;
   box-sizing: border-box !important;
   display: inline-flex !important;
@@ -348,7 +351,8 @@ body.arcade-selection-open .af-pizza { opacity: 0.085; }
 }
 body.on-lobby #vhs-bands, body.on-char #vhs-bands, body.on-whack #vhs-bands,
 body.on-match #vhs-bands,
-body.on-space #vhs-bands { display: none !important; }
+body.on-space #vhs-bands,
+body.on-snoob #vhs-bands { display: none !important; }
 
 /* ── SCANLINES ── */
 body::after {
@@ -358,7 +362,7 @@ body::after {
   background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
 }
 body.on-lobby::after, body.on-char::after, body.on-whack::after,
-body.on-match::after, body.on-space::after { display: none; }
+body.on-match::after, body.on-space::after, body.on-snoob::after { display: none; }
 
 /* ── MOBILE TAB DOCK — desktop uses page headers instead ── */
 #tabs { display: none; }
@@ -410,7 +414,8 @@ body.on-match::after, body.on-space::after { display: none; }
   body.on-char #tabs,
   body.on-whack #tabs,
   body.on-match #tabs,
-  body.on-space #tabs {
+  body.on-space #tabs,
+  body.on-snoob #tabs {
     display: none;
   }
   #tabs .tab { display: flex; }
