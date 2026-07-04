@@ -257,6 +257,7 @@
           field,
           seconds: (matchMode === 'hard' || matchMode === 'challenge') ? matchTimer : 0,
           ascending,
+          canSave: didWin,
           buttons: `
             <button class="whack-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.30)" onclick="matchPlay('${matchMode}')">PLAY AGAIN</button>
             <button class="whack-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.30)" onclick="matchChangeMode()">CHANGE MODE</button>

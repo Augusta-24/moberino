@@ -970,6 +970,17 @@
 
       const startRound = () => {
         if (state !== 'playing') return;
+        for (let h = 0; h < HOLES; h++) {
+          holeStates[h] = 'empty';
+          holeCharIdx[h] = -1;
+          holeGrace[h] = false;
+          const hole = document.getElementById(`wh-${h}`);
+          const charEl = document.getElementById(`wc-${h}`);
+          if (hole) hole.classList.remove('up','hit','hit-success','wrong-hit','missed','tap-miss','reveal-correct');
+          if (charEl) charEl.innerHTML = '';
+          clearTint(h);
+          hideMissX(h);
+        }
         waveTransitioning = false;
         if (currentRoundType === 'clear') { startClearRound(); return; }
         if (currentRoundType === 'memory') { startMemoryRound(); return; }

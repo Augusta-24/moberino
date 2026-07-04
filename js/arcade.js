@@ -881,6 +881,7 @@ window.saveArcadeLeaderboard = async function(boardKey, localScore, remoteScore,
 function handleArcadeLeaderboardSubmit(e) {
   const btn = e.target.closest && e.target.closest('[data-arcade-save]');
   if (!btn || btn.disabled) return;
+  if (btn.dataset.eligible === 'false') return;
   e.preventDefault();
   e.stopPropagation();
   const d = btn.dataset;
@@ -928,6 +929,7 @@ function buildArcadeResultCard(options) {
   const statusId = `${uid}-status`;
   const submitLabel = options.submitLabel || '▶';
   const saveButtonId = `${inputId}-save`;
+  const canSave = options.canSave !== false;
   const rowsLine = options.rowsLine || '';
   const statusLine = options.statusLine || '';
   const buttons = options.buttons || '';
@@ -951,14 +953,14 @@ function buildArcadeResultCard(options) {
             ${statusLine ? `<div id="${statusId}" style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:${color};text-shadow:0 0 8px ${color}66">${statusLine}</div>` : `<div id="${statusId}" style="display:none"></div>`}
           </div>
           <div id="${boardTargetId}"></div>
-          <div data-save-row="arcade" style="width:min(100%,280px);height:40px;margin:${saveMarginTop}px auto 0;display:flex;align-items:stretch;gap:8px">
+          ${canSave ? `<div data-save-row="arcade" style="width:min(100%,280px);height:40px;margin:${saveMarginTop}px auto 0;display:flex;align-items:stretch;gap:8px">
             <input id="${inputId}" data-arcade-name="1" maxlength="12" autocomplete="off" spellcheck="false" placeholder="ENTER NAME"
               style="flex:1;min-width:0;height:40px;box-sizing:border-box;background:#0e0b22;border:1.5px solid ${color};border-radius:4px;padding:10px 12px;font-family:'VCR',monospace;font-size:15px;letter-spacing:4px;color:#fff;text-align:center;text-transform:uppercase;outline:none">
             <button id="${saveButtonId}" type="button" aria-label="Submit score" data-arcade-save="1"
               data-board-key="${attr(boardKey)}" data-local-score="${attr(saveValue)}" data-remote-score="${attr(saveValue)}" data-seconds="${attr(options.seconds || 0)}" data-extra="${attr(options.extra || '')}" data-ascending="${options.ascending ? 'true' : 'false'}"
-              data-input-id="${attr(inputId)}" data-status-id="${attr(statusId)}" data-board-target-id="${attr(boardTargetId)}" data-neon-color="${attr(color)}" data-field="${attr(boardField)}" data-art-target-id="${attr(artTargetId)}" data-art-game="${attr(artGame)}"
+              data-input-id="${attr(inputId)}" data-status-id="${attr(statusId)}" data-board-target-id="${attr(boardTargetId)}" data-neon-color="${attr(color)}" data-field="${attr(boardField)}" data-art-target-id="${attr(artTargetId)}" data-art-game="${attr(artGame)}" data-eligible="true"
               style="flex:0 0 44px;width:44px;height:40px;box-sizing:border-box;background:${color}22;border:1.5px solid ${color};border-radius:4px;color:${color};cursor:pointer;text-shadow:0 0 8px ${color}66;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center">${submitLabel}</button>
-          </div>
+          </div>` : `<div style="width:min(100%,280px);margin:${saveMarginTop}px auto 0;font-family:'VCR',monospace;font-size:10px;letter-spacing:2px;line-height:1.5;color:rgba(242,239,232,0.42);text-align:center">CLEAR THE MODE TO SAVE A LEADERBOARD SCORE</div>`}
         </div>
       </div>
       <div class="arcade-cab-foot" style="position:relative;z-index:2;flex-direction:column;align-items:center;gap:8px;background:rgba(5,3,16,0.90);padding:22px 16px 18px;border-top:1px solid rgba(242,239,232,0.12)">${buttons}</div>
