@@ -33,6 +33,7 @@
   let score = 0, shots = 0, drops = 0, rowsAdded = 0, missStreak = 0;
   let current = null, currentType = 0, nextType = 0, shooter = { x: 0, y: 0 };
   let aim = -Math.PI / 2;
+  let aimArmed = false;
   let rowPhase = 0;
   let crankSpin = 0;
   let raf = 0, last = 0, resizeHandler = null;
@@ -110,7 +111,33 @@
   }
 
   function randType() {
-    return Math.floor(Math.random() * tokenTypes.length);
+    return Math.floor(Math.random() * Math.max(1, tokenTypes.length));
+  }
+
+  function pickType(types) {
+    return types[Math.floor(Math.random() * types.length)];
+  }
+
+  function boardTypeList() {
+    const found = new Set();
+    for (const row of board) {
+      for (const type of row) {
+        if (type != null) found.add(type);
+      }
+    }
+    return [...found];
+  }
+
+  function randQueuedType() {
+    const remaining = boardTypeList();
+    return remaining.length ? pickType(remaining) : randType();
+  }
+
+  function syncQueuedTypesToBoard() {
+    const remaining = boardTypeList();
+    if (!remaining.length) return;
+    if (!remaining.includes(currentType)) currentType = pickType(remaining);
+    if (!remaining.includes(nextType)) nextType = pickType(remaining);
   }
 
   function rowOffset(row) {
@@ -217,9 +244,6 @@
         </div>
         <div class="snoob-canvas-wrap">
           <canvas id="snoob-canvas"></canvas>
-          <button class="snoob-fire-btn" type="button" onclick="snoobFire()" aria-label="Fire capsule">
-            <span>FIRE</span>
-          </button>
           <div class="snoob-toast" id="snoob-toast"></div>
         </div>
       </div>`;
@@ -270,7 +294,7 @@
       mini.width = 52; mini.height = 52;
       mini.style.width = '46px'; mini.style.height = '46px';
       next.appendChild(mini);
-      drawToken(mini.getContext('2d'), 26, 26, 20, nextType, 1);
+      drawToken(mini.getContext('2d'), 26, 26, 20, currentType, 1);
     }
   }
 
@@ -318,6 +342,8 @@
       try { canvas.setPointerCapture(e.pointerId); } catch(err) {}
     }
     updateAimFromEvent(e);
+    if (aimArmed) shoot();
+    else aimArmed = true;
   }
 
   function handleKeyDown(e) {
@@ -340,7 +366,8 @@
       visual: makePieceVisual(shots * 43 + currentType * 19 + 5),
     };
     currentType = nextType;
-    nextType = randType();
+    nextType = randQueuedType();
+    aimArmed = false;
     shots++;
     updateHud();
     crankSpin = 0.38;
@@ -503,6 +530,7 @@
         addRow();
       }
     }
+    syncQueuedTypesToBoard();
     updateHud();
     if (boardCleared()) {
       score += 1000 + Math.max(0, 40 - shots) * 25;
@@ -1372,8 +1400,10 @@
   window.snoobStart = function() {
     tokenTypes = playableChars();
     score = 0; shots = 0; drops = 0; rowsAdded = 0; missStreak = 0;
-    current = null; currentType = randType(); nextType = randType(); aim = -Math.PI / 2;
+    current = null; aim = -Math.PI / 2; aimArmed = false;
     resetBoard();
+    currentType = randQueuedType();
+    nextType = randQueuedType();
     state = 'playing';
     renderPlaying();
     if (ArcadeMusic && ArcadeMusic.duck) ArcadeMusic.duck();
@@ -1397,5 +1427,4 @@
     current = null;
   };
 
-  window.snoobFire = shoot;
 })();
