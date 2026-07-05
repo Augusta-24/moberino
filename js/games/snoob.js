@@ -24,10 +24,12 @@
   let board = [];
   let fallingPieces = [];
   let faceFlashes = [];
+  let rattles = [];
   let tokenTypes = [];
   let score = 0, shots = 0, drops = 0, rowsAdded = 0;
   let current = null, nextType = 0, shooter = { x: 0, y: 0 };
   let aim = -Math.PI / 2;
+  let crankSpin = 0;
   let raf = 0, last = 0, resizeHandler = null;
   let imagesReady = false;
   const imgCache = new Map();
@@ -82,7 +84,7 @@
   }
 
   function cabinetBaseH() {
-    return Math.max(radius() * 1.48, 48);
+    return Math.max(radius() * 1.34, 46);
   }
 
   function cellPos(row, col) {
@@ -104,6 +106,7 @@
     board = [];
     fallingPieces = [];
     faceFlashes = [];
+    rattles = [];
     ensureBoardRows(MAX_ROWS);
     for (let r = 0; r < START_ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
@@ -219,25 +222,40 @@
     canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     shooter.x = W / 2;
-    shooter.y = H - cabinetBaseH() - radius() * 0.4;
+    shooter.y = H - cabinetBaseH() - radius() * 0.28;
   }
 
   function bindCanvas() {
     if (!canvas) return;
-    canvas.onpointerdown = handlePointer;
+    canvas.onpointerdown = handlePointerDown;
     canvas.onpointermove = handlePointer;
-    canvas.onpointerup = shoot;
+    canvas.onpointerup = null;
     resizeHandler = resize;
     window.addEventListener('resize', resizeHandler);
   }
 
-  function handlePointer(e) {
-    if (state !== 'playing' || !canvas || current) return;
+  function updateAimFromEvent(e) {
+    if (state !== 'playing' || !canvas) return;
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     const a = Math.atan2(y - shooter.y, x - shooter.x);
     aim = Math.max(-Math.PI + 0.18, Math.min(-0.18, a));
+  }
+
+  function handlePointer(e) {
+    if (state !== 'playing' || !canvas || current) return;
+    updateAimFromEvent(e);
+  }
+
+  function handlePointerDown(e) {
+    if (state !== 'playing' || !canvas || current) return;
+    if (e.preventDefault) e.preventDefault();
+    if (canvas.setPointerCapture && e.pointerId != null) {
+      try { canvas.setPointerCapture(e.pointerId); } catch(err) {}
+    }
+    updateAimFromEvent(e);
+    shoot();
   }
 
   function shoot() {
@@ -253,6 +271,7 @@
     nextType = randType();
     shots++;
     updateHud();
+    crankSpin = 0.38;
     playSnoobSound('fire');
   }
 
@@ -268,6 +287,8 @@
   function update(dt) {
     updateFallingPieces(dt);
     updateFaceFlashes(dt);
+    updateRattles(dt);
+    if (crankSpin > 0) crankSpin = Math.max(0, crankSpin - dt);
     if (!current) return;
     const r = radius();
     current.x += current.vx * dt;
@@ -315,6 +336,47 @@
     return f && f.until > 0 ? f.mood : 'normal';
   }
 
+  function updateRattles(dt) {
+    rattles.forEach(item => { item.t -= dt; });
+    rattles = rattles.filter(item => item.t > 0);
+  }
+
+  function rattleAt(row, col) {
+    return rattles.find(item => item.row === row && item.col === col);
+  }
+
+  function triggerRattle(row, col) {
+    const targets = [{ row, col, amp: 1 }, ...neighbors(row, col).map(n => ({ ...n, amp: 0.55 }))];
+    targets.forEach((item, i) => {
+      if (!board[item.row] || board[item.row][item.col] == null) return;
+      const existing = rattleAt(item.row, item.col);
+      const next = {
+        row: item.row,
+        col: item.col,
+        t: 0.26 + i * 0.012,
+        dur: 0.26 + i * 0.012,
+        amp: item.amp,
+        phase: (item.row * 11.7 + item.col * 5.3) % (Math.PI * 2),
+      };
+      if (existing) Object.assign(existing, next);
+      else rattles.push(next);
+    });
+  }
+
+  function visualForCell(row, col) {
+    const n = shapeNoise(row * 29 + col * 7 + 3);
+    const rattle = rattleAt(row, col);
+    const baseRot = n.c * 0.087;
+    if (!rattle) return { dx: 0, dy: 0, rot: baseRot };
+    const p = Math.max(0, rattle.t / rattle.dur);
+    const wave = Math.sin((1 - p) * Math.PI * 5.5 + rattle.phase) * p * rattle.amp;
+    return {
+      dx: wave * radius() * 0.045,
+      dy: Math.cos((1 - p) * Math.PI * 4 + rattle.phase) * p * rattle.amp * radius() * 0.025,
+      rot: baseRot + wave * 0.045,
+    };
+  }
+
   function collides(x, y, r) {
     const hitDist = r * 1.72;
     for (let row = 0; row < board.length; row++) {
@@ -347,6 +409,7 @@
     board[target.row][target.col] = current.type;
     const snapped = target;
     current = null;
+    triggerRattle(snapped.row, snapped.col);
     const cleared = clearMatches(snapped.row, snapped.col);
     if (cleared > 0) {
       const fallen = dropDisconnected();
@@ -555,13 +618,17 @@
 
   function drawBackground() {
     const chamber = ctx.createLinearGradient(0, 0, 0, H);
-    chamber.addColorStop(0, '#f7f7f3');
-    chamber.addColorStop(0.5, '#ecebe3');
-    chamber.addColorStop(1, '#d8d4c8');
+    chamber.addColorStop(0, '#efeee8');
+    chamber.addColorStop(0.48, '#e6e3da');
+    chamber.addColorStop(1, '#cfcabe');
     ctx.fillStyle = chamber;
     ctx.fillRect(0, 0, W, H);
     const topH = cabinetTopH();
     const baseH = cabinetBaseH();
+    const chamberX = radius() * 0.58;
+    const chamberY = topH + radius() * 0.16;
+    const chamberW = W - radius() * 1.16;
+    const chamberH = H - baseH - topH - radius() * 0.24;
     const redTop = ctx.createLinearGradient(0, 0, 0, topH);
     redTop.addColorStop(0, '#e64b31');
     redTop.addColorStop(0.62, '#bc281b');
@@ -573,13 +640,22 @@
     ctx.fillStyle = 'rgba(0,0,0,0.10)';
     ctx.fillRect(0, H - baseH, W, Math.max(5, radius() * 0.14));
     ctx.fillStyle = chamber;
-    ctx.fillRect(radius() * 0.58, topH + radius() * 0.16, W - radius() * 1.16, H - baseH - topH - radius() * 0.24);
-    const frost = ctx.createRadialGradient(W * 0.5, H * 0.24, radius(), W * 0.5, H * 0.35, W * 0.78);
-    frost.addColorStop(0, 'rgba(255,255,255,0.46)');
-    frost.addColorStop(0.55, 'rgba(255,255,255,0.16)');
-    frost.addColorStop(1, 'rgba(120,120,115,0.08)');
+    ctx.fillRect(chamberX, chamberY, chamberW, chamberH);
+    drawFrostedWallpaper(chamberX, chamberY, chamberW, chamberH);
+    const frost = ctx.createRadialGradient(W * 0.5, H * 0.34, radius(), W * 0.5, H * 0.42, W * 0.72);
+    frost.addColorStop(0, 'rgba(255,255,255,0.64)');
+    frost.addColorStop(0.45, 'rgba(255,255,255,0.34)');
+    frost.addColorStop(1, 'rgba(92,88,84,0.12)');
     ctx.fillStyle = frost;
-    ctx.fillRect(radius() * 0.58, topH + radius() * 0.16, W - radius() * 1.16, H - baseH - topH - radius() * 0.24);
+    ctx.fillRect(chamberX, chamberY, chamberW, chamberH);
+    const edgeFog = ctx.createLinearGradient(chamberX, 0, chamberX + chamberW, 0);
+    edgeFog.addColorStop(0, 'rgba(35,32,35,0.18)');
+    edgeFog.addColorStop(0.18, 'rgba(255,255,255,0)');
+    edgeFog.addColorStop(0.82, 'rgba(255,255,255,0)');
+    edgeFog.addColorStop(1, 'rgba(35,32,35,0.16)');
+    ctx.fillStyle = edgeFog;
+    ctx.fillRect(chamberX, chamberY, chamberW, chamberH);
+    drawChamberWear(chamberX, chamberY, chamberW, chamberH);
     drawBackRods(topH, baseH);
     drawCabinetFrame(topH, baseH);
     ctx.strokeStyle = 'rgba(255,255,255,0.55)';
@@ -594,6 +670,86 @@
     ctx.closePath();
     ctx.fill();
     drawCrankMachineParts(topH, baseH);
+  }
+
+  function drawFrostedWallpaper(x, y, w, h) {
+    const r = radius();
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
+    ctx.globalAlpha = 0.12;
+    ctx.strokeStyle = '#6f5f8e';
+    ctx.fillStyle = 'rgba(108,86,140,0.22)';
+    const step = Math.max(72, r * 2.7);
+    for (let yy = y + r * 0.9; yy < y + h + step; yy += step) {
+      for (let xx = x + r * 0.9; xx < x + w + step; xx += step) {
+        const offset = Math.sin((xx + yy) * 0.013) * r * 0.28;
+        const kind = Math.abs(Math.round((xx + yy) / step)) % 3;
+        ctx.save();
+        ctx.translate(xx + offset, yy);
+        ctx.rotate(Math.sin((xx - yy) * 0.01) * 0.24);
+        if (kind === 0) {
+          ctx.beginPath();
+          ctx.arc(0, 0, r * 0.34, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(0, 0, r * 0.12, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (kind === 1) {
+          ctx.beginPath();
+          ctx.moveTo(0, -r * 0.42);
+          ctx.lineTo(r * 0.4, r * 0.28);
+          ctx.lineTo(-r * 0.4, r * 0.28);
+          ctx.closePath();
+          ctx.stroke();
+        } else {
+          ctx.beginPath();
+          roundRectPath(ctx, -r * 0.34, -r * 0.22, r * 0.68, r * 0.44, r * 0.07);
+          ctx.stroke();
+          ctx.fillRect(-r * 0.2, -r * 0.04, r * 0.4, r * 0.08);
+        }
+        ctx.restore();
+      }
+    }
+    ctx.globalAlpha = 0.22;
+    const cloudy = ctx.createLinearGradient(x, y, x + w, y + h);
+    cloudy.addColorStop(0, 'rgba(255,255,255,0.58)');
+    cloudy.addColorStop(0.5, 'rgba(255,255,255,0.18)');
+    cloudy.addColorStop(1, 'rgba(255,255,255,0.5)');
+    ctx.fillStyle = cloudy;
+    ctx.fillRect(x, y, w, h);
+    ctx.restore();
+  }
+
+  function drawChamberWear(x, y, w, h) {
+    const r = radius();
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
+    ctx.globalAlpha = 0.16;
+    for (let i = 0; i < 14; i++) {
+      const px = x + ((i * 47) % Math.max(1, w));
+      const py = y + ((i * 83) % Math.max(1, h));
+      const spot = ctx.createRadialGradient(px, py, r * 0.08, px, py, r * (0.8 + (i % 3) * 0.22));
+      spot.addColorStop(0, i % 2 ? 'rgba(170,150,100,0.14)' : 'rgba(255,255,255,0.2)');
+      spot.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = spot;
+      ctx.fillRect(px - r * 1.4, py - r * 1.4, r * 2.8, r * 2.8);
+    }
+    ctx.globalAlpha = 0.18;
+    ctx.strokeStyle = 'rgba(95,85,76,0.38)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 18; i++) {
+      const sx = x + ((i * 31 + 13) % Math.max(1, w));
+      const sy = y + ((i * 59 + 21) % Math.max(1, h));
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(sx + r * (0.24 + (i % 4) * 0.12), sy + r * (0.08 - (i % 3) * 0.06));
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   function drawBackRods(topH, baseH) {
@@ -646,8 +802,18 @@
       ctx.fillStyle = 'rgba(0,0,0,0.24)';
       ctx.fillRect(x + (x === 0 ? railW - 2 : 1), 0, 2, H);
     });
-    ctx.fillStyle = '#111318';
-    ctx.fillRect(0, H - baseH - Math.max(5, r * 0.16), W, Math.max(5, r * 0.16));
+    const railY = H - baseH - Math.max(5, r * 0.16);
+    const railH = Math.max(6, r * 0.18);
+    const divider = ctx.createLinearGradient(0, railY, 0, railY + railH);
+    divider.addColorStop(0, '#3c3d39');
+    divider.addColorStop(0.18, '#d7d2c7');
+    divider.addColorStop(0.45, '#8d8a82');
+    divider.addColorStop(0.72, '#2f302d');
+    divider.addColorStop(1, '#111318');
+    ctx.fillStyle = divider;
+    ctx.fillRect(0, railY, W, railH);
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillRect(railW * 0.7, railY + railH * 0.18, W - railW * 1.4, 1);
     ctx.strokeStyle = 'rgba(17,19,24,0.48)';
     ctx.lineWidth = Math.max(3, r * 0.12);
     ctx.strokeRect(railW * 0.7, topH * 0.2, W - railW * 1.4, H - baseH - topH * 0.22);
@@ -655,14 +821,14 @@
 
   function drawCrankMachineParts(topH, baseH) {
     const r = radius();
-    const panelW = Math.min(W * 0.48, r * 5.4);
-    const panelH = Math.min(baseH * 0.5, r * 0.82);
-    const panelX = W / 2 - panelW / 2;
-    const panelY = H - baseH + Math.max(6, baseH * 0.17);
+    const panelW = Math.min(W * 0.62, r * 6.8);
+    const panelH = Math.min(baseH * 0.68, r * 1.02);
+    const panelX = W * 0.07;
+    const panelY = H - baseH + Math.max(5, baseH * 0.14);
     ctx.save();
     ctx.fillStyle = 'rgba(17,19,24,0.13)';
     ctx.beginPath();
-    roundRectPath(ctx, W * 0.14, H - baseH + baseH * 0.12, W * 0.72, baseH * 0.72, r * 0.12);
+    roundRectPath(ctx, W * 0.06, H - baseH + baseH * 0.1, W * 0.88, baseH * 0.78, r * 0.12);
     ctx.fill();
     const metal = ctx.createLinearGradient(panelX, panelY, panelX + panelW, panelY + panelH);
     metal.addColorStop(0, '#a6a39a');
@@ -680,33 +846,55 @@
     ctx.stroke();
     ctx.strokeStyle = 'rgba(255,255,255,0.48)';
     ctx.lineWidth = 1;
-    for (let i = 0; i < 7; i++) {
-      const x = panelX + r * 0.26 + i * (panelW - r * 0.52) / 6;
+    for (let i = 0; i < 9; i++) {
+      const x = panelX + r * 0.26 + i * (panelW - r * 0.52) / 8;
       ctx.beginPath(); ctx.moveTo(x, panelY + r * 0.16); ctx.lineTo(x - r * 0.16, panelY + panelH - r * 0.18); ctx.stroke();
     }
-    [[panelX + r * 0.32, panelY + r * 0.32], [panelX + panelW - r * 0.32, panelY + r * 0.32], [panelX + r * 0.32, panelY + panelH - r * 0.32], [panelX + panelW - r * 0.32, panelY + panelH - r * 0.32]].forEach(([x, y]) => {
+    [[panelX + r * 0.24, panelY + r * 0.24], [panelX + panelW - r * 0.24, panelY + r * 0.24], [panelX + r * 0.24, panelY + panelH - r * 0.24], [panelX + panelW - r * 0.24, panelY + panelH - r * 0.24]].forEach(([x, y]) => {
       ctx.fillStyle = '#4e4b46';
-      ctx.beginPath(); ctx.arc(x, y, r * 0.095, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, r * 0.07, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = 'rgba(255,255,255,0.45)';
       ctx.beginPath(); ctx.moveTo(x - r * 0.06, y); ctx.lineTo(x + r * 0.06, y); ctx.stroke();
     });
-    const slotX = panelX + panelW * 0.22;
+    const slotX = panelX + panelW * 0.1;
     const slotY = panelY + panelH * 0.34;
     ctx.fillStyle = '#111318';
     ctx.beginPath();
-    roundRectPath(ctx, slotX, slotY, panelW * 0.24, r * 0.16, r * 0.05);
+    roundRectPath(ctx, slotX, slotY, panelW * 0.24, Math.max(4, r * 0.13), r * 0.04);
     ctx.fill();
     ctx.strokeStyle = '#ebe7dc';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.4;
     ctx.stroke();
-    const crankX = panelX + panelW * 0.64;
-    const crankY = panelY + panelH * 0.47;
-    ctx.strokeStyle = '#25231f';
-    ctx.lineWidth = Math.max(4, r * 0.16);
+    ctx.fillStyle = '#2d2a25';
+    ctx.font = `${Math.max(7, Math.round(r * 0.24))}px sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('INSERT 25¢', slotX, panelY + panelH * 0.66);
+
+    const throatW = r * 1.55;
+    const throatH = Math.max(10, r * 0.34);
+    const throatX = shooter.x - throatW / 2;
+    const throatY = panelY + panelH * 0.14;
+    const throat = ctx.createLinearGradient(throatX, throatY, throatX, throatY + throatH);
+    throat.addColorStop(0, '#3f3e38');
+    throat.addColorStop(0.45, '#f0eadc');
+    throat.addColorStop(1, '#23231f');
+    ctx.fillStyle = throat;
+    ctx.strokeStyle = '#111318';
+    ctx.lineWidth = Math.max(2, r * 0.06);
     ctx.beginPath();
-    ctx.moveTo(crankX, crankY);
-    ctx.lineTo(crankX + r * 0.68, crankY + r * 0.34);
+    roundRectPath(ctx, throatX, throatY, throatW, throatH, r * 0.08);
+    ctx.fill();
     ctx.stroke();
+    ctx.fillStyle = 'rgba(17,19,24,0.6)';
+    ctx.beginPath();
+    roundRectPath(ctx, throatX + r * 0.2, throatY + throatH * 0.42, throatW - r * 0.4, throatH * 0.36, r * 0.05);
+    ctx.fill();
+
+    const crankX = panelX + panelW * 0.76;
+    const crankY = panelY + panelH * 0.5;
+    const spin = crankSpin > 0 ? (1 - crankSpin / 0.38) * Math.PI * 2.2 : 0;
+    const crankAngle = aim + Math.PI / 2 + spin + Math.sin(crankSpin * 42) * crankSpin * 0.6;
     const knob = ctx.createRadialGradient(crankX - r * 0.13, crankY - r * 0.16, r * 0.05, crankX, crankY, r * 0.44);
     knob.addColorStop(0, '#ffffff');
     knob.addColorStop(0.45, '#bdb8aa');
@@ -718,27 +906,40 @@
     ctx.arc(crankX, crankY, r * 0.34, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
+    ctx.save();
+    ctx.translate(crankX, crankY);
+    ctx.rotate(crankAngle);
+    ctx.strokeStyle = '#25231f';
+    ctx.lineWidth = Math.max(4, r * 0.14);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(r * 0.66, 0);
+    ctx.stroke();
+    const handleGrad = ctx.createLinearGradient(r * 0.48, -r * 0.18, r * 0.9, r * 0.18);
+    handleGrad.addColorStop(0, '#77736a');
+    handleGrad.addColorStop(0.45, '#f7f2e7');
+    handleGrad.addColorStop(1, '#6a665e');
+    ctx.fillStyle = handleGrad;
+    ctx.strokeStyle = '#111318';
+    ctx.lineWidth = Math.max(2, r * 0.06);
+    ctx.beginPath();
+    ctx.ellipse(r * 0.78, 0, r * 0.24, r * 0.18, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
     ctx.fillStyle = '#292620';
     ctx.beginPath();
     ctx.arc(crankX, crankY, r * 0.11, 0, Math.PI * 2);
     ctx.fill();
-    const handleX = crankX + r * 0.78;
-    const handleY = crankY + r * 0.4;
-    ctx.fillStyle = '#d8d2c3';
-    ctx.strokeStyle = '#111318';
-    ctx.lineWidth = Math.max(2, r * 0.07);
-    ctx.beginPath();
-    ctx.ellipse(handleX, handleY, r * 0.26, r * 0.2, 0.38, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    const doorX = panelX + panelW * 0.35;
-    const doorY = panelY + panelH * 0.68;
+    const doorX = shooter.x - r * 0.5;
+    const doorY = panelY + panelH * 0.58;
     ctx.fillStyle = 'rgba(17,19,24,0.78)';
     ctx.beginPath();
-    roundRectPath(ctx, doorX, doorY, panelW * 0.3, r * 0.28, r * 0.08);
+    roundRectPath(ctx, doorX, doorY, r, Math.max(8, r * 0.25), r * 0.07);
     ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,0.16)';
-    ctx.fillRect(doorX + r * 0.08, doorY + r * 0.06, panelW * 0.3 - r * 0.16, r * 0.05);
+    ctx.fillRect(doorX + r * 0.1, doorY + r * 0.06, r * 0.8, r * 0.04);
     ctx.restore();
   }
 
@@ -806,14 +1007,15 @@
         const type = board[row][col];
         if (type == null) continue;
         const p = cellPos(row, col);
-        drawToken(ctx, p.x, p.y, r * 0.96, type, 1, flashMood(row, col), 0, row * COLS + col);
+        const visual = visualForCell(row, col);
+        drawToken(ctx, p.x + visual.dx, p.y + visual.dy, r * 0.985, type, 1, flashMood(row, col), visual.rot, row * COLS + col);
       }
     }
-    fallingPieces.forEach((p, i) => drawToken(ctx, p.x, p.y, r * 0.96, p.type, Math.max(0, Math.min(1, p.life)), p.mood, p.rot, 500 + i));
+    fallingPieces.forEach((p, i) => drawToken(ctx, p.x, p.y, r * 0.985, p.type, Math.max(0, Math.min(1, p.life)), p.mood, p.rot, 500 + i));
     drawGlassOverlay();
     drawAim();
     drawShooter();
-    if (current) drawToken(ctx, current.x, current.y, r * 0.96, current.type, 1, 'normal', 0, 900 + current.type);
+    if (current) drawToken(ctx, current.x, current.y, r * 0.985, current.type, 1, 'normal', current.rot || 0, 900 + current.type);
     drawNextUpBadge();
   }
 
@@ -860,15 +1062,15 @@
   function drawShooter() {
     const r = radius();
     ctx.save();
-    ctx.translate(shooter.x, shooter.y + r * 0.18);
-    ctx.fillStyle = '#111318';
+    ctx.translate(shooter.x, shooter.y + r * 0.02);
+    const throatShadow = ctx.createRadialGradient(0, r * 0.08, r * 0.1, 0, r * 0.08, r * 1.4);
+    throatShadow.addColorStop(0, 'rgba(0,0,0,0.5)');
+    throatShadow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = throatShadow;
     ctx.beginPath();
-    ctx.moveTo(0, -r * 0.8);
-    ctx.lineTo(-r * 0.92, r * 1.1);
-    ctx.lineTo(r * 0.92, r * 1.1);
-    ctx.closePath();
+    ctx.ellipse(0, r * 0.28, r * 1.02, r * 0.38, 0, 0, Math.PI * 2);
     ctx.fill();
-    const launcherMetal = ctx.createLinearGradient(-r * 1.05, -r * 0.45, r * 1.05, r * 0.37);
+    const launcherMetal = ctx.createLinearGradient(-r * 1.08, -r * 0.42, r * 1.08, r * 0.32);
     launcherMetal.addColorStop(0, '#85827b');
     launcherMetal.addColorStop(0.25, '#f2efe5');
     launcherMetal.addColorStop(0.52, '#aaa59b');
@@ -876,13 +1078,19 @@
     launcherMetal.addColorStop(1, '#746f66');
     ctx.fillStyle = launcherMetal;
     ctx.strokeStyle = '#111318';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = Math.max(2, r * 0.07);
     ctx.beginPath();
-    roundRectPath(ctx, -r * 1.05, -r * 0.45, r * 2.1, r * 0.82, 6);
+    roundRectPath(ctx, -r * 1.08, -r * 0.38, r * 2.16, r * 0.74, r * 0.11);
     ctx.fill();
     ctx.stroke();
+    ctx.fillStyle = 'rgba(17,19,24,0.72)';
+    ctx.beginPath();
+    roundRectPath(ctx, -r * 0.72, -r * 0.08, r * 1.44, r * 0.28, r * 0.08);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.38)';
+    ctx.fillRect(-r * 0.86, -r * 0.26, r * 1.72, 1);
     ctx.restore();
-    if (!current) drawToken(ctx, shooter.x, shooter.y - r * 1.05, r * 0.82, nextType, 1, 'normal', 0, 950 + nextType);
+    if (!current) drawToken(ctx, shooter.x, shooter.y - r * 0.9, r * 0.86, nextType, 1, 'normal', 0, 950 + nextType);
   }
 
   function roundRectPath(c, x, y, w, h, rad) {
@@ -970,15 +1178,15 @@
     if (img && img.complete && img.naturalWidth) {
       c.save();
       c.beginPath();
-      capsuleDomePath(c, r, seamY + r * 0.32, 0.72, 0.98, 0.48);
+      capsuleDomePath(c, r, seamY - r * 0.03, 0.7, 0.98, 0.48);
       c.clip();
-      c.globalAlpha *= 0.92;
-      const targetW = r * 1.58;
-      const targetH = r * 1.68;
+      c.globalAlpha *= 0.94;
+      const targetW = r * 1.5;
+      const targetH = r * 1.58;
       const imageScale = Math.min(targetW / img.naturalWidth, targetH / img.naturalHeight);
       const drawW = img.naturalWidth * imageScale;
       const drawH = img.naturalHeight * imageScale;
-      c.drawImage(img, -drawW / 2, -r * 1.0, drawW, drawH);
+      c.drawImage(img, -drawW / 2, -r * 0.98, drawW, drawH);
       c.restore();
     } else {
       c.fillStyle = color || '#111318';
@@ -996,13 +1204,13 @@
     c.strokeStyle = 'rgba(17,19,24,0.55)';
     c.lineWidth = Math.max(1.2, r * 0.038);
     c.beginPath();
-    roundRectPath(c, -r * 0.92, seamY - r * 0.17, r * 1.84, r * 0.34, r * 0.07);
+    roundRectPath(c, -r * 0.89, seamY - r * 0.17, r * 1.78, r * 0.34, r * 0.07);
     c.fill();
     c.stroke();
     c.fillStyle = 'rgba(255,255,255,0.24)';
-    c.fillRect(-r * 0.82, seamY - r * 0.11, r * 1.64, r * 0.04);
+    c.fillRect(-r * 0.8, seamY - r * 0.11, r * 1.6, r * 0.04);
     c.fillStyle = 'rgba(17,19,24,0.18)';
-    c.fillRect(-r * 0.82, seamY + r * 0.07, r * 1.64, r * 0.045);
+    c.fillRect(-r * 0.8, seamY + r * 0.07, r * 1.6, r * 0.045);
 
     c.fillStyle = 'rgba(255,255,255,0.58)';
     c.beginPath(); c.ellipse(-r * 0.34, -r * 0.58, r * 0.28, r * 0.11, -0.55, 0, Math.PI * 2); c.fill();
