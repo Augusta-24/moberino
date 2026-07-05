@@ -34,6 +34,7 @@
   let current = null, currentType = 0, nextType = 0, shooter = { x: 0, y: 0 };
   let aim = -Math.PI / 2;
   let aimArmed = false;
+  let pendingAimTouch = null;
   let rowPhase = 0;
   let crankSpin = 0;
   let raf = 0, last = 0, resizeHandler = null;
@@ -41,6 +42,7 @@
   const imgCache = new Map();
   const imageBoundsCache = new WeakMap();
   const soundCache = new Map();
+  const REAIM_HOLD_MS = 220;
 
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
@@ -239,7 +241,12 @@
       <div class="snoob-shell">
         <div class="snoob-hud">
           <div><div class="snoob-stat-label">SCORE</div><div class="snoob-stat-value" id="snoob-score">0</div></div>
-          <div class="snoob-next" id="snoob-next"></div>
+          <div class="snoob-aim-stack">
+            <div class="snoob-next" id="snoob-next"></div>
+            <div class="snoob-aim-switch" id="snoob-aim-switch" aria-live="polite">
+              <span>AIM</span><i></i><span>SHOOT</span>
+            </div>
+          </div>
           <div style="text-align:right"><div class="snoob-stat-label">SHOTS</div><div class="snoob-stat-value" id="snoob-shots">0</div></div>
         </div>
         <div class="snoob-canvas-wrap">
@@ -296,6 +303,11 @@
       next.appendChild(mini);
       drawToken(mini.getContext('2d'), 26, 26, 20, currentType, 1);
     }
+    const aimSwitch = document.getElementById('snoob-aim-switch');
+    if (aimSwitch) {
+      aimSwitch.classList.toggle('is-shoot', aimArmed);
+      aimSwitch.setAttribute('aria-label', aimArmed ? 'Shoot armed' : 'Aim mode');
+    }
   }
 
   function resize() {
@@ -315,23 +327,39 @@
     if (!canvas) return;
     canvas.onpointerdown = handlePointerDown;
     canvas.onpointermove = handlePointer;
-    canvas.onpointerup = null;
+    canvas.onpointerup = handlePointerUp;
+    canvas.onpointercancel = clearPendingAimTouch;
     window.onkeydown = handleKeyDown;
     resizeHandler = resize;
     window.addEventListener('resize', resizeHandler);
   }
 
-  function updateAimFromEvent(e) {
+  function updateAimFromPoint(clientX, clientY) {
     if (state !== 'playing' || !canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
     const a = Math.atan2(y - shooter.y, x - shooter.x);
     aim = Math.max(-Math.PI + 0.18, Math.min(-0.18, a));
   }
 
+  function updateAimFromEvent(e) {
+    updateAimFromPoint(e.clientX, e.clientY);
+  }
+
+  function clearPendingAimTouch() {
+    if (pendingAimTouch && pendingAimTouch.timer) clearTimeout(pendingAimTouch.timer);
+    pendingAimTouch = null;
+  }
+
   function handlePointer(e) {
     if (state !== 'playing' || !canvas || current) return;
+    if (pendingAimTouch) {
+      pendingAimTouch.clientX = e.clientX;
+      pendingAimTouch.clientY = e.clientY;
+      if (pendingAimTouch.reaiming) updateAimFromEvent(e);
+      return;
+    }
     updateAimFromEvent(e);
   }
 
@@ -341,9 +369,31 @@
     if (canvas.setPointerCapture && e.pointerId != null) {
       try { canvas.setPointerCapture(e.pointerId); } catch(err) {}
     }
+    if (aimArmed) {
+      clearPendingAimTouch();
+      pendingAimTouch = {
+        pointerId: e.pointerId,
+        clientX: e.clientX,
+        clientY: e.clientY,
+        reaiming: false,
+        timer: setTimeout(() => {
+          if (!pendingAimTouch || pendingAimTouch.pointerId !== e.pointerId) return;
+          pendingAimTouch.reaiming = true;
+          updateAimFromPoint(pendingAimTouch.clientX, pendingAimTouch.clientY);
+        }, REAIM_HOLD_MS),
+      };
+      return;
+    }
     updateAimFromEvent(e);
-    if (aimArmed) shoot();
-    else aimArmed = true;
+    aimArmed = true;
+    updateHud();
+  }
+
+  function handlePointerUp(e) {
+    if (state !== 'playing' || !pendingAimTouch) return;
+    const wasReaiming = pendingAimTouch.reaiming;
+    clearPendingAimTouch();
+    if (!wasReaiming && !current) shoot();
   }
 
   function handleKeyDown(e) {
@@ -356,6 +406,7 @@
 
   function shoot() {
     if (state !== 'playing' || current) return;
+    clearPendingAimTouch();
     const speed = 720;
     current = {
       x: shooter.x,
@@ -500,12 +551,25 @@
         if (d < bestD) { bestD = d; best = { row, col }; }
       }
     }
-    return best || { row: MAX_ROWS - 1, col: Math.floor(COLS / 2) };
+    return best;
+  }
+
+  function endSnoobGame() {
+    if (state !== 'playing') return;
+    current = null;
+    clearPendingAimTouch();
+    state = 'over';
+    playSnoobSound('over');
+    setTimeout(renderOver, 500);
   }
 
   function snapCurrent() {
     if (!current) return;
     const target = nearestCell(current.x, current.y);
+    if (!target) {
+      endSnoobGame();
+      return;
+    }
     board[target.row][target.col] = current.type;
     pieceVisuals[target.row][target.col] = current.visual || makePieceVisual(shots * 37 + target.row * 11 + target.col);
     const snapped = target;
@@ -527,7 +591,7 @@
       if (missStreak >= 5) {
         missStreak = 0;
         playSnoobSound('whoosh');
-        addRow();
+        if (!addRow()) return;
       }
     }
     syncQueuedTypesToBoard();
@@ -538,9 +602,7 @@
       playSnoobWin();
       setTimeout(renderOver, 500);
     } else if (isDanger()) {
-      state = 'over';
-      playSnoobSound('over');
-      setTimeout(renderOver, 500);
+      endSnoobGame();
     }
   }
 
@@ -620,6 +682,10 @@
   }
 
   function addRow() {
+    if (board[MAX_ROWS - 1] && board[MAX_ROWS - 1].some(v => v != null)) {
+      endSnoobGame();
+      return false;
+    }
     board.pop();
     pieceVisuals.pop();
     const rowSeed = rowsAdded * 101 + shots * 13 + 29;
@@ -628,6 +694,7 @@
     pieceVisuals.unshift(Array.from({ length: COLS }, (_, i) => makePieceVisual(rowSeed + i * 17)));
     rowsAdded++;
     showToast('ROW DOWN');
+    return true;
   }
 
   function boardCleared() {
@@ -1277,11 +1344,14 @@
       c.clip();
       c.globalAlpha *= 0.96;
       const source = imageContentBounds(img) || { x: 0, y: 0, w: img.naturalWidth, h: img.naturalHeight };
-      const imageScale = Math.max((domeW * 1.58) / source.w, (r * 1.76) / source.h);
+      const imageScale = Math.max((domeW * 1.44) / source.w, (r * 1.6) / source.h);
       const drawW = source.w * imageScale;
       const drawH = source.h * imageScale;
-      const drawX = -drawW / 2;
-      const drawY = domeTop + (seamY - domeTop) * 0.52 - drawH / 2 + r * 0.06;
+      const eyeX = source.w * 0.5;
+      const eyeY = source.h * 0.38;
+      const targetEyeY = domeTop + (seamY - domeTop) * 0.46;
+      const drawX = -eyeX * imageScale;
+      const drawY = targetEyeY - eyeY * imageScale;
       c.drawImage(img, source.x, source.y, source.w, source.h, drawX, drawY, drawW, drawH);
       c.globalCompositeOperation = 'source-atop';
       const wrapShade = c.createRadialGradient(-r * 0.3, -r * 0.36, r * 0.12, 0, -r * 0.08, r * 1.08);
@@ -1401,6 +1471,7 @@
     tokenTypes = playableChars();
     score = 0; shots = 0; drops = 0; rowsAdded = 0; missStreak = 0;
     current = null; aim = -Math.PI / 2; aimArmed = false;
+    clearPendingAimTouch();
     resetBoard();
     currentType = randQueuedType();
     nextType = randQueuedType();
@@ -1424,6 +1495,7 @@
     if (resizeHandler) window.removeEventListener('resize', resizeHandler);
     resizeHandler = null;
     window.onkeydown = null;
+    clearPendingAimTouch();
     current = null;
   };
 

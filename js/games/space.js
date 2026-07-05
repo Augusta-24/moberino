@@ -1489,7 +1489,7 @@
           if (!tooClose) { spawnX = candidate; break; }
         }
       }
-      obstacles.push({ type:'face', behavior: isTrapped ? 'captiveDrift' : 'holdDrift', x:spawnX, y:-faceR-10, vx:rand(-0.55,0.55)*cfg.speed*0.22*enemyDriftMult*personalityDrift*traitorDrift, vy:cfg.speed*(0.7+Math.random()*0.5)*(isTrapped?0.82:0.38)*faceVyMult, r:faceR, ci, hp: faceHp, isTrapped, ringHp: isTrapped ? CAPTIVE_RING_HP : 0, maxRingHp: isTrapped ? CAPTIVE_RING_HP : 0, pausedBurstDone: true, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0, holdY, baseY: holdY, born: Date.now(), driftSeed: Math.random() * Math.PI * 2, driftAmpY: rand(7, 12 + enemyAwareness * 7) * enemyDriftMult * personalityDrift * traitorDrift, enemyDriftMult: enemyDriftMult * personalityDrift * traitorDrift, enemyDodgeMult: enemyDodgeMult * personalityDodge * traitorDodge, enemyJukeMult: personalityJuke, enemyAwareness, enemyPersonality, traitorType, nextDodgeAt: Date.now() + rand(420 - enemyAwareness * 120, 980 - enemyAwareness * 260), nextDriftTurnAt: Date.now() + rand(580 - enemyAwareness * 120, 1220 - enemyAwareness * 260) / Math.min(1.55, enemyDriftMult * personalityDrift * traitorDrift), nextJukeAt: Date.now() + rand(520 - enemyAwareness * 130, 1300 - enemyAwareness * 300) * personalityJuke });
+      obstacles.push({ type:'face', behavior: isTrapped ? 'captiveDrift' : 'holdDrift', x:spawnX, y:-faceR-10, vx:rand(-0.55,0.55)*cfg.speed*0.22*enemyDriftMult*personalityDrift*traitorDrift, vy:cfg.speed*(0.7+Math.random()*0.5)*(isTrapped?0.82:0.38)*faceVyMult, r:faceR, ci, hp: faceHp, maxHp: faceHp, isTrapped, ringHp: isTrapped ? CAPTIVE_RING_HP : 0, maxRingHp: isTrapped ? CAPTIVE_RING_HP : 0, pausedBurstDone: true, paused: false, pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0, holdY, baseY: holdY, born: Date.now(), driftSeed: Math.random() * Math.PI * 2, driftAmpY: rand(7, 12 + enemyAwareness * 7) * enemyDriftMult * personalityDrift * traitorDrift, enemyDriftMult: enemyDriftMult * personalityDrift * traitorDrift, enemyDodgeMult: enemyDodgeMult * personalityDodge * traitorDodge, enemyJukeMult: personalityJuke, enemyAwareness, enemyPersonality, traitorType, nextDodgeAt: Date.now() + rand(420 - enemyAwareness * 120, 980 - enemyAwareness * 260), nextDriftTurnAt: Date.now() + rand(580 - enemyAwareness * 120, 1220 - enemyAwareness * 260) / Math.min(1.55, enemyDriftMult * personalityDrift * traitorDrift), nextJukeAt: Date.now() + rand(520 - enemyAwareness * 130, 1300 - enemyAwareness * 300) * personalityJuke });
     }
   }
 
@@ -1996,7 +1996,7 @@
   function createRainEye(now, rescue) {
     return {
       x: W * 0.5, fromX: W * 0.5, toX: W * 0.5, lane: 2,
-      radius: Math.max(32, Math.min(36, W * 0.095)),
+      radius: Math.max(64, Math.min(72, W * 0.19)),
       tellAt: now + 900, moveAt: 0, arriveAt: 0, nextMoveAt: now + 900,
       step: 0, sequence: rescue ? [3, 2, 1, 2] : [1, 2, 3, 2], seed: rescue ? 7 : 3,
     };
@@ -4264,7 +4264,7 @@
     const o = {
       type: 'face', behavior: 'holdDrift', x: spawnX, y: -r - 18,
       vx: entryVx, vy: 5.0, r,
-      ci: missionTraitorIndexForType(type), hp: opts.hp || 3,
+      ci: missionTraitorIndexForType(type), hp: opts.hp || 3, maxHp: opts.hp || 3,
       isTrapped: false, ringHp: 0, pausedBurstDone: true, paused: false,
       pauseUntil: 0, burstShotsLeft: 0, lastBurstShot: 0,
       holdY, baseY: holdY, born: now, driftSeed: Math.random() * Math.PI * 2,
@@ -6066,6 +6066,29 @@ function nextWave() {
         glowBlur: o.r * (o.isTrapped ? 0.35 : (o.behavior === 'swarmer' || o.behavior === 'shieldBomber' ? 0.46 : 0.18)),
       });
       drawTraitorBoundary(o, Date.now());
+      if (o.traitorType === 'red' && o.maxHp > 1 && o.hp < o.maxHp) {
+        ctx.save();
+        const barW = o.r * 1.6;
+        const barH = 4;
+        const barY = o.r + 10;
+        const hpFrac = Math.max(0, o.hp) / o.maxHp;
+        ctx.globalAlpha = 0.85;
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.beginPath();
+        ctx.roundRect(-barW / 2 - 1, barY - 1, barW + 2, barH + 2, 3);
+        ctx.fill();
+        const fillColor = hpFrac > 0.5 ? '#ff5a3c' : hpFrac > 0.25 ? '#ff8833' : '#ff2222';
+        ctx.fillStyle = fillColor;
+        ctx.beginPath();
+        ctx.roundRect(-barW / 2, barY, barW * hpFrac, barH, 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,200,180,0.5)';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.roundRect(-barW / 2 - 1, barY - 1, barW + 2, barH + 2, 3);
+        ctx.stroke();
+        ctx.restore();
+      }
       if (o.isTrapped) {
         ctx.restore();
         ctx.fillStyle = 'rgba(0,229,255,0.32)';
