@@ -187,7 +187,7 @@
           <div class="game-card-art snoob-menu-art">
             <div class="snoob-menu-capsules">
               ${CAPSULE_COLORS.slice(0, 7).map((color, i) => `
-                <div class="snoob-menu-capsule" style="--cap:${color};--rot:${[-24, 13, 32, -11, 18, -26, 8][i]}deg;--x:${[-92, -22, 58, -62, 38, -112, 100][i]}px;--y:${[-52, -68, -42, 18, 28, 78, 82][i]}px;--s:${[1.05, 1.14, .98, 1.18, 1.08, .96, .92][i]}"></div>
+                <div class="snoob-menu-capsule" style="--cap:${color};--rot:${[-28, 18, 38, -16, 24, -31, 11][i]}deg;--x:${[-164, -44, 116, -124, 84, -196, 178][i]}px;--y:${[-94, -122, -84, 18, 48, 126, 118][i]}px;--s:${[1.18, 1.28, 1.1, 1.34, 1.22, 1.08, 1.02][i]}"></div>
               `).join('')}
             </div>
           </div>
@@ -217,6 +217,9 @@
         </div>
         <div class="snoob-canvas-wrap">
           <canvas id="snoob-canvas"></canvas>
+          <button class="snoob-fire-btn" type="button" onclick="snoobFire()" aria-label="Fire capsule">
+            <span>FIRE</span>
+          </button>
           <div class="snoob-toast" id="snoob-toast"></div>
         </div>
       </div>`;
@@ -289,6 +292,7 @@
     canvas.onpointerdown = handlePointerDown;
     canvas.onpointermove = handlePointer;
     canvas.onpointerup = null;
+    window.onkeydown = handleKeyDown;
     resizeHandler = resize;
     window.addEventListener('resize', resizeHandler);
   }
@@ -314,7 +318,14 @@
       try { canvas.setPointerCapture(e.pointerId); } catch(err) {}
     }
     updateAimFromEvent(e);
-    shoot();
+  }
+
+  function handleKeyDown(e) {
+    if (state !== 'playing') return;
+    if (e.code === 'Space' || e.code === 'Enter') {
+      e.preventDefault();
+      shoot();
+    }
   }
 
   function shoot() {
@@ -1382,6 +1393,9 @@
     cancelAnimationFrame(raf);
     if (resizeHandler) window.removeEventListener('resize', resizeHandler);
     resizeHandler = null;
+    window.onkeydown = null;
     current = null;
   };
+
+  window.snoobFire = shoot;
 })();
