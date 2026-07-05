@@ -664,11 +664,14 @@ body.on-char.arcade-music-prompt-visible #char-select-screen {
   flex: 0 0 var(--carousel-card-w);
   transition: opacity 0.15s, transform 0.15s;
   opacity: 0.45;
-  transform: scale(0.92);
+  transform: translateZ(0) scale(0.92);
+  backface-visibility: hidden;
+  contain: paint;
+  will-change: opacity, transform;
 }
 .carousel-item.active-card {
   opacity: 1;
-  transform: scale(1);
+  transform: translateZ(0) scale(1);
 }
 .carousel-item .game-card-marquee { font-size: 28px; letter-spacing: 5px; }
 .carousel-item .game-card-desc { font-size: 13px; letter-spacing: 1.5px; line-height: 1.5; }
@@ -753,6 +756,9 @@ body.on-char.arcade-music-prompt-visible #char-select-screen {
   justify-content: flex-end;
   border: 2px solid rgba(255,255,255,0.12);
   transition: border-color 0.2s;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  isolation: isolate;
 }
 .game-card:active { transform: scale(0.97); }
 .game-card-art {
