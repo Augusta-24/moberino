@@ -352,6 +352,10 @@
     pendingAimTouch = null;
   }
 
+  function isMousePointer(e) {
+    return e.pointerType === 'mouse';
+  }
+
   function handlePointer(e) {
     if (state !== 'playing' || !canvas || current) return;
     if (pendingAimTouch) {
@@ -368,6 +372,12 @@
     if (e.preventDefault) e.preventDefault();
     if (canvas.setPointerCapture && e.pointerId != null) {
       try { canvas.setPointerCapture(e.pointerId); } catch(err) {}
+    }
+    if (isMousePointer(e)) {
+      clearPendingAimTouch();
+      updateAimFromEvent(e);
+      shoot();
+      return;
     }
     if (aimArmed) {
       clearPendingAimTouch();
@@ -1344,7 +1354,7 @@
       c.clip();
       c.globalAlpha *= 0.96;
       const source = imageContentBounds(img) || { x: 0, y: 0, w: img.naturalWidth, h: img.naturalHeight };
-      const imageScale = Math.max((domeW * 1.44) / source.w, (r * 1.6) / source.h);
+      const imageScale = Math.max((domeW * 1.34) / source.w, (r * 1.5) / source.h);
       const drawW = source.w * imageScale;
       const drawH = source.h * imageScale;
       const eyeX = source.w * 0.5;

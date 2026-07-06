@@ -217,20 +217,19 @@
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  min-width: 88px;
+  min-width: 116px;
 }
 .snoob-aim-switch {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr 16px 1fr;
+  grid-template-columns: 1fr 1fr;
   align-items: center;
-  gap: 3px;
-  width: 86px;
-  height: 18px;
-  padding: 2px 4px;
+  width: 112px;
+  height: 24px;
+  padding: 3px;
   box-sizing: border-box;
   border: 2px solid #181714;
-  border-radius: 3px;
+  border-radius: 4px;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.26), rgba(255,255,255,0) 35%),
     linear-gradient(90deg, #d7d0bd 0%, #8d8779 48%, #f2ebd8 100%);
@@ -239,41 +238,44 @@
     2px 2px 0 rgba(0,0,0,0.24);
   color: #231f1b;
   font-family: 'VCR', monospace;
-  font-size: 6px;
-  letter-spacing: 0.6px;
+  font-size: 8px;
+  letter-spacing: 0.9px;
   line-height: 1;
 }
 .snoob-aim-switch span {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   opacity: 0.48;
   text-align: center;
+  padding-top: 1px;
 }
 .snoob-aim-switch span:first-child,
 .snoob-aim-switch.is-shoot span:last-child {
   opacity: 1;
-  color: #111318;
-  text-shadow: 0 1px 0 rgba(255,255,255,0.45);
+  color: #f7f1df;
+  text-shadow: 0 1px 0 #000;
 }
 .snoob-aim-switch.is-shoot span:first-child {
   opacity: 0.48;
+  color: #231f1b;
+  text-shadow: none;
 }
 .snoob-aim-switch i {
   position: absolute;
-  left: 5px;
-  top: 3px;
-  width: 34px;
-  height: 8px;
+  left: 4px;
+  top: 4px;
+  width: 49px;
+  height: 12px;
   border: 2px solid #191919;
   border-radius: 3px;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0) 45%),
-    linear-gradient(90deg, #38414b, #111318);
+    linear-gradient(90deg, #3d4854, #15191f);
   box-shadow: 1px 1px 0 rgba(0,0,0,0.32);
   transition: transform 110ms ease-out;
 }
 .snoob-aim-switch.is-shoot i {
-  transform: translateX(37px);
+  transform: translateX(51px);
 }
 .snoob-canvas-wrap {
   position: relative;
@@ -327,19 +329,18 @@
     min-height: 60px;
   }
   .snoob-aim-stack {
-    min-width: 104px;
+    min-width: 128px;
   }
   .snoob-aim-switch {
-    width: 100px;
-    height: 20px;
-    grid-template-columns: 1fr 18px 1fr;
-    font-size: 7px;
+    width: 124px;
+    height: 26px;
+    font-size: 9px;
   }
   .snoob-aim-switch i {
-    width: 40px;
+    width: 55px;
   }
   .snoob-aim-switch.is-shoot i {
-    transform: translateX(43px);
+    transform: translateX(57px);
   }
 }
 
