@@ -43,6 +43,7 @@
   const imageBoundsCache = new WeakMap();
   const soundCache = new Map();
   const REAIM_HOLD_MS = 220;
+  const TOUCH_AIM_BLEND = 0.82;
 
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
@@ -334,17 +335,18 @@
     window.addEventListener('resize', resizeHandler);
   }
 
-  function updateAimFromPoint(clientX, clientY) {
+  function updateAimFromPoint(clientX, clientY, smooth) {
     if (state !== 'playing' || !canvas) return;
     const rect = canvas.getBoundingClientRect();
     const x = clientX - rect.left;
     const y = clientY - rect.top;
     const a = Math.atan2(y - shooter.y, x - shooter.x);
-    aim = Math.max(-Math.PI + 0.18, Math.min(-0.18, a));
+    const target = Math.max(-Math.PI + 0.18, Math.min(-0.18, a));
+    aim = smooth ? aim + (target - aim) * TOUCH_AIM_BLEND : target;
   }
 
-  function updateAimFromEvent(e) {
-    updateAimFromPoint(e.clientX, e.clientY);
+  function updateAimFromEvent(e, smooth) {
+    updateAimFromPoint(e.clientX, e.clientY, smooth);
   }
 
   function clearPendingAimTouch() {
@@ -361,10 +363,10 @@
     if (pendingAimTouch) {
       pendingAimTouch.clientX = e.clientX;
       pendingAimTouch.clientY = e.clientY;
-      if (pendingAimTouch.reaiming) updateAimFromEvent(e);
+      if (pendingAimTouch.reaiming) updateAimFromEvent(e, !isMousePointer(e));
       return;
     }
-    updateAimFromEvent(e);
+    updateAimFromEvent(e, !isMousePointer(e));
   }
 
   function handlePointerDown(e) {
@@ -375,7 +377,7 @@
     }
     if (isMousePointer(e)) {
       clearPendingAimTouch();
-      updateAimFromEvent(e);
+      updateAimFromEvent(e, false);
       shoot();
       return;
     }
@@ -389,12 +391,12 @@
         timer: setTimeout(() => {
           if (!pendingAimTouch || pendingAimTouch.pointerId !== e.pointerId) return;
           pendingAimTouch.reaiming = true;
-          updateAimFromPoint(pendingAimTouch.clientX, pendingAimTouch.clientY);
+          updateAimFromPoint(pendingAimTouch.clientX, pendingAimTouch.clientY, true);
         }, REAIM_HOLD_MS),
       };
       return;
     }
-    updateAimFromEvent(e);
+    updateAimFromEvent(e, false);
     aimArmed = true;
     updateHud();
   }
@@ -1192,7 +1194,7 @@
     if (current) return;
     const pts = aimPoints();
     ctx.save();
-    ctx.strokeStyle = 'rgba(17,19,24,0.28)';
+    ctx.strokeStyle = 'rgba(17,19,24,0.42)';
     ctx.lineWidth = 2;
     ctx.setLineDash([3, 8]);
     ctx.lineCap = 'round';
@@ -1200,7 +1202,7 @@
     ctx.moveTo(shooter.x, shooter.y);
     pts.forEach(p => ctx.lineTo(p.x, p.y));
     ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,0.42)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.24)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(shooter.x, shooter.y);
