@@ -20,6 +20,7 @@
 <link rel="stylesheet" href="css/arcade.css">
 <link rel="stylesheet" href="css/games/whack.css">
 <link rel="stylesheet" href="css/games/space.css">
+<link rel="stylesheet" href="css/games/signal.css">
 <link rel="stylesheet" href="css/games/match.css">
 <link rel="stylesheet" href="css/games/snoob.css">
 <script>
@@ -271,6 +272,44 @@
 </div>
 </div>
 </div>
+<div class="carousel-item" id="ci-signal">
+<div class="game-card" onclick="SFX.menuSelect();nav('signal')" style="border-color:#00e5ff55;cursor:pointer">
+<div class="game-card-art" style="background:linear-gradient(160deg,#030116 0%,#071333 52%,#120029 100%)">
+<svg height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0" viewBox="0 0 200 240" width="100%">
+<rect fill="#02040e" height="240" width="200"/>
+<g opacity="0.42" stroke="#00e5ff" stroke-width="1">
+<path d="M0 54 C24 42 42 66 66 54 S110 42 134 54 S176 66 200 54" fill="none"/>
+<path d="M0 94 C24 82 42 106 66 94 S110 82 134 94 S176 106 200 94" fill="none" opacity="0.55"/>
+<path d="M0 134 C24 122 42 146 66 134 S110 122 134 134 S176 146 200 134" fill="none" opacity="0.35"/>
+</g>
+<g opacity="0.86">
+<circle cx="45" cy="58" fill="#00e5ff" r="6"/>
+<circle cx="86" cy="82" fill="#ffe61a" r="8"/>
+<circle cx="150" cy="64" fill="#ff2db8" r="7"/>
+<circle cx="122" cy="124" fill="#7b61ff" r="10"/>
+<circle cx="57" cy="144" fill="#33ff66" r="7"/>
+</g>
+<g fill="none" stroke-linecap="round">
+<path d="M38 184 L52 174 L66 184" stroke="#00e5ff" stroke-width="3"/>
+<path d="M52 174 L52 214" stroke="#00e5ff" stroke-width="2"/>
+<path d="M87 183 L101 171 L115 183" stroke="#ffe61a" stroke-width="3"/>
+<path d="M101 171 L101 214" stroke="#ffe61a" stroke-width="2"/>
+<path d="M136 184 L150 172 L164 184" stroke="#ff2db8" stroke-width="3"/>
+<path d="M150 172 L150 214" stroke="#ff2db8" stroke-width="2"/>
+</g>
+<rect fill="#00e5ff22" height="16" rx="3" stroke="#00e5ff" width="132" x="34" y="205"/>
+<rect fill="#00e5ff" height="8" rx="2" width="84" x="40" y="209"/>
+<text fill="#eaffff" font-family="monospace" font-size="10" letter-spacing="2" text-anchor="middle" x="100" y="31">SIGNAL</text>
+</svg>
+</div>
+<div class="game-card-info">
+<div class="game-card-badge" style="background:#00e5ff22;color:#00e5ff;border:1px solid #00e5ff66">MUSIC</div>
+<div class="game-card-marquee" style="color:#00e5ff;text-shadow:0 0 20px #00e5ff88">SIGNAL DRIFT</div>
+<div class="game-card-desc">SHOOT ROCKS · BUILD THE LOOP</div>
+<div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#00e5ff22;border:1.5px solid #00e5ff;border-radius:5px;padding:10px 24px;color:#00e5ff;width:100%;text-shadow:0 0 8px #00e5ff66;text-align:center">▶ PLAY</div>
+</div>
+</div>
+</div>
 <div class="carousel-item" id="ci-snoob">
 <div class="game-card" onclick="SFX.menuSelect();nav('snoob')" style="border-color:#e4b65f66;cursor:pointer">
 <div class="game-card-art" style="background:transparent">
@@ -394,6 +433,20 @@
 </div>
 </div>
 
+<div class="page" id="pg-signal">
+<div class="cats-header">
+<button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE MENU</button>
+<div class="arcade-header-actions" style="display:flex;align-items:center;gap:8px">
+<button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
+<button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
+</div>
+</div>
+<canvas id="signal-canvas"></canvas>
+<div id="signal-overlay">
+<!-- filled by JS -->
+</div>
+</div>
+
 <div class="page" id="pg-snoob">
 <div class="cats-header">
 <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE MENU</button>
@@ -434,6 +487,7 @@
 <script src="js/games/whack.js"></script>
 <script src="js/games/match.js"></script>
 <script src="js/games/space.js"></script>
+<script src="js/games/signal.js"></script>
 <script src="js/games/snoob.js"></script>
 </body>
 </html>
