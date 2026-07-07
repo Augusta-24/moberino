@@ -92,7 +92,7 @@
   let signalSettings = { mode: 'arcade', style: 'space-funk', mood: 'minor', tempo: 'medium' };
   let beatMs = DEFAULT_BEAT_MS;
   let laneFlash = [0, 0, 0];
-  let spawnAt = 0, fireAt = 0, beatAt = 0, stepIndex = 0, lastLoopStep = -1;
+  let spawnAt = 0, fireAt = 0, manualFireAt = 0, beatAt = 0, stepIndex = 0, lastLoopStep = -1;
   let loop = [];
   let leftHeld = false, rightHeld = false, pointerActive = false, pointerX = 0;
   let resizeHandler = null, keyDownHandler = null, keyUpHandler = null;
@@ -164,6 +164,43 @@
     o.stop(t0 + dur + 0.03);
   }
 
+  function synth(freq, type, delay, dur, vol, options) {
+    const c = audioCtx();
+    if (!c) return;
+    const opts = options || {};
+    const t0 = c.currentTime + Math.max(0.006, delay || 0);
+    const o = c.createOscillator();
+    const filter = c.createBiquadFilter();
+    const g = c.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(Math.max(20, freq), t0);
+    if (opts.endFreq) o.frequency.exponentialRampToValueAtTime(Math.max(20, opts.endFreq), t0 + dur);
+    filter.type = opts.filter || 'lowpass';
+    filter.frequency.setValueAtTime(opts.cutoff || 1800, t0);
+    if (opts.endCutoff) filter.frequency.exponentialRampToValueAtTime(Math.max(60, opts.endCutoff), t0 + dur);
+    filter.Q.setValueAtTime(opts.q || 0.8, t0);
+    g.gain.setValueAtTime(Math.max(0.0001, vol), t0);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    o.connect(filter);
+    filter.connect(g);
+    g.connect(c.destination);
+    if (opts.echo) {
+      const d = c.createDelay();
+      const fb = c.createGain();
+      const eg = c.createGain();
+      d.delayTime.setValueAtTime(opts.echoTime || 0.16, t0);
+      fb.gain.setValueAtTime(opts.echoFeedback || 0.18, t0);
+      eg.gain.setValueAtTime(opts.echoGain || 0.22, t0);
+      g.connect(d);
+      d.connect(fb);
+      fb.connect(d);
+      d.connect(eg);
+      eg.connect(c.destination);
+    }
+    o.start(t0);
+    o.stop(t0 + dur + 0.05);
+  }
+
   function noise(delay, dur, vol, highpass) {
     const c = audioCtx();
     if (!c) return;
@@ -195,11 +232,22 @@
       tone((note || 105) * tune, 'sine', 0, 0.12, 0.11 * vol * toneDef.drum, 48);
       noise(0.002, 0.045, 0.032 * vol * toneDef.drum, !aligned);
     } else if (type === 'bass') {
-      tone((note || 110) * tune, toneDef.bassWave, 0, 0.18, 0.10 * vol, (note || 110) * 0.72);
-      tone((note || 110) * 2 * tune, 'sine', 0.03, 0.10, 0.03 * vol);
+      synth((note || 110) * tune, toneDef.bassWave, 0, 0.20, 0.10 * vol, {
+        cutoff: 760,
+        endCutoff: 240,
+        q: 1.8,
+        endFreq: (note || 110) * 0.72,
+      });
+      synth((note || 110) * 2 * tune, 'sine', 0.035, 0.10, 0.026 * vol, { cutoff: 1400 });
     } else {
-      tone((note || 330) * tune, toneDef.leadWave, 0, 0.13, 0.085 * vol);
-      tone((note || 330) * (1.5 + toneDef.shimmer * 0.5) * tune, 'sine', 0.05, 0.09, 0.03 * vol);
+      synth((note || 330) * tune, toneDef.leadWave, 0, 0.14, 0.072 * vol, {
+        cutoff: 2600,
+        q: 1.1,
+        echo: aligned,
+        echoTime: beatMs / 2000,
+        echoGain: 0.16,
+      });
+      synth((note || 330) * (1.5 + toneDef.shimmer * 0.5) * tune, 'sine', 0.045, 0.11, 0.026 * vol, { cutoff: 4200 });
     }
   }
 
@@ -207,24 +255,35 @@
     if (!slot) return;
     const toneDef = styleTone();
     const note = slot.note;
+    const third = !toneDef.forceMinor && signalSettings.mood === 'major' ? 1.25 : 1.2;
     if (slot.type === 'drum') {
       if (slot.role === 'hat') {
         noise(0, 0.035, 0.018 * toneDef.drum, true);
+        synth(5200, 'square', 0, 0.025, 0.006, { filter: 'highpass', cutoff: 3000 });
       } else if (slot.role === 'clap' || slot.role === 'snare') {
         noise(0, 0.055, 0.032 * toneDef.drum, true);
         tone(DRUM_SNARE, 'triangle', 0, 0.055, 0.026 * toneDef.drum, 95);
       } else {
         tone(note || DRUM_KICK, 'sine', 0, 0.10, 0.052 * toneDef.drum, 44);
+        synth((note || DRUM_KICK) * 2, 'triangle', 0.01, 0.055, 0.012, { cutoff: 650 });
       }
     } else if (slot.type === 'bass') {
-      tone(note, toneDef.bassWave, 0, 0.18, 0.048, note * 0.82);
+      synth(note, toneDef.bassWave, 0, 0.22, 0.052, { cutoff: 820, endCutoff: 220, q: 1.6, endFreq: note * 0.82 });
+      synth(note * 2, 'sine', 0.025, 0.12, 0.014, { cutoff: 1200 });
       if (slot.role === 'chord') {
-        tone(note * 1.5, 'sine', 0.02, 0.22, 0.02);
-        tone(note * 2, 'sine', 0.04, 0.20, 0.014);
+        synth(note * third, 'triangle', 0.02, 0.30, 0.026, { cutoff: 1700, echo: true, echoGain: 0.1 });
+        synth(note * 1.5, 'sine', 0.04, 0.28, 0.020, { cutoff: 2200, echo: true, echoGain: 0.1 });
       }
     } else {
-      tone(note, toneDef.leadWave, 0, 0.12, 0.038);
-      tone(note * (slot.role === 'glass' ? 1.5 + toneDef.shimmer * 0.5 : 1.25 + toneDef.shimmer * 0.25), 'triangle', 0.04, 0.09, 0.012);
+      const accent = slot.role === 'glass' ? 1.5 + toneDef.shimmer * 0.5 : 1.25 + toneDef.shimmer * 0.25;
+      synth(note, toneDef.leadWave, 0, slot.role === 'solo' ? 0.20 : 0.14, 0.038, {
+        cutoff: slot.role === 'glass' ? 4800 : 3000,
+        q: 1.2,
+        echo: true,
+        echoTime: beatMs / 1800,
+        echoGain: slot.role === 'solo' ? 0.22 : 0.14,
+      });
+      synth(note * accent, 'triangle', 0.045, 0.10, 0.014, { cutoff: 5200 });
     }
   }
 
@@ -306,6 +365,7 @@
     elapsed = 0;
     spawnAt = 0;
     fireAt = 0;
+    manualFireAt = 0;
     beatAt = 0;
     stepIndex = 0;
     lastLoopStep = -1;
@@ -394,6 +454,14 @@
   function shoot() {
     bullets.push({ x: player.x, y: player.y - 18, vy: -420, r: 4 });
     tone(650, 'triangle', 0, 0.035, 0.018, 920);
+  }
+
+  function tapShoot() {
+    const t = performance.now();
+    if (t < manualFireAt) return;
+    shoot();
+    manualFireAt = t + 125;
+    fireAt = Math.max(fireAt, t + 150);
   }
 
   function registerAddition(rock, perfectPhrase) {
@@ -964,7 +1032,7 @@
     overlay.innerHTML = `
       <div class="signal-panel">
         <div class="signal-title">SIGNAL DRIFT</div>
-        <div class="signal-subtitle">MOVE LEFT/RIGHT. SHIP AUTO-SHOOTS.<br>HIT A ROCK'S WHOLE PHRASE IN ITS LANE TO ADD IT. LET IT PASS TO LEAVE A REST.</div>
+        <div class="signal-subtitle">MOVE LEFT/RIGHT. TAP OR CLICK TO SHOOT.<br>HIT A ROCK'S WHOLE PHRASE IN ITS LANE TO ADD IT. LET IT PASS TO LEAVE A REST.</div>
         ${presetControlsHTML()}
         <div class="signal-stats">
           <div class="signal-stat">LOOP 1<b>FOUNDATION</b></div>
@@ -1233,6 +1301,7 @@
       pointerActive = true;
       pointerX = pointerPos(e).x;
       audioCtx();
+      tapShoot();
     }, { passive: false });
     canvas.addEventListener('touchmove', e => {
       if (state !== 'playing') return;
@@ -1245,6 +1314,13 @@
       if (state !== 'playing') return;
       pointerActive = true;
       pointerX = pointerPos(e).x;
+    });
+    canvas.addEventListener('mousedown', e => {
+      if (state !== 'playing') return;
+      pointerActive = true;
+      pointerX = pointerPos(e).x;
+      audioCtx();
+      tapShoot();
     });
     canvas.addEventListener('mouseleave', () => { pointerActive = false; });
   }
