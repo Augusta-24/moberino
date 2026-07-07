@@ -96,7 +96,7 @@
         }
       }
       if (maxX >= minX && maxY >= minY) {
-        const pad = 2;
+        const pad = 9;
         minX = Math.max(0, minX - pad);
         minY = Math.max(0, minY - pad);
         maxX = Math.min(probeSize - 1, maxX + pad);
