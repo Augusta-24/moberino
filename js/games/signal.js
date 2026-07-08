@@ -544,7 +544,7 @@
   }
 
   function padRect(row, col) {
-    const left = 46, right = 12, top = 108;
+    const left = 46, right = 12, top = 122;
     const bottom = H - LOOP_PANEL_H - 16;
     const gw = (W - left - right - (PAD_COLS - 1) * 8) / PAD_COLS;
     const gh = (bottom - top - 2 * 10) / 3;
@@ -928,22 +928,40 @@
       playStamp(v);
     });
     lastLoopStep = stepIndex;
-    // Theremin drift: while the player holds and pulls from the center, the
-    // orb sings on the grid — distance picks the scale degree and the density.
-    if (chimesActive() && pointerActive) {
+    // Invite drum pads on the beat grid, not a wall-clock timer, so the
+    // lighting reads as part of the groove instead of random flicker.
+    if (drumsActive() && stepIndex % 4 === 2) {
+      const litCount = pads.filter(p => p.lit > t).length;
+      if (litCount < 3) {
+        const nextIsDownbeat = ((stepIndex + 2) % 8) === 0;
+        const roll = Math.random();
+        const piece = nextIsDownbeat && roll < 0.5 ? 'kick' : roll < 0.55 ? 'hat' : roll < 0.8 ? 'tom' : 'kick';
+        const rowPads = pads.filter(p => p.piece === piece && p.lit <= t);
+        if (rowPads.length) {
+          const pad = rowPads[Math.floor(Math.random() * rowPads.length)];
+          pad.lit = beatAt + beatMs * 3;
+        }
+      }
+    }
+    // Orb drift (chimes theremin / swell pads): while the player holds and
+    // pulls from the center, distance picks the scale degree and the density.
+    const orbInst = pointerActive ? orbLayerInst() : null;
+    if (orbInst) {
       const tc = thereminCenter();
       const dist = clamp(Math.hypot(pointerX - tc.x, pointerY - tc.y) / tc.maxR, 0, 1);
       if (dist > 0.12) {
         const deg = Math.round((dist - 0.12) / 0.88 * 9);
-        const every = dist > 0.7 ? 1 : dist > 0.4 ? 2 : 4;
+        const isSwell = orbInst === 'swell';
+        const every = isSwell ? (dist > 0.7 ? 2 : 4) : (dist > 0.7 ? 1 : dist > 0.4 ? 2 : 4);
         if (stepIndex % every === 0) {
           const note = degreeFreq(deg, activeLayer().mult);
-          playPitched('chimes', note, 0.55 + dist * 0.45, 0);
+          if (isSwell) playSwellChord(note, 0.4 + dist * 0.6, 0);
+          else playPitched('chimes', note, 0.55 + dist * 0.45, 0);
           // Only re-stamp when the note at this step actually changes,
           // so a held position doesn't flood the capture log.
           const existing = loop[stepIndex].find(v => v.layerId === activeLayer().id);
           if (!existing || existing.note !== note) {
-            stampNote({ lane: 1, label: noteNameForDegree(deg), color: '#ff2db8' }, stepIndex, note, true, false);
+            stampNote({ lane: 1, label: noteNameForDegree(deg), color: isSwell ? '#ffe61a' : '#ff2db8' }, stepIndex, note, true, false);
           }
           thereminPulse = 1;
         }
@@ -985,20 +1003,6 @@
     tickBeat(t);
     if (drumsActive()) {
       for (let i = 0; i < laneFlash.length; i++) laneFlash[i] = Math.max(0, laneFlash[i] - dt / 360);
-      // Light pads with a loose groove bias: kicks and hats invite more often.
-      if (t >= padSpawnAt) {
-        const litCount = pads.filter(p => p.lit > t).length;
-        if (litCount < 3) {
-          const roll = Math.random();
-          const piece = roll < 0.4 ? 'hat' : roll < 0.65 ? 'tom' : 'kick';
-          const rowPads = pads.filter(p => p.piece === piece && p.lit <= t);
-          if (rowPads.length) {
-            const pad = rowPads[Math.floor(Math.random() * rowPads.length)];
-            pad.lit = t + beatMs * 3.2;
-          }
-        }
-        padSpawnAt = t + beatMs * 2;
-      }
       pads.forEach(p => { p.flash = Math.max(0, p.flash - dt / 260); });
       stars.forEach(s => {
         s.y += s.vy * dt / 1000;
@@ -1245,7 +1249,10 @@
 
   function drawPads(c) {
     const t = now();
-    const dim = phase === 'countin';
+    // Lit pads breathe with the loop: brightest at each step tick, fading until
+    // the next — every lit pad pulses in phase with the music.
+    const beatFrac = beatAt > 0 ? clamp(1 - (beatAt - t) / beatMs, 0, 1) : 0;
+    const beatPulse = 1 - beatFrac;
     c.save();
     c.font = "7px 'VCR', monospace";
     c.textAlign = 'center';
@@ -1253,7 +1260,7 @@
     PAD_ROWS.forEach((rowDef, row) => {
       const r0 = padRect(row, 0);
       c.fillStyle = rowDef.color;
-      c.globalAlpha = dim ? 0.3 : 0.75;
+      c.globalAlpha = 0.75;
       c.save();
       c.translate(22, r0.y + r0.h / 2);
       c.rotate(-Math.PI / 2);
@@ -1262,17 +1269,17 @@
     });
     pads.forEach(pad => {
       const r = padRect(pad.row, pad.col);
-      const lit = !dim && pad.lit > t;
-      const pulse = lit ? 0.5 + 0.5 * Math.sin(t * 0.012) : 0;
+      const lit = pad.lit > t;
+      const pulse = lit ? 0.45 + 0.55 * beatPulse : 0;
       c.fillStyle = pad.color;
-      c.globalAlpha = dim ? 0.05 : 0.09 + pad.flash * 0.30 + pulse * 0.22;
+      c.globalAlpha = 0.09 + pad.flash * 0.30 + pulse * 0.22;
       c.fillRect(r.x, r.y, r.w, r.h);
       c.strokeStyle = pad.color;
       c.lineWidth = lit ? 2 : 1;
-      c.globalAlpha = dim ? 0.14 : 0.30 + pad.flash * 0.6 + pulse * 0.55;
+      c.globalAlpha = 0.30 + pad.flash * 0.6 + pulse * 0.55;
       c.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
       const cr = pad.piece === 'kick' ? 6 : pad.piece === 'tom' ? 4.5 : 3;
-      c.globalAlpha = dim ? 0.18 : 0.35 + pad.flash * 0.5 + pulse * 0.4;
+      c.globalAlpha = 0.35 + pad.flash * 0.5 + pulse * 0.4;
       c.beginPath();
       c.arc(r.x + r.w / 2, r.y + r.h / 2, cr + pad.flash * 3, 0, Math.PI * 2);
       if (pad.piece === 'hat') c.stroke(); else c.fill();
@@ -1284,22 +1291,29 @@
   function drawTheremin(c) {
     const t = now();
     const tc = thereminCenter();
+    const isSwell = orbLayerInst() === 'swell';
+    // Chimes orb: sharp pink rings, quick shimmer. Swell orb: gold dashed
+    // rings breathing slowly — you can tell which instrument you're holding.
+    const col = isSwell ? '#ffe61a' : '#ff2db8';
+    const breathe = isSwell ? Math.sin(t * 0.0022) * 3 : Math.sin(t * 0.006) * 1.5;
     c.save();
-    c.strokeStyle = '#ff2db8';
+    c.strokeStyle = col;
+    if (isSwell) c.setLineDash([5, 6]);
     [0.12, 0.4, 0.7, 1].forEach((band, i) => {
       c.globalAlpha = 0.10 + (i === 0 ? 0.06 : 0);
       c.lineWidth = 1;
       c.beginPath();
-      c.arc(tc.x, tc.y, tc.maxR * band, 0, Math.PI * 2);
+      c.arc(tc.x, tc.y, tc.maxR * band + (isSwell ? breathe : 0), 0, Math.PI * 2);
       c.stroke();
     });
+    c.setLineDash([]);
     // The orb
-    c.shadowColor = '#ff2db8';
-    c.shadowBlur = 18 + thereminPulse * 22;
+    c.shadowColor = col;
+    c.shadowBlur = (isSwell ? 26 : 18) + thereminPulse * 22;
     c.globalAlpha = 0.75 + thereminPulse * 0.25;
-    c.fillStyle = '#ff2db8';
+    c.fillStyle = col;
     c.beginPath();
-    c.arc(tc.x, tc.y, 10 + thereminPulse * 6 + Math.sin(t * 0.006) * 1.5, 0, Math.PI * 2);
+    c.arc(tc.x, tc.y, (isSwell ? 13 : 10) + thereminPulse * 6 + breathe, 0, Math.PI * 2);
     c.fill();
     c.shadowBlur = 0;
     if (pointerActive) {
@@ -1327,7 +1341,7 @@
       c.font = "9px 'VCR', monospace";
       c.textAlign = 'center';
       c.textBaseline = 'middle';
-      c.fillText('HOLD + PULL', tc.x, tc.y + tc.maxR * 0.55);
+      c.fillText(isSwell ? 'HOLD + PULL — SLOW WAVES' : 'HOLD + PULL', tc.x, tc.y + tc.maxR * 0.55);
     }
     c.restore();
     c.globalAlpha = 1;
@@ -1347,7 +1361,7 @@
       const pulse = laneFlash[i];
       c.fillStyle = lane.color;
       c.globalAlpha = 0.04 + (isSelected ? 0.08 : 0) + pulse * 0.16 + (isSolo ? 0.05 : 0) + (isLocked ? 0.06 : 0);
-      c.fillRect(x + 3, 58, lw - 6, baseY - 64);
+      c.fillRect(x + 3, 118, lw - 6, baseY - 124);
       c.globalAlpha = 0.24 + pulse * 0.35 + (isSelected ? 0.3 : 0) + (isSolo ? 0.22 : 0) + (isLocked ? 0.28 : 0);
       c.strokeStyle = lane.color;
       c.lineWidth = isSelected ? 2 : 1;
@@ -1370,35 +1384,43 @@
     c.textAlign = 'right';
     c.fillText(String(score), W - 12, 12);
     c.textAlign = 'left';
-    if (combo > 1) {
-      c.fillStyle = '#ffe61a';
-      c.fillText('COMBO ' + combo, 12, 30);
-    }
-    // Big beat dots: one per beat, the sweep-line's coarse twin.
+    // Loop rows live up top now, right under the layer title.
     if (phase !== 'countin' || state !== 'playing') {
-      const t = now();
-      const beats = LOOP_STEPS / 4;
-      const beatIdx = Math.floor(stepIndex / 4);
-      const frac = beatAt > 0 ? clamp(1 - (beatAt - t) / beatMs, 0, 1) : 0;
-      const stepInBeat = (stepIndex % 4 + frac) / 4;
-      const bw = Math.min(30, (W - 48) / beats);
-      const bx = W / 2 - (bw * beats) / 2;
-      for (let b = 0; b < beats; b++) {
-        const cx2 = bx + b * bw + bw / 2;
-        const active = b === beatIdx;
-        c.beginPath();
-        c.fillStyle = COLOR;
-        if (active) {
-          c.globalAlpha = 0.95;
-          c.arc(cx2, 44, 5.5 + (1 - stepInBeat) * 2.5, 0, Math.PI * 2);
-          c.fill();
-        } else {
-          c.globalAlpha = b < beatIdx ? 0.5 : 0.2;
-          c.arc(cx2, 44, 3.2, 0, Math.PI * 2);
-          c.fill();
+      const loopX = 30, loopY = 26;
+      const rowH = 5, rowGap = 3;
+      const w = (W - 48) / LOOP_STEPS;
+      for (let i = 0; i < LOOP_STEPS; i++) {
+        const active = i === stepIndex;
+        c.fillStyle = active ? COLOR : 'rgba(234,255,255,0.12)';
+        if (loopEndArmed && i >= LOOP_STEPS - 4) c.fillStyle = active ? '#ffe61a' : 'rgba(255,230,26,0.34)';
+        c.fillRect(loopX + i * w + 1, loopY + LAYERS.length * (rowH + rowGap) + 1, Math.max(2, w - 3), active ? 7 : 4);
+      }
+      for (let row = 0; row < LAYERS.length; row++) {
+        const layer = LAYERS[row];
+        const y = loopY + row * (rowH + rowGap);
+        c.globalAlpha = row === currentLayerIndex && state === 'playing' ? 0.95 : 0.58;
+        c.fillStyle = layer.options[0].color;
+        c.font = "6px 'VCR', monospace";
+        c.textAlign = 'right';
+        c.fillText(String(row + 1), loopX - 6, y + rowH + 1);
+        for (let i = 0; i < LOOP_STEPS; i++) {
+          const slots = layerSlotAt(i, row);
+          c.fillStyle = 'rgba(234,255,255,0.10)';
+          if (loopEndArmed && i >= LOOP_STEPS - 4 && row === currentLayerIndex) c.fillStyle = 'rgba(255,230,26,0.20)';
+          c.fillRect(loopX + i * w + 1, y, Math.max(2, w - 3), rowH);
+          if (slots.length) {
+            const slot = slots[slots.length - 1];
+            c.fillStyle = slot.tight === false ? 'rgba(234,255,255,0.38)' : slot.color;
+            c.fillRect(loopX + i * w + 1, y, Math.max(2, w - 3), rowH);
+          }
+          if (i === stepIndex) {
+            c.fillStyle = row === currentLayerIndex ? '#ffe61a' : 'rgba(0,229,255,0.72)';
+            c.fillRect(loopX + i * w + Math.max(2, w - 3) * 0.42, y - 1, 2, rowH + 2);
+          }
         }
       }
       c.globalAlpha = 1;
+      c.textAlign = 'left';
     }
 
     c.textAlign = 'center';
@@ -1409,9 +1431,10 @@
       ? 'SET THE PULSE'
       : state === 'replay'
         ? 'REPLAYING TRACK'
+        : orbLayerInst() === 'swell' ? 'SWELL · SLOW WAVES'
         : chimesActive() ? 'CHIMES · THEREMIN DRIFT'
         : LANES.map(l => l.label).join(' / ');
-    c.fillText(objective, W * 0.5, 64);
+    c.fillText(objective, W * 0.5, 84);
     if (state !== 'replay') {
       c.font = "7px 'VCR', monospace";
       c.fillStyle = 'rgba(234,255,255,0.58)';
@@ -1419,9 +1442,10 @@
         ? `TAP THE BEAT ANYWHERE · ${countTaps.length}/4 · YOUR TEMPO, YOUR TRACK`
         : loopEndArmed ? 'LOCKING AT THE ONE...'
         : drumsActive() ? 'WHACK PADS TO DRUM · LIT PADS SIT IN THE GROOVE'
+        : orbLayerInst() === 'swell' ? 'HOLD + PULL · LONG SWELLS BLOOM ON THE BAR'
         : chimesActive() ? 'HOLD + PULL FROM THE CENTER · FURTHER = HIGHER AND FULLER'
         : 'EVERY HIT RECORDS · SHOOT ON THE PULSE · SPACE IS PART OF THE TRACK';
-      c.fillText(hint, W * 0.5, 80);
+      c.fillText(hint, W * 0.5, 96);
     }
     c.textAlign = 'left';
 
@@ -1429,40 +1453,41 @@
       const layer = LAYERS[lastGrooveToast.layerIndex] || LAYERS[0];
       c.font = "7px 'VCR', monospace";
       c.fillStyle = '#ffe61a';
-      c.fillText(`${layer.name} LOCKED · GROOVE +${lastGrooveToast.groove.total}`, W * 0.5, 92);
+      c.fillText(`${layer.name} LOCKED · GROOVE +${lastGrooveToast.groove.total}`, W * 0.5, 108);
     }
 
-    const loopX = 30, loopY = H - LOOP_PANEL_H + 12;
-    const rowH = 5, rowGap = 3;
-    const w = (W - 48) / LOOP_STEPS;
-    for (let i = 0; i < LOOP_STEPS; i++) {
-      const active = i === stepIndex;
-      c.fillStyle = active ? COLOR : 'rgba(234,255,255,0.12)';
-      if (loopEndArmed && i >= 12) c.fillStyle = active ? '#ffe61a' : 'rgba(255,230,26,0.34)';
-      c.fillRect(loopX + i * w + 1, loopY + 4 * (rowH + rowGap) + 1, Math.max(2, w - 3), active ? 7 : 4);
-    }
-    for (let row = 0; row < LAYERS.length; row++) {
-      const layer = LAYERS[row];
-      const y = loopY + row * (rowH + rowGap);
-      c.globalAlpha = row === currentLayerIndex && state === 'playing' ? 0.95 : 0.58;
-      c.fillStyle = layer.options[0].color;
-      c.font = "6px 'VCR', monospace";
-      c.textAlign = 'right';
-      c.fillText(String(row + 1), loopX - 6, y + rowH + 1);
-      for (let i = 0; i < LOOP_STEPS; i++) {
-        const slots = layerSlotAt(i, row);
-        c.fillStyle = 'rgba(234,255,255,0.10)';
-        if (loopEndArmed && i >= 12 && row === currentLayerIndex) c.fillStyle = 'rgba(255,230,26,0.20)';
-        c.fillRect(loopX + i * w + 1, y, Math.max(2, w - 3), rowH);
-        if (slots.length) {
-          const slot = slots[slots.length - 1];
-          c.fillStyle = slot.tight === false ? 'rgba(234,255,255,0.38)' : slot.color;
-          c.fillRect(loopX + i * w + 1, y, Math.max(2, w - 3), rowH);
+    // Bottom panel: big beat dots, the loop's coarse heartbeat.
+    if (phase !== 'countin' || state !== 'playing') {
+      const t2 = now();
+      const beats = LOOP_STEPS / 4;
+      const beatIdx = Math.floor(stepIndex / 4);
+      const frac2 = beatAt > 0 ? clamp(1 - (beatAt - t2) / beatMs, 0, 1) : 0;
+      const stepInBeat = (stepIndex % 4 + frac2) / 4;
+      const bw = Math.min(40, (W - 48) / beats);
+      const bx = W / 2 - (bw * beats) / 2;
+      const by = H - LOOP_PANEL_H / 2;
+      for (let b = 0; b < beats; b++) {
+        const cx2 = bx + b * bw + bw / 2;
+        const active = b === beatIdx;
+        c.beginPath();
+        c.fillStyle = COLOR;
+        if (active) {
+          c.globalAlpha = 0.95;
+          c.arc(cx2, by, 7 + (1 - stepInBeat) * 3.5, 0, Math.PI * 2);
+          c.fill();
+        } else {
+          c.globalAlpha = b < beatIdx ? 0.5 : 0.2;
+          c.arc(cx2, by, 4.2, 0, Math.PI * 2);
+          c.fill();
         }
-        if (i === stepIndex) {
-          c.fillStyle = row === currentLayerIndex ? '#ffe61a' : 'rgba(0,229,255,0.72)';
-          c.fillRect(loopX + i * w + Math.max(2, w - 3) * 0.42, y - 1, 2, rowH + 2);
-        }
+      }
+      c.globalAlpha = 1;
+      if (combo > 1) {
+        c.fillStyle = '#ffe61a';
+        c.font = "9px 'VCR', monospace";
+        c.textAlign = 'left';
+        c.textBaseline = 'middle';
+        c.fillText('COMBO ' + combo, 12, by);
       }
     }
     c.globalAlpha = 1;
@@ -1510,7 +1535,7 @@
       const t = now();
       const frac = beatAt > 0 ? clamp(1 - (beatAt - t) / beatMs, 0, 1) : 0;
       const x = (((stepIndex + frac) % LOOP_STEPS) / LOOP_STEPS) * W;
-      const sweepTop = 56, sweepBot = H - LOOP_PANEL_H;
+      const sweepTop = 118, sweepBot = H - LOOP_PANEL_H;
       const grad = c.createLinearGradient(x - 52, 0, x, 0);
       grad.addColorStop(0, 'rgba(0,229,255,0)');
       grad.addColorStop(1, 'rgba(0,229,255,0.09)');
@@ -1524,9 +1549,10 @@
       c.stroke();
     }
 
-    const padsVisible = state === 'playing' && (phase === 'countin' || activeLayer().inst === 'drums');
+    const counting = phase === 'countin' && state === 'playing';
+    const padsVisible = drumsActive();
     const thereminVisible = chimesActive();
-    if (!padsVisible && !thereminVisible) drawLanes(c);
+    if (!counting && !padsVisible && !thereminVisible) drawLanes(c);
     drawBoss(c);
     if (padsVisible) drawPads(c);
     if (thereminVisible) drawTheremin(c);
@@ -1585,7 +1611,7 @@
       c.restore();
       c.globalAlpha = 1;
     }
-    if (!padsVisible && !thereminVisible) drawShip(c);
+    if (!counting && !padsVisible && !thereminVisible) drawShip(c);
     // Reserved loop panel: gameplay slides behind it, loop rows own the space.
     c.fillStyle = '#02040e';
     c.fillRect(0, H - LOOP_PANEL_H, W, LOOP_PANEL_H);
@@ -1661,6 +1687,7 @@
           <div class="signal-stat">LAYER 2<b>BASS</b></div>
           <div class="signal-stat">LAYER 3<b>KEYS</b></div>
           <div class="signal-stat">LAYER 4<b>CHIMES</b></div>
+          <div class="signal-stat">LAYER 5<b>SWELL</b></div>
           <div class="signal-stat">WRONG NOTES<b>NONE</b></div>
         </div>
         <button class="signal-btn" onclick="signalStart()">START SIGNAL</button>
