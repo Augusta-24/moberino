@@ -8,54 +8,57 @@
   const BOARD_KEY = 'signal';
   const LOOP_STEPS = 16;
   const DEFAULT_BEAT_MS = 285;
-  const MAX_ROCKS = 32;
+  const LOOP_GOAL = 3;
+  const MAX_LOOP_GOAL = 6;
+  const ADDS_PER_LOOP = 3;
+  const MAX_BULLETS = 18;
+  const MAX_ROCKS = 18;
   const MAX_SPARKS = 120;
-  const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-  // One pentatonic scale per run: any note against any other always sounds good.
-  const MOOD_SEMIS = {
-    minor: [0, 3, 5, 7, 10],
-    major: [0, 2, 4, 7, 9],
-  };
+  const ROCK_TYPES = [
+    { id: 'drum', label: 'DRUM', color: '#00e5ff', radius: 18 },
+    { id: 'bass', label: 'BASS', color: '#ffe61a', radius: 22 },
+    { id: 'melody', label: 'NOTE', color: '#ff2db8', radius: 16 },
+  ];
   const LANES = [
-    { label: 'KICK', color: '#00e5ff' },
-    { label: 'TOM', color: '#ff8a3d' },
-    { label: 'HAT', color: '#eaffff' },
+    { type: 'drum', label: 'DRUM', color: '#00e5ff' },
+    { type: 'bass', label: 'BASS', color: '#ffe61a' },
+    { type: 'melody', label: 'LEAD', color: '#ff2db8' },
   ];
-  const LAYERS = [
-    { id: 'drums', name: 'DRUMS', inst: 'drums', mult: 1, options: [
-      { label: 'KICK', piece: 'kick', color: '#00e5ff' },
-      { label: 'TOM', piece: 'tom', color: '#ff8a3d' },
-      { label: 'HAT', piece: 'hat', color: '#eaffff' },
-    ] },
-    { id: 'bass', name: 'BASS', inst: 'bass', mult: 1, options: [
-      { label: 'LOW', degLo: 0, degHi: 2, color: '#ffe61a' },
-      { label: 'MID', degLo: 3, degHi: 5, color: '#33ff66' },
-      { label: 'HIGH', degLo: 6, degHi: 9, color: '#d7ff65' },
-    ] },
-    { id: 'keys', name: 'KEYS', inst: 'keys', mult: 2, options: [
-      { label: 'LOW', degLo: 0, degHi: 2, color: '#00e5ff' },
-      { label: 'MID', degLo: 3, degHi: 5, color: '#b66cff' },
-      { label: 'HIGH', degLo: 6, degHi: 9, color: '#7bffea' },
-    ] },
-    { id: 'chimes', name: 'CHIMES', inst: 'chimes', mult: 4, options: [
-      { label: 'LOW', degLo: 0, degHi: 2, color: '#ff2db8' },
-      { label: 'MID', degLo: 3, degHi: 5, color: '#b66cff' },
-      { label: 'HIGH', degLo: 6, degHi: 9, color: '#ff7bd5' },
-    ] },
+  const OPTION_SETS = [
+    [
+      { type: 'drum', label: 'PULSE', color: '#00e5ff', role: 'kick' },
+      { type: 'bass', label: 'SUB', color: '#ffe61a', role: 'sub' },
+      { type: 'melody', label: 'GLASS', color: '#ff2db8', role: 'glass' },
+    ],
+    [
+      { type: 'drum', label: 'CLAP', color: '#ff8a3d', role: 'clap' },
+      { type: 'bass', label: 'WALK', color: '#33ff66', role: 'walk' },
+      { type: 'melody', label: 'ARP', color: '#b66cff', role: 'arp' },
+    ],
+    [
+      { type: 'drum', label: 'SHAKE', color: '#eaffff', role: 'hat' },
+      { type: 'bass', label: 'CHORD', color: '#00e5ff', role: 'chord' },
+      { type: 'melody', label: 'SOLO', color: '#ff2db8', role: 'solo' },
+    ],
   ];
-  // Legacy v2 recipes only: old rock types stored per-role step masks.
+  const SONG = [
+    { root: 130.81, bass: [65.41, 98.0, 130.81, 98.0], lead: [261.63, 311.13, 392.0, 466.16] },
+    { root: 103.83, bass: [51.91, 77.78, 103.83, 155.56], lead: [311.13, 349.23, 415.3, 523.25] },
+    { root: 155.56, bass: [77.78, 116.54, 155.56, 116.54], lead: [311.13, 392.0, 466.16, 622.25] },
+    { root: 116.54, bass: [58.27, 87.31, 116.54, 174.61], lead: [233.08, 293.66, 349.23, 466.16] },
+  ];
+  const DRUM_KICK = 82;
+  const DRUM_SNARE = 146;
   const WRITE_STEPS = {
     drum: [0, 4, 8, 12],
     bass: [0, 4, 8, 12],
     melody: [2, 6, 10, 14],
   };
-  const LAYER_DENSITY_BANDS = {
-    drums: [4, 10],
-    bass: [3, 8],
-    keys: [2, 6],
-    chimes: [3, 8],
-  };
   const SIGNAL_PRESETS = {
+    mode: [
+      { id: 'arcade', label: 'ARCADE BUILD' },
+      { id: 'studio', label: 'STUDIO DRIFT' },
+    ],
     style: [
       { id: 'space-funk', label: 'SPACE FUNK' },
       { id: 'dream-synth', label: 'DREAM SYNTH' },
@@ -73,28 +76,26 @@
       { id: 'fast', label: 'FAST', beatMs: 235 },
     ],
   };
-  // Palettes: key center + instrument character. Never breaks the pentatonic guarantee.
-  const STYLE_DEFS = {
-    'space-funk': { root: 110.00, rootSemi: 9, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'triangle', drumVol: 1, shimmer: 1 },
-    'dream-synth': { root: 123.47, rootSemi: 11, bassWave: 'sine', keysWave: 'sine', chimeWave: 'triangle', drumVol: 0.8, shimmer: 1.5 },
-    'boss-rave': { root: 116.54, rootSemi: 10, bassWave: 'sawtooth', keysWave: 'triangle', chimeWave: 'triangle', drumVol: 1.22, shimmer: 1.1 },
-    'chiptune': { root: 146.83, rootSemi: 2, bassWave: 'square', keysWave: 'square', chimeWave: 'square', drumVol: 0.85, shimmer: 0.8 },
-    'dark-minor': { root: 103.83, rootSemi: 8, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'triangle', drumVol: 1.05, shimmer: 0.7, forceMinor: true },
+  const STYLE_TONE = {
+    'space-funk': { transpose: 1, bassWave: 'triangle', leadWave: 'sine', shimmer: 1, drum: 1 },
+    'dream-synth': { transpose: 1.125, bassWave: 'sine', leadWave: 'triangle', shimmer: 1.45, drum: 0.78 },
+    'boss-rave': { transpose: 1.06, bassWave: 'sawtooth', leadWave: 'square', shimmer: 1.2, drum: 1.25 },
+    'chiptune': { transpose: 1.5, bassWave: 'square', leadWave: 'square', shimmer: 0.9, drum: 0.85 },
+    'dark-minor': { transpose: 0.89, bassWave: 'triangle', leadWave: 'sawtooth', shimmer: 0.72, drum: 1.05, forceMinor: true },
   };
 
-  let canvas = null, ctx = null, overlay = null, loopButton = null;
+  let canvas = null, ctx = null, overlay = null;
   let W = 0, H = 0, dpr = 1, raf = 0, last = 0, state = 'idle';
-  let player, bullets, rocks, sparks, floatTexts, stars, boss;
+  let player, bullets, rocks, sparks, stars, boss;
   let score = 0, signal = 0, distortion = 0, health = 3, elapsed = 0;
   let combo = 0, bestCombo = 0, currentSoloLane = 1;
-  let currentLayerIndex = 0, additionsThisLayer = 0, totalAdditions = 0;
-  let recordedChoices = [], grooveByLayer = [], lastGrooveToast = null, replaying = false, replayUntil = 0;
+  let loopRound = 1, additionsThisLoop = 0, totalAdditions = 0;
+  let recordedChoices = [], replaying = false, replayUntil = 0;
   let jukeboxRows = [];
-  let signalSettings = { style: 'space-funk', mood: 'minor', tempo: 'medium' };
+  let signalSettings = { mode: 'arcade', style: 'space-funk', mood: 'minor', tempo: 'medium' };
   let beatMs = DEFAULT_BEAT_MS;
   let laneFlash = [0, 0, 0];
-  let spawnAt = 0, manualFireAt = 0, beatAt = 0, stepIndex = 0, lastLoopStep = -1;
-  let loopEndArmed = false;
+  let spawnAt = 0, fireAt = 0, beatAt = 0, stepIndex = 0, lastLoopStep = -1;
   let loop = [];
   let leftHeld = false, rightHeld = false, pointerActive = false, pointerX = 0;
   let resizeHandler = null, keyDownHandler = null, keyUpHandler = null;
@@ -106,97 +107,12 @@
   function laneWidth() { return W / LANES.length; }
   function laneIndexForX(x) { return clamp(Math.floor(x / Math.max(1, laneWidth())), 0, LANES.length - 1); }
   function laneCenter(i) { return laneWidth() * (i + 0.5); }
-  function styleDef() { return STYLE_DEFS[signalSettings.style] || STYLE_DEFS['space-funk']; }
-  function moodSemis() {
-    const id = styleDef().forceMinor ? 'minor' : (signalSettings.mood || 'minor');
-    return MOOD_SEMIS[id] || MOOD_SEMIS.minor;
-  }
-  function degreeFreq(deg, mult) {
-    const semis = moodSemis();
-    const d = Math.max(0, Math.floor(deg || 0));
-    const oct = Math.floor(d / semis.length);
-    const st = semis[d % semis.length] + 12 * oct;
-    return styleDef().root * (mult || 1) * Math.pow(2, st / 12);
-  }
-  function noteNameForDegree(deg) {
-    const semis = moodSemis();
-    const d = Math.max(0, Math.floor(deg || 0));
-    const st = semis[d % semis.length];
-    return NOTE_NAMES[(styleDef().rootSemi + st) % 12];
-  }
-  function activeLayer() { return LAYERS[clamp(currentLayerIndex, 0, LAYERS.length - 1)] || LAYERS[0]; }
-  function activeLayerLabel() { return `LAYER ${currentLayerIndex + 1}: ${activeLayer().name}`; }
-  function fallbackStepsForType(type) {
-    const steps = WRITE_STEPS[type] || [0];
-    return steps.slice();
-  }
-  function stepsForChoice(choice) {
-    if (choice && Array.isArray(choice.steps) && choice.steps.length) {
-      return choice.steps.map(s => clamp(Math.floor(s), 0, LOOP_STEPS - 1));
-    }
-    return fallbackStepsForType(choice && choice.type);
-  }
-  function choiceLayerIndex(choice) {
-    return clamp(choice && Number.isFinite(choice.layerIndex) ? choice.layerIndex : ((choice && choice.loop ? choice.loop : 1) - 1), 0, LAYERS.length - 1);
-  }
-  function layerSlotAt(step, layerIndex) {
-    const layer = LAYERS[layerIndex];
-    return (loop[step] || []).filter(v => (v.layerId || '') === layer.id);
-  }
-  function layerFilledSteps(layerIndex) {
-    const filled = [];
-    for (let i = 0; i < LOOP_STEPS; i++) {
-      if (layerSlotAt(i, layerIndex).length) filled.push(i);
-    }
-    return filled;
-  }
-  function scoreLayerGrid(layerIndex) {
-    const layer = LAYERS[layerIndex] || LAYERS[0];
-    const filled = layerFilledSteps(layerIndex);
-    const filledSet = new Set(filled);
-    const layerChoices = recordedChoices.filter(c => choiceLayerIndex(c) === layerIndex);
-    if (!layerChoices.length) {
-      return { total: 0, density: 0, breath: 0, clean: 0, interlock: 0, filled: 0, cleanCount: 0, captures: 0, rest: true };
-    }
-    const densityBand = LAYER_DENSITY_BANDS[layer.id] || [3, 8];
-    const count = filled.length;
-    let density = 80;
-    if (count < densityBand[0]) density = Math.round(80 * (count / Math.max(1, densityBand[0])));
-    else if (count > densityBand[1]) density = Math.max(0, Math.round(80 * (1 - (count - densityBand[1]) / Math.max(1, LOOP_STEPS - densityBand[1]))));
-    let breath = 0;
-    for (let start = 0; start < LOOP_STEPS; start += 4) {
-      let emptyQuarter = true;
-      for (let i = start; i < start + 4; i++) {
-        if (filledSet.has(i)) emptyQuarter = false;
-      }
-      if (emptyQuarter) { breath += 25; break; }
-    }
-    if (layer.id === 'drums' || ![0, 4, 8, 12].every(s => filledSet.has(s))) breath += 25;
-    const cleanCount = layerChoices.filter(c => c.tight).length;
-    const clean = layerChoices.length ? Math.round(70 * (cleanCount / layerChoices.length)) : 35;
-    let interlock = 0;
-    if (layerIndex > 0) {
-      filled.forEach(step => {
-        if (!layerSlotAt(step, layerIndex - 1).length) interlock += 10;
-      });
-    } else {
-      interlock = Math.min(50, count * 5);
-    }
-    interlock = Math.min(50, interlock);
-    const total = density + Math.min(50, breath) + clean + interlock;
-    return { total, density, breath: Math.min(50, breath), clean, interlock, filled: count, cleanCount, captures: layerChoices.length };
-  }
-  function applyLayerOptions() {
-    const layer = activeLayer();
-    for (let i = 0; i < LANES.length; i++) LANES[i] = { ...layer.options[i], inst: layer.inst, mult: layer.mult };
-  }
-  function updateLoopButton() {
-    if (!loopButton) return;
-    const show = state === 'playing';
-    loopButton.classList.toggle('hidden', !show);
-    if (!show) return;
-    if (loopEndArmed) loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISHING...' : 'LOCKING...';
-    else loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISH TRACK' : 'END LOOP';
+  function laneForType(type) { return Math.max(0, LANES.findIndex(l => l.type === type)); }
+  function songPartForStep(step) { return SONG[Math.floor((step % LOOP_STEPS) / 4) % SONG.length]; }
+  function phrasePartForRock() { return themedPart(songPartForStep(stepIndex)); }
+  function applyOptionSet() {
+    const set = OPTION_SETS[(loopRound - 1) % OPTION_SETS.length];
+    for (let i = 0; i < LANES.length; i++) LANES[i] = { ...set[i] };
   }
   function presetLabel(group, id) {
     const item = (SIGNAL_PRESETS[group] || []).find(p => p.id === id);
@@ -209,12 +125,26 @@
     const tempo = SIGNAL_PRESETS.tempo.find(t => t.id === signalSettings.tempo) || SIGNAL_PRESETS.tempo[1];
     beatMs = tempo.beatMs || DEFAULT_BEAT_MS;
   }
-  function withTimeout(promise, ms) {
-    return Promise.race([
-      promise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
-    ]);
+  function styleTone() {
+    return STYLE_TONE[signalSettings.style] || STYLE_TONE['space-funk'];
   }
+  function themedPart(part) {
+    const toneDef = styleTone();
+    const root = part.root * toneDef.transpose;
+    if (!toneDef.forceMinor && signalSettings.mood === 'major') {
+      return {
+        root,
+        bass: [root * 0.5, root * 0.75, root, root * 1.25],
+        lead: [root * 2, root * 2.5, root * 3, root * 4],
+      };
+    }
+    return {
+      root,
+      bass: part.bass.map(n => n * toneDef.transpose),
+      lead: part.lead.map(n => n * toneDef.transpose),
+    };
+  }
+
   function audioCtx() {
     if (typeof getAudioCtx === 'function') return getAudioCtx();
     return null;
@@ -235,43 +165,6 @@
     g.connect(c.destination);
     o.start(t0);
     o.stop(t0 + dur + 0.03);
-  }
-
-  function synth(freq, type, delay, dur, vol, options) {
-    const c = audioCtx();
-    if (!c) return;
-    const opts = options || {};
-    const t0 = c.currentTime + Math.max(0.006, delay || 0);
-    const o = c.createOscillator();
-    const filter = c.createBiquadFilter();
-    const g = c.createGain();
-    o.type = type || 'sine';
-    o.frequency.setValueAtTime(Math.max(20, freq), t0);
-    if (opts.endFreq) o.frequency.exponentialRampToValueAtTime(Math.max(20, opts.endFreq), t0 + dur);
-    filter.type = opts.filter || 'lowpass';
-    filter.frequency.setValueAtTime(opts.cutoff || 1800, t0);
-    if (opts.endCutoff) filter.frequency.exponentialRampToValueAtTime(Math.max(60, opts.endCutoff), t0 + dur);
-    filter.Q.setValueAtTime(opts.q || 0.8, t0);
-    g.gain.setValueAtTime(Math.max(0.0001, vol), t0);
-    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
-    o.connect(filter);
-    filter.connect(g);
-    g.connect(c.destination);
-    if (opts.echo) {
-      const d = c.createDelay();
-      const fb = c.createGain();
-      const eg = c.createGain();
-      d.delayTime.setValueAtTime(opts.echoTime || 0.16, t0);
-      fb.gain.setValueAtTime(opts.echoFeedback || 0.18, t0);
-      eg.gain.setValueAtTime(opts.echoGain || 0.22, t0);
-      g.connect(d);
-      d.connect(fb);
-      fb.connect(d);
-      d.connect(eg);
-      eg.connect(c.destination);
-    }
-    o.start(t0);
-    o.stop(t0 + dur + 0.05);
   }
 
   function noise(delay, dur, vol, highpass) {
@@ -297,77 +190,58 @@
     src.stop(t0 + dur + 0.02);
   }
 
-  // ── Instrument recipes ported from space.js: little acoustic caricatures
-  //    built from 2-3 stacked tones with slight detune drift.
-  function playDrumPiece(piece, vel, delay) {
-    const v = (vel == null ? 1 : vel) * styleDef().drumVol;
-    const dl = delay || 0;
-    if (piece === 'hat') {
-      noise(dl, 0.035, 0.021 * v, true);
-      synth(5200, 'square', dl, 0.025, 0.007 * v, { filter: 'highpass', cutoff: 3200 });
-    } else if (piece === 'tom') {
-      tone(130.81, 'sine', dl, 0.085, 0.062 * v, 92.5);
-      tone(196.00, 'triangle', dl + 0.004, 0.060, 0.022 * v, 146.83);
-      noise(dl, 0.030, 0.012 * v, false);
+  function playHit(type, note, aligned) {
+    const toneDef = styleTone();
+    const tune = aligned ? 1 : 0.965;
+    const vol = aligned ? 1 : 0.62;
+    if (type === 'drum') {
+      tone((note || 105) * tune, 'sine', 0, 0.12, 0.11 * vol * toneDef.drum, 48);
+      noise(0.002, 0.045, 0.032 * vol * toneDef.drum, !aligned);
+    } else if (type === 'bass') {
+      tone((note || 110) * tune, toneDef.bassWave, 0, 0.18, 0.10 * vol, (note || 110) * 0.72);
+      tone((note || 110) * 2 * tune, 'sine', 0.03, 0.10, 0.03 * vol);
     } else {
-      tone(122, 'sine', dl, 0.105, 0.080 * v, 42);
-      noise(dl + 0.002, 0.050, 0.020 * v, false);
+      tone((note || 330) * tune, toneDef.leadWave, 0, 0.13, 0.085 * vol);
+      tone((note || 330) * (1.5 + toneDef.shimmer * 0.5) * tune, 'sine', 0.05, 0.09, 0.03 * vol);
     }
   }
 
-  function playPitched(inst, note, vel, delay) {
-    const d = styleDef();
-    const v = vel == null ? 1 : vel;
-    const dl = delay || 0;
-    const f = Math.max(30, note || d.root);
-    if (inst === 'bass') {
-      const wave = d.bassWave || 'triangle';
-      if (wave === 'sawtooth' || wave === 'square') {
-        synth(f, wave, dl, 0.26, 0.085 * v, { cutoff: 900, endCutoff: 260, q: 1.4, endFreq: f * 0.988 });
+  function playLoopVoice(slot) {
+    if (!slot) return;
+    const toneDef = styleTone();
+    const note = slot.note;
+    if (slot.type === 'drum') {
+      if (slot.role === 'hat') {
+        noise(0, 0.035, 0.018 * toneDef.drum, true);
+      } else if (slot.role === 'clap' || slot.role === 'snare') {
+        noise(0, 0.055, 0.032 * toneDef.drum, true);
+        tone(DRUM_SNARE, 'triangle', 0, 0.055, 0.026 * toneDef.drum, 95);
       } else {
-        tone(f, wave, dl, 0.26, 0.085 * v, f * 0.988);
+        tone(note || DRUM_KICK, 'sine', 0, 0.10, 0.052 * toneDef.drum, 44);
       }
-      tone(f * 2.01, 'sine', dl + 0.004, 0.11, 0.020 * v, f * 1.98);
-    } else if (inst === 'keys') {
-      // The space.js piano: triangle + sine an octave up, both drifting slightly flat.
-      tone(f, d.keysWave || 'triangle', dl, 0.150, 0.070 * v, f * 0.992);
-      tone(f * 2.01, 'sine', dl + 0.003, 0.065, 0.021 * v, f * 1.99);
+    } else if (slot.type === 'bass') {
+      tone(note, toneDef.bassWave, 0, 0.18, 0.048, note * 0.82);
+      if (slot.role === 'chord') {
+        tone(note * 1.5, 'sine', 0.02, 0.22, 0.02);
+        tone(note * 2, 'sine', 0.04, 0.20, 0.014);
+      }
     } else {
-      // Handpan / music box: soft metallic tap with an overtone stack.
-      const sh = d.shimmer || 1;
-      tone(f, d.chimeWave || 'triangle', dl, 0.160, 0.048 * v, f * 1.004);
-      tone(f * 2.01, 'sine', dl + 0.002, 0.090, 0.015 * v * sh, f * 2.02);
-      tone(f * 3.02, 'sine', dl + 0.014, 0.055, 0.008 * v * sh, f * 3.03);
+      tone(note, toneDef.leadWave, 0, 0.12, 0.038);
+      tone(note * (slot.role === 'glass' ? 1.5 + toneDef.shimmer * 0.5 : 1.25 + toneDef.shimmer * 0.25), 'triangle', 0.04, 0.09, 0.012);
     }
   }
 
-  function playInstrument(inst, opts) {
-    const o = opts || {};
-    if (inst === 'drums') {
-      (o.pieces || [o.piece || 'kick']).forEach((p, i) => playDrumPiece(p, o.vel, (o.delay || 0) + i * 0.004));
-      return;
-    }
-    playPitched(inst, o.note, o.vel, o.delay);
-  }
-
-  function playStamp(slot) {
-    if (!slot || !slot.inst) return;
-    const vel = (slot.vel || 1) * 0.8;
-    if (slot.inst === 'drums') playInstrument('drums', { pieces: slot.pieces, vel });
-    else playInstrument(slot.inst, { note: slot.note, vel });
-  }
-
-  function playPulseBed() {
-    if (stepIndex % 4 === 0) noise(0.004, 0.020, stepIndex === 0 ? 0.014 : 0.009, true);
-    if (stepIndex === 0) {
-      const root = styleDef().root;
-      tone(root * 0.5, 'sine', 0, 0.55, 0.013);
-      tone(root * 0.75, 'sine', 0.02, 0.45, 0.007);
-    }
+  function playSongBed() {
+    if (stepIndex % 2 === 0) noise(0.006, 0.022, 0.009, true);
+    if (stepIndex % 4 !== 0) return;
+    const part = themedPart(songPartForStep(stepIndex));
+    tone(part.root, 'sine', 0, 0.32, 0.012);
+    tone(part.root * 1.5, 'sine', 0.02, 0.28, 0.007);
   }
 
   function playBossMotif() {
-    [4, 2, 5, 1].forEach((deg, i) => playPitched('chimes', degreeFreq(deg, 4), 0.7, i * 0.08));
+    const motif = boss && boss.phrase ? boss.phrase : [392, 330, 440, 294];
+    motif.forEach((f, i) => tone(f, 'sine', i * 0.08, 0.11, 0.035));
   }
 
   function fitCanvas() {
@@ -415,33 +289,29 @@
     bullets = [];
     rocks = [];
     sparks = [];
-    floatTexts = [];
     boss = null;
     score = 0;
-    signal = 28;
-    distortion = 0;
+    signal = 18;
+    distortion = 8;
     health = 3;
     combo = 0;
     bestCombo = 0;
     currentSoloLane = 1;
     applySettings();
-    currentLayerIndex = 0;
-    additionsThisLayer = 0;
+    loopRound = 1;
+    additionsThisLoop = 0;
     totalAdditions = 0;
     recordedChoices = [];
-    grooveByLayer = Array.from({ length: LAYERS.length }, () => null);
-    lastGrooveToast = null;
     replaying = false;
     replayUntil = 0;
-    applyLayerOptions();
+    applyOptionSet();
     laneFlash = [0, 0, 0];
     elapsed = 0;
     spawnAt = 0;
-    manualFireAt = 0;
+    fireAt = 0;
     beatAt = 0;
     stepIndex = 0;
     lastLoopStep = -1;
-    loopEndArmed = false;
     loop = Array.from({ length: LOOP_STEPS }, () => []);
     initStars();
   }
@@ -458,40 +328,62 @@
     } catch(e) {}
   }
 
-  function spawnRock(forceLane) {
-    if (rocks.length >= MAX_ROCKS) rocks.splice(0, rocks.length - MAX_ROCKS + 1);
-    const lane = Number.isFinite(forceLane) ? clamp(Math.floor(forceLane), 0, LANES.length - 1) : Math.floor(Math.random() * LANES.length);
+  function rockTypeForTime() {
+    const t = elapsed / 1000;
+    const roll = Math.random();
+    if (t > 35 && roll < 0.42) return ROCK_TYPES[2];
+    if (roll < 0.34) return ROCK_TYPES[0];
+    if (roll < 0.62) return ROCK_TYPES[1];
+    return ROCK_TYPES[2];
+  }
+
+  function spawnRock(forceType) {
+    const lane = Number.isFinite(forceType) ? forceType : Math.floor(Math.random() * LANES.length);
     const option = LANES[lane];
-    const layer = activeLayer();
+    const type = ROCK_TYPES.find(t => t.id === option.type) || ROCK_TYPES[0];
+    const part = phrasePartForRock();
+    const phrase = makePhrase(option, part);
+    const note = phrase[0];
+    const r = type.radius + rand(-3, 5);
     const lw = laneWidth();
-    const rock = {
-      inst: layer.inst,
+    rocks.push({
+      type: type.id,
       label: option.label,
       color: option.color,
+      role: option.role,
       lane,
-      runStep: 0,
-      hp: 1,
-      maxHp: 1,
+      note,
+      phrase,
+      phraseStep: 0,
+      cleanHits: 0,
+      r,
       x: clamp(laneCenter(lane) + rand(-lw * 0.24, lw * 0.24), 26, W - 26),
+      y: -r - rand(0, 60),
       vx: rand(-10, 10),
       vy: rand(48, 76) + elapsed * 0.0025,
+      hp: phrase.length,
+      maxHp: phrase.length,
       spin: rand(-2, 2),
       rot: rand(0, Math.PI * 2),
-    };
-    if (layer.inst === 'drums') {
-      rock.piece = option.piece;
-      rock.r = 18 + rand(-3, 4);
-    } else {
-      const degLo = option.degLo || 0;
-      const degHi = option.degHi == null ? degLo : option.degHi;
-      rock.deg = degLo + Math.floor(Math.random() * (degHi - degLo + 1));
-      rock.label = noteNameForDegree(rock.deg);
-      // Occasional "run rock": three hits walk up the scale.
-      if (Math.random() < 0.22) { rock.hp = 3; rock.maxHp = 3; }
-      rock.r = 22 - rock.deg * 0.9 + rand(-2, 3) + (rock.maxHp > 1 ? 4 : 0);
+    });
+  }
+
+  function makePhrase(option, part) {
+    if (option.type === 'drum') {
+      if (option.role === 'clap') return [DRUM_SNARE, DRUM_SNARE, DRUM_SNARE, DRUM_SNARE];
+      if (option.role === 'hat') return [220, 260, 220, 300];
+      return Math.random() < 0.5
+        ? [DRUM_KICK, DRUM_SNARE, DRUM_KICK, DRUM_SNARE]
+        : [DRUM_KICK, DRUM_KICK, DRUM_SNARE, DRUM_KICK];
     }
-    rock.y = -rock.r - rand(0, 60);
-    rocks.push(rock);
+    if (option.type === 'bass') {
+      if (option.role === 'chord') return [part.root, part.root * 1.25, part.root * 1.5, part.root * 2];
+      if (option.role === 'walk') return [part.bass[0], part.bass[1], part.bass[2], part.bass[3]];
+      return [part.bass[0], part.bass[2], part.bass[0], part.bass[1]];
+    }
+    if (option.role === 'arp') return [part.lead[0], part.lead[2], part.lead[1], part.lead[3]];
+    if (option.role === 'solo') return [part.lead[3], part.lead[2], part.lead[1], part.lead[0]];
+    return [part.lead[1], part.lead[0], part.lead[2], part.lead[3]];
   }
 
   function ensureBoss() {
@@ -503,141 +395,85 @@
   }
 
   function shoot() {
-    if (!bullets) return;
-    if (bullets.length > 18) bullets.splice(0, bullets.length - 18);
+    if (bullets.length >= MAX_BULLETS) bullets.shift();
     bullets.push({ x: player.x, y: player.y - 18, vy: -420, r: 4 });
-    noise(0, 0.025, 0.013, true);
+    tone(650, 'triangle', 0, 0.035, 0.018, 920);
   }
 
   function tapShoot() {
     const t = performance.now();
-    if (t < manualFireAt) return;
+    if (t < fireAt) return;
     shoot();
-    manualFireAt = t + 125;
+    fireAt = t + 130;
   }
 
-  // Live capture: stamp the note the player just played into the loop grid.
-  function stampNote(rock, target, note, tight, isNextStep) {
-    const layer = activeLayer();
-    const vel = tight ? 1 : 0.62;
-    const bucket = loop[target];
-    let slot = bucket.find(v => v.layerId === layer.id);
-    if (layer.inst === 'drums') {
-      if (slot) {
-        if (slot.pieces.indexOf(rock.piece) < 0) slot.pieces.push(rock.piece);
-        slot.tight = slot.tight && tight;
-        slot.vel = Math.max(slot.vel, vel);
-        slot.skip = isNextStep ? 1 : 0;
-      } else {
-        slot = { layerId: layer.id, layerIndex: currentLayerIndex, inst: 'drums', pieces: [rock.piece], color: rock.color, label: rock.label, tight, vel, skip: isNextStep ? 1 : 0 };
-        bucket.push(slot);
-      }
-    } else {
-      const stamp = { layerId: layer.id, layerIndex: currentLayerIndex, inst: layer.inst, note, color: rock.color, label: rock.label, tight, vel, skip: isNextStep ? 1 : 0 };
-      if (slot) Object.assign(slot, stamp);
-      else bucket.push(stamp);
-    }
-    while (bucket.length > 5) bucket.shift();
-    additionsThisLayer += 1;
+  function registerAddition(rock, perfectPhrase) {
+    if (!perfectPhrase) return false;
+    additionsThisLoop = Math.min(ADDS_PER_LOOP, additionsThisLoop + 1);
     totalAdditions += 1;
     recordedChoices.push({
-      step: target,
-      layerIndex: currentLayerIndex,
-      layerId: layer.id,
-      layerName: layer.name,
-      inst: layer.inst,
-      note: note || null,
-      piece: rock.piece || null,
+      loop: loopRound,
       lane: rock.lane,
       label: rock.label,
+      type: rock.type,
+      role: rock.role,
       color: rock.color,
-      tight,
+      phrase: rock.phrase ? rock.phrase.slice() : [],
     });
-    if (recordedChoices.length > 128) recordedChoices.shift();
-    laneFlash[rock.lane] = Math.max(laneFlash[rock.lane], tight ? 1 : 0.6);
+    score += 45;
+    signal = clamp(signal + 8, 0, 100);
+    laneFlash[rock.lane] = 1.2;
+    tone(523, 'triangle', 0, 0.10, 0.05);
+    tone(659, 'triangle', 0.08, 0.12, 0.045);
+    if (additionsThisLoop >= ADDS_PER_LOOP) advanceLoopPass();
+    return true;
   }
 
-  function restartLoopPlayback() {
-    const t = performance.now();
-    stepIndex = 0;
-    lastLoopStep = -1;
-    beatAt = t + beatMs;
-    playPulseBed();
-    const bucket = loop[stepIndex] || [];
-    bucket.forEach(playStamp);
-    lastLoopStep = stepIndex;
-  }
-
-  function endCurrentLoop(restartPlayback) {
-    if (state !== 'playing') return;
-    const committedLayerIndex = currentLayerIndex;
-    const groove = scoreLayerGrid(committedLayerIndex);
-    grooveByLayer[committedLayerIndex] = groove;
-    score += groove.total;
-    lastGrooveToast = { layerIndex: committedLayerIndex, groove };
-    addFloatText(`${LAYERS[committedLayerIndex].name} +${groove.total}`, W * 0.5, 104, '#ffe61a');
-    loopEndArmed = false;
-    if (currentLayerIndex >= LAYERS.length - 1) {
+  function advanceLoopPass() {
+    if (loopRound >= LOOP_GOAL) {
       finishTrack();
       return;
     }
-    currentLayerIndex += 1;
-    additionsThisLayer = 0;
+    loopRound += 1;
+    additionsThisLoop = 0;
     rocks = [];
-    bullets = [];
-    applyLayerOptions();
+    applyOptionSet();
     laneFlash = [1, 1, 1];
-    if (restartPlayback !== false) restartLoopPlayback();
-    updateLoopButton();
-    [0, 2, 4].forEach((deg, i) => playPitched('keys', degreeFreq(deg, 2), 0.8, 0.05 + i * 0.09));
-  }
-
-  function requestLoopEnd() {
-    if (state !== 'playing' || loopEndArmed) return;
-    loopEndArmed = true;
-    updateLoopButton();
-    playPitched('keys', degreeFreq(2, 2), 0.6, 0);
-    playPitched('keys', degreeFreq(4, 2), 0.5, 0.07);
+    tone(392, 'triangle', 0, 0.12, 0.05);
+    tone(523, 'triangle', 0.11, 0.14, 0.05);
+    tone(659, 'sine', 0.24, 0.18, 0.04);
   }
 
   function finishTrack() {
     if (state !== 'playing') return;
-    if (!grooveByLayer[currentLayerIndex]) {
-      const groove = scoreLayerGrid(currentLayerIndex);
-      grooveByLayer[currentLayerIndex] = groove;
-      score += groove.total;
-      lastGrooveToast = { layerIndex: currentLayerIndex, groove };
-    }
     state = 'built';
-    loopEndArmed = false;
-    updateLoopButton();
     cancelAnimationFrame(raf);
     signal = Math.max(signal, 82);
     score += Math.max(0, 220 - Math.floor(elapsed / 1000)) + bestCombo * 4;
-    [0, 1, 2, 4, 5].forEach((deg, i) => playPitched('chimes', degreeFreq(deg, 4), 0.8, 0.05 + i * 0.07));
+    tone(262, 'triangle', 0, 0.14, 0.06);
+    tone(330, 'triangle', 0.1, 0.14, 0.06);
+    tone(392, 'triangle', 0.2, 0.16, 0.06);
+    tone(523, 'sine', 0.32, 0.22, 0.05);
     showBuiltChoice();
   }
 
   function continueLooping() {
     if (state !== 'built' && state !== 'replay') return;
-    loopEndArmed = false;
-    currentLayerIndex = Math.min(LAYERS.length - 1, currentLayerIndex + 1);
-    additionsThisLayer = 0;
+    if (loopRound < MAX_LOOP_GOAL) loopRound += 1;
+    additionsThisLoop = 0;
     rocks = [];
     replaying = false;
-    applyLayerOptions();
+    applyOptionSet();
     overlay.classList.add('hidden');
     state = 'playing';
-    updateLoopButton();
     last = performance.now();
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(frame);
   }
 
   function startReplay() {
+    if (!recordedChoices.length) return;
     state = 'replay';
-    loopEndArmed = false;
-    updateLoopButton();
     replaying = true;
     replayUntil = performance.now() + LOOP_STEPS * beatMs * 4;
     rocks = [];
@@ -648,14 +484,27 @@
     raf = requestAnimationFrame(frame);
   }
 
-  function addFloatText(text, x, y, color) {
-    if (!floatTexts) floatTexts = [];
-    floatTexts.push({ text, x, y, color, age: 0, life: 850 });
-    if (floatTexts.length > 12) floatTexts.shift();
+  function addLoopVoice(rock, lockedTrack) {
+    const steps = WRITE_STEPS[rock.type] || [stepIndex];
+    steps.forEach((target, i) => {
+      const phraseNote = rock.phrase[i % rock.phrase.length];
+      const slot = {
+        type: rock.type,
+        note: phraseNote,
+        role: rock.role || (rock.type === 'drum' && (i % 2) ? 'snare' : 'kick'),
+        color: rock.color,
+        ttl: lockedTrack ? Infinity : (rock.type === 'melody' ? 16 : 18),
+        locked: !!lockedTrack,
+      };
+      const bucket = loop[target];
+      const same = bucket.findIndex(v => v.type === slot.type);
+      if (same >= 0) bucket[same] = slot;
+      else bucket.push(slot);
+      while (bucket.length > 3) bucket.shift();
+    });
   }
 
   function burst(x, y, color, n) {
-    if (sparks.length > MAX_SPARKS) sparks.splice(0, sparks.length - MAX_SPARKS);
     for (let i = 0; i < n; i++) {
       sparks.push({
         x, y,
@@ -667,65 +516,68 @@
         r: rand(1.5, 4),
       });
     }
+    if (sparks.length > MAX_SPARKS) sparks.splice(0, sparks.length - MAX_SPARKS);
   }
 
   function hitRock(rock) {
-    const t = performance.now();
-    // Where does this hit land on the loop? Snap to the nearest step;
-    // the note plays NOW either way — the player's timing is the rhythm.
-    const toNext = Math.max(0, beatAt - t);
-    const sincePrev = Math.max(0, beatMs - toNext);
-    const isNextStep = toNext < sincePrev;
-    const offset = Math.min(sincePrev, toNext);
-    const tight = offset <= beatMs * 0.3;
-    const target = isNextStep ? (stepIndex + 1) % LOOP_STEPS : stepIndex;
-    const note = rock.inst === 'drums' ? null : degreeFreq(rock.deg + rock.runStep, activeLayer().mult);
-    if (rock.inst !== 'drums') rock.label = noteNameForDegree(rock.deg + rock.runStep);
-    playInstrument(rock.inst, { note, piece: rock.piece, vel: 1 });
-    stampNote(rock, target, note, tight, isNextStep);
-    rock.runStep += 1;
+    const playerLane = laneIndexForX(player.x);
+    const aligned = playerLane === rock.lane;
+    const solo = aligned && playerLane === currentSoloLane && boss;
+    const phraseNote = rock.phrase && rock.phrase.length
+      ? rock.phrase[rock.phraseStep % rock.phrase.length]
+      : rock.note;
+    rock.phraseStep += 1;
     rock.hp -= 1;
-    burst(rock.x, rock.y, rock.color, tight ? 8 : 4);
-    combo = tight ? combo + 1 : 0;
+    rock.note = phraseNote;
+    if (aligned) rock.cleanHits += 1;
+    playHit(rock.type, phraseNote, aligned);
+    burst(rock.x, rock.y, rock.color, aligned ? 7 : 4);
+    laneFlash[rock.lane] = aligned ? 0.8 : 0.42;
+    combo = aligned ? combo + 1 : 0;
     bestCombo = Math.max(bestCombo, combo);
-    score += tight ? 4 + combo : 1;
-    signal = clamp(signal + (tight ? 1.3 : 0.3), 0, 100);
-    distortion = clamp(distortion + (tight ? -0.8 : 2.2), 0, 100);
+    score += aligned ? 3 + combo : 1;
+    signal = clamp(signal + (aligned ? 0.95 : 0.1), 0, 100);
+    distortion = clamp(distortion + (aligned ? -0.45 : 1.7), 0, 100);
 
     if (rock.hp > 0) return false;
 
-    if (rock.maxHp > 1) addFloatText('RUN!', rock.x, rock.y - rock.r - 8, rock.color);
-    score += tight ? 24 : 8;
+    const perfectPhrase = rock.cleanHits >= rock.maxHp;
+    const lockedTrack = registerAddition(rock, perfectPhrase);
+    addLoopVoice(rock, lockedTrack);
+    laneFlash[rock.lane] = perfectPhrase ? 1 : 0.7;
+    score += (rock.type === 'bass' ? 18 : rock.type === 'melody' ? 22 : 14) + (perfectPhrase ? 28 : 6) + (solo ? 18 : 0);
+    signal = clamp(signal + (perfectPhrase ? 6.8 : 1.8) + (solo ? 2.6 : 0), 0, 100);
+    distortion = clamp(distortion + (perfectPhrase ? -3.2 : 2.4), 0, 100);
+    if (solo) {
+      tone(784, 'triangle', 0, 0.08, 0.035);
+      tone(1047, 'sine', 0.06, 0.11, 0.025);
+    }
     burst(rock.x, rock.y, rock.color, 12);
     return true;
   }
 
   function playerDamage(amount) {
+    distortion = clamp(distortion + 5, 0, 100);
+    signal = clamp(signal - 2, 0, 100);
     combo = 0;
-    distortion = clamp(distortion + 8, 0, 100);
-    tone(90, 'sine', 0, 0.12, 0.05, 55);
-    noise(0, 0.06, 0.028, false);
-    burst(player.x, player.y, '#ff8a3d', 10);
-    addFloatText('CLAM', player.x, player.y - 34, '#ff8a3d');
+    noise(0, 0.12, 0.045, false);
+    tone(190, 'sawtooth', 0, 0.16, 0.06, 70);
+    burst(player.x, player.y, '#ff8a3d', 12);
   }
 
   function tickBeat(t) {
     if (!beatAt) beatAt = t + beatMs;
     if (t < beatAt) return;
-    const skipped = Math.floor((t - beatAt) / beatMs);
-    beatAt += Math.min(skipped + 1, 4) * beatMs;
-    if (t - beatAt > beatMs * 4) beatAt = t + beatMs;
+    while (t >= beatAt) beatAt += beatMs;
     stepIndex = (stepIndex + 1) % LOOP_STEPS;
-    playPulseBed();
+    playSongBed();
     const bucket = loop[stepIndex];
-    bucket.forEach(v => {
-      if (v.skip > 0) { v.skip -= 1; return; }
-      playStamp(v);
-    });
+    bucket.forEach(playLoopVoice);
+    bucket.forEach(v => { v.ttl -= 1; });
+    loop[stepIndex] = bucket.filter(v => v.ttl > 0);
     lastLoopStep = stepIndex;
-    if (loopEndArmed && stepIndex === 0) endCurrentLoop(false);
-    distortion = clamp(distortion - 0.4, 0, 100);
-    if (stepIndex % 8 === 0 && signal > 22) signal = clamp(signal - 0.12, 0, 100);
+    distortion = clamp(distortion + (signalSettings.mode === 'studio' ? 0.02 : 0.12), 0, 100);
+    if (stepIndex % 8 === 0 && signal > 22) signal = clamp(signal - 0.35, 0, 100);
     if (boss && stepIndex % 8 === 0) playBossMotif();
     if (boss && stepIndex % 8 === 0) {
       currentSoloLane = (currentSoloLane + 1 + Math.floor(Math.random() * 2)) % LANES.length;
@@ -755,6 +607,7 @@
 
     if (t >= spawnAt) {
       spawnRock();
+      if (rocks.length > MAX_ROCKS) rocks.splice(0, rocks.length - MAX_ROCKS);
       const cadence = clamp(820 - elapsed * 0.004, 420, 820);
       spawnAt = t + cadence;
     }
@@ -763,7 +616,7 @@
       boss.phase += dt / 1000;
       boss.x = W * 0.5 + Math.sin(boss.phase * 1.3) * W * 0.22;
       if (t >= boss.nextSpawn) {
-        spawnRock(currentSoloLane);
+        spawnRock(ROCK_TYPES[currentSoloLane]);
         rocks[rocks.length - 1].x = clamp(laneCenter(currentSoloLane) + rand(-laneWidth() * 0.2, laneWidth() * 0.2), 28, W - 28);
         rocks[rocks.length - 1].vy += 24;
         boss.nextSpawn = t + 1150;
@@ -817,7 +670,8 @@
         playerDamage(1);
       } else if (r.y > H + r.r) {
         rocks.splice(i, 1);
-        if (Math.random() < 0.18) addFloatText('REST', clamp(r.x, 28, W - 28), H - 106, 'rgba(234,255,255,0.58)');
+        distortion = clamp(distortion + 0.45, 0, 100);
+        combo = 0;
       }
     }
 
@@ -827,15 +681,9 @@
       p.y += p.vy * dt / 1000;
       p.vy += 80 * dt / 1000;
     });
-    sparks = sparks.filter(p => p.age < p.life).slice(-MAX_SPARKS);
-    if (floatTexts) {
-      floatTexts.forEach(f => {
-        f.age += dt;
-        f.y -= 28 * dt / 1000;
-      });
-      floatTexts = floatTexts.filter(f => f.age < f.life);
-    }
+    sparks = sparks.filter(p => p.age < p.life);
 
+    if (signal >= 100 && loopRound >= LOOP_GOAL && additionsThisLoop >= ADDS_PER_LOOP) finish(true);
   }
 
   function drawShip(c) {
@@ -876,11 +724,11 @@
     c.rotate(r.rot);
     c.shadowColor = r.color;
     c.shadowBlur = 14;
-    c.fillStyle = r.inst === 'bass' ? '#2c2608' : r.inst === 'keys' ? '#26061e' : r.inst === 'chimes' ? '#1c0a26' : '#062432';
+    c.fillStyle = r.type === 'bass' ? '#2c2608' : r.type === 'melody' ? '#26061e' : '#062432';
     c.strokeStyle = r.color;
     c.lineWidth = r.hp < r.maxHp ? 3 : 2;
     c.beginPath();
-    const points = r.inst === 'bass' ? 8 : 7;
+    const points = r.type === 'bass' ? 8 : 7;
     for (let i = 0; i < points; i++) {
       const a = i / points * Math.PI * 2;
       const rr = r.r * (0.78 + ((i * 37) % 10) / 42);
@@ -895,7 +743,7 @@
     c.font = "8px 'VCR', monospace";
     c.textAlign = 'center';
     c.textBaseline = 'middle';
-    c.fillText(r.inst === 'drums' ? '●' : (r.label || '♪'), 0, 1);
+    c.fillText(r.type === 'drum' ? '●' : r.type === 'bass' ? 'B' : '♪', 0, 1);
     if (r.maxHp > 1) {
       const done = r.maxHp - r.hp;
       for (let i = 0; i < r.maxHp; i++) {
@@ -966,6 +814,8 @@
       c.textAlign = 'center';
       c.textBaseline = 'middle';
       c.fillText(lane.label, x + lw * 0.5, baseY + 17);
+      c.font = "7px 'VCR', monospace";
+      c.fillText('ADD', x + lw * 0.5, baseY - 8);
     }
     c.restore();
   }
@@ -975,9 +825,9 @@
     c.font = "10px 'VCR', monospace";
     c.textBaseline = 'top';
     c.fillStyle = 'rgba(234,255,255,0.66)';
-    c.fillText('GROOVE', 12, 12);
-    c.fillText('CLEAN', 12, 38);
-    c.fillText(activeLayer().name, W - 96, 12);
+    c.fillText('SIGNAL', 12, 12);
+    c.fillText('SPACE', 12, 38);
+    c.fillText('LOOP ' + loopRound, W - 72, 12);
     c.fillText(String(score), W - 72, 38);
     if (combo > 1) {
       c.fillStyle = LANES[laneIndexForX(player.x)].color;
@@ -991,57 +841,21 @@
     c.fillStyle = 'rgba(234,255,255,0.78)';
     const objective = state === 'replay'
       ? 'REPLAYING TRACK: ' + recordedChoices.map(c => c.label).slice(-9).join(' / ')
-      : `${activeLayerLabel()}  ` + LANES.map(l => l.label).join(' / ');
+      : `LOOP ${loopRound}${loopRound > LOOP_GOAL ? '+' : '/' + LOOP_GOAL}: ADD ${additionsThisLoop}/${ADDS_PER_LOOP}  ` + LANES.map(l => l.label).join(' / ');
     c.fillText(objective, W * 0.5, 64);
-    if (state !== 'replay') {
-      c.font = "7px 'VCR', monospace";
-      c.fillStyle = 'rgba(234,255,255,0.58)';
-      c.fillText(loopEndArmed ? 'LOCKING AT THE ONE...' : 'EVERY HIT RECORDS · SHOOT ON THE PULSE · SPACE IS PART OF THE TRACK', W * 0.5, 80);
-    }
     c.textAlign = 'left';
 
-    if (lastGrooveToast && state !== 'replay') {
-      const layer = LAYERS[lastGrooveToast.layerIndex] || LAYERS[0];
-      c.font = "7px 'VCR', monospace";
-      c.fillStyle = '#ffe61a';
-      c.fillText(`${layer.name} LOCKED · GROOVE +${lastGrooveToast.groove.total}`, W * 0.5, 92);
-    }
-
-    const loopX = 30, loopY = H - 54;
-    const rowH = 5, rowGap = 3;
-    const w = (W - 48) / LOOP_STEPS;
+    const loopX = 18, loopY = H - 28;
+    const w = (W - 36) / LOOP_STEPS;
     for (let i = 0; i < LOOP_STEPS; i++) {
       const active = i === stepIndex;
       c.fillStyle = active ? COLOR : 'rgba(234,255,255,0.12)';
-      if (loopEndArmed && i >= 12) c.fillStyle = active ? '#ffe61a' : 'rgba(255,230,26,0.34)';
-      c.fillRect(loopX + i * w + 1, loopY + 4 * (rowH + rowGap) + 1, Math.max(2, w - 3), active ? 7 : 4);
-    }
-    for (let row = 0; row < LAYERS.length; row++) {
-      const layer = LAYERS[row];
-      const y = loopY + row * (rowH + rowGap);
-      c.globalAlpha = row === currentLayerIndex && state === 'playing' ? 0.95 : 0.58;
-      c.fillStyle = layer.options[0].color;
-      c.font = "6px 'VCR', monospace";
-      c.textAlign = 'right';
-      c.fillText(String(row + 1), loopX - 6, y + rowH + 1);
-      for (let i = 0; i < LOOP_STEPS; i++) {
-        const slots = layerSlotAt(i, row);
-        c.fillStyle = 'rgba(234,255,255,0.10)';
-        if (loopEndArmed && i >= 12 && row === currentLayerIndex) c.fillStyle = 'rgba(255,230,26,0.20)';
-        c.fillRect(loopX + i * w + 1, y, Math.max(2, w - 3), rowH);
-        if (slots.length) {
-          const slot = slots[slots.length - 1];
-          c.fillStyle = slot.tight === false ? 'rgba(234,255,255,0.38)' : slot.color;
-          c.fillRect(loopX + i * w + 1, y, Math.max(2, w - 3), rowH);
-        }
-        if (i === stepIndex) {
-          c.fillStyle = row === currentLayerIndex ? '#ffe61a' : 'rgba(0,229,255,0.72)';
-          c.fillRect(loopX + i * w + Math.max(2, w - 3) * 0.42, y - 1, 2, rowH + 2);
-        }
+      c.fillRect(loopX + i * w + 1, loopY, Math.max(2, w - 3), active ? 12 : 7);
+      if (loop[i] && loop[i].length) {
+        c.fillStyle = loop[i][loop[i].length - 1].color;
+        c.fillRect(loopX + i * w + 1, loopY - 7, Math.max(2, w - 3), 4);
       }
     }
-    c.globalAlpha = 1;
-    c.textAlign = 'left';
     c.restore();
   }
 
@@ -1102,19 +916,6 @@
       c.fill();
     });
     c.globalAlpha = 1;
-    if (floatTexts && floatTexts.length) {
-      c.save();
-      c.textAlign = 'center';
-      c.textBaseline = 'middle';
-      c.font = "10px 'VCR', monospace";
-      floatTexts.forEach(f => {
-        c.globalAlpha = clamp(1 - f.age / f.life, 0, 1);
-        c.fillStyle = f.color;
-        c.fillText(f.text, f.x, f.y);
-      });
-      c.restore();
-      c.globalAlpha = 1;
-    }
     drawShip(c);
     drawHud(c);
   }
@@ -1126,8 +927,8 @@
     try {
       update(dt, t);
       draw();
-    } catch(e) {
-      console.warn('[Signal Drift] recovered frame error', e);
+    } catch (e) {
+      console.warn('[Signal Drift copy] recovered frame error', e);
       rocks = [];
       bullets = [];
       sparks = [];
@@ -1142,7 +943,6 @@
     resetRun();
     state = 'playing';
     overlay.classList.add('hidden');
-    updateLoopButton();
     if (typeof ArcadeMusic !== 'undefined' && ArcadeMusic.duck) ArcadeMusic.duck();
     last = performance.now();
     cancelAnimationFrame(raf);
@@ -1152,8 +952,6 @@
   function finish(won) {
     if (state !== 'playing') return;
     state = 'over';
-    loopEndArmed = false;
-    updateLoopButton();
     cancelAnimationFrame(raf);
     if (won) {
       signal = 100;
@@ -1170,19 +968,17 @@
   }
 
   function showIntro() {
-    updateLoopButton();
     overlay.classList.remove('hidden');
     overlay.innerHTML = `
       <div class="signal-panel">
         <div class="signal-title">SIGNAL DRIFT</div>
-        <div class="signal-subtitle">EVERY SHOT PLAYS A NOTE AND RECORDS IT INTO YOUR LOOP.<br>ALL NOTES FIT THE KEY — NO WRONG NOTES.<br>TIME YOUR HITS TO THE PULSE. TAP END LOOP TO LOCK A LAYER.</div>
+        <div class="signal-subtitle">MOVE LEFT/RIGHT. TAP OR CLICK TO SHOOT.<br>HIT A ROCK'S WHOLE PHRASE IN ITS LANE TO ADD IT. LET IT PASS TO LEAVE A REST.</div>
         ${presetControlsHTML()}
         <div class="signal-stats">
-          <div class="signal-stat">LAYER 1<b>DRUMS</b></div>
-          <div class="signal-stat">LAYER 2<b>BASS</b></div>
-          <div class="signal-stat">LAYER 3<b>KEYS</b></div>
-          <div class="signal-stat">LAYER 4<b>CHIMES</b></div>
-          <div class="signal-stat">WRONG NOTES<b>NONE</b></div>
+          <div class="signal-stat">LOOP 1<b>FOUNDATION</b></div>
+          <div class="signal-stat">LOOP 2<b>VARIATION</b></div>
+          <div class="signal-stat">LOOP 3<b>FINISH</b></div>
+          <div class="signal-stat">CLEAN PHRASE<b>ADD</b></div>
         </div>
         <button class="signal-btn" onclick="signalStart()">START SIGNAL</button>
         <button class="signal-btn secondary" onclick="signalShowJukebox()">JUKEBOX</button>
@@ -1199,7 +995,8 @@
         </div>
       </div>`;
     return `<div class="signal-presets">
-      ${group('style', 'PALETTE')}
+      ${group('mode', 'MODE')}
+      ${group('style', 'STYLE')}
       ${group('mood', 'MOOD')}
       ${group('tempo', 'TEMPO')}
     </div>`;
@@ -1208,52 +1005,25 @@
   function choiceSummaryHTML() {
     if (!recordedChoices.length) return '<div class="signal-subtitle">NO CHOICES RECORDED YET.</div>';
     return `<div class="signal-stats">` + recordedChoices.slice(-12).map(choice =>
-      `<div class="signal-stat">LAYER ${(choice.layerIndex ?? ((choice.loop || 1) - 1)) + 1}<b style="color:${choice.color}">${choice.label}</b></div>`
+      `<div class="signal-stat">LOOP ${choice.loop}<b style="color:${choice.color}">${choice.label}</b></div>`
     ).join('') + `</div>`;
-  }
-
-  function grooveSummaryHTML() {
-    const rows = LAYERS.map((layer, index) => {
-      const groove = grooveByLayer[index];
-      if (!groove || groove.rest || groove.total <= 0) return `<div class="signal-stat">${layer.name}<b>REST</b></div>`;
-      return `<div class="signal-stat">${layer.name}<b>${groove.total}</b></div>`;
-    }).join('');
-    return `<div class="signal-stats">${rows}</div>`;
-  }
-
-  // Serialize the loop grid itself — the final truth of what the player built.
-  // Max 4 layers x 16 steps = 64 stamps, which is the supabase choices cap.
-  function gridStamps() {
-    const out = [];
-    for (let s = 0; s < LOOP_STEPS; s++) {
-      (loop[s] || []).forEach(v => {
-        if (!v || !v.inst) return;
-        out.push({
-          step: s,
-          layerIndex: v.layerIndex,
-          layerId: v.layerId,
-          inst: v.inst,
-          note: v.note || null,
-          pieces: v.pieces ? v.pieces.slice() : null,
-          label: v.label || '',
-          color: v.color,
-          tight: !!v.tight,
-          vel: v.vel || 1,
-        });
-      });
-    }
-    return out.slice(0, 64);
   }
 
   function currentRecipe() {
     return {
-      version: 3,
+      version: 1,
       settings: { ...signalSettings },
       beatMs,
       score,
-      layers: LAYERS.map((layer, index) => ({ index, id: layer.id, name: layer.name })),
-      grooveByLayer: Object.fromEntries(LAYERS.map((layer, index) => [layer.id, grooveByLayer[index] || null])),
-      choices: gridStamps(),
+      choices: recordedChoices.map(c => ({
+        loop: c.loop,
+        lane: c.lane,
+        label: c.label,
+        type: c.type,
+        role: c.role,
+        color: c.color,
+        phrase: c.phrase ? c.phrase.slice() : [],
+      })),
     };
   }
 
@@ -1264,27 +1034,21 @@
 
   function recipeSummary(recipe) {
     const choices = recipe && recipe.choices ? recipe.choices : recordedChoices;
-    if (!choices.length) return '';
-    const layerNames = (recipe && recipe.layers ? recipe.layers.map(l => l.name) : LAYERS.map(l => l.name));
-    return layerNames.map((name, index) => {
-      const count = choices.filter(c => (c.layerIndex ?? ((c.loop || 1) - 1)) === index).length;
-      return `${name}: ${count ? count + ' HITS' : 'REST'}`;
-    }).join(' / ');
+    return choices.map(c => c.label).join(' / ');
   }
 
   function showBuiltChoice() {
     cancelAnimationFrame(raf);
     state = 'built';
     replaying = false;
-    updateLoopButton();
     overlay.classList.remove('hidden');
     overlay.innerHTML = `
       <div class="signal-panel">
         <div class="signal-title">TRACK BUILT</div>
-        <div class="signal-subtitle">REPLAY WHAT YOU MADE OR END THE RUN.</div>
-        ${grooveSummaryHTML()}
+        <div class="signal-subtitle">REPLAY WHAT YOU MADE, LOOP AROUND FOR MORE OPTIONS, OR END THE RUN.</div>
         ${choiceSummaryHTML()}
         <button class="signal-btn" onclick="signalReplayTrack()">REPLAY TRACK</button>
+        <button class="signal-btn secondary" onclick="signalLoopAgain()">LOOP AROUND</button>
         <button class="signal-btn secondary" onclick="signalEndRun()">END RUN</button>
       </div>`;
   }
@@ -1293,12 +1057,10 @@
     cancelAnimationFrame(raf);
     state = 'over';
     replaying = false;
-    updateLoopButton();
     showResult(true);
   }
 
   function showResult(won) {
-    updateLoopButton();
     const seconds = Math.round(elapsed / 1000);
     const canSave = won || score > 0;
     overlay.classList.remove('hidden');
@@ -1309,12 +1071,11 @@
         <div class="signal-stats">
           <div class="signal-stat">SCORE<b>${score}</b></div>
           <div class="signal-stat">TIME<b>${seconds}s</b></div>
-          <div class="signal-stat">GROOVE<b>${Math.round(signal)}%</b></div>
-          <div class="signal-stat">LAYERS<b>${LAYERS.length}</b></div>
+          <div class="signal-stat">SIGNAL<b>${Math.round(signal)}%</b></div>
+          <div class="signal-stat">SPACE<b>${Math.round(100 - distortion)}%</b></div>
           <div class="signal-stat">ADDS<b>${totalAdditions}</b></div>
           <div class="signal-stat">BEST COMBO<b>${bestCombo}</b></div>
         </div>
-        ${won ? grooveSummaryHTML() : ''}
         ${won ? choiceSummaryHTML() : ''}
         ${canSave ? `
           <div style="display:flex;gap:8px;margin-top:14px">
@@ -1356,7 +1117,7 @@
       return { rows: localRows, online: false };
     }
     try {
-      const remoteRows = await withTimeout(window.SignalRecipeRemote.fetchTop(20), 3500);
+      const remoteRows = await window.SignalRecipeRemote.fetchTop(20);
       if (remoteRows && remoteRows.length) return { rows: remoteRows, online: true };
     } catch(e) {}
     return { rows: localRows, online: false };
@@ -1387,7 +1148,7 @@
     if (input) input.disabled = true;
     if (window.SignalRecipeRemote && typeof window.SignalRecipeRemote.submit === 'function') {
       try {
-        await withTimeout(window.SignalRecipeRemote.submit(name, score, extra, recipe), 3500);
+        await window.SignalRecipeRemote.submit(name, score, extra, recipe);
         if (status) status.textContent = 'SAVED ONLINE';
       } catch(e) {
         if (status) status.textContent = 'SAVED LOCAL';
@@ -1398,67 +1159,34 @@
 
   function recipeToLoop(recipe) {
     const savedLoop = Array.from({ length: LOOP_STEPS }, () => []);
-    const pushStamp = (target, stamp) => {
-      const bucket = savedLoop[target];
-      const same = bucket.findIndex(v => v.layerId === stamp.layerId);
-      if (same >= 0) bucket[same] = stamp;
-      else bucket.push(stamp);
-      while (bucket.length > 5) bucket.shift();
-    };
     (recipe.choices || []).forEach(choice => {
-      if (Number.isFinite(choice.step) && choice.inst) {
-        pushStamp(clamp(Math.floor(choice.step), 0, LOOP_STEPS - 1), {
-          layerId: choice.layerId || 'drums',
-          layerIndex: choiceLayerIndex(choice),
-          inst: choice.inst,
-          note: choice.note || null,
-          pieces: choice.pieces ? choice.pieces.slice() : (choice.piece ? [choice.piece] : null),
-          label: choice.label || '',
-          color: choice.color || COLOR,
-          tight: choice.tight !== false,
-          vel: choice.vel || 1,
-        });
-        return;
-      }
-      // Legacy v2 recipes: role/phrase choices spread over step masks.
-      const steps = stepsForChoice(choice);
-      const phrase = choice.phrase && choice.phrase.length ? choice.phrase : [styleDef().root];
+      const steps = WRITE_STEPS[choice.type] || [0];
       steps.forEach((target, i) => {
-        let stamp;
-        if (choice.type === 'drum') {
-          const piece = choice.role === 'hat' ? 'hat' : (choice.role === 'clap' || choice.role === 'snare') ? 'tom' : 'kick';
-          stamp = { inst: 'drums', pieces: [piece] };
-        } else if (choice.type === 'bass') {
-          stamp = { inst: 'bass', note: phrase[i % phrase.length] };
-        } else {
-          stamp = { inst: 'keys', note: phrase[i % phrase.length] };
-        }
-        stamp.layerId = `${choice.layerId || `legacy-${choice.type}`}:${choice.role || ''}`;
-        stamp.layerIndex = choiceLayerIndex(choice);
-        stamp.label = choice.label || '';
-        stamp.color = choice.color || COLOR;
-        stamp.tight = !choice.faded;
-        stamp.vel = choice.faded ? 0.62 : 1;
-        pushStamp(target, stamp);
+        const phrase = choice.phrase && choice.phrase.length ? choice.phrase : [DRUM_KICK];
+        savedLoop[target].push({
+          type: choice.type,
+          note: phrase[i % phrase.length],
+          role: choice.role || (choice.type === 'drum' && (i % 2) ? 'snare' : 'kick'),
+          color: choice.color || COLOR,
+          ttl: Infinity,
+          locked: true,
+        });
       });
     });
     return savedLoop;
   }
 
   function playRecipe(recipe) {
-    if (!recipe || !Array.isArray(recipe.choices)) return;
+    if (!recipe || !recipe.choices || !recipe.choices.length) return;
     signalSettings = { ...signalSettings, ...(recipe.settings || {}) };
     applySettings();
     loop = recipeToLoop(recipe);
     recordedChoices = recipe.choices.map(c => ({ ...c, phrase: c.phrase ? c.phrase.slice() : [] }));
-    grooveByLayer = LAYERS.map(layer => recipe.grooveByLayer && recipe.grooveByLayer[layer.id] ? recipe.grooveByLayer[layer.id] : null);
-    lastGrooveToast = null;
-    currentLayerIndex = Math.max(0, Math.min(LAYERS.length - 1, ...recordedChoices.map(c => c.layerIndex ?? ((c.loop || 1) - 1))));
-    additionsThisLayer = 0;
+    loopRound = Math.max(LOOP_GOAL, ...recordedChoices.map(c => c.loop || 1));
+    additionsThisLoop = ADDS_PER_LOOP;
     totalAdditions = recordedChoices.length;
     state = 'replay';
     replaying = true;
-    updateLoopButton();
     replayUntil = performance.now() + LOOP_STEPS * beatMs * 4;
     overlay.classList.add('hidden');
     rocks = [];
@@ -1472,8 +1200,6 @@
   async function showJukebox() {
     overlay.classList.remove('hidden');
     state = 'built';
-    loopEndArmed = false;
-    updateLoopButton();
     overlay.innerHTML = `
       <div class="signal-panel">
         <div class="signal-title">JUKEBOX</div>
@@ -1540,11 +1266,6 @@
   }
 
   window.signalStart = start;
-  window.signalEndLoop = function(e) {
-    if (e && typeof e.preventDefault === 'function') e.preventDefault();
-    if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-    requestLoopEnd();
-  };
   window.signalSaveScore = saveScore;
   window.signalSaveRecipe = saveRecipe;
   window.signalReplayTrack = startReplay;
@@ -1569,14 +1290,12 @@
   window.initSignal = function() {
     canvas = document.getElementById('signal-canvas');
     overlay = document.getElementById('signal-overlay');
-    loopButton = document.getElementById('signal-loop-btn');
     if (!canvas || !overlay) return;
     fitCanvas();
     loadPilot();
     attachInput();
     resetRun();
     state = 'idle';
-    updateLoopButton();
     showIntro();
     draw();
     if (!resizeHandler) {
@@ -1606,8 +1325,6 @@
   window.signalBack = function() {
     cancelAnimationFrame(raf);
     state = 'idle';
-    loopEndArmed = false;
-    updateLoopButton();
     leftHeld = false;
     rightHeld = false;
     pointerActive = false;
