@@ -147,12 +147,15 @@
   };
 
   let canvas = null, ctx = null, overlay = null, loopButton = null, resetButton = null, signalExitButton = null;
+  let freeControls = null, freeChangeButton = null, freeSaveButton = null, freeMenuButton = null;
   let W = 0, H = 0, dpr = 1, raf = 0, last = 0, state = 'idle';
   let signalAudioCtx = null, signalMasterGain = null, signalLimiter = null;
   let player, bullets, rocks, sparks, floatTexts, stars, boss;
   let score = 0, signal = 0, distortion = 0, health = 3, elapsed = 0;
   let combo = 0, bestCombo = 0, currentSoloLane = 1;
   let currentLayerIndex = 0, additionsThisLayer = 0, totalAdditions = 0;
+  let mode = 'arcade', freeLayerIndex = 0, freeRecording = false;
+  let freeLayerMenuKeepsLoop = false;
   let recordedChoices = [], grooveByLayer = [], lastGrooveToast = null, replaying = false, replayUntil = 0;
   let jukeboxRows = [], jukeboxBackTarget = 'intro';
   let signalSettings = { style: 'space-funk', mood: 'minor', tempo: 'medium' };
@@ -177,6 +180,9 @@
   function laneWidth() { return W / LANES.length; }
   function laneIndexForX(x) { return clamp(Math.floor(x / Math.max(1, laneWidth())), 0, LANES.length - 1); }
   function laneCenter(i) { return laneWidth() * (i + 0.5); }
+  function isFreeMode() { return mode === 'free'; }
+  function shouldRecordStamp() { return !isFreeMode() || freeRecording; }
+  function freeHasRecordedLoop() { return gridStamps().length > 0; }
   function styleDef() { return STYLE_DEFS[signalSettings.style] || STYLE_DEFS['space-funk']; }
   function soundProfile() {
     return {
@@ -207,7 +213,7 @@
     return NOTE_NAMES[(styleDef().rootSemi + st) % 12];
   }
   function activeLayer() { return LAYERS[clamp(currentLayerIndex, 0, LAYERS.length - 1)] || LAYERS[0]; }
-  function activeLayerLabel() { return `LAYER ${currentLayerIndex + 1}: ${activeLayer().name}`; }
+  function activeLayerLabel() { return isFreeMode() ? `FREE MODE: ${activeLayer().name}` : `LAYER ${currentLayerIndex + 1}: ${activeLayer().name}`; }
   function fallbackStepsForType(type) {
     const steps = WRITE_STEPS[type] || [0];
     return steps.slice();
@@ -275,6 +281,51 @@
     const layer = activeLayer();
     for (let i = 0; i < LANES.length; i++) LANES[i] = { ...layer.options[i], inst: layer.inst, mult: layer.mult };
   }
+  function ensureFreeControls() {
+    if (freeControls || !loopButton || !loopButton.parentElement) return;
+    const row = loopButton.parentElement;
+    freeControls = document.createElement('div');
+    freeControls.style.display = 'none';
+    freeControls.style.gap = '6px';
+    freeControls.style.width = '100%';
+    freeControls.style.flexBasis = '100%';
+    freeControls.style.alignItems = 'stretch';
+    freeControls.style.justifyContent = 'center';
+    const makeButton = (text, handler) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'signal-loop-btn';
+      btn.style.flex = '1 1 0';
+      btn.style.minWidth = '0';
+      btn.style.maxWidth = 'none';
+      btn.style.padding = '0 8px';
+      btn.style.fontSize = '10px';
+      btn.style.letterSpacing = '1.2px';
+      btn.textContent = text;
+      btn.addEventListener('click', handler);
+      return btn;
+    };
+    freeChangeButton = makeButton('CHANGE LAYER', showFreeLayerMenu);
+    freeSaveButton = makeButton('SAVE LOOP', showFreeSave);
+    freeMenuButton = makeButton('LAUNCH MENU', showIntro);
+    freeControls.append(freeChangeButton, freeSaveButton, freeMenuButton);
+    row.appendChild(freeControls);
+  }
+  function updateFreeControls() {
+    ensureFreeControls();
+    if (!freeControls) return;
+    const show = state === 'playing' && isFreeMode();
+    freeControls.style.display = show ? 'flex' : 'none';
+    if (loopButton && loopButton.parentElement) {
+      loopButton.parentElement.style.flexWrap = show ? 'wrap' : '';
+      loopButton.parentElement.style.width = show ? 'min(560px, calc(100vw - 24px))' : '';
+    }
+    if (freeSaveButton) {
+      const hasLoop = freeHasRecordedLoop();
+      freeSaveButton.classList.toggle('hidden', !hasLoop);
+      freeSaveButton.textContent = 'SAVE LOOP';
+    }
+  }
   function updateLoopButton() {
     if (!loopButton) return;
     const show = state === 'playing';
@@ -283,14 +334,31 @@
     if (wasHidden === show) fitCanvas();
     if (resetButton) resetButton.classList.toggle('hidden', !(show && phase === 'build'));
     if (!show) {
+      updateFreeControls();
       syncSignalChrome();
       return;
     }
-    if (phase === 'countin') loopButton.textContent = 'START LOOP';
-    else if (loopEndArmed) loopButton.textContent = 'SAVING LOOP...';
-    else loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISH TRACK' : 'NEXT LOOP ›';
-    // Reset (↻) only while actively building a layer — not during count-in.
-    if (resetButton) resetButton.classList.toggle('hidden', phase !== 'build');
+    if (isFreeMode()) {
+      loopButton.textContent = freeRecording ? 'RECORDING...' : 'RECORD LOOP';
+      if (resetButton) {
+        resetButton.classList.toggle('hidden', false);
+        resetButton.textContent = 'CLEAR';
+        resetButton.title = 'Clear Free Mode loop';
+        resetButton.setAttribute('aria-label', 'Clear Free Mode loop');
+      }
+    } else {
+      if (phase === 'countin') loopButton.textContent = 'START LOOP';
+      else if (loopEndArmed) loopButton.textContent = 'SAVING LOOP...';
+      else loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISH TRACK' : 'NEXT LOOP ›';
+      // Reset (↻) only while actively building a layer — not during count-in.
+      if (resetButton) {
+        resetButton.classList.toggle('hidden', phase !== 'build');
+        resetButton.textContent = '↻';
+        resetButton.title = 'Clear this layer';
+        resetButton.setAttribute('aria-label', 'Clear this layer');
+      }
+    }
+    updateFreeControls();
     syncSignalChrome();
   }
   function presetLabel(group, id) {
@@ -965,7 +1033,9 @@
     }));
   }
 
-  function resetRun() {
+  function resetRun(nextMode) {
+    mode = nextMode || 'arcade';
+    freeRecording = false;
     player = { x: W * 0.5, y: H - LOOP_PANEL_H - 28, r: 17, cooldown: 0 };
     bullets = [];
     rocks = [];
@@ -979,8 +1049,8 @@
     combo = 0;
     bestCombo = 0;
     currentSoloLane = 1;
-    applySettings();
-    currentLayerIndex = 0;
+    if (!isFreeMode()) applySettings();
+    currentLayerIndex = isFreeMode() ? freeLayerIndex : 0;
     additionsThisLayer = 0;
     totalAdditions = 0;
     recordedChoices = [];
@@ -998,7 +1068,7 @@
     stepIndex = 0;
     lastLoopStep = -1;
     loopEndArmed = false;
-    phase = 'countin';
+    phase = isFreeMode() ? 'build' : 'countin';
     countKickPulse = 0;
     countLockedText = '';
     tempoPreviewBeatAt = 0;
@@ -1314,6 +1384,10 @@
   function stampNote(rock, target, note, tight, isNextStep) {
     const layer = activeLayer();
     const vel = tight ? 1 : 0.62;
+    if (!shouldRecordStamp()) {
+      laneFlash[rock.lane] = Math.max(laneFlash[rock.lane] || 0, tight ? 0.9 : 0.55);
+      return;
+    }
     const bucket = loop[target];
     let slot = bucket.find(v => v.layerId === layer.id);
     if (layer.inst === 'drums') {
@@ -1381,6 +1455,7 @@
     if (recordedChoices.length > 128) recordedChoices.shift();
     laneFlash[rock.lane] = Math.max(laneFlash[rock.lane], tight ? 1 : 0.6);
     if (loopFlash[target]) loopFlash[target] = { pulse: 1, color: rock.color || COLOR, row: currentLayerIndex };
+    if (isFreeMode()) updateFreeControls();
   }
 
   function restartLoopPlayback() {
@@ -1395,7 +1470,7 @@
   }
 
   function endCurrentLoop(restartPlayback) {
-    if (state !== 'playing') return;
+    if (state !== 'playing' || isFreeMode()) return;
     const committedLayerIndex = currentLayerIndex;
     const groove = scoreLayerGrid(committedLayerIndex);
     grooveByLayer[committedLayerIndex] = groove;
@@ -1449,15 +1524,22 @@
     grooveByLayer[li] = null;
     combo = 0;
     loopEndArmed = false;
+    if (isFreeMode()) freeRecording = false;
     if (asteroidSurfaceActive()) initAsteroidSurface();
     updateLoopButton();
-    addFloatText('LAYER CLEARED', W * 0.5, H * 0.3, '#00e5ff');
+    addFloatText(isFreeMode() ? 'LOOP CLEARED' : 'LAYER CLEARED', W * 0.5, H * 0.3, '#00e5ff');
     tone(520, 'sine', 0, 0.20, 0.05, 170);
     noise(0.02, 0.12, 0.02, true);
   }
 
   function requestLoopEnd() {
     if (state !== 'playing' || loopEndArmed) return;
+    if (isFreeMode()) {
+      freeRecording = !freeRecording;
+      updateLoopButton();
+      addFloatText(freeRecording ? 'RECORDING' : 'RECORD OFF', W * 0.5, H * 0.3, freeRecording ? '#ffe61a' : '#00e5ff');
+      return;
+    }
     loopEndArmed = true;
     updateLoopButton();
     playPitched('keys', degreeFreq(2, 2), 0.6, 0);
@@ -1465,7 +1547,7 @@
   }
 
   function finishTrack() {
-    if (state !== 'playing') return;
+    if (state !== 'playing' || isFreeMode()) return;
     if (!grooveByLayer[currentLayerIndex]) {
       const groove = scoreLayerGrid(currentLayerIndex);
       grooveByLayer[currentLayerIndex] = groove;
@@ -1695,7 +1777,7 @@
         }
       }
     }
-    if (loopEndArmed && stepIndex === 0) endCurrentLoop(false);
+    if (!isFreeMode() && loopEndArmed && stepIndex === 0) endCurrentLoop(false);
     distortion = clamp(distortion - 0.4, 0, 100);
     if (stepIndex % 8 === 0 && signal > 22) signal = clamp(signal - 0.12, 0, 100);
     if (boss && stepIndex % 8 === 0) playBossMotif();
@@ -1779,7 +1861,10 @@
         s.y += s.vy * dt / 1000;
         if (s.y > H + 5) { s.y = -5; s.x = Math.random() * W; }
       });
-      if (t >= replayUntil) showBuiltChoice();
+      if (t >= replayUntil) {
+        if (isFreeMode()) showJukebox();
+        else showBuiltChoice();
+      }
       return;
     }
     ensureBoss();
@@ -2241,9 +2326,9 @@
     if (state === 'playing' || state === 'replay') {
       const titleY = 58;
       c.fillStyle = 'rgba(234,255,255,0.78)';
-      c.fillText(state === 'replay' ? 'REPLAY' : activeLayerLabel(), 12, titleY);
+      c.fillText(state === 'replay' ? (isFreeMode() ? 'FREE REPLAY' : 'REPLAY') : activeLayerLabel(), 12, titleY);
       c.textAlign = 'right';
-      c.fillText(String(score), W - 12, titleY);
+      c.fillText(isFreeMode() && state === 'playing' ? (freeRecording ? 'REC' : `${tempoBpm()} BPM`) : String(score), W - 12, titleY);
     }
     c.textAlign = 'left';
     // Loop rows live up top now, right under the layer title.
@@ -2477,7 +2562,7 @@
 
   function start() {
     fitCanvas();
-    resetRun();
+    resetRun('arcade');
     state = 'playing';
     updateLoopButton();
     silenceArcadeMusic();
@@ -2509,7 +2594,9 @@
 
   function showIntro() {
     cancelAnimationFrame(raf);
-    if (state !== 'playing') state = 'idle';
+    mode = 'arcade';
+    freeRecording = false;
+    state = 'idle';
     replaying = false;
     loopEndArmed = false;
     updateLoopButton();
@@ -2522,6 +2609,7 @@
         <div class="signal-title">SIGNAL DRIFT</div>
         ${presetControlsHTML()}
         <button class="signal-btn" onclick="signalStart()">START SIGNAL</button>
+        <button class="signal-btn secondary" onclick="signalShowFreeLayers()">FREE MODE</button>
         <button class="signal-btn secondary" onclick="signalShowJukebox()">JUKEBOX</button>
       </div>`;
   }
@@ -2540,6 +2628,131 @@
         </div>
         <button class="signal-btn" onclick="signalStartTempo()">START LOOP</button>
       </div>`;
+  }
+
+  function freeLayerMenuHTML() {
+    const rows = LAYERS.map((layer, index) => `
+      <button class="signal-chip ${index === freeLayerIndex ? 'active' : ''}" style="min-height:42px" onclick="signalChooseFreeLayer(${index})">${layer.name}</button>
+    `).join('');
+    return `
+      <div class="signal-panel">
+        <div class="signal-title">FREE MODE</div>
+        <div class="signal-subtitle">PICK ONE LAYER AND PLAY WITHOUT THE ARCADE SEQUENCE.</div>
+        <div class="signal-tempo-box" style="margin:12px 0 14px;padding:14px">
+          <div id="signal-tempo-value" class="signal-tempo-value" style="font-size:24px">${tempoBpm()} BPM</div>
+          <input class="signal-tempo-slider" type="range" min="${MIN_TEMPO_BPM}" max="${MAX_TEMPO_BPM}" value="${tempoBpm()}" oninput="signalSetTempo(this.value, true)">
+        </div>
+        <div class="signal-presets" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${rows}</div>
+        <button class="signal-btn secondary" onclick="signalShowIntro()">LAUNCH MENU</button>
+      </div>`;
+  }
+
+  function showFreeLayerMenu() {
+    cancelAnimationFrame(raf);
+    freeLayerMenuKeepsLoop = isFreeMode() && (state === 'playing' || freeHasRecordedLoop());
+    mode = 'free';
+    state = 'built';
+    freeRecording = false;
+    loopEndArmed = false;
+    updateLoopButton();
+    overlay.classList.remove('hidden');
+    overlay.classList.remove('signal-menu-mode');
+    overlay.classList.remove('signal-tempo-mode');
+    overlay.innerHTML = freeLayerMenuHTML();
+  }
+
+  function switchFreeLayer(index) {
+    freeLayerIndex = clamp(Math.floor(index || 0), 0, LAYERS.length - 1);
+    currentLayerIndex = freeLayerIndex;
+    additionsThisLayer = recordedChoices.filter(ch => choiceLayerIndex(ch) === currentLayerIndex).length;
+    rocks = [];
+    bullets = [];
+    pointerActive = false;
+    thereminPulse = 0;
+    applyLayerOptions();
+    if (asteroidSurfaceActive()) initAsteroidSurface();
+    laneFlash = [1, 1, 1];
+    showLayerToast();
+  }
+
+  function startFreeMode(index) {
+    freeLayerMenuKeepsLoop = false;
+    fitCanvas();
+    freeLayerIndex = clamp(Math.floor(index || 0), 0, LAYERS.length - 1);
+    resetRun('free');
+    switchFreeLayer(freeLayerIndex);
+    state = 'playing';
+    phase = 'build';
+    loopEndArmed = false;
+    freeRecording = false;
+    silenceArcadeMusic();
+    overlay.classList.add('hidden');
+    updateLoopButton();
+    restartLoopPlayback();
+    last = performance.now();
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(frame);
+  }
+
+  function chooseFreeLayer(index) {
+    if (!freeLayerMenuKeepsLoop) {
+      startFreeMode(index);
+      return;
+    }
+    freeLayerMenuKeepsLoop = false;
+    const nextLayer = clamp(Math.floor(index || 0), 0, LAYERS.length - 1);
+    if (nextLayer !== currentLayerIndex && freeHasRecordedLoop()) {
+      loop = Array.from({ length: LOOP_STEPS }, () => []);
+      recordedChoices = [];
+      grooveByLayer = Array.from({ length: LAYERS.length }, () => null);
+      additionsThisLayer = 0;
+      totalAdditions = 0;
+      score = 0;
+    }
+    switchFreeLayer(nextLayer);
+    state = 'playing';
+    phase = 'build';
+    freeRecording = false;
+    overlay.classList.add('hidden');
+    updateLoopButton();
+    last = performance.now();
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(frame);
+  }
+
+  function showFreeSave() {
+    if (!isFreeMode() || !freeHasRecordedLoop()) return;
+    freeRecording = false;
+    updateLoopButton();
+    overlay.classList.remove('hidden');
+    overlay.classList.remove('signal-menu-mode');
+    overlay.classList.remove('signal-tempo-mode');
+    overlay.innerHTML = `
+      <div class="signal-panel">
+        <div class="signal-title">SAVE LOOP</div>
+        <div class="signal-subtitle">${activeLayer().name} · ${recipeExtra(currentRecipe())}</div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <input id="signal-name" maxlength="12" placeholder="NAME" style="flex:1;min-width:0;height:42px;box-sizing:border-box;background:#02040e;border:1.5px solid ${COLOR};border-radius:4px;color:#fff;text-align:center;text-transform:uppercase;font-family:'VCR',monospace;font-size:14px;letter-spacing:3px">
+          <button id="signal-save-btn" class="signal-btn" style="width:58px;margin:0" onclick="signalSaveRecipe()">▶</button>
+        </div>
+        <div id="signal-save-status" class="signal-subtitle" style="min-height:18px;margin-top:8px"></div>
+        <button class="signal-btn secondary" onclick="signalResumeFreeMode()">BACK TO LOOP</button>
+        <button class="signal-btn secondary" onclick="signalShowJukebox()">JUKEBOX</button>
+        <button class="signal-btn secondary" onclick="signalShowIntro()">LAUNCH MENU</button>
+      </div>`;
+    const input = document.getElementById('signal-name');
+    if (input) input.focus({ preventScroll: true });
+  }
+
+  function resumeFreeMode() {
+    if (!isFreeMode()) return;
+    state = 'playing';
+    phase = 'build';
+    overlay.classList.add('hidden');
+    updateLoopButton();
+    last = performance.now();
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(frame);
   }
 
   function backButtonHTML() {
@@ -2636,11 +2849,13 @@
   }
 
   function currentRecipe() {
+    const freeLayer = LAYERS[freeLayerIndex] || activeLayer();
     return {
       version: 3,
       settings: { ...signalSettings },
       beatMs,
       score,
+      meta: isFreeMode() ? { mode: 'free', freeLayerIndex, freeLayerId: freeLayer.id, freeLayerName: freeLayer.name } : { mode: 'arcade' },
       layers: LAYERS.map((layer, index) => ({ index, id: layer.id, name: layer.name })),
       grooveByLayer: Object.fromEntries(LAYERS.map((layer, index) => [layer.id, grooveByLayer[index] || null])),
       choices: gridStamps(),
@@ -2649,12 +2864,21 @@
 
   function recipeExtra(recipe) {
     const settings = recipe && recipe.settings ? recipe.settings : signalSettings;
-    return `${presetLabel('style', settings.style)} · ${presetLabel('mood', settings.mood)}`;
+    const base = `${presetLabel('style', settings.style)} · ${presetLabel('mood', settings.mood)}`;
+    if (recipe && recipe.meta && recipe.meta.mode === 'free') {
+      return `FREE MODE · ${recipe.meta.freeLayerName || 'LAYER'} · ${base}`;
+    }
+    return base;
   }
 
   function recipeSummary(recipe) {
     const choices = recipe && recipe.choices ? recipe.choices : recordedChoices;
     if (!choices.length) return '';
+    if (recipe && recipe.meta && recipe.meta.mode === 'free') {
+      const layerName = recipe.meta.freeLayerName || 'FREE';
+      const hits = choices.reduce((n, c) => n + (c.pieces ? c.pieces.length : c.notes ? c.notes.length : 1), 0);
+      return `FREE ${layerName}: ${hits} HITS`;
+    }
     const layerNames = (recipe && recipe.layers ? recipe.layers.map(l => l.name) : LAYERS.map(l => l.name));
     return layerNames.map((name, index) => {
       const count = choices.filter(c => (c.layerIndex ?? ((c.loop || 1) - 1)) === index).length;
@@ -2864,6 +3088,8 @@
   function playRecipe(recipe) {
     if (!recipe || !Array.isArray(recipe.choices)) return;
     silenceArcadeMusic();
+    mode = recipe.meta && recipe.meta.mode === 'free' ? 'free' : 'arcade';
+    freeRecording = false;
     signalSettings = { ...signalSettings, ...(recipe.settings || {}) };
     applySettings();
     // Tapped tempos don't match any preset, so honor the recipe's exact beat.
@@ -2873,11 +3099,17 @@
     recordedChoices = recipe.choices.map(c => ({ ...c, phrase: c.phrase ? c.phrase.slice() : [] }));
     grooveByLayer = LAYERS.map(layer => recipe.grooveByLayer && recipe.grooveByLayer[layer.id] ? recipe.grooveByLayer[layer.id] : null);
     lastGrooveToast = null;
-    currentLayerIndex = Math.max(0, Math.min(LAYERS.length - 1, ...recordedChoices.map(c => c.layerIndex ?? ((c.loop || 1) - 1))));
+    if (isFreeMode() && recipe.meta && Number.isFinite(recipe.meta.freeLayerIndex)) {
+      currentLayerIndex = clamp(recipe.meta.freeLayerIndex, 0, LAYERS.length - 1);
+    } else {
+      currentLayerIndex = Math.max(0, Math.min(LAYERS.length - 1, ...recordedChoices.map(c => c.layerIndex ?? ((c.loop || 1) - 1))));
+    }
+    freeLayerIndex = currentLayerIndex;
     additionsThisLayer = 0;
     totalAdditions = recordedChoices.length;
     state = 'replay';
     replaying = true;
+    applyLayerOptions();
     updateLoopButton();
     replayUntil = performance.now() + LOOP_STEPS * beatMs * 2;
     overlay.classList.add('hidden');
@@ -2890,7 +3122,7 @@
   }
 
   async function showJukebox() {
-    jukeboxBackTarget = state === 'over' ? 'result' : (state === 'built' && recordedChoices.length ? 'built' : 'intro');
+    jukeboxBackTarget = isFreeMode() && (state === 'playing' || state === 'built') ? 'free' : state === 'over' ? 'result' : (state === 'built' && recordedChoices.length ? 'built' : 'intro');
     overlay.classList.remove('hidden');
     overlay.classList.remove('signal-tempo-mode');
     overlay.classList.remove('signal-menu-mode');
@@ -2979,6 +3211,10 @@
   window.signalStartTempo = function() {
     skipCountIn();
   };
+  window.signalShowFreeLayers = showFreeLayerMenu;
+  window.signalStartFreeMode = startFreeMode;
+  window.signalChooseFreeLayer = chooseFreeLayer;
+  window.signalResumeFreeMode = resumeFreeMode;
   window.signalEndLoop = function(e) {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
@@ -2999,6 +3235,7 @@
   window.signalJukeboxBack = function() {
     if (jukeboxBackTarget === 'result') showResult(true);
     else if (jukeboxBackTarget === 'built' && recordedChoices.length) showBuiltChoice();
+    else if (jukeboxBackTarget === 'free') resumeFreeMode();
     else showIntro();
   };
   window.signalShowIntro = showIntro;
