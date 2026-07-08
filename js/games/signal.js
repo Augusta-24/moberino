@@ -8,16 +8,32 @@
   const BOARD_KEY = 'signal';
   const LOOP_STEPS = 24;
   const DEFAULT_BEAT_MS = 285;
+  const MIN_TEMPO_BPM = 36;
+  const MAX_TEMPO_BPM = 88;
   const MAX_ROCKS = 32;
   const MAX_SPARKS = 120;
-  // Reserved band at the bottom of the canvas where the loop rows live —
-  // gameplay (ship, lanes, pads, rocks) stays above it.
-  const LOOP_PANEL_H = 76;
+  // Small reserved footer; gameplay now uses the room formerly occupied by beat dots.
+  const LOOP_PANEL_H = 24;
   const PAD_COLS = 4;
   const PAD_ROWS = [
-    { piece: 'hat', label: 'HAT', color: '#eaffff', lane: 2 },
-    { piece: 'tom', label: 'TOM', color: '#ff8a3d', lane: 1 },
-    { piece: 'kick', label: 'KICK', color: '#00e5ff', lane: 0 },
+    { label: 'METAL', lane: 2, cells: [
+      { piece: 'tri', label: 'TRI', color: '#eaffff' },
+      { piece: 'bell', label: 'BELL', color: '#b8fff8' },
+      { piece: 'gong', label: 'GONG', color: '#ffe61a' },
+      { piece: 'clave', label: 'CLAVE', color: '#d8ff8a' },
+    ] },
+    { label: 'SHAKE', lane: 1, cells: [
+      { piece: 'guiro', label: 'GUIRO', color: '#ff9f4a' },
+      { piece: 'shaker', label: 'SHKR', color: '#ffd23d' },
+      { piece: 'cabasa', label: 'CAB', color: '#ffbd66' },
+      { piece: 'hat', label: 'HAT', color: '#eaffff' },
+    ] },
+    { label: 'DRUM', lane: 0, cells: [
+      { piece: 'kick', label: 'KICK', color: '#00e5ff' },
+      { piece: 'tom', label: 'TOM', color: '#ff8a3d' },
+      { piece: 'clap', label: 'CLAP', color: '#ff66c7' },
+      { piece: 'rim', label: 'RIM', color: '#7bffea' },
+    ] },
   ];
   const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   // One pentatonic scale per run: any note against any other always sounds good.
@@ -97,7 +113,7 @@
     'dark-minor': { root: 103.83, rootSemi: 8, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'triangle', drumVol: 1.05, shimmer: 0.7, forceMinor: true },
   };
 
-  let canvas = null, ctx = null, overlay = null, loopButton = null, resetButton = null;
+  let canvas = null, ctx = null, overlay = null, loopButton = null, resetButton = null, signalExitButton = null;
   let W = 0, H = 0, dpr = 1, raf = 0, last = 0, state = 'idle';
   let player, bullets, rocks, sparks, floatTexts, stars, boss;
   let score = 0, signal = 0, distortion = 0, health = 3, elapsed = 0;
@@ -110,14 +126,14 @@
   let laneFlash = [0, 0, 0];
   let spawnAt = 0, manualFireAt = 0, beatAt = 0, stepIndex = 0, lastLoopStep = -1;
   let loopEndArmed = false;
-  // 'countin': the player lays 4 kick beats to set their own tempo before the loop starts.
-  let phase = 'countin', countTaps = [], countKickPulse = 0, countLockedText = '', countPadAt = 0;
+  // 'countin': tempo setup before the loop starts. It seeds an even kick floor.
+  let phase = 'countin', countKickPulse = 0, countLockedText = '', tempoPreviewBeatAt = 0, lastTempoPreviewAt = 0;
   let pads = [], padSpawnAt = 0;
   let loop = [];
   let leftHeld = false, rightHeld = false, pointerActive = false, pointerX = 0, pointerY = 0;
   let thereminPulse = 0;
   let resizeHandler = null, keyDownHandler = null, keyUpHandler = null;
-  let signalShellApplied = false, gestureGuardHandler = null, gestureStartHandler = null, signalHeaderStyles = null, signalPageStyles = null, signalCanvasStyles = null;
+  let signalShellApplied = false, gestureGuardHandler = null, gestureStartHandler = null, signalHeaderStyles = null, signalHeaderActionStyles = null, signalHeaderBackStyles = null, signalPageStyles = null, signalCanvasStyles = null, signalLoopRowStyles = null, signalLoopButtonStyles = null, signalResetButtonStyles = null;
   let imagesReady = false, pilotImg = null;
 
   function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
@@ -218,15 +234,18 @@
     const show = state === 'playing';
     const wasHidden = loopButton.classList.contains('hidden');
     loopButton.classList.toggle('hidden', !show);
-    // Button sits in flow above the canvas, so visibility changes the space left for it.
     if (wasHidden === show) fitCanvas();
     if (resetButton) resetButton.classList.toggle('hidden', !(show && phase === 'build'));
-    if (!show) return;
-    if (phase === 'countin') loopButton.textContent = 'SKIP COUNT-IN';
-    else if (loopEndArmed) loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISHING...' : 'LOCKING...';
-    else loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISH TRACK' : 'END LOOP';
+    if (!show) {
+      syncSignalChrome();
+      return;
+    }
+    if (phase === 'countin') loopButton.textContent = 'START LOOP';
+    else if (loopEndArmed) loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISHING...' : 'NEXT LOOP...';
+    else loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISH TRACK' : 'NEXT LOOP ›';
     // Reset (↻) only while actively building a layer — not during count-in.
     if (resetButton) resetButton.classList.toggle('hidden', phase !== 'build');
+    syncSignalChrome();
   }
   function presetLabel(group, id) {
     const item = (SIGNAL_PRESETS[group] || []).find(p => p.id === id);
@@ -238,6 +257,28 @@
   function applySettings() {
     const tempo = SIGNAL_PRESETS.tempo.find(t => t.id === signalSettings.tempo) || SIGNAL_PRESETS.tempo[1];
     beatMs = tempo.beatMs || DEFAULT_BEAT_MS;
+  }
+  function tempoBpm() {
+    return clamp(Math.round(60000 / (beatMs * 4)), MIN_TEMPO_BPM, MAX_TEMPO_BPM);
+  }
+  function beatMsForBpm(bpm) {
+    return clamp(Math.round(60000 / (clamp(Math.round(bpm || tempoBpm()), MIN_TEMPO_BPM, MAX_TEMPO_BPM) * 4)), 170, 420);
+  }
+  function tempoBeatMs() {
+    return beatMs * 4;
+  }
+  function setTempoBpm(bpm) {
+    beatMs = beatMsForBpm(bpm);
+    const label = document.getElementById('signal-tempo-value');
+    if (label) label.textContent = `${tempoBpm()} BPM`;
+  }
+  function previewTempoKick() {
+    const t = performance.now();
+    if (t - lastTempoPreviewAt < 130) return;
+    lastTempoPreviewAt = t;
+    tempoPreviewBeatAt = t + tempoBeatMs();
+    countKickPulse = 0.9;
+    playDrumPiece('kick', 0.65, 0);
   }
   function withTimeout(promise, ms) {
     return Promise.race([
@@ -259,7 +300,8 @@
     o.type = type || 'sine';
     o.frequency.setValueAtTime(freq, t0);
     if (endFreq) o.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), t0 + dur);
-    g.gain.setValueAtTime(Math.max(0.0001, vol), t0);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(Math.max(0.0001, vol), t0 + 0.004);
     g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
     o.connect(g);
     g.connect(c.destination);
@@ -282,7 +324,8 @@
     filter.frequency.setValueAtTime(opts.cutoff || 1800, t0);
     if (opts.endCutoff) filter.frequency.exponentialRampToValueAtTime(Math.max(60, opts.endCutoff), t0 + dur);
     filter.Q.setValueAtTime(opts.q || 0.8, t0);
-    g.gain.setValueAtTime(Math.max(0.0001, vol), t0);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(Math.max(0.0001, vol), t0 + 0.004);
     g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
     o.connect(filter);
     filter.connect(g);
@@ -317,8 +360,9 @@
     const t0 = c.currentTime + Math.max(0.006, delay || 0);
     src.buffer = buffer;
     filter.type = highpass ? 'highpass' : 'lowpass';
-    filter.frequency.setValueAtTime(highpass ? 4200 : 900, t0);
-    g.gain.setValueAtTime(vol, t0);
+    filter.frequency.setValueAtTime(highpass ? 3300 : 900, t0);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(Math.max(0.0001, vol), t0 + 0.004);
     g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
     src.connect(filter);
     filter.connect(g);
@@ -335,13 +379,47 @@
     // tune 0..1 maps across the pad row: left = lower/tighter, right = higher/opener.
     const tn = tune == null ? 0.5 : clamp(tune, 0, 1);
     if (piece === 'hat') {
-      noise(dl, 0.018 + tn * 0.026, 0.030 * v, true);
-      synth(6800 + tn * 1900, 'square', dl, 0.018 + tn * 0.020, 0.0065 * v, { filter: 'highpass', cutoff: 4300, q: 0.9 });
+      noise(dl, 0.024 + tn * 0.032, 0.020 * v, true);
+      synth(5600 + tn * 1300, 'triangle', dl, 0.026 + tn * 0.020, 0.0045 * v, { filter: 'highpass', cutoff: 3600, q: 0.75 });
+    } else if (piece === 'tri') {
+      const f = 2100 + tn * 900;
+      tone(f, 'sine', dl, 0.32, 0.030 * v, f * 1.006);
+      tone(f * 2.01, 'sine', dl + 0.006, 0.24, 0.010 * v, f * 2.02);
+    } else if (piece === 'bell') {
+      const f = 980 + tn * 420;
+      tone(f, 'triangle', dl, 0.28, 0.035 * v, f * 0.998);
+      tone(f * 2.42, 'sine', dl + 0.004, 0.20, 0.015 * v, f * 2.44);
+    } else if (piece === 'gong') {
+      const f = 190 + tn * 80;
+      tone(f, 'sine', dl, 0.58, 0.055 * v, f * 0.82);
+      tone(f * 1.47, 'triangle', dl + 0.015, 0.48, 0.030 * v, f * 1.20);
+      noise(dl + 0.004, 0.09, 0.018 * v, false);
+    } else if (piece === 'clave') {
+      const f = 980 + tn * 280;
+      synth(f, 'triangle', dl, 0.065, 0.030 * v, { filter: 'bandpass', cutoff: f, q: 4.8 });
+      tone(f * 1.34, 'sine', dl + 0.003, 0.048, 0.014 * v, f * 1.32);
+    } else if (piece === 'guiro') {
+      for (let i = 0; i < 4; i++) noise(dl + i * (0.018 + tn * 0.006), 0.020, 0.010 * v, true);
+      synth(1200 + tn * 760, 'triangle', dl, 0.13, 0.007 * v, { filter: 'bandpass', cutoff: 1250 + tn * 780, q: 4 });
+    } else if (piece === 'shaker') {
+      noise(dl, 0.050 + tn * 0.040, 0.020 * v, true);
+      noise(dl + 0.036, 0.026, 0.010 * v, true);
+    } else if (piece === 'cabasa') {
+      for (let i = 0; i < 5; i++) noise(dl + i * 0.012, 0.016, 0.0075 * v, true);
+      synth(3600 + tn * 650, 'triangle', dl, 0.08, 0.003 * v, { filter: 'highpass', cutoff: 3000, q: 0.85 });
     } else if (piece === 'tom') {
       const f = 150 + tn * 110;
       tone(f, 'triangle', dl, 0.130, 0.078 * v, f * 0.66);
       tone(f * 1.42, 'sine', dl + 0.004, 0.090, 0.026 * v, f * 1.02);
       noise(dl, 0.026, 0.010 * v, false);
+    } else if (piece === 'clap') {
+      noise(dl, 0.026, 0.018 * v, true);
+      noise(dl + 0.018, 0.035, 0.026 * v, true);
+      noise(dl + 0.040, 0.060, 0.015 * v, true);
+    } else if (piece === 'rim') {
+      const f = 1450 + tn * 300;
+      synth(f, 'triangle', dl, 0.050, 0.026 * v, { filter: 'bandpass', cutoff: f, q: 5.5 });
+      tone(f * 0.5, 'sine', dl + 0.003, 0.038, 0.010 * v, f * 0.48);
     } else {
       const f = 82 + tn * 18;
       tone(f, 'sine', dl, 0.145, 0.135 * v, 34 + tn * 8);
@@ -439,35 +517,173 @@
     } catch(e) {}
   }
 
+  function snapshotStyles(el, props) {
+    if (!el) return null;
+    const out = {};
+    props.forEach(p => { out[p] = el.style[p]; });
+    return out;
+  }
+
+  function restoreStyles(el, snap) {
+    if (el && snap) Object.assign(el.style, snap);
+  }
+
+  function ensureSignalExitButton() {
+    const row = document.querySelector('#pg-signal .signal-loop-row');
+    if (!row) return null;
+    if (!signalExitButton) {
+      signalExitButton = document.createElement('button');
+      signalExitButton.id = 'signal-exit-btn';
+      signalExitButton.type = 'button';
+      signalExitButton.className = 'arcade-exit-btn signal-exit-btn';
+      signalExitButton.textContent = '×';
+      signalExitButton.title = 'Quit Signal Drift';
+      signalExitButton.setAttribute('aria-label', 'Quit Signal Drift');
+      signalExitButton.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        try { if (typeof SFX !== 'undefined' && SFX.menuSelect) SFX.menuSelect(); } catch(err) {}
+        if (typeof nav === 'function') nav('lobby');
+      });
+    }
+    if (signalExitButton.parentNode !== row) row.appendChild(signalExitButton);
+    return signalExitButton;
+  }
+
+  function syncSignalChrome() {
+    const page = document.getElementById('pg-signal');
+    const header = document.querySelector('#pg-signal .cats-header');
+    const actions = document.querySelector('#pg-signal .arcade-header-actions');
+    const headerBack = document.querySelector('#pg-signal .arcade-exit-btn');
+    const row = document.querySelector('#pg-signal .signal-loop-row');
+    const inRun = state === 'playing' || state === 'replay';
+
+    if (header) {
+      if (!signalHeaderStyles) signalHeaderStyles = snapshotStyles(header, ['display', 'height', 'padding', 'background', 'backdropFilter', 'webkitBackdropFilter', 'alignItems', 'justifyContent', 'gap', 'position', 'zIndex', 'left', 'right', 'top', 'pointerEvents', 'width', 'alignSelf', 'boxSizing', 'flexWrap']);
+      header.style.display = inRun ? 'none' : 'flex';
+      header.style.height = '46px';
+      header.style.padding = '6px 10px';
+      header.style.background = 'transparent';
+      header.style.backdropFilter = 'none';
+      header.style.webkitBackdropFilter = 'none';
+      header.style.alignItems = 'center';
+      header.style.justifyContent = 'space-between';
+      header.style.gap = '8px';
+      header.style.flexWrap = 'nowrap';
+      header.style.position = inRun ? 'absolute' : 'relative';
+      header.style.zIndex = '40';
+      header.style.pointerEvents = 'auto';
+      header.style.width = '100%';
+      header.style.boxSizing = 'border-box';
+    }
+    if (actions) {
+      if (!signalHeaderActionStyles) signalHeaderActionStyles = snapshotStyles(actions, ['display', 'alignItems', 'gap', 'order', 'flexShrink', 'marginLeft', 'marginRight']);
+      actions.style.display = 'flex';
+      actions.style.alignItems = 'center';
+      actions.style.gap = '8px';
+      actions.style.order = '0';
+      actions.style.flexShrink = '0';
+      actions.style.marginLeft = '0';
+      actions.style.marginRight = 'auto';
+      Array.from(actions.querySelectorAll('button')).forEach(btn => {
+        btn.style.height = '32px';
+        btn.style.boxSizing = 'border-box';
+        btn.style.display = 'inline-flex';
+        btn.style.alignItems = 'center';
+        btn.style.justifyContent = 'center';
+        btn.style.flexShrink = '0';
+      });
+    }
+    if (headerBack) {
+      if (!signalHeaderBackStyles) signalHeaderBackStyles = snapshotStyles(headerBack, ['order', 'marginLeft', 'flexShrink', 'height', 'boxSizing', 'display', 'alignItems', 'justifyContent', 'fontSize', 'letterSpacing', 'padding', 'maxWidth', 'whiteSpace']);
+      headerBack.style.order = '1';
+      headerBack.style.marginLeft = 'auto';
+      headerBack.style.flexShrink = '0';
+      headerBack.style.height = '32px';
+      headerBack.style.boxSizing = 'border-box';
+      headerBack.style.display = 'inline-flex';
+      headerBack.style.alignItems = 'center';
+      headerBack.style.justifyContent = 'center';
+      headerBack.style.fontSize = '9px';
+      headerBack.style.letterSpacing = '1px';
+      headerBack.style.padding = '0 8px';
+      headerBack.style.maxWidth = '164px';
+      headerBack.style.whiteSpace = 'nowrap';
+    }
+
+    if (!row) return;
+    if (!signalLoopRowStyles) signalLoopRowStyles = snapshotStyles(row, ['position', 'zIndex', 'left', 'right', 'top', 'width', 'maxWidth', 'margin', 'display', 'gridTemplateColumns', 'gap', 'alignItems', 'justifyContent', 'boxSizing', 'padding', 'pointerEvents']);
+    row.style.display = inRun ? 'grid' : 'none';
+    if (!inRun) return;
+    const exit = ensureSignalExitButton();
+    if (resetButton && loopButton && resetButton.parentNode === row && loopButton.parentNode === row) row.insertBefore(resetButton, loopButton);
+    row.style.position = 'absolute';
+    row.style.top = 'calc(env(safe-area-inset-top, 0px) + 6px)';
+    row.style.left = '8px';
+    row.style.right = '8px';
+    row.style.width = 'auto';
+    row.style.maxWidth = 'none';
+    row.style.margin = '0';
+    row.style.zIndex = '60';
+    row.style.gridTemplateColumns = '56px minmax(0, 1fr) 42px';
+    row.style.gap = '8px';
+    row.style.alignItems = 'stretch';
+    row.style.justifyContent = 'stretch';
+    row.style.boxSizing = 'border-box';
+    row.style.padding = '0';
+    row.style.pointerEvents = 'auto';
+
+    if (loopButton) {
+      if (!signalLoopButtonStyles) signalLoopButtonStyles = snapshotStyles(loopButton, ['gridColumn', 'width', 'maxWidth', 'minHeight', 'fontSize', 'letterSpacing', 'padding', 'boxSizing']);
+      loopButton.style.gridColumn = '2';
+      loopButton.style.width = '100%';
+      loopButton.style.maxWidth = 'none';
+      loopButton.style.minHeight = '40px';
+      loopButton.style.fontSize = '10px';
+      loopButton.style.letterSpacing = '2px';
+      loopButton.style.padding = '0 8px';
+      loopButton.style.boxSizing = 'border-box';
+    }
+    if (resetButton) {
+      if (!signalResetButtonStyles) signalResetButtonStyles = snapshotStyles(resetButton, ['gridColumn', 'width', 'minHeight', 'fontSize', 'boxSizing']);
+      resetButton.style.gridColumn = '1';
+      resetButton.style.width = '56px';
+      resetButton.style.minHeight = '40px';
+      resetButton.style.fontSize = '22px';
+      resetButton.style.boxSizing = 'border-box';
+    }
+    if (exit) {
+      exit.style.gridColumn = '3';
+      exit.style.width = '42px';
+      exit.style.minWidth = '42px';
+      exit.style.minHeight = '40px';
+      exit.style.padding = '0';
+      exit.style.fontSize = '20px';
+      exit.style.letterSpacing = '0';
+      exit.style.borderColor = 'rgba(255,0,204,0.45)';
+      exit.style.background = 'rgba(2,4,14,0.88)';
+      exit.style.color = '#ff2db8';
+      exit.style.boxShadow = '0 0 14px rgba(255,45,184,0.18)';
+      exit.style.display = 'inline-flex';
+      exit.style.alignItems = 'center';
+      exit.style.justifyContent = 'center';
+    }
+  }
+
   function applySignalShell() {
     if (signalShellApplied) return;
     const page = document.getElementById('pg-signal');
-    const header = document.querySelector('#pg-signal .cats-header');
     if (page) {
-      signalPageStyles = { overflow: page.style.overflow, touchAction: page.style.touchAction };
+      signalPageStyles = { overflow: page.style.overflow, touchAction: page.style.touchAction, justifyContent: page.style.justifyContent };
       page.style.overflow = 'hidden';
       page.style.touchAction = 'none';
+      page.style.justifyContent = 'flex-start';
     }
     if (canvas) {
       signalCanvasStyles = { touchAction: canvas.style.touchAction };
       canvas.style.touchAction = 'none';
     }
-    if (header) {
-      signalHeaderStyles = {
-        position: header.style.position,
-        zIndex: header.style.zIndex,
-        left: header.style.left,
-        right: header.style.right,
-        top: header.style.top,
-        pointerEvents: header.style.pointerEvents,
-      };
-      header.style.position = 'absolute';
-      header.style.left = '0';
-      header.style.right = '0';
-      header.style.top = '0';
-      header.style.zIndex = '40';
-      header.style.pointerEvents = 'auto';
-    }
+    syncSignalChrome();
     gestureGuardHandler = e => {
       if (!document.body.classList.contains('on-signal')) return;
       if (e.touches && e.touches.length > 1) e.preventDefault();
@@ -483,6 +699,9 @@
   function restoreSignalShell() {
     const page = document.getElementById('pg-signal');
     const header = document.querySelector('#pg-signal .cats-header');
+    const actions = document.querySelector('#pg-signal .arcade-header-actions');
+    const headerBack = document.querySelector('#pg-signal .arcade-exit-btn');
+    const row = document.querySelector('#pg-signal .signal-loop-row');
     if (page && signalPageStyles) {
       Object.assign(page.style, signalPageStyles);
       signalPageStyles = null;
@@ -491,9 +710,21 @@
       Object.assign(canvas.style, signalCanvasStyles);
       signalCanvasStyles = null;
     }
-    if (header && signalHeaderStyles) {
-      Object.assign(header.style, signalHeaderStyles);
-      signalHeaderStyles = null;
+    restoreStyles(header, signalHeaderStyles);
+    restoreStyles(actions, signalHeaderActionStyles);
+    restoreStyles(headerBack, signalHeaderBackStyles);
+    restoreStyles(row, signalLoopRowStyles);
+    restoreStyles(loopButton, signalLoopButtonStyles);
+    restoreStyles(resetButton, signalResetButtonStyles);
+    signalHeaderStyles = null;
+    signalHeaderActionStyles = null;
+    signalHeaderBackStyles = null;
+    signalLoopRowStyles = null;
+    signalLoopButtonStyles = null;
+    signalResetButtonStyles = null;
+    if (signalExitButton) {
+      signalExitButton.remove();
+      signalExitButton = null;
     }
     if (gestureGuardHandler) {
       document.removeEventListener('touchmove', gestureGuardHandler);
@@ -508,12 +739,11 @@
 
   function fitCanvas() {
     if (!canvas) return;
-    const btnSpace = loopButton && !loopButton.classList.contains('hidden') ? loopButton.offsetHeight + 12 : 0;
     const vv = window.visualViewport;
     const availW = (vv && vv.width) || window.innerWidth || document.documentElement.clientWidth || 360;
     const safeTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat') || '0') || 0;
     const safeBottom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sab') || '0') || 0;
-    const availH = ((vv && vv.height) || window.innerHeight || document.documentElement.clientHeight || 640) - btnSpace - safeTop - safeBottom;
+    const availH = ((vv && vv.height) || window.innerHeight || document.documentElement.clientHeight || 640) - safeTop - safeBottom;
     const ratio = 9 / 16;
     let cssH = Math.max(320, availH);
     let cssW = cssH * ratio;
@@ -581,10 +811,10 @@
     lastLoopStep = -1;
     loopEndArmed = false;
     phase = 'countin';
-    countTaps = [];
     countKickPulse = 0;
     countLockedText = '';
-    countPadAt = 0;
+    tempoPreviewBeatAt = 0;
+    lastTempoPreviewAt = 0;
     padSpawnAt = 0;
     initPads();
     loop = Array.from({ length: LOOP_STEPS }, () => []);
@@ -595,7 +825,8 @@
     pads = [];
     PAD_ROWS.forEach((rowDef, row) => {
       for (let col = 0; col < PAD_COLS; col++) {
-        pads.push({ row, col, piece: rowDef.piece, label: rowDef.label, color: rowDef.color, lane: rowDef.lane, lit: 0, flash: 0 });
+        const cell = rowDef.cells[col] || rowDef.cells[rowDef.cells.length - 1];
+        pads.push({ row, col, piece: cell.piece, label: cell.label, color: cell.color, lane: rowDef.lane, lit: 0, flash: 0 });
       }
     });
   }
@@ -626,8 +857,8 @@
   }
 
   function padRect(row, col) {
-    const left = 38, right = 16, top = 128;
-    const bottom = H - LOOP_PANEL_H - 18;
+    const left = 38, right = 16, top = 146;
+    const bottom = H - LOOP_PANEL_H - 8;
     const colGap = 10, rowGap = 12;
     const gw = (W - left - right - (PAD_COLS - 1) * colGap) / PAD_COLS;
     const gh = (bottom - top - 2 * rowGap) / 3;
@@ -726,8 +957,9 @@
     const t = performance.now();
     if (t < manualFireAt) return;
     if (phase === 'countin' && state === 'playing') {
-      countInTap(t);
-      manualFireAt = t + 90;
+      playDrumPiece('kick', 0.45, 0);
+      countKickPulse = 0.8;
+      manualFireAt = t + 160;
       return;
     }
     if (drumsActive()) {
@@ -764,26 +996,7 @@
     if (wasLit && timing.tight) addFloatText('POCKET', r.x + r.w / 2, r.y - 6, pad.color);
   }
 
-  function countInTap(t) {
-    countTaps.push(t);
-    countKickPulse = 1;
-    playDrumPiece('kick', 0.9, 0);
-    addFloatText(String(countTaps.length), W * 0.5, H * 0.42, '#00e5ff');
-    const step = (countTaps.length - 1) * 4;
-    if (step < LOOP_STEPS && !loop[step].some(v => v.foundation)) {
-      loop[step].push({ layerId: 'drums', layerIndex: 0, inst: 'drums', pieces: ['kick'], tunes: [0.3], color: '#00e5ff', label: 'KICK', tight: true, vel: 0.85, skip: 0, foundation: true });
-      recordedChoices.push({ step, layerIndex: 0, layerId: 'drums', layerName: 'DRUMS', inst: 'drums', note: null, piece: 'kick', lane: 0, label: 'KICK', color: '#00e5ff', tight: true, foundation: true });
-      additionsThisLayer += 1;
-      totalAdditions += 1;
-    }
-    if (countTaps.length < 4) return;
-    // The player's tap interval is one beat = 4 loop steps. Median of the
-    // last 3 intervals, so one nervous tap doesn't skew the tempo.
-    const iv = [];
-    for (let i = 1; i < countTaps.length; i++) iv.push(countTaps[i] - countTaps[i - 1]);
-    iv.sort((a, b) => a - b);
-    const median = iv[Math.floor(iv.length / 2)];
-    beatMs = clamp(Math.round(median / 4), 170, 420);
+  function seedFoundationKicks() {
     for (let step = 0; step < LOOP_STEPS; step += 4) {
       if (loop[step].some(v => v.foundation)) continue;
       loop[step].push({ layerId: 'drums', layerIndex: 0, inst: 'drums', pieces: ['kick'], tunes: [0.3], color: '#00e5ff', label: 'KICK', tight: true, vel: 0.85, skip: 0, foundation: true });
@@ -791,10 +1004,6 @@
       additionsThisLayer += 1;
       totalAdditions += 1;
     }
-    const bpm = Math.round(60000 / (beatMs * 4));
-    countLockedText = `KICK LOCKED · ${bpm} BPM`;
-    startBuildPhase(t);
-    addFloatText(countLockedText, W * 0.5, H * 0.34, '#ffe61a');
   }
 
   function startBuildPhase(t) {
@@ -810,8 +1019,12 @@
 
   function skipCountIn() {
     if (phase !== 'countin' || state !== 'playing') return;
-    applySettings();
-    startBuildPhase(performance.now());
+    seedFoundationKicks();
+    countLockedText = `TEMPO SET · ${tempoBpm()} BPM`;
+    if (overlay) overlay.classList.add('hidden');
+    const t = performance.now();
+    startBuildPhase(t);
+    addFloatText(countLockedText, W * 0.5, H * 0.34, '#ffe61a');
   }
 
   // Live capture: stamp the note the player just played into the loop grid.
@@ -993,7 +1206,7 @@
   }
 
   function layerHintText() {
-    if (phase === 'countin') return 'TAP 4 KICKS';
+    if (phase === 'countin') return 'SET TEMPO';
     if (drumsActive()) return 'TAP DRUM PADS';
     if (rockTapActive()) return 'TAP THE ROCKS';
     const orb = orbLayerInst();
@@ -1132,13 +1345,13 @@
   function update(dt, t) {
     elapsed += dt;
     if (phase === 'countin' && state === 'playing') {
-      // Ambient key pad so the first tap never lands in dead air.
-      if (t >= countPadAt) {
-        const root = styleDef().root;
-        tone(root, 'sine', 0, 1.4, 0.011);
-        tone(root * 1.5, 'sine', 0.06, 1.2, 0.007);
-        tone(root * 2, 'sine', 0.12, 1.0, 0.004);
-        countPadAt = t + 2600;
+      // Tempo preview: an audible kick floor before the run starts.
+      if (!tempoPreviewBeatAt) tempoPreviewBeatAt = t + 180;
+      if (t >= tempoPreviewBeatAt) {
+        playDrumPiece('kick', 0.72, 0);
+        countKickPulse = 1;
+        tempoPreviewBeatAt += tempoBeatMs();
+        if (t - tempoPreviewBeatAt > tempoBeatMs() * 2) tempoPreviewBeatAt = t + tempoBeatMs();
       }
       for (let i = 0; i < laneFlash.length; i++) laneFlash[i] = Math.max(0, laneFlash[i] - dt / 360);
       countKickPulse = Math.max(0, countKickPulse - dt / 240);
@@ -1416,7 +1629,7 @@
     c.textBaseline = 'middle';
     PAD_ROWS.forEach((rowDef, row) => {
       const r0 = padRect(row, 0);
-      c.fillStyle = rowDef.color;
+      c.fillStyle = rowDef.cells[0].color;
       c.globalAlpha = 0.75;
       c.save();
       c.translate(22, r0.y + r0.h / 2);
@@ -1434,15 +1647,15 @@
       c.lineWidth = lit ? 2 : 1;
       c.globalAlpha = 0.34 + pad.flash * 0.62;
       c.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
-      const cr = pad.piece === 'kick' ? 8 : pad.piece === 'tom' ? 6.5 : 5;
+      const cr = pad.piece === 'kick' || pad.piece === 'gong' ? 8 : pad.piece === 'tom' || pad.piece === 'clap' ? 6.5 : 5;
       c.globalAlpha = 0.42 + pad.flash * 0.48;
       c.beginPath();
       c.arc(r.x + r.w / 2, r.y + r.h / 2, cr + pad.flash * 4, 0, Math.PI * 2);
-      if (pad.piece === 'hat') c.stroke(); else c.fill();
+      if (pad.piece === 'hat' || pad.piece === 'tri' || pad.piece === 'guiro' || pad.piece === 'shaker' || pad.piece === 'cabasa') c.stroke(); else c.fill();
       c.globalAlpha = 0.62 + pad.flash * 0.28;
       c.fillStyle = pad.color;
-      c.font = "7px 'VCR', monospace";
-      c.fillText(pad.label, r.x + r.w / 2, r.y + r.h - 12);
+      c.font = "14px 'VCR', monospace";
+      c.fillText(pad.label, r.x + r.w / 2, r.y + r.h - 16);
     });
     c.globalAlpha = 1;
     c.restore();
@@ -1509,7 +1722,7 @@
 
   function drawLanes(c) {
     const lw = laneWidth();
-    const baseY = H - LOOP_PANEL_H - 42;
+    const baseY = H - LOOP_PANEL_H - 30;
     const selected = rockTapActive() ? -1 : laneIndexForX(player.x);
     c.save();
     for (let i = 0; i < LANES.length; i++) {
@@ -1540,17 +1753,18 @@
     c.font = "10px 'VCR', monospace";
     c.textBaseline = 'top';
     if (state === 'playing' || state === 'replay') {
+      const titleY = 58;
       c.fillStyle = 'rgba(234,255,255,0.78)';
-      c.fillText(state === 'replay' ? 'REPLAY' : activeLayerLabel(), 12, 12);
+      c.fillText(state === 'replay' ? 'REPLAY' : activeLayerLabel(), 12, titleY);
       c.textAlign = 'right';
-      c.fillText(String(score), W - 12, 12);
+      c.fillText(String(score), W - 12, titleY);
     }
     c.textAlign = 'left';
     // Loop rows live up top now, right under the layer title.
     if (state === 'playing' || state === 'replay') {
-      const loopX = 30, loopY = 26;
-      const rowH = 5, rowGap = 3;
-      const w = (W - 48) / LOOP_STEPS;
+      const loopX = 26, loopY = 72;
+      const rowH = 7, rowGap = 4;
+      const w = (W - 40) / LOOP_STEPS;
       for (let i = 0; i < LOOP_STEPS; i++) {
         const active = i === stepIndex;
         c.fillStyle = active ? COLOR : 'rgba(234,255,255,0.12)';
@@ -1592,44 +1806,10 @@
       c.font = "7px 'VCR', monospace";
       c.fillStyle = '#ffe61a';
       c.textAlign = 'center';
-      c.fillText(`${layer.name} LOCKED · +${lastGrooveToast.groove.total}`, W * 0.5, 84);
+      c.fillText(`${layer.name} LOCKED · +${lastGrooveToast.groove.total}`, W * 0.5, 128);
       c.textAlign = 'left';
     }
 
-    // Bottom panel: big beat dots, the loop's coarse heartbeat.
-    if (phase !== 'countin' || state !== 'playing') {
-      const t2 = now();
-      const beats = LOOP_STEPS / 4;
-      const beatIdx = Math.floor(stepIndex / 4);
-      const frac2 = beatAt > 0 ? clamp(1 - (beatAt - t2) / beatMs, 0, 1) : 0;
-      const stepInBeat = (stepIndex % 4 + frac2) / 4;
-      const bw = Math.min(40, (W - 48) / beats);
-      const bx = W / 2 - (bw * beats) / 2;
-      const by = H - LOOP_PANEL_H / 2;
-      for (let b = 0; b < beats; b++) {
-        const cx2 = bx + b * bw + bw / 2;
-        const active = b === beatIdx;
-        c.beginPath();
-        c.fillStyle = COLOR;
-        if (active) {
-          c.globalAlpha = 0.95;
-          c.arc(cx2, by, 7 + (1 - stepInBeat) * 3.5, 0, Math.PI * 2);
-          c.fill();
-        } else {
-          c.globalAlpha = b < beatIdx ? 0.5 : 0.2;
-          c.arc(cx2, by, 4.2, 0, Math.PI * 2);
-          c.fill();
-        }
-      }
-      c.globalAlpha = 1;
-      if (combo > 1) {
-        c.fillStyle = '#ffe61a';
-        c.font = "9px 'VCR', monospace";
-        c.textAlign = 'left';
-        c.textBaseline = 'middle';
-        c.fillText('COMBO ' + combo, 12, by);
-      }
-    }
     c.globalAlpha = 1;
     c.textAlign = 'left';
     c.restore();
@@ -1669,28 +1849,6 @@
       c.stroke();
     }
     c.restore();
-
-    // Playhead sweep: a light band crossing the field in sync with the loop.
-    if ((state === 'playing' && phase === 'build') || state === 'replay') {
-      const t = now();
-      const frac = beatAt > 0 ? clamp(1 - (beatAt - t) / beatMs, 0, 1) : 0;
-      const gridX = 30;
-      const stepW = (W - 48) / LOOP_STEPS;
-      const cellW = Math.max(2, stepW - 3);
-      const x = gridX + ((stepIndex + frac) % LOOP_STEPS) * stepW + cellW * 0.42;
-      const sweepTop = 118, sweepBot = H - LOOP_PANEL_H;
-      const grad = c.createLinearGradient(x - 52, 0, x, 0);
-      grad.addColorStop(0, 'rgba(0,229,255,0)');
-      grad.addColorStop(1, 'rgba(0,229,255,0.09)');
-      c.fillStyle = grad;
-      c.fillRect(x - 52, sweepTop, 52, sweepBot - sweepTop);
-      c.strokeStyle = stepIndex % 4 === 0 && frac < 0.4 ? 'rgba(0,229,255,0.55)' : 'rgba(0,229,255,0.28)';
-      c.lineWidth = 1;
-      c.beginPath();
-      c.moveTo(x + 0.5, sweepTop);
-      c.lineTo(x + 0.5, sweepBot);
-      c.stroke();
-    }
 
     const counting = phase === 'countin' && state === 'playing';
     const padsVisible = drumsActive();
@@ -1749,11 +1907,11 @@
       c.font = "22px 'VCR', monospace";
       c.textAlign = 'center';
       c.textBaseline = 'middle';
-      c.fillText(String(countTaps.length) + '/4', cx, cy - 2);
+      c.fillText(`${tempoBpm()} BPM`, cx, cy - 2);
       c.globalAlpha = 0.85;
       c.fillStyle = '#eaffff';
       c.font = "9px 'VCR', monospace";
-      c.fillText('KICK DRUM', cx, cy + 28);
+      c.fillText('SET TEMPO', cx, cy + 28);
       c.restore();
       c.globalAlpha = 1;
     }
@@ -1771,7 +1929,7 @@
       c.globalAlpha = 1;
     }
     if (!counting && !padsVisible && !thereminVisible && !rockTapActive()) drawShip(c);
-    // Reserved loop panel: gameplay slides behind it, loop rows own the space.
+    // Minimal footer line; the old beat-dot panel space belongs to gameplay now.
     c.fillStyle = '#02040e';
     c.fillRect(0, H - LOOP_PANEL_H, W, LOOP_PANEL_H);
     c.strokeStyle = 'rgba(0,229,255,0.22)';
@@ -1805,10 +1963,9 @@
     fitCanvas();
     resetRun();
     state = 'playing';
-    overlay.classList.add('hidden');
     updateLoopButton();
     silenceArcadeMusic();
-    addFloatText('LAY THE KICK · TAP 4', W * 0.5, 132, COLOR, 1800);
+    showTempoSetup();
     last = performance.now();
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(frame);
@@ -1836,11 +1993,12 @@
 
   function showIntro() {
     updateLoopButton();
+    syncSignalChrome();
     overlay.classList.remove('hidden');
     overlay.innerHTML = `
       <div class="signal-panel">
         <div class="signal-title">SIGNAL DRIFT</div>
-        <div class="signal-subtitle">LAY THE KICK WITH 4 STEADY TAPS — YOUR TEMPO, YOUR FLOOR.<br>EVERY HIT PLAYS A NOTE AND RECORDS IT INTO YOUR LOOP.<br>ALL NOTES FIT THE KEY — NO WRONG NOTES.</div>
+        <div class="signal-subtitle">SET THE TEMPO, THEN BUILD THE LOOP LIVE.<br>EVERY HIT PLAYS A NOTE AND RECORDS IT INTO YOUR LOOP.<br>ALL NOTES FIT THE KEY — NO WRONG NOTES.</div>
         ${presetControlsHTML()}
         <div class="signal-stats">
           <div class="signal-stat">LAYER 1<b>DRUMS</b></div>
@@ -1852,7 +2010,21 @@
         </div>
         <button class="signal-btn" onclick="signalStart()">START SIGNAL</button>
         <button class="signal-btn secondary" onclick="signalShowJukebox()">JUKEBOX</button>
-        ${backButtonHTML()}
+      </div>`;
+  }
+
+  function showTempoSetup() {
+    overlay.classList.remove('hidden');
+    overlay.innerHTML = `
+      <div class="signal-panel">
+        <div class="signal-title">SET TEMPO</div>
+        <div class="signal-subtitle">SLIDE THE BAR TO SET THE KICK FLOOR.</div>
+        <div class="signal-tempo-box">
+          <div id="signal-tempo-value" class="signal-tempo-value">${tempoBpm()} BPM</div>
+          <input class="signal-tempo-slider" type="range" min="${MIN_TEMPO_BPM}" max="${MAX_TEMPO_BPM}" value="${tempoBpm()}" oninput="signalSetTempo(this.value, true)">
+          <div class="signal-tempo-scale"><span>SLOW</span><span>FAST</span></div>
+        </div>
+        <button class="signal-btn" onclick="signalStartTempo()">START LOOP</button>
       </div>`;
   }
 
@@ -2242,6 +2414,14 @@
   }
 
   window.signalStart = start;
+  window.signalSetTempo = function(value, preview) {
+    audioCtx();
+    setTempoBpm(Number(value));
+    if (preview) previewTempoKick();
+  };
+  window.signalStartTempo = function() {
+    skipCountIn();
+  };
   window.signalEndLoop = function(e) {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     if (e && typeof e.stopPropagation === 'function') e.stopPropagation();

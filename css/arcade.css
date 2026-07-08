@@ -118,7 +118,8 @@ body.on-char {
 /* outline:none on all three — without it, tapping one (the trophy button
    especially, since it already has a gold border/glow) leaves the browser's
    default focus ring stuck on top, reading as a stray/wrong-colored highlight. */
-.arcade-mute-btn {
+.arcade-mute-btn,
+.arcade-char-btn {
   font-family: 'VCR', monospace; font-size: 9px; letter-spacing: 1px;
   background: none; border: 1px solid rgba(242,239,232,0.2); outline: none;
   border-radius: 3px; padding: 3px 7px; color: rgba(242,239,232,0.6); cursor: pointer;
@@ -162,7 +163,10 @@ body.on-match .arcade-lb-btn, body.on-space .arcade-lb-btn, body.on-snoob .arcad
 }
 body.on-lobby .arcade-mute-btn, body.on-char .arcade-mute-btn,
 body.on-whack .arcade-mute-btn,
-body.on-match .arcade-mute-btn, body.on-space .arcade-mute-btn, body.on-snoob .arcade-mute-btn {
+body.on-match .arcade-mute-btn, body.on-space .arcade-mute-btn, body.on-snoob .arcade-mute-btn,
+body.on-lobby .arcade-char-btn, body.on-char .arcade-char-btn,
+body.on-whack .arcade-char-btn,
+body.on-match .arcade-char-btn, body.on-space .arcade-char-btn, body.on-snoob .arcade-char-btn {
   font-size: 11px !important; letter-spacing: 1px !important;
   padding: 5px 9px !important; border-radius: 4px !important;
 }

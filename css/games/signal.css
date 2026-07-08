@@ -155,6 +155,34 @@
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.22);
 }
 .signal-chip:active { transform: translateY(1px); }
+.signal-tempo-box {
+  margin-top: 16px;
+  padding: 14px 12px;
+  border: 1px solid rgba(234, 255, 255, 0.16);
+  border-radius: 6px;
+  background: rgba(0, 229, 255, 0.06);
+}
+.signal-tempo-value {
+  font-family: 'VCR', monospace;
+  font-size: 22px;
+  letter-spacing: 3px;
+  color: #ffe61a;
+  text-shadow: 0 0 14px rgba(255, 230, 26, 0.34);
+}
+.signal-tempo-slider {
+  width: 100%;
+  margin: 14px 0 8px;
+  accent-color: #00e5ff;
+  cursor: pointer;
+}
+.signal-tempo-scale {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'VCR', monospace;
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  color: rgba(234, 255, 255, 0.46);
+}
 .signal-btn {
   width: 100%;
   min-height: 48px;

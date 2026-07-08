@@ -1234,7 +1234,10 @@ function renderLbTabs(activeGame) {
 window.toggleArcadeMute = function() {
   const muted = ArcadeMusic.toggleMute();
   const label = muted ? '♪ OFF' : '♪ ON';
-  document.querySelectorAll('.arcade-mute-btn').forEach(btn => { btn.textContent = label; });
+  document.querySelectorAll('.arcade-mute-btn').forEach(btn => {
+    const action = btn.getAttribute('onclick') || '';
+    if (action.includes('toggleArcadeMute')) btn.textContent = label;
+  });
   if (typeof updateArcadeMusicPrompt === 'function') updateArcadeMusicPrompt();
   if (typeof updateArcadeInstallPrompt === 'function') updateArcadeInstallPrompt();
 };
