@@ -148,6 +148,7 @@
 
   let canvas = null, ctx = null, overlay = null, loopButton = null, resetButton = null, signalExitButton = null;
   let freeControls = null, freeChangeButton = null, freeSaveButton = null, freeMenuButton = null;
+  let loopButtonStyleCache = null, resetButtonStyleCache = null;
   let W = 0, H = 0, dpr = 1, raf = 0, last = 0, state = 'idle';
   let signalAudioCtx = null, signalMasterGain = null, signalLimiter = null;
   let player, bullets, rocks, sparks, floatTexts, stars, boss;
@@ -286,44 +287,87 @@
     const row = loopButton.parentElement;
     freeControls = document.createElement('div');
     freeControls.style.display = 'none';
-    freeControls.style.gap = '6px';
-    freeControls.style.width = '100%';
-    freeControls.style.flexBasis = '100%';
+    freeControls.style.gap = '5px';
     freeControls.style.alignItems = 'stretch';
     freeControls.style.justifyContent = 'center';
     const makeButton = (text, handler) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'signal-loop-btn';
-      btn.style.flex = '1 1 0';
+      btn.style.flex = '0 1 auto';
       btn.style.minWidth = '0';
       btn.style.maxWidth = 'none';
-      btn.style.padding = '0 8px';
-      btn.style.fontSize = '10px';
-      btn.style.letterSpacing = '1.2px';
+      btn.style.width = '76px';
+      btn.style.padding = '0 5px';
+      btn.style.fontSize = '8px';
+      btn.style.letterSpacing = '0.8px';
       btn.textContent = text;
       btn.addEventListener('click', handler);
       return btn;
     };
-    freeChangeButton = makeButton('CHANGE LAYER', showFreeLayerMenu);
-    freeSaveButton = makeButton('SAVE LOOP', showFreeSave);
-    freeMenuButton = makeButton('LAUNCH MENU', showIntro);
+    freeChangeButton = makeButton('LAYER', showFreeLayerMenu);
+    freeSaveButton = makeButton('SAVE', showFreeSave);
+    freeMenuButton = makeButton('MENU', showIntro);
     freeControls.append(freeChangeButton, freeSaveButton, freeMenuButton);
     row.appendChild(freeControls);
+  }
+  function cacheButtonStyles() {
+    if (!loopButtonStyleCache && loopButton) {
+      loopButtonStyleCache = {
+        flex: loopButton.style.flex,
+        width: loopButton.style.width,
+        maxWidth: loopButton.style.maxWidth,
+        padding: loopButton.style.padding,
+        fontSize: loopButton.style.fontSize,
+        letterSpacing: loopButton.style.letterSpacing,
+      };
+    }
+    if (!resetButtonStyleCache && resetButton) {
+      resetButtonStyleCache = {
+        width: resetButton.style.width,
+        fontSize: resetButton.style.fontSize,
+        letterSpacing: resetButton.style.letterSpacing,
+        padding: resetButton.style.padding,
+      };
+    }
+  }
+  function restoreButtonStyles() {
+    if (loopButtonStyleCache && loopButton) Object.assign(loopButton.style, loopButtonStyleCache);
+    if (resetButtonStyleCache && resetButton) Object.assign(resetButton.style, resetButtonStyleCache);
+  }
+  function applyFreeButtonStyles() {
+    cacheButtonStyles();
+    if (loopButton) {
+      loopButton.style.flex = '1 1 auto';
+      loopButton.style.width = 'auto';
+      loopButton.style.maxWidth = 'none';
+      loopButton.style.padding = '0 6px';
+      loopButton.style.fontSize = '9px';
+      loopButton.style.letterSpacing = '1px';
+    }
+    if (resetButton) {
+      resetButton.style.width = '64px';
+      resetButton.style.fontSize = '9px';
+      resetButton.style.letterSpacing = '0.8px';
+      resetButton.style.padding = '0 5px';
+    }
   }
   function updateFreeControls() {
     ensureFreeControls();
     if (!freeControls) return;
     const show = state === 'playing' && isFreeMode();
-    freeControls.style.display = show ? 'flex' : 'none';
+    freeControls.style.display = show ? 'contents' : 'none';
     if (loopButton && loopButton.parentElement) {
-      loopButton.parentElement.style.flexWrap = show ? 'wrap' : '';
-      loopButton.parentElement.style.width = show ? 'min(560px, calc(100vw - 24px))' : '';
+      loopButton.parentElement.style.flexWrap = 'nowrap';
+      loopButton.parentElement.style.gap = show ? '5px' : '';
+      loopButton.parentElement.style.width = show ? 'min(430px, calc(100vw - 14px))' : '';
     }
+    if (show) applyFreeButtonStyles();
+    else restoreButtonStyles();
     if (freeSaveButton) {
       const hasLoop = freeHasRecordedLoop();
       freeSaveButton.classList.toggle('hidden', !hasLoop);
-      freeSaveButton.textContent = 'SAVE LOOP';
+      freeMenuButton.classList.toggle('hidden', hasLoop);
     }
   }
   function updateLoopButton() {
@@ -1124,7 +1168,8 @@
     const dy = pointerY - tc.y;
     const dist = clamp(Math.hypot(dx, dy) / tc.maxR, 0, 1);
     const angle = Math.atan2(dy, dx);
-    const deg = Math.round((dist - 0.12) / 0.88 * 9);
+    const noteT = ((angle + Math.PI * 0.5 + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2);
+    const deg = Math.round(noteT * 9) % 10;
     const shimmer = 0.5 + 0.5 * Math.sin(angle * 2);
     return { ...tc, dist, angle, deg: clamp(deg, 0, 9), shimmer };
   }
@@ -2190,6 +2235,21 @@
       c.stroke();
     });
     c.setLineDash([]);
+    if (!isFx) {
+      const labelR = tc.maxR * 0.84;
+      const activeDeg = pull && pull.dist > 0.12 ? pull.deg : -1;
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      for (let deg = 0; deg < 10; deg += 1) {
+        const a = -Math.PI / 2 + (deg / 10) * Math.PI * 2;
+        const label = noteNameForDegree(deg);
+        const active = deg === activeDeg;
+        c.globalAlpha = active ? 0.96 : 0.42;
+        c.fillStyle = active ? '#eaffff' : col;
+        c.font = `${active ? 11 : 9}px 'VCR', monospace`;
+        c.fillText(label, tc.x + Math.cos(a) * labelR, tc.y + Math.sin(a) * labelR);
+      }
+    }
     if (!isSwell) {
       for (let i = 0; i < 8; i += 1) {
         const a = -Math.PI / 2 + i / 8 * Math.PI * 2;
@@ -2632,18 +2692,18 @@
 
   function freeLayerMenuHTML() {
     const rows = LAYERS.map((layer, index) => `
-      <button class="signal-chip ${index === freeLayerIndex ? 'active' : ''}" style="min-height:42px" onclick="signalChooseFreeLayer(${index})">${layer.name}</button>
+      <button class="signal-chip ${index === freeLayerIndex ? 'active' : ''}" style="min-height:42px" onclick="signalChooseFreeLayer(${index})">▶ ${layer.name}</button>
     `).join('');
     return `
       <div class="signal-panel">
         <div class="signal-title">FREE MODE</div>
-        <div class="signal-subtitle">PICK ONE LAYER AND PLAY WITHOUT THE ARCADE SEQUENCE.</div>
+        <div class="signal-subtitle">TAP A LAYER TO START FREE MODE.</div>
         <div class="signal-tempo-box" style="margin:12px 0 14px;padding:14px">
           <div id="signal-tempo-value" class="signal-tempo-value" style="font-size:24px">${tempoBpm()} BPM</div>
           <input class="signal-tempo-slider" type="range" min="${MIN_TEMPO_BPM}" max="${MAX_TEMPO_BPM}" value="${tempoBpm()}" oninput="signalSetTempo(this.value, true)">
         </div>
         <div class="signal-presets" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${rows}</div>
-        <button class="signal-btn secondary" onclick="signalShowIntro()">LAUNCH MENU</button>
+        <button class="signal-btn secondary" onclick="signalShowIntro()">BACK TO MENU</button>
       </div>`;
   }
 
