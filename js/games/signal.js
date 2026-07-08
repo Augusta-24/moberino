@@ -11,6 +11,8 @@
   const LOOP_GOAL = 3;
   const MAX_LOOP_GOAL = 6;
   const ADDS_PER_LOOP = 3;
+  const MAX_ROCKS = 32;
+  const MAX_SPARKS = 120;
   const ROCK_TYPES = [
     { id: 'drum', label: 'DRUM', color: '#00e5ff', radius: 18 },
     { id: 'bass', label: 'BASS', color: '#ffe61a', radius: 22 },
@@ -92,7 +94,7 @@
   let signalSettings = { mode: 'arcade', style: 'space-funk', mood: 'minor', tempo: 'medium' };
   let beatMs = DEFAULT_BEAT_MS;
   let laneFlash = [0, 0, 0];
-  let spawnAt = 0, fireAt = 0, manualFireAt = 0, beatAt = 0, stepIndex = 0, lastLoopStep = -1;
+  let spawnAt = 0, manualFireAt = 0, beatAt = 0, stepIndex = 0, lastLoopStep = -1;
   let loop = [];
   let leftHeld = false, rightHeld = false, pointerActive = false, pointerX = 0;
   let resizeHandler = null, keyDownHandler = null, keyUpHandler = null;
@@ -121,6 +123,12 @@
   function applySettings() {
     const tempo = SIGNAL_PRESETS.tempo.find(t => t.id === signalSettings.tempo) || SIGNAL_PRESETS.tempo[1];
     beatMs = tempo.beatMs || DEFAULT_BEAT_MS;
+  }
+  function withTimeout(promise, ms) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+    ]);
   }
   function styleTone() {
     return STYLE_TONE[signalSettings.style] || STYLE_TONE['space-funk'];
@@ -364,7 +372,6 @@
     laneFlash = [0, 0, 0];
     elapsed = 0;
     spawnAt = 0;
-    fireAt = 0;
     manualFireAt = 0;
     beatAt = 0;
     stepIndex = 0;
@@ -395,6 +402,7 @@
   }
 
   function spawnRock(forceType) {
+    if (rocks.length >= MAX_ROCKS) rocks.splice(0, rocks.length - MAX_ROCKS + 1);
     const lane = Number.isFinite(forceType) ? forceType : Math.floor(Math.random() * LANES.length);
     const option = LANES[lane];
     const type = ROCK_TYPES.find(t => t.id === option.type) || ROCK_TYPES[0];
@@ -452,6 +460,8 @@
   }
 
   function shoot() {
+    if (!bullets) return;
+    if (bullets.length > 18) bullets.splice(0, bullets.length - 18);
     bullets.push({ x: player.x, y: player.y - 18, vy: -420, r: 4 });
     tone(650, 'triangle', 0, 0.035, 0.018, 920);
   }
@@ -461,7 +471,6 @@
     if (t < manualFireAt) return;
     shoot();
     manualFireAt = t + 125;
-    fireAt = Math.max(fireAt, t + 150);
   }
 
   function registerAddition(rock, perfectPhrase) {
@@ -562,6 +571,7 @@
   }
 
   function burst(x, y, color, n) {
+    if (sparks.length > MAX_SPARKS) sparks.splice(0, sparks.length - MAX_SPARKS);
     for (let i = 0; i < n; i++) {
       sparks.push({
         x, y,
@@ -631,7 +641,9 @@
   function tickBeat(t) {
     if (!beatAt) beatAt = t + beatMs;
     if (t < beatAt) return;
-    while (t >= beatAt) beatAt += beatMs;
+    const skipped = Math.floor((t - beatAt) / beatMs);
+    beatAt += Math.min(skipped + 1, 4) * beatMs;
+    if (t - beatAt > beatMs * 4) beatAt = t + beatMs;
     stepIndex = (stepIndex + 1) % LOOP_STEPS;
     playSongBed();
     const bucket = loop[stepIndex];
@@ -667,11 +679,6 @@
     if (pointerActive) player.x += (pointerX - player.x) * Math.min(1, dt / 100);
     else player.x += move * 260 * dt / 1000;
     player.x = clamp(player.x, 24, W - 24);
-
-    if (t >= fireAt) {
-      shoot();
-      fireAt = t + 310;
-    }
 
     if (t >= spawnAt) {
       spawnRock();
@@ -750,7 +757,7 @@
       p.y += p.vy * dt / 1000;
       p.vy += 80 * dt / 1000;
     });
-    sparks = sparks.filter(p => p.age < p.life);
+    sparks = sparks.filter(p => p.age < p.life).slice(-MAX_SPARKS);
 
     if (signal >= 100 && loopRound >= LOOP_GOAL && additionsThisLoop >= ADDS_PER_LOOP) finish(true);
   }
@@ -993,8 +1000,17 @@
     if (state !== 'playing' && state !== 'replay') return;
     const dt = Math.min(40, t - (last || t));
     last = t;
-    update(dt, t);
-    draw();
+    try {
+      update(dt, t);
+      draw();
+    } catch(e) {
+      console.warn('[Signal Drift] recovered frame error', e);
+      rocks = [];
+      bullets = [];
+      sparks = [];
+      beatAt = t + beatMs;
+      draw();
+    }
     if (state === 'playing' || state === 'replay') raf = requestAnimationFrame(frame);
   }
 
@@ -1177,7 +1193,7 @@
       return { rows: localRows, online: false };
     }
     try {
-      const remoteRows = await window.SignalRecipeRemote.fetchTop(20);
+      const remoteRows = await withTimeout(window.SignalRecipeRemote.fetchTop(20), 3500);
       if (remoteRows && remoteRows.length) return { rows: remoteRows, online: true };
     } catch(e) {}
     return { rows: localRows, online: false };
@@ -1208,7 +1224,7 @@
     if (input) input.disabled = true;
     if (window.SignalRecipeRemote && typeof window.SignalRecipeRemote.submit === 'function') {
       try {
-        await window.SignalRecipeRemote.submit(name, score, extra, recipe);
+        await withTimeout(window.SignalRecipeRemote.submit(name, score, extra, recipe), 3500);
         if (status) status.textContent = 'SAVED ONLINE';
       } catch(e) {
         if (status) status.textContent = 'SAVED LOCAL';
