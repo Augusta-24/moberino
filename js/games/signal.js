@@ -728,6 +728,7 @@
     spawnAt = t + 600;
     countKickPulse = 0;
     updateLoopButton();
+    showLayerToast();
   }
 
   function skipCountIn() {
@@ -816,6 +817,7 @@
     laneFlash = [1, 1, 1];
     if (restartPlayback !== false) restartLoopPlayback();
     updateLoopButton();
+    showLayerToast();
     [0, 2, 4].forEach((deg, i) => playPitched('keys', degreeFreq(deg, 2), 0.8, 0.05 + i * 0.09));
   }
 
@@ -892,6 +894,7 @@
     overlay.classList.add('hidden');
     state = 'playing';
     updateLoopButton();
+    showLayerToast();
     last = performance.now();
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(frame);
@@ -912,9 +915,25 @@
     raf = requestAnimationFrame(frame);
   }
 
-  function addFloatText(text, x, y, color) {
+  function layerHintText() {
+    if (phase === 'countin') return 'TAP 4 KICKS';
+    if (drumsActive()) return 'TAP DRUM PADS';
+    if (rockTapActive()) return 'TAP THE ROCKS';
+    const orb = orbLayerInst();
+    if (orb === 'swell') return 'HOLD + PULL';
+    if (orb === 'chimes') return 'HOLD + PULL';
+    return '';
+  }
+
+  function showLayerToast() {
+    const layer = activeLayer();
+    const hint = layerHintText();
+    addFloatText(hint ? `${layer.name} · ${hint}` : layer.name, W * 0.5, 132, layer.options[0].color || COLOR, 1800);
+  }
+
+  function addFloatText(text, x, y, color, life) {
     if (!floatTexts) floatTexts = [];
-    floatTexts.push({ text, x, y, color, age: 0, life: 850 });
+    floatTexts.push({ text, x, y, color, age: 0, life: life || 850 });
     if (floatTexts.length > 12) floatTexts.shift();
   }
 
@@ -1487,38 +1506,15 @@
       c.textAlign = 'left';
     }
 
-    c.textAlign = 'center';
-    c.font = "9px 'VCR', monospace";
-    c.fillStyle = 'rgba(234,255,255,0.78)';
     const counting = phase === 'countin' && state === 'playing';
-    const objective = counting
-      ? 'LAY THE KICK'
-      : state === 'replay'
-        ? 'REPLAYING TRACK'
-        : orbLayerInst() === 'swell' ? 'SWELL · SLOW WAVES'
-        : chimesActive() ? 'CHIMES · THEREMIN DRIFT'
-        : LANES.map(l => l.label).join(' / ');
-    c.fillText(objective, W * 0.5, 84);
-    if (state !== 'replay') {
-      c.font = "7px 'VCR', monospace";
-      c.fillStyle = 'rgba(234,255,255,0.58)';
-      const hint = counting
-        ? 'TAP YOUR KICK DRUM · 4 STEADY TAPS SET THE TEMPO AND THE FLOOR'
-        : loopEndArmed ? 'LOCKING AT THE ONE...'
-        : drumsActive() ? 'WHACK PADS TO DRUM · LIT PADS SIT IN THE GROOVE'
-        : orbLayerInst() === 'swell' ? 'HOLD + PULL · LONG SWELLS BLOOM ON THE BAR'
-        : chimesActive() ? 'HOLD + PULL FROM THE CENTER · FURTHER = HIGHER AND FULLER'
-        : rockTapActive() ? 'TAP THE ROCKS · EVERY HIT RECORDS'
-        : 'EVERY HIT RECORDS · SHOOT ON THE PULSE · SPACE IS PART OF THE TRACK';
-      c.fillText(hint, W * 0.5, 96);
-    }
-    c.textAlign = 'left';
 
     if (lastGrooveToast && state !== 'replay') {
       const layer = LAYERS[lastGrooveToast.layerIndex] || LAYERS[0];
       c.font = "7px 'VCR', monospace";
       c.fillStyle = '#ffe61a';
-      c.fillText(`${layer.name} LOCKED · GROOVE +${lastGrooveToast.groove.total}`, W * 0.5, 108);
+      c.textAlign = 'center';
+      c.fillText(`${layer.name} LOCKED · +${lastGrooveToast.groove.total}`, W * 0.5, 84);
+      c.textAlign = 'left';
     }
 
     // Bottom panel: big beat dots, the loop's coarse heartbeat.
@@ -1733,6 +1729,7 @@
     overlay.classList.add('hidden');
     updateLoopButton();
     if (typeof ArcadeMusic !== 'undefined' && ArcadeMusic.duck) ArcadeMusic.duck();
+    addFloatText('LAY THE KICK · TAP 4', W * 0.5, 132, COLOR, 1800);
     last = performance.now();
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(frame);
@@ -1776,8 +1773,14 @@
         </div>
         <button class="signal-btn" onclick="signalStart()">START SIGNAL</button>
         <button class="signal-btn secondary" onclick="signalShowJukebox()">JUKEBOX</button>
-        <button class="signal-btn secondary" onclick="nav('lobby')">BACK TO ARCADE</button>
+        ${backButtonHTML()}
       </div>`;
+  }
+
+  function backButtonHTML() {
+    return `<div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="signal-btn secondary" style="width:auto;min-width:176px;margin:0;padding:0 14px" onclick="nav('lobby')">BACK TO ARCADE</button>
+    </div>`;
   }
 
   function presetControlsHTML() {
@@ -1811,6 +1814,15 @@
       return `<div class="signal-stat">${layer.name}<b style="color:${picks[0].color};font-size:11px;letter-spacing:1px">${seq}</b></div>`;
     }).join('');
     return `<div class="signal-stats">${rows}</div>`;
+  }
+
+  function compactTrackStatsHTML() {
+    const stamps = gridStamps();
+    const grooveTotal = grooveByLayer.reduce((sum, g) => sum + (g && !g.rest ? g.total : 0), 0);
+    return `<div class="signal-stats">
+      <div class="signal-stat">TRACK<b>${stamps.length} HITS</b></div>
+      <div class="signal-stat">GROOVE<b>${grooveTotal}</b></div>
+    </div>`;
   }
 
   function grooveSummaryHTML() {
@@ -1884,10 +1896,10 @@
       <div class="signal-panel">
         <div class="signal-title">TRACK BUILT</div>
         <div class="signal-subtitle">REPLAY WHAT YOU MADE OR END THE RUN.</div>
-        ${grooveSummaryHTML()}
-        ${choiceSummaryHTML()}
+        ${compactTrackStatsHTML()}
         <button class="signal-btn" onclick="signalReplayTrack()">REPLAY TRACK</button>
         <button class="signal-btn secondary" onclick="signalEndRun()">END RUN</button>
+        ${backButtonHTML()}
       </div>`;
   }
 
@@ -1912,12 +1924,8 @@
           <div class="signal-stat">SCORE<b>${score}</b></div>
           <div class="signal-stat">TIME<b>${seconds}s</b></div>
           <div class="signal-stat">GROOVE<b>${Math.round(signal)}%</b></div>
-          <div class="signal-stat">LAYERS<b>${LAYERS.length}</b></div>
-          <div class="signal-stat">ADDS<b>${totalAdditions}</b></div>
-          <div class="signal-stat">BEST COMBO<b>${bestCombo}</b></div>
+          <div class="signal-stat">TRACK<b>${gridStamps().length} HITS</b></div>
         </div>
-        ${won ? grooveSummaryHTML() : ''}
-        ${won ? choiceSummaryHTML() : ''}
         ${canSave ? `
           <div style="display:flex;gap:8px;margin-top:14px">
             <input id="signal-name" maxlength="12" placeholder="NAME" style="flex:1;min-width:0;height:42px;box-sizing:border-box;background:#02040e;border:1.5px solid ${COLOR};border-radius:4px;color:#fff;text-align:center;text-transform:uppercase;font-family:'VCR',monospace;font-size:14px;letter-spacing:3px">
@@ -1926,7 +1934,7 @@
           <div id="signal-save-status" class="signal-subtitle" style="min-height:18px;margin-top:8px"></div>` : ''}
         ${won ? `<button class="signal-btn secondary" onclick="signalShowJukebox()">LOCAL JUKEBOX</button>` : ''}
         <button class="signal-btn" onclick="signalStart()">PLAY AGAIN</button>
-        <button class="signal-btn secondary" onclick="nav('lobby')">BACK TO ARCADE</button>
+        ${backButtonHTML()}
       </div>`;
     const input = document.getElementById('signal-name');
     if (input) input.focus({ preventScroll: true });
