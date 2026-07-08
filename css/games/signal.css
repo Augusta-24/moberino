@@ -44,13 +44,10 @@
 }
 #signal-overlay.hidden { display: none; }
 .signal-loop-btn {
-  position: fixed;
-  left: 50%;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 50px);
-  z-index: 8;
+  flex: none;
   width: min(280px, calc(100vw - 42px));
-  min-height: 44px;
-  transform: translateX(-50%);
+  min-height: 40px;
+  margin: 6px auto;
   border: 1.5px solid rgba(0, 229, 255, 0.68);
   border-radius: 5px;
   background: rgba(2, 4, 14, 0.88);
@@ -62,9 +59,11 @@
   cursor: pointer;
 }
 .signal-loop-btn.hidden { display: none; }
-.signal-loop-btn:active { transform: translateX(-50%) translateY(1px); }
+.signal-loop-btn:active { transform: translateY(1px); }
 .signal-panel {
   width: min(100%, 370px);
+  max-height: 100%;
+  overflow-y: auto;
   border: 2px solid rgba(0, 229, 255, 0.42);
   border-radius: 8px;
   background: linear-gradient(180deg, rgba(4, 18, 45, 0.94), rgba(10, 3, 28, 0.96));

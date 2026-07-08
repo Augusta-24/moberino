@@ -13,7 +13,7 @@ create table if not exists public.signal_recipes (
     and jsonb_typeof(recipe -> 'choices') = 'array'
     and case
       when jsonb_typeof(recipe -> 'choices') = 'array'
-      then jsonb_array_length(recipe -> 'choices') between 0 and 64
+      then jsonb_array_length(recipe -> 'choices') between 0 and 128
       else false
     end
   )
@@ -40,7 +40,7 @@ create policy "Signal recipes can be inserted"
     and jsonb_typeof(recipe -> 'choices') = 'array'
     and case
       when jsonb_typeof(recipe -> 'choices') = 'array'
-      then jsonb_array_length(recipe -> 'choices') between 0 and 64
+      then jsonb_array_length(recipe -> 'choices') between 0 and 128
       else false
     end
   );
