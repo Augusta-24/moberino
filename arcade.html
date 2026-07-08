@@ -441,7 +441,10 @@
 <button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
 </div>
 </div>
+<div class="signal-loop-row">
+<button id="signal-reset-btn" class="signal-reset-btn hidden" type="button" onclick="signalResetLoop(event)" title="Clear this layer" aria-label="Clear this layer">↻</button>
 <button id="signal-loop-btn" class="signal-loop-btn hidden" type="button" onclick="signalEndLoop(event)">END LOOP</button>
+</div>
 <canvas id="signal-canvas"></canvas>
 <div id="signal-overlay">
 <!-- filled by JS -->

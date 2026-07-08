@@ -43,11 +43,19 @@
   -webkit-backdrop-filter: blur(8px);
 }
 #signal-overlay.hidden { display: none; }
-.signal-loop-btn {
+.signal-loop-row {
   flex: none;
-  width: min(280px, calc(100vw - 42px));
-  min-height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 8px;
   margin: 6px auto;
+  width: min(330px, calc(100vw - 24px));
+}
+.signal-loop-btn {
+  flex: 1 1 auto;
+  max-width: 280px;
+  min-height: 40px;
   border: 1.5px solid rgba(0, 229, 255, 0.68);
   border-radius: 5px;
   background: rgba(2, 4, 14, 0.88);
@@ -60,6 +68,22 @@
 }
 .signal-loop-btn.hidden { display: none; }
 .signal-loop-btn:active { transform: translateY(1px); }
+.signal-reset-btn {
+  flex: none;
+  width: 40px;
+  min-height: 40px;
+  border: 1.5px solid rgba(0, 229, 255, 0.45);
+  border-radius: 5px;
+  background: rgba(2, 4, 14, 0.88);
+  color: #00e5ff;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.18);
+  font-family: 'VCR', monospace;
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+}
+.signal-reset-btn.hidden { display: none; }
+.signal-reset-btn:active { transform: translateY(1px); }
 .signal-panel {
   width: min(100%, 370px);
   max-height: 100%;

@@ -97,7 +97,7 @@
     'dark-minor': { root: 103.83, rootSemi: 8, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'triangle', drumVol: 1.05, shimmer: 0.7, forceMinor: true },
   };
 
-  let canvas = null, ctx = null, overlay = null, loopButton = null;
+  let canvas = null, ctx = null, overlay = null, loopButton = null, resetButton = null;
   let W = 0, H = 0, dpr = 1, raf = 0, last = 0, state = 'idle';
   let player, bullets, rocks, sparks, floatTexts, stars, boss;
   let score = 0, signal = 0, distortion = 0, health = 3, elapsed = 0;
@@ -223,6 +223,8 @@
     if (phase === 'countin') loopButton.textContent = 'SKIP COUNT-IN';
     else if (loopEndArmed) loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISHING...' : 'LOCKING...';
     else loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISH TRACK' : 'END LOOP';
+    // Reset (↻) only while actively building a layer — not during count-in.
+    if (resetButton) resetButton.classList.toggle('hidden', !(show && phase === 'build'));
   }
   function presetLabel(group, id) {
     const item = (SIGNAL_PRESETS[group] || []).find(p => p.id === id);
@@ -691,8 +693,8 @@
     // Their tapped pulse becomes the track's first drum hits: on the floor,
     // continued across the whole loop.
     for (let step = 0; step < LOOP_STEPS; step += 4) {
-      loop[step].push({ layerId: 'drums', layerIndex: 0, inst: 'drums', pieces: ['kick'], tunes: [0.3], color: '#00e5ff', label: 'KICK', tight: true, vel: 0.85, skip: 0 });
-      recordedChoices.push({ step, layerIndex: 0, layerId: 'drums', layerName: 'DRUMS', inst: 'drums', note: null, piece: 'kick', lane: 0, label: 'KICK', color: '#00e5ff', tight: true });
+      loop[step].push({ layerId: 'drums', layerIndex: 0, inst: 'drums', pieces: ['kick'], tunes: [0.3], color: '#00e5ff', label: 'KICK', tight: true, vel: 0.85, skip: 0, foundation: true });
+      recordedChoices.push({ step, layerIndex: 0, layerId: 'drums', layerName: 'DRUMS', inst: 'drums', note: null, piece: 'kick', lane: 0, label: 'KICK', color: '#00e5ff', tight: true, foundation: true });
       additionsThisLayer += 1;
       totalAdditions += 1;
     }
@@ -797,6 +799,41 @@
     if (restartPlayback !== false) restartLoopPlayback();
     updateLoopButton();
     [0, 2, 4].forEach((deg, i) => playPitched('keys', degreeFreq(deg, 2), 0.8, 0.05 + i * 0.09));
+  }
+
+  // Scrap the take: clear the layer you're building and re-record over the
+  // groove. Earlier locked layers are untouched; on DRUMS the count-in kicks
+  // (the tempo floor) survive so the loop never goes pulseless.
+  function resetCurrentLoop() {
+    if (state !== 'playing' || phase !== 'build') return;
+    const li = currentLayerIndex;
+    for (let s = 0; s < LOOP_STEPS; s++) {
+      const bucket = loop[s];
+      for (let i = bucket.length - 1; i >= 0; i--) {
+        const v = bucket[i];
+        if (v.layerIndex !== li) continue;
+        if (v.foundation) {
+          v.pieces = ['kick'];
+          v.tunes = [0.3];
+          v.vel = 0.85;
+          v.tight = true;
+          v.skip = 0;
+        } else {
+          bucket.splice(i, 1);
+        }
+      }
+    }
+    const before = recordedChoices.length;
+    recordedChoices = recordedChoices.filter(ch => ch.layerIndex !== li || ch.foundation);
+    totalAdditions = Math.max(0, totalAdditions - (before - recordedChoices.length));
+    additionsThisLayer = recordedChoices.filter(ch => ch.layerIndex === li).length;
+    grooveByLayer[li] = null;
+    combo = 0;
+    loopEndArmed = false;
+    updateLoopButton();
+    addFloatText('LAYER CLEARED', W * 0.5, H * 0.3, '#00e5ff');
+    tone(520, 'sine', 0, 0.20, 0.05, 170);
+    noise(0.02, 0.12, 0.02, true);
   }
 
   function requestLoopEnd() {
@@ -2076,6 +2113,11 @@
     if (phase === 'countin' && state === 'playing') skipCountIn();
     else requestLoopEnd();
   };
+  window.signalResetLoop = function(e) {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+    resetCurrentLoop();
+  };
   window.signalSaveScore = saveScore;
   window.signalSaveRecipe = saveRecipe;
   window.signalReplayTrack = startReplay;
@@ -2101,6 +2143,7 @@
     canvas = document.getElementById('signal-canvas');
     overlay = document.getElementById('signal-overlay');
     loopButton = document.getElementById('signal-loop-btn');
+    resetButton = document.getElementById('signal-reset-btn');
     if (!canvas || !overlay) return;
     fitCanvas();
     loadPilot();
