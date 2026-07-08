@@ -12,6 +12,7 @@
   const MAX_TEMPO_BPM = 88;
   const MAX_ROCKS = 32;
   const MAX_SPARKS = 120;
+  const MAX_DRUM_STACK = 6;
   // Small reserved footer; gameplay now uses the room formerly occupied by beat dots.
   const LOOP_PANEL_H = 24;
   const PAD_COLS = 4;
@@ -124,6 +125,7 @@
   let signalSettings = { style: 'space-funk', mood: 'minor', tempo: 'medium' };
   let beatMs = DEFAULT_BEAT_MS;
   let laneFlash = [0, 0, 0];
+  let loopFlash = [];
   let spawnAt = 0, manualFireAt = 0, beatAt = 0, stepIndex = 0, lastLoopStep = -1;
   let loopEndArmed = false;
   // 'countin': tempo setup before the loop starts. It seeds an even kick floor.
@@ -353,7 +355,11 @@
     const len = Math.max(1, Math.floor(c.sampleRate * dur));
     const buffer = c.createBuffer(1, len, c.sampleRate);
     const data = buffer.getChannelData(0);
-    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    for (let i = 0; i < len; i++) {
+      const attack = Math.min(1, i / Math.max(1, c.sampleRate * 0.006));
+      const release = 1 - i / len;
+      data[i] = (Math.random() * 2 - 1) * attack * release;
+    }
     const src = c.createBufferSource();
     const filter = c.createBiquadFilter();
     const g = c.createGain();
@@ -383,12 +389,14 @@
       synth(5600 + tn * 1300, 'triangle', dl, 0.026 + tn * 0.020, 0.0045 * v, { filter: 'highpass', cutoff: 3600, q: 0.75 });
     } else if (piece === 'tri') {
       const f = 2100 + tn * 900;
-      tone(f, 'sine', dl, 0.32, 0.030 * v, f * 1.006);
-      tone(f * 2.01, 'sine', dl + 0.006, 0.24, 0.010 * v, f * 2.02);
+      tone(f, 'sine', dl, 0.34, 0.036 * v, f * 1.006);
+      tone(f * 2.01, 'sine', dl + 0.006, 0.25, 0.012 * v, f * 2.02);
+      tone(520 + tn * 120, 'triangle', dl, 0.11, 0.008 * v, 460 + tn * 90);
     } else if (piece === 'bell') {
       const f = 980 + tn * 420;
-      tone(f, 'triangle', dl, 0.28, 0.035 * v, f * 0.998);
-      tone(f * 2.42, 'sine', dl + 0.004, 0.20, 0.015 * v, f * 2.44);
+      tone(f, 'triangle', dl, 0.30, 0.042 * v, f * 0.998);
+      tone(f * 2.42, 'sine', dl + 0.004, 0.22, 0.014 * v, f * 2.44);
+      tone(f * 0.5, 'sine', dl + 0.002, 0.16, 0.012 * v, f * 0.48);
     } else if (piece === 'gong') {
       const f = 190 + tn * 80;
       tone(f, 'sine', dl, 0.58, 0.055 * v, f * 0.82);
@@ -396,30 +404,31 @@
       noise(dl + 0.004, 0.09, 0.018 * v, false);
     } else if (piece === 'clave') {
       const f = 980 + tn * 280;
-      synth(f, 'triangle', dl, 0.065, 0.030 * v, { filter: 'bandpass', cutoff: f, q: 4.8 });
-      tone(f * 1.34, 'sine', dl + 0.003, 0.048, 0.014 * v, f * 1.32);
+      synth(f, 'triangle', dl, 0.070, 0.026 * v, { filter: 'bandpass', cutoff: f, q: 3.8 });
+      tone(f * 0.72, 'sine', dl + 0.003, 0.060, 0.018 * v, f * 0.70);
     } else if (piece === 'guiro') {
-      for (let i = 0; i < 4; i++) noise(dl + i * (0.018 + tn * 0.006), 0.020, 0.010 * v, true);
-      synth(1200 + tn * 760, 'triangle', dl, 0.13, 0.007 * v, { filter: 'bandpass', cutoff: 1250 + tn * 780, q: 4 });
+      for (let i = 0; i < 4; i++) noise(dl + i * (0.018 + tn * 0.006), 0.022, 0.009 * v, true);
+      synth(950 + tn * 560, 'triangle', dl, 0.14, 0.012 * v, { filter: 'bandpass', cutoff: 1050 + tn * 600, q: 3.2 });
     } else if (piece === 'shaker') {
-      noise(dl, 0.050 + tn * 0.040, 0.020 * v, true);
-      noise(dl + 0.036, 0.026, 0.010 * v, true);
+      noise(dl, 0.058 + tn * 0.042, 0.016 * v, true);
+      noise(dl + 0.038, 0.030, 0.008 * v, true);
     } else if (piece === 'cabasa') {
-      for (let i = 0; i < 5; i++) noise(dl + i * 0.012, 0.016, 0.0075 * v, true);
-      synth(3600 + tn * 650, 'triangle', dl, 0.08, 0.003 * v, { filter: 'highpass', cutoff: 3000, q: 0.85 });
+      for (let i = 0; i < 5; i++) noise(dl + i * 0.013, 0.018, 0.0065 * v, true);
+      synth(2600 + tn * 500, 'triangle', dl, 0.10, 0.006 * v, { filter: 'bandpass', cutoff: 2300 + tn * 450, q: 2.2 });
     } else if (piece === 'tom') {
       const f = 150 + tn * 110;
       tone(f, 'triangle', dl, 0.130, 0.078 * v, f * 0.66);
       tone(f * 1.42, 'sine', dl + 0.004, 0.090, 0.026 * v, f * 1.02);
       noise(dl, 0.026, 0.010 * v, false);
     } else if (piece === 'clap') {
-      noise(dl, 0.026, 0.018 * v, true);
-      noise(dl + 0.018, 0.035, 0.026 * v, true);
-      noise(dl + 0.040, 0.060, 0.015 * v, true);
+      noise(dl, 0.030, 0.014 * v, true);
+      noise(dl + 0.020, 0.040, 0.022 * v, true);
+      noise(dl + 0.045, 0.070, 0.012 * v, true);
+      tone(220, 'triangle', dl + 0.006, 0.060, 0.014 * v, 160);
     } else if (piece === 'rim') {
       const f = 1450 + tn * 300;
-      synth(f, 'triangle', dl, 0.050, 0.026 * v, { filter: 'bandpass', cutoff: f, q: 5.5 });
-      tone(f * 0.5, 'sine', dl + 0.003, 0.038, 0.010 * v, f * 0.48);
+      synth(f, 'triangle', dl, 0.056, 0.022 * v, { filter: 'bandpass', cutoff: f, q: 4.2 });
+      tone(f * 0.48, 'sine', dl + 0.003, 0.052, 0.018 * v, f * 0.45);
     } else {
       const f = 82 + tn * 18;
       tone(f, 'sine', dl, 0.145, 0.135 * v, 34 + tn * 8);
@@ -479,7 +488,13 @@
   function playInstrument(inst, opts) {
     const o = opts || {};
     if (inst === 'drums') {
-      (o.pieces || [o.piece || 'kick']).forEach((p, i) => playDrumPiece(p, o.vel, (o.delay || 0) + i * 0.004, o.tunes ? o.tunes[i] : o.tune));
+      const seen = {};
+      (o.pieces || [o.piece || 'kick']).forEach((p, i) => {
+        const repeat = seen[p] || 0;
+        seen[p] = repeat + 1;
+        const flam = i * 0.004 + repeat * 0.018;
+        playDrumPiece(p, o.vel, (o.delay || 0) + flam, o.tunes ? o.tunes[i] : o.tune);
+      });
       return;
     }
     if (inst === 'swell') {
@@ -803,6 +818,7 @@
     replayUntil = 0;
     applyLayerOptions();
     laneFlash = [0, 0, 0];
+    loopFlash = Array.from({ length: LOOP_STEPS }, () => ({ pulse: 0, color: COLOR, row: 0 }));
     elapsed = 0;
     spawnAt = 0;
     manualFireAt = 0;
@@ -963,8 +979,8 @@
       return;
     }
     if (drumsActive()) {
-      if (pos) whackPad(pos, t);
-      manualFireAt = t + 90;
+      if (pos && whackPad(pos, t)) manualFireAt = t + 58;
+      else manualFireAt = t + 18;
       return;
     }
     if (rockTapActive()) {
@@ -978,7 +994,7 @@
 
   function whackPad(pos, t) {
     const pad = padAt(pos.x, pos.y);
-    if (!pad) return;
+    if (!pad) return false;
     const wasLit = pad.lit > t;
     pad.lit = 0;
     pad.flash = 1;
@@ -994,6 +1010,7 @@
     signal = clamp(signal + (timing.tight ? 1.3 : 0.3) + (wasLit ? 0.6 : 0), 0, 100);
     distortion = clamp(distortion + (timing.tight ? -0.8 : 2.2), 0, 100);
     if (wasLit && timing.tight) addFloatText('POCKET', r.x + r.w / 2, r.y - 6, pad.color);
+    return true;
   }
 
   function seedFoundationKicks() {
@@ -1036,13 +1053,16 @@
     if (layer.inst === 'drums') {
       const tune = rock.tune == null ? 0.5 : rock.tune;
       if (slot) {
-        const idx = slot.pieces.indexOf(rock.piece);
-        if (idx < 0) {
-          slot.pieces.push(rock.piece);
-          (slot.tunes = slot.tunes || slot.pieces.map(() => 0.5))[slot.pieces.length - 1] = tune;
-        } else if (slot.tunes) {
-          slot.tunes[idx] = tune;
+        slot.pieces = slot.pieces || [];
+        slot.tunes = slot.tunes || slot.pieces.map(() => 0.5);
+        slot.pieces.push(rock.piece);
+        slot.tunes.push(tune);
+        while (slot.pieces.length > MAX_DRUM_STACK) {
+          slot.pieces.shift();
+          slot.tunes.shift();
         }
+        slot.color = rock.color;
+        slot.label = rock.label;
         slot.tight = slot.tight && tight;
         slot.vel = Math.max(slot.vel, vel);
         slot.skip = isNextStep ? 1 : 0;
@@ -1073,6 +1093,7 @@
     });
     if (recordedChoices.length > 128) recordedChoices.shift();
     laneFlash[rock.lane] = Math.max(laneFlash[rock.lane], tight ? 1 : 0.6);
+    if (loopFlash[target]) loopFlash[target] = { pulse: 1, color: rock.color || COLOR, row: currentLayerIndex };
   }
 
   function restartLoopPlayback() {
@@ -1354,6 +1375,7 @@
         if (t - tempoPreviewBeatAt > tempoBeatMs() * 2) tempoPreviewBeatAt = t + tempoBeatMs();
       }
       for (let i = 0; i < laneFlash.length; i++) laneFlash[i] = Math.max(0, laneFlash[i] - dt / 360);
+      loopFlash.forEach(f => { f.pulse = Math.max(0, f.pulse - dt / 260); });
       countKickPulse = Math.max(0, countKickPulse - dt / 240);
       stars.forEach(s => {
         s.y += s.vy * dt / 1000;
@@ -1368,6 +1390,7 @@
     tickBeat(t);
     if (drumsActive()) {
       for (let i = 0; i < laneFlash.length; i++) laneFlash[i] = Math.max(0, laneFlash[i] - dt / 360);
+      loopFlash.forEach(f => { f.pulse = Math.max(0, f.pulse - dt / 260); });
       pads.forEach(p => { p.flash = Math.max(0, p.flash - dt / 260); });
       stars.forEach(s => {
         s.y += s.vy * dt / 1000;
@@ -1388,6 +1411,7 @@
     }
     if (chimesActive()) {
       for (let i = 0; i < laneFlash.length; i++) laneFlash[i] = Math.max(0, laneFlash[i] - dt / 360);
+      loopFlash.forEach(f => { f.pulse = Math.max(0, f.pulse - dt / 300); });
       thereminPulse = Math.max(0, thereminPulse - dt / 320);
       stars.forEach(s => {
         s.y += s.vy * dt / 1000;
@@ -1408,6 +1432,7 @@
     }
     if (state === 'replay') {
       for (let i = 0; i < laneFlash.length; i++) laneFlash[i] = Math.max(0, laneFlash[i] - dt / 420);
+      loopFlash.forEach(f => { f.pulse = Math.max(0, f.pulse - dt / 320); });
       stars.forEach(s => {
         s.y += s.vy * dt / 1000;
         if (s.y > H + 5) { s.y = -5; s.x = Math.random() * W; }
@@ -1417,6 +1442,7 @@
     }
     ensureBoss();
     for (let i = 0; i < laneFlash.length; i++) laneFlash[i] = Math.max(0, laneFlash[i] - dt / 360);
+    loopFlash.forEach(f => { f.pulse = Math.max(0, f.pulse - dt / 260); });
 
     const directTapLayer = rockTapActive();
     const move = (leftHeld ? -1 : 0) + (rightHeld ? 1 : 0);
@@ -1786,8 +1812,26 @@
           c.fillRect(loopX + i * w + 1, y, Math.max(2, w - 3), rowH);
           if (slots.length) {
             const slot = slots[slots.length - 1];
-            c.fillStyle = slot.tight === false ? 'rgba(234,255,255,0.38)' : slot.color;
+            c.fillStyle = slot.color;
             c.fillRect(loopX + i * w + 1, y, Math.max(2, w - 3), rowH);
+            if (slot.inst === 'drums' && slot.pieces && slot.pieces.length > 1) {
+              const count = Math.min(slot.pieces.length, MAX_DRUM_STACK);
+              const cellW = Math.max(2, w - 3);
+              c.fillStyle = '#02040e';
+              c.globalAlpha = 0.36;
+              for (let m = 1; m < count; m++) {
+                const mx = loopX + i * w + 1 + (cellW * m) / count;
+                c.fillRect(mx, y, 1, rowH);
+              }
+              c.globalAlpha = row === currentLayerIndex && state === 'playing' ? 0.95 : 0.58;
+            }
+          }
+          const flash = loopFlash[i];
+          if (flash && flash.row === row && flash.pulse > 0) {
+            c.fillStyle = flash.color;
+            c.globalAlpha = 0.35 + flash.pulse * 0.55;
+            c.fillRect(loopX + i * w, y - 1, Math.max(3, w - 1), rowH + 2);
+            c.globalAlpha = row === currentLayerIndex && state === 'playing' ? 0.95 : 0.58;
           }
           if (i === stepIndex) {
             c.fillStyle = row === currentLayerIndex ? '#ffe61a' : 'rgba(0,229,255,0.72)';
