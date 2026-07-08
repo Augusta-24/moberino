@@ -43,6 +43,22 @@
   -webkit-backdrop-filter: blur(8px);
 }
 #signal-overlay.hidden { display: none; }
+#signal-overlay.signal-menu-mode {
+  top: 0;
+  max-width: none;
+  overflow: hidden;
+  background: #02040e;
+  padding: 14px;
+}
+#signal-overlay.signal-menu-mode .signal-panel {
+  width: min(100%, 620px);
+  max-height: none;
+  overflow: visible;
+  padding: 22px 20px;
+}
+#signal-overlay.signal-menu-mode .signal-title {
+  font-size: 58px;
+}
 #signal-overlay.signal-tempo-mode {
   top: 0;
   max-width: none;
@@ -177,27 +193,44 @@
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.22);
 }
 .signal-chip:active { transform: translateY(1px); }
-.signal-select {
-  width: 100%;
+.signal-stepper {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 48px;
   min-height: 48px;
   border: 1.5px solid rgba(0, 229, 255, 0.46);
   border-radius: 5px;
   background: rgba(0, 229, 255, 0.10);
+  overflow: hidden;
+}
+.signal-stepper-btn,
+.signal-stepper-value {
+  border: 0;
+  background: transparent;
   color: #eaffff;
   font-family: 'VCR', monospace;
-  font-size: 14px;
-  letter-spacing: 2px;
-  padding: 0 42px 0 14px;
   cursor: pointer;
 }
-.signal-select:focus {
+.signal-stepper-btn {
+  font-size: 24px;
+  line-height: 1;
+  color: #00e5ff;
+  background: rgba(0, 229, 255, 0.10);
+}
+.signal-stepper-value {
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.15;
+  letter-spacing: 2px;
+  padding: 0 10px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.signal-stepper:focus-within {
   outline: none;
   border-color: #00e5ff;
   box-shadow: 0 0 14px rgba(0, 229, 255, 0.24);
-}
-.signal-select option {
-  background: #02040e;
-  color: #eaffff;
 }
 .signal-tempo-box {
   margin-top: 16px;
@@ -254,6 +287,15 @@
     width: min(100%, 460px);
     padding: 18px 14px;
   }
+  #signal-overlay.signal-menu-mode {
+    padding: 10px;
+  }
+  #signal-overlay.signal-menu-mode .signal-panel {
+    padding: 16px 12px;
+  }
+  #signal-overlay.signal-menu-mode .signal-title {
+    font-size: 42px;
+  }
   .signal-title {
     font-size: 46px;
   }
@@ -266,9 +308,16 @@
     padding-top: 0;
     font-size: 10px;
   }
-  .signal-select {
-    min-height: 44px;
-    font-size: 12px;
+  .signal-stepper {
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
+    min-height: 42px;
+  }
+  .signal-stepper-btn {
+    font-size: 21px;
+  }
+  .signal-stepper-value {
+    font-size: 11px;
+    letter-spacing: 1.5px;
   }
   #signal-overlay.signal-tempo-mode {
     padding: 12px;

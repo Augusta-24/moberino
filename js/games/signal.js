@@ -959,21 +959,36 @@
     } catch(e) {}
   }
 
+  function rocksOverlap(a, b, margin) {
+    if (!a || !b) return false;
+    const minDist = (a.r || 0) + (b.r || 0) + (margin == null ? 8 : margin);
+    const dx = a.x - b.x;
+    const dy = a.y - b.y;
+    return dx * dx + dy * dy < minDist * minDist;
+  }
+
+  function findRockSpawnPosition(rock, forceLane) {
+    for (let tries = 0; tries < 28; tries++) {
+      const lane = rock.lane;
+      const lw = laneWidth();
+      const x = clamp(laneCenter(lane) + rand(-lw * 0.24, lw * 0.24), rock.r + 8, W - rock.r - 8);
+      const y = -rock.r - rand(0, 96) - tries * 6;
+      const candidate = { ...rock, lane, x, y };
+      if (!rocks.some(r => rocksOverlap(candidate, r, 10))) return candidate;
+    }
+    return null;
+  }
+
   function spawnRock(forceLane) {
     if (rocks.length >= MAX_ROCKS) rocks.splice(0, rocks.length - MAX_ROCKS + 1);
     const lane = Number.isFinite(forceLane) ? clamp(Math.floor(forceLane), 0, LANES.length - 1) : Math.floor(Math.random() * LANES.length);
     const option = LANES[lane];
     const layer = activeLayer();
-    const lw = laneWidth();
     const rock = {
       inst: layer.inst,
       label: option.label,
       color: option.color,
       lane,
-      runStep: 0,
-      hp: 1,
-      maxHp: 1,
-      x: clamp(laneCenter(lane) + rand(-lw * 0.24, lw * 0.24), 26, W - 26),
       vx: rand(-10, 10),
       vy: rand(31, 49) + elapsed * 0.0016,
       spin: rand(-2, 2),
@@ -987,21 +1002,17 @@
       const degHi = option.degHi == null ? degLo : option.degHi;
       rock.deg = degLo + Math.floor(Math.random() * (degHi - degLo + 1));
       rock.label = noteNameForDegree(rock.deg);
-      // Multi-hit rocks: 'up' walks the scale, 'same' repeats its note —
-      // drum a rhythm on one pitch.
-      const roll = Math.random();
-      if (roll < 0.2) { rock.hp = 3; rock.maxHp = 3; rock.runMode = 'up'; }
-      else if (roll < 0.42) { rock.hp = Math.random() < 0.5 ? 2 : 3; rock.maxHp = rock.hp; rock.runMode = 'same'; }
       if (layer.inst === 'keys') {
         const span = Math.max(1, degHi - degLo);
         const pitchT = clamp((rock.deg - degLo) / span, 0, 1);
-        rock.r = 26 - pitchT * 8 + rand(-1.2, 1.2) + (rock.maxHp > 1 ? 3 : 0);
+        rock.r = 26 - pitchT * 8 + rand(-1.2, 1.2);
       } else {
-        rock.r = 22 - rock.deg * 0.9 + rand(-2, 3) + (rock.maxHp > 1 ? 4 : 0);
+        rock.r = 22 - rock.deg * 0.9 + rand(-2, 3);
       }
     }
-    rock.y = -rock.r - rand(0, 60);
-    rocks.push(rock);
+    const placed = findRockSpawnPosition(rock, forceLane);
+    if (placed) rocks.push(placed);
+    return placed;
   }
 
   function ensureBoss() {
@@ -1333,6 +1344,37 @@
     if (floatTexts.length > 12) floatTexts.shift();
   }
 
+  function separateRocks() {
+    if (!rocks || rocks.length < 2) return;
+    for (let pass = 0; pass < 2; pass++) {
+      for (let i = 0; i < rocks.length; i++) {
+        for (let j = i + 1; j < rocks.length; j++) {
+          const a = rocks[i], b = rocks[j];
+          const minDist = a.r + b.r + 8;
+          let dx = b.x - a.x;
+          let dy = b.y - a.y;
+          let dist = Math.hypot(dx, dy);
+          if (dist >= minDist) continue;
+          if (dist < 0.001) {
+            dx = (b.lane - a.lane) || 1;
+            dy = 0.5;
+            dist = Math.hypot(dx, dy);
+          }
+          const nx = dx / dist;
+          const ny = dy / dist;
+          const push = (minDist - dist) * 0.5;
+          a.x = clamp(a.x - nx * push, a.r + 6, W - a.r - 6);
+          b.x = clamp(b.x + nx * push, b.r + 6, W - b.r - 6);
+          a.y -= ny * push;
+          b.y += ny * push;
+          const vxPush = nx * Math.min(18, push * 4);
+          a.vx -= vxPush;
+          b.vx += vxPush;
+        }
+      }
+    }
+  }
+
   function burst(x, y, color, n) {
     if (sparks.length > MAX_SPARKS) sparks.splice(0, sparks.length - MAX_SPARKS);
     for (let i = 0; i < n; i++) {
@@ -1353,13 +1395,10 @@
     // The note plays NOW; it lands on the loop at the nearest step —
     // the player's timing is the rhythm.
     const { target, tight, isNextStep } = captureTiming(t);
-    const degStep = rock.runMode === 'up' ? rock.runStep : 0;
-    const note = rock.inst === 'drums' ? null : degreeFreq(rock.deg + degStep, activeLayer().mult);
-    if (rock.inst !== 'drums') rock.label = noteNameForDegree(rock.deg + degStep);
+    const note = rock.inst === 'drums' ? null : degreeFreq(rock.deg, activeLayer().mult);
+    if (rock.inst !== 'drums') rock.label = noteNameForDegree(rock.deg);
     playInstrument(rock.inst, { note, piece: rock.piece, vel: 1 });
     stampNote(rock, target, note, tight, isNextStep);
-    rock.runStep += 1;
-    rock.hp -= 1;
     burst(rock.x, rock.y, rock.color, tight ? 8 : 4);
     combo = tight ? combo + 1 : 0;
     bestCombo = Math.max(bestCombo, combo);
@@ -1367,9 +1406,6 @@
     signal = clamp(signal + (tight ? 1.3 : 0.3), 0, 100);
     distortion = clamp(distortion + (tight ? -0.8 : 2.2), 0, 100);
 
-    if (rock.hp > 0) return false;
-
-    if (rock.maxHp > 1) addFloatText('RUN!', rock.x, rock.y - rock.r - 8, rock.color);
     score += tight ? 24 : 8;
     burst(rock.x, rock.y, rock.color, 12);
     return true;
@@ -1551,9 +1587,11 @@
       boss.phase += dt / 1000;
       boss.x = W * 0.5 + Math.sin(boss.phase * 1.3) * W * 0.22;
       if (t >= boss.nextSpawn) {
-        spawnRock(currentSoloLane);
-        rocks[rocks.length - 1].x = clamp(laneCenter(currentSoloLane) + rand(-laneWidth() * 0.2, laneWidth() * 0.2), 28, W - 28);
-        rocks[rocks.length - 1].vy += 24;
+        const spawned = spawnRock(currentSoloLane);
+        if (spawned) {
+          spawned.x = clamp(spawned.x, spawned.r + 8, W - spawned.r - 8);
+          spawned.vy += 24;
+        }
         boss.nextSpawn = t + 1150;
       }
     }
@@ -1587,6 +1625,7 @@
       r.rot += r.spin * dt / 1000;
       if (r.x < r.r || r.x > W - r.r) r.vx *= -1;
     });
+    separateRocks();
 
     for (let i = rocks.length - 1; i >= 0; i--) {
       const r = rocks[i];
@@ -1672,7 +1711,7 @@
     c.shadowBlur = 14;
     c.fillStyle = r.inst === 'bass' ? '#2c2608' : r.inst === 'keys' ? '#26061e' : r.inst === 'chimes' ? '#1c0a26' : '#062432';
     c.strokeStyle = r.color;
-    c.lineWidth = r.hp < r.maxHp ? 3 : 2;
+    c.lineWidth = 2;
     c.beginPath();
     const points = r.inst === 'bass' ? 8 : 7;
     for (let i = 0; i < points; i++) {
@@ -1690,17 +1729,6 @@
     c.textAlign = 'center';
     c.textBaseline = 'middle';
     c.fillText(r.inst === 'drums' ? '●' : (r.label || '♪'), 0, 1);
-    if (r.maxHp > 1) {
-      const done = r.maxHp - r.hp;
-      for (let i = 0; i < r.maxHp; i++) {
-        const a = -Math.PI / 2 + i / r.maxHp * Math.PI * 2;
-        c.globalAlpha = i < done ? 0.95 : 0.28;
-        c.beginPath();
-        c.arc(Math.cos(a) * (r.r + 6), Math.sin(a) * (r.r + 6), 2.1, 0, Math.PI * 2);
-        c.fill();
-      }
-      c.globalAlpha = 1;
-    }
     c.restore();
   }
 
@@ -2139,6 +2167,7 @@
     syncSignalChrome();
     overlay.classList.remove('hidden');
     overlay.classList.remove('signal-tempo-mode');
+    overlay.classList.add('signal-menu-mode');
     overlay.innerHTML = `
       <div class="signal-panel">
         <div class="signal-title">SIGNAL DRIFT</div>
@@ -2150,6 +2179,7 @@
 
   function showTempoSetup() {
     overlay.classList.remove('hidden');
+    overlay.classList.remove('signal-menu-mode');
     overlay.classList.add('signal-tempo-mode');
     overlay.innerHTML = `
       <div class="signal-panel">
@@ -2172,10 +2202,12 @@
   function presetControlsHTML() {
     const group = (key, label) => `
       <div class="signal-preset-row">
-        <label class="signal-preset-label" for="signal-${key}-select">${label}</label>
-        <select id="signal-${key}-select" class="signal-select" onchange="signalSetPreset('${key}', this.value)">
-          ${SIGNAL_PRESETS[key].map(p => `<option value="${p.id}" ${signalSettings[key] === p.id ? 'selected' : ''}>${p.label}</option>`).join('')}
-        </select>
+        <div class="signal-preset-label">${label}</div>
+        <div class="signal-stepper" role="group" aria-label="${label}">
+          <button type="button" class="signal-stepper-btn" onclick="signalCyclePreset('${key}', -1)" aria-label="Previous ${label}">‹</button>
+          <button type="button" class="signal-stepper-value" onclick="signalCyclePreset('${key}', 1)" aria-label="Change ${label}">${presetLabel(key, signalSettings[key])}</button>
+          <button type="button" class="signal-stepper-btn" onclick="signalCyclePreset('${key}', 1)" aria-label="Next ${label}">›</button>
+        </div>
       </div>`;
     return `<div class="signal-presets">
       ${group('style', 'PALETTE')}
@@ -2287,6 +2319,7 @@
     updateLoopButton();
     overlay.classList.remove('hidden');
     overlay.classList.remove('signal-tempo-mode');
+    overlay.classList.remove('signal-menu-mode');
     overlay.innerHTML = `
       <div class="signal-panel">
         <div class="signal-title">TRACK BUILT</div>
@@ -2312,6 +2345,7 @@
     const hitCount = gridStamps().reduce((n, s) => n + (s.pieces ? s.pieces.length : s.notes ? s.notes.length : 1), 0);
     overlay.classList.remove('hidden');
     overlay.classList.remove('signal-tempo-mode');
+    overlay.classList.remove('signal-menu-mode');
     overlay.innerHTML = `
       <div class="signal-panel">
         <div class="signal-title">TRACK BUILT</div>
@@ -2500,6 +2534,7 @@
   async function showJukebox() {
     overlay.classList.remove('hidden');
     overlay.classList.remove('signal-tempo-mode');
+    overlay.classList.remove('signal-menu-mode');
     state = 'built';
     loopEndArmed = false;
     updateLoopButton();
@@ -2613,6 +2648,15 @@
   window.signalSetPreset = function(group, value) {
     if (!SIGNAL_PRESETS[group] || !SIGNAL_PRESETS[group].some(p => p.id === value)) return;
     signalSettings[group] = value;
+    applySettings();
+    showIntro();
+  };
+  window.signalCyclePreset = function(group, dir) {
+    const presets = SIGNAL_PRESETS[group];
+    if (!presets || !presets.length) return;
+    const current = presets.findIndex(p => p.id === signalSettings[group]);
+    const next = (current + (dir || 1) + presets.length) % presets.length;
+    signalSettings[group] = presets[next].id;
     applySettings();
     showIntro();
   };
