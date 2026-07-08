@@ -13,6 +13,8 @@
   const MAX_ROCKS = 32;
   const MAX_SPARKS = 120;
   const MAX_DRUM_STACK = 6;
+  const MAX_PIANO_STACK = 6;
+  const SIGNAL_MASTER_GAIN = 1.22;
   // Small reserved footer; gameplay now uses the room formerly occupied by beat dots.
   const LOOP_PANEL_H = 24;
   const PAD_COLS = 4;
@@ -41,6 +43,10 @@
   const MOOD_SEMIS = {
     minor: [0, 3, 5, 7, 10],
     major: [0, 2, 4, 7, 9],
+    blues: [0, 3, 5, 6, 7, 10],
+    dorian: [0, 2, 3, 5, 7, 9, 10],
+    egyptian: [0, 2, 5, 7, 10],
+    hirajoshi: [0, 2, 3, 7, 8],
   };
   const LANES = [
     { label: 'KICK', color: '#00e5ff' },
@@ -94,10 +100,22 @@
       { id: 'boss-rave', label: 'BOSS RAVE' },
       { id: 'chiptune', label: 'CHIPTUNE' },
       { id: 'dark-minor', label: 'DARK MINOR' },
+      { id: 'vaporwave', label: 'VAPORWAVE' },
+      { id: 'toy-box', label: 'TOY BOX' },
+      { id: 'steel-island', label: 'STEEL ISLAND' },
+      { id: 'jazz-club', label: 'JAZZ CLUB' },
+      { id: 'haunted-organ', label: 'HAUNTED ORGAN' },
+      { id: 'desert-caravan', label: 'DESERT' },
+      { id: 'cyber-garage', label: 'CYBER GARAGE' },
+      { id: 'crystal-cave', label: 'CRYSTAL CAVE' },
     ],
     mood: [
       { id: 'minor', label: 'MINOR' },
       { id: 'major', label: 'MAJOR' },
+      { id: 'blues', label: 'BLUES' },
+      { id: 'dorian', label: 'DORIAN' },
+      { id: 'egyptian', label: 'EGYPTIAN' },
+      { id: 'hirajoshi', label: 'HIRO' },
     ],
     tempo: [
       { id: 'chill', label: 'CHILL', beatMs: 340 },
@@ -112,10 +130,19 @@
     'boss-rave': { root: 116.54, rootSemi: 10, bassWave: 'sawtooth', keysWave: 'triangle', chimeWave: 'triangle', drumVol: 1.22, shimmer: 1.1 },
     'chiptune': { root: 146.83, rootSemi: 2, bassWave: 'square', keysWave: 'square', chimeWave: 'square', drumVol: 0.85, shimmer: 0.8 },
     'dark-minor': { root: 103.83, rootSemi: 8, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'triangle', drumVol: 1.05, shimmer: 0.7, forceMinor: true },
+    'vaporwave': { root: 92.50, rootSemi: 6, bassWave: 'sine', keysWave: 'sine', chimeWave: 'triangle', drumVol: 0.72, shimmer: 1.8 },
+    'toy-box': { root: 130.81, rootSemi: 0, bassWave: 'triangle', keysWave: 'square', chimeWave: 'sine', drumVol: 0.74, shimmer: 1.35 },
+    'steel-island': { root: 98.00, rootSemi: 7, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.92, shimmer: 2.2 },
+    'jazz-club': { root: 116.54, rootSemi: 10, bassWave: 'sine', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.86, shimmer: 0.9 },
+    'haunted-organ': { root: 87.31, rootSemi: 5, bassWave: 'triangle', keysWave: 'sine', chimeWave: 'triangle', drumVol: 0.78, shimmer: 0.55, forceMinor: true },
+    'desert-caravan': { root: 146.83, rootSemi: 2, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.95, shimmer: 1.15 },
+    'cyber-garage': { root: 123.47, rootSemi: 11, bassWave: 'sawtooth', keysWave: 'square', chimeWave: 'square', drumVol: 1.35, shimmer: 0.7 },
+    'crystal-cave': { root: 104.65, rootSemi: 8, bassWave: 'sine', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.66, shimmer: 2.5 },
   };
 
   let canvas = null, ctx = null, overlay = null, loopButton = null, resetButton = null, signalExitButton = null;
   let W = 0, H = 0, dpr = 1, raf = 0, last = 0, state = 'idle';
+  let signalAudioCtx = null, signalMasterGain = null, signalLimiter = null;
   let player, bullets, rocks, sparks, floatTexts, stars, boss;
   let score = 0, signal = 0, distortion = 0, health = 3, elapsed = 0;
   let combo = 0, bestCombo = 0, currentSoloLane = 1;
@@ -293,6 +320,25 @@
     return null;
   }
 
+  function signalOutput() {
+    const c = audioCtx();
+    if (!c) return null;
+    if (signalAudioCtx !== c || !signalMasterGain || !signalLimiter) {
+      signalAudioCtx = c;
+      signalMasterGain = c.createGain();
+      signalLimiter = c.createDynamicsCompressor();
+      signalMasterGain.gain.value = SIGNAL_MASTER_GAIN;
+      signalLimiter.threshold.value = -8;
+      signalLimiter.knee.value = 16;
+      signalLimiter.ratio.value = 6;
+      signalLimiter.attack.value = 0.003;
+      signalLimiter.release.value = 0.12;
+      signalMasterGain.connect(signalLimiter);
+      signalLimiter.connect(c.destination);
+    }
+    return signalMasterGain;
+  }
+
   function tone(freq, type, delay, dur, vol, endFreq) {
     const c = audioCtx();
     if (!c) return;
@@ -306,7 +352,7 @@
     g.gain.linearRampToValueAtTime(Math.max(0.0001, vol), t0 + 0.004);
     g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
     o.connect(g);
-    g.connect(c.destination);
+    g.connect(signalOutput());
     o.start(t0);
     o.stop(t0 + dur + 0.03);
   }
@@ -331,7 +377,7 @@
     g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
     o.connect(filter);
     filter.connect(g);
-    g.connect(c.destination);
+    g.connect(signalOutput());
     if (opts.echo) {
       const d = c.createDelay();
       const fb = c.createGain();
@@ -343,7 +389,7 @@
       d.connect(fb);
       fb.connect(d);
       d.connect(eg);
-      eg.connect(c.destination);
+      eg.connect(signalOutput());
     }
     o.start(t0);
     o.stop(t0 + dur + 0.05);
@@ -372,7 +418,7 @@
     g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
     src.connect(filter);
     filter.connect(g);
-    g.connect(c.destination);
+    g.connect(signalOutput());
     src.start(t0);
     src.stop(t0 + dur + 0.02);
   }
@@ -453,7 +499,7 @@
       g.gain.linearRampToValueAtTime(vol * v, t0 + 0.32);
       g.gain.exponentialRampToValueAtTime(0.001, t0 + 1.7);
       o.connect(g);
-      g.connect(c.destination);
+      g.connect(signalOutput());
       o.start(t0);
       o.stop(t0 + 1.8);
     });
@@ -501,6 +547,17 @@
       playSwellChord(o.note, o.vel, o.delay);
       return;
     }
+    if (Array.isArray(o.notes) && o.notes.length) {
+      const seen = {};
+      o.notes.slice(0, MAX_PIANO_STACK).forEach((note, i) => {
+        const key = Math.round(note || 0);
+        const repeat = seen[key] || 0;
+        seen[key] = repeat + 1;
+        const split = i * 0.012 + repeat * 0.018;
+        playPitched(inst, note, (o.vel || 1) * 0.86, (o.delay || 0) + split);
+      });
+      return;
+    }
     playPitched(inst, o.note, o.vel, o.delay);
   }
 
@@ -508,6 +565,7 @@
     if (!slot || !slot.inst) return;
     const vel = (slot.vel || 1) * 0.8;
     if (slot.inst === 'drums') playInstrument('drums', { pieces: slot.pieces, tunes: slot.tunes, vel });
+    else if (slot.inst === 'keys' && slot.notes && slot.notes.length) playInstrument(slot.inst, { notes: slot.notes, vel });
     else playInstrument(slot.inst, { note: slot.note, vel });
   }
 
@@ -934,7 +992,13 @@
       const roll = Math.random();
       if (roll < 0.2) { rock.hp = 3; rock.maxHp = 3; rock.runMode = 'up'; }
       else if (roll < 0.42) { rock.hp = Math.random() < 0.5 ? 2 : 3; rock.maxHp = rock.hp; rock.runMode = 'same'; }
-      rock.r = 22 - rock.deg * 0.9 + rand(-2, 3) + (rock.maxHp > 1 ? 4 : 0);
+      if (layer.inst === 'keys') {
+        const span = Math.max(1, degHi - degLo);
+        const pitchT = clamp((rock.deg - degLo) / span, 0, 1);
+        rock.r = 26 - pitchT * 8 + rand(-1.2, 1.2) + (rock.maxHp > 1 ? 3 : 0);
+      } else {
+        rock.r = 22 - rock.deg * 0.9 + rand(-2, 3) + (rock.maxHp > 1 ? 4 : 0);
+      }
     }
     rock.y = -rock.r - rand(0, 60);
     rocks.push(rock);
@@ -1068,6 +1132,27 @@
         slot.skip = isNextStep ? 1 : 0;
       } else {
         slot = { layerId: layer.id, layerIndex: currentLayerIndex, inst: 'drums', pieces: [rock.piece], tunes: [tune], color: rock.color, label: rock.label, tight, vel, skip: isNextStep ? 1 : 0 };
+        bucket.push(slot);
+      }
+    } else if (layer.inst === 'keys') {
+      const label = rock.label || noteNameForDegree(rock.deg || 0);
+      if (slot) {
+        slot.notes = slot.notes || (slot.note ? [slot.note] : []);
+        slot.labels = slot.labels || (slot.label ? [slot.label] : []);
+        slot.notes.push(note);
+        slot.labels.push(label);
+        while (slot.notes.length > MAX_PIANO_STACK) {
+          slot.notes.shift();
+          slot.labels.shift();
+        }
+        slot.note = slot.notes[slot.notes.length - 1];
+        slot.label = slot.labels[slot.labels.length - 1] || label;
+        slot.color = rock.color;
+        slot.tight = slot.tight && tight;
+        slot.vel = Math.max(slot.vel, vel);
+        slot.skip = isNextStep ? 1 : 0;
+      } else {
+        slot = { layerId: layer.id, layerIndex: currentLayerIndex, inst: layer.inst, note, notes: [note], label, labels: [label], color: rock.color, tight, vel, skip: isNextStep ? 1 : 0 };
         bucket.push(slot);
       }
     } else {
@@ -1454,7 +1539,11 @@
 
     if (t >= spawnAt) {
       spawnRock();
-      const cadence = clamp(1080 - elapsed * 0.0025, 560, 1080);
+      if (activeLayer().inst === 'keys' && Math.random() < 0.28) spawnRock();
+      const isKeys = activeLayer().inst === 'keys';
+      const cadence = isKeys
+        ? clamp(760 - elapsed * 0.0022, 420, 760)
+        : clamp(1080 - elapsed * 0.0025, 560, 1080);
       spawnAt = t + cadence;
     }
 
@@ -1824,6 +1913,16 @@
                 c.fillRect(mx, y, 1, rowH);
               }
               c.globalAlpha = row === currentLayerIndex && state === 'playing' ? 0.95 : 0.58;
+            } else if (slot.inst === 'keys' && slot.notes && slot.notes.length > 1) {
+              const count = Math.min(slot.notes.length, MAX_PIANO_STACK);
+              const cellW = Math.max(2, w - 3);
+              c.fillStyle = '#02040e';
+              c.globalAlpha = 0.30;
+              for (let m = 1; m < count; m++) {
+                const mx = loopX + i * w + 1 + (cellW * m) / count;
+                c.fillRect(mx, y, 1, rowH);
+              }
+              c.globalAlpha = row === currentLayerIndex && state === 'playing' ? 0.95 : 0.58;
             }
           }
           const flash = loopFlash[i];
@@ -2042,16 +2141,7 @@
     overlay.innerHTML = `
       <div class="signal-panel">
         <div class="signal-title">SIGNAL DRIFT</div>
-        <div class="signal-subtitle">SET THE TEMPO, THEN BUILD THE LOOP LIVE.<br>EVERY HIT PLAYS A NOTE AND RECORDS IT INTO YOUR LOOP.<br>ALL NOTES FIT THE KEY — NO WRONG NOTES.</div>
         ${presetControlsHTML()}
-        <div class="signal-stats">
-          <div class="signal-stat">LAYER 1<b>DRUMS</b></div>
-          <div class="signal-stat">LAYER 2<b>BASS</b></div>
-          <div class="signal-stat">LAYER 3<b>KEYS</b></div>
-          <div class="signal-stat">LAYER 4<b>CHIMES</b></div>
-          <div class="signal-stat">LAYER 5<b>SWELL</b></div>
-          <div class="signal-stat">WRONG NOTES<b>NONE</b></div>
-        </div>
         <button class="signal-btn" onclick="signalStart()">START SIGNAL</button>
         <button class="signal-btn secondary" onclick="signalShowJukebox()">JUKEBOX</button>
       </div>`;
@@ -2105,6 +2195,11 @@
         const hits = picks.reduce((n, s) => n + (s.pieces ? s.pieces.length : 1), 0);
         return `<div class="signal-stat">${layer.name}<b style="color:${picks[0].color}">${hits} HITS</b></div>`;
       }
+      if (layer.inst === 'keys') {
+        const hits = picks.reduce((n, s) => n + (s.notes ? s.notes.length : 1), 0);
+        const seq = picks.flatMap(s => s.labels && s.labels.length ? s.labels : [s.label]).slice(0, 10).join(' ') + (hits > 10 ? ' …' : '');
+        return `<div class="signal-stat">${layer.name}<b style="color:${picks[0].color};font-size:11px;letter-spacing:1px">${seq || `${hits} HITS`}</b></div>`;
+      }
       const seq = picks.slice(0, 10).map(s => s.label).join(' ') + (picks.length > 10 ? ' …' : '');
       return `<div class="signal-stat">${layer.name}<b style="color:${picks[0].color};font-size:11px;letter-spacing:1px">${seq}</b></div>`;
     }).join('');
@@ -2113,9 +2208,10 @@
 
   function compactTrackStatsHTML() {
     const stamps = gridStamps();
+    const hitCount = stamps.reduce((n, s) => n + (s.pieces ? s.pieces.length : s.notes ? s.notes.length : 1), 0);
     const grooveTotal = grooveByLayer.reduce((sum, g) => sum + (g && !g.rest ? g.total : 0), 0);
     return `<div class="signal-stats">
-      <div class="signal-stat">TRACK<b>${stamps.length} HITS</b></div>
+      <div class="signal-stat">TRACK<b>${hitCount} HITS</b></div>
       <div class="signal-stat">GROOVE<b>${grooveTotal}</b></div>
     </div>`;
   }
@@ -2142,9 +2238,11 @@
           layerId: v.layerId,
           inst: v.inst,
           note: v.note || null,
+          notes: v.notes ? v.notes.slice() : null,
           pieces: v.pieces ? v.pieces.slice() : null,
           tunes: v.tunes ? v.tunes.slice() : null,
           label: v.label || '',
+          labels: v.labels ? v.labels.slice() : null,
           color: v.color,
           tight: !!v.tight,
           vel: v.vel || 1,
@@ -2210,6 +2308,7 @@
     updateLoopButton();
     const seconds = Math.round(elapsed / 1000);
     const canSave = won || score > 0;
+    const hitCount = gridStamps().reduce((n, s) => n + (s.pieces ? s.pieces.length : s.notes ? s.notes.length : 1), 0);
     overlay.classList.remove('hidden');
     overlay.innerHTML = `
       <div class="signal-panel">
@@ -2219,12 +2318,12 @@
           <div class="signal-stat">SCORE<b>${score}</b></div>
           <div class="signal-stat">TIME<b>${seconds}s</b></div>
           <div class="signal-stat">GROOVE<b>${Math.round(signal)}%</b></div>
-          <div class="signal-stat">TRACK<b>${gridStamps().length} HITS</b></div>
+          <div class="signal-stat">TRACK<b>${hitCount} HITS</b></div>
         </div>
         ${canSave ? `
           <div style="display:flex;gap:8px;margin-top:14px">
             <input id="signal-name" maxlength="12" placeholder="NAME" style="flex:1;min-width:0;height:42px;box-sizing:border-box;background:#02040e;border:1.5px solid ${COLOR};border-radius:4px;color:#fff;text-align:center;text-transform:uppercase;font-family:'VCR',monospace;font-size:14px;letter-spacing:3px">
-            <button class="signal-btn" style="width:58px;margin:0" onclick="signalSaveRecipe()">▶</button>
+            <button id="signal-save-btn" class="signal-btn" style="width:58px;margin:0" onclick="signalSaveRecipe()">▶</button>
           </div>
           <div id="signal-save-status" class="signal-subtitle" style="min-height:18px;margin-top:8px"></div>` : ''}
         ${won ? `<button class="signal-btn secondary" onclick="signalShowJukebox()">LOCAL JUKEBOX</button>` : ''}
@@ -2269,6 +2368,7 @@
 
   async function saveRecipe() {
     const input = document.getElementById('signal-name');
+    const button = document.getElementById('signal-save-btn');
     const status = document.getElementById('signal-save-status');
     const name = ((input && input.value) || '').trim() || 'MOBE';
     const recipe = currentRecipe();
@@ -2290,6 +2390,7 @@
     } catch(e) {}
     if (status) status.textContent = 'SAVED LOCAL. SYNCING...';
     if (input) input.disabled = true;
+    if (button) button.disabled = true;
     if (window.SignalRecipeRemote && typeof window.SignalRecipeRemote.submit === 'function') {
       try {
         await withTimeout(window.SignalRecipeRemote.submit(name, score, extra, recipe), 3500);
@@ -2298,7 +2399,6 @@
         if (status) status.textContent = 'SAVED LOCAL';
       }
     }
-    showJukebox();
   }
 
   function recipeToLoop(recipe) {
@@ -2317,9 +2417,11 @@
           layerIndex: choiceLayerIndex(choice),
           inst: choice.inst,
           note: choice.note || null,
+          notes: choice.notes ? choice.notes.slice() : null,
           pieces: choice.pieces ? choice.pieces.slice() : (choice.piece ? [choice.piece] : null),
           tunes: choice.tunes ? choice.tunes.slice() : null,
           label: choice.label || '',
+          labels: choice.labels ? choice.labels.slice() : null,
           color: choice.color || COLOR,
           tight: choice.tight !== false,
           vel: choice.vel || 1,
@@ -2407,6 +2509,7 @@
         <div class="signal-subtitle">${result.online ? 'SHARED SIGNAL DRIFT RECIPES.' : 'LOCAL SAVED SIGNAL DRIFT RECIPES.'}</div>
         <div class="signal-jukebox">${list}</div>
         <button class="signal-btn secondary" onclick="signalJukeboxBack()">BACK</button>
+        ${backButtonHTML()}
       </div>`;
   }
 

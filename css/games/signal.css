@@ -85,20 +85,20 @@
 .signal-reset-btn.hidden { display: none; }
 .signal-reset-btn:active { transform: translateY(1px); }
 .signal-panel {
-  width: min(100%, 370px);
+  width: min(100%, 720px);
   max-height: 100%;
   overflow-y: auto;
   border: 2px solid rgba(0, 229, 255, 0.42);
   border-radius: 8px;
   background: linear-gradient(180deg, rgba(4, 18, 45, 0.94), rgba(10, 3, 28, 0.96));
   box-shadow: 0 0 28px rgba(0, 229, 255, 0.18), inset 0 0 24px rgba(0, 229, 255, 0.06);
-  padding: 18px 16px;
+  padding: 24px 22px;
   box-sizing: border-box;
   text-align: center;
 }
 .signal-title {
   font-family: 'Bebas Neue', cursive;
-  font-size: 44px;
+  font-size: 62px;
   line-height: 0.95;
   letter-spacing: 3px;
   color: #00e5ff;
@@ -115,37 +115,40 @@
 .signal-presets {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 14px;
+  gap: 14px;
+  margin-top: 22px;
 }
 .signal-preset-row {
   display: grid;
-  grid-template-columns: 58px 1fr;
-  align-items: center;
-  gap: 8px;
+  grid-template-columns: 96px 1fr;
+  align-items: start;
+  gap: 12px;
 }
 .signal-preset-label {
   font-family: 'VCR', monospace;
-  font-size: 8px;
-  letter-spacing: 1.8px;
+  font-size: 11px;
+  line-height: 1.3;
+  letter-spacing: 2px;
   color: rgba(234, 255, 255, 0.42);
   text-align: right;
+  padding-top: 12px;
 }
 .signal-preset-options {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 8px;
 }
 .signal-chip {
-  min-height: 27px;
+  min-height: 40px;
   border: 1px solid rgba(0, 229, 255, 0.28);
   border-radius: 5px;
   background: rgba(0, 229, 255, 0.08);
   color: rgba(234, 255, 255, 0.68);
   font-family: 'VCR', monospace;
-  font-size: 7.5px;
-  letter-spacing: 1px;
-  padding: 6px 7px;
+  font-size: 10px;
+  line-height: 1.15;
+  letter-spacing: 1.5px;
+  padding: 9px 11px;
   cursor: pointer;
 }
 .signal-chip.active {
@@ -185,10 +188,10 @@
 }
 .signal-btn {
   width: 100%;
-  min-height: 48px;
-  margin-top: 14px;
+  min-height: 56px;
+  margin-top: 18px;
   font-family: 'VCR', monospace;
-  font-size: 12px;
+  font-size: 14px;
   letter-spacing: 3px;
   color: #02040e;
   background: #00e5ff;
@@ -204,6 +207,30 @@
   box-shadow: none;
 }
 .signal-btn:active { transform: translateY(1px); }
+
+@media (max-width: 560px) {
+  .signal-panel {
+    width: min(100%, 460px);
+    padding: 20px 14px;
+  }
+  .signal-title {
+    font-size: 50px;
+  }
+  .signal-preset-row {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+  .signal-preset-label {
+    text-align: left;
+    padding-top: 0;
+    font-size: 10px;
+  }
+  .signal-chip {
+    min-height: 38px;
+    font-size: 9px;
+    padding: 9px 9px;
+  }
+}
 .signal-stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
