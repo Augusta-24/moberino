@@ -14,7 +14,7 @@
   const MAX_SPARKS = 120;
   const MAX_DRUM_STACK = 6;
   const MAX_PIANO_STACK = 6;
-  const SIGNAL_MASTER_GAIN = 1.22;
+  const SIGNAL_MASTER_GAIN = 1.30;
   // Small reserved footer; gameplay now uses the room formerly occupied by beat dots.
   const LOOP_PANEL_H = 24;
   const PAD_COLS = 4;
@@ -131,19 +131,19 @@
   };
   // Palettes: key center + instrument character. Never breaks the pentatonic guarantee.
   const STYLE_DEFS = {
-    'space-funk': { root: 110.00, rootSemi: 9, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'triangle', drumVol: 1, shimmer: 1 },
-    'dream-synth': { root: 123.47, rootSemi: 11, bassWave: 'sine', keysWave: 'sine', chimeWave: 'triangle', drumVol: 0.8, shimmer: 1.5 },
-    'boss-rave': { root: 116.54, rootSemi: 10, bassWave: 'sawtooth', keysWave: 'triangle', chimeWave: 'triangle', drumVol: 1.22, shimmer: 1.1 },
-    'chiptune': { root: 146.83, rootSemi: 2, bassWave: 'square', keysWave: 'square', chimeWave: 'square', drumVol: 0.85, shimmer: 0.8 },
-    'dark-minor': { root: 103.83, rootSemi: 8, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'triangle', drumVol: 1.05, shimmer: 0.7, forceMinor: true },
-    'vaporwave': { root: 92.50, rootSemi: 6, bassWave: 'sine', keysWave: 'sine', chimeWave: 'triangle', drumVol: 0.72, shimmer: 1.8 },
-    'toy-box': { root: 130.81, rootSemi: 0, bassWave: 'triangle', keysWave: 'square', chimeWave: 'sine', drumVol: 0.74, shimmer: 1.35 },
-    'steel-island': { root: 98.00, rootSemi: 7, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.92, shimmer: 2.2 },
-    'jazz-club': { root: 116.54, rootSemi: 10, bassWave: 'sine', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.86, shimmer: 0.9 },
-    'haunted-organ': { root: 87.31, rootSemi: 5, bassWave: 'triangle', keysWave: 'sine', chimeWave: 'triangle', drumVol: 0.78, shimmer: 0.55, forceMinor: true },
-    'desert-caravan': { root: 146.83, rootSemi: 2, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.95, shimmer: 1.15 },
-    'cyber-garage': { root: 123.47, rootSemi: 11, bassWave: 'sawtooth', keysWave: 'square', chimeWave: 'square', drumVol: 1.35, shimmer: 0.7 },
-    'crystal-cave': { root: 104.65, rootSemi: 8, bassWave: 'sine', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.66, shimmer: 2.5 },
+    'space-funk': { root: 110.00, rootSemi: 9, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'triangle', drumVol: 1, shimmer: 1, bassWeight: 1.08, keyGlow: 1, echo: 0.9, resonance: 1.05 },
+    'dream-synth': { root: 123.47, rootSemi: 11, bassWave: 'sine', keysWave: 'sine', chimeWave: 'triangle', drumVol: 0.8, shimmer: 1.5, bassWeight: 0.86, keyGlow: 1.3, echo: 1.35, resonance: 0.85 },
+    'boss-rave': { root: 116.54, rootSemi: 10, bassWave: 'sawtooth', keysWave: 'triangle', chimeWave: 'triangle', drumVol: 1.22, shimmer: 1.1, bassWeight: 1.22, keyGlow: 1.08, echo: 0.75, resonance: 1.35, master: 1.06 },
+    'chiptune': { root: 146.83, rootSemi: 2, bassWave: 'square', keysWave: 'square', chimeWave: 'square', drumVol: 0.85, shimmer: 0.8, bassWeight: 0.9, keyGlow: 0.86, echo: 0.35, resonance: 1.65 },
+    'dark-minor': { root: 103.83, rootSemi: 8, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'triangle', drumVol: 1.05, shimmer: 0.7, bassWeight: 1.18, keyGlow: 0.9, echo: 0.7, resonance: 1.12, forceMinor: true },
+    'vaporwave': { root: 92.50, rootSemi: 6, bassWave: 'sine', keysWave: 'sine', chimeWave: 'triangle', drumVol: 0.72, shimmer: 1.8, bassWeight: 0.8, keyGlow: 1.45, echo: 1.8, resonance: 0.7 },
+    'toy-box': { root: 130.81, rootSemi: 0, bassWave: 'triangle', keysWave: 'square', chimeWave: 'sine', drumVol: 0.74, shimmer: 1.35, bassWeight: 0.76, keyGlow: 0.94, echo: 0.65, resonance: 1.45 },
+    'steel-island': { root: 98.00, rootSemi: 7, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.92, shimmer: 2.2, bassWeight: 1, keyGlow: 1.08, echo: 1.15, resonance: 1.7 },
+    'jazz-club': { root: 116.54, rootSemi: 10, bassWave: 'sine', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.86, shimmer: 0.9, bassWeight: 0.94, keyGlow: 0.82, echo: 0.55, resonance: 0.95, master: 0.96 },
+    'haunted-organ': { root: 87.31, rootSemi: 5, bassWave: 'triangle', keysWave: 'sine', chimeWave: 'triangle', drumVol: 0.78, shimmer: 0.55, bassWeight: 1.12, keyGlow: 1.12, echo: 1.05, resonance: 1.25, forceMinor: true },
+    'desert-caravan': { root: 146.83, rootSemi: 2, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.95, shimmer: 1.15, bassWeight: 0.94, keyGlow: 0.96, echo: 0.82, resonance: 1.55 },
+    'cyber-garage': { root: 123.47, rootSemi: 11, bassWave: 'sawtooth', keysWave: 'square', chimeWave: 'square', drumVol: 1.35, shimmer: 0.7, bassWeight: 1.25, keyGlow: 1, echo: 0.45, resonance: 1.9, master: 1.08 },
+    'crystal-cave': { root: 104.65, rootSemi: 8, bassWave: 'sine', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.66, shimmer: 2.5, bassWeight: 0.74, keyGlow: 1.35, echo: 1.55, resonance: 1.6 },
   };
 
   let canvas = null, ctx = null, overlay = null, loopButton = null, resetButton = null, signalExitButton = null;
@@ -154,7 +154,7 @@
   let combo = 0, bestCombo = 0, currentSoloLane = 1;
   let currentLayerIndex = 0, additionsThisLayer = 0, totalAdditions = 0;
   let recordedChoices = [], grooveByLayer = [], lastGrooveToast = null, replaying = false, replayUntil = 0;
-  let jukeboxRows = [];
+  let jukeboxRows = [], jukeboxBackTarget = 'intro';
   let signalSettings = { style: 'space-funk', mood: 'minor', tempo: 'medium' };
   let beatMs = DEFAULT_BEAT_MS;
   let laneFlash = [0, 0, 0];
@@ -178,6 +178,17 @@
   function laneIndexForX(x) { return clamp(Math.floor(x / Math.max(1, laneWidth())), 0, LANES.length - 1); }
   function laneCenter(i) { return laneWidth() * (i + 0.5); }
   function styleDef() { return STYLE_DEFS[signalSettings.style] || STYLE_DEFS['space-funk']; }
+  function soundProfile() {
+    return {
+      bassWeight: 1,
+      keyGlow: 1,
+      echo: 1,
+      resonance: 1,
+      shimmer: 1,
+      master: 1,
+      ...styleDef(),
+    };
+  }
   function moodSemis() {
     const id = styleDef().forceMinor ? 'minor' : (signalSettings.mood || 'minor');
     return MOOD_SEMIS[id] || MOOD_SEMIS.minor;
@@ -292,6 +303,7 @@
   function applySettings() {
     const tempo = SIGNAL_PRESETS.tempo.find(t => t.id === signalSettings.tempo) || SIGNAL_PRESETS.tempo[1];
     beatMs = tempo.beatMs || DEFAULT_BEAT_MS;
+    refreshSignalOutput();
   }
   function tempoBpm() {
     return clamp(Math.round(60000 / (beatMs * 4)), MIN_TEMPO_BPM, MAX_TEMPO_BPM);
@@ -342,7 +354,19 @@
       signalMasterGain.connect(signalLimiter);
       signalLimiter.connect(c.destination);
     }
+    refreshSignalOutput();
     return signalMasterGain;
+  }
+
+  function refreshSignalOutput() {
+    if (!signalMasterGain || !signalLimiter) return;
+    const d = soundProfile();
+    signalMasterGain.gain.value = SIGNAL_MASTER_GAIN * (d.master || 1);
+    signalLimiter.threshold.value = -7.2;
+    signalLimiter.knee.value = 18;
+    signalLimiter.ratio.value = 5.2;
+    signalLimiter.attack.value = 0.003;
+    signalLimiter.release.value = 0.14;
   }
 
   function tone(freq, type, delay, dur, vol, endFreq) {
@@ -432,7 +456,8 @@
   // ── Instrument recipes ported from space.js: little acoustic caricatures
   //    built from 2-3 stacked tones with slight detune drift.
   function playDrumPiece(piece, vel, delay, tune) {
-    const v = (vel == null ? 1 : vel) * styleDef().drumVol;
+    const d = soundProfile();
+    const v = (vel == null ? 1 : vel) * d.drumVol;
     const dl = delay || 0;
     // tune 0..1 maps across the pad row: left = lower/tighter, right = higher/opener.
     const tn = tune == null ? 0.5 : clamp(tune, 0, 1);
@@ -494,6 +519,7 @@
   function playSwellChord(note, vel, delay, shape) {
     const c = audioCtx();
     if (!c) return;
+    const d = soundProfile();
     const opts = shape || {};
     const v = vel == null ? 1 : vel;
     const f = Math.max(30, note || styleDef().root * 2);
@@ -501,7 +527,7 @@
     const tension = clamp(opts.tension == null ? 0.5 : opts.tension, 0, 1);
     const dur = 1.25 + openness * 0.72;
     const attack = 0.20 + (1 - openness) * 0.24;
-    const cutoff = 520 + openness * 1120 + tension * 340;
+    const cutoff = (520 + openness * 1120 + tension * 340) * d.resonance;
     [[1, 0.030], [1.5, 0.018], [2, 0.012], [2.5, 0.006 * tension]].forEach(([m, vol], i) => {
       const t0 = c.currentTime + (delay || 0) + 0.01 + i * 0.035;
       const o = c.createOscillator();
@@ -512,24 +538,24 @@
       filter.type = 'lowpass';
       filter.frequency.setValueAtTime(cutoff + i * 180, t0);
       filter.frequency.exponentialRampToValueAtTime(Math.max(220, cutoff * 0.64), t0 + dur);
-      filter.Q.setValueAtTime(0.7 + tension * 0.9, t0);
+      filter.Q.setValueAtTime((0.7 + tension * 0.9) * d.resonance, t0);
       g.gain.setValueAtTime(0.0001, t0);
       g.gain.linearRampToValueAtTime(vol * v, t0 + attack);
       g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
       o.connect(filter);
       filter.connect(g);
       g.connect(signalOutput());
-      if (i < 2 && openness > 0.35) {
-        const d = c.createDelay();
+      if (i < 2 && openness > 0.35 && d.echo > 0.45) {
+        const delayNode = c.createDelay();
         const fb = c.createGain();
         const eg = c.createGain();
-        d.delayTime.setValueAtTime(0.18 + tension * 0.08, t0);
-        fb.gain.setValueAtTime(0.16 + openness * 0.06, t0);
-        eg.gain.setValueAtTime(0.07 + openness * 0.05, t0);
-        g.connect(d);
-        d.connect(fb);
-        fb.connect(d);
-        d.connect(eg);
+        delayNode.delayTime.setValueAtTime(0.18 + tension * 0.08, t0);
+        fb.gain.setValueAtTime((0.16 + openness * 0.06) * d.echo, t0);
+        eg.gain.setValueAtTime((0.07 + openness * 0.05) * d.echo, t0);
+        g.connect(delayNode);
+        delayNode.connect(fb);
+        fb.connect(delayNode);
+        delayNode.connect(eg);
         eg.connect(signalOutput());
       }
       o.start(t0);
@@ -544,6 +570,7 @@
   }
 
   function playFxGesture(piece, note, vel, delay, shape) {
+    const d = soundProfile();
     const opts = shape || {};
     const v = vel == null ? 1 : vel;
     const dl = delay || 0;
@@ -554,56 +581,56 @@
       noise(dl, 0.12 + intensity * 0.10, 0.010 + intensity * 0.014, true);
       synth(f * 0.5, 'triangle', dl + 0.006, 0.34 + intensity * 0.18, 0.026 * v, {
         filter: 'bandpass',
-        cutoff: 620 + intensity * 1200,
-        endCutoff: 1800 + intensity * 1700,
-        q: 1.2 + tension * 2.4,
+        cutoff: (620 + intensity * 1200) * d.resonance,
+        endCutoff: (1800 + intensity * 1700) * d.resonance,
+        q: (1.2 + tension * 2.4) * d.resonance,
         endFreq: f * (1.04 + intensity * 0.34),
-        echo: true,
+        echo: d.echo > 0.4,
         echoTime: 0.16,
-        echoFeedback: 0.14,
-        echoGain: 0.08,
+        echoFeedback: 0.14 * d.echo,
+        echoGain: 0.08 * d.echo,
       });
       return;
     }
     if (piece === 'warp') {
       synth(f * (0.76 + tension * 0.18), 'sawtooth', dl, 0.18 + intensity * 0.12, 0.021 * v, {
-        cutoff: 760 + intensity * 980,
+        cutoff: (760 + intensity * 980) * d.resonance,
         endCutoff: 260 + tension * 320,
-        q: 2.6,
+        q: 2.6 * d.resonance,
         endFreq: f * (0.52 + intensity * 0.12),
       });
       tone(f * 1.5, 'sine', dl + 0.026, 0.16, 0.010 * v, f * (1.32 - tension * 0.18));
       return;
     }
-    synth(f, styleDef().chimeWave || 'triangle', dl, 0.22 + intensity * 0.10, 0.028 * v, {
+    synth(f, d.chimeWave || 'triangle', dl, 0.22 + intensity * 0.10, 0.028 * v, {
       filter: 'bandpass',
-      cutoff: 1100 + intensity * 1200,
-      q: 2.2,
-      echo: true,
+      cutoff: (1100 + intensity * 1200) * d.resonance,
+      q: 2.2 * d.resonance,
+      echo: d.echo > 0.35,
       echoTime: 0.18 + tension * 0.08,
-      echoFeedback: 0.22,
-      echoGain: 0.16 + intensity * 0.06,
+      echoFeedback: 0.22 * d.echo,
+      echoGain: (0.16 + intensity * 0.06) * d.echo,
     });
     tone(f * 2.01, 'sine', dl + 0.018, 0.14, 0.008 * v, f * 2.04);
   }
 
   function playPitched(inst, note, vel, delay) {
-    const d = styleDef();
+    const d = soundProfile();
     const v = vel == null ? 1 : vel;
     const dl = delay || 0;
     const f = Math.max(30, note || d.root);
     if (inst === 'bass') {
       const wave = d.bassWave || 'triangle';
       if (wave === 'sawtooth' || wave === 'square') {
-        synth(f, wave, dl, 0.26, 0.085 * v, { cutoff: 900, endCutoff: 260, q: 1.4, endFreq: f * 0.988 });
+        synth(f, wave, dl, 0.26, 0.085 * v * d.bassWeight, { cutoff: 900 * d.resonance, endCutoff: 260, q: 1.4 * d.resonance, endFreq: f * 0.988 });
       } else {
-        tone(f, wave, dl, 0.26, 0.085 * v, f * 0.988);
+        tone(f, wave, dl, 0.26, 0.085 * v * d.bassWeight, f * 0.988);
       }
-      tone(f * 2.01, 'sine', dl + 0.004, 0.11, 0.020 * v, f * 1.98);
+      tone(f * 2.01, 'sine', dl + 0.004, 0.11, 0.020 * v * d.bassWeight, f * 1.98);
     } else if (inst === 'keys') {
       // The space.js piano: triangle + sine an octave up, both drifting slightly flat.
-      tone(f, d.keysWave || 'triangle', dl, 0.150, 0.070 * v, f * 0.992);
-      tone(f * 2.01, 'sine', dl + 0.003, 0.065, 0.021 * v, f * 1.99);
+      tone(f, d.keysWave || 'triangle', dl, 0.150, 0.070 * v * d.keyGlow, f * 0.992);
+      tone(f * 2.01, 'sine', dl + 0.003, 0.065, 0.021 * v * d.keyGlow * d.shimmer, f * 1.99);
     } else {
       // Handpan / music box: soft metallic tap with an overtone stack.
       const sh = d.shimmer || 1;
@@ -2481,6 +2508,10 @@
   }
 
   function showIntro() {
+    cancelAnimationFrame(raf);
+    if (state !== 'playing') state = 'idle';
+    replaying = false;
+    loopEndArmed = false;
     updateLoopButton();
     syncSignalChrome();
     overlay.classList.remove('hidden');
@@ -2577,7 +2608,7 @@
   }
 
   // Serialize the loop grid itself — the final truth of what the player built.
-  // Max 4 layers x 16 steps = 64 stamps, which is the supabase choices cap.
+  // The cap keeps long experiments small enough for local and shared jukeboxes.
   function gridStamps() {
     const out = [];
     for (let s = 0; s < LOOP_STEPS; s++) {
@@ -2590,6 +2621,7 @@
           inst: v.inst,
           note: v.note || null,
           notes: v.notes ? v.notes.slice() : null,
+          piece: v.piece || null,
           pieces: v.pieces ? v.pieces.slice() : null,
           tunes: v.tunes ? v.tunes.slice() : null,
           label: v.label || '',
@@ -2680,7 +2712,8 @@
             <button id="signal-save-btn" class="signal-btn" style="width:58px;margin:0" onclick="signalSaveRecipe()">▶</button>
           </div>
           <div id="signal-save-status" class="signal-subtitle" style="min-height:18px;margin-top:8px"></div>` : ''}
-        ${won ? `<button class="signal-btn secondary" onclick="signalShowJukebox()">LOCAL JUKEBOX</button>` : ''}
+        ${won ? `<button class="signal-btn secondary" onclick="signalShowJukebox()">JUKEBOX</button>` : ''}
+        <button class="signal-btn secondary" onclick="signalShowIntro()">LAUNCH MENU</button>
         <button class="signal-btn" onclick="signalStart()">PLAY AGAIN</button>
       </div>`;
     const input = document.getElementById('signal-name');
@@ -2750,9 +2783,14 @@
     try {
       if (typeof LB !== 'undefined' && typeof LB.add === 'function') LB.add(BOARD_KEY, name, score, extra, false);
     } catch(e) {}
-    if (status) status.textContent = 'SAVING...';
+    if (status) status.textContent = 'SAVING LOOP...';
     if (input) input.disabled = true;
-    if (button) button.disabled = true;
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Saving loop...';
+      button.style.width = 'auto';
+      button.style.minWidth = '190px';
+    }
     let scoreOnline = false;
     if (window.RemoteLB && typeof window.RemoteLB.submit === 'function') {
       try {
@@ -2766,7 +2804,8 @@
       } catch(e) {
       }
     }
-    if (status) status.textContent = scoreOnline || recipeOnline ? 'SAVED ONLINE' : 'SAVED LOCAL';
+    if (status) status.textContent = scoreOnline || recipeOnline ? 'SAVED ONLINE · JUKEBOX READY' : 'SAVED LOCAL · JUKEBOX READY';
+    if (button) button.textContent = scoreOnline || recipeOnline ? 'Saved online' : 'Saved local';
   }
 
   function recipeToLoop(recipe) {
@@ -2786,6 +2825,7 @@
           inst: choice.inst,
           note: choice.note || null,
           notes: choice.notes ? choice.notes.slice() : null,
+          piece: choice.piece || (choice.inst === 'fx' && choice.pieces && choice.pieces[0]) || null,
           pieces: choice.pieces ? choice.pieces.slice() : (choice.piece ? [choice.piece] : null),
           tunes: choice.tunes ? choice.tunes.slice() : null,
           label: choice.label || '',
@@ -2850,6 +2890,7 @@
   }
 
   async function showJukebox() {
+    jukeboxBackTarget = state === 'over' ? 'result' : (state === 'built' && recordedChoices.length ? 'built' : 'intro');
     overlay.classList.remove('hidden');
     overlay.classList.remove('signal-tempo-mode');
     overlay.classList.remove('signal-menu-mode');
@@ -2956,9 +2997,11 @@
   window.signalEndRun = endBuiltRun;
   window.signalShowJukebox = showJukebox;
   window.signalJukeboxBack = function() {
-    if (recordedChoices.length) showBuiltChoice();
+    if (jukeboxBackTarget === 'result') showResult(true);
+    else if (jukeboxBackTarget === 'built' && recordedChoices.length) showBuiltChoice();
     else showIntro();
   };
+  window.signalShowIntro = showIntro;
   window.signalPlayRecipe = function(id) {
     const row = jukeboxRows.find(r => r.id === id) || loadSignalRecipes().find(r => r.id === id);
     if (row) playRecipe(row.recipe);
