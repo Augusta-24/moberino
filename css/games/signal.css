@@ -70,15 +70,15 @@
 .signal-loop-btn:active { transform: translateY(1px); }
 .signal-reset-btn {
   flex: none;
-  width: 40px;
-  min-height: 40px;
+  width: 88px;
+  align-self: stretch;
   border: 1.5px solid rgba(0, 229, 255, 0.45);
   border-radius: 5px;
   background: rgba(2, 4, 14, 0.88);
   color: #00e5ff;
   box-shadow: 0 0 12px rgba(0, 229, 255, 0.18);
   font-family: 'VCR', monospace;
-  font-size: 19px;
+  font-size: 22px;
   line-height: 1;
   cursor: pointer;
 }

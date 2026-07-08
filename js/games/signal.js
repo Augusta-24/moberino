@@ -13,7 +13,7 @@
   // Reserved band at the bottom of the canvas where the loop rows live —
   // gameplay (ship, lanes, pads, rocks) stays above it.
   const LOOP_PANEL_H = 76;
-  const PAD_COLS = 6;
+  const PAD_COLS = 4;
   const PAD_ROWS = [
     { piece: 'hat', label: 'HAT', color: '#eaffff', lane: 2 },
     { piece: 'tom', label: 'TOM', color: '#ff8a3d', lane: 1 },
@@ -110,8 +110,8 @@
   let laneFlash = [0, 0, 0];
   let spawnAt = 0, manualFireAt = 0, beatAt = 0, stepIndex = 0, lastLoopStep = -1;
   let loopEndArmed = false;
-  // 'countin': the player taps 4 beats to set their own tempo before the loop starts.
-  let phase = 'countin', countTaps = [], countRings = [], countPadAt = 0;
+  // 'countin': the player lays 4 kick beats to set their own tempo before the loop starts.
+  let phase = 'countin', countTaps = [], countKickPulse = 0, countLockedText = '', countPadAt = 0;
   let pads = [], padSpawnAt = 0;
   let loop = [];
   let leftHeld = false, rightHeld = false, pointerActive = false, pointerX = 0, pointerY = 0;
@@ -219,12 +219,13 @@
     loopButton.classList.toggle('hidden', !show);
     // Button sits in flow above the canvas, so visibility changes the space left for it.
     if (wasHidden === show) fitCanvas();
+    if (resetButton) resetButton.classList.toggle('hidden', !(show && phase === 'build'));
     if (!show) return;
     if (phase === 'countin') loopButton.textContent = 'SKIP COUNT-IN';
     else if (loopEndArmed) loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISHING...' : 'LOCKING...';
     else loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISH TRACK' : 'END LOOP';
     // Reset (↻) only while actively building a layer — not during count-in.
-    if (resetButton) resetButton.classList.toggle('hidden', !(show && phase === 'build'));
+    if (resetButton) resetButton.classList.toggle('hidden', phase !== 'build');
   }
   function presetLabel(group, id) {
     const item = (SIGNAL_PRESETS[group] || []).find(p => p.id === id);
@@ -333,18 +334,18 @@
     // tune 0..1 maps across the pad row: left = lower/tighter, right = higher/opener.
     const tn = tune == null ? 0.5 : clamp(tune, 0, 1);
     if (piece === 'hat') {
-      noise(dl, 0.025 + tn * 0.045, 0.021 * v, true);
-      synth(4600 + tn * 1400, 'square', dl, 0.020 + tn * 0.030, 0.007 * v, { filter: 'highpass', cutoff: 3200 });
+      noise(dl, 0.018 + tn * 0.026, 0.030 * v, true);
+      synth(6800 + tn * 1900, 'square', dl, 0.018 + tn * 0.020, 0.0065 * v, { filter: 'highpass', cutoff: 4300, q: 0.9 });
     } else if (piece === 'tom') {
-      const f = 112 + tn * 96;
-      tone(f, 'sine', dl, 0.085, 0.062 * v, f * 0.72);
-      tone(f * 1.5, 'triangle', dl + 0.004, 0.060, 0.022 * v, f * 1.12);
-      noise(dl, 0.030, 0.012 * v, false);
+      const f = 150 + tn * 110;
+      tone(f, 'triangle', dl, 0.130, 0.078 * v, f * 0.66);
+      tone(f * 1.42, 'sine', dl + 0.004, 0.090, 0.026 * v, f * 1.02);
+      noise(dl, 0.026, 0.010 * v, false);
     } else {
-      const f = 112 + tn * 26;
-      tone(f, 'sine', dl, 0.115, 0.115 * v, 40 + tn * 10);
-      tone(f * 0.6, 'sine', dl + 0.005, 0.14, 0.055 * v, 32);
-      noise(dl + 0.002, 0.050, 0.022 * v, false);
+      const f = 82 + tn * 18;
+      tone(f, 'sine', dl, 0.145, 0.135 * v, 34 + tn * 8);
+      tone(f * 0.52, 'sine', dl + 0.004, 0.18, 0.064 * v, 28);
+      noise(dl + 0.001, 0.036, 0.027 * v, false);
     }
   }
 
@@ -417,17 +418,12 @@
   }
 
   function playPulseBed() {
-    // The session band behind the player: a quiet backing groove in their key
-    // and tempo. Offbeat hat breaths + a root pluck at the top of each loop.
-    const root = styleDef().root;
+    // The session band behind the player: a quiet high bed in their key
+    // and tempo. The player's kick owns the low pulse during the build.
     if (stepIndex % 4 === 2) noise(0.004, 0.024, 0.007, true);
     if (stepIndex === 0) {
       noise(0.004, 0.020, 0.010, true);
-      tone(root * 0.5, 'sine', 0, 0.55, 0.013);
-      tone(root * 0.75, 'sine', 0.02, 0.45, 0.007);
-      playPitched('bass', degreeFreq(0, 1), 0.22, 0.01);
     }
-    if (stepIndex === LOOP_STEPS / 2) playPitched('bass', degreeFreq(3, 1), 0.16, 0.01);
   }
 
   function playBossMotif() {
@@ -509,7 +505,8 @@
     loopEndArmed = false;
     phase = 'countin';
     countTaps = [];
-    countRings = [];
+    countKickPulse = 0;
+    countLockedText = '';
     countPadAt = 0;
     padSpawnAt = 0;
     initPads();
@@ -541,16 +538,23 @@
     return !!orbLayerInst();
   }
 
+  function rockTapActive() {
+    if (state !== 'playing' || phase !== 'build') return false;
+    const inst = activeLayer().inst;
+    return inst === 'bass' || inst === 'keys';
+  }
+
   function thereminCenter() {
     return { x: W / 2, y: (H - LOOP_PANEL_H) * 0.52, maxR: Math.min(W, H - LOOP_PANEL_H) * 0.44 };
   }
 
   function padRect(row, col) {
-    const left = 46, right = 12, top = 122;
-    const bottom = H - LOOP_PANEL_H - 16;
-    const gw = (W - left - right - (PAD_COLS - 1) * 8) / PAD_COLS;
-    const gh = (bottom - top - 2 * 10) / 3;
-    return { x: left + col * (gw + 8), y: top + row * (gh + 10), w: gw, h: gh };
+    const left = 38, right = 16, top = 128;
+    const bottom = H - LOOP_PANEL_H - 18;
+    const colGap = 10, rowGap = 12;
+    const gw = (W - left - right - (PAD_COLS - 1) * colGap) / PAD_COLS;
+    const gh = (bottom - top - 2 * rowGap) / 3;
+    return { x: left + col * (gw + colGap), y: top + row * (gh + rowGap), w: gw, h: gh };
   }
 
   function padAt(x, y) {
@@ -589,7 +593,7 @@
       maxHp: 1,
       x: clamp(laneCenter(lane) + rand(-lw * 0.24, lw * 0.24), 26, W - 26),
       vx: rand(-10, 10),
-      vy: rand(48, 76) + elapsed * 0.0025,
+      vy: rand(31, 49) + elapsed * 0.0016,
       spin: rand(-2, 2),
       rot: rand(0, Math.PI * 2),
     };
@@ -621,6 +625,7 @@
   }
 
   function shoot() {
+    // Dormant build-era shooter path, reserved for a future boss-duet finale.
     if (!bullets) return;
     if (bullets.length > 18) bullets.splice(0, bullets.length - 18);
     bullets.push({ x: player.x, y: player.y - 18, vy: -420, r: 4 });
@@ -653,6 +658,11 @@
       manualFireAt = t + 90;
       return;
     }
+    if (rockTapActive()) {
+      if (pos) tapRock(pos);
+      manualFireAt = t + 78;
+      return;
+    }
     shoot();
     manualFireAt = t + 125;
   }
@@ -679,9 +689,16 @@
 
   function countInTap(t) {
     countTaps.push(t);
-    countRings.push({ x: W * 0.5, y: H * 0.42, t0: t });
+    countKickPulse = 1;
     playDrumPiece('kick', 0.9, 0);
     addFloatText(String(countTaps.length), W * 0.5, H * 0.42, '#00e5ff');
+    const step = (countTaps.length - 1) * 4;
+    if (step < LOOP_STEPS && !loop[step].some(v => v.foundation)) {
+      loop[step].push({ layerId: 'drums', layerIndex: 0, inst: 'drums', pieces: ['kick'], tunes: [0.3], color: '#00e5ff', label: 'KICK', tight: true, vel: 0.85, skip: 0, foundation: true });
+      recordedChoices.push({ step, layerIndex: 0, layerId: 'drums', layerName: 'DRUMS', inst: 'drums', note: null, piece: 'kick', lane: 0, label: 'KICK', color: '#00e5ff', tight: true, foundation: true });
+      additionsThisLayer += 1;
+      totalAdditions += 1;
+    }
     if (countTaps.length < 4) return;
     // The player's tap interval is one beat = 4 loop steps. Median of the
     // last 3 intervals, so one nervous tap doesn't skew the tempo.
@@ -690,16 +707,17 @@
     iv.sort((a, b) => a - b);
     const median = iv[Math.floor(iv.length / 2)];
     beatMs = clamp(Math.round(median / 4), 170, 420);
-    // Their tapped pulse becomes the track's first drum hits: on the floor,
-    // continued across the whole loop.
     for (let step = 0; step < LOOP_STEPS; step += 4) {
+      if (loop[step].some(v => v.foundation)) continue;
       loop[step].push({ layerId: 'drums', layerIndex: 0, inst: 'drums', pieces: ['kick'], tunes: [0.3], color: '#00e5ff', label: 'KICK', tight: true, vel: 0.85, skip: 0, foundation: true });
       recordedChoices.push({ step, layerIndex: 0, layerId: 'drums', layerName: 'DRUMS', inst: 'drums', note: null, piece: 'kick', lane: 0, label: 'KICK', color: '#00e5ff', tight: true, foundation: true });
       additionsThisLayer += 1;
       totalAdditions += 1;
     }
+    const bpm = Math.round(60000 / (beatMs * 4));
+    countLockedText = `KICK LOCKED · ${bpm} BPM`;
     startBuildPhase(t);
-    addFloatText('PULSE SET', W * 0.5, H * 0.34, '#ffe61a');
+    addFloatText(countLockedText, W * 0.5, H * 0.34, '#ffe61a');
   }
 
   function startBuildPhase(t) {
@@ -708,7 +726,7 @@
     lastLoopStep = 0;
     beatAt = t + beatMs;
     spawnAt = t + 600;
-    countRings = [];
+    countKickPulse = 0;
     updateLoopButton();
   }
 
@@ -942,6 +960,22 @@
     return true;
   }
 
+  function tapRock(pos) {
+    let best = null;
+    let bestScore = Infinity;
+    rocks.forEach((rock, index) => {
+      const hitR = rock.r + 14;
+      const dist = Math.hypot(rock.x - pos.x, rock.y - pos.y);
+      if (dist <= hitR && dist - hitR < bestScore) {
+        best = { rock, index };
+        bestScore = dist - hitR;
+      }
+    });
+    if (!best) return false;
+    if (hitRock(best.rock)) rocks.splice(best.index, 1);
+    return true;
+  }
+
   function playerDamage(amount) {
     combo = 0;
     distortion = clamp(distortion + 8, 0, 100);
@@ -965,21 +999,6 @@
       playStamp(v);
     });
     lastLoopStep = stepIndex;
-    // Invite drum pads on the beat grid, not a wall-clock timer, so the
-    // lighting reads as part of the groove instead of random flicker.
-    if (drumsActive() && stepIndex % 4 === 2) {
-      const litCount = pads.filter(p => p.lit > t).length;
-      if (litCount < 3) {
-        const nextIsDownbeat = ((stepIndex + 2) % 8) === 0;
-        const roll = Math.random();
-        const piece = nextIsDownbeat && roll < 0.5 ? 'kick' : roll < 0.55 ? 'hat' : roll < 0.8 ? 'tom' : 'kick';
-        const rowPads = pads.filter(p => p.piece === piece && p.lit <= t);
-        if (rowPads.length) {
-          const pad = rowPads[Math.floor(Math.random() * rowPads.length)];
-          pad.lit = beatAt + beatMs * 3;
-        }
-      }
-    }
     // Orb drift (chimes theremin / swell pads): while the player holds and
     // pulls from the center, distance picks the scale degree and the density.
     const orbInst = pointerActive ? orbLayerInst() : null;
@@ -1026,11 +1045,11 @@
         countPadAt = t + 2600;
       }
       for (let i = 0; i < laneFlash.length; i++) laneFlash[i] = Math.max(0, laneFlash[i] - dt / 360);
+      countKickPulse = Math.max(0, countKickPulse - dt / 240);
       stars.forEach(s => {
         s.y += s.vy * dt / 1000;
         if (s.y > H + 5) { s.y = -5; s.x = Math.random() * W; }
       });
-      countRings = countRings.filter(ring => t - ring.t0 < 900);
       if (floatTexts) {
         floatTexts.forEach(f => { f.age += dt; f.y -= 28 * dt / 1000; });
         floatTexts = floatTexts.filter(f => f.age < f.life);
@@ -1090,14 +1109,17 @@
     ensureBoss();
     for (let i = 0; i < laneFlash.length; i++) laneFlash[i] = Math.max(0, laneFlash[i] - dt / 360);
 
+    const directTapLayer = rockTapActive();
     const move = (leftHeld ? -1 : 0) + (rightHeld ? 1 : 0);
-    if (pointerActive) player.x += (pointerX - player.x) * Math.min(1, dt / 100);
-    else player.x += move * 260 * dt / 1000;
-    player.x = clamp(player.x, 24, W - 24);
+    if (!directTapLayer) {
+      if (pointerActive) player.x += (pointerX - player.x) * Math.min(1, dt / 100);
+      else player.x += move * 260 * dt / 1000;
+      player.x = clamp(player.x, 24, W - 24);
+    }
 
     if (t >= spawnAt) {
       spawnRock();
-      const cadence = clamp(820 - elapsed * 0.004, 420, 820);
+      const cadence = clamp(1080 - elapsed * 0.0025, 560, 1080);
       spawnAt = t + cadence;
     }
 
@@ -1117,10 +1139,14 @@
       if (s.y > H + 5) { s.y = -5; s.x = Math.random() * W; }
     });
 
-    bullets.forEach(b => { b.y += b.vy * dt / 1000; });
-    bullets = bullets.filter(b => b.y > -20);
+    if (!directTapLayer) {
+      bullets.forEach(b => { b.y += b.vy * dt / 1000; });
+      bullets = bullets.filter(b => b.y > -20);
+    } else {
+      bullets = [];
+    }
 
-    if (boss) {
+    if (boss && !directTapLayer) {
       for (let j = bullets.length - 1; j >= 0; j--) {
         const b = bullets[j];
         const dx = boss.x - b.x, dy = boss.y - b.y;
@@ -1140,13 +1166,15 @@
 
     for (let i = rocks.length - 1; i >= 0; i--) {
       const r = rocks[i];
-      for (let j = bullets.length - 1; j >= 0; j--) {
-        const b = bullets[j];
-        const dx = r.x - b.x, dy = r.y - b.y;
-        if (dx * dx + dy * dy <= (r.r + b.r) * (r.r + b.r)) {
-          bullets.splice(j, 1);
-          if (hitRock(r)) rocks.splice(i, 1);
-          break;
+      if (!directTapLayer) {
+        for (let j = bullets.length - 1; j >= 0; j--) {
+          const b = bullets[j];
+          const dx = r.x - b.x, dy = r.y - b.y;
+          if (dx * dx + dy * dy <= (r.r + b.r) * (r.r + b.r)) {
+            bullets.splice(j, 1);
+            if (hitRock(r)) rocks.splice(i, 1);
+            break;
+          }
         }
       }
     }
@@ -1154,7 +1182,7 @@
     for (let i = rocks.length - 1; i >= 0; i--) {
       const r = rocks[i];
       const dx = r.x - player.x, dy = r.y - player.y;
-      if (dx * dx + dy * dy <= (r.r + player.r) * (r.r + player.r)) {
+      if (!directTapLayer && dx * dx + dy * dy <= (r.r + player.r) * (r.r + player.r)) {
         rocks.splice(i, 1);
         playerDamage(1);
       } else if (r.y - r.r > H - LOOP_PANEL_H) {
@@ -1286,12 +1314,8 @@
 
   function drawPads(c) {
     const t = now();
-    // Lit pads breathe with the loop: brightest at each step tick, fading until
-    // the next — every lit pad pulses in phase with the music.
-    const beatFrac = beatAt > 0 ? clamp(1 - (beatAt - t) / beatMs, 0, 1) : 0;
-    const beatPulse = 1 - beatFrac;
     c.save();
-    c.font = "7px 'VCR', monospace";
+    c.font = "8px 'VCR', monospace";
     c.textAlign = 'center';
     c.textBaseline = 'middle';
     PAD_ROWS.forEach((rowDef, row) => {
@@ -1307,19 +1331,22 @@
     pads.forEach(pad => {
       const r = padRect(pad.row, pad.col);
       const lit = pad.lit > t;
-      const pulse = lit ? 0.45 + 0.55 * beatPulse : 0;
       c.fillStyle = pad.color;
-      c.globalAlpha = 0.09 + pad.flash * 0.30 + pulse * 0.22;
+      c.globalAlpha = 0.10 + pad.flash * 0.34;
       c.fillRect(r.x, r.y, r.w, r.h);
       c.strokeStyle = pad.color;
       c.lineWidth = lit ? 2 : 1;
-      c.globalAlpha = 0.30 + pad.flash * 0.6 + pulse * 0.55;
+      c.globalAlpha = 0.34 + pad.flash * 0.62;
       c.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
-      const cr = pad.piece === 'kick' ? 6 : pad.piece === 'tom' ? 4.5 : 3;
-      c.globalAlpha = 0.35 + pad.flash * 0.5 + pulse * 0.4;
+      const cr = pad.piece === 'kick' ? 8 : pad.piece === 'tom' ? 6.5 : 5;
+      c.globalAlpha = 0.42 + pad.flash * 0.48;
       c.beginPath();
-      c.arc(r.x + r.w / 2, r.y + r.h / 2, cr + pad.flash * 3, 0, Math.PI * 2);
+      c.arc(r.x + r.w / 2, r.y + r.h / 2, cr + pad.flash * 4, 0, Math.PI * 2);
       if (pad.piece === 'hat') c.stroke(); else c.fill();
+      c.globalAlpha = 0.62 + pad.flash * 0.28;
+      c.fillStyle = pad.color;
+      c.font = "7px 'VCR', monospace";
+      c.fillText(pad.label, r.x + r.w / 2, r.y + r.h - 12);
     });
     c.globalAlpha = 1;
     c.restore();
@@ -1387,7 +1414,7 @@
   function drawLanes(c) {
     const lw = laneWidth();
     const baseY = H - LOOP_PANEL_H - 42;
-    const selected = laneIndexForX(player.x);
+    const selected = rockTapActive() ? -1 : laneIndexForX(player.x);
     c.save();
     for (let i = 0; i < LANES.length; i++) {
       const lane = LANES[i];
@@ -1422,7 +1449,7 @@
     c.fillText(String(score), W - 12, 12);
     c.textAlign = 'left';
     // Loop rows live up top now, right under the layer title.
-    if (phase !== 'countin' || state !== 'playing') {
+    if (state === 'playing' || state === 'replay') {
       const loopX = 30, loopY = 26;
       const rowH = 5, rowGap = 3;
       const w = (W - 48) / LOOP_STEPS;
@@ -1465,7 +1492,7 @@
     c.fillStyle = 'rgba(234,255,255,0.78)';
     const counting = phase === 'countin' && state === 'playing';
     const objective = counting
-      ? 'SET THE PULSE'
+      ? 'LAY THE KICK'
       : state === 'replay'
         ? 'REPLAYING TRACK'
         : orbLayerInst() === 'swell' ? 'SWELL · SLOW WAVES'
@@ -1476,11 +1503,12 @@
       c.font = "7px 'VCR', monospace";
       c.fillStyle = 'rgba(234,255,255,0.58)';
       const hint = counting
-        ? `TAP THE BEAT ANYWHERE · ${countTaps.length}/4 · YOUR TEMPO, YOUR TRACK`
+        ? 'TAP YOUR KICK DRUM · 4 STEADY TAPS SET THE TEMPO AND THE FLOOR'
         : loopEndArmed ? 'LOCKING AT THE ONE...'
         : drumsActive() ? 'WHACK PADS TO DRUM · LIT PADS SIT IN THE GROOVE'
         : orbLayerInst() === 'swell' ? 'HOLD + PULL · LONG SWELLS BLOOM ON THE BAR'
         : chimesActive() ? 'HOLD + PULL FROM THE CENTER · FURTHER = HIGHER AND FULLER'
+        : rockTapActive() ? 'TAP THE ROCKS · EVERY HIT RECORDS'
         : 'EVERY HIT RECORDS · SHOOT ON THE PULSE · SPACE IS PART OF THE TRACK';
       c.fillText(hint, W * 0.5, 96);
     }
@@ -1571,7 +1599,10 @@
     if ((state === 'playing' && phase === 'build') || state === 'replay') {
       const t = now();
       const frac = beatAt > 0 ? clamp(1 - (beatAt - t) / beatMs, 0, 1) : 0;
-      const x = (((stepIndex + frac) % LOOP_STEPS) / LOOP_STEPS) * W;
+      const gridX = 30;
+      const stepW = (W - 48) / LOOP_STEPS;
+      const cellW = Math.max(2, stepW - 3);
+      const x = gridX + ((stepIndex + frac) % LOOP_STEPS) * stepW + cellW * 0.42;
       const sweepTop = 118, sweepBot = H - LOOP_PANEL_H;
       const grad = c.createLinearGradient(x - 52, 0, x, 0);
       grad.addColorStop(0, 'rgba(0,229,255,0)');
@@ -1594,7 +1625,7 @@
     if (padsVisible) drawPads(c);
     if (thereminVisible) drawTheremin(c);
     rocks.forEach(r => drawRock(c, r));
-    bullets.forEach(b => {
+    if (!rockTapActive()) bullets.forEach(b => {
       c.save();
       c.shadowColor = COLOR;
       c.shadowBlur = 12;
@@ -1614,24 +1645,40 @@
     });
     c.globalAlpha = 1;
     if (phase === 'countin' && state === 'playing') {
-      const t = now();
       c.save();
-      countRings.forEach(ring => {
-        const age = t - ring.t0;
-        const a = clamp(1 - age / 900, 0, 1);
-        c.globalAlpha = a * 0.7;
-        c.strokeStyle = COLOR;
-        c.lineWidth = 2;
-        c.beginPath();
-        c.arc(ring.x, ring.y, 18 + age * 0.16, 0, Math.PI * 2);
-        c.stroke();
-      });
-      c.globalAlpha = 0.85;
+      const cx = W * 0.5;
+      const cy = H * 0.42;
+      const pulse = countKickPulse;
+      const r = 58 + pulse * 12;
+      c.shadowColor = COLOR;
+      c.shadowBlur = 18 + pulse * 24;
+      c.globalAlpha = 0.16 + pulse * 0.18;
+      c.fillStyle = COLOR;
+      c.beginPath();
+      c.arc(cx, cy, r, 0, Math.PI * 2);
+      c.fill();
+      c.globalAlpha = 0.88;
+      c.strokeStyle = COLOR;
+      c.lineWidth = 3;
+      c.beginPath();
+      c.arc(cx, cy, r, 0, Math.PI * 2);
+      c.stroke();
+      c.shadowBlur = 0;
+      c.globalAlpha = 0.45;
+      c.lineWidth = 1;
+      c.beginPath();
+      c.arc(cx, cy, r * 0.68, 0, Math.PI * 2);
+      c.stroke();
+      c.globalAlpha = 0.95;
       c.fillStyle = '#eaffff';
-      c.font = "13px 'VCR', monospace";
+      c.font = "22px 'VCR', monospace";
       c.textAlign = 'center';
       c.textBaseline = 'middle';
-      c.fillText('TAP THE BEAT', W * 0.5, H * 0.42);
+      c.fillText(String(countTaps.length) + '/4', cx, cy - 2);
+      c.globalAlpha = 0.85;
+      c.fillStyle = '#eaffff';
+      c.font = "9px 'VCR', monospace";
+      c.fillText('KICK DRUM', cx, cy + 28);
       c.restore();
       c.globalAlpha = 1;
     }
@@ -1648,7 +1695,7 @@
       c.restore();
       c.globalAlpha = 1;
     }
-    if (!counting && !padsVisible && !thereminVisible) drawShip(c);
+    if (!counting && !padsVisible && !thereminVisible && !rockTapActive()) drawShip(c);
     // Reserved loop panel: gameplay slides behind it, loop rows own the space.
     c.fillStyle = '#02040e';
     c.fillRect(0, H - LOOP_PANEL_H, W, LOOP_PANEL_H);
@@ -1717,7 +1764,7 @@
     overlay.innerHTML = `
       <div class="signal-panel">
         <div class="signal-title">SIGNAL DRIFT</div>
-        <div class="signal-subtitle">TAP 4 BEATS TO COUNT YOURSELF IN — YOUR TEMPO, YOUR TRACK.<br>EVERY SHOT PLAYS A NOTE AND RECORDS IT INTO YOUR LOOP.<br>ALL NOTES FIT THE KEY — NO WRONG NOTES.</div>
+        <div class="signal-subtitle">LAY THE KICK WITH 4 STEADY TAPS — YOUR TEMPO, YOUR FLOOR.<br>EVERY HIT PLAYS A NOTE AND RECORDS IT INTO YOUR LOOP.<br>ALL NOTES FIT THE KEY — NO WRONG NOTES.</div>
         ${presetControlsHTML()}
         <div class="signal-stats">
           <div class="signal-stat">LAYER 1<b>DRUMS</b></div>
