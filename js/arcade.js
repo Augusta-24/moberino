@@ -850,6 +850,7 @@ const RemoteLB = (() => {
 
   return { submit, fetchTop, isConfigured };
 })();
+window.RemoteLB = RemoteLB;
 
 // Renders the local cache instantly, then swaps in the shared Supabase board once it
 // loads. If that fetch fails, the local board just stays put — no error shown, this

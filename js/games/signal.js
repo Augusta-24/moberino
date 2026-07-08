@@ -270,7 +270,7 @@
       return;
     }
     if (phase === 'countin') loopButton.textContent = 'START LOOP';
-    else if (loopEndArmed) loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISHING...' : 'NEXT LOOP...';
+    else if (loopEndArmed) loopButton.textContent = 'SAVING LOOP...';
     else loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISH TRACK' : 'NEXT LOOP ›';
     // Reset (↻) only while actively building a layer — not during count-in.
     if (resetButton) resetButton.classList.toggle('hidden', phase !== 'build');
@@ -2138,6 +2138,7 @@
     updateLoopButton();
     syncSignalChrome();
     overlay.classList.remove('hidden');
+    overlay.classList.remove('signal-tempo-mode');
     overlay.innerHTML = `
       <div class="signal-panel">
         <div class="signal-title">SIGNAL DRIFT</div>
@@ -2149,10 +2150,10 @@
 
   function showTempoSetup() {
     overlay.classList.remove('hidden');
+    overlay.classList.add('signal-tempo-mode');
     overlay.innerHTML = `
       <div class="signal-panel">
         <div class="signal-title">SET TEMPO</div>
-        <div class="signal-subtitle">SLIDE THE BAR TO SET THE KICK FLOOR.</div>
         <div class="signal-tempo-box">
           <div id="signal-tempo-value" class="signal-tempo-value">${tempoBpm()} BPM</div>
           <input class="signal-tempo-slider" type="range" min="${MIN_TEMPO_BPM}" max="${MAX_TEMPO_BPM}" value="${tempoBpm()}" oninput="signalSetTempo(this.value, true)">
@@ -2171,10 +2172,10 @@
   function presetControlsHTML() {
     const group = (key, label) => `
       <div class="signal-preset-row">
-        <div class="signal-preset-label">${label}</div>
-        <div class="signal-preset-options">
-          ${SIGNAL_PRESETS[key].map(p => `<button type="button" class="signal-chip ${signalSettings[key] === p.id ? 'active' : ''}" onclick="signalSetPreset('${key}','${p.id}')">${p.label}</button>`).join('')}
-        </div>
+        <label class="signal-preset-label" for="signal-${key}-select">${label}</label>
+        <select id="signal-${key}-select" class="signal-select" onchange="signalSetPreset('${key}', this.value)">
+          ${SIGNAL_PRESETS[key].map(p => `<option value="${p.id}" ${signalSettings[key] === p.id ? 'selected' : ''}>${p.label}</option>`).join('')}
+        </select>
       </div>`;
     return `<div class="signal-presets">
       ${group('style', 'PALETTE')}
@@ -2285,6 +2286,7 @@
     replaying = false;
     updateLoopButton();
     overlay.classList.remove('hidden');
+    overlay.classList.remove('signal-tempo-mode');
     overlay.innerHTML = `
       <div class="signal-panel">
         <div class="signal-title">TRACK BUILT</div>
@@ -2292,7 +2294,6 @@
         ${compactTrackStatsHTML()}
         <button class="signal-btn" onclick="signalReplayTrack()">REPLAY TRACK</button>
         <button class="signal-btn secondary" onclick="signalEndRun()">END RUN</button>
-        ${backButtonHTML()}
       </div>`;
   }
 
@@ -2310,6 +2311,7 @@
     const canSave = won || score > 0;
     const hitCount = gridStamps().reduce((n, s) => n + (s.pieces ? s.pieces.length : s.notes ? s.notes.length : 1), 0);
     overlay.classList.remove('hidden');
+    overlay.classList.remove('signal-tempo-mode');
     overlay.innerHTML = `
       <div class="signal-panel">
         <div class="signal-title">TRACK BUILT</div>
@@ -2328,7 +2330,6 @@
           <div id="signal-save-status" class="signal-subtitle" style="min-height:18px;margin-top:8px"></div>` : ''}
         ${won ? `<button class="signal-btn secondary" onclick="signalShowJukebox()">LOCAL JUKEBOX</button>` : ''}
         <button class="signal-btn" onclick="signalStart()">PLAY AGAIN</button>
-        ${backButtonHTML()}
       </div>`;
     const input = document.getElementById('signal-name');
     if (input) input.focus({ preventScroll: true });
@@ -2361,7 +2362,16 @@
     }
     try {
       const remoteRows = await withTimeout(window.SignalRecipeRemote.fetchTop(20), 3500);
-      if (remoteRows && remoteRows.length) return { rows: remoteRows, online: true };
+      if (remoteRows && remoteRows.length) {
+        const seen = new Set();
+        const rows = remoteRows.concat(localRows).filter(row => {
+          const key = `${row.name || ''}:${row.score || 0}:${row.extra || ''}:${row.recipe && row.recipe.choices ? row.recipe.choices.length : 0}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        }).sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 20);
+        return { rows, online: true };
+      }
     } catch(e) {}
     return { rows: localRows, online: false };
   }
@@ -2388,17 +2398,23 @@
     try {
       if (typeof LB !== 'undefined' && typeof LB.add === 'function') LB.add(BOARD_KEY, name, score, extra, false);
     } catch(e) {}
-    if (status) status.textContent = 'SAVED LOCAL. SYNCING...';
+    if (status) status.textContent = 'SAVING...';
     if (input) input.disabled = true;
     if (button) button.disabled = true;
+    let scoreOnline = false;
+    if (window.RemoteLB && typeof window.RemoteLB.submit === 'function') {
+      try {
+        scoreOnline = await withTimeout(window.RemoteLB.submit(BOARD_KEY, name, score, Math.round(elapsed / 1000), extra), 3500);
+      } catch(e) {}
+    }
+    let recipeOnline = false;
     if (window.SignalRecipeRemote && typeof window.SignalRecipeRemote.submit === 'function') {
       try {
-        await withTimeout(window.SignalRecipeRemote.submit(name, score, extra, recipe), 3500);
-        if (status) status.textContent = 'SAVED ONLINE';
+        recipeOnline = await withTimeout(window.SignalRecipeRemote.submit(name, score, extra, recipe), 3500);
       } catch(e) {
-        if (status) status.textContent = 'SAVED LOCAL';
       }
     }
+    if (status) status.textContent = scoreOnline || recipeOnline ? 'SAVED ONLINE' : 'SAVED LOCAL';
   }
 
   function recipeToLoop(recipe) {
@@ -2483,6 +2499,7 @@
 
   async function showJukebox() {
     overlay.classList.remove('hidden');
+    overlay.classList.remove('signal-tempo-mode');
     state = 'built';
     loopEndArmed = false;
     updateLoopButton();
@@ -2509,7 +2526,6 @@
         <div class="signal-subtitle">${result.online ? 'SHARED SIGNAL DRIFT RECIPES.' : 'LOCAL SAVED SIGNAL DRIFT RECIPES.'}</div>
         <div class="signal-jukebox">${list}</div>
         <button class="signal-btn secondary" onclick="signalJukeboxBack()">BACK</button>
-        ${backButtonHTML()}
       </div>`;
   }
 
