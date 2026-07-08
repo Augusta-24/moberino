@@ -79,6 +79,11 @@
       { label: 'MID', degLo: 3, degHi: 5, color: '#ffd23d' },
       { label: 'HIGH', degLo: 6, degHi: 9, color: '#fff2a0' },
     ] },
+    { id: 'fx', name: 'FX', inst: 'fx', mult: 4, options: [
+      { label: 'ECHO', piece: 'echo', color: '#7bffea' },
+      { label: 'RISE', piece: 'rise', color: '#ff66c7' },
+      { label: 'WARP', piece: 'warp', color: '#ffe61a' },
+    ] },
   ];
   // Legacy v2 recipes only: old rock types stored per-role step masks.
   const WRITE_STEPS = {
@@ -92,6 +97,7 @@
     keys: [2, 6],
     chimes: [3, 8],
     swell: [2, 8],
+    fx: [1, 4],
   };
   const SIGNAL_PRESETS = {
     style: [
@@ -483,26 +489,102 @@
     }
   }
 
-  // Slow-attack pad chord for the SWELL layer: root + fifth + octave breathing in.
-  function playSwellChord(note, vel, delay) {
+  // Slow-attack pad chord for the SWELL layer: a gravity bloom that gets
+  // brighter and wider as the player pulls farther from the orb.
+  function playSwellChord(note, vel, delay, shape) {
     const c = audioCtx();
     if (!c) return;
+    const opts = shape || {};
     const v = vel == null ? 1 : vel;
     const f = Math.max(30, note || styleDef().root * 2);
-    [[1, 0.034], [1.5, 0.020], [2, 0.013]].forEach(([m, vol], i) => {
+    const openness = clamp(opts.openness == null ? 0.45 : opts.openness, 0, 1);
+    const tension = clamp(opts.tension == null ? 0.5 : opts.tension, 0, 1);
+    const dur = 1.25 + openness * 0.72;
+    const attack = 0.20 + (1 - openness) * 0.24;
+    const cutoff = 520 + openness * 1120 + tension * 340;
+    [[1, 0.030], [1.5, 0.018], [2, 0.012], [2.5, 0.006 * tension]].forEach(([m, vol], i) => {
       const t0 = c.currentTime + (delay || 0) + 0.01 + i * 0.035;
       const o = c.createOscillator();
+      const filter = c.createBiquadFilter();
       const g = c.createGain();
       o.type = i === 0 ? 'triangle' : 'sine';
-      o.frequency.setValueAtTime(f * m, t0);
+      o.frequency.setValueAtTime(f * m * (1 + (tension - 0.5) * 0.002 * i), t0);
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(cutoff + i * 180, t0);
+      filter.frequency.exponentialRampToValueAtTime(Math.max(220, cutoff * 0.64), t0 + dur);
+      filter.Q.setValueAtTime(0.7 + tension * 0.9, t0);
       g.gain.setValueAtTime(0.0001, t0);
-      g.gain.linearRampToValueAtTime(vol * v, t0 + 0.32);
-      g.gain.exponentialRampToValueAtTime(0.001, t0 + 1.7);
-      o.connect(g);
+      g.gain.linearRampToValueAtTime(vol * v, t0 + attack);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+      o.connect(filter);
+      filter.connect(g);
       g.connect(signalOutput());
+      if (i < 2 && openness > 0.35) {
+        const d = c.createDelay();
+        const fb = c.createGain();
+        const eg = c.createGain();
+        d.delayTime.setValueAtTime(0.18 + tension * 0.08, t0);
+        fb.gain.setValueAtTime(0.16 + openness * 0.06, t0);
+        eg.gain.setValueAtTime(0.07 + openness * 0.05, t0);
+        g.connect(d);
+        d.connect(fb);
+        fb.connect(d);
+        d.connect(eg);
+        eg.connect(signalOutput());
+      }
       o.start(t0);
-      o.stop(t0 + 1.8);
+      o.stop(t0 + dur + 0.08);
     });
+  }
+
+  function fxChoiceForPull(pull) {
+    const angle = ((pull.angle + Math.PI * 2.5) % (Math.PI * 2));
+    const idx = Math.floor(angle / (Math.PI * 2 / 3)) % 3;
+    return activeLayer().options[idx] || activeLayer().options[0];
+  }
+
+  function playFxGesture(piece, note, vel, delay, shape) {
+    const opts = shape || {};
+    const v = vel == null ? 1 : vel;
+    const dl = delay || 0;
+    const f = Math.max(80, note || styleDef().root * 4);
+    const intensity = clamp(opts.intensity == null ? 0.55 : opts.intensity, 0, 1);
+    const tension = clamp(opts.tension == null ? 0.5 : opts.tension, 0, 1);
+    if (piece === 'rise') {
+      noise(dl, 0.12 + intensity * 0.10, 0.010 + intensity * 0.014, true);
+      synth(f * 0.5, 'triangle', dl + 0.006, 0.34 + intensity * 0.18, 0.026 * v, {
+        filter: 'bandpass',
+        cutoff: 620 + intensity * 1200,
+        endCutoff: 1800 + intensity * 1700,
+        q: 1.2 + tension * 2.4,
+        endFreq: f * (1.04 + intensity * 0.34),
+        echo: true,
+        echoTime: 0.16,
+        echoFeedback: 0.14,
+        echoGain: 0.08,
+      });
+      return;
+    }
+    if (piece === 'warp') {
+      synth(f * (0.76 + tension * 0.18), 'sawtooth', dl, 0.18 + intensity * 0.12, 0.021 * v, {
+        cutoff: 760 + intensity * 980,
+        endCutoff: 260 + tension * 320,
+        q: 2.6,
+        endFreq: f * (0.52 + intensity * 0.12),
+      });
+      tone(f * 1.5, 'sine', dl + 0.026, 0.16, 0.010 * v, f * (1.32 - tension * 0.18));
+      return;
+    }
+    synth(f, styleDef().chimeWave || 'triangle', dl, 0.22 + intensity * 0.10, 0.028 * v, {
+      filter: 'bandpass',
+      cutoff: 1100 + intensity * 1200,
+      q: 2.2,
+      echo: true,
+      echoTime: 0.18 + tension * 0.08,
+      echoFeedback: 0.22,
+      echoGain: 0.16 + intensity * 0.06,
+    });
+    tone(f * 2.01, 'sine', dl + 0.018, 0.14, 0.008 * v, f * 2.04);
   }
 
   function playPitched(inst, note, vel, delay) {
@@ -547,6 +629,10 @@
       playSwellChord(o.note, o.vel, o.delay);
       return;
     }
+    if (inst === 'fx') {
+      playFxGesture(o.piece || 'echo', o.note, o.vel, o.delay);
+      return;
+    }
     if (Array.isArray(o.notes) && o.notes.length) {
       const seen = {};
       o.notes.slice(0, MAX_PIANO_STACK).forEach((note, i) => {
@@ -566,6 +652,7 @@
     const vel = (slot.vel || 1) * 0.8;
     if (slot.inst === 'drums') playInstrument('drums', { pieces: slot.pieces, tunes: slot.tunes, vel });
     else if (slot.inst === 'keys' && slot.notes && slot.notes.length) playInstrument(slot.inst, { notes: slot.notes, vel });
+    else if (slot.inst === 'fx') playInstrument(slot.inst, { note: slot.note, piece: slot.piece, vel });
     else playInstrument(slot.inst, { note: slot.note, vel });
   }
 
@@ -909,11 +996,11 @@
     return state === 'playing' && phase === 'build' && activeLayer().inst === 'drums';
   }
 
-  // Which orb-driven layer is live: 'chimes' (theremin taps), 'swell' (slow pads), or null.
+  // Which orb-driven layer is live: chimes, swell, final FX, or null.
   function orbLayerInst() {
     if (state !== 'playing' || phase !== 'build') return null;
     const inst = activeLayer().inst;
-    return inst === 'chimes' || inst === 'swell' ? inst : null;
+    return inst === 'chimes' || inst === 'swell' || inst === 'fx' ? inst : null;
   }
 
   function chimesActive() {
@@ -926,8 +1013,23 @@
     return inst === 'bass' || inst === 'keys';
   }
 
+  function asteroidSurfaceActive() {
+    return rockTapActive();
+  }
+
   function thereminCenter() {
     return { x: W / 2, y: (H - LOOP_PANEL_H) * 0.52, maxR: Math.min(W, H - LOOP_PANEL_H) * 0.44 };
+  }
+
+  function orbPullState() {
+    const tc = thereminCenter();
+    const dx = pointerX - tc.x;
+    const dy = pointerY - tc.y;
+    const dist = clamp(Math.hypot(dx, dy) / tc.maxR, 0, 1);
+    const angle = Math.atan2(dy, dx);
+    const deg = Math.round((dist - 0.12) / 0.88 * 9);
+    const shimmer = 0.5 + 0.5 * Math.sin(angle * 2);
+    return { ...tc, dist, angle, deg: clamp(deg, 0, 9), shimmer };
   }
 
   function padRect(row, col) {
@@ -957,6 +1059,67 @@
       pilotImg.onload = () => { imagesReady = true; };
       pilotImg.src = src;
     } catch(e) {}
+  }
+
+  function makeAsteroidRock(layer, option, lane, deg, x, y, r, role) {
+    return {
+      inst: layer.inst,
+      label: layer.inst === 'drums' ? option.label : noteNameForDegree(deg),
+      color: option.color,
+      lane,
+      deg,
+      x,
+      y,
+      baseX: x,
+      baseY: y,
+      r,
+      vx: 0,
+      vy: 0,
+      spin: role === 'bass-anchor' ? rand(-0.45, 0.45) : rand(-0.75, 0.75),
+      rot: rand(0, Math.PI * 2),
+      surface: true,
+      role,
+      rangeLabel: option.label,
+      driftSeed: rand(0, Math.PI * 2),
+      pulse: 0,
+    };
+  }
+
+  function initAsteroidSurface() {
+    const layer = activeLayer();
+    if (layer.inst !== 'bass' && layer.inst !== 'keys') return;
+    rocks = [];
+    bullets = [];
+    const top = 142;
+    const bottom = Math.max(top + 120, H - LOOP_PANEL_H - 78);
+    const spanY = bottom - top;
+    if (layer.inst === 'bass') {
+      layer.options.forEach((option, lane) => {
+        const degLo = option.degLo || 0;
+        const degHi = option.degHi == null ? degLo : option.degHi;
+        const deg = Math.round((degLo + degHi) / 2);
+        const x = laneCenter(lane);
+        const y = top + spanY * (0.52 + (lane - 1) * 0.10);
+        const r = [34, 30, 26][lane] || 28;
+        rocks.push(makeAsteroidRock(layer, option, lane, deg, x, y, r, 'bass-anchor'));
+      });
+      return;
+    }
+
+    layer.options.forEach((option, lane) => {
+      const degLo = option.degLo || 0;
+      const degHi = option.degHi == null ? degLo : option.degHi;
+      const count = Math.max(3, degHi - degLo + 1);
+      const beltY = top + spanY * (0.18 + lane * 0.31);
+      for (let i = 0; i < count; i++) {
+        const deg = degLo + Math.min(degHi - degLo, i);
+        const pitchT = count <= 1 ? 0 : i / (count - 1);
+        const x = (W * (i + 1)) / (count + 1);
+        const y = beltY + Math.sin((i / Math.max(1, count - 1)) * Math.PI) * 16;
+        const r = 27 - pitchT * 8;
+        rocks.push(makeAsteroidRock(layer, option, lane, deg, x, y, r, 'keys-belt'));
+      }
+    });
   }
 
   function rocksOverlap(a, b, margin) {
@@ -1105,6 +1268,7 @@
     beatAt = t + beatMs;
     spawnAt = t + 600;
     countKickPulse = 0;
+    if (asteroidSurfaceActive()) initAsteroidSurface();
     updateLoopButton();
     showLayerToast();
   }
@@ -1167,7 +1331,7 @@
         bucket.push(slot);
       }
     } else {
-      const stamp = { layerId: layer.id, layerIndex: currentLayerIndex, inst: layer.inst, note, color: rock.color, label: rock.label, tight, vel, skip: isNextStep ? 1 : 0 };
+      const stamp = { layerId: layer.id, layerIndex: currentLayerIndex, inst: layer.inst, note, piece: rock.piece || null, color: rock.color, label: rock.label, lane: rock.lane, tight, vel, skip: isNextStep ? 1 : 0 };
       if (slot) Object.assign(slot, stamp);
       else bucket.push(stamp);
     }
@@ -1221,6 +1385,7 @@
     rocks = [];
     bullets = [];
     applyLayerOptions();
+    if (asteroidSurfaceActive()) initAsteroidSurface();
     laneFlash = [1, 1, 1];
     if (restartPlayback !== false) restartLoopPlayback();
     updateLoopButton();
@@ -1257,6 +1422,7 @@
     grooveByLayer[li] = null;
     combo = 0;
     loopEndArmed = false;
+    if (asteroidSurfaceActive()) initAsteroidSurface();
     updateLoopButton();
     addFloatText('LAYER CLEARED', W * 0.5, H * 0.3, '#00e5ff');
     tone(520, 'sine', 0, 0.20, 0.05, 170);
@@ -1327,6 +1493,7 @@
     if (drumsActive()) return 'TAP DRUM PADS';
     if (rockTapActive()) return 'TAP THE ROCKS';
     const orb = orbLayerInst();
+    if (orb === 'fx') return 'HOLD + SHAPE FX';
     if (orb === 'swell') return 'HOLD + PULL';
     if (orb === 'chimes') return 'HOLD + PULL';
     return '';
@@ -1375,6 +1542,19 @@
     }
   }
 
+  function updateAsteroidSurface(dt, t) {
+    if (!asteroidSurfaceActive()) return;
+    if (!rocks || !rocks.length) initAsteroidSurface();
+    rocks.forEach((r, i) => {
+      const time = t * 0.001;
+      const amp = r.role === 'bass-anchor' ? 4 : 7;
+      r.x = clamp(r.baseX + Math.sin(time * 0.62 + r.driftSeed) * amp, r.r + 8, W - r.r - 8);
+      r.y = r.baseY + Math.cos(time * 0.48 + r.driftSeed + i) * (amp * 0.55);
+      r.rot += r.spin * dt / 1000;
+      r.pulse = Math.max(0, (r.pulse || 0) - dt / 220);
+    });
+  }
+
   function burst(x, y, color, n) {
     if (sparks.length > MAX_SPARKS) sparks.splice(0, sparks.length - MAX_SPARKS);
     for (let i = 0; i < n; i++) {
@@ -1399,6 +1579,7 @@
     if (rock.inst !== 'drums') rock.label = noteNameForDegree(rock.deg);
     playInstrument(rock.inst, { note, piece: rock.piece, vel: 1 });
     stampNote(rock, target, note, tight, isNextStep);
+    rock.pulse = 1;
     burst(rock.x, rock.y, rock.color, tight ? 8 : 4);
     combo = tight ? combo + 1 : 0;
     bestCombo = Math.max(bestCombo, combo);
@@ -1423,7 +1604,7 @@
       }
     });
     if (!best) return false;
-    if (hitRock(best.rock)) rocks.splice(best.index, 1);
+    if (hitRock(best.rock) && !best.rock.surface) rocks.splice(best.index, 1);
     return true;
   }
 
@@ -1454,23 +1635,36 @@
     // pulls from the center, distance picks the scale degree and the density.
     const orbInst = pointerActive ? orbLayerInst() : null;
     if (orbInst) {
-      const tc = thereminCenter();
-      const dist = clamp(Math.hypot(pointerX - tc.x, pointerY - tc.y) / tc.maxR, 0, 1);
-      if (dist > 0.12) {
-        const deg = Math.round((dist - 0.12) / 0.88 * 9);
+      const pull = orbPullState();
+      if (pull.dist > 0.12) {
         const isSwell = orbInst === 'swell';
-        const every = isSwell ? (dist > 0.7 ? 2 : 4) : (dist > 0.7 ? 1 : dist > 0.4 ? 2 : 4);
+        const isFx = orbInst === 'fx';
+        const every = isFx ? (pull.dist > 0.72 ? 6 : 12) : isSwell ? (pull.dist > 0.76 ? 3 : 6) : (pull.dist > 0.7 ? 1 : pull.dist > 0.4 ? 2 : 4);
         if (stepIndex % every === 0) {
-          const note = degreeFreq(deg, activeLayer().mult);
-          if (isSwell) playSwellChord(note, 0.4 + dist * 0.6, 0);
-          else playPitched('chimes', note, 0.55 + dist * 0.45, 0);
-          // Only re-stamp when the note at this step actually changes,
-          // so a held position doesn't flood the capture log.
-          const existing = loop[stepIndex].find(v => v.layerId === activeLayer().id);
-          if (!existing || existing.note !== note) {
-            stampNote({ lane: 1, label: noteNameForDegree(deg), color: isSwell ? '#ffe61a' : '#ff2db8' }, stepIndex, note, true, false);
+          const note = degreeFreq(pull.deg, activeLayer().mult);
+          if (isFx) {
+            const fx = fxChoiceForPull(pull);
+            playFxGesture(fx.piece, note, 0.52 + pull.dist * 0.36, 0, { intensity: pull.dist, tension: pull.shimmer });
+            const existing = loop[stepIndex].find(v => v.layerId === activeLayer().id);
+            if (!existing || existing.note !== note || existing.piece !== fx.piece) {
+              stampNote({ ...fx, lane: activeLayer().options.indexOf(fx) }, stepIndex, note, true, false);
+            }
+            thereminPulse = 0.95 + pull.dist * 0.35;
+          } else if (isSwell) playSwellChord(note, 0.34 + pull.dist * 0.52, 0, { openness: pull.dist, tension: pull.shimmer });
+          else {
+            playPitched('chimes', note, 0.55 + pull.dist * 0.45, 0);
+            tone(note * (2.01 + pull.shimmer * 0.5), 'sine', 0.018, 0.070, 0.006 + pull.shimmer * 0.009, note * (2.03 + pull.shimmer * 0.5));
+            if (pull.shimmer > 0.72) tone(note * 3.02, 'sine', 0.038, 0.045, 0.0045 * pull.shimmer, note * 3.04);
           }
-          thereminPulse = 1;
+          if (!isFx) {
+            // Only re-stamp when the note at this step actually changes,
+            // so a held position doesn't flood the capture log.
+            const existing = loop[stepIndex].find(v => v.layerId === activeLayer().id);
+            if (!existing || existing.note !== note) {
+              stampNote({ lane: 1, label: noteNameForDegree(pull.deg), color: isSwell ? '#ffe61a' : '#ff2db8' }, stepIndex, note, true, false);
+            }
+            thereminPulse = isSwell ? 1 : 0.75 + pull.shimmer * 0.35;
+          }
         }
       }
     }
@@ -1573,7 +1767,9 @@
       player.x = clamp(player.x, 24, W - 24);
     }
 
-    if (t >= spawnAt) {
+    if (asteroidSurfaceActive()) {
+      updateAsteroidSurface(dt, t);
+    } else if (t >= spawnAt) {
       spawnRock();
       if (activeLayer().inst === 'keys' && Math.random() < 0.28) spawnRock();
       const isKeys = activeLayer().inst === 'keys';
@@ -1619,13 +1815,15 @@
       }
     }
 
-    rocks.forEach(r => {
-      r.x += r.vx * dt / 1000;
-      r.y += r.vy * dt / 1000;
-      r.rot += r.spin * dt / 1000;
-      if (r.x < r.r || r.x > W - r.r) r.vx *= -1;
-    });
-    separateRocks();
+    if (!asteroidSurfaceActive()) {
+      rocks.forEach(r => {
+        r.x += r.vx * dt / 1000;
+        r.y += r.vy * dt / 1000;
+        r.rot += r.spin * dt / 1000;
+        if (r.x < r.r || r.x > W - r.r) r.vx *= -1;
+      });
+      separateRocks();
+    }
 
     for (let i = rocks.length - 1; i >= 0; i--) {
       const r = rocks[i];
@@ -1642,15 +1840,17 @@
       }
     }
 
-    for (let i = rocks.length - 1; i >= 0; i--) {
-      const r = rocks[i];
-      const dx = r.x - player.x, dy = r.y - player.y;
-      if (!directTapLayer && dx * dx + dy * dy <= (r.r + player.r) * (r.r + player.r)) {
-        rocks.splice(i, 1);
-        playerDamage(1);
-      } else if (r.y - r.r > H - LOOP_PANEL_H) {
-        rocks.splice(i, 1);
-        if (Math.random() < 0.18) addFloatText('REST', clamp(r.x, 28, W - 28), H - LOOP_PANEL_H - 30, 'rgba(234,255,255,0.58)');
+    if (!asteroidSurfaceActive()) {
+      for (let i = rocks.length - 1; i >= 0; i--) {
+        const r = rocks[i];
+        const dx = r.x - player.x, dy = r.y - player.y;
+        if (!directTapLayer && dx * dx + dy * dy <= (r.r + player.r) * (r.r + player.r)) {
+          rocks.splice(i, 1);
+          playerDamage(1);
+        } else if (r.y - r.r > H - LOOP_PANEL_H) {
+          rocks.splice(i, 1);
+          if (Math.random() < 0.18) addFloatText('REST', clamp(r.x, 28, W - 28), H - LOOP_PANEL_H - 30, 'rgba(234,255,255,0.58)');
+        }
       }
     }
 
@@ -1708,10 +1908,10 @@
     c.translate(r.x, r.y);
     c.rotate(r.rot);
     c.shadowColor = r.color;
-    c.shadowBlur = 14;
+    c.shadowBlur = 14 + (r.pulse || 0) * 22;
     c.fillStyle = r.inst === 'bass' ? '#2c2608' : r.inst === 'keys' ? '#26061e' : r.inst === 'chimes' ? '#1c0a26' : '#062432';
     c.strokeStyle = r.color;
-    c.lineWidth = 2;
+    c.lineWidth = 2 + (r.pulse || 0) * 1.5;
     c.beginPath();
     const points = r.inst === 'bass' ? 8 : 7;
     for (let i = 0; i < points; i++) {
@@ -1730,6 +1930,58 @@
     c.textBaseline = 'middle';
     c.fillText(r.inst === 'drums' ? '●' : (r.label || '♪'), 0, 1);
     c.restore();
+  }
+
+  function drawAsteroidSurface(c) {
+    if (!asteroidSurfaceActive()) return;
+    const layer = activeLayer();
+    c.save();
+    if (layer.inst === 'keys') {
+      for (let lane = 0; lane < LANES.length; lane++) {
+        const laneRocks = rocks.filter(r => r.lane === lane);
+        if (!laneRocks.length) continue;
+        const y = laneRocks.reduce((sum, r) => sum + r.baseY, 0) / laneRocks.length;
+        const color = LANES[lane].color;
+        c.strokeStyle = color;
+        c.globalAlpha = 0.18 + laneFlash[lane] * 0.16;
+        c.lineWidth = 2;
+        c.beginPath();
+        laneRocks.forEach((r, i) => {
+          const yy = y + Math.sin(i / Math.max(1, laneRocks.length - 1) * Math.PI) * 16;
+          if (i === 0) c.moveTo(r.baseX, yy); else c.lineTo(r.baseX, yy);
+        });
+        c.stroke();
+        c.globalAlpha = 0.72;
+        c.fillStyle = color;
+        c.font = "8px 'VCR', monospace";
+        c.textAlign = 'left';
+        c.fillText(LANES[lane].label, 12, y - 18);
+      }
+    } else if (layer.inst === 'bass') {
+      c.strokeStyle = 'rgba(255,230,26,0.18)';
+      c.lineWidth = 2;
+      c.beginPath();
+      rocks.forEach((r, i) => {
+        if (i === 0) c.moveTo(r.baseX, r.baseY);
+        else c.lineTo(r.baseX, r.baseY);
+      });
+      c.stroke();
+      rocks.forEach(r => {
+        c.globalAlpha = 0.18 + (r.pulse || 0) * 0.16;
+        c.strokeStyle = r.color;
+        c.lineWidth = 1.5;
+        c.beginPath();
+        c.arc(r.baseX, r.baseY, r.r + 13 + (r.pulse || 0) * 9, 0, Math.PI * 2);
+        c.stroke();
+        c.globalAlpha = 0.82;
+        c.fillStyle = r.color;
+        c.font = "8px 'VCR', monospace";
+        c.textAlign = 'center';
+        c.fillText(r.rangeLabel || LANES[r.lane].label, r.baseX, r.baseY + r.r + 20);
+      });
+    }
+    c.restore();
+    rocks.forEach(r => drawRock(c, r));
   }
 
   function drawBoss(c) {
@@ -1807,10 +2059,13 @@
   function drawTheremin(c) {
     const t = now();
     const tc = thereminCenter();
-    const isSwell = orbLayerInst() === 'swell';
+    const orbInst = orbLayerInst();
+    const isSwell = orbInst === 'swell';
+    const isFx = orbInst === 'fx';
+    const pull = pointerActive ? orbPullState() : null;
     // Chimes orb: sharp pink rings, quick shimmer. Swell orb: gold dashed
     // rings breathing slowly — you can tell which instrument you're holding.
-    const col = isSwell ? '#ffe61a' : '#ff2db8';
+    const col = isFx ? '#7bffea' : isSwell ? '#ffe61a' : '#ff2db8';
     const breathe = isSwell ? Math.sin(t * 0.0022) * 3 : Math.sin(t * 0.006) * 1.5;
     c.save();
     c.strokeStyle = col;
@@ -1823,6 +2078,30 @@
       c.stroke();
     });
     c.setLineDash([]);
+    if (!isSwell) {
+      for (let i = 0; i < 8; i += 1) {
+        const a = -Math.PI / 2 + i / 8 * Math.PI * 2;
+        const orbitR = tc.maxR * (i % 2 ? 0.82 : 0.62);
+        const delta = pull ? Math.abs(Math.atan2(Math.sin(pull.angle - a), Math.cos(pull.angle - a))) : Math.PI;
+        const active = pull && delta < 0.42;
+        c.globalAlpha = active ? 0.72 : 0.20;
+        c.fillStyle = active ? '#eaffff' : col;
+        c.beginPath();
+        c.arc(tc.x + Math.cos(a) * orbitR, tc.y + Math.sin(a) * orbitR, active ? 3.8 : 2, 0, Math.PI * 2);
+        c.fill();
+      }
+    }
+    if (isFx) {
+      activeLayer().options.forEach((fx, i) => {
+        const a = -Math.PI / 2 + i / 3 * Math.PI * 2;
+        const chosen = pull && fxChoiceForPull(pull).piece === fx.piece;
+        c.globalAlpha = chosen ? 0.82 : 0.34;
+        c.fillStyle = chosen ? fx.color : 'rgba(234,255,255,0.55)';
+        c.font = "8px 'VCR', monospace";
+        c.textAlign = 'center';
+        c.fillText(fx.label, tc.x + Math.cos(a) * tc.maxR * 0.72, tc.y + Math.sin(a) * tc.maxR * 0.72);
+      });
+    }
     // The orb
     c.shadowColor = col;
     c.shadowBlur = (isSwell ? 26 : 18) + thereminPulse * 22;
@@ -1832,24 +2111,61 @@
     c.arc(tc.x, tc.y, (isSwell ? 13 : 10) + thereminPulse * 6 + breathe, 0, Math.PI * 2);
     c.fill();
     c.shadowBlur = 0;
-    if (pointerActive) {
-      const dist = clamp(Math.hypot(pointerX - tc.x, pointerY - tc.y) / tc.maxR, 0, 1);
+    if (pull) {
+      const dist = pull.dist;
       c.globalAlpha = 0.55;
       c.lineWidth = 1.5;
       c.beginPath();
       c.moveTo(tc.x, tc.y);
       c.lineTo(pointerX, pointerY);
       c.stroke();
+      if (!isSwell && !isFx) {
+        c.globalAlpha = 0.18 + pull.shimmer * 0.34;
+        c.lineWidth = 2;
+        c.beginPath();
+        c.arc(tc.x, tc.y, tc.maxR * (0.42 + pull.shimmer * 0.20), pull.angle - 0.42, pull.angle + 0.42);
+        c.stroke();
+        c.globalAlpha = 0.45 + pull.shimmer * 0.25;
+        c.beginPath();
+        c.arc(tc.x + Math.cos(pull.angle) * tc.maxR * 0.28, tc.y + Math.sin(pull.angle) * tc.maxR * 0.28, 3 + pull.shimmer * 3, 0, Math.PI * 2);
+        c.fill();
+      } else if (isSwell) {
+        c.setLineDash([10, 8]);
+        for (let i = 0; i < 3; i += 1) {
+          c.globalAlpha = 0.10 + pull.dist * 0.16 - i * 0.025;
+          c.lineWidth = 2 + i;
+          c.beginPath();
+          c.arc(tc.x, tc.y, tc.maxR * (0.26 + pull.dist * 0.18 + i * 0.16) + breathe, pull.angle - 1.05, pull.angle + 1.05);
+          c.stroke();
+        }
+        c.setLineDash([]);
+        c.globalAlpha = 0.20 + pull.dist * 0.30;
+        c.lineWidth = 1.5;
+        c.beginPath();
+        c.arc(pointerX, pointerY, 14 + pull.dist * 16, 0, Math.PI * 2);
+        c.stroke();
+      } else if (isFx) {
+        const fx = fxChoiceForPull(pull);
+        c.globalAlpha = 0.24 + pull.dist * 0.30;
+        c.strokeStyle = fx.color;
+        c.lineWidth = 2;
+        c.beginPath();
+        c.arc(tc.x, tc.y, tc.maxR * (0.34 + pull.dist * 0.44), pull.angle - 0.28, pull.angle + 0.28);
+        c.stroke();
+        c.globalAlpha = 0.20 + pull.dist * 0.28;
+        c.beginPath();
+        c.arc(pointerX, pointerY, 12 + pull.dist * 18, 0, Math.PI * 2);
+        c.stroke();
+      }
       c.globalAlpha = 0.9;
       c.beginPath();
       c.arc(pointerX, pointerY, 6 + dist * 4, 0, Math.PI * 2);
       c.fill();
       if (dist > 0.12) {
-        const deg = Math.round((dist - 0.12) / 0.88 * 9);
         c.font = "9px 'VCR', monospace";
         c.textAlign = 'center';
         c.fillStyle = '#eaffff';
-        c.fillText(noteNameForDegree(deg), pointerX, pointerY - 16);
+        c.fillText(isFx ? fxChoiceForPull(pull).label : noteNameForDegree(pull.deg), pointerX, pointerY - 16);
       }
     } else {
       c.globalAlpha = 0.6;
@@ -1857,7 +2173,7 @@
       c.font = "9px 'VCR', monospace";
       c.textAlign = 'center';
       c.textBaseline = 'middle';
-      c.fillText(isSwell ? 'HOLD + PULL — SLOW WAVES' : 'HOLD + PULL', tc.x, tc.y + tc.maxR * 0.55);
+      c.fillText(isFx ? 'HOLD + SHAPE FX' : isSwell ? 'HOLD + PULL — SLOW WAVES' : 'HOLD + PULL', tc.x, tc.y + tc.maxR * 0.55);
     }
     c.restore();
     c.globalAlpha = 1;
@@ -2024,11 +2340,13 @@
     const counting = phase === 'countin' && state === 'playing';
     const padsVisible = drumsActive();
     const thereminVisible = chimesActive();
-    if (!counting && !padsVisible && !thereminVisible) drawLanes(c);
+    const surfaceVisible = asteroidSurfaceActive();
+    if (!counting && !padsVisible && !thereminVisible && !surfaceVisible) drawLanes(c);
     drawBoss(c);
     if (padsVisible) drawPads(c);
     if (thereminVisible) drawTheremin(c);
-    rocks.forEach(r => drawRock(c, r));
+    if (asteroidSurfaceActive()) drawAsteroidSurface(c);
+    else rocks.forEach(r => drawRock(c, r));
     if (!rockTapActive()) bullets.forEach(b => {
       c.save();
       c.shadowColor = COLOR;
