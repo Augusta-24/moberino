@@ -117,6 +117,7 @@
   let leftHeld = false, rightHeld = false, pointerActive = false, pointerX = 0, pointerY = 0;
   let thereminPulse = 0;
   let resizeHandler = null, keyDownHandler = null, keyUpHandler = null;
+  let signalShellApplied = false, gestureGuardHandler = null, gestureStartHandler = null, signalHeaderStyles = null, signalPageStyles = null, signalCanvasStyles = null;
   let imagesReady = false, pilotImg = null;
 
   function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
@@ -430,13 +431,89 @@
     [4, 2, 5, 1].forEach((deg, i) => playPitched('chimes', degreeFreq(deg, 4), 0.7, i * 0.08));
   }
 
+  function silenceArcadeMusic() {
+    try {
+      if (typeof ArcadeMusic !== 'undefined' && typeof ArcadeMusic.stop === 'function') ArcadeMusic.stop();
+      else if (typeof ArcadeMusic !== 'undefined' && typeof ArcadeMusic.duck === 'function') ArcadeMusic.duck();
+      if (typeof updateArcadeMusicPrompt === 'function') updateArcadeMusicPrompt();
+    } catch(e) {}
+  }
+
+  function applySignalShell() {
+    if (signalShellApplied) return;
+    const page = document.getElementById('pg-signal');
+    const header = document.querySelector('#pg-signal .cats-header');
+    if (page) {
+      signalPageStyles = { overflow: page.style.overflow, touchAction: page.style.touchAction };
+      page.style.overflow = 'hidden';
+      page.style.touchAction = 'none';
+    }
+    if (canvas) {
+      signalCanvasStyles = { touchAction: canvas.style.touchAction };
+      canvas.style.touchAction = 'none';
+    }
+    if (header) {
+      signalHeaderStyles = {
+        position: header.style.position,
+        zIndex: header.style.zIndex,
+        left: header.style.left,
+        right: header.style.right,
+        top: header.style.top,
+        pointerEvents: header.style.pointerEvents,
+      };
+      header.style.position = 'absolute';
+      header.style.left = '0';
+      header.style.right = '0';
+      header.style.top = '0';
+      header.style.zIndex = '40';
+      header.style.pointerEvents = 'auto';
+    }
+    gestureGuardHandler = e => {
+      if (!document.body.classList.contains('on-signal')) return;
+      if (e.touches && e.touches.length > 1) e.preventDefault();
+    };
+    gestureStartHandler = e => {
+      if (document.body.classList.contains('on-signal')) e.preventDefault();
+    };
+    document.addEventListener('touchmove', gestureGuardHandler, { passive: false });
+    document.addEventListener('gesturestart', gestureStartHandler, { passive: false });
+    signalShellApplied = true;
+  }
+
+  function restoreSignalShell() {
+    const page = document.getElementById('pg-signal');
+    const header = document.querySelector('#pg-signal .cats-header');
+    if (page && signalPageStyles) {
+      Object.assign(page.style, signalPageStyles);
+      signalPageStyles = null;
+    }
+    if (canvas && signalCanvasStyles) {
+      Object.assign(canvas.style, signalCanvasStyles);
+      signalCanvasStyles = null;
+    }
+    if (header && signalHeaderStyles) {
+      Object.assign(header.style, signalHeaderStyles);
+      signalHeaderStyles = null;
+    }
+    if (gestureGuardHandler) {
+      document.removeEventListener('touchmove', gestureGuardHandler);
+      gestureGuardHandler = null;
+    }
+    if (gestureStartHandler) {
+      document.removeEventListener('gesturestart', gestureStartHandler);
+      gestureStartHandler = null;
+    }
+    signalShellApplied = false;
+  }
+
   function fitCanvas() {
     if (!canvas) return;
-    const header = document.querySelector('#pg-signal .cats-header');
-    const top = header ? header.offsetHeight : 56;
     const btnSpace = loopButton && !loopButton.classList.contains('hidden') ? loopButton.offsetHeight + 12 : 0;
-    const availW = window.innerWidth || document.documentElement.clientWidth || 360;
-    const availH = (window.innerHeight || document.documentElement.clientHeight || 640) - top - btnSpace;
+    const vv = window.visualViewport;
+    const availW = (vv && vv.width) || window.innerWidth || document.documentElement.clientWidth || 360;
+    const safeTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat') || '0') || 0;
+    const safeBottom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sab') || '0') || 0;
+    const availH = ((vv && vv.height) || window.innerHeight || document.documentElement.clientHeight || 640) - btnSpace - safeTop - safeBottom;
     const ratio = 9 / 16;
     let cssH = Math.max(320, availH);
     let cssW = cssH * ratio;
@@ -1462,10 +1539,12 @@
     c.save();
     c.font = "10px 'VCR', monospace";
     c.textBaseline = 'top';
-    c.fillStyle = 'rgba(234,255,255,0.78)';
-    c.fillText(state === 'replay' ? 'REPLAY' : activeLayerLabel(), 12, 12);
-    c.textAlign = 'right';
-    c.fillText(String(score), W - 12, 12);
+    if (state === 'playing' || state === 'replay') {
+      c.fillStyle = 'rgba(234,255,255,0.78)';
+      c.fillText(state === 'replay' ? 'REPLAY' : activeLayerLabel(), 12, 12);
+      c.textAlign = 'right';
+      c.fillText(String(score), W - 12, 12);
+    }
     c.textAlign = 'left';
     // Loop rows live up top now, right under the layer title.
     if (state === 'playing' || state === 'replay') {
@@ -1728,7 +1807,7 @@
     state = 'playing';
     overlay.classList.add('hidden');
     updateLoopButton();
-    if (typeof ArcadeMusic !== 'undefined' && ArcadeMusic.duck) ArcadeMusic.duck();
+    silenceArcadeMusic();
     addFloatText('LAY THE KICK · TAP 4', W * 0.5, 132, COLOR, 1800);
     last = performance.now();
     cancelAnimationFrame(raf);
@@ -2058,6 +2137,7 @@
 
   function playRecipe(recipe) {
     if (!recipe || !Array.isArray(recipe.choices)) return;
+    silenceArcadeMusic();
     signalSettings = { ...signalSettings, ...(recipe.settings || {}) };
     applySettings();
     // Tapped tempos don't match any preset, so honor the recipe's exact beat.
@@ -2200,6 +2280,8 @@
     loopButton = document.getElementById('signal-loop-btn');
     resetButton = document.getElementById('signal-reset-btn');
     if (!canvas || !overlay) return;
+    applySignalShell();
+    silenceArcadeMusic();
     fitCanvas();
     loadPilot();
     attachInput();
@@ -2215,6 +2297,10 @@
       };
       window.addEventListener('resize', resizeHandler);
       window.addEventListener('orientationchange', resizeHandler);
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', resizeHandler);
+        window.visualViewport.addEventListener('scroll', resizeHandler);
+      }
     }
     if (!keyDownHandler) {
       keyDownHandler = e => {
@@ -2240,6 +2326,7 @@
     leftHeld = false;
     rightHeld = false;
     pointerActive = false;
+    restoreSignalShell();
     if (overlay) overlay.classList.remove('hidden');
   };
 
