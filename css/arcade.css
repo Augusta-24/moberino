@@ -27,6 +27,7 @@ html,
 body {
   touch-action: manipulation;
   overscroll-behavior: none;
+  overscroll-behavior-x: none;
 }
 html.arcade-root {
   background:
@@ -50,15 +51,17 @@ body.on-home {
   padding-bottom: 0;
 }
 /* Neon arcade floor — even diamond grid, fills full viewport */
-body.on-lobby, body.on-char, body.on-whack, body.on-match, body.on-space, body.on-snoob {
+body.on-lobby, body.on-char, body.on-whack, body.on-match, body.on-space, body.on-signal, body.on-snoob {
   min-height: var(--app-vh, 100dvh);
   background-color: #02040e;
   overflow: hidden;
   overscroll-behavior: none;
+  overscroll-behavior-x: none;
 }
 body.on-whack,
 body.on-match,
 body.on-space,
+body.on-signal,
 body.on-snoob {
   padding-bottom: 0 !important;
   background:
@@ -83,7 +86,7 @@ body.on-char {
     repeating-linear-gradient(-45deg, rgba(0,229,255,0.04) 0px, rgba(0,229,255,0.04) 1px, transparent 1px, transparent 31px);
   background-size: auto, 44px 44px, 44px 44px;
 }
-#pg-lobby, #pg-charselect, #pg-whack, #pg-match, #pg-space, #pg-snoob {
+#pg-lobby, #pg-charselect, #pg-whack, #pg-match, #pg-space, #pg-signal, #pg-snoob {
   background: transparent;
 }
 

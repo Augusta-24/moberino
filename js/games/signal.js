@@ -159,7 +159,10 @@
   let currentLayerIndex = 0, additionsThisLayer = 0, totalAdditions = 0;
   let mode = 'arcade', freeLayerIndex = 0, freeRecording = false;
   let freeLayerMenuKeepsLoop = false;
-  let recordedChoices = [], grooveByLayer = [], lastGrooveToast = null, replaying = false, replayUntil = 0;
+  let pendingStartMode = 'arcade';
+  let setupOpen = false;
+  let recordedChoices = [], undoStack = [], grooveByLayer = [], lastGrooveToast = null, replaying = false, replayUntil = 0;
+  let undoSeq = 0;
   let replayBall = null, replayHazards = [], replayPickups = [], replayToyScore = 0, replaySpawnAt = 0;
   let jukeboxRows = [], jukeboxBackTarget = 'intro';
   let signalSettings = { style: 'space-funk', mood: 'minor', tempo: 'medium' };
@@ -169,7 +172,7 @@
   let spawnAt = 0, manualFireAt = 0, beatAt = 0, stepIndex = 0, lastLoopStep = -1;
   let loopEndArmed = false;
   // 'countin': tempo setup before the loop starts. It seeds an even kick floor.
-  let phase = 'countin', countKickPulse = 0, countLockedText = '', tempoPreviewBeatAt = 0, lastTempoPreviewAt = 0;
+  let phase = 'countin', countKickPulse = 0, countLockedText = '', tempoPreviewBeatAt = 0, lastTempoPreviewAt = 0, countdown = null;
   let pads = [], padSpawnAt = 0;
   let fxJunk = [], swellInk = 0;
   let loop = [];
@@ -310,7 +313,7 @@
       btn.addEventListener('click', handler);
       return btn;
     };
-    freeChangeButton = makeButton('LAYER', showFreeLayerMenu);
+    freeChangeButton = makeButton('LAYER', () => showFreeLayerMenu(true));
     freeSaveButton = makeButton('SAVE', showFreeSave);
     freeMenuButton = makeButton('MENU', showIntro);
     freeControls.append(freeChangeButton, freeSaveButton, freeMenuButton);
@@ -360,7 +363,7 @@
   function updateFreeControls() {
     ensureFreeControls();
     if (!freeControls) return;
-    const show = state === 'playing' && isFreeMode();
+    const show = state === 'playing' && isFreeMode() && phase === 'build';
     const hasLoop = freeHasRecordedLoop();
     freeControls.style.display = show && hasLoop ? 'contents' : 'none';
     if (loopButton && loopButton.parentElement) {
@@ -388,24 +391,26 @@
       syncSignalChrome();
       return;
     }
+    const canUndo = canUndoLastStamp();
     if (isFreeMode()) {
-      loopButton.textContent = freeRecording ? 'RECORDING...' : 'RECORD LOOP';
+      loopButton.textContent = phase === 'countdown' ? 'STARTING...' : freeRecording ? 'RECORDING...' : 'RECORD LOOP';
       if (resetButton) {
-        resetButton.classList.toggle('hidden', false);
-        resetButton.textContent = 'CLEAR';
-        resetButton.title = 'Clear Free Mode loop';
-        resetButton.setAttribute('aria-label', 'Clear Free Mode loop');
+        resetButton.classList.toggle('hidden', phase !== 'build');
+        resetButton.textContent = canUndo ? 'UNDO' : 'CLEAR';
+        resetButton.title = canUndo ? 'Undo last note' : 'Clear Free Mode loop';
+        resetButton.setAttribute('aria-label', canUndo ? 'Undo last note' : 'Clear Free Mode loop');
       }
     } else {
       if (phase === 'countin') loopButton.textContent = 'START LOOP';
+      else if (phase === 'countdown') loopButton.textContent = 'STARTING...';
       else if (loopEndArmed) loopButton.textContent = 'SAVING LOOP...';
       else loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISH TRACK' : 'NEXT LOOP ›';
       // Reset (↻) only while actively building a layer — not during count-in.
       if (resetButton) {
         resetButton.classList.toggle('hidden', phase !== 'build');
-        resetButton.textContent = '↻';
-        resetButton.title = 'Clear this layer';
-        resetButton.setAttribute('aria-label', 'Clear this layer');
+        resetButton.textContent = canUndo ? 'UNDO' : 'CLEAR';
+        resetButton.title = canUndo ? 'Undo last note' : 'Clear this layer';
+        resetButton.setAttribute('aria-label', canUndo ? 'Undo last note' : 'Clear this layer');
       }
     }
     updateFreeControls();
@@ -900,6 +905,12 @@
     return signalExitButton;
   }
 
+  function canUndoLastStamp() {
+    if (state !== 'playing' || phase !== 'build' || !undoStack.length) return false;
+    const lastUndo = undoStack[undoStack.length - 1];
+    return lastUndo && lastUndo.layerIndex === currentLayerIndex;
+  }
+
   function syncSignalChrome() {
     const page = document.getElementById('pg-signal');
     const header = document.querySelector('#pg-signal .cats-header');
@@ -975,8 +986,8 @@
     row.style.maxWidth = 'none';
     row.style.margin = '0';
     row.style.zIndex = '60';
-    row.style.gridTemplateColumns = '56px minmax(0, 1fr) 42px';
-    row.style.gap = '8px';
+    row.style.gridTemplateColumns = '66px minmax(0, 1fr) 42px';
+    row.style.gap = '6px';
     row.style.alignItems = 'stretch';
     row.style.justifyContent = 'stretch';
     row.style.boxSizing = 'border-box';
@@ -989,17 +1000,19 @@
       loopButton.style.width = '100%';
       loopButton.style.maxWidth = 'none';
       loopButton.style.minHeight = '40px';
-      loopButton.style.fontSize = '10px';
-      loopButton.style.letterSpacing = '2px';
-      loopButton.style.padding = '0 8px';
+      loopButton.style.fontSize = '9px';
+      loopButton.style.letterSpacing = '1.6px';
+      loopButton.style.padding = '0 6px';
       loopButton.style.boxSizing = 'border-box';
     }
     if (resetButton) {
-      if (!signalResetButtonStyles) signalResetButtonStyles = snapshotStyles(resetButton, ['gridColumn', 'width', 'minHeight', 'fontSize', 'boxSizing']);
+      if (!signalResetButtonStyles) signalResetButtonStyles = snapshotStyles(resetButton, ['gridColumn', 'width', 'minHeight', 'fontSize', 'letterSpacing', 'padding', 'boxSizing']);
       resetButton.style.gridColumn = '1';
-      resetButton.style.width = '56px';
+      resetButton.style.width = '66px';
       resetButton.style.minHeight = '40px';
-      resetButton.style.fontSize = '22px';
+      resetButton.style.fontSize = '9px';
+      resetButton.style.letterSpacing = '0.7px';
+      resetButton.style.padding = '0 4px';
       resetButton.style.boxSizing = 'border-box';
     }
     if (exit) {
@@ -1149,6 +1162,8 @@
     additionsThisLayer = 0;
     totalAdditions = 0;
     recordedChoices = [];
+    undoStack = [];
+    undoSeq = 0;
     grooveByLayer = Array.from({ length: LAYERS.length }, () => null);
     lastGrooveToast = null;
     replaying = false;
@@ -1168,6 +1183,7 @@
     countLockedText = '';
     tempoPreviewBeatAt = 0;
     lastTempoPreviewAt = 0;
+    countdown = null;
     padSpawnAt = 0;
     fxJunk = [];
     swellInk = 0;
@@ -1623,7 +1639,7 @@
       manualFireAt = t + 150;
       return;
     }
-    if (phase === 'countin' && state === 'playing') {
+    if ((phase === 'countin' || phase === 'countdown') && state === 'playing') {
       playDrumPiece('kick', 0.45, 0);
       countKickPulse = 0.8;
       manualFireAt = t + 160;
@@ -1679,7 +1695,38 @@
     }
   }
 
+  function cloneLoopSlot(slot) {
+    return {
+      ...slot,
+      pieces: slot.pieces ? slot.pieces.slice() : slot.pieces,
+      tunes: slot.tunes ? slot.tunes.slice() : slot.tunes,
+      notes: slot.notes ? slot.notes.slice() : slot.notes,
+      labels: slot.labels ? slot.labels.slice() : slot.labels,
+    };
+  }
+
+  function snapshotBucket(bucket) {
+    return (bucket || []).map(cloneLoopSlot);
+  }
+
+  function undoLastStamp() {
+    if (!canUndoLastStamp()) return;
+    const undo = undoStack.pop();
+    loop[undo.step] = snapshotBucket(undo.beforeBucket);
+    recordedChoices = recordedChoices.filter(ch => ch.undoId !== undo.choiceId);
+    totalAdditions = Math.max(0, totalAdditions - 1);
+    additionsThisLayer = recordedChoices.filter(ch => choiceLayerIndex(ch) === currentLayerIndex && !ch.foundation).length;
+    grooveByLayer[currentLayerIndex] = null;
+    combo = 0;
+    loopEndArmed = false;
+    if (loopFlash[undo.step]) loopFlash[undo.step] = { pulse: 1, color: '#ff2db8', row: currentLayerIndex };
+    addFloatText('UNDONE', W * 0.5, H * 0.3, '#ff2db8', 650);
+    tone(300, 'triangle', 0, 0.09, 0.035, 170);
+    updateLoopButton();
+  }
+
   function startBuildPhase(t) {
+    countdown = null;
     phase = 'build';
     stepIndex = 0;
     lastLoopStep = 0;
@@ -1691,13 +1738,35 @@
     showLayerToast();
   }
 
+  function beginLoopCountdown(opts) {
+    if (state !== 'playing') return;
+    opts = opts || {};
+    const t = performance.now();
+    phase = 'countdown';
+    countdown = {
+      start: t,
+      beat: Math.max(220, Math.min(360, beatMs)),
+      last: 0,
+      seedFoundation: !!opts.seedFoundation,
+      afterClear: !!opts.afterClear,
+    };
+    stepIndex = 0;
+    lastLoopStep = -1;
+    beatAt = 0;
+    rocks = [];
+    bullets = [];
+    pointerActive = false;
+    pinchActive = false;
+    countKickPulse = 1;
+    if (overlay) overlay.classList.add('hidden');
+    updateLoopButton();
+    addFloatText(opts.afterClear ? 'RESETTING LOOP' : 'GET READY', W * 0.5, H * 0.3, '#ffe61a', 700);
+  }
+
   function skipCountIn() {
     if (phase !== 'countin' || state !== 'playing') return;
-    seedFoundationKicks();
     countLockedText = `TEMPO SET · ${tempoBpm()} BPM`;
-    if (overlay) overlay.classList.add('hidden');
-    const t = performance.now();
-    startBuildPhase(t);
+    beginLoopCountdown({ seedFoundation: true });
     addFloatText(countLockedText, W * 0.5, H * 0.34, '#ffe61a');
   }
 
@@ -1710,6 +1779,14 @@
       return;
     }
     const bucket = loop[target];
+    const choiceId = ++undoSeq;
+    undoStack.push({
+      choiceId,
+      step: target,
+      layerIndex: currentLayerIndex,
+      beforeBucket: snapshotBucket(bucket),
+    });
+    if (undoStack.length > 32) undoStack.shift();
     let slot = bucket.find(v => v.layerId === layer.id);
     if (layer.inst === 'drums') {
       const tune = rock.tune == null ? 0.5 : rock.tune;
@@ -1772,11 +1849,12 @@
       label: rock.label,
       color: rock.color,
       tight,
+      undoId: choiceId,
     });
     if (recordedChoices.length > 128) recordedChoices.shift();
     laneFlash[rock.lane] = Math.max(laneFlash[rock.lane], tight ? 1 : 0.6);
     if (loopFlash[target]) loopFlash[target] = { pulse: 1, color: rock.color || COLOR, row: currentLayerIndex };
-    if (isFreeMode()) updateFreeControls();
+    if (isFreeMode() || undoStack.length === 1) updateLoopButton();
   }
 
   function restartLoopPlayback() {
@@ -1799,6 +1877,7 @@
     lastGrooveToast = { layerIndex: committedLayerIndex, groove };
     addFloatText(`${LAYERS[committedLayerIndex].name} +${groove.total}`, W * 0.5, 104, '#ffe61a');
     loopEndArmed = false;
+    undoStack = [];
     if (currentLayerIndex >= LAYERS.length - 1) {
       finishTrack();
       return;
@@ -1840,6 +1919,7 @@
     }
     const before = recordedChoices.length;
     recordedChoices = recordedChoices.filter(ch => ch.layerIndex !== li || ch.foundation);
+    undoStack = [];
     totalAdditions = Math.max(0, totalAdditions - (before - recordedChoices.length));
     additionsThisLayer = recordedChoices.filter(ch => ch.layerIndex === li).length;
     grooveByLayer[li] = null;
@@ -1847,14 +1927,15 @@
     loopEndArmed = false;
     if (isFreeMode()) freeRecording = false;
     if (asteroidSurfaceActive()) initAsteroidSurface();
-    updateLoopButton();
     addFloatText(isFreeMode() ? 'LOOP CLEARED' : 'LAYER CLEARED', W * 0.5, H * 0.3, '#00e5ff');
     tone(520, 'sine', 0, 0.20, 0.05, 170);
     noise(0.02, 0.12, 0.02, true);
+    beginLoopCountdown({ afterClear: true });
   }
 
   function requestLoopEnd() {
     if (state !== 'playing' || loopEndArmed) return;
+    if (phase !== 'build') return;
     if (isFreeMode()) {
       freeRecording = !freeRecording;
       updateLoopButton();
@@ -1921,6 +2002,7 @@
 
   function layerHintText() {
     if (phase === 'countin') return 'SET TEMPO';
+    if (phase === 'countdown') return 'GET READY';
     if (drumsActive()) return 'TAP DRUM PADS';
     if (rockTapActive()) return 'TAP THE ROCKS';
     if (fxActive()) return 'TAP + PINCH JUNK';
@@ -2153,6 +2235,44 @@
 
   function update(dt, t) {
     elapsed += dt;
+    if (phase === 'countdown' && state === 'playing') {
+      if (!countdown) beginLoopCountdown();
+      const elapsedCount = Math.max(0, t - countdown.start);
+      const slot = Math.floor(elapsedCount / countdown.beat);
+      const number = 3 - slot;
+      if (number !== countdown.last && number > 0) {
+        countdown.last = number;
+        countKickPulse = 1;
+        playDrumPiece(number === 1 ? 'hat' : 'kick', number === 1 ? 0.78 : 0.68, 0);
+      }
+      if (slot >= 3) {
+        const shouldSeed = countdown.seedFoundation;
+        const afterClear = countdown.afterClear;
+        countdown = null;
+        if (shouldSeed) {
+          seedFoundationKicks();
+          startBuildPhase(t);
+        } else if (afterClear || isFreeMode()) {
+          phase = 'build';
+          restartLoopPlayback();
+          updateLoopButton();
+          showLayerToast();
+        } else {
+          startBuildPhase(t);
+        }
+        return;
+      }
+      for (let i = 0; i < laneFlash.length; i++) laneFlash[i] = Math.max(0, laneFlash[i] - dt / 360);
+      loopFlash.forEach(f => { f.pulse = Math.max(0, f.pulse - dt / 260); });
+      countKickPulse = Math.max(0, countKickPulse - dt / 240);
+      stars.forEach(s => {
+        s.y += s.vy * dt / 1000;
+        if (s.y > H) { s.y = -8; s.x = Math.random() * W; }
+      });
+      floatTexts.forEach(f => { f.age += dt; f.y -= dt * 0.018; });
+      floatTexts = floatTexts.filter(f => f.age < f.life);
+      return;
+    }
     if (phase === 'countin' && state === 'playing') {
       // Tempo preview: an audible kick floor before the run starts.
       if (!tempoPreviewBeatAt) tempoPreviewBeatAt = t + 180;
@@ -3070,13 +3190,14 @@
     c.restore();
 
     const counting = phase === 'countin' && state === 'playing';
+    const countdownActive = phase === 'countdown' && state === 'playing';
     const padsVisible = drumsActive();
     const thereminVisible = chimesActive();
     const swellVisible = swellActive();
     const fxVisible = fxActive();
     const replayVisible = state === 'replay';
     const surfaceVisible = asteroidSurfaceActive();
-    if (!counting && !padsVisible && !thereminVisible && !swellVisible && !fxVisible && !replayVisible && !surfaceVisible) drawLanes(c);
+    if (!counting && !countdownActive && !padsVisible && !thereminVisible && !swellVisible && !fxVisible && !replayVisible && !surfaceVisible) drawLanes(c);
     drawBoss(c);
     if (replayVisible) drawReplayPlayground(c);
     if (padsVisible) drawPads(c);
@@ -3104,7 +3225,7 @@
       c.fill();
     });
     c.globalAlpha = 1;
-    if (phase === 'countin' && state === 'playing') {
+    if ((phase === 'countin' || phase === 'countdown') && state === 'playing') {
       c.save();
       const cx = W * 0.5;
       const cy = H * 0.42;
@@ -3131,14 +3252,22 @@
       c.stroke();
       c.globalAlpha = 0.95;
       c.fillStyle = '#eaffff';
-      c.font = "22px 'VCR', monospace";
+      c.font = phase === 'countdown' ? "56px 'VCR', monospace" : "22px 'VCR', monospace";
       c.textAlign = 'center';
       c.textBaseline = 'middle';
-      c.fillText(`${tempoBpm()} BPM`, cx, cy - 2);
+      let mainText = `${tempoBpm()} BPM`;
+      let subText = 'SET TEMPO';
+      if (phase === 'countdown' && countdown) {
+        const elapsedCount = Math.max(0, now() - countdown.start);
+        const slot = Math.floor(elapsedCount / countdown.beat);
+        mainText = String(clamp(3 - slot, 1, 3));
+        subText = countdown.afterClear ? 'CLEAR · RESTART' : 'LOOP START';
+      }
+      c.fillText(mainText, cx, cy - 2);
       c.globalAlpha = 0.85;
       c.fillStyle = '#eaffff';
       c.font = "9px 'VCR', monospace";
-      c.fillText('SET TEMPO', cx, cy + 28);
+      c.fillText(subText, cx, cy + (phase === 'countdown' ? 46 : 28));
       c.restore();
       c.globalAlpha = 1;
     }
@@ -3155,7 +3284,7 @@
       c.restore();
       c.globalAlpha = 1;
     }
-    if (!counting && !padsVisible && !thereminVisible && !swellVisible && !fxVisible && !replayVisible && !rockTapActive()) drawShip(c);
+    if (!counting && !countdownActive && !padsVisible && !thereminVisible && !swellVisible && !fxVisible && !replayVisible && !rockTapActive()) drawShip(c);
     // Minimal footer line; the old beat-dot panel space belongs to gameplay now.
     c.fillStyle = '#02040e';
     c.fillRect(0, H - LOOP_PANEL_H, W, LOOP_PANEL_H);
@@ -3221,6 +3350,8 @@
   function showIntro() {
     cancelAnimationFrame(raf);
     mode = 'arcade';
+    pendingStartMode = 'arcade';
+    setupOpen = false;
     freeRecording = false;
     state = 'idle';
     replaying = false;
@@ -3233,11 +3364,31 @@
     overlay.innerHTML = `
       <div class="signal-panel">
         <div class="signal-title">SPACE AND SOUND</div>
-        ${presetControlsHTML()}
-        <button class="signal-btn" onclick="signalStart()">START SOUND</button>
-        <button class="signal-btn secondary" onclick="signalShowFreeLayers()">FREE MODE</button>
+        <button class="signal-btn" onclick="signalShowSetup('arcade')">START SOUND</button>
+        <button class="signal-btn secondary" onclick="signalShowSetup('free')">FREE MODE</button>
         <button class="signal-btn secondary" onclick="signalShowJukebox()">JUKEBOX</button>
       </div>`;
+  }
+
+  function showSetup(nextMode) {
+    pendingStartMode = nextMode === 'free' ? 'free' : 'arcade';
+    setupOpen = true;
+    overlay.classList.remove('hidden');
+    overlay.classList.add('signal-menu-mode');
+    overlay.classList.remove('signal-tempo-mode');
+    overlay.innerHTML = `
+      <div class="signal-panel">
+        <div class="signal-title">${pendingStartMode === 'free' ? 'FREE SETUP' : 'SOUND SETUP'}</div>
+        ${presetControlsHTML()}
+        <button class="signal-btn" onclick="signalConfirmSetup()">${pendingStartMode === 'free' ? 'CHOOSE LAYER' : 'START SOUND'}</button>
+        <button class="signal-btn secondary" onclick="signalShowIntro()">BACK TO MENU</button>
+      </div>`;
+  }
+
+  function confirmSetup() {
+    setupOpen = false;
+    if (pendingStartMode === 'free') showFreeLayerMenu(false);
+    else start();
   }
 
   function showTempoSetup() {
@@ -3273,9 +3424,10 @@
       </div>`;
   }
 
-  function showFreeLayerMenu() {
+  function showFreeLayerMenu(keepLoop) {
     cancelAnimationFrame(raf);
-    freeLayerMenuKeepsLoop = isFreeMode() && (state === 'playing' || freeHasRecordedLoop());
+    setupOpen = false;
+    freeLayerMenuKeepsLoop = keepLoop == null ? isFreeMode() && (state === 'playing' || freeHasRecordedLoop()) : !!keepLoop;
     mode = 'free';
     state = 'built';
     freeRecording = false;
@@ -3290,6 +3442,7 @@
   function switchFreeLayer(index) {
     freeLayerIndex = clamp(Math.floor(index || 0), 0, LAYERS.length - 1);
     currentLayerIndex = freeLayerIndex;
+    undoStack = [];
     additionsThisLayer = recordedChoices.filter(ch => choiceLayerIndex(ch) === currentLayerIndex).length;
     rocks = [];
     bullets = [];
@@ -3315,7 +3468,7 @@
     silenceArcadeMusic();
     overlay.classList.add('hidden');
     updateLoopButton();
-    restartLoopPlayback();
+    beginLoopCountdown();
     last = performance.now();
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(frame);
@@ -3331,6 +3484,7 @@
     if (nextLayer !== currentLayerIndex && freeHasRecordedLoop()) {
       loop = Array.from({ length: LOOP_STEPS }, () => []);
       recordedChoices = [];
+      undoStack = [];
       grooveByLayer = Array.from({ length: LAYERS.length }, () => null);
       additionsThisLayer = 0;
       totalAdditions = 0;
@@ -3342,6 +3496,7 @@
     freeRecording = false;
     overlay.classList.add('hidden');
     updateLoopButton();
+    restartLoopPlayback();
     last = performance.now();
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(frame);
@@ -3729,6 +3884,7 @@
     phase = 'build';
     loop = recipeToLoop(recipe);
     recordedChoices = recipe.choices.map(c => ({ ...c, phrase: c.phrase ? c.phrase.slice() : [] }));
+    undoStack = [];
     grooveByLayer = LAYERS.map(layer => recipe.grooveByLayer && recipe.grooveByLayer[layer.id] ? recipe.grooveByLayer[layer.id] : null);
     lastGrooveToast = null;
     if (isFreeMode() && recipe.meta && Number.isFinite(recipe.meta.freeLayerIndex)) {
@@ -3911,6 +4067,8 @@
     skipCountIn();
   };
   window.signalShowFreeLayers = showFreeLayerMenu;
+  window.signalShowSetup = showSetup;
+  window.signalConfirmSetup = confirmSetup;
   window.signalStartFreeMode = startFreeMode;
   window.signalChooseFreeLayer = chooseFreeLayer;
   window.signalResumeFreeMode = resumeFreeMode;
@@ -3923,7 +4081,8 @@
   window.signalResetLoop = function(e) {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-    resetCurrentLoop();
+    if (canUndoLastStamp()) undoLastStamp();
+    else resetCurrentLoop();
   };
   window.signalSaveScore = saveScore;
   window.signalSaveRecipe = saveRecipe;
@@ -3946,7 +4105,8 @@
     if (!SIGNAL_PRESETS[group] || !SIGNAL_PRESETS[group].some(p => p.id === value)) return;
     signalSettings[group] = value;
     applySettings();
-    showIntro();
+    if (setupOpen) showSetup(pendingStartMode);
+    else showIntro();
   };
   window.signalCyclePreset = function(group, dir) {
     const presets = SIGNAL_PRESETS[group];
@@ -3955,7 +4115,8 @@
     const next = (current + (dir || 1) + presets.length) % presets.length;
     signalSettings[group] = presets[next].id;
     applySettings();
-    showIntro();
+    if (setupOpen) showSetup(pendingStartMode);
+    else showIntro();
   };
 
   window.initSignal = function() {

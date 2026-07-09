@@ -97,6 +97,46 @@
   window.updateArcadeInstallPrompt = updateArcadeInstallPrompt;
   window.updateArcadeMusicPrompt = updateArcadeMusicPrompt;
 
+  let arcadeEdgeSwipe = null;
+  function arcadeSwipeGuardActive() {
+    return document.body.matches('.on-lobby,.on-char,.on-whack,.on-match,.on-space,.on-signal,.on-snoob');
+  }
+
+  document.addEventListener('touchstart', e => {
+    if (!arcadeSwipeGuardActive() || !e.touches || e.touches.length !== 1) {
+      arcadeEdgeSwipe = null;
+      return;
+    }
+    const touch = e.touches[0];
+    const width = window.innerWidth || document.documentElement.clientWidth || 0;
+    const edgeSize = Math.max(28, Math.min(46, width * 0.08));
+    const nearLeftEdge = touch.clientX <= edgeSize;
+    const nearRightEdge = width - touch.clientX <= edgeSize;
+    arcadeEdgeSwipe = nearLeftEdge || nearRightEdge
+      ? { x: touch.clientX, y: touch.clientY, edge: nearLeftEdge ? 'left' : 'right', locked: false }
+      : null;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    if (!arcadeEdgeSwipe || !arcadeSwipeGuardActive() || !e.touches || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - arcadeEdgeSwipe.x;
+    const dy = touch.clientY - arcadeEdgeSwipe.y;
+    const horizontalSwipe = Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.15;
+    const leavingEdge = arcadeEdgeSwipe.edge === 'left' ? dx > 0 : dx < 0;
+    if ((horizontalSwipe && leavingEdge) || arcadeEdgeSwipe.locked) {
+      arcadeEdgeSwipe.locked = true;
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  document.addEventListener('touchend', () => {
+    arcadeEdgeSwipe = null;
+  }, { passive: true });
+  document.addEventListener('touchcancel', () => {
+    arcadeEdgeSwipe = null;
+  }, { passive: true });
+
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     arcadeInstallPromptEvent = e;
