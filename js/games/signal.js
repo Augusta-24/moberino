@@ -608,16 +608,21 @@
     // tune 0..1 maps across the pad row: left = lower/tighter, right = higher/opener.
     const tn = tune == null ? 0.5 : clamp(tune, 0, 1);
     if (piece === 'hat') {
-      filteredNoise(dl, 0.038 + tn * 0.025, 0.025 * v, 'highpass', 5600 + tn * 1400, 0.7);
-      filteredNoise(dl + 0.012, 0.026, 0.010 * v, 'bandpass', 7900 + tn * 900, 1.1);
+      filteredNoise(dl, 0.046 + tn * 0.030, 0.034 * v, 'highpass', 4700 + tn * 1300, 0.7);
+      filteredNoise(dl + 0.010, 0.032, 0.016 * v, 'bandpass', 7200 + tn * 900, 1.0);
+      filteredNoise(dl + 0.004, 0.020, 0.010 * v, 'bandpass', 3100 + tn * 700, 1.5);
     } else if (piece === 'tri') {
-      filteredNoise(dl, 0.16 + tn * 0.08, 0.020 * v, 'highpass', 7200 + tn * 1200, 0.9);
-      filteredNoise(dl + 0.004, 0.10, 0.010 * v, 'bandpass', 9800, 1.3);
+      const f = 2850 + tn * 1150;
+      filteredNoise(dl, 0.012, 0.010 * v, 'highpass', 7200, 0.8);
+      tone(f, 'sine', dl, 0.46, 0.040 * v, f * 1.002);
+      tone(f * 1.505, 'sine', dl + 0.004, 0.30, 0.014 * v, f * 1.508);
+      tone(f * 2.01, 'sine', dl + 0.008, 0.20, 0.007 * v, f * 2.012);
     } else if (piece === 'bell') {
-      const f = 620 + tn * 260;
-      filteredNoise(dl, 0.038, 0.016 * v, 'bandpass', 1200 + tn * 420, 2.6);
-      tone(f, 'square', dl, 0.075, 0.020 * v, f * 0.985);
-      tone(f * 1.47, 'triangle', dl + 0.002, 0.055, 0.010 * v, f * 1.45);
+      const f = 720 + tn * 260;
+      filteredNoise(dl, 0.018, 0.014 * v, 'bandpass', 2400 + tn * 420, 2.8);
+      tone(f, 'triangle', dl, 0.22, 0.038 * v, f * 0.996);
+      tone(f * 1.47, 'sine', dl + 0.003, 0.18, 0.021 * v, f * 1.465);
+      tone(f * 2.18, 'sine', dl + 0.006, 0.11, 0.010 * v, f * 2.17);
     } else if (piece === 'gong') {
       const f = 115 + tn * 42;
       filteredNoise(dl, 0.30 + tn * 0.12, 0.030 * v, 'lowpass', 1800 + tn * 450, 0.8, 520 + tn * 160);
@@ -631,15 +636,15 @@
     } else if (piece === 'guiro') {
       for (let i = 0; i < 7; i++) {
         const scrapeT = i / 6;
-        filteredNoise(dl + i * (0.014 + tn * 0.004), 0.020, 0.010 * v, 'bandpass', 760 + scrapeT * (1250 + tn * 700), 5.4, 620 + scrapeT * 900);
+        filteredNoise(dl + i * (0.014 + tn * 0.004), 0.020, 0.016 * v, 'bandpass', 760 + scrapeT * (1250 + tn * 700), 5.4, 620 + scrapeT * 900);
       }
-      filteredNoise(dl, 0.13 + tn * 0.03, 0.010 * v, 'bandpass', 1180 + tn * 520, 2.2, 760 + tn * 260);
+      filteredNoise(dl, 0.13 + tn * 0.03, 0.017 * v, 'bandpass', 1180 + tn * 520, 2.2, 760 + tn * 260);
     } else if (piece === 'shaker') {
-      filteredNoise(dl, 0.064 + tn * 0.040, 0.018 * v, 'highpass', 4300 + tn * 900, 0.8);
-      filteredNoise(dl + 0.034, 0.036, 0.010 * v, 'highpass', 5200 + tn * 900, 0.9);
+      filteredNoise(dl, 0.064 + tn * 0.040, 0.030 * v, 'highpass', 3900 + tn * 900, 0.8);
+      filteredNoise(dl + 0.034, 0.036, 0.017 * v, 'highpass', 5000 + tn * 900, 0.9);
     } else if (piece === 'cabasa') {
-      for (let i = 0; i < 8; i++) filteredNoise(dl + i * 0.010, 0.016, 0.0065 * v, 'highpass', 3600 + tn * 900, 1.4);
-      filteredNoise(dl + 0.006, 0.11, 0.012 * v, 'bandpass', 2300 + tn * 650, 3.4, 1750 + tn * 420);
+      for (let i = 0; i < 8; i++) filteredNoise(dl + i * 0.010, 0.016, 0.011 * v, 'highpass', 3300 + tn * 900, 1.4);
+      filteredNoise(dl + 0.006, 0.11, 0.020 * v, 'bandpass', 2200 + tn * 650, 3.4, 1750 + tn * 420);
     } else if (piece === 'tom') {
       const f = 112 + tn * 126;
       filteredNoise(dl, 0.020, 0.018 * v, 'lowpass', 1200 + tn * 400, 0.9);
@@ -654,10 +659,10 @@
       filteredNoise(dl + 0.018, 0.035, 0.024 * v, 'highpass', 1900, 0.8);
       filteredNoise(dl + 0.042, 0.075, 0.018 * v, 'highpass', 1700, 0.8);
     } else if (piece === 'rim') {
-      const f = 1220 + tn * 360;
-      filteredNoise(dl, 0.018, 0.010 * v, 'bandpass', 2400 + tn * 500, 3.4);
-      tone(f, 'triangle', dl, 0.036, 0.023 * v, f * 0.92);
-      tone(f * 0.42, 'sine', dl + 0.001, 0.032, 0.011 * v, f * 0.39);
+      const f = 1420 + tn * 460;
+      filteredNoise(dl, 0.014, 0.020 * v, 'bandpass', 2600 + tn * 700, 4.8);
+      tone(f, 'square', dl, 0.030, 0.040 * v, f * 0.90);
+      tone(f * 0.46, 'triangle', dl + 0.001, 0.026, 0.020 * v, f * 0.42);
     } else if (piece === 'kick') {
       const f = 82 + tn * 18;
       tone(f * 1.9, 'triangle', dl, 0.018, 0.030 * v, f * 1.18);
