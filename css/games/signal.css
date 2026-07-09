@@ -44,16 +44,17 @@
 }
 #signal-overlay.hidden { display: none; }
 #signal-overlay.signal-menu-mode {
-  top: 0;
+  top: max(56px, env(safe-area-inset-top, 0px));
   max-width: none;
-  overflow: hidden;
+  overflow-y: auto;
+  justify-content: flex-start;
   background: #02040e;
   padding: 14px;
 }
 #signal-overlay.signal-menu-mode .signal-panel {
   width: min(100%, 620px);
-  max-height: none;
-  overflow: visible;
+  max-height: 100%;
+  overflow-y: auto;
   padding: 22px 20px;
 }
 #signal-overlay.signal-menu-mode .signal-title {
@@ -271,6 +272,43 @@
   letter-spacing: 1.5px;
   color: rgba(234, 255, 255, 0.46);
 }
+.signal-mix-panel .signal-title {
+  font-size: 54px;
+}
+.signal-mix-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+.signal-mix-row {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr) 48px;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 6px 8px;
+  border: 1px solid rgba(234, 255, 255, 0.14);
+  border-radius: 5px;
+  background: rgba(0, 229, 255, 0.05);
+}
+.signal-mix-name,
+.signal-mix-value {
+  font-family: 'VCR', monospace;
+  font-size: 9px;
+  letter-spacing: 1.1px;
+  text-align: left;
+}
+.signal-mix-value {
+  color: rgba(234, 255, 255, 0.72);
+  text-align: right;
+}
+.signal-mix-slider {
+  width: 100%;
+  min-width: 0;
+  accent-color: #00e5ff;
+  cursor: pointer;
+}
 .signal-btn {
   width: 100%;
   min-height: 56px;
@@ -296,23 +334,24 @@
 @media (max-width: 560px) {
   .signal-panel {
     width: min(100%, 460px);
-    padding: 18px 14px;
-  }
-  #signal-overlay.signal-menu-mode {
-    padding: 10px;
-  }
-  #signal-overlay.signal-menu-mode .signal-panel {
     padding: 16px 12px;
   }
+  #signal-overlay.signal-menu-mode {
+    padding: 8px 8px calc(env(safe-area-inset-bottom, 0px) + 8px);
+  }
+  #signal-overlay.signal-menu-mode .signal-panel {
+    max-height: 100%;
+    padding: 13px 10px;
+  }
   #signal-overlay.signal-menu-mode .signal-title {
-    font-size: 42px;
+    font-size: 38px;
   }
   .signal-title {
     font-size: 46px;
   }
   .signal-preset-row {
     grid-template-columns: 1fr;
-    gap: 6px;
+    gap: 5px;
   }
   .signal-preset-label {
     text-align: left;
@@ -337,7 +376,7 @@
     padding: 12px;
   }
   #signal-overlay.signal-tempo-mode .signal-panel {
-    padding: 22px 14px;
+    padding: 19px 12px;
   }
   #signal-overlay.signal-tempo-mode .signal-title {
     font-size: 52px;
@@ -349,11 +388,37 @@
   #signal-overlay.signal-tempo-mode .signal-tempo-value {
     font-size: 28px;
   }
+  .signal-mix-panel .signal-title {
+    font-size: 42px;
+  }
+  .signal-mix-row {
+    grid-template-columns: 64px minmax(0, 1fr) 42px;
+    gap: 6px;
+    min-height: 30px;
+    padding: 5px 6px;
+  }
+  .signal-mix-name,
+  .signal-mix-value {
+    font-size: 8px;
+    letter-spacing: 0.7px;
+  }
   .signal-chip {
-    min-height: 38px;
-    font-size: 11px;
+    min-height: 34px;
+    font-size: 10px;
     letter-spacing: 0.5px;
-    padding: 9px 6px;
+    padding: 7px 5px;
+  }
+  .signal-presets {
+    gap: 9px;
+    margin-top: 14px;
+  }
+  .signal-preset-chip-grid {
+    gap: 6px;
+  }
+  .signal-btn {
+    min-height: 50px;
+    margin-top: 14px;
+    font-size: 12px;
   }
 }
 .signal-stats {

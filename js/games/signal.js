@@ -15,6 +15,24 @@
   const MAX_DRUM_STACK = 6;
   const MAX_PIANO_STACK = 6;
   const SIGNAL_MASTER_GAIN = 1.00;
+  const COUNTDOWN_STEP_MS = 1000;
+  const DRUM_BUS_GAIN = 0.78;
+  const DEFAULT_LAYER_VOLUMES = { drums: 1, bass: 1, keys: 1, chimes: 1, swell: 1, fx: 1 };
+  const DRUM_PIECE_GAINS = {
+    kick: 0.92,
+    tom: 0.82,
+    snare: 0.86,
+    rim: 0.84,
+    hat: 0.62,
+    shaker: 0.66,
+    cabasa: 0.68,
+    guiro: 0.72,
+    tri: 0.72,
+    bell: 0.76,
+    gong: 0.84,
+    clave: 0.72,
+    clap: 0.82,
+  };
   // Small reserved footer; gameplay now uses the room formerly occupied by beat dots.
   const LOOP_PANEL_H = 24;
   const PAD_COLS = 4;
@@ -148,7 +166,7 @@
     'crystal-cave': { root: 104.65, rootSemi: 8, bassWave: 'sine', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.66, shimmer: 2.5, bassWeight: 0.74, keyGlow: 1.35, echo: 1.55, resonance: 1.6 },
   };
 
-  let canvas = null, ctx = null, overlay = null, loopButton = null, resetButton = null, signalExitButton = null;
+  let canvas = null, ctx = null, overlay = null, loopButton = null, resetButton = null, undoButton = null, signalExitButton = null;
   let freeControls = null, freeChangeButton = null, freeSaveButton = null, freeMenuButton = null;
   let loopButtonStyleCache = null, resetButtonStyleCache = null;
   let W = 0, H = 0, dpr = 1, raf = 0, last = 0, state = 'idle';
@@ -166,12 +184,13 @@
   let replayBall = null, replayHazards = [], replayPickups = [], replayToyScore = 0, replaySpawnAt = 0;
   let jukeboxRows = [], jukeboxBackTarget = 'intro';
   let signalSettings = { style: 'space-funk', mood: 'minor', tempo: 'medium' };
+  let layerVolumes = { ...DEFAULT_LAYER_VOLUMES };
   let beatMs = DEFAULT_BEAT_MS;
   let laneFlash = [0, 0, 0];
   let loopFlash = [];
   let spawnAt = 0, manualFireAt = 0, beatAt = 0, stepIndex = 0, lastLoopStep = -1;
   let loopEndArmed = false;
-  // 'countin': tempo setup before the loop starts. It seeds an even kick floor.
+  // 'countin': tempo setup before the loop starts.
   let phase = 'countin', countKickPulse = 0, countLockedText = '', tempoPreviewBeatAt = 0, lastTempoPreviewAt = 0, countdown = null;
   let pads = [], padSpawnAt = 0;
   let fxJunk = [], swellInk = 0;
@@ -180,7 +199,7 @@
   let pinchActive = false, pinchStartDist = 0, pinchJunk = null, pinchStamped = false;
   let thereminPulse = 0;
   let resizeHandler = null, keyDownHandler = null, keyUpHandler = null;
-  let signalShellApplied = false, gestureGuardHandler = null, gestureStartHandler = null, signalHeaderStyles = null, signalHeaderActionStyles = null, signalHeaderBackStyles = null, signalPageStyles = null, signalCanvasStyles = null, signalLoopRowStyles = null, signalLoopButtonStyles = null, signalResetButtonStyles = null;
+  let signalShellApplied = false, gestureGuardHandler = null, gestureStartHandler = null, signalHeaderStyles = null, signalHeaderActionStyles = null, signalHeaderBackStyles = null, signalPageStyles = null, signalCanvasStyles = null, signalLoopRowStyles = null, signalLoopButtonStyles = null, signalResetButtonStyles = null, signalUndoButtonStyles = null;
   let imagesReady = false, pilotImg = null;
 
   function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
@@ -222,6 +241,8 @@
     return NOTE_NAMES[(styleDef().rootSemi + st) % 12];
   }
   function activeLayer() { return LAYERS[clamp(currentLayerIndex, 0, LAYERS.length - 1)] || LAYERS[0]; }
+  function swellSurfaceTop() { return 158; }
+  function swellSurfaceBottom() { return H - LOOP_PANEL_H - 20; }
   function activeLayerLabel() { return isFreeMode() ? `FREE MODE: ${activeLayer().name}` : `LAYER ${currentLayerIndex + 1}: ${activeLayer().name}`; }
   function fallbackStepsForType(type) {
     const steps = WRITE_STEPS[type] || [0];
@@ -235,6 +256,31 @@
   }
   function choiceLayerIndex(choice) {
     return clamp(choice && Number.isFinite(choice.layerIndex) ? choice.layerIndex : ((choice && choice.loop ? choice.loop : 1) - 1), 0, LAYERS.length - 1);
+  }
+  function normalizeLayerVolumes(mix) {
+    const src = (mix && mix.layerVolumes) || mix || {};
+    const next = { ...DEFAULT_LAYER_VOLUMES };
+    LAYERS.forEach(layer => {
+      const raw = Number(src[layer.id]);
+      next[layer.id] = Number.isFinite(raw) ? clamp(raw, 0, 1.25) : 1;
+    });
+    return next;
+  }
+  function layerVolumeForId(id) {
+    return Number.isFinite(layerVolumes[id]) ? clamp(layerVolumes[id], 0, 1.25) : 1;
+  }
+  function slotLayerId(slot) {
+    if (slot && DEFAULT_LAYER_VOLUMES.hasOwnProperty(slot.layerId)) return slot.layerId;
+    const byIndex = slot && LAYERS[choiceLayerIndex(slot)];
+    if (byIndex) return byIndex.id;
+    return slot && DEFAULT_LAYER_VOLUMES.hasOwnProperty(slot.inst) ? slot.inst : 'drums';
+  }
+  function setLayerVolume(id, value) {
+    if (!DEFAULT_LAYER_VOLUMES.hasOwnProperty(id)) return;
+    const raw = Number(value);
+    layerVolumes[id] = Number.isFinite(raw) ? clamp(raw / 100, 0, 1.25) : 1;
+    const label = document.getElementById(`signal-mix-value-${id}`);
+    if (label) label.textContent = `${Math.round(layerVolumes[id] * 100)}%`;
   }
   function layerSlotAt(step, layerIndex) {
     const layer = LAYERS[layerIndex];
@@ -363,7 +409,7 @@
   function updateFreeControls() {
     ensureFreeControls();
     if (!freeControls) return;
-    const show = state === 'playing' && isFreeMode() && phase === 'build';
+    const show = false;
     const hasLoop = freeHasRecordedLoop();
     freeControls.style.display = show && hasLoop ? 'contents' : 'none';
     if (loopButton && loopButton.parentElement) {
@@ -381,11 +427,12 @@
   }
   function updateLoopButton() {
     if (!loopButton) return;
-    const show = state === 'playing';
+    const show = state === 'playing' && phase !== 'countin' && phase !== 'countdown';
     const wasHidden = loopButton.classList.contains('hidden');
     loopButton.classList.toggle('hidden', !show);
     if (wasHidden === show) fitCanvas();
     if (resetButton) resetButton.classList.toggle('hidden', !(show && phase === 'build'));
+    if (undoButton) undoButton.classList.toggle('hidden', !(show && phase === 'build'));
     if (!show) {
       updateFreeControls();
       syncSignalChrome();
@@ -393,25 +440,32 @@
     }
     const canUndo = canUndoLastStamp();
     if (isFreeMode()) {
-      loopButton.textContent = phase === 'countdown' ? 'STARTING...' : freeRecording ? 'RECORDING...' : 'RECORD LOOP';
+      loopButton.textContent = 'NEXT LOOP';
       if (resetButton) {
         resetButton.classList.toggle('hidden', phase !== 'build');
-        resetButton.textContent = canUndo ? 'UNDO' : 'CLEAR';
-        resetButton.title = canUndo ? 'Undo last note' : 'Clear Free Mode loop';
-        resetButton.setAttribute('aria-label', canUndo ? 'Undo last note' : 'Clear Free Mode loop');
+        resetButton.textContent = 'CLEAR';
+        resetButton.title = 'Clear Free Mode loop';
+        resetButton.setAttribute('aria-label', 'Clear Free Mode loop');
       }
     } else {
-      if (phase === 'countin') loopButton.textContent = 'START LOOP';
-      else if (phase === 'countdown') loopButton.textContent = 'STARTING...';
-      else if (loopEndArmed) loopButton.textContent = 'SAVING LOOP...';
+      if (loopEndArmed) loopButton.textContent = 'SAVING LOOP...';
       else loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISH TRACK' : 'NEXT LOOP ›';
       // Reset (↻) only while actively building a layer — not during count-in.
       if (resetButton) {
         resetButton.classList.toggle('hidden', phase !== 'build');
-        resetButton.textContent = canUndo ? 'UNDO' : 'CLEAR';
-        resetButton.title = canUndo ? 'Undo last note' : 'Clear this layer';
-        resetButton.setAttribute('aria-label', canUndo ? 'Undo last note' : 'Clear this layer');
+        resetButton.textContent = 'CLEAR';
+        resetButton.title = 'Clear this layer';
+        resetButton.setAttribute('aria-label', 'Clear this layer');
       }
+    }
+    if (undoButton) {
+      undoButton.classList.toggle('hidden', phase !== 'build');
+      undoButton.disabled = !canUndo;
+      undoButton.textContent = 'UNDO';
+      undoButton.title = canUndo ? 'Undo last note' : 'Nothing to undo yet';
+      undoButton.setAttribute('aria-label', canUndo ? 'Undo last note' : 'Nothing to undo yet');
+      undoButton.style.opacity = canUndo ? '1' : '0.46';
+      undoButton.style.cursor = canUndo ? 'pointer' : 'default';
     }
     updateFreeControls();
     syncSignalChrome();
@@ -610,7 +664,8 @@
   //    built from 2-3 stacked tones with slight detune drift.
   function playDrumPiece(piece, vel, delay, tune) {
     const d = soundProfile();
-    const v = (vel == null ? 1 : vel) * d.drumVol;
+    const pieceGain = DRUM_PIECE_GAINS[piece] || 0.78;
+    const v = (vel == null ? 1 : vel) * d.drumVol * DRUM_BUS_GAIN * pieceGain;
     const dl = delay || 0;
     // tune 0..1 maps across the pad row: left = lower/tighter, right = higher/opener.
     const tn = tune == null ? 0.5 : clamp(tune, 0, 1);
@@ -667,10 +722,11 @@
       filteredNoise(dl + 0.018, 0.035, 0.024 * v, 'highpass', 1900, 0.8);
       filteredNoise(dl + 0.042, 0.075, 0.018 * v, 'highpass', 1700, 0.8);
     } else if (piece === 'rim') {
-      const f = 1420 + tn * 460;
-      filteredNoise(dl, 0.014, 0.020 * v, 'bandpass', 2600 + tn * 700, 4.8);
-      tone(f, 'square', dl, 0.030, 0.040 * v, f * 0.90);
-      tone(f * 0.46, 'triangle', dl + 0.001, 0.026, 0.020 * v, f * 0.42);
+      const f = 470 + tn * 170;
+      filteredNoise(dl, 0.018, 0.030 * v, 'bandpass', 1350 + tn * 520, 2.6, 980 + tn * 320);
+      filteredNoise(dl + 0.004, 0.030, 0.018 * v, 'highpass', 2400 + tn * 600, 0.7);
+      tone(f, 'triangle', dl, 0.046, 0.030 * v, f * 0.72);
+      tone(f * 1.92, 'sine', dl + 0.002, 0.022, 0.012 * v, f * 1.42);
     } else if (piece === 'kick') {
       const f = velvet ? 68 + tn * 12 : 82 + tn * 18;
       tone(f * 1.9, 'triangle', dl, 0.018, 0.030 * v, f * 1.18);
@@ -844,7 +900,7 @@
 
   function playStamp(slot) {
     if (!slot || !slot.inst) return;
-    const vel = (slot.vel || 1) * 0.8;
+    const vel = (slot.vel || 1) * 0.8 * layerVolumeForId(slotLayerId(slot));
     if (slot.inst === 'drums') playInstrument('drums', { pieces: slot.pieces, tunes: slot.tunes, vel });
     else if (slot.inst === 'keys' && slot.notes && slot.notes.length) playInstrument(slot.inst, { notes: slot.notes, vel });
     else if (slot.inst === 'fx') playInstrument(slot.inst, { note: slot.note, piece: slot.piece, vel });
@@ -905,6 +961,27 @@
     return signalExitButton;
   }
 
+  function ensureSignalUndoButton() {
+    const row = document.querySelector('#pg-signal .signal-loop-row');
+    if (!row) return null;
+    if (!undoButton) {
+      undoButton = document.createElement('button');
+      undoButton.id = 'signal-undo-btn';
+      undoButton.type = 'button';
+      undoButton.className = 'signal-reset-btn signal-undo-btn hidden';
+      undoButton.textContent = 'UNDO';
+      undoButton.title = 'Undo last note';
+      undoButton.setAttribute('aria-label', 'Undo last note');
+      undoButton.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (canUndoLastStamp()) undoLastStamp();
+      });
+    }
+    if (undoButton.parentNode !== row) row.appendChild(undoButton);
+    return undoButton;
+  }
+
   function canUndoLastStamp() {
     if (state !== 'playing' || phase !== 'build' || !undoStack.length) return false;
     const lastUndo = undoStack[undoStack.length - 1];
@@ -918,6 +995,7 @@
     const headerBack = document.querySelector('#pg-signal .arcade-exit-btn');
     const row = document.querySelector('#pg-signal .signal-loop-row');
     const inRun = state === 'playing' || state === 'replay';
+    const runBarVisible = state === 'playing' && phase === 'build';
 
     if (header) {
       if (!signalHeaderStyles) signalHeaderStyles = snapshotStyles(header, ['display', 'height', 'padding', 'background', 'backdropFilter', 'webkitBackdropFilter', 'alignItems', 'justifyContent', 'gap', 'position', 'zIndex', 'left', 'right', 'top', 'pointerEvents', 'width', 'alignSelf', 'boxSizing', 'flexWrap']);
@@ -974,10 +1052,14 @@
 
     if (!row) return;
     if (!signalLoopRowStyles) signalLoopRowStyles = snapshotStyles(row, ['position', 'zIndex', 'left', 'right', 'top', 'width', 'maxWidth', 'margin', 'display', 'gridTemplateColumns', 'gap', 'alignItems', 'justifyContent', 'boxSizing', 'padding', 'pointerEvents']);
-    row.style.display = inRun ? 'grid' : 'none';
-    if (!inRun) return;
+    row.style.display = runBarVisible ? 'grid' : 'none';
+    if (!runBarVisible) return;
     const exit = ensureSignalExitButton();
-    if (resetButton && loopButton && resetButton.parentNode === row && loopButton.parentNode === row) row.insertBefore(resetButton, loopButton);
+    const undo = ensureSignalUndoButton();
+    if (resetButton && resetButton.parentNode === row) row.appendChild(resetButton);
+    if (undo && undo.parentNode === row) row.appendChild(undo);
+    if (loopButton && loopButton.parentNode === row) row.appendChild(loopButton);
+    if (exit && exit.parentNode === row) row.appendChild(exit);
     row.style.position = 'absolute';
     row.style.top = 'calc(env(safe-area-inset-top, 0px) + 6px)';
     row.style.left = '8px';
@@ -986,8 +1068,8 @@
     row.style.maxWidth = 'none';
     row.style.margin = '0';
     row.style.zIndex = '60';
-    row.style.gridTemplateColumns = '66px minmax(0, 1fr) 42px';
-    row.style.gap = '6px';
+    row.style.gridTemplateColumns = '58px 58px minmax(0, 1fr) 42px';
+    row.style.gap = '5px';
     row.style.alignItems = 'stretch';
     row.style.justifyContent = 'stretch';
     row.style.boxSizing = 'border-box';
@@ -996,7 +1078,7 @@
 
     if (loopButton) {
       if (!signalLoopButtonStyles) signalLoopButtonStyles = snapshotStyles(loopButton, ['gridColumn', 'width', 'maxWidth', 'minHeight', 'fontSize', 'letterSpacing', 'padding', 'boxSizing']);
-      loopButton.style.gridColumn = '2';
+      loopButton.style.gridColumn = '3';
       loopButton.style.width = '100%';
       loopButton.style.maxWidth = 'none';
       loopButton.style.minHeight = '40px';
@@ -1008,15 +1090,30 @@
     if (resetButton) {
       if (!signalResetButtonStyles) signalResetButtonStyles = snapshotStyles(resetButton, ['gridColumn', 'width', 'minHeight', 'fontSize', 'letterSpacing', 'padding', 'boxSizing']);
       resetButton.style.gridColumn = '1';
-      resetButton.style.width = '66px';
+      resetButton.style.width = '58px';
       resetButton.style.minHeight = '40px';
-      resetButton.style.fontSize = '9px';
-      resetButton.style.letterSpacing = '0.7px';
-      resetButton.style.padding = '0 4px';
+      resetButton.style.fontSize = '8px';
+      resetButton.style.letterSpacing = '0.4px';
+      resetButton.style.padding = '0 3px';
       resetButton.style.boxSizing = 'border-box';
     }
+    if (undo) {
+      if (!signalUndoButtonStyles) signalUndoButtonStyles = snapshotStyles(undo, ['gridColumn', 'width', 'minHeight', 'fontSize', 'letterSpacing', 'padding', 'boxSizing', 'opacity', 'cursor']);
+      const canUndo = canUndoLastStamp();
+      undo.classList.toggle('hidden', phase !== 'build');
+      undo.disabled = !canUndo;
+      undo.style.opacity = canUndo ? '1' : '0.46';
+      undo.style.cursor = canUndo ? 'pointer' : 'default';
+      undo.style.gridColumn = '2';
+      undo.style.width = '58px';
+      undo.style.minHeight = '40px';
+      undo.style.fontSize = '8px';
+      undo.style.letterSpacing = '0.4px';
+      undo.style.padding = '0 3px';
+      undo.style.boxSizing = 'border-box';
+    }
     if (exit) {
-      exit.style.gridColumn = '3';
+      exit.style.gridColumn = '4';
       exit.style.width = '42px';
       exit.style.minWidth = '42px';
       exit.style.minHeight = '40px';
@@ -1079,12 +1176,18 @@
     restoreStyles(row, signalLoopRowStyles);
     restoreStyles(loopButton, signalLoopButtonStyles);
     restoreStyles(resetButton, signalResetButtonStyles);
+    restoreStyles(undoButton, signalUndoButtonStyles);
     signalHeaderStyles = null;
     signalHeaderActionStyles = null;
     signalHeaderBackStyles = null;
     signalLoopRowStyles = null;
     signalLoopButtonStyles = null;
     signalResetButtonStyles = null;
+    signalUndoButtonStyles = null;
+    if (undoButton) {
+      undoButton.remove();
+      undoButton = null;
+    }
     if (signalExitButton) {
       signalExitButton.remove();
       signalExitButton = null;
@@ -1168,6 +1271,7 @@
     lastGrooveToast = null;
     replaying = false;
     replayUntil = 0;
+    layerVolumes = { ...DEFAULT_LAYER_VOLUMES };
     applyLayerOptions();
     laneFlash = [0, 0, 0];
     loopFlash = Array.from({ length: LOOP_STEPS }, () => ({ pulse: 0, color: COLOR, row: 0 }));
@@ -1621,13 +1725,16 @@
   // Shared by every capture mechanic: where does an action landing NOW sit on
   // the loop grid, and was it in the pocket?
   function captureTiming(t) {
-    const toNext = Math.max(0, beatAt - t);
-    const sincePrev = Math.max(0, beatMs - toNext);
-    const isNextStep = toNext < sincePrev;
+    const baseBeatAt = beatAt || (t + beatMs);
+    const advance = t >= baseBeatAt ? Math.min(Math.floor((t - baseBeatAt) / beatMs) + 1, 4) : 0;
+    const virtualStep = (stepIndex + advance) % LOOP_STEPS;
+    const virtualNextBeatAt = baseBeatAt + advance * beatMs;
+    const toNext = Math.max(0, virtualNextBeatAt - t);
+    const sincePrev = clamp(beatMs - toNext, 0, beatMs);
     return {
-      isNextStep,
+      isNextStep: advance > 0,
       tight: Math.min(sincePrev, toNext) <= beatMs * 0.3,
-      target: isNextStep ? (stepIndex + 1) % LOOP_STEPS : stepIndex,
+      target: virtualStep,
     };
   }
 
@@ -1734,6 +1841,11 @@
     spawnAt = t + 600;
     countKickPulse = 0;
     if (asteroidSurfaceActive()) initAsteroidSurface();
+    playPulseBed();
+    (loop[stepIndex] || []).forEach(v => {
+      if (v.skip > 0) { v.skip -= 1; return; }
+      playStamp(v);
+    });
     updateLoopButton();
     showLayerToast();
   }
@@ -1745,9 +1857,8 @@
     phase = 'countdown';
     countdown = {
       start: t,
-      beat: Math.max(220, Math.min(360, beatMs)),
+      beat: COUNTDOWN_STEP_MS,
       last: 0,
-      seedFoundation: !!opts.seedFoundation,
       afterClear: !!opts.afterClear,
     };
     stepIndex = 0;
@@ -1758,6 +1869,8 @@
     pointerActive = false;
     pinchActive = false;
     countKickPulse = 1;
+    if (activeLayer().inst === 'bass' || activeLayer().inst === 'keys') initAsteroidSurface();
+    if (activeLayer().inst === 'fx') initFxJunk();
     if (overlay) overlay.classList.add('hidden');
     updateLoopButton();
     addFloatText(opts.afterClear ? 'RESETTING LOOP' : 'GET READY', W * 0.5, H * 0.3, '#ffe61a', 700);
@@ -1766,7 +1879,7 @@
   function skipCountIn() {
     if (phase !== 'countin' || state !== 'playing') return;
     countLockedText = `TEMPO SET · ${tempoBpm()} BPM`;
-    beginLoopCountdown({ seedFoundation: true });
+    beginLoopCountdown();
     addFloatText(countLockedText, W * 0.5, H * 0.34, '#ffe61a');
   }
 
@@ -1887,17 +2000,14 @@
     rocks = [];
     bullets = [];
     applyLayerOptions();
-    if (asteroidSurfaceActive()) initAsteroidSurface();
     laneFlash = [1, 1, 1];
-    if (restartPlayback !== false) restartLoopPlayback();
+    beginLoopCountdown();
     updateLoopButton();
-    showLayerToast();
     [0, 2, 4].forEach((deg, i) => playPitched('keys', degreeFreq(deg, 2), 0.8, 0.05 + i * 0.09));
   }
 
   // Scrap the take: clear the layer you're building and re-record over the
-  // groove. Earlier locked layers are untouched; on DRUMS the count-in kicks
-  // (the tempo floor) survive so the loop never goes pulseless.
+  // groove. Earlier locked layers are untouched.
   function resetCurrentLoop() {
     if (state !== 'playing' || phase !== 'build') return;
     const li = currentLayerIndex;
@@ -1937,9 +2047,7 @@
     if (state !== 'playing' || loopEndArmed) return;
     if (phase !== 'build') return;
     if (isFreeMode()) {
-      freeRecording = !freeRecording;
-      updateLoopButton();
-      addFloatText(freeRecording ? 'RECORDING' : 'RECORD OFF', W * 0.5, H * 0.3, freeRecording ? '#ffe61a' : '#00e5ff');
+      showFreeLayerMenu(true);
       return;
     }
     loopEndArmed = true;
@@ -1963,7 +2071,7 @@
     signal = Math.max(signal, 82);
     score += Math.max(0, 220 - Math.floor(elapsed / 1000)) + bestCombo * 4;
     [0, 1, 2, 4, 5].forEach((deg, i) => playPitched('chimes', degreeFreq(deg, 4), 0.8, 0.05 + i * 0.07));
-    showBuiltChoice();
+    showMixScreen();
   }
 
   function continueLooping() {
@@ -1995,6 +2103,22 @@
     bullets = [];
     initReplayPlayground();
     overlay.classList.add('hidden');
+    last = performance.now();
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(frame);
+  }
+
+  function startMixAudition() {
+    state = 'mix';
+    phase = 'build';
+    loopEndArmed = false;
+    replaying = false;
+    rocks = [];
+    bullets = [];
+    pointerActive = false;
+    pinchActive = false;
+    updateLoopButton();
+    restartLoopPlayback();
     last = performance.now();
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(frame);
@@ -2159,9 +2283,10 @@
     if (!beatAt) beatAt = t + beatMs;
     if (t < beatAt) return;
     const skipped = Math.floor((t - beatAt) / beatMs);
-    beatAt += Math.min(skipped + 1, 4) * beatMs;
+    const advance = Math.min(skipped + 1, 4);
+    beatAt += advance * beatMs;
     if (t - beatAt > beatMs * 4) beatAt = t + beatMs;
-    stepIndex = (stepIndex + 1) % LOOP_STEPS;
+    stepIndex = (stepIndex + advance) % LOOP_STEPS;
     playPulseBed();
     const bucket = loop[stepIndex];
     bucket.forEach(v => {
@@ -2207,9 +2332,11 @@
       }
     }
     if (pointerActive && swellActive()) {
-      const usableH = Math.max(1, H - LOOP_PANEL_H - 138);
+      const top = swellSurfaceTop();
+      const bottom = swellSurfaceBottom();
+      const usableH = Math.max(1, bottom - top);
       const xT = clamp(pointerX / Math.max(1, W), 0, 1);
-      const yT = clamp((pointerY - 118) / usableH, 0, 1);
+      const yT = clamp((pointerY - top) / usableH, 0, 1);
       const deg = clamp(Math.round(xT * 9), 0, 9);
       const openness = 1 - yT;
       const tension = 0.25 + xT * 0.5 + openness * 0.25;
@@ -2246,14 +2373,11 @@
         playDrumPiece(number === 1 ? 'hat' : 'kick', number === 1 ? 0.78 : 0.68, 0);
       }
       if (slot >= 3) {
-        const shouldSeed = countdown.seedFoundation;
         const afterClear = countdown.afterClear;
         countdown = null;
-        if (shouldSeed) {
-          seedFoundationKicks();
-          startBuildPhase(t);
-        } else if (afterClear || isFreeMode()) {
+        if (afterClear || isFreeMode()) {
           phase = 'build';
+          if (isFreeMode()) freeRecording = true;
           restartLoopPlayback();
           updateLoopButton();
           showLayerToast();
@@ -2296,6 +2420,15 @@
       return;
     }
     tickBeat(t);
+    if (state === 'mix') {
+      for (let i = 0; i < laneFlash.length; i++) laneFlash[i] = Math.max(0, laneFlash[i] - dt / 420);
+      loopFlash.forEach(f => { f.pulse = Math.max(0, f.pulse - dt / 320); });
+      stars.forEach(s => {
+        s.y += s.vy * dt / 1000;
+        if (s.y > H + 5) { s.y = -5; s.x = Math.random() * W; }
+      });
+      return;
+    }
     swellInk = swellActive() && pointerActive ? clamp(swellInk + dt / 1700, 0, 1) : Math.max(0, swellInk - dt / 900);
     if (drumsActive()) {
       for (let i = 0; i < laneFlash.length; i++) laneFlash[i] = Math.max(0, laneFlash[i] - dt / 360);
@@ -2568,7 +2701,7 @@
     c.stroke();
     c.rotate(-r.rot);
     c.fillStyle = r.color;
-    c.font = "8px 'VCR', monospace";
+    c.font = "10px 'VCR', monospace";
     c.textAlign = 'center';
     c.textBaseline = 'middle';
     c.fillText(r.inst === 'drums' ? '●' : (r.label || '♪'), 0, 1);
@@ -2576,7 +2709,8 @@
   }
 
   function drawAsteroidSurface(c) {
-    if (!asteroidSurfaceActive()) return;
+    const countdownPreview = phase === 'countdown' && state === 'playing' && (activeLayer().inst === 'bass' || activeLayer().inst === 'keys');
+    if (!asteroidSurfaceActive() && !countdownPreview) return;
     const layer = activeLayer();
     c.save();
     if (layer.inst === 'keys') {
@@ -2596,9 +2730,9 @@
         c.stroke();
         c.globalAlpha = 0.72;
         c.fillStyle = color;
-        c.font = "8px 'VCR', monospace";
+        c.font = "10px 'VCR', monospace";
         c.textAlign = 'left';
-        c.fillText(LANES[lane].label, 12, y - 18);
+        c.fillText(LANES[lane].label, 12, y - 20);
       }
     } else if (layer.inst === 'bass') {
       c.strokeStyle = 'rgba(255,230,26,0.18)';
@@ -2618,9 +2752,9 @@
         c.stroke();
         c.globalAlpha = 0.82;
         c.fillStyle = r.color;
-        c.font = "8px 'VCR', monospace";
+        c.font = "10px 'VCR', monospace";
         c.textAlign = 'center';
-        c.fillText(r.rangeLabel || LANES[r.lane].label, r.baseX, r.baseY + r.r + 20);
+        c.fillText(r.rangeLabel || LANES[r.lane].label, r.baseX, r.baseY + r.r + 24);
       });
     }
     c.restore();
@@ -2700,8 +2834,8 @@
   }
 
   function drawSwellSurface(c) {
-    const top = 132;
-    const bottom = H - LOOP_PANEL_H - 20;
+    const top = swellSurfaceTop();
+    const bottom = swellSurfaceBottom();
     const h = bottom - top;
     const layer = activeLayer();
     const grad = c.createLinearGradient(0, top, W, bottom);
@@ -2725,14 +2859,14 @@
       c.stroke();
       c.globalAlpha = 0.58;
       c.fillStyle = '#eaffff';
-      c.font = "8px 'VCR', monospace";
+      c.font = "10px 'VCR', monospace";
       c.textAlign = 'center';
-      c.fillText(noteNameForDegree(i), x, top + 17);
+      c.fillText(noteNameForDegree(i), x, top + 20);
     }
     ['BRIGHT', 'WARM'].forEach((label, i) => {
       c.globalAlpha = 0.62;
       c.fillStyle = i ? 'rgba(182,108,255,0.85)' : 'rgba(255,230,26,0.9)';
-      c.font = "8px 'VCR', monospace";
+      c.font = "10px 'VCR', monospace";
       c.textAlign = 'left';
       c.fillText(label, 24, i ? bottom - 14 : top + 34);
     });
@@ -2925,7 +3059,7 @@
         const active = deg === activeDeg;
         c.globalAlpha = active ? 0.96 : 0.42;
         c.fillStyle = active ? '#eaffff' : col;
-        c.font = `${active ? 11 : 9}px 'VCR', monospace`;
+        c.font = `${active ? 13 : 11}px 'VCR', monospace`;
         c.fillText(label, tc.x + Math.cos(a) * labelR, tc.y + Math.sin(a) * labelR);
       }
     }
@@ -2948,7 +3082,7 @@
         const chosen = pull && fxChoiceForPull(pull).piece === fx.piece;
         c.globalAlpha = chosen ? 0.82 : 0.34;
         c.fillStyle = chosen ? fx.color : 'rgba(234,255,255,0.55)';
-        c.font = "8px 'VCR', monospace";
+        c.font = "10px 'VCR', monospace";
         c.textAlign = 'center';
         c.fillText(fx.label, tc.x + Math.cos(a) * tc.maxR * 0.72, tc.y + Math.sin(a) * tc.maxR * 0.72);
       });
@@ -3013,7 +3147,7 @@
       c.arc(pointerX, pointerY, 6 + dist * 4, 0, Math.PI * 2);
       c.fill();
       if (dist > 0.12) {
-        c.font = "9px 'VCR', monospace";
+        c.font = "11px 'VCR', monospace";
         c.textAlign = 'center';
         c.fillStyle = '#eaffff';
         c.fillText(isFx ? fxChoiceForPull(pull).label : noteNameForDegree(pull.deg), pointerX, pointerY - 16);
@@ -3062,22 +3196,22 @@
     c.save();
     c.font = "10px 'VCR', monospace";
     c.textBaseline = 'top';
-    if (state === 'playing' || state === 'replay') {
+    if (state === 'playing' || state === 'replay' || state === 'mix') {
       const titleY = 58;
       c.fillStyle = 'rgba(234,255,255,0.78)';
-      c.fillText(state === 'replay' ? (isFreeMode() ? 'FREE REPLAY' : 'REPLAY') : activeLayerLabel(), 12, titleY);
+      c.fillText(state === 'mix' ? 'MIX PLAYBACK' : state === 'replay' ? (isFreeMode() ? 'FREE REPLAY' : 'REPLAY') : activeLayerLabel(), 12, titleY);
       c.textAlign = 'right';
       c.fillText(isFreeMode() && state === 'playing' ? (freeRecording ? 'REC' : `${tempoBpm()} BPM`) : String(score), W - 12, titleY);
     }
     c.textAlign = 'left';
     // Loop rows live up top now, right under the layer title.
-    if (state === 'playing' || state === 'replay') {
+    if (state === 'playing' || state === 'replay' || state === 'mix') {
       const loopX = 26, loopY = 72;
       const rowH = 7, rowGap = 4;
       const w = (W - 40) / LOOP_STEPS;
       const cellX = i => loopX + i * w + 1;
       const cellW = Math.max(2, w - 3);
-      const playheadX = i => cellX(i) + cellW * 0.5 - 1;
+      const playheadX = i => cellX(i) - 1;
       for (let i = 0; i < LOOP_STEPS; i++) {
         const active = i === stepIndex;
         c.fillStyle = active ? COLOR : 'rgba(234,255,255,0.12)';
@@ -3191,12 +3325,12 @@
 
     const counting = phase === 'countin' && state === 'playing';
     const countdownActive = phase === 'countdown' && state === 'playing';
-    const padsVisible = drumsActive();
-    const thereminVisible = chimesActive();
-    const swellVisible = swellActive();
-    const fxVisible = fxActive();
+    const padsVisible = drumsActive() || (countdownActive && activeLayer().inst === 'drums');
+    const thereminVisible = chimesActive() || (countdownActive && activeLayer().inst === 'chimes');
+    const swellVisible = swellActive() || (countdownActive && activeLayer().inst === 'swell');
+    const fxVisible = fxActive() || (countdownActive && activeLayer().inst === 'fx');
     const replayVisible = state === 'replay';
-    const surfaceVisible = asteroidSurfaceActive();
+    const surfaceVisible = asteroidSurfaceActive() || (countdownActive && (activeLayer().inst === 'bass' || activeLayer().inst === 'keys'));
     if (!counting && !countdownActive && !padsVisible && !thereminVisible && !swellVisible && !fxVisible && !replayVisible && !surfaceVisible) drawLanes(c);
     drawBoss(c);
     if (replayVisible) drawReplayPlayground(c);
@@ -3204,7 +3338,7 @@
     if (swellVisible) drawSwellSurface(c);
     if (fxVisible) drawFxJunkSurface(c);
     if (thereminVisible) drawTheremin(c);
-    if (asteroidSurfaceActive()) drawAsteroidSurface(c);
+    if (surfaceVisible) drawAsteroidSurface(c);
     else rocks.forEach(r => drawRock(c, r));
     if (!rockTapActive()) bullets.forEach(b => {
       c.save();
@@ -3228,13 +3362,13 @@
     if ((phase === 'countin' || phase === 'countdown') && state === 'playing') {
       c.save();
       const cx = W * 0.5;
-      const cy = H * 0.42;
+      const cy = phase === 'countdown' ? 132 : H * 0.42;
       const pulse = countKickPulse;
-      const r = 58 + pulse * 12;
+      const r = (phase === 'countdown' ? 38 : 58) + pulse * (phase === 'countdown' ? 8 : 12);
       c.shadowColor = COLOR;
       c.shadowBlur = 18 + pulse * 24;
-      c.globalAlpha = 0.16 + pulse * 0.18;
-      c.fillStyle = COLOR;
+      c.globalAlpha = phase === 'countdown' ? 1 : 0.16 + pulse * 0.18;
+      c.fillStyle = phase === 'countdown' ? '#02040e' : COLOR;
       c.beginPath();
       c.arc(cx, cy, r, 0, Math.PI * 2);
       c.fill();
@@ -3252,7 +3386,7 @@
       c.stroke();
       c.globalAlpha = 0.95;
       c.fillStyle = '#eaffff';
-      c.font = phase === 'countdown' ? "56px 'VCR', monospace" : "22px 'VCR', monospace";
+      c.font = phase === 'countdown' ? "44px 'VCR', monospace" : "22px 'VCR', monospace";
       c.textAlign = 'center';
       c.textBaseline = 'middle';
       let mainText = `${tempoBpm()} BPM`;
@@ -3267,7 +3401,7 @@
       c.globalAlpha = 0.85;
       c.fillStyle = '#eaffff';
       c.font = "9px 'VCR', monospace";
-      c.fillText(subText, cx, cy + (phase === 'countdown' ? 46 : 28));
+      c.fillText(subText, cx, cy + (phase === 'countdown' ? 35 : 28));
       c.restore();
       c.globalAlpha = 1;
     }
@@ -3298,7 +3432,7 @@
   }
 
   function frame(t) {
-    if (state !== 'playing' && state !== 'replay') return;
+    if (state !== 'playing' && state !== 'replay' && state !== 'mix') return;
     const dt = Math.min(40, t - (last || t));
     last = t;
     try {
@@ -3312,7 +3446,7 @@
       beatAt = t + beatMs;
       draw();
     }
-    if (state === 'playing' || state === 'replay') raf = requestAnimationFrame(frame);
+    if (state === 'playing' || state === 'replay' || state === 'mix') raf = requestAnimationFrame(frame);
   }
 
   function start() {
@@ -3409,17 +3543,17 @@
 
   function freeLayerMenuHTML() {
     const rows = LAYERS.map((layer, index) => `
-      <button class="signal-chip ${index === freeLayerIndex ? 'active' : ''}" style="min-height:42px" onclick="signalChooseFreeLayer(${index})">▶ ${layer.name}</button>
+      <button class="signal-chip ${index === freeLayerIndex ? 'active' : ''}" style="min-height:38px" onclick="signalChooseFreeLayer(${index})">▶ ${layer.name}</button>
     `).join('');
     return `
       <div class="signal-panel">
         <div class="signal-title">FREE MODE</div>
         <div class="signal-subtitle">TAP A LAYER TO START FREE MODE.</div>
-        <div class="signal-tempo-box" style="margin:12px 0 14px;padding:14px">
-          <div id="signal-tempo-value" class="signal-tempo-value" style="font-size:24px">${tempoBpm()} BPM</div>
+        <div class="signal-tempo-box" style="margin:10px 0 12px;padding:12px">
+          <div id="signal-tempo-value" class="signal-tempo-value" style="font-size:22px">${tempoBpm()} BPM</div>
           <input class="signal-tempo-slider" type="range" min="${MIN_TEMPO_BPM}" max="${MAX_TEMPO_BPM}" value="${tempoBpm()}" oninput="signalSetTempo(this.value, true)">
         </div>
-        <div class="signal-presets" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${rows}</div>
+        <div class="signal-presets" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:7px">${rows}</div>
         <button class="signal-btn secondary" onclick="signalShowIntro()">BACK TO MENU</button>
       </div>`;
   }
@@ -3493,7 +3627,7 @@
     switchFreeLayer(nextLayer);
     state = 'playing';
     phase = 'build';
-    freeRecording = false;
+    freeRecording = true;
     overlay.classList.add('hidden');
     updateLoopButton();
     restartLoopPlayback();
@@ -3598,6 +3732,19 @@
     </div>`;
   }
 
+  function mixControlsHTML() {
+    return `<div class="signal-mix-controls">
+      ${LAYERS.map(layer => {
+        const pct = Math.round(layerVolumeForId(layer.id) * 100);
+        return `<label class="signal-mix-row">
+          <span class="signal-mix-name" style="color:${layer.options[0].color}">${layer.name}</span>
+          <input class="signal-mix-slider" type="range" min="0" max="125" value="${pct}" oninput="signalSetLayerVolume('${layer.id}', this.value)">
+          <span id="signal-mix-value-${layer.id}" class="signal-mix-value">${pct}%</span>
+        </label>`;
+      }).join('')}
+    </div>`;
+  }
+
   function grooveSummaryHTML() {
     const rows = LAYERS.map((layer, index) => {
       const groove = grooveByLayer[index];
@@ -3637,12 +3784,14 @@
 
   function currentRecipe() {
     const freeLayer = LAYERS[freeLayerIndex] || activeLayer();
+    const mix = { layerVolumes: normalizeLayerVolumes(layerVolumes) };
     return {
       version: 3,
       settings: { ...signalSettings },
       beatMs,
       score,
-      meta: isFreeMode() ? { mode: 'free', freeLayerIndex, freeLayerId: freeLayer.id, freeLayerName: freeLayer.name } : { mode: 'arcade' },
+      mix,
+      meta: isFreeMode() ? { mode: 'free', freeLayerIndex, freeLayerId: freeLayer.id, freeLayerName: freeLayer.name, mix } : { mode: 'arcade', mix },
       layers: LAYERS.map((layer, index) => ({ index, id: layer.id, name: layer.name })),
       grooveByLayer: Object.fromEntries(LAYERS.map((layer, index) => [layer.id, grooveByLayer[index] || null])),
       choices: gridStamps(),
@@ -3686,9 +3835,27 @@
         <div class="signal-title">TRACK BUILT</div>
         <div class="signal-subtitle">REPLAY WHAT YOU MADE OR END THE RUN.</div>
         ${compactTrackStatsHTML()}
+        <button class="signal-btn secondary" onclick="signalShowMix()">MIX</button>
         <button class="signal-btn" onclick="signalReplayTrack()">REPLAY TRACK</button>
         <button class="signal-btn secondary" onclick="signalEndRun()">END RUN</button>
       </div>`;
+  }
+
+  function showMixScreen() {
+    cancelAnimationFrame(raf);
+    overlay.classList.remove('hidden');
+    overlay.classList.remove('signal-tempo-mode');
+    overlay.classList.remove('signal-menu-mode');
+    overlay.innerHTML = `
+      <div class="signal-panel signal-mix-panel">
+        <div class="signal-title">MIX</div>
+        <div class="signal-subtitle">BALANCE EACH LAYER BEFORE REPLAY OR SAVE.</div>
+        ${compactTrackStatsHTML()}
+        ${mixControlsHTML()}
+        <button class="signal-btn" onclick="signalReplayTrack()">REPLAY TRACK</button>
+        <button class="signal-btn secondary" onclick="signalEndRun()">SAVE SCREEN</button>
+      </div>`;
+    startMixAudition();
   }
 
   function endBuiltRun() {
@@ -3723,6 +3890,7 @@
             <button id="signal-save-btn" class="signal-btn" style="width:58px;margin:0" onclick="signalSaveRecipe()">▶</button>
           </div>
           <div id="signal-save-status" class="signal-subtitle" style="min-height:18px;margin-top:8px"></div>` : ''}
+        ${canSave ? `<button class="signal-btn secondary" onclick="signalShowMix()">MIX</button>` : ''}
         ${won ? `<button class="signal-btn secondary" onclick="signalShowJukebox()">JUKEBOX</button>` : ''}
         <button class="signal-btn secondary" onclick="signalShowIntro()">MENU</button>
         <button class="signal-btn" onclick="signalStart()">PLAY AGAIN</button>
@@ -3879,6 +4047,7 @@
     freeRecording = false;
     signalSettings = { ...signalSettings, ...(recipe.settings || {}) };
     applySettings();
+    layerVolumes = normalizeLayerVolumes((recipe.mix && recipe.mix.layerVolumes) || (recipe.meta && recipe.meta.mix && recipe.meta.mix.layerVolumes));
     // Tapped tempos don't match any preset, so honor the recipe's exact beat.
     if (Number.isFinite(recipe.beatMs)) beatMs = clamp(recipe.beatMs, 170, 420);
     phase = 'build';
@@ -4081,14 +4250,20 @@
   window.signalResetLoop = function(e) {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+    resetCurrentLoop();
+  };
+  window.signalUndoLoop = function(e) {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
     if (canUndoLastStamp()) undoLastStamp();
-    else resetCurrentLoop();
   };
   window.signalSaveScore = saveScore;
   window.signalSaveRecipe = saveRecipe;
   window.signalReplayTrack = startReplay;
   window.signalLoopAgain = continueLooping;
   window.signalEndRun = endBuiltRun;
+  window.signalShowMix = showMixScreen;
+  window.signalSetLayerVolume = setLayerVolume;
   window.signalShowJukebox = showJukebox;
   window.signalJukeboxBack = function() {
     if (jukeboxBackTarget === 'result') showResult(true);
