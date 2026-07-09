@@ -14,7 +14,7 @@
   const MAX_SPARKS = 120;
   const MAX_DRUM_STACK = 6;
   const MAX_PIANO_STACK = 6;
-  const SIGNAL_MASTER_GAIN = 1.30;
+  const SIGNAL_MASTER_GAIN = 1.00;
   // Small reserved footer; gameplay now uses the room formerly occupied by beat dots.
   const LOOP_PANEL_H = 24;
   const PAD_COLS = 4;
@@ -34,7 +34,7 @@
     { label: 'DRUM', lane: 0, cells: [
       { piece: 'kick', label: 'KICK', color: '#00e5ff' },
       { piece: 'tom', label: 'TOM', color: '#ff8a3d' },
-      { piece: 'clap', label: 'CLAP', color: '#ff66c7' },
+      { piece: 'snare', label: 'SNARE', color: '#ff66c7' },
       { piece: 'rim', label: 'RIM', color: '#7bffea' },
     ] },
   ];
@@ -158,6 +158,7 @@
   let mode = 'arcade', freeLayerIndex = 0, freeRecording = false;
   let freeLayerMenuKeepsLoop = false;
   let recordedChoices = [], grooveByLayer = [], lastGrooveToast = null, replaying = false, replayUntil = 0;
+  let replayBall = null, replayHazards = [], replayPickups = [], replayToyScore = 0, replaySpawnAt = 0;
   let jukeboxRows = [], jukeboxBackTarget = 'intro';
   let signalSettings = { style: 'space-funk', mood: 'minor', tempo: 'medium' };
   let beatMs = DEFAULT_BEAT_MS;
@@ -168,8 +169,10 @@
   // 'countin': tempo setup before the loop starts. It seeds an even kick floor.
   let phase = 'countin', countKickPulse = 0, countLockedText = '', tempoPreviewBeatAt = 0, lastTempoPreviewAt = 0;
   let pads = [], padSpawnAt = 0;
+  let fxJunk = [], swellInk = 0;
   let loop = [];
   let leftHeld = false, rightHeld = false, pointerActive = false, pointerX = 0, pointerY = 0;
+  let pinchActive = false, pinchStartDist = 0, pinchJunk = null, pinchStamped = false;
   let thereminPulse = 0;
   let resizeHandler = null, keyDownHandler = null, keyUpHandler = null;
   let signalShellApplied = false, gestureGuardHandler = null, gestureStartHandler = null, signalHeaderStyles = null, signalHeaderActionStyles = null, signalHeaderBackStyles = null, signalPageStyles = null, signalCanvasStyles = null, signalLoopRowStyles = null, signalLoopButtonStyles = null, signalResetButtonStyles = null;
@@ -342,11 +345,11 @@
       loopButton.style.width = 'auto';
       loopButton.style.maxWidth = 'none';
       loopButton.style.padding = '0 6px';
-      loopButton.style.fontSize = '9px';
-      loopButton.style.letterSpacing = '1px';
+      loopButton.style.fontSize = '10px';
+      loopButton.style.letterSpacing = '1.8px';
     }
     if (resetButton) {
-      resetButton.style.width = '64px';
+      resetButton.style.width = '72px';
       resetButton.style.fontSize = '9px';
       resetButton.style.letterSpacing = '0.8px';
       resetButton.style.padding = '0 5px';
@@ -356,18 +359,19 @@
     ensureFreeControls();
     if (!freeControls) return;
     const show = state === 'playing' && isFreeMode();
-    freeControls.style.display = show ? 'contents' : 'none';
+    const hasLoop = freeHasRecordedLoop();
+    freeControls.style.display = show && hasLoop ? 'contents' : 'none';
     if (loopButton && loopButton.parentElement) {
       loopButton.parentElement.style.flexWrap = 'nowrap';
-      loopButton.parentElement.style.gap = show ? '5px' : '';
-      loopButton.parentElement.style.width = show ? 'min(430px, calc(100vw - 14px))' : '';
+      loopButton.parentElement.style.gap = show ? '7px' : '';
+      loopButton.parentElement.style.width = show ? (hasLoop ? 'min(430px, calc(100vw - 18px))' : 'min(360px, calc(100vw - 18px))') : '';
     }
     if (show) applyFreeButtonStyles();
     else restoreButtonStyles();
     if (freeSaveButton) {
-      const hasLoop = freeHasRecordedLoop();
+      freeChangeButton.classList.toggle('hidden', true);
       freeSaveButton.classList.toggle('hidden', !hasLoop);
-      freeMenuButton.classList.toggle('hidden', hasLoop);
+      freeMenuButton.classList.toggle('hidden', true);
     }
   }
   function updateLoopButton() {
@@ -458,11 +462,11 @@
       signalMasterGain = c.createGain();
       signalLimiter = c.createDynamicsCompressor();
       signalMasterGain.gain.value = SIGNAL_MASTER_GAIN;
-      signalLimiter.threshold.value = -8;
-      signalLimiter.knee.value = 16;
-      signalLimiter.ratio.value = 6;
-      signalLimiter.attack.value = 0.003;
-      signalLimiter.release.value = 0.12;
+      signalLimiter.threshold.value = -3;
+      signalLimiter.knee.value = 10;
+      signalLimiter.ratio.value = 2.5;
+      signalLimiter.attack.value = 0.008;
+      signalLimiter.release.value = 0.18;
       signalMasterGain.connect(signalLimiter);
       signalLimiter.connect(c.destination);
     }
@@ -474,11 +478,11 @@
     if (!signalMasterGain || !signalLimiter) return;
     const d = soundProfile();
     signalMasterGain.gain.value = SIGNAL_MASTER_GAIN * (d.master || 1);
-    signalLimiter.threshold.value = -7.2;
-    signalLimiter.knee.value = 18;
-    signalLimiter.ratio.value = 5.2;
-    signalLimiter.attack.value = 0.003;
-    signalLimiter.release.value = 0.14;
+    signalLimiter.threshold.value = -3;
+    signalLimiter.knee.value = 10;
+    signalLimiter.ratio.value = 2.5;
+    signalLimiter.attack.value = 0.008;
+    signalLimiter.release.value = 0.18;
   }
 
   function tone(freq, type, delay, dur, vol, endFreq) {
@@ -609,6 +613,11 @@
       tone(f, 'triangle', dl, 0.130, 0.078 * v, f * 0.66);
       tone(f * 1.42, 'sine', dl + 0.004, 0.090, 0.026 * v, f * 1.02);
       noise(dl, 0.026, 0.010 * v, false);
+    } else if (piece === 'snare') {
+      noise(dl, 0.075 + tn * 0.025, 0.040 * v, true);
+      noise(dl + 0.012, 0.055, 0.022 * v, false);
+      tone(190 + tn * 70, 'triangle', dl, 0.075, 0.035 * v, 116 + tn * 28);
+      synth(1180 + tn * 420, 'triangle', dl + 0.004, 0.052, 0.014 * v, { filter: 'bandpass', cutoff: 1350 + tn * 520, q: 2.8 });
     } else if (piece === 'clap') {
       noise(dl, 0.030, 0.014 * v, true);
       noise(dl + 0.020, 0.040, 0.022 * v, true);
@@ -620,9 +629,10 @@
       tone(f * 0.48, 'sine', dl + 0.003, 0.052, 0.018 * v, f * 0.45);
     } else {
       const f = 82 + tn * 18;
-      tone(f, 'sine', dl, 0.145, 0.135 * v, 34 + tn * 8);
-      tone(f * 0.52, 'sine', dl + 0.004, 0.18, 0.064 * v, 28);
-      noise(dl + 0.001, 0.036, 0.027 * v, false);
+      tone(f * 1.9, 'triangle', dl, 0.018, 0.030 * v, f * 1.18);
+      tone(f, 'sine', dl + 0.002, 0.175, 0.118 * v, 34 + tn * 8);
+      tone(f * 0.52, 'sine', dl + 0.006, 0.21, 0.052 * v, 28);
+      noise(dl + 0.001, 0.018, 0.015 * v, true);
     }
   }
 
@@ -836,8 +846,8 @@
       signalExitButton.type = 'button';
       signalExitButton.className = 'arcade-exit-btn signal-exit-btn';
       signalExitButton.textContent = '×';
-      signalExitButton.title = 'Quit Signal Drift';
-      signalExitButton.setAttribute('aria-label', 'Quit Signal Drift');
+      signalExitButton.title = 'Quit Space and Sound';
+      signalExitButton.setAttribute('aria-label', 'Quit Space and Sound');
       signalExitButton.addEventListener('click', e => {
         e.preventDefault();
         e.stopPropagation();
@@ -1118,6 +1128,10 @@
     tempoPreviewBeatAt = 0;
     lastTempoPreviewAt = 0;
     padSpawnAt = 0;
+    fxJunk = [];
+    swellInk = 0;
+    pinchActive = false;
+    pinchJunk = null;
     initPads();
     loop = Array.from({ length: LOOP_STEPS }, () => []);
     initStars();
@@ -1133,19 +1147,230 @@
     });
   }
 
+  function initFxJunk() {
+    fxJunk = [];
+    const top = 142;
+    const bottom = Math.max(top + 160, H - LOOP_PANEL_H - 78);
+    activeLayer().options.forEach((fx, i) => {
+      fxJunk.push({
+        ...fx,
+        lane: i,
+        x: W * (0.23 + i * 0.27),
+        y: top + (bottom - top) * (0.34 + (i % 2) * 0.24),
+        baseX: W * (0.23 + i * 0.27),
+        baseY: top + (bottom - top) * (0.34 + (i % 2) * 0.24),
+        r: 24 + i * 3,
+        rot: rand(0, Math.PI * 2),
+        spin: rand(-0.45, 0.45),
+        pulse: 0,
+        armed: 0,
+        driftSeed: rand(0, Math.PI * 2),
+      });
+    });
+  }
+
+  function initReplayPlayground() {
+    replayToyScore = 0;
+    replaySpawnAt = performance.now() + 900;
+    replayBall = {
+      x: W * 0.5,
+      y: (H - LOOP_PANEL_H) * 0.45,
+      vx: rand(-85, 85) || 70,
+      vy: -185,
+      r: 9,
+      color: '#ffe61a',
+      pulse: 0,
+    };
+    replayHazards = [];
+    replayPickups = [];
+    bullets = [];
+    player = player || { x: W * 0.5, y: H - LOOP_PANEL_H - 28, r: 17, cooldown: 0 };
+    player.x = W * 0.5;
+    player.y = H - LOOP_PANEL_H - 28;
+  }
+
+  function spawnReplayThing() {
+    const isPickup = Math.random() < 0.38;
+    const x = rand(30, W - 30);
+    const y = rand(132, Math.max(160, (H - LOOP_PANEL_H) * 0.48));
+    if (isPickup) {
+      const deg = Math.floor(rand(0, 9.99));
+      replayPickups.push({
+        x, y,
+        vx: rand(-16, 16),
+        vy: rand(12, 28),
+        r: rand(7, 11),
+        deg,
+        color: ['#ff2db8', '#7bffea', '#ffe61a'][Math.floor(Math.random() * 3)],
+        pulse: 0,
+      });
+      return;
+    }
+    const hp = Math.random() < 0.35 ? 3 : 2;
+    const hazard = {
+      x, y,
+      vx: rand(-26, 26),
+      vy: rand(18, 36),
+      r: rand(14, 24),
+      hp,
+      maxHp: hp,
+      rot: rand(0, Math.PI * 2),
+      spin: rand(-1.3, 1.3),
+      color: Math.random() < 0.5 ? '#00e5ff' : '#ff8a3d',
+      pulse: 0,
+    };
+    replayHazards.push(hazard);
+    playPitched('chimes', degreeFreq(hp + 1, 4), 0.18, 0);
+  }
+
+  function fireReplayProjectile() {
+    if (state !== 'replay' || !player) return;
+    if (bullets.length > 12) bullets.shift();
+    bullets.push({ x: player.x, y: player.y - 20, vy: -440, r: 4 });
+    noise(0, 0.018, 0.010, true);
+  }
+
+  function resetReplayBall() {
+    if (!replayBall) return;
+    replayBall.x = W * 0.5;
+    replayBall.y = (H - LOOP_PANEL_H) * 0.45;
+    replayBall.vx = rand(-90, 90) || 80;
+    replayBall.vy = -180;
+    replayBall.pulse = 1;
+  }
+
+  function updateReplayPlayground(dt, t) {
+    if (!replayBall) initReplayPlayground();
+    const top = 124;
+    const bottom = H - LOOP_PANEL_H - 12;
+    const move = (leftHeld ? -1 : 0) + (rightHeld ? 1 : 0);
+    if (pointerActive) player.x += (pointerX - player.x) * Math.min(1, dt / 90);
+    else player.x += move * 285 * dt / 1000;
+    player.x = clamp(player.x, 24, W - 24);
+    player.y = H - LOOP_PANEL_H - 28;
+
+    const b = replayBall;
+    b.x += b.vx * dt / 1000;
+    b.y += b.vy * dt / 1000;
+    b.pulse = Math.max(0, b.pulse - dt / 260);
+    if (b.x < b.r + 5) { b.x = b.r + 5; b.vx = Math.abs(b.vx); playPitched('chimes', degreeFreq(1, 4), 0.22, 0); }
+    if (b.x > W - b.r - 5) { b.x = W - b.r - 5; b.vx = -Math.abs(b.vx); playPitched('chimes', degreeFreq(3, 4), 0.22, 0); }
+    if (b.y < top) { b.y = top; b.vy = Math.abs(b.vy); playPitched('keys', degreeFreq(5, 2), 0.24, 0); }
+    if (b.y > bottom) {
+      noise(0, 0.055, 0.018, false);
+      resetReplayBall();
+    }
+
+    const paddleW = 58;
+    const paddleH = 14;
+    if (b.y + b.r >= player.y - paddleH && b.y - b.r <= player.y + 6 && Math.abs(b.x - player.x) <= paddleW * 0.5) {
+      const off = clamp((b.x - player.x) / (paddleW * 0.5), -1, 1);
+      b.y = player.y - paddleH - b.r;
+      b.vx = off * 230;
+      b.vy = -Math.max(190, Math.abs(b.vy) + 8);
+      b.pulse = 1;
+      replayToyScore += 1;
+      playDrumPiece('rim', 0.55, 0, (off + 1) * 0.5);
+      burst(b.x, b.y, b.color, 6);
+    }
+
+    if (t >= replaySpawnAt) {
+      spawnReplayThing();
+      replaySpawnAt = t + rand(900, 1500);
+    }
+    replayHazards.forEach(h => {
+      h.x += h.vx * dt / 1000;
+      h.y += h.vy * dt / 1000;
+      h.rot += h.spin * dt / 1000;
+      h.pulse = Math.max(0, h.pulse - dt / 300);
+      if (h.x < h.r || h.x > W - h.r) h.vx *= -1;
+      const dx = b.x - h.x, dy = b.y - h.y;
+      const minD = b.r + h.r;
+      if (dx * dx + dy * dy <= minD * minD) {
+        const a = Math.atan2(dy, dx);
+        b.vx = Math.cos(a) * 210;
+        b.vy = Math.sin(a) * 210;
+        h.hp -= 1;
+        h.pulse = 1;
+        b.pulse = 1;
+        replayToyScore += 2;
+        playDrumPiece(h.hp <= 0 ? 'snare' : 'tom', 0.55, 0, clamp(h.x / W, 0, 1));
+        burst(h.x, h.y, h.color, 8);
+        if (h.hp <= 0) h.broken = true;
+      }
+    });
+    replayPickups.forEach(p => {
+      p.x += p.vx * dt / 1000;
+      p.y += p.vy * dt / 1000;
+      p.pulse = Math.max(0, p.pulse - dt / 280);
+      const dx = b.x - p.x, dy = b.y - p.y;
+      if (dx * dx + dy * dy <= (b.r + p.r) * (b.r + p.r)) {
+        p.pulse = 1;
+        p.collected = true;
+        b.pulse = 1;
+        replayToyScore += 3;
+        playPitched('chimes', degreeFreq(p.deg, 4), 0.55, 0);
+        burst(p.x, p.y, p.color, 10);
+      }
+    });
+    bullets.forEach(projectile => { projectile.y += projectile.vy * dt / 1000; });
+    bullets = bullets.filter(projectile => projectile.y > 104);
+    for (let i = replayHazards.length - 1; i >= 0; i--) {
+      const h = replayHazards[i];
+      for (let j = bullets.length - 1; j >= 0; j--) {
+        const projectile = bullets[j];
+        const dx = projectile.x - h.x, dy = projectile.y - h.y;
+        if (dx * dx + dy * dy <= (projectile.r + h.r) * (projectile.r + h.r)) {
+          bullets.splice(j, 1);
+          h.hp -= 1;
+          h.pulse = 1;
+          replayToyScore += 2;
+          playFxGesture(h.hp <= 0 ? 'warp' : 'echo', degreeFreq(4 + h.hp, 4), 0.34, 0, { intensity: 0.45, tension: 0.7 });
+          burst(h.x, h.y, h.color, 12);
+          if (h.hp <= 0) replayHazards.splice(i, 1);
+          break;
+        }
+      }
+    }
+    replayHazards = replayHazards.filter(h => !h.broken && h.y < bottom + 70).slice(-8);
+    replayPickups = replayPickups.filter(p => !p.collected && p.y < bottom + 60).slice(-8);
+  }
+
+  function updateFxJunk(dt, t) {
+    if (!fxActive()) return;
+    if (!fxJunk.length) initFxJunk();
+    fxJunk.forEach((j, i) => {
+      const time = t * 0.001;
+      j.x = clamp(j.baseX + Math.sin(time * 0.45 + j.driftSeed) * 14, j.r + 10, W - j.r - 10);
+      j.y = j.baseY + Math.cos(time * 0.38 + j.driftSeed + i) * 10;
+      j.rot += j.spin * dt / 1000;
+      j.pulse = Math.max(0, j.pulse - dt / 520);
+      j.armed = Math.max(0, j.armed - dt / 900);
+    });
+  }
+
   function drumsActive() {
     return state === 'playing' && phase === 'build' && activeLayer().inst === 'drums';
   }
 
-  // Which orb-driven layer is live: chimes, swell, final FX, or null.
+  // Which orb-driven layer is live: chimes only. Swell and FX now have
+  // their own surfaces so Free Mode does not become six versions of tapping.
   function orbLayerInst() {
     if (state !== 'playing' || phase !== 'build') return null;
     const inst = activeLayer().inst;
-    return inst === 'chimes' || inst === 'swell' || inst === 'fx' ? inst : null;
+    return inst === 'chimes' ? inst : null;
   }
 
   function chimesActive() {
     return !!orbLayerInst();
+  }
+
+  function swellActive() {
+    return state === 'playing' && phase === 'build' && activeLayer().inst === 'swell';
+  }
+
+  function fxActive() {
+    return state === 'playing' && phase === 'build' && activeLayer().inst === 'fx';
   }
 
   function rockTapActive() {
@@ -1352,6 +1577,11 @@
   function tapShoot(pos) {
     const t = performance.now();
     if (t < manualFireAt) return;
+    if (state === 'replay') {
+      fireReplayProjectile();
+      manualFireAt = t + 150;
+      return;
+    }
     if (phase === 'countin' && state === 'playing') {
       playDrumPiece('kick', 0.45, 0);
       countKickPulse = 0.8;
@@ -1366,6 +1596,11 @@
     if (rockTapActive()) {
       if (pos) tapRock(pos);
       manualFireAt = t + 78;
+      return;
+    }
+    if (fxActive()) {
+      if (pos) tapFxJunk(pos);
+      manualFireAt = t + 96;
       return;
     }
     shoot();
@@ -1636,6 +1871,7 @@
     replayUntil = performance.now() + LOOP_STEPS * beatMs * 2;
     rocks = [];
     bullets = [];
+    initReplayPlayground();
     overlay.classList.add('hidden');
     last = performance.now();
     cancelAnimationFrame(raf);
@@ -1646,9 +1882,9 @@
     if (phase === 'countin') return 'SET TEMPO';
     if (drumsActive()) return 'TAP DRUM PADS';
     if (rockTapActive()) return 'TAP THE ROCKS';
+    if (fxActive()) return 'TAP + PINCH JUNK';
+    if (swellActive()) return 'HOLD + SLIDE';
     const orb = orbLayerInst();
-    if (orb === 'fx') return 'HOLD + SHAPE FX';
-    if (orb === 'swell') return 'HOLD + PULL';
     if (orb === 'chimes') return 'HOLD + PULL';
     return '';
   }
@@ -1762,6 +1998,31 @@
     return true;
   }
 
+  function tapFxJunk(pos) {
+    const best = fxJunkAt(pos);
+    if (!best) return false;
+    const power = clamp(1 - best.dist / Math.max(1, best.junk.r + 28), 0.35, 1);
+    triggerFxJunk(best.junk, power, performance.now());
+    return true;
+  }
+
+  function triggerFxJunk(junk, power, t) {
+    t = t || performance.now();
+    const timing = captureTiming(t);
+    const deg = junk.piece === 'echo' ? 2 : junk.piece === 'rise' ? 5 : 8;
+    const note = degreeFreq(deg, activeLayer().mult);
+    junk.pulse = 1.35;
+    junk.armed = 1;
+    playFxGesture(junk.piece, note, 0.62 + power * 0.42, 0, { intensity: 0.5 + power * 0.5, tension: power });
+    stampNote({ ...junk, lane: junk.lane }, timing.target, note, timing.tight, timing.isNextStep);
+    burst(junk.x, junk.y, junk.color, timing.tight ? 14 : 8);
+    combo = timing.tight ? combo + 1 : 0;
+    bestCombo = Math.max(bestCombo, combo);
+    score += timing.tight ? 18 + combo : 6;
+    signal = clamp(signal + (timing.tight ? 1.1 : 0.4), 0, 100);
+    distortion = clamp(distortion + (timing.tight ? -0.5 : 1.5), 0, 100);
+  }
+
   function playerDamage(amount) {
     combo = 0;
     distortion = clamp(distortion + 8, 0, 100);
@@ -1822,6 +2083,23 @@
         }
       }
     }
+    if (pointerActive && swellActive()) {
+      const usableH = Math.max(1, H - LOOP_PANEL_H - 138);
+      const xT = clamp(pointerX / Math.max(1, W), 0, 1);
+      const yT = clamp((pointerY - 118) / usableH, 0, 1);
+      const deg = clamp(Math.round(xT * 9), 0, 9);
+      const openness = 1 - yT;
+      const tension = 0.25 + xT * 0.5 + openness * 0.25;
+      const every = swellInk > 0.72 ? 2 : swellInk > 0.42 ? 3 : 6;
+      if (stepIndex % every === 0) {
+        const note = degreeFreq(deg, activeLayer().mult);
+        playSwellChord(note, 0.34 + swellInk * 0.42, 0, { openness, tension });
+        const existing = loop[stepIndex].find(v => v.layerId === activeLayer().id);
+        if (!existing || existing.note !== note) {
+          stampNote({ lane: 1, label: noteNameForDegree(deg), color: '#ffe61a' }, stepIndex, note, true, false);
+        }
+      }
+    }
     if (!isFreeMode() && loopEndArmed && stepIndex === 0) endCurrentLoop(false);
     distortion = clamp(distortion - 0.4, 0, 100);
     if (stepIndex % 8 === 0 && signal > 22) signal = clamp(signal - 0.12, 0, 100);
@@ -1857,6 +2135,7 @@
       return;
     }
     tickBeat(t);
+    swellInk = swellActive() && pointerActive ? clamp(swellInk + dt / 1700, 0, 1) : Math.max(0, swellInk - dt / 900);
     if (drumsActive()) {
       for (let i = 0; i < laneFlash.length; i++) laneFlash[i] = Math.max(0, laneFlash[i] - dt / 360);
       loopFlash.forEach(f => { f.pulse = Math.max(0, f.pulse - dt / 260); });
@@ -1899,17 +2178,63 @@
       }
       return;
     }
+    if (swellActive()) {
+      for (let i = 0; i < laneFlash.length; i++) laneFlash[i] = Math.max(0, laneFlash[i] - dt / 360);
+      loopFlash.forEach(f => { f.pulse = Math.max(0, f.pulse - dt / 300); });
+      thereminPulse = Math.max(0, thereminPulse - dt / 320);
+      stars.forEach(s => {
+        s.y += s.vy * dt / 1000;
+        if (s.y > H + 5) { s.y = -5; s.x = Math.random() * W; }
+      });
+      sparks.forEach(p => {
+        p.age += dt;
+        p.x += p.vx * dt / 1000;
+        p.y += p.vy * dt / 1000;
+        p.vy += 80 * dt / 1000;
+      });
+      sparks = sparks.filter(p => p.age < p.life).slice(-MAX_SPARKS);
+      if (floatTexts) {
+        floatTexts.forEach(f => { f.age += dt; f.y -= 28 * dt / 1000; });
+        floatTexts = floatTexts.filter(f => f.age < f.life);
+      }
+      return;
+    }
+    if (fxActive()) {
+      updateFxJunk(dt, t);
+      for (let i = 0; i < laneFlash.length; i++) laneFlash[i] = Math.max(0, laneFlash[i] - dt / 360);
+      loopFlash.forEach(f => { f.pulse = Math.max(0, f.pulse - dt / 300); });
+      stars.forEach(s => {
+        s.y += s.vy * dt / 1000;
+        if (s.y > H + 5) { s.y = -5; s.x = Math.random() * W; }
+      });
+      sparks.forEach(p => {
+        p.age += dt;
+        p.x += p.vx * dt / 1000;
+        p.y += p.vy * dt / 1000;
+        p.vy += 80 * dt / 1000;
+      });
+      sparks = sparks.filter(p => p.age < p.life).slice(-MAX_SPARKS);
+      if (floatTexts) {
+        floatTexts.forEach(f => { f.age += dt; f.y -= 28 * dt / 1000; });
+        floatTexts = floatTexts.filter(f => f.age < f.life);
+      }
+      return;
+    }
     if (state === 'replay') {
+      updateReplayPlayground(dt, t);
       for (let i = 0; i < laneFlash.length; i++) laneFlash[i] = Math.max(0, laneFlash[i] - dt / 420);
       loopFlash.forEach(f => { f.pulse = Math.max(0, f.pulse - dt / 320); });
       stars.forEach(s => {
         s.y += s.vy * dt / 1000;
         if (s.y > H + 5) { s.y = -5; s.x = Math.random() * W; }
       });
-      if (t >= replayUntil) {
-        if (isFreeMode()) showJukebox();
-        else showBuiltChoice();
-      }
+      sparks.forEach(p => {
+        p.age += dt;
+        p.x += p.vx * dt / 1000;
+        p.y += p.vy * dt / 1000;
+        p.vy += 80 * dt / 1000;
+      });
+      sparks = sparks.filter(p => p.age < p.life).slice(-MAX_SPARKS);
       return;
     }
     ensureBoss();
@@ -2199,7 +2524,7 @@
       c.lineWidth = lit ? 2 : 1;
       c.globalAlpha = 0.34 + pad.flash * 0.62;
       c.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
-      const cr = pad.piece === 'kick' || pad.piece === 'gong' ? 8 : pad.piece === 'tom' || pad.piece === 'clap' ? 6.5 : 5;
+      const cr = pad.piece === 'kick' || pad.piece === 'gong' ? 8 : pad.piece === 'tom' || pad.piece === 'snare' || pad.piece === 'clap' ? 6.5 : 5;
       c.globalAlpha = 0.42 + pad.flash * 0.48;
       c.beginPath();
       c.arc(r.x + r.w / 2, r.y + r.h / 2, cr + pad.flash * 4, 0, Math.PI * 2);
@@ -2210,6 +2535,199 @@
       c.fillText(pad.label, r.x + r.w / 2, r.y + r.h - 16);
     });
     c.globalAlpha = 1;
+    c.restore();
+  }
+
+  function drawSwellSurface(c) {
+    const top = 132;
+    const bottom = H - LOOP_PANEL_H - 20;
+    const h = bottom - top;
+    const layer = activeLayer();
+    const grad = c.createLinearGradient(0, top, W, bottom);
+    grad.addColorStop(0, 'rgba(255,230,26,0.16)');
+    grad.addColorStop(0.45, 'rgba(123,255,234,0.10)');
+    grad.addColorStop(1, 'rgba(182,108,255,0.14)');
+    c.save();
+    c.fillStyle = grad;
+    c.globalAlpha = 0.65 + swellInk * 0.35;
+    c.fillRect(16, top, W - 32, h);
+    c.strokeStyle = 'rgba(255,230,26,0.42)';
+    c.lineWidth = 1.5;
+    c.strokeRect(16.5, top + 0.5, W - 33, h - 1);
+    for (let i = 0; i < 10; i++) {
+      const x = 16 + (W - 32) * (i / 9);
+      c.globalAlpha = 0.12 + swellInk * 0.10;
+      c.strokeStyle = layer.options[i < 3 ? 0 : i < 6 ? 1 : 2].color;
+      c.beginPath();
+      c.moveTo(x, top);
+      c.lineTo(x, bottom);
+      c.stroke();
+      c.globalAlpha = 0.58;
+      c.fillStyle = '#eaffff';
+      c.font = "8px 'VCR', monospace";
+      c.textAlign = 'center';
+      c.fillText(noteNameForDegree(i), x, top + 17);
+    }
+    ['BRIGHT', 'WARM'].forEach((label, i) => {
+      c.globalAlpha = 0.62;
+      c.fillStyle = i ? 'rgba(182,108,255,0.85)' : 'rgba(255,230,26,0.9)';
+      c.font = "8px 'VCR', monospace";
+      c.textAlign = 'left';
+      c.fillText(label, 24, i ? bottom - 14 : top + 34);
+    });
+    if (pointerActive) {
+      const x = clamp(pointerX, 18, W - 18);
+      const y = clamp(pointerY, top, bottom);
+      const r = 18 + swellInk * 34;
+      const grd = c.createRadialGradient(x, y, 2, x, y, r);
+      grd.addColorStop(0, 'rgba(255,242,160,0.92)');
+      grd.addColorStop(0.42, 'rgba(255,230,26,0.28)');
+      grd.addColorStop(1, 'rgba(255,230,26,0)');
+      c.globalAlpha = 1;
+      c.fillStyle = grd;
+      c.beginPath();
+      c.arc(x, y, r, 0, Math.PI * 2);
+      c.fill();
+      c.strokeStyle = '#ffe61a';
+      c.globalAlpha = 0.75;
+      c.beginPath();
+      c.arc(x, y, 8 + swellInk * 8, 0, Math.PI * 2);
+      c.stroke();
+    } else {
+      c.globalAlpha = 0.72;
+      c.fillStyle = 'rgba(234,255,255,0.7)';
+      c.font = "9px 'VCR', monospace";
+      c.textAlign = 'center';
+      c.fillText('HOLD + SLIDE', W * 0.5, top + h * 0.54);
+    }
+    c.restore();
+  }
+
+  function drawFxJunkSurface(c) {
+    if (!fxJunk.length) initFxJunk();
+    c.save();
+    fxJunk.forEach(j => {
+      const open = Math.max(j.pulse || 0, j.armed || 0);
+      c.save();
+      c.translate(j.x, j.y);
+      c.rotate(j.rot);
+      c.globalAlpha = 0.35 + open * 0.48;
+      c.shadowColor = j.color;
+      c.shadowBlur = 8 + open * 24;
+      c.strokeStyle = j.color;
+      c.fillStyle = 'rgba(2,4,14,0.72)';
+      c.lineWidth = 1.5 + open * 2;
+      c.beginPath();
+      for (let i = 0; i < 7; i++) {
+        const a = i / 7 * Math.PI * 2;
+        const rr = j.r * (0.72 + ((i * 29) % 11) / 30) * (1 + open * 0.55);
+        const x = Math.cos(a) * rr;
+        const y = Math.sin(a) * rr;
+        if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
+      }
+      c.closePath();
+      c.fill();
+      c.stroke();
+      c.rotate(-j.rot);
+      c.shadowBlur = 0;
+      c.globalAlpha = 0.68 + open * 0.3;
+      c.fillStyle = j.color;
+      c.font = "9px 'VCR', monospace";
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText(j.label, 0, 1);
+      c.restore();
+      if (open > 0.08) {
+        c.globalAlpha = 0.16 + open * 0.24;
+        c.strokeStyle = j.color;
+        c.beginPath();
+        c.arc(j.x, j.y, j.r * (1.45 + open * 1.3), 0, Math.PI * 2);
+        c.stroke();
+      }
+    });
+    c.globalAlpha = 0.62;
+    c.fillStyle = 'rgba(234,255,255,0.72)';
+    c.font = "9px 'VCR', monospace";
+    c.textAlign = 'center';
+    c.fillText('PINCH JUNK OPEN', W * 0.5, H - LOOP_PANEL_H - 42);
+    c.restore();
+  }
+
+  function drawReplayPlayground(c) {
+    if (!replayBall) initReplayPlayground();
+    c.save();
+    replayPickups.forEach(p => {
+      const pulse = p.pulse || 0;
+      c.shadowColor = p.color;
+      c.shadowBlur = 10 + pulse * 18;
+      c.globalAlpha = 0.46 + pulse * 0.35;
+      c.fillStyle = p.color;
+      c.beginPath();
+      c.arc(p.x, p.y, p.r + pulse * 5, 0, Math.PI * 2);
+      c.fill();
+      c.shadowBlur = 0;
+      c.globalAlpha = 0.74;
+      c.fillStyle = '#02040e';
+      c.font = "7px 'VCR', monospace";
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText(noteNameForDegree(p.deg), p.x, p.y + 1);
+    });
+    replayHazards.forEach(h => {
+      const pulse = h.pulse || 0;
+      c.save();
+      c.translate(h.x, h.y);
+      c.rotate(h.rot);
+      c.shadowColor = h.color;
+      c.shadowBlur = 8 + pulse * 20;
+      c.globalAlpha = 0.58 + pulse * 0.34;
+      c.fillStyle = 'rgba(2,4,14,0.84)';
+      c.strokeStyle = h.color;
+      c.lineWidth = 1.5 + pulse * 1.5;
+      c.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const a = i / 8 * Math.PI * 2;
+        const rr = h.r * (0.78 + ((i * 37) % 10) / 42);
+        const x = Math.cos(a) * rr;
+        const y = Math.sin(a) * rr;
+        if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
+      }
+      c.closePath();
+      c.fill();
+      c.stroke();
+      c.restore();
+      for (let hp = 0; hp < h.maxHp; hp++) {
+        c.globalAlpha = hp < h.hp ? 0.86 : 0.22;
+        c.fillStyle = h.color;
+        c.fillRect(h.x - h.maxHp * 4 + hp * 8, h.y - h.r - 11, 5, 3);
+      }
+    });
+    const b = replayBall;
+    c.shadowColor = b.color;
+    c.shadowBlur = 18 + b.pulse * 22;
+    c.globalAlpha = 0.92;
+    c.fillStyle = b.color;
+    c.beginPath();
+    c.arc(b.x, b.y, b.r + b.pulse * 5, 0, Math.PI * 2);
+    c.fill();
+    c.shadowBlur = 0;
+    c.globalAlpha = 0.30;
+    c.strokeStyle = b.color;
+    c.beginPath();
+    c.arc(b.x, b.y, b.r + 12 + b.pulse * 8, 0, Math.PI * 2);
+    c.stroke();
+    c.globalAlpha = 1;
+    c.fillStyle = 'rgba(0,229,255,0.16)';
+    c.strokeStyle = COLOR;
+    c.lineWidth = 2;
+    c.fillRect(player.x - 30, player.y - 13, 60, 12);
+    c.strokeRect(player.x - 30.5, player.y - 13.5, 61, 13);
+    c.fillStyle = 'rgba(234,255,255,0.68)';
+    c.font = "8px 'VCR', monospace";
+    c.textAlign = 'center';
+    c.fillText('KEEP THE LOOP ALIVE', W * 0.5, H - LOOP_PANEL_H - 50);
+    c.textAlign = 'right';
+    c.fillText(String(replayToyScore), W - 14, H - LOOP_PANEL_H - 50);
     c.restore();
   }
 
@@ -2396,11 +2914,14 @@
       const loopX = 26, loopY = 72;
       const rowH = 7, rowGap = 4;
       const w = (W - 40) / LOOP_STEPS;
+      const cellX = i => loopX + i * w + 1;
+      const cellW = Math.max(2, w - 3);
+      const playheadX = i => cellX(i) + cellW * 0.5 - 1;
       for (let i = 0; i < LOOP_STEPS; i++) {
         const active = i === stepIndex;
         c.fillStyle = active ? COLOR : 'rgba(234,255,255,0.12)';
         if (loopEndArmed && i >= LOOP_STEPS - 4) c.fillStyle = active ? '#ffe61a' : 'rgba(255,230,26,0.34)';
-        c.fillRect(loopX + i * w + 1, loopY + LAYERS.length * (rowH + rowGap) + 1, Math.max(2, w - 3), active ? 7 : 4);
+        c.fillRect(cellX(i), loopY + LAYERS.length * (rowH + rowGap) + 1, cellW, active ? 7 : 4);
       }
       for (let row = 0; row < LAYERS.length; row++) {
         const layer = LAYERS[row];
@@ -2414,28 +2935,26 @@
           const slots = layerSlotAt(i, row);
           c.fillStyle = 'rgba(234,255,255,0.10)';
           if (loopEndArmed && i >= LOOP_STEPS - 4 && row === currentLayerIndex) c.fillStyle = 'rgba(255,230,26,0.20)';
-          c.fillRect(loopX + i * w + 1, y, Math.max(2, w - 3), rowH);
+          c.fillRect(cellX(i), y, cellW, rowH);
           if (slots.length) {
             const slot = slots[slots.length - 1];
             c.fillStyle = slot.color;
-            c.fillRect(loopX + i * w + 1, y, Math.max(2, w - 3), rowH);
+            c.fillRect(cellX(i), y, cellW, rowH);
             if (slot.inst === 'drums' && slot.pieces && slot.pieces.length > 1) {
               const count = Math.min(slot.pieces.length, MAX_DRUM_STACK);
-              const cellW = Math.max(2, w - 3);
               c.fillStyle = '#02040e';
               c.globalAlpha = 0.36;
               for (let m = 1; m < count; m++) {
-                const mx = loopX + i * w + 1 + (cellW * m) / count;
+                const mx = cellX(i) + (cellW * m) / count;
                 c.fillRect(mx, y, 1, rowH);
               }
               c.globalAlpha = row === currentLayerIndex && state === 'playing' ? 0.95 : 0.58;
             } else if (slot.inst === 'keys' && slot.notes && slot.notes.length > 1) {
               const count = Math.min(slot.notes.length, MAX_PIANO_STACK);
-              const cellW = Math.max(2, w - 3);
               c.fillStyle = '#02040e';
               c.globalAlpha = 0.30;
               for (let m = 1; m < count; m++) {
-                const mx = loopX + i * w + 1 + (cellW * m) / count;
+                const mx = cellX(i) + (cellW * m) / count;
                 c.fillRect(mx, y, 1, rowH);
               }
               c.globalAlpha = row === currentLayerIndex && state === 'playing' ? 0.95 : 0.58;
@@ -2445,12 +2964,12 @@
           if (flash && flash.row === row && flash.pulse > 0) {
             c.fillStyle = flash.color;
             c.globalAlpha = 0.35 + flash.pulse * 0.55;
-            c.fillRect(loopX + i * w, y - 1, Math.max(3, w - 1), rowH + 2);
+            c.fillRect(cellX(i), y - 1, cellW, rowH + 2);
             c.globalAlpha = row === currentLayerIndex && state === 'playing' ? 0.95 : 0.58;
           }
           if (i === stepIndex) {
             c.fillStyle = row === currentLayerIndex ? '#ffe61a' : 'rgba(0,229,255,0.72)';
-            c.fillRect(loopX + i * w + Math.max(2, w - 3) * 0.42, y - 1, 2, rowH + 2);
+            c.fillRect(playheadX(i), y - 1, 2, rowH + 2);
           }
         }
       }
@@ -2512,10 +3031,16 @@
     const counting = phase === 'countin' && state === 'playing';
     const padsVisible = drumsActive();
     const thereminVisible = chimesActive();
+    const swellVisible = swellActive();
+    const fxVisible = fxActive();
+    const replayVisible = state === 'replay';
     const surfaceVisible = asteroidSurfaceActive();
-    if (!counting && !padsVisible && !thereminVisible && !surfaceVisible) drawLanes(c);
+    if (!counting && !padsVisible && !thereminVisible && !swellVisible && !fxVisible && !replayVisible && !surfaceVisible) drawLanes(c);
     drawBoss(c);
+    if (replayVisible) drawReplayPlayground(c);
     if (padsVisible) drawPads(c);
+    if (swellVisible) drawSwellSurface(c);
+    if (fxVisible) drawFxJunkSurface(c);
     if (thereminVisible) drawTheremin(c);
     if (asteroidSurfaceActive()) drawAsteroidSurface(c);
     else rocks.forEach(r => drawRock(c, r));
@@ -2589,7 +3114,7 @@
       c.restore();
       c.globalAlpha = 1;
     }
-    if (!counting && !padsVisible && !thereminVisible && !rockTapActive()) drawShip(c);
+    if (!counting && !padsVisible && !thereminVisible && !swellVisible && !fxVisible && !replayVisible && !rockTapActive()) drawShip(c);
     // Minimal footer line; the old beat-dot panel space belongs to gameplay now.
     c.fillStyle = '#02040e';
     c.fillRect(0, H - LOOP_PANEL_H, W, LOOP_PANEL_H);
@@ -2666,9 +3191,9 @@
     overlay.classList.add('signal-menu-mode');
     overlay.innerHTML = `
       <div class="signal-panel">
-        <div class="signal-title">SIGNAL DRIFT</div>
+        <div class="signal-title">SPACE AND SOUND</div>
         ${presetControlsHTML()}
-        <button class="signal-btn" onclick="signalStart()">START SIGNAL</button>
+        <button class="signal-btn" onclick="signalStart()">START SOUND</button>
         <button class="signal-btn secondary" onclick="signalShowFreeLayers()">FREE MODE</button>
         <button class="signal-btn secondary" onclick="signalShowJukebox()">JUKEBOX</button>
       </div>`;
@@ -2731,6 +3256,7 @@
     thereminPulse = 0;
     applyLayerOptions();
     if (asteroidSurfaceActive()) initAsteroidSurface();
+    if (fxActive()) initFxJunk();
     laneFlash = [1, 1, 1];
     showLayerToast();
   }
@@ -2798,7 +3324,7 @@
         <div id="signal-save-status" class="signal-subtitle" style="min-height:18px;margin-top:8px"></div>
         <button class="signal-btn secondary" onclick="signalResumeFreeMode()">BACK TO LOOP</button>
         <button class="signal-btn secondary" onclick="signalShowJukebox()">JUKEBOX</button>
-        <button class="signal-btn secondary" onclick="signalShowIntro()">LAUNCH MENU</button>
+        <button class="signal-btn secondary" onclick="signalShowIntro()">MENU</button>
       </div>`;
     const input = document.getElementById('signal-name');
     if (input) input.focus({ preventScroll: true });
@@ -2997,7 +3523,7 @@
           </div>
           <div id="signal-save-status" class="signal-subtitle" style="min-height:18px;margin-top:8px"></div>` : ''}
         ${won ? `<button class="signal-btn secondary" onclick="signalShowJukebox()">JUKEBOX</button>` : ''}
-        <button class="signal-btn secondary" onclick="signalShowIntro()">LAUNCH MENU</button>
+        <button class="signal-btn secondary" onclick="signalShowIntro()">MENU</button>
         <button class="signal-btn" onclick="signalStart()">PLAY AGAIN</button>
       </div>`;
     const input = document.getElementById('signal-name');
@@ -3126,7 +3652,7 @@
       steps.forEach((target, i) => {
         let stamp;
         if (choice.type === 'drum') {
-          const piece = choice.role === 'hat' ? 'hat' : (choice.role === 'clap' || choice.role === 'snare') ? 'tom' : 'kick';
+          const piece = choice.role === 'hat' ? 'hat' : (choice.role === 'clap' || choice.role === 'snare') ? 'snare' : 'kick';
           stamp = { inst: 'drums', pieces: [piece] };
         } else if (choice.type === 'bass') {
           stamp = { inst: 'bass', note: phrase[i % phrase.length] };
@@ -3175,6 +3701,7 @@
     overlay.classList.add('hidden');
     rocks = [];
     bullets = [];
+    initReplayPlayground();
     if (!stars || !stars.length) initStars();
     last = performance.now();
     cancelAnimationFrame(raf);
@@ -3192,7 +3719,7 @@
     overlay.innerHTML = `
       <div class="signal-panel">
         <div class="signal-title">JUKEBOX</div>
-        <div class="signal-subtitle">LOADING SAVED SIGNAL DRIFT RECIPES...</div>
+        <div class="signal-subtitle">LOADING SAVED SPACE AND SOUND RECIPES...</div>
       </div>`;
     const result = await loadJukeboxRows();
     const rows = result.rows;
@@ -3209,7 +3736,7 @@
     overlay.innerHTML = `
       <div class="signal-panel">
         <div class="signal-title">JUKEBOX</div>
-        <div class="signal-subtitle">${result.online ? 'SHARED SIGNAL DRIFT RECIPES.' : 'LOCAL SAVED SIGNAL DRIFT RECIPES.'}</div>
+        <div class="signal-subtitle">${result.online ? 'SHARED SPACE AND SOUND RECIPES.' : 'LOCAL SAVED SPACE AND SOUND RECIPES.'}</div>
         <div class="signal-jukebox">${list}</div>
         <button class="signal-btn secondary" onclick="signalJukeboxBack()">BACK</button>
       </div>`;
@@ -3221,12 +3748,77 @@
     return { x: (p.clientX - rect.left) * (W / rect.width), y: (p.clientY - rect.top) * (H / rect.height) };
   }
 
+  function touchPoint(touch) {
+    const rect = canvas.getBoundingClientRect();
+    return { x: (touch.clientX - rect.left) * (W / rect.width), y: (touch.clientY - rect.top) * (H / rect.height) };
+  }
+
+  function twoTouchState(e) {
+    if (!e.touches || e.touches.length < 2) return null;
+    const a = touchPoint(e.touches[0]);
+    const b = touchPoint(e.touches[1]);
+    return {
+      a,
+      b,
+      x: (a.x + b.x) * 0.5,
+      y: (a.y + b.y) * 0.5,
+      dist: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)),
+    };
+  }
+
+  function fxJunkAt(pos) {
+    if (!fxJunk.length) initFxJunk();
+    let best = null;
+    let bestScore = Infinity;
+    fxJunk.forEach((junk, index) => {
+      const hitR = junk.r + 28 + junk.armed * 14;
+      const dist = Math.hypot(junk.x - pos.x, junk.y - pos.y);
+      if (dist <= hitR && dist - hitR < bestScore) {
+        best = { junk, index, dist };
+        bestScore = dist - hitR;
+      }
+    });
+    return best;
+  }
+
+  function beginFxPinch(e) {
+    const two = twoTouchState(e);
+    if (!two || !fxActive()) return false;
+    const best = fxJunkAt(two);
+    if (!best) return false;
+    pinchActive = true;
+    pinchStartDist = two.dist;
+    pinchJunk = best.junk;
+    pinchStamped = false;
+    pinchJunk.armed = 1;
+    pinchJunk.pulse = Math.max(pinchJunk.pulse || 0, 0.7);
+    return true;
+  }
+
+  function updateFxPinch(e) {
+    const two = twoTouchState(e);
+    if (!two || !pinchActive || !pinchJunk || !fxActive()) return false;
+    const stretch = clamp((two.dist / Math.max(1, pinchStartDist) - 1) / 0.85, 0, 1);
+    pinchJunk.armed = Math.max(pinchJunk.armed || 0, stretch);
+    pinchJunk.pulse = Math.max(pinchJunk.pulse || 0, 0.5 + stretch);
+    pointerX = two.x;
+    pointerY = two.y;
+    if (stretch > 0.24 && !pinchStamped) {
+      triggerFxJunk(pinchJunk, stretch, performance.now());
+      pinchStamped = true;
+    } else if (stretch > 0.62) {
+      playFxGesture(pinchJunk.piece, degreeFreq(pinchJunk.piece === 'echo' ? 2 : pinchJunk.piece === 'rise' ? 5 : 8, activeLayer().mult), 0.26 + stretch * 0.22, 0, { intensity: stretch, tension: stretch });
+    }
+    return true;
+  }
+
   function attachInput() {
     if (canvas._signalReady) return;
     canvas._signalReady = true;
     canvas.addEventListener('touchstart', e => {
-      if (state !== 'playing') return;
+      if (state !== 'playing' && state !== 'replay') return;
       e.preventDefault();
+      if (beginFxPinch(e)) return;
       const p = pointerPos(e);
       pointerActive = true;
       pointerX = p.x;
@@ -3235,23 +3827,24 @@
       tapShoot(p);
     }, { passive: false });
     canvas.addEventListener('touchmove', e => {
-      if (state !== 'playing') return;
+      if (state !== 'playing' && state !== 'replay') return;
       e.preventDefault();
+      if (updateFxPinch(e)) return;
       const p = pointerPos(e);
       pointerX = p.x;
       pointerY = p.y;
     }, { passive: false });
-    canvas.addEventListener('touchend', () => { pointerActive = false; }, { passive: true });
-    canvas.addEventListener('touchcancel', () => { pointerActive = false; }, { passive: true });
+    canvas.addEventListener('touchend', () => { pointerActive = false; pinchActive = false; pinchJunk = null; }, { passive: true });
+    canvas.addEventListener('touchcancel', () => { pointerActive = false; pinchActive = false; pinchJunk = null; }, { passive: true });
     canvas.addEventListener('mousemove', e => {
-      if (state !== 'playing') return;
+      if (state !== 'playing' && state !== 'replay') return;
       const p = pointerPos(e);
       pointerActive = true;
       pointerX = p.x;
       pointerY = p.y;
     });
     canvas.addEventListener('mousedown', e => {
-      if (state !== 'playing') return;
+      if (state !== 'playing' && state !== 'replay') return;
       const p = pointerPos(e);
       pointerActive = true;
       pointerX = p.x;
