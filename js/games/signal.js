@@ -569,6 +569,36 @@
     src.stop(t0 + dur + 0.02);
   }
 
+  function filteredNoise(delay, dur, vol, filterType, cutoff, q, endCutoff) {
+    const c = audioCtx();
+    if (!c) return;
+    const len = Math.max(1, Math.floor(c.sampleRate * dur));
+    const buffer = c.createBuffer(1, len, c.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < len; i++) {
+      const attack = Math.min(1, i / Math.max(1, c.sampleRate * 0.003));
+      const release = Math.pow(1 - i / len, 1.6);
+      data[i] = (Math.random() * 2 - 1) * attack * release;
+    }
+    const src = c.createBufferSource();
+    const filter = c.createBiquadFilter();
+    const g = c.createGain();
+    const t0 = c.currentTime + Math.max(0.006, delay || 0);
+    src.buffer = buffer;
+    filter.type = filterType || 'bandpass';
+    filter.frequency.setValueAtTime(Math.max(40, cutoff || 1800), t0);
+    if (endCutoff) filter.frequency.exponentialRampToValueAtTime(Math.max(40, endCutoff), t0 + dur);
+    filter.Q.setValueAtTime(q || 1.2, t0);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(Math.max(0.0001, vol), t0 + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    src.connect(filter);
+    filter.connect(g);
+    g.connect(signalOutput());
+    src.start(t0);
+    src.stop(t0 + dur + 0.02);
+  }
+
   // ── Instrument recipes ported from space.js: little acoustic caricatures
   //    built from 2-3 stacked tones with slight detune drift.
   function playDrumPiece(piece, vel, delay, tune) {
@@ -578,61 +608,64 @@
     // tune 0..1 maps across the pad row: left = lower/tighter, right = higher/opener.
     const tn = tune == null ? 0.5 : clamp(tune, 0, 1);
     if (piece === 'hat') {
-      noise(dl, 0.024 + tn * 0.032, 0.020 * v, true);
-      synth(5600 + tn * 1300, 'triangle', dl, 0.026 + tn * 0.020, 0.0045 * v, { filter: 'highpass', cutoff: 3600, q: 0.75 });
+      filteredNoise(dl, 0.038 + tn * 0.025, 0.025 * v, 'highpass', 5600 + tn * 1400, 0.7);
+      filteredNoise(dl + 0.012, 0.026, 0.010 * v, 'bandpass', 7900 + tn * 900, 1.1);
     } else if (piece === 'tri') {
-      const f = 2100 + tn * 900;
-      tone(f, 'sine', dl, 0.34, 0.036 * v, f * 1.006);
-      tone(f * 2.01, 'sine', dl + 0.006, 0.25, 0.012 * v, f * 2.02);
-      tone(520 + tn * 120, 'triangle', dl, 0.11, 0.008 * v, 460 + tn * 90);
+      filteredNoise(dl, 0.16 + tn * 0.08, 0.020 * v, 'highpass', 7200 + tn * 1200, 0.9);
+      filteredNoise(dl + 0.004, 0.10, 0.010 * v, 'bandpass', 9800, 1.3);
     } else if (piece === 'bell') {
-      const f = 980 + tn * 420;
-      tone(f, 'triangle', dl, 0.30, 0.042 * v, f * 0.998);
-      tone(f * 2.42, 'sine', dl + 0.004, 0.22, 0.014 * v, f * 2.44);
-      tone(f * 0.5, 'sine', dl + 0.002, 0.16, 0.012 * v, f * 0.48);
+      const f = 620 + tn * 260;
+      filteredNoise(dl, 0.038, 0.016 * v, 'bandpass', 1200 + tn * 420, 2.6);
+      tone(f, 'square', dl, 0.075, 0.020 * v, f * 0.985);
+      tone(f * 1.47, 'triangle', dl + 0.002, 0.055, 0.010 * v, f * 1.45);
     } else if (piece === 'gong') {
-      const f = 190 + tn * 80;
-      tone(f, 'sine', dl, 0.58, 0.055 * v, f * 0.82);
-      tone(f * 1.47, 'triangle', dl + 0.015, 0.48, 0.030 * v, f * 1.20);
-      noise(dl + 0.004, 0.09, 0.018 * v, false);
+      const f = 115 + tn * 42;
+      filteredNoise(dl, 0.30 + tn * 0.12, 0.030 * v, 'lowpass', 1800 + tn * 450, 0.8, 520 + tn * 160);
+      tone(f, 'sine', dl, 0.34, 0.070 * v, f * 0.74);
+      tone(f * 1.56, 'triangle', dl + 0.010, 0.22, 0.025 * v, f * 1.16);
     } else if (piece === 'clave') {
-      const f = 980 + tn * 280;
-      synth(f, 'triangle', dl, 0.070, 0.026 * v, { filter: 'bandpass', cutoff: f, q: 3.8 });
-      tone(f * 0.72, 'sine', dl + 0.003, 0.060, 0.018 * v, f * 0.70);
+      const f = 1550 + tn * 420;
+      filteredNoise(dl, 0.018, 0.010 * v, 'bandpass', f, 5.5);
+      tone(f, 'triangle', dl, 0.040, 0.024 * v, f * 0.96);
+      tone(f * 0.55, 'sine', dl + 0.002, 0.035, 0.010 * v, f * 0.53);
     } else if (piece === 'guiro') {
-      for (let i = 0; i < 4; i++) noise(dl + i * (0.018 + tn * 0.006), 0.022, 0.009 * v, true);
-      synth(950 + tn * 560, 'triangle', dl, 0.14, 0.012 * v, { filter: 'bandpass', cutoff: 1050 + tn * 600, q: 3.2 });
+      for (let i = 0; i < 7; i++) {
+        const scrapeT = i / 6;
+        filteredNoise(dl + i * (0.014 + tn * 0.004), 0.020, 0.010 * v, 'bandpass', 760 + scrapeT * (1250 + tn * 700), 5.4, 620 + scrapeT * 900);
+      }
+      filteredNoise(dl, 0.13 + tn * 0.03, 0.010 * v, 'bandpass', 1180 + tn * 520, 2.2, 760 + tn * 260);
     } else if (piece === 'shaker') {
-      noise(dl, 0.058 + tn * 0.042, 0.016 * v, true);
-      noise(dl + 0.038, 0.030, 0.008 * v, true);
+      filteredNoise(dl, 0.064 + tn * 0.040, 0.018 * v, 'highpass', 4300 + tn * 900, 0.8);
+      filteredNoise(dl + 0.034, 0.036, 0.010 * v, 'highpass', 5200 + tn * 900, 0.9);
     } else if (piece === 'cabasa') {
-      for (let i = 0; i < 5; i++) noise(dl + i * 0.013, 0.018, 0.0065 * v, true);
-      synth(2600 + tn * 500, 'triangle', dl, 0.10, 0.006 * v, { filter: 'bandpass', cutoff: 2300 + tn * 450, q: 2.2 });
+      for (let i = 0; i < 8; i++) filteredNoise(dl + i * 0.010, 0.016, 0.0065 * v, 'highpass', 3600 + tn * 900, 1.4);
+      filteredNoise(dl + 0.006, 0.11, 0.012 * v, 'bandpass', 2300 + tn * 650, 3.4, 1750 + tn * 420);
     } else if (piece === 'tom') {
-      const f = 150 + tn * 110;
-      tone(f, 'triangle', dl, 0.130, 0.078 * v, f * 0.66);
-      tone(f * 1.42, 'sine', dl + 0.004, 0.090, 0.026 * v, f * 1.02);
-      noise(dl, 0.026, 0.010 * v, false);
+      const f = 112 + tn * 126;
+      filteredNoise(dl, 0.020, 0.018 * v, 'lowpass', 1200 + tn * 400, 0.9);
+      tone(f, 'sine', dl, 0.190, 0.082 * v, f * 0.58);
+      tone(f * 1.35, 'triangle', dl + 0.004, 0.105, 0.020 * v, f * 0.94);
     } else if (piece === 'snare') {
-      noise(dl, 0.075 + tn * 0.025, 0.040 * v, true);
-      noise(dl + 0.012, 0.055, 0.022 * v, false);
-      tone(190 + tn * 70, 'triangle', dl, 0.075, 0.035 * v, 116 + tn * 28);
-      synth(1180 + tn * 420, 'triangle', dl + 0.004, 0.052, 0.014 * v, { filter: 'bandpass', cutoff: 1350 + tn * 520, q: 2.8 });
+      filteredNoise(dl, 0.105 + tn * 0.030, 0.050 * v, 'highpass', 2100 + tn * 600, 0.9);
+      filteredNoise(dl + 0.006, 0.050, 0.026 * v, 'bandpass', 5200 + tn * 900, 1.6);
+      tone(185 + tn * 45, 'triangle', dl, 0.070, 0.026 * v, 118 + tn * 16);
     } else if (piece === 'clap') {
-      noise(dl, 0.030, 0.014 * v, true);
-      noise(dl + 0.020, 0.040, 0.022 * v, true);
-      noise(dl + 0.045, 0.070, 0.012 * v, true);
-      tone(220, 'triangle', dl + 0.006, 0.060, 0.014 * v, 160);
+      filteredNoise(dl, 0.025, 0.018 * v, 'highpass', 1800, 0.8);
+      filteredNoise(dl + 0.018, 0.035, 0.024 * v, 'highpass', 1900, 0.8);
+      filteredNoise(dl + 0.042, 0.075, 0.018 * v, 'highpass', 1700, 0.8);
     } else if (piece === 'rim') {
-      const f = 1450 + tn * 300;
-      synth(f, 'triangle', dl, 0.056, 0.022 * v, { filter: 'bandpass', cutoff: f, q: 4.2 });
-      tone(f * 0.48, 'sine', dl + 0.003, 0.052, 0.018 * v, f * 0.45);
-    } else {
+      const f = 1220 + tn * 360;
+      filteredNoise(dl, 0.018, 0.010 * v, 'bandpass', 2400 + tn * 500, 3.4);
+      tone(f, 'triangle', dl, 0.036, 0.023 * v, f * 0.92);
+      tone(f * 0.42, 'sine', dl + 0.001, 0.032, 0.011 * v, f * 0.39);
+    } else if (piece === 'kick') {
       const f = 82 + tn * 18;
       tone(f * 1.9, 'triangle', dl, 0.018, 0.030 * v, f * 1.18);
       tone(f, 'sine', dl + 0.002, 0.175, 0.118 * v, 34 + tn * 8);
       tone(f * 0.52, 'sine', dl + 0.006, 0.21, 0.052 * v, 28);
       noise(dl + 0.001, 0.018, 0.015 * v, true);
+    } else {
+      filteredNoise(dl, 0.045, 0.018 * v, 'bandpass', 1800 + tn * 900, 1.6);
     }
   }
 
