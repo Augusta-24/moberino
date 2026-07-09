@@ -105,11 +105,12 @@
       { id: 'dream-synth', label: 'DREAM SYNTH' },
       { id: 'boss-rave', label: 'BOSS RAVE' },
       { id: 'chiptune', label: 'CHIPTUNE' },
-      { id: 'dark-minor', label: 'DARK MINOR' },
+      { id: 'dark-minor', label: 'NOIR MOON' },
       { id: 'vaporwave', label: 'VAPORWAVE' },
       { id: 'toy-box', label: 'TOY BOX' },
       { id: 'steel-island', label: 'STEEL ISLAND' },
       { id: 'jazz-club', label: 'JAZZ CLUB' },
+      { id: 'velvet-hall', label: 'VELVET HALL' },
       { id: 'haunted-organ', label: 'HAUNTED ORGAN' },
       { id: 'desert-caravan', label: 'DESERT' },
       { id: 'cyber-garage', label: 'CYBER GARAGE' },
@@ -140,6 +141,7 @@
     'toy-box': { root: 130.81, rootSemi: 0, bassWave: 'triangle', keysWave: 'square', chimeWave: 'sine', drumVol: 0.74, shimmer: 1.35, bassWeight: 0.76, keyGlow: 0.94, echo: 0.65, resonance: 1.45 },
     'steel-island': { root: 98.00, rootSemi: 7, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.92, shimmer: 2.2, bassWeight: 1, keyGlow: 1.08, echo: 1.15, resonance: 1.7 },
     'jazz-club': { root: 116.54, rootSemi: 10, bassWave: 'sine', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.86, shimmer: 0.9, bassWeight: 0.94, keyGlow: 0.82, echo: 0.55, resonance: 0.95, master: 0.96 },
+    'velvet-hall': { root: 98.00, rootSemi: 7, bassWave: 'sine', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.68, shimmer: 0.72, bassWeight: 1.06, keyGlow: 0.78, echo: 1.2, resonance: 1.28, master: 0.94 },
     'haunted-organ': { root: 87.31, rootSemi: 5, bassWave: 'triangle', keysWave: 'sine', chimeWave: 'triangle', drumVol: 0.78, shimmer: 0.55, bassWeight: 1.12, keyGlow: 1.12, echo: 1.05, resonance: 1.25, forceMinor: true },
     'desert-caravan': { root: 146.83, rootSemi: 2, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.95, shimmer: 1.15, bassWeight: 0.94, keyGlow: 0.96, echo: 0.82, resonance: 1.55 },
     'cyber-garage': { root: 123.47, rootSemi: 11, bassWave: 'sawtooth', keysWave: 'square', chimeWave: 'square', drumVol: 1.35, shimmer: 0.7, bassWeight: 1.25, keyGlow: 1, echo: 0.45, resonance: 1.9, master: 1.08 },
@@ -607,9 +609,10 @@
     const dl = delay || 0;
     // tune 0..1 maps across the pad row: left = lower/tighter, right = higher/opener.
     const tn = tune == null ? 0.5 : clamp(tune, 0, 1);
+    const velvet = signalSettings.style === 'velvet-hall';
     if (piece === 'hat') {
-      filteredNoise(dl, 0.046 + tn * 0.030, 0.034 * v, 'highpass', 4700 + tn * 1300, 0.7);
-      filteredNoise(dl + 0.010, 0.032, 0.016 * v, 'bandpass', 7200 + tn * 900, 1.0);
+      filteredNoise(dl, (velvet ? 0.070 : 0.046) + tn * 0.030, (velvet ? 0.026 : 0.034) * v, 'highpass', velvet ? 3900 + tn * 1000 : 4700 + tn * 1300, 0.7);
+      filteredNoise(dl + 0.010, velvet ? 0.046 : 0.032, (velvet ? 0.014 : 0.016) * v, 'bandpass', 7200 + tn * 900, 1.0);
       filteredNoise(dl + 0.004, 0.020, 0.010 * v, 'bandpass', 3100 + tn * 700, 1.5);
     } else if (piece === 'tri') {
       const f = 2850 + tn * 1150;
@@ -640,8 +643,8 @@
       }
       filteredNoise(dl, 0.13 + tn * 0.03, 0.017 * v, 'bandpass', 1180 + tn * 520, 2.2, 760 + tn * 260);
     } else if (piece === 'shaker') {
-      filteredNoise(dl, 0.064 + tn * 0.040, 0.030 * v, 'highpass', 3900 + tn * 900, 0.8);
-      filteredNoise(dl + 0.034, 0.036, 0.017 * v, 'highpass', 5000 + tn * 900, 0.9);
+      filteredNoise(dl, (velvet ? 0.105 : 0.064) + tn * 0.040, (velvet ? 0.026 : 0.030) * v, 'highpass', velvet ? 3000 + tn * 700 : 3900 + tn * 900, 0.8);
+      filteredNoise(dl + 0.034, velvet ? 0.060 : 0.036, (velvet ? 0.016 : 0.017) * v, 'highpass', 5000 + tn * 900, 0.9);
     } else if (piece === 'cabasa') {
       for (let i = 0; i < 8; i++) filteredNoise(dl + i * 0.010, 0.016, 0.011 * v, 'highpass', 3300 + tn * 900, 1.4);
       filteredNoise(dl + 0.006, 0.11, 0.020 * v, 'bandpass', 2200 + tn * 650, 3.4, 1750 + tn * 420);
@@ -664,11 +667,11 @@
       tone(f, 'square', dl, 0.030, 0.040 * v, f * 0.90);
       tone(f * 0.46, 'triangle', dl + 0.001, 0.026, 0.020 * v, f * 0.42);
     } else if (piece === 'kick') {
-      const f = 82 + tn * 18;
+      const f = velvet ? 68 + tn * 12 : 82 + tn * 18;
       tone(f * 1.9, 'triangle', dl, 0.018, 0.030 * v, f * 1.18);
-      tone(f, 'sine', dl + 0.002, 0.175, 0.118 * v, 34 + tn * 8);
-      tone(f * 0.52, 'sine', dl + 0.006, 0.21, 0.052 * v, 28);
-      noise(dl + 0.001, 0.018, 0.015 * v, true);
+      tone(f, 'sine', dl + 0.002, velvet ? 0.22 : 0.175, (velvet ? 0.090 : 0.118) * v, 34 + tn * 8);
+      tone(f * 0.52, 'sine', dl + 0.006, velvet ? 0.25 : 0.21, (velvet ? 0.040 : 0.052) * v, 28);
+      noise(dl + 0.001, 0.018, (velvet ? 0.008 : 0.015) * v, true);
     } else {
       filteredNoise(dl, 0.045, 0.018 * v, 'bandpass', 1800 + tn * 900, 1.6);
     }
@@ -3386,15 +3389,20 @@
   }
 
   function presetControlsHTML() {
-    const group = (key, label) => `
+    const group = (key, label) => {
+      const items = SIGNAL_PRESETS[key] || [];
+      const compact = key !== 'style';
+      const chips = items.map(item => `
+        <button type="button" class="signal-chip ${signalSettings[key] === item.id ? 'active' : ''}" style="${compact ? 'min-height:36px' : 'min-height:38px'}" onclick="signalSetPreset('${key}', '${item.id}')">${item.label}</button>
+      `).join('');
+      return `
       <div class="signal-preset-row">
         <div class="signal-preset-label">${label}</div>
-        <div class="signal-stepper" role="group" aria-label="${label}">
-          <button type="button" class="signal-stepper-btn" onclick="signalCyclePreset('${key}', -1)" aria-label="Previous ${label}">‹</button>
-          <button type="button" class="signal-stepper-value" onclick="signalCyclePreset('${key}', 1)" aria-label="Change ${label}">${presetLabel(key, signalSettings[key])}</button>
-          <button type="button" class="signal-stepper-btn" onclick="signalCyclePreset('${key}', 1)" aria-label="Next ${label}">›</button>
+        <div class="signal-preset-chip-grid ${compact ? 'compact' : 'wide'}" role="group" aria-label="${label}">
+          ${chips}
         </div>
       </div>`;
+    };
     return `<div class="signal-presets">
       ${group('style', 'PALETTE')}
       ${group('mood', 'MOOD')}
