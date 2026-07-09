@@ -64,6 +64,7 @@
 
     const playing = typeof ArcadeMusic !== 'undefined' && ArcadeMusic.playing;
     const muted = typeof ArcadeMusic !== 'undefined' && ArcadeMusic.muted;
+    const loading = typeof ArcadeMusic !== 'undefined' && ArcadeMusic.loading;
     if (playing || muted) {
       document.body.classList.remove('arcade-music-prompt-visible');
       card.hidden = true;
@@ -84,10 +85,12 @@
     };
     showCard();
     requestAnimationFrame(showCard);
-    text.textContent = isStartup
-      ? 'If you do not hear music yet, tap here to wake the soundtrack.'
-      : 'No music yet. Tap here to start the lobby soundtrack.';
-    btn.textContent = 'START MUSIC';
+    text.textContent = loading
+      ? 'Loading soundtrack. If you still do not hear it, tap again.'
+      : isStartup
+        ? 'If you do not hear music yet, tap here to wake the soundtrack.'
+        : 'No music yet. Tap here to start the lobby soundtrack.';
+    btn.textContent = loading ? 'WAKE MUSIC' : 'START MUSIC';
     btn.hidden = false;
   }
 
@@ -518,6 +521,7 @@ const ArcadeMusic = (() => {
   const FULL_VOL = 0.04, DUCK_VOL = 0.01;
   let targetVol = FULL_VOL;
   let gainNode = null, sourceNode = null, audioBuffer = null, loadStarted = false;
+  let loadError = false;
   // Set by stop(), cleared by start()/duck()/unduck(). Whack/Match/Space all call
   // stop() the instant real gameplay begins (silence the lobby loop during play),
   // but body keeps its .on-whack/.on-match/.on-space class for the whole game, and
@@ -537,6 +541,7 @@ const ArcadeMusic = (() => {
   function loadBuffer() {
     if (loadStarted) return;
     loadStarted = true;
+    loadError = false;
     const ctx = getAudioCtx();
     gainNode = ctx.createGain();
     gainNode.gain.value = muted ? 0 : targetVol;
@@ -544,19 +549,48 @@ const ArcadeMusic = (() => {
     fetch('arcademusic.mp3')
       .then(r => { if (!r.ok) throw new Error('fetch failed: ' + r.status); return r.arrayBuffer(); })
       .then(data => ctx.decodeAudioData(data))
-      .then(buf => { audioBuffer = buf; if (started) playSource(); })
+      .then(buf => {
+        audioBuffer = buf;
+        loadError = false;
+        if (started) playSource();
+        if (typeof updateArcadeMusicPrompt === 'function') updateArcadeMusicPrompt();
+      })
       .catch(e => {
         // Previously a silent no-op that also left loadStarted permanently true — meaning
         // a single failed attempt (transient network blip, etc.) bricked music for the
         // rest of the session with zero visibility into why. Now it logs and allows retry.
         console.warn('[ArcadeMusic] failed to load arcademusic.mp3:', e);
         loadStarted = false;
+        loadError = true;
+        if (typeof updateArcadeMusicPrompt === 'function') updateArcadeMusicPrompt();
       });
   }
 
   function playSource() {
-    if (!audioBuffer || sourceNode) return;
+    if (!audioBuffer) return;
     const ctx = getAudioCtx();
+    if (sourceNode) {
+      if (ctx.state !== 'running' && ctx.resume) {
+        ctx.resume().finally(() => {
+          if (typeof updateArcadeMusicPrompt === 'function') updateArcadeMusicPrompt();
+          if (typeof updateArcadeInstallPrompt === 'function') updateArcadeInstallPrompt();
+        });
+      }
+      return;
+    }
+    if (ctx.state !== 'running') {
+      if (ctx.resume) {
+        ctx.resume().then(() => {
+          if (started && !muted) playSource();
+          if (typeof updateArcadeMusicPrompt === 'function') updateArcadeMusicPrompt();
+          if (typeof updateArcadeInstallPrompt === 'function') updateArcadeInstallPrompt();
+        }).catch(() => {
+          if (typeof updateArcadeMusicPrompt === 'function') updateArcadeMusicPrompt();
+        });
+      }
+      if (typeof updateArcadeMusicPrompt === 'function') updateArcadeMusicPrompt();
+      return;
+    }
     sourceNode = ctx.createBufferSource();
     sourceNode.buffer = audioBuffer;
     sourceNode.loop = true;
@@ -595,7 +629,8 @@ const ArcadeMusic = (() => {
       return muted;
     },
     get muted()   { return muted; },
-    get playing() { return !!sourceNode; },
+    get playing() { return !!sourceNode && (!_sharedAudioCtx || _sharedAudioCtx.state === 'running'); },
+    get loading() { return !muted && started && loadStarted && !sourceNode && !loadError; },
     get suppressAutoResume() { return suppressAutoResume; },
   };
 })();
@@ -608,6 +643,7 @@ document.addEventListener('click', function() {
     if (onArcade && !ArcadeMusic.playing && !ArcadeMusic.muted && !ArcadeMusic.suppressAutoResume) {
       ArcadeMusic.start();
       updateArcadeMusicPrompt();
+      setTimeout(updateArcadeMusicPrompt, 180);
     }
 }, { passive: true });
 document.addEventListener('touchstart', function() {
@@ -615,6 +651,7 @@ document.addEventListener('touchstart', function() {
     if (onArcade && !ArcadeMusic.playing && !ArcadeMusic.muted && !ArcadeMusic.suppressAutoResume) {
       ArcadeMusic.start();
       updateArcadeMusicPrompt();
+      setTimeout(updateArcadeMusicPrompt, 180);
     }
 }, { passive: true });
 
