@@ -339,14 +339,14 @@
       { id: 'fast', label: 'FAST', beatMs: 235 },
     ],
     grooveAssist: [
-      { id: 'raw', label: 'NONE' },
+      { id: 'raw', label: 'RAW' },
       { id: 'light', label: 'LIGHT' },
-      { id: 'snap', label: 'MEDIUM' },
-      { id: 'locked', label: 'STRONG' },
+      { id: 'snap', label: 'SNAP' },
+      { id: 'locked', label: 'LOCKED' },
     ],
     recordingStyle: [
-      { id: 'guided', label: 'GUIDED' },
-      { id: 'freebuild', label: 'FREE BUILD' },
+      { id: 'capture', label: 'CAPTURE' },
+      { id: 'grid', label: 'GRID' },
     ],
   };
   // Palettes: key center + instrument character. Never breaks the pentatonic guarantee.
@@ -367,7 +367,7 @@
     'crystal-cave': { root: 104.65, rootSemi: 8, bassWave: 'sine', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.66, shimmer: 2.5, bassWeight: 0.74, keyGlow: 1.35, echo: 1.55, resonance: 1.6 },
   };
 
-  let canvas = null, ctx = null, overlay = null, loopButton = null, resetButton = null, undoButton = null, signalExitButton = null, guidedControls = null, guidedControlsKey = '';
+  let canvas = null, ctx = null, overlay = null, loopButton = null, resetButton = null, undoButton = null, signalExitButton = null;
   let freeControls = null, freeChangeButton = null, freeSaveButton = null, freeMenuButton = null;
   let loopButtonStyleCache = null, resetButtonStyleCache = null;
   let W = 0, H = 0, dpr = 1, raf = 0, last = 0, state = 'idle';
@@ -379,13 +379,13 @@
   let mode = 'arcade', freeLayerIndex = 0, freeRecording = false;
   let freeLayerMenuKeepsLoop = false;
   let pendingStartMode = 'arcade';
-  let setupOpen = false, setupStep = 'palette', guidedStage = 'practice';
+  let setupOpen = false;
   let recordedChoices = [], undoStack = [], grooveByLayer = [], lastGrooveToast = null, replaying = false, replayUntil = 0;
   let undoSeq = 0;
   let replayBall = null, replayHazards = [], replayPickups = [], replayToyScore = 0, replaySpawnAt = 0;
   let jukeboxRows = [], jukeboxBackTarget = 'intro';
   let playAlongPattern = null, playAlongRoundIndex = 0, playAlongInput = [], playAlongResult = null;
-  let signalSettings = { style: 'space-funk', mood: 'minor', tempo: 'medium', grooveAssist: 'snap', recordingStyle: 'guided' };
+  let signalSettings = { style: 'space-funk', mood: 'minor', tempo: 'medium', grooveAssist: 'snap', recordingStyle: 'capture' };
   let layerVolumes = { ...DEFAULT_LAYER_VOLUMES };
   let beatMs = DEFAULT_BEAT_MS;
   let laneFlash = [0, 0, 0];
@@ -417,11 +417,8 @@
   function laneCenter(i) { return laneWidth() * (i + 0.5); }
   function isFreeMode() { return mode === 'free'; }
   function isPlayAlongMode() { return mode === 'playalong'; }
-  function isGuidedBuildMode() { return mode === 'arcade' && (signalSettings.recordingStyle || 'guided') === 'guided'; }
-  function isFreeBuildMode() { return mode === 'arcade' && signalSettings.recordingStyle === 'freebuild'; }
-  function isCaptureBuildMode() { return isGuidedBuildMode() && guidedStage === 'record'; }
-  function isGuidedReviewStage() { return isGuidedBuildMode() && guidedStage === 'review'; }
-  function shouldRecordStamp() { return !isPlayAlongMode() && !(isGuidedBuildMode() && (guidedStage === 'practice' || guidedStage === 'waiting' || guidedStage === 'review')) && (!isFreeMode() || freeRecording); }
+  function isCaptureBuildMode() { return mode === 'arcade' && (signalSettings.recordingStyle || 'capture') === 'capture'; }
+  function shouldRecordStamp() { return !isPlayAlongMode() && (!isFreeMode() || freeRecording); }
   function freeHasRecordedLoop() { return gridStamps().length > 0; }
   function styleDef() { return STYLE_DEFS[signalSettings.style] || STYLE_DEFS['space-funk']; }
   function soundProfile() {
@@ -453,21 +450,9 @@
     return NOTE_NAMES[(styleDef().rootSemi + st) % 12];
   }
   function activeLayer() { return LAYERS[clamp(currentLayerIndex, 0, LAYERS.length - 1)] || LAYERS[0]; }
-  function guidedCoachActive() { return isGuidedBuildMode() && state === 'playing' && phase === 'build'; }
-  function playFieldTop() { return guidedCoachActive() ? 296 : 146; }
-  function playFieldBottom(limit) {
-    const base = H - LOOP_PANEL_H - (guidedCoachActive() ? 118 : 20);
-    if (!guidedCoachActive() || !limit) return base;
-    return Math.min(base, playFieldTop() + limit);
-  }
-  function swellSurfaceTop() { return guidedCoachActive() ? 296 : 158; }
-  function swellSurfaceBottom() { return playFieldBottom(guidedCoachActive() ? 390 : 0); }
-  function activeLayerLabel() {
-    if (isFreeMode()) return `FREE PLAY: ${activeLayer().name}`;
-    if (isPlayAlongMode()) return `PLAY ALONG: ${activeLayer().name}`;
-    if (isGuidedBuildMode()) return `${guidedStage === 'record' ? 'RECORD' : guidedStage === 'review' ? 'REVIEW' : 'PRACTICE'} ${activeLayer().name}`;
-    return `PLAY ${activeLayer().name}`;
-  }
+  function swellSurfaceTop() { return 158; }
+  function swellSurfaceBottom() { return H - LOOP_PANEL_H - 20; }
+  function activeLayerLabel() { return isFreeMode() ? `FREE PLAY: ${activeLayer().name}` : isPlayAlongMode() ? `PLAY ALONG: ${activeLayer().name}` : isCaptureBuildMode() ? `PLAY ${activeLayer().name}` : `LAYER ${currentLayerIndex + 1}: ${activeLayer().name}`; }
   function fallbackStepsForType(type) {
     const steps = WRITE_STEPS[type] || [0];
     return steps.map(wrapStep);
@@ -661,7 +646,6 @@
       loopButton.disabled = false;
       updateFreeControls();
       syncSignalChrome();
-      updateGuidedControls();
       return;
     }
     const canUndo = canUndoLastStamp();
@@ -678,41 +662,30 @@
       if (isPlayAlongMode() && phase === 'build') {
         loopButton.textContent = 'PLAYING...';
         loopButton.disabled = true;
-      } else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'practice') {
-        loopButton.textContent = 'READY';
-      } else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'waiting') {
-        loopButton.textContent = 'PLAY WHEN READY';
+      } else if (isCaptureBuildMode() && phase === 'build') {
+        loopButton.textContent = 'CAPTURING...';
         loopButton.disabled = true;
-      } else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'record') {
-        loopButton.textContent = 'RECORDING...';
-        loopButton.disabled = true;
-      } else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'review') {
-        loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISH TRACK' : 'KEEP';
       } else if (loopEndArmed) loopButton.textContent = 'SAVING LOOP...';
       else loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISH TRACK' : 'NEXT LAYER ›';
       // Reset (↻) only while actively building a layer — not during count-in.
       if (resetButton) {
-        const showSkip = isGuidedBuildMode() && phase === 'build' && guidedStage === 'practice';
-        const showStartOver = isGuidedBuildMode() && phase === 'build' && guidedStage === 'review';
-        resetButton.classList.toggle('hidden', phase !== 'build' || isPlayAlongMode() || (isGuidedBuildMode() && guidedStage === 'record'));
-        resetButton.textContent = showStartOver ? 'START OVER' : showSkip ? 'SKIP LAYER' : 'CLEAR';
-        resetButton.title = showStartOver ? 'Start this layer over' : showSkip ? 'Skip this layer' : 'Clear this layer';
-        resetButton.setAttribute('aria-label', showStartOver ? 'Start this layer over' : showSkip ? 'Skip this layer' : 'Clear this layer');
+        resetButton.classList.toggle('hidden', phase !== 'build' || isPlayAlongMode());
+        resetButton.textContent = 'CLEAR';
+        resetButton.title = 'Clear this layer';
+        resetButton.setAttribute('aria-label', 'Clear this layer');
       }
     }
     if (undoButton) {
-      const guidedReview = isGuidedBuildMode() && phase === 'build' && guidedStage === 'review';
-      undoButton.classList.toggle('hidden', phase !== 'build' || isPlayAlongMode() || (isGuidedBuildMode() && !guidedReview));
-      undoButton.disabled = guidedReview ? false : !canUndo;
-      undoButton.textContent = guidedReview ? 'ADD MORE' : 'UNDO';
-      undoButton.title = guidedReview ? 'Add more to this layer' : canUndo ? 'Undo last note' : 'Nothing to undo yet';
-      undoButton.setAttribute('aria-label', guidedReview ? 'Add more to this layer' : canUndo ? 'Undo last note' : 'Nothing to undo yet');
-      undoButton.style.opacity = guidedReview || canUndo ? '1' : '0.46';
-      undoButton.style.cursor = guidedReview || canUndo ? 'pointer' : 'default';
+      undoButton.classList.toggle('hidden', phase !== 'build' || isPlayAlongMode());
+      undoButton.disabled = !canUndo;
+      undoButton.textContent = 'UNDO';
+      undoButton.title = canUndo ? 'Undo last note' : 'Nothing to undo yet';
+      undoButton.setAttribute('aria-label', canUndo ? 'Undo last note' : 'Nothing to undo yet');
+      undoButton.style.opacity = canUndo ? '1' : '0.46';
+      undoButton.style.cursor = canUndo ? 'pointer' : 'default';
     }
     updateFreeControls();
     syncSignalChrome();
-    updateGuidedControls();
   }
   function presetLabel(group, id) {
     const item = (SIGNAL_PRESETS[group] || []).find(p => p.id === id);
@@ -1183,127 +1156,6 @@
     if (el && snap) Object.assign(el.style, snap);
   }
 
-  function ensureGuidedControls() {
-    if (guidedControls) return guidedControls;
-    const host = document.body;
-    guidedControls = document.createElement('div');
-    guidedControls.id = 'signal-guided-controls';
-    Object.assign(guidedControls.style, {
-      position: 'fixed',
-      left: '12px',
-      right: '12px',
-      bottom: 'calc(env(safe-area-inset-bottom, 0px) + 22px)',
-      zIndex: '999999',
-      display: 'none',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '12px',
-      pointerEvents: 'auto',
-      boxSizing: 'border-box',
-    });
-    host.appendChild(guidedControls);
-    return guidedControls;
-  }
-
-  function guidedControlButton(label, handler, primary) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = primary ? 'signal-loop-btn' : 'signal-reset-btn';
-    btn.textContent = label;
-    Object.assign(btn.style, {
-      minHeight: '64px',
-      width: '100%',
-      maxWidth: 'none',
-      fontSize: '13px',
-      letterSpacing: '1.8px',
-      padding: '0 12px',
-      boxSizing: 'border-box',
-      pointerEvents: 'auto',
-      whiteSpace: 'nowrap',
-      borderRadius: '14px',
-      border: primary ? '2px solid rgba(0,229,255,.95)' : '2px solid rgba(255,255,255,.45)',
-      background: primary ? 'rgba(0,229,255,.20)' : 'rgba(2,4,14,.94)',
-      color: primary ? '#eaffff' : '#eaffff',
-      boxShadow: primary ? '0 0 24px rgba(0,229,255,.35)' : '0 0 16px rgba(0,0,0,.35)',
-    });
-    let firedAt = 0;
-    const activate = e => {
-      if (e && typeof e.preventDefault === 'function') e.preventDefault();
-      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-      const t = performance.now();
-      if (t - firedAt < 180) return;
-      firedAt = t;
-      try { if (typeof SFX !== 'undefined' && SFX.menuSelect) SFX.menuSelect(); } catch(err) {}
-      handler();
-    };
-    btn.addEventListener('pointerdown', activate);
-    btn.addEventListener('touchend', activate, { passive: false });
-    btn.addEventListener('click', activate);
-    return btn;
-  }
-
-  function updateGuidedControls() {
-    const el = ensureGuidedControls();
-    const visible = isGuidedBuildMode() && state === 'playing' && phase === 'build';
-    if (!visible) {
-      el.style.display = 'none';
-      if (guidedControlsKey) {
-        el.innerHTML = '';
-        guidedControlsKey = '';
-      }
-      return;
-    }
-
-    const key = `${guidedStage}:${currentLayerIndex}:${LAYERS.length}`;
-    el.style.display = 'grid';
-    // Do not rebuild the buttons every animation frame. Recreating the DOM
-    // while a finger is down can swallow the click/tap before READY fires.
-    if (guidedControlsKey === key && el.childNodes.length) return;
-
-    guidedControlsKey = key;
-    el.innerHTML = '';
-    if (guidedStage === 'practice') {
-      el.style.gridTemplateColumns = '1fr 1fr';
-      el.appendChild(guidedControlButton('SKIP LAYER', skipGuidedLayer, false));
-      el.appendChild(guidedControlButton('READY', startGuidedRecordPass, true));
-      return;
-    }
-    if (guidedStage === 'waiting') {
-      el.style.gridTemplateColumns = '1fr';
-      el.appendChild(guidedControlButton('BACK TO PRACTICE', () => {
-        guidedStage = 'practice';
-        updateLoopButton();
-        showLayerToast();
-      }, false));
-      return;
-    }
-    if (guidedStage === 'record') {
-      el.style.gridTemplateColumns = '1fr';
-      const label = document.createElement('div');
-      label.textContent = 'RECORDING...';
-      Object.assign(label.style, {
-        minHeight: '52px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '13px',
-        letterSpacing: '2px',
-        color: '#ffe61a',
-        textShadow: '0 0 14px rgba(255,230,26,.6)',
-        pointerEvents: 'none',
-      });
-      el.appendChild(label);
-      return;
-    }
-    if (guidedStage === 'review') {
-      el.style.gridTemplateColumns = '1fr 1fr';
-      el.appendChild(guidedControlButton('START OVER', captureRetryLayer, false));
-      el.appendChild(guidedControlButton('ADD MORE', captureAddMoreLayer, false));
-      const keep = guidedControlButton(currentLayerIndex >= LAYERS.length - 1 ? 'FINISH TRACK' : 'KEEP', captureNextLayer, true);
-      keep.style.gridColumn = '1 / -1';
-      el.appendChild(keep);
-    }
-  }
-
   function ensureSignalExitButton() {
     const row = document.querySelector('#pg-signal .signal-loop-row');
     if (!row) return null;
@@ -1340,8 +1192,7 @@
       undoButton.addEventListener('click', e => {
         e.preventDefault();
         e.stopPropagation();
-        if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'review') captureAddMoreLayer();
-    else if (canUndoLastStamp()) undoLastStamp();
+        if (canUndoLastStamp()) undoLastStamp();
       });
     }
     if (undoButton.parentNode !== row) row.appendChild(undoButton);
@@ -1421,49 +1272,6 @@
     row.style.display = runBarVisible ? 'grid' : 'none';
     if (!runBarVisible) return;
     const exit = ensureSignalExitButton();
-
-    // Guided uses the large fixed bottom controls. Keep only the top-right X
-    // here so the player does not see duplicate READY / SKIP controls.
-    if (isGuidedBuildMode() && phase === 'build') {
-      if (resetButton) resetButton.classList.add('hidden');
-      if (undoButton) undoButton.classList.add('hidden');
-      if (loopButton) loopButton.classList.add('hidden');
-      if (exit && exit.parentNode === row) row.appendChild(exit);
-      row.style.position = 'absolute';
-      row.style.top = 'calc(env(safe-area-inset-top, 0px) + 6px)';
-      row.style.left = 'auto';
-      row.style.right = '10px';
-      row.style.width = '42px';
-      row.style.maxWidth = '42px';
-      row.style.margin = '0';
-      row.style.zIndex = '60';
-      row.style.display = 'grid';
-      row.style.gridTemplateColumns = '42px';
-      row.style.gap = '0';
-      row.style.alignItems = 'stretch';
-      row.style.justifyContent = 'end';
-      row.style.boxSizing = 'border-box';
-      row.style.padding = '0';
-      row.style.pointerEvents = 'auto';
-      if (exit) {
-        exit.style.gridColumn = '1';
-        exit.style.width = '42px';
-        exit.style.minWidth = '42px';
-        exit.style.minHeight = '40px';
-        exit.style.padding = '0';
-        exit.style.fontSize = '20px';
-        exit.style.letterSpacing = '0';
-        exit.style.borderColor = 'rgba(255,0,204,0.45)';
-        exit.style.background = 'rgba(2,4,14,0.88)';
-        exit.style.color = '#ff2db8';
-        exit.style.boxShadow = '0 0 14px rgba(255,45,184,0.18)';
-        exit.style.display = 'inline-flex';
-        exit.style.alignItems = 'center';
-        exit.style.justifyContent = 'center';
-      }
-      return;
-    }
-
     const undo = ensureSignalUndoButton();
     if (resetButton && resetButton.parentNode === row) row.appendChild(resetButton);
     if (undo && undo.parentNode === row) row.appendChild(undo);
@@ -1477,7 +1285,7 @@
     row.style.maxWidth = 'none';
     row.style.margin = '0';
     row.style.zIndex = '60';
-    row.style.gridTemplateColumns = isGuidedReviewStage() ? '92px 74px minmax(0, 1fr) 42px' : '58px 58px minmax(0, 1fr) 42px';
+    row.style.gridTemplateColumns = '58px 58px minmax(0, 1fr) 42px';
     row.style.gap = '5px';
     row.style.alignItems = 'stretch';
     row.style.justifyContent = 'stretch';
@@ -1499,7 +1307,7 @@
     if (resetButton) {
       if (!signalResetButtonStyles) signalResetButtonStyles = snapshotStyles(resetButton, ['gridColumn', 'width', 'minHeight', 'fontSize', 'letterSpacing', 'padding', 'boxSizing']);
       resetButton.style.gridColumn = '1';
-      resetButton.style.width = isGuidedReviewStage() ? '92px' : '58px';
+      resetButton.style.width = '58px';
       resetButton.style.minHeight = '40px';
       resetButton.style.fontSize = '8px';
       resetButton.style.letterSpacing = '0.4px';
@@ -1509,14 +1317,12 @@
     if (undo) {
       if (!signalUndoButtonStyles) signalUndoButtonStyles = snapshotStyles(undo, ['gridColumn', 'width', 'minHeight', 'fontSize', 'letterSpacing', 'padding', 'boxSizing', 'opacity', 'cursor']);
       const canUndo = canUndoLastStamp();
-      const guidedReview = isGuidedBuildMode() && phase === 'build' && guidedStage === 'review';
-      undo.classList.toggle('hidden', phase !== 'build' || isPlayAlongMode() || (isGuidedBuildMode() && !guidedReview));
-      undo.disabled = guidedReview ? false : !canUndo;
-      undo.textContent = guidedReview ? 'ADD MORE' : 'UNDO';
-      undo.style.opacity = guidedReview || canUndo ? '1' : '0.46';
-      undo.style.cursor = guidedReview || canUndo ? 'pointer' : 'default';
+      undo.classList.toggle('hidden', phase !== 'build');
+      undo.disabled = !canUndo;
+      undo.style.opacity = canUndo ? '1' : '0.46';
+      undo.style.cursor = canUndo ? 'pointer' : 'default';
       undo.style.gridColumn = '2';
-      undo.style.width = isGuidedReviewStage() ? '74px' : '58px';
+      undo.style.width = '58px';
       undo.style.minHeight = '40px';
       undo.style.fontSize = '8px';
       undo.style.letterSpacing = '0.4px';
@@ -1697,7 +1503,6 @@
     stepIndex = 0;
     lastLoopStep = -1;
     loopEndArmed = false;
-    guidedStage = 'practice';
     phase = isFreeMode() ? 'build' : 'countin';
     countKickPulse = 0;
     countLockedText = '';
@@ -1726,8 +1531,8 @@
 
   function initFxJunk() {
     fxJunk = [];
-    const top = playFieldTop();
-    const bottom = Math.max(top + 160, playFieldBottom(360));
+    const top = 142;
+    const bottom = Math.max(top + 160, H - LOOP_PANEL_H - 78);
     activeLayer().options.forEach((fx, i) => {
       fxJunk.push({
         ...fx,
@@ -1961,7 +1766,7 @@
   }
 
   function thereminCenter() {
-    return { x: W / 2, y: guidedCoachActive() ? (playFieldTop() + (playFieldBottom(430) - playFieldTop()) * 0.52) : (H - LOOP_PANEL_H) * 0.52, maxR: guidedCoachActive() ? Math.min(W * 0.42, Math.max(110, (playFieldBottom(430) - playFieldTop()) * 0.45)) : Math.min(W, H - LOOP_PANEL_H) * 0.44 };
+    return { x: W / 2, y: (H - LOOP_PANEL_H) * 0.52, maxR: Math.min(W, H - LOOP_PANEL_H) * 0.44 };
   }
 
   function orbPullState() {
@@ -1977,8 +1782,8 @@
   }
 
   function padRect(row, col) {
-    const left = 38, right = 16, top = playFieldTop();
-    const bottom = playFieldBottom(430);
+    const left = 38, right = 16, top = 146;
+    const bottom = H - LOOP_PANEL_H - 8;
     const colGap = 10, rowGap = 12;
     const gw = (W - left - right - (PAD_COLS - 1) * colGap) / PAD_COLS;
     const gh = (bottom - top - 2 * rowGap) / 3;
@@ -2034,8 +1839,8 @@
     if (layer.inst !== 'bass' && layer.inst !== 'keys') return;
     rocks = [];
     bullets = [];
-    const top = playFieldTop();
-    const bottom = Math.max(top + 120, playFieldBottom(350));
+    const top = 142;
+    const bottom = Math.max(top + 120, H - LOOP_PANEL_H - 78);
     const spanY = bottom - top;
     if (layer.inst === 'bass') {
       layer.options.forEach((option, lane) => {
@@ -2151,24 +1956,7 @@
     return nearest;
   }
 
-  function startGuidedRecordingFromFirstNote(t) {
-    if (!(isGuidedBuildMode() && state === 'playing' && phase === 'build' && guidedStage === 'waiting')) return false;
-    guidedStage = 'record';
-    undoStack = [];
-    rocks = [];
-    bullets = [];
-    pointerActive = false;
-    pinchActive = false;
-    restartLoopPlayback();
-    updateLoopButton();
-    showLayerToast();
-    return true;
-  }
-
   function captureTiming(t) {
-    if (startGuidedRecordingFromFirstNote(t)) {
-      return { isNextStep: false, tight: true, target: 0 };
-    }
     const baseBeatAt = beatAt || (t + beatMs);
     const elapsedSinceStep = clamp(beatMs - (baseBeatAt - t), 0, beatMs * 4);
     const rawStepFloat = stepIndex + elapsedSinceStep / beatMs;
@@ -2384,7 +2172,6 @@
       beat: COUNTDOWN_STEP_MS,
       last: 0,
       afterClear: !!opts.afterClear,
-      guidedRecord: !!opts.guidedRecord,
     };
     stepIndex = 0;
     lastLoopStep = -1;
@@ -2398,7 +2185,7 @@
     if (activeLayer().inst === 'fx') initFxJunk();
     if (overlay) overlay.classList.add('hidden');
     updateLoopButton();
-    addFloatText(opts.afterClear ? 'RESETTING LOOP' : opts.guidedRecord ? 'READY TO RECORD' : 'GET READY', W * 0.5, H * 0.3, '#ffe61a', 900);
+    addFloatText(opts.afterClear ? 'RESETTING LOOP' : 'GET READY', W * 0.5, H * 0.3, '#ffe61a', 700);
   }
 
   function skipCountIn() {
@@ -2521,7 +2308,6 @@
       return;
     }
     currentLayerIndex += 1;
-    guidedStage = isGuidedBuildMode() ? 'practice' : guidedStage;
     additionsThisLayer = 0;
     rocks = [];
     bullets = [];
@@ -2537,15 +2323,16 @@
     const committedLayerIndex = currentLayerIndex;
     grooveByLayer[committedLayerIndex] = scoreLayerGrid(committedLayerIndex);
     lastGrooveToast = null;
-    state = 'playing';
-    phase = 'build';
-    guidedStage = 'review';
+    state = 'built';
+    phase = 'capture-review';
     loopEndArmed = false;
     undoStack = [];
     rocks = [];
     bullets = [];
     pointerActive = false;
     pinchActive = false;
+    updateLoopButton();
+    cancelAnimationFrame(raf);
     showCaptureReview(committedLayerIndex);
     [0, 2, 4].forEach((deg, i) => playPitched('keys', degreeFreq(deg, 2), 0.64, 0.04 + i * 0.08));
   }
@@ -2615,24 +2402,27 @@
 
   function showCaptureReview(layerIndex) {
     const layer = LAYERS[layerIndex] || activeLayer();
-    guidedStage = 'review';
-    state = 'playing';
-    phase = 'build';
-    overlay.classList.add('hidden');
-    addFloatText(`${layer.name} ADDED`, W * 0.5, 118, '#ffe61a', 1400);
-    restartLoopPlayback();
-    updateLoopButton();
+    const isFinal = layerIndex >= LAYERS.length - 1;
+    overlay.classList.remove('hidden');
+    overlay.classList.remove('signal-tempo-mode');
+    overlay.classList.remove('signal-menu-mode');
+    overlay.innerHTML = `
+      <div class="signal-panel">
+        <div class="signal-title">${layer.name} ADDED</div>
+        <div class="signal-subtitle">${recipeExtra(currentRecipe())}</div>
+        <button class="signal-btn" onclick="signalCaptureNext()">${isFinal ? 'FINISH TRACK' : 'NEXT'}</button>
+        <button class="signal-btn secondary" onclick="signalCaptureRetry()">RETRY</button>
+      </div>`;
   }
 
   function captureNextLayer() {
-    if (!(isGuidedReviewStage() && state === 'playing' && phase === 'build')) return;
+    if (state !== 'built' || phase !== 'capture-review') return;
     if (currentLayerIndex >= LAYERS.length - 1) {
       state = 'playing';
       finishTrack();
       return;
     }
     currentLayerIndex += 1;
-    if (isGuidedBuildMode()) guidedStage = 'practice';
     additionsThisLayer = 0;
     rocks = [];
     bullets = [];
@@ -2642,32 +2432,16 @@
     applyLayerOptions();
     laneFlash = [1, 1, 1];
     state = 'playing';
-    phase = 'build';
     overlay.classList.add('hidden');
     updateLoopButton();
-    restartLoopPlayback();
-    showLayerToast();
-    last = performance.now();
-    cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(frame);
-  }
-
-  function captureAddMoreLayer() {
-    if (!(isGuidedReviewStage() && state === 'playing' && phase === 'build')) return;
-    guidedStage = 'waiting';
-    state = 'playing';
-    phase = 'build';
-    overlay.classList.add('hidden');
-    updateLoopButton();
-    showLayerToast();
+    beginLoopCountdown();
     last = performance.now();
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(frame);
   }
 
   function captureRetryLayer() {
-    if (!(isGuidedReviewStage() && state === 'playing' && phase === 'build')) return;
-    guidedStage = 'practice';
+    if (state !== 'built' || phase !== 'capture-review') return;
     state = 'playing';
     phase = 'build';
     overlay.classList.add('hidden');
@@ -2711,58 +2485,14 @@
     addFloatText(isFreeMode() ? 'LOOP CLEARED' : 'LAYER CLEARED', W * 0.5, H * 0.3, '#00e5ff');
     tone(520, 'sine', 0, 0.20, 0.05, 170);
     noise(0.02, 0.12, 0.02, true);
-    if (isGuidedBuildMode()) {
-      phase = 'build';
-      restartLoopPlayback();
-      updateLoopButton();
-      showLayerToast();
-    } else {
-      beginLoopCountdown({ afterClear: true });
-    }
-  }
-
-
-  function startGuidedRecordPass() {
-    if (!isGuidedBuildMode() || state !== 'playing' || phase !== 'build') return;
-    guidedStage = 'waiting';
-    undoStack = [];
-    overlay.classList.add('hidden');
-    // Keep the backing loop running. The player's first note restarts the
-    // loop from step 0 and begins the guided recording pass.
-    updateLoopButton();
-    showLayerToast();
-  }
-
-  function skipGuidedLayer() {
-    if (!isGuidedBuildMode() || state !== 'playing' || phase !== 'build') return;
-    if (currentLayerIndex >= LAYERS.length - 1) {
-      finishTrack();
-      return;
-    }
-    currentLayerIndex += 1;
-    guidedStage = 'practice';
-    additionsThisLayer = 0;
-    rocks = [];
-    bullets = [];
-    pointerActive = false;
-    pinchActive = false;
-    applyLayerOptions();
-    laneFlash = [1, 1, 1];
-    phase = 'build';
-    restartLoopPlayback();
-    updateLoopButton();
-    showLayerToast();
+    beginLoopCountdown({ afterClear: true });
   }
 
   function requestLoopEnd() {
     if (state !== 'playing' || loopEndArmed) return;
     if (phase !== 'build') return;
     if (isPlayAlongMode()) return;
-    if (isGuidedBuildMode()) {
-      if (guidedStage === 'practice') startGuidedRecordPass();
-      else if (guidedStage === 'review') captureNextLayer();
-      return;
-    }
+    if (isCaptureBuildMode()) return;
     if (isFreeMode()) {
       showFreeLayerMenu(true);
       return;
@@ -2842,7 +2572,6 @@
   function layerHintText() {
     if (phase === 'countin') return 'SET TEMPO';
     if (phase === 'countdown') return 'GET READY';
-    if (isGuidedBuildMode() && phase === 'build') return guidedStage === 'record' ? 'PLAY FOR ONE LOOP' : guidedStage === 'waiting' ? 'FIRST NOTE STARTS' : guidedStage === 'review' ? 'LISTEN BACK' : 'NOTHING RECORDS YET';
     if (drumsActive()) return 'TAP DRUM PADS';
     if (rockTapActive()) return 'TAP THE ROCKS';
     if (fxActive()) return 'TAP + PINCH JUNK';
@@ -2855,7 +2584,7 @@
   function showLayerToast() {
     const layer = activeLayer();
     const hint = layerHintText();
-    addFloatText(isGuidedBuildMode() ? `${guidedStage === 'record' ? 'RECORD' : guidedStage === 'waiting' ? 'PLAY WHEN READY' : guidedStage === 'review' ? 'REVIEW' : 'PRACTICE'} ${layer.name}` : (hint ? `${layer.name} · ${hint}` : layer.name), W * 0.5, 132, layer.options[0].color || COLOR, 1800);
+    addFloatText(hint ? `${layer.name} · ${hint}` : layer.name, W * 0.5, 132, layer.options[0].color || COLOR, 1800);
   }
 
   function addFloatText(text, x, y, color, life) {
@@ -3096,15 +2825,8 @@
       }
       if (slot >= 3) {
         const afterClear = countdown.afterClear;
-        const guidedRecord = countdown.guidedRecord;
         countdown = null;
-        if (guidedRecord) {
-          guidedStage = 'record';
-          phase = 'build';
-          restartLoopPlayback();
-          updateLoopButton();
-          showLayerToast();
-        } else if (afterClear || isFreeMode()) {
+        if (afterClear || isFreeMode()) {
           phase = 'build';
           if (isFreeMode()) freeRecording = true;
           restartLoopPlayback();
@@ -3921,45 +3643,6 @@
     c.restore();
   }
 
-
-  function drawGuidedCoach(c) {
-    if (!isGuidedBuildMode() || state !== 'playing' || phase !== 'build') return;
-    const layer = activeLayer();
-    const name = layer.name;
-    const main = guidedStage === 'record' ? `RECORD ${name}` : guidedStage === 'waiting' ? 'PLAY WHEN READY' : guidedStage === 'review' ? `${name} ADDED` : `PRACTICE ${name}`;
-    const sub = guidedStage === 'record' ? 'Keep playing until the bar fills.' : guidedStage === 'waiting' ? 'First note starts recording from the top.' : guidedStage === 'review' ? 'Listen back. Add more or keep going.' : 'Try the sounds. Nothing records yet.';
-    const y = 218;
-    c.save();
-    c.textAlign = 'center';
-    c.textBaseline = 'middle';
-    c.fillStyle = 'rgba(2,4,14,0.72)';
-    c.strokeStyle = 'rgba(0,229,255,0.45)';
-    c.lineWidth = 2;
-    const panelW = Math.min(W - 28, 520);
-    const panelX = (W - panelW) / 2;
-    c.fillRect(panelX, y - 34, panelW, 72);
-    c.strokeRect(panelX + 0.5, y - 33.5, panelW - 1, 71);
-    c.shadowColor = guidedStage === 'record' || guidedStage === 'waiting' ? '#ffe61a' : COLOR;
-    c.shadowBlur = 16;
-    c.fillStyle = guidedStage === 'record' || guidedStage === 'waiting' ? '#ffe61a' : COLOR;
-    c.font = "24px 'VCR', monospace";
-    c.fillText(main, W * 0.5, y - 10);
-    c.shadowBlur = 0;
-    c.fillStyle = 'rgba(234,255,255,0.92)';
-    c.font = "11px 'VCR', monospace";
-    c.fillText(sub, W * 0.5, y + 20);
-    if (guidedStage === 'record') {
-      const total = Math.max(1, LOOP_STEPS * beatMs);
-      const progress = clamp(((stepIndex * beatMs) + Math.max(0, performance.now() - (beatAt - beatMs))) / total, 0, 1);
-      const bw = panelW - 42;
-      c.fillStyle = 'rgba(234,255,255,0.16)';
-      c.fillRect(panelX + 21, y + 33, bw, 5);
-      c.fillStyle = '#ffe61a';
-      c.fillRect(panelX + 21, y + 33, bw * progress, 5);
-    }
-    c.restore();
-  }
-
   function drawHud(c) {
     c.save();
     c.font = "10px 'VCR', monospace";
@@ -4169,7 +3852,7 @@
         const elapsedCount = Math.max(0, now() - countdown.start);
         const slot = Math.floor(elapsedCount / countdown.beat);
         mainText = String(clamp(3 - slot, 1, 3));
-        subText = countdown.afterClear ? 'CLEAR · RESTART' : countdown.guidedRecord ? 'RECORDING NEXT' : 'LOOP START';
+        subText = countdown.afterClear ? 'CLEAR · RESTART' : 'LOOP START';
       }
       c.fillText(mainText, cx, cy - 2);
       c.globalAlpha = 0.85;
@@ -4203,8 +3886,6 @@
     c.lineTo(W, H - LOOP_PANEL_H + 0.5);
     c.stroke();
     drawHud(c);
-    drawGuidedCoach(c);
-    updateGuidedControls();
   }
 
   function frame(t) {
@@ -4231,15 +3912,7 @@
     state = 'playing';
     updateLoopButton();
     silenceArcadeMusic();
-    overlay.classList.add('hidden');
-    if (isGuidedBuildMode()) {
-      phase = 'build';
-      guidedStage = 'practice';
-      restartLoopPlayback();
-      showLayerToast();
-    } else {
-      beginLoopCountdown();
-    }
+    showTempoSetup();
     last = performance.now();
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(frame);
@@ -4269,7 +3942,6 @@
     mode = 'arcade';
     pendingStartMode = 'arcade';
     setupOpen = false;
-    setupStep = 'palette';
     freeRecording = false;
     state = 'idle';
     replaying = false;
@@ -4280,20 +3952,12 @@
     overlay.classList.remove('signal-tempo-mode');
     overlay.classList.add('signal-menu-mode');
     overlay.innerHTML = `
-      <div class="signal-panel" style="width:min(460px,calc(100vw - 24px));max-width:460px;padding:18px 16px 16px;box-sizing:border-box">
-        <div class="signal-title" style="font-size:24px;line-height:1.1;margin-bottom:14px">SPACE AND SOUND</div>
-        <button class="signal-btn secondary" style="min-height:82px;font-size:17px;line-height:1.15;margin-bottom:10px;background:rgba(5,20,42,.78) !important;border:2px solid rgba(0,229,255,.72) !important;color:#00e5ff !important;box-shadow:none !important" onclick="signalShowSetup('arcade')">
-          BUILD A TRACK<br><span style="display:block;font-size:14px;letter-spacing:1px;line-height:1.25;color:#eaffff;opacity:.95;margin-top:8px">Make a song one layer at a time.</span>
-        </button>
-        <button class="signal-btn secondary" style="min-height:82px;font-size:17px;line-height:1.15;margin-bottom:10px;background:rgba(5,20,42,.78) !important;border:2px solid rgba(0,229,255,.72) !important;color:#00e5ff !important;box-shadow:none !important" onclick="signalShowPlayAlong()">
-          PLAY ALONG<br><span style="display:block;font-size:14px;letter-spacing:1px;line-height:1.25;color:#eaffff;opacity:.95;margin-top:8px">Listen, then repeat the pattern.</span>
-        </button>
-        <button class="signal-btn secondary" style="min-height:82px;font-size:17px;line-height:1.15;margin-bottom:10px;background:rgba(5,20,42,.78) !important;border:2px solid rgba(0,229,255,.72) !important;color:#00e5ff !important;box-shadow:none !important" onclick="signalShowSetup('free')">
-          FREE PLAY<br><span style="display:block;font-size:14px;letter-spacing:1px;line-height:1.25;color:#eaffff;opacity:.95;margin-top:8px">Mess around with sounds.</span>
-        </button>
-        <button class="signal-btn secondary" style="min-height:82px;font-size:17px;line-height:1.15;background:rgba(5,20,42,.78) !important;border:2px solid rgba(0,229,255,.72) !important;color:#00e5ff !important;box-shadow:none !important" onclick="signalShowJukebox()">
-          JUKEBOX<br><span style="display:block;font-size:14px;letter-spacing:1px;line-height:1.25;color:#eaffff;opacity:.95;margin-top:8px">Play your saved loops.</span>
-        </button>
+      <div class="signal-panel">
+        <div class="signal-title">SPACE AND SOUND</div>
+        <button class="signal-btn" onclick="signalShowSetup('arcade')">BUILD A TRACK</button>
+        <button class="signal-btn secondary" onclick="signalShowPlayAlong()">PLAY ALONG</button>
+        <button class="signal-btn secondary" onclick="signalShowSetup('free')">FREE PLAY</button>
+        <button class="signal-btn secondary" onclick="signalShowJukebox()">JUKEBOX</button>
       </div>`;
   }
 
@@ -4309,22 +3973,17 @@
     overlay.classList.remove('hidden');
     overlay.classList.remove('signal-tempo-mode');
     overlay.classList.add('signal-menu-mode');
-    const diffs = ['EASY', 'MEDIUM', 'HARD', 'EXPERT'];
-    const rows = diffs.map(diff => `
-      <button class="signal-btn secondary" onclick="signalStartPlayAlongDifficulty('${diff}')">${diff}</button>
+    const rows = PLAY_ALONG_PATTERNS.map(pattern => `
+      <button class="signal-chip" onclick="signalStartPlayAlong('${pattern.id}')">
+        ${pattern.difficulty} · ${pattern.title}
+      </button>
     `).join('');
     overlay.innerHTML = `
       <div class="signal-panel">
         <div class="signal-title">PLAY ALONG</div>
-        <div class="signal-subtitle">LISTEN, THEN REPEAT THE PATTERN.</div>
-        ${rows}
+        <div class="signal-presets signal-playalong-grid">${rows}</div>
         <button class="signal-btn secondary" onclick="signalShowIntro()">BACK TO MENU</button>
       </div>`;
-  }
-
-  function startPlayAlongDifficulty(diff) {
-    const pattern = PLAY_ALONG_PATTERNS.find(p => String(p.difficulty).toUpperCase() === String(diff).toUpperCase()) || PLAY_ALONG_PATTERNS[0];
-    if (pattern) startPlayAlong(pattern.id);
   }
 
   function startPlayAlong(patternId) {
@@ -4336,7 +3995,7 @@
     playAlongRoundIndex = 0;
     playAlongInput = [];
     playAlongResult = null;
-    signalSettings = { ...signalSettings, ...(pattern.settings || {}), grooveAssist: 'snap', recordingStyle: signalSettings.recordingStyle || 'guided' };
+    signalSettings = { ...signalSettings, ...(pattern.settings || {}), grooveAssist: 'snap', recordingStyle: signalSettings.recordingStyle || 'capture' };
     applySettings();
     loop = loopFromPlayAlongPattern(pattern);
     recordedChoices = [];
@@ -4344,118 +4003,25 @@
     restartPlayAlongRound();
   }
 
-  function setupNavButtonsHTML(primaryLabel, primaryAction, backAction) {
-    return `
-      <div style="display:grid;grid-template-columns:.72fr 1fr;gap:12px;margin-top:16px">
-        <button class="signal-btn secondary" style="min-height:54px;font-size:12px" onclick="${backAction || 'signalShowIntro()'}">BACK</button>
-        <button class="signal-btn secondary" style="min-height:54px;font-size:13px;background:rgba(2,4,14,.94) !important;border:2px solid rgba(0,229,255,.72) !important;color:#eaffff !important;box-shadow:0 0 14px rgba(0,229,255,.16) !important" onclick="${primaryAction}">${primaryLabel}</button>
-      </div>`;
-  }
-
-  function setupChipGridHTML(key, items, columns) {
-    const cols = key === 'style' ? 2 : (columns || 2);
-    const chips = items.map(item => {
-      const selected = signalSettings[key] === item.id;
-      const style = [
-        'width:100%',
-        'min-width:0',
-        'margin:0',
-        'box-sizing:border-box',
-        'display:flex',
-        'align-items:center',
-        'justify-content:center',
-        'text-align:center',
-        `min-height:${key === 'style' ? '58px' : '54px'}`,
-        `font-size:${key === 'style' ? '12px' : '12px'}`,
-        'line-height:1.08',
-        'letter-spacing:1px',
-        `border-width:${selected ? '2px' : '1px'}`,
-        `box-shadow:${selected ? '0 0 20px rgba(0,229,255,.35)' : 'none'}`,
-      ].join(';');
-      return `<button type="button" class="signal-chip ${selected ? 'active' : ''}" style="${style}" onclick="signalSetPreset('${key}', '${item.id}')">${selected ? '✓ ' : ''}${item.label}</button>`;
-    }).join('');
-    return `<div style="display:grid !important;grid-template-columns:repeat(${cols}, minmax(0, 1fr)) !important;gap:10px;width:100%;box-sizing:border-box;align-items:stretch">${chips}</div>`;
-  }
-
-  function showSetup(nextMode, step) {
+  function showSetup(nextMode) {
     pendingStartMode = nextMode === 'free' ? 'free' : 'arcade';
     setupOpen = true;
-    if (pendingStartMode === 'free') {
-      overlay.classList.remove('hidden');
-      overlay.classList.add('signal-menu-mode');
-      overlay.classList.remove('signal-tempo-mode');
-      overlay.innerHTML = `
-        <div class="signal-panel">
-          <div class="signal-title">FREE PLAY</div>
-          <div class="signal-subtitle">MESS AROUND WITH SOUNDS.</div>
-          ${presetControlsHTML(true)}
-          <button class="signal-btn" onclick="signalConfirmSetup()">CHOOSE LAYER</button>
-          <button class="signal-btn secondary" onclick="signalShowIntro()">BACK TO MENU</button>
-        </div>`;
-      return;
-    }
-    setupStep = step || setupStep || 'palette';
-    renderBuildSetup();
-  }
-
-  function renderBuildSetup() {
     overlay.classList.remove('hidden');
     overlay.classList.add('signal-menu-mode');
     overlay.classList.remove('signal-tempo-mode');
-    const panelStyle = 'width:min(500px,calc(100vw - 24px));max-width:500px;padding:16px;box-sizing:border-box';
-    if (setupStep === 'feel') {
-      overlay.innerHTML = `
-        <div class="signal-panel" style="${panelStyle}">
-          <div class="signal-title" style="font-size:22px;margin-bottom:14px">CHOOSE FEEL</div>
-          <div class="signal-preset-label" style="font-size:12px;margin-bottom:8px">MOOD</div>
-          ${setupChipGridHTML('mood', SIGNAL_PRESETS.mood, 2)}
-          <div class="signal-preset-label" style="font-size:12px;margin-top:14px;margin-bottom:8px">TEMPO</div>
-          ${setupChipGridHTML('tempo', SIGNAL_PRESETS.tempo, 3)}
-          ${setupNavButtonsHTML('NEXT ›', "signalSetupStep('style')", "signalSetupStep('palette')")}
-        </div>`;
-      return;
-    }
-    if (setupStep === 'style') {
-      const active = signalSettings.recordingStyle || 'guided';
-      const card = (id, title, sub) => `
-        <button type="button" class="signal-chip ${active === id ? 'active' : ''}" style="min-height:92px;font-size:16px;line-height:1.15;letter-spacing:1.2px;text-align:left;padding:14px 16px;border-width:${active === id ? '2px' : '1px'};box-shadow:${active === id ? '0 0 22px rgba(0,229,255,.38)' : 'none'}" onclick="signalChooseBuildStyle('${id}')">
-          <span style="font-size:17px">${active === id ? '✓ ' : ''}${title}</span><br>
-          <span style="display:block;font-size:13px;letter-spacing:.7px;line-height:1.25;opacity:.92;margin-top:7px">${sub}</span>
-        </button>`;
-      overlay.innerHTML = `
-        <div class="signal-panel" style="${panelStyle}">
-          <div class="signal-title" style="font-size:22px;line-height:1.15;margin-bottom:14px">HOW DO YOU WANT TO BUILD?</div>
-          <div style="display:grid;grid-template-columns:1fr;gap:12px">
-            ${card('guided', 'GUIDED', 'Practice first, then record in steps.')}
-            ${card('freebuild', 'FREE BUILD', 'Loop runs while you add notes freely.')}
-          </div>
-          <div style="display:grid;grid-template-columns:.72fr 1fr;gap:12px;margin-top:16px">
-            <button class="signal-btn secondary" style="min-height:54px;font-size:12px" onclick="signalSetupStep('feel')">BACK</button>
-            <button class="signal-btn secondary" style="min-height:54px;font-size:13px;background:rgba(2,4,14,.94) !important;border:2px solid rgba(0,229,255,.72) !important;color:#eaffff !important;box-shadow:0 0 14px rgba(0,229,255,.16) !important" onclick="signalConfirmSetup()">START ›</button>
-          </div>
-        </div>`;
-      return;
-    }
-    setupStep = 'palette';
     overlay.innerHTML = `
-      <div class="signal-panel" style="${panelStyle}">
-        <div class="signal-title" style="font-size:22px;margin-bottom:14px">CHOOSE PALETTE</div>
-        ${setupChipGridHTML('style', SIGNAL_PRESETS.style, 2)}
-        ${setupNavButtonsHTML('NEXT ›', "signalSetupStep('feel')", "signalShowIntro()")}
+      <div class="signal-panel">
+        <div class="signal-title">${pendingStartMode === 'free' ? 'FREE PLAY SETUP' : 'TRACK SETUP'}</div>
+        ${presetControlsHTML()}
+        <button class="signal-btn" onclick="signalConfirmSetup()">${pendingStartMode === 'free' ? 'CHOOSE LAYER' : 'BUILD A TRACK'}</button>
+        <button class="signal-btn secondary" onclick="signalShowIntro()">BACK TO MENU</button>
       </div>`;
   }
 
   function confirmSetup() {
     setupOpen = false;
     if (pendingStartMode === 'free') showFreeLayerMenu(false);
-    else {
-      if ((signalSettings.recordingStyle || 'guided') === 'freebuild') signalSettings.grooveAssist = 'light';
-      else {
-        signalSettings.recordingStyle = 'guided';
-        signalSettings.grooveAssist = 'snap';
-      }
-      start();
-    }
+    else start();
   }
 
   function showTempoSetup() {
@@ -4610,12 +4176,12 @@
     </div>`;
   }
 
-  function presetControlsHTML(freeOnly) {
+  function presetControlsHTML() {
     const group = (key, label) => {
       const items = SIGNAL_PRESETS[key] || [];
       const compact = key !== 'style';
       const chips = items.map(item => `
-        <button type="button" class="signal-chip ${signalSettings[key] === item.id ? 'active' : ''}" style="${compact ? 'min-height:38px' : 'min-height:44px'};font-size:11px" onclick="signalSetPreset('${key}', '${item.id}')">${item.label}</button>
+        <button type="button" class="signal-chip ${signalSettings[key] === item.id ? 'active' : ''}" style="${compact ? 'min-height:36px' : 'min-height:38px'}" onclick="signalSetPreset('${key}', '${item.id}')">${item.label}</button>
       `).join('');
       return `
       <div class="signal-preset-row">
@@ -4629,6 +4195,8 @@
       ${group('style', 'PALETTE')}
       ${group('mood', 'MOOD')}
       ${group('tempo', 'TEMPO')}
+      ${pendingStartMode === 'free' ? '' : group('grooveAssist', 'GROOVE ASSIST')}
+      ${pendingStartMode === 'free' ? '' : group('recordingStyle', 'RECORDING STYLE')}
     </div>`;
   }
 
@@ -5144,16 +4712,6 @@
   }
 
   window.signalStart = start;
-  window.signalSetupStep = function(step) {
-    setupStep = step || 'palette';
-    renderBuildSetup();
-  };
-  window.signalChooseBuildStyle = function(style) {
-    signalSettings.recordingStyle = style === 'freebuild' ? 'freebuild' : 'guided';
-    signalSettings.grooveAssist = signalSettings.recordingStyle === 'freebuild' ? 'light' : 'snap';
-    renderBuildSetup();
-  };
-  window.signalStartPlayAlongDifficulty = startPlayAlongDifficulty;
   window.signalSetTempo = function(value, preview) {
     audioCtx();
     setTempoBpm(Number(value));
@@ -5172,21 +4730,17 @@
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
     if (phase === 'countin' && state === 'playing') skipCountIn();
-    else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'review') captureNextLayer();
     else requestLoopEnd();
   };
   window.signalResetLoop = function(e) {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-    if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'practice') skipGuidedLayer();
-    else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'review') captureRetryLayer();
-    else resetCurrentLoop();
+    resetCurrentLoop();
   };
   window.signalUndoLoop = function(e) {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-    if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'review') captureAddMoreLayer();
-    else if (canUndoLastStamp()) undoLastStamp();
+    if (canUndoLastStamp()) undoLastStamp();
   };
   window.signalSaveScore = saveScore;
   window.signalSaveRecipe = saveRecipe;
@@ -5194,7 +4748,6 @@
   window.signalLoopAgain = continueLooping;
   window.signalCaptureNext = captureNextLayer;
   window.signalCaptureRetry = captureRetryLayer;
-  window.signalCaptureAddMore = captureAddMoreLayer;
   window.signalEndRun = endBuiltRun;
   window.signalShowMix = showMixScreen;
   window.signalSetLayerVolume = setLayerVolume;

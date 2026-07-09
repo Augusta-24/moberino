@@ -153,7 +153,7 @@
   let spaceBriefingTimers = [];
   let spaceFlowToken = 0;
   const SPACE_WAVE_ANNOUNCE_MS = 4200;
-  const SPACE_WAVE_INSTRUCTION_READ_MS = 800;
+  const SPACE_WAVE_INSTRUCTION_READ_MS = 3800;
   const SPACE_BLACKOUT_VISUAL_READ_MS = 3600;
   let academyMode = false;
   let academyStep = 0;
@@ -3643,16 +3643,20 @@
     mkStars();
     currentCfg = waveConfig(wave);
     waveTheme = pickWaveTheme(wave, null);
-    startWaveSpawn(currentCfg);
-    if (waveTheme === 'blackout' && !blackoutTestMode) { spawnBlackoutHiddenEnemies(); spaceSfx('wave.blackout'); }
-    scheduleHpPowerup();
-    schedulePowerup();
-    scheduleMysteryBox();
-    scheduleInstrument();
-    const flowToken = spaceFlowToken;
-    setTimeout(() => {
-      if (flowToken === spaceFlowToken && state === 'playing' && wave === 1) showSkillCalloutForWave({ delayMs: 0 });
-    }, 260);
+    if (spaceRunMode === 'campaign') {
+      waveTransitioning = true;
+    } else {
+      startWaveSpawn(currentCfg);
+      if (waveTheme === 'blackout' && !blackoutTestMode) { spawnBlackoutHiddenEnemies(); spaceSfx('wave.blackout'); }
+      scheduleHpPowerup();
+      schedulePowerup();
+      scheduleMysteryBox();
+      scheduleInstrument();
+      const flowToken = spaceFlowToken;
+      setTimeout(() => {
+        if (flowToken === spaceFlowToken && state === 'playing' && wave === 1) showSkillCalloutForWave({ delayMs: 0 });
+      }, 260);
+    }
   }
 
   function clearSpaceRuntimeTimers() {
@@ -3811,7 +3815,7 @@
   // (or one title+detail pair) is ever visible — never stacked, never racing.
   let academyMsgPanel = null; // {title, detail, kind, x, y, startedAt, holdMs}
   const ACADEMY_MSG_FADE_IN = 180, ACADEMY_MSG_FADE_OUT = 260;
-  const ACADEMY_INTRO_HOLD_MS = 2000;
+  const ACADEMY_INTRO_HOLD_MS = 3600;
   function academyMsgDuration(holdMs) {
     return ACADEMY_MSG_FADE_IN + holdMs + ACADEMY_MSG_FADE_OUT;
   }
@@ -3825,8 +3829,8 @@
       kind: opts.kind || 'good',
       x: opts.x != null ? opts.x : W / 2,
       y: opts.y != null ? opts.y : H * 0.26,
-      titleSize: opts.titleSize || 25,
-      detailSize: opts.detailSize || 16,
+      titleSize: opts.titleSize || 32,
+      detailSize: opts.detailSize || 21,
       startedAt: Date.now(),
       holdMs: opts.holdMs != null ? opts.holdMs : 1500,
     };
@@ -3857,7 +3861,7 @@
       ctx.shadowBlur = 0;
       ctx.fillStyle = '#ffe61a';
       ctx.font = `${m.detailSize}px 'Bebas Neue', cursive`;
-      ctx.fillText(m.detail, m.x, m.y + 26);
+      ctx.fillText(m.detail, m.x, m.y + 34);
     }
     ctx.restore();
   }
@@ -3871,13 +3875,14 @@
       if (!academyMode || state !== 'playing') return;
       academyClearMsg();
       bullets = [];
+      academyStepStarted = Date.now();
       fn();
     }, academyMsgDuration(ACADEMY_INTRO_HOLD_MS) + 120 + (extraDelay || 0));
   }
 
   function academyConfirm(text) {
     if (!academyMode || state !== 'playing') return;
-    academyShowMsg(text || 'NICE!', '', { kind: 'good', holdMs: 1100, titleSize: 27 });
+    academyShowMsg(text || 'NICE!', '', { kind: 'good', holdMs: 1700, titleSize: 32 });
   }
 
   function academyTryAgain(text, onDone) {
@@ -3885,12 +3890,12 @@
     if (academyMsgPanel) return false;
     if (now - academyRetryNoticeAt < 1200) return false;
     academyRetryNoticeAt = now;
-    academyShowMsg(text || 'TRY AGAIN!', '', { kind: 'bad', holdMs: 900, titleSize: 21 });
+    academyShowMsg(text || 'TRY AGAIN!', '', { kind: 'bad', holdMs: 1500, titleSize: 28 });
     academyTimer(() => {
       if (!academyMode || state !== 'playing') return;
       academyClearMsg();
       if (onDone) onDone();
-    }, academyMsgDuration(900) + 120);
+    }, academyMsgDuration(1500) + 120);
     return true;
   }
 
@@ -5235,9 +5240,9 @@ function nextWave() {
       const flowToken = spaceFlowToken;
       setTimeout(() => {
         if (flowToken !== spaceFlowToken || state !== 'playing' || (waveTransitioning && !opts.allowDuringTransition)) return;
-        addFloatText('BLASTER DISABLED', W / 2, H * 0.34, '#ff3030', 30, { vy: 0, holdMs: 2600, fade: 0.012 });
-        addFloatText('EMERGENCY SHIELD UP', W / 2, H * 0.34 + 34, '#00e5ff', 22, { vy: 0, holdMs: 2600, fade: 0.012 });
-        addFloatText('RAM SWARMERS TO DEFLECT THEM', W / 2, H * 0.34 + 62, '#33ff66', 18, { vy: 0, holdMs: 2600, fade: 0.012 });
+        addFloatText('BLASTER DISABLED', W / 2, H * 0.34, '#ff3030', 36, { vy: 0, holdMs: 3800, fade: 0.012 });
+        addFloatText('EMERGENCY SHIELD UP', W / 2, H * 0.34 + 40, '#00e5ff', 26, { vy: 0, holdMs: 3800, fade: 0.012 });
+        addFloatText('RAM SWARMERS TO DEFLECT THEM', W / 2, H * 0.34 + 72, '#33ff66', 22, { vy: 0, holdMs: 3800, fade: 0.012 });
       }, opts.delayMs != null ? opts.delayMs : 420);
       return;
     }
@@ -5247,22 +5252,22 @@ function nextWave() {
     setTimeout(() => {
       if (flowToken !== spaceFlowToken || state !== 'playing' || (waveTransitioning && !opts.allowDuringTransition)) return;
       if (waveTheme === 'blackout') {
-        addFloatText('BLACKOUT!', W / 2, H * 0.35, '#ffe61a', 32, { holdMs: 3400, fade: 0.012 });
-        addFloatText('FIND THE FLASH', W / 2, H * 0.35 + 30, '#33ff66', 20, { holdMs: 3400, fade: 0.012 });
+        addFloatText('BLACKOUT!', W / 2, H * 0.35, '#ffe61a', 38, { holdMs: 3800, fade: 0.012 });
+        addFloatText('FIND THE FLASH', W / 2, H * 0.35 + 38, '#33ff66', 24, { holdMs: 3800, fade: 0.012 });
       } else if (wave === 6 && currentCfg && currentCfg.authoredRescue) {
-        addFloatText('STAY IN THE EYE', W / 2, H * 0.42, '#7dffff', 28, { vy: 0, holdMs: 2400, fade: 0.012 });
-        addFloatText('SHOOT THE LOCK WHILE YOU SURVIVE', W / 2, H * 0.42 + 30, '#33ff66', 19, { vy: 0, holdMs: 2400, fade: 0.012 });
+        addFloatText('STAY IN THE EYE', W / 2, H * 0.42, '#7dffff', 36, { vy: 0, holdMs: 3800, fade: 0.012 });
+        addFloatText('SHOOT THE LOCK WHILE YOU SURVIVE', W / 2, H * 0.42 + 38, '#33ff66', 24, { vy: 0, holdMs: 3800, fade: 0.012 });
       } else if (wave >= 1 && wave <= 3 && currentCfg && currentCfg.authoredEncounter) {
         const openingInstruction = {
           1: ['SURVIVE 30 SECONDS', 'FIND THE GAP'],
           2: ['RED CHARGED SHOT', 'LET IT LOCK. THEN MOVE.'],
           3: ['PURPLE RAIN', 'STAY IN THE EYE. BREAK THE CLOUDS.'],
         }[wave];
-        const instructionHold = wave === 1 ? 1650 : 2600;
-        addFloatText(openingInstruction[0], W / 2, H * 0.35, wave === 1 ? '#ffe61a' : wave === 2 ? '#ff765d' : '#d7a4ff', 30, { vy: 0, holdMs: instructionHold, fade: 0.012 });
-        addFloatText(openingInstruction[1], W / 2, H * 0.35 + 30, '#33ff66', 19, { vy: 0, holdMs: instructionHold, fade: 0.012 });
+        const instructionHold = wave === 1 ? 3000 : 3800;
+        addFloatText(openingInstruction[0], W / 2, H * 0.35, wave === 1 ? '#ffe61a' : wave === 2 ? '#ff765d' : '#d7a4ff', 36, { vy: 0, holdMs: instructionHold, fade: 0.012 });
+        addFloatText(openingInstruction[1], W / 2, H * 0.35 + 38, '#33ff66', 24, { vy: 0, holdMs: instructionHold, fade: 0.012 });
       } else {
-        showTopBanner(text, waveTheme === 'boss' || waveTheme === 'gizmo' || waveTheme === 'captive' ? 'bad' : 'good', { holdMs: 1800 });
+        showTopBanner(text, waveTheme === 'boss' || waveTheme === 'gizmo' || waveTheme === 'captive' ? 'bad' : 'good', { holdMs: 3000 });
       }
     }, opts.delayMs != null ? opts.delayMs : 420);
   }
@@ -11007,7 +11012,7 @@ function nextWave() {
       onDone();
     };
     const steps = [
-      { duration: 3000, show: () => {
+      { duration: 4500, show: () => {
         ann.innerHTML = spIntroObjectiveHTML('SHOOT ENEMIES AND ASTEROIDS',
           `<div style="display:flex;gap:28px;align-items:flex-start">
             <div style="position:relative;width:46px;height:90px">
@@ -11046,7 +11051,7 @@ function nextWave() {
           SFX.hit && SFX.hit();
         }, 1050);
       }},
-      { duration: 3000, show: () => {
+      { duration: 4500, show: () => {
         ann.innerHTML = spIntroObjectiveHTML('DODGE ROCKS AND JUNK',
           `<div id="sp-intro-line-wrap" style="position:relative;width:140px;height:90px">
             <div id="sp-intro-rock2" style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:40px;height:40px;background:linear-gradient(135deg,#8b7fa3 0 22%,#5c526c 22% 60%,#362f42 60%);clip-path:polygon(48% 0,84% 12%,100% 46%,82% 84%,42% 100%,8% 74%,0 34%,18% 8%);box-shadow:0 0 0 4px #241f2d,0 0 0 6px #8b7fa3;transition:top 0.9s ease-in"></div>
@@ -11075,7 +11080,7 @@ function nextWave() {
           }
         }, 1200);
       }},
-      { duration: 3000, show: () => {
+      { duration: 4500, show: () => {
         ann.innerHTML = spIntroObjectiveHTML('RESCUE HEROES',
           `<div style="position:relative;width:80px;height:140px">
             <div id="sp-intro-hero-wrap" style="position:absolute;top:0;width:80px;height:80px;display:flex;align-items:center;justify-content:center">
@@ -11130,7 +11135,7 @@ function nextWave() {
           playMusicBoxArpeggio();
         }, 1300);
       }},
-      { duration: 3800, show: () => {
+      { duration: 5200, show: () => {
         ann.innerHTML = spIntroObjectiveHTML('CATCH POWER UPS AND HEALTH',
           `<div style="position:relative;width:160px;height:130px">
             <img id="sp-intro-hp" src="projectiles/hp_icon.png" alt="" style="position:absolute;top:0;left:18px;width:34px;height:34px;object-fit:contain;transform:translate3d(0,0,0);will-change:transform,opacity;transition:transform 0.9s ease-in,opacity 0.2s">
@@ -11172,7 +11177,7 @@ function nextWave() {
           if (check) check.style.opacity = '1';
         }, 3200);
       }},
-      { duration: 3000, show: () => {
+      { duration: 4500, show: () => {
         ann.innerHTML = spIntroObjectiveHTML('USE YOUR POWERUPS',
           `<div style="position:relative;width:190px;height:90px;display:flex;flex-direction:column;align-items:center;gap:10px">
             <div style="position:relative;width:44px;height:44px">
@@ -11554,8 +11559,13 @@ function nextWave() {
     const beginRun = () => {
       reset();
       state='playing';
-      seedVisibleAmbientJunk(currentCfg);
-      scheduleAmbientJunk(currentCfg);
+      const flowToken = spaceFlowToken;
+      showSkillCalloutForWave({ delayMs: 260, allowDuringTransition: true });
+      setTimeout(() => {
+        if (flowToken !== spaceFlowToken || state !== 'playing' || spaceRunMode !== 'campaign' || wave !== 1) return;
+        seedVisibleAmbientJunk(currentCfg);
+        startPreparedCampaignWave();
+      }, SPACE_WAVE_INSTRUCTION_READ_MS + 260);
       raf=requestAnimationFrame(loop);
     };
     const briefThenBegin = () => showSpaceRescueBriefing(beginRun);
