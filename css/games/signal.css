@@ -152,10 +152,10 @@
 .signal-subtitle {
   margin-top: 8px;
   font-family: 'VCR', monospace;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.5;
   letter-spacing: 2px;
-  color: rgba(234, 255, 255, 0.66);
+  color: rgba(234, 255, 255, 0.72);
 }
 .signal-presets {
   display: flex;
@@ -491,22 +491,22 @@
 }
 .signal-jukebox-name {
   font-family: 'VCR', monospace;
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 1.5px;
   color: #eaffff;
 }
 .signal-jukebox-meta {
   margin-top: 4px;
   font-family: 'VCR', monospace;
-  font-size: 8px;
+  font-size: 10px;
   letter-spacing: 1.1px;
   color: #00e5ff;
 }
 .signal-jukebox-seq {
   margin-top: 4px;
   font-family: 'VCR', monospace;
-  font-size: 7px;
+  font-size: 9px;
   letter-spacing: 0.8px;
   line-height: 1.35;
-  color: rgba(234, 255, 255, 0.42);
+  color: rgba(234, 255, 255, 0.5);
 }

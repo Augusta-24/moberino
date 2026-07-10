@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "moberino-static",
+      "name": "moberino",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8431", "--directory", "/Users/kevinseverino/Documents/moberino"],
-      "port": 8431
+      "runtimeArgs": ["-m", "http.server", "8971"],
+      "port": 8971
     }
   ]
 }

@@ -14,7 +14,7 @@
   const MAX_SPARKS = 120;
   const MAX_DRUM_STACK = 6;
   const MAX_PIANO_STACK = 6;
-  const SIGNAL_MASTER_GAIN = 1.35;
+  const SIGNAL_MASTER_GAIN = 2.6;
   const COUNTDOWN_STEP_MS = 1000;
   const DRUM_BUS_GAIN = 0.94;
   const DEFAULT_LAYER_VOLUMES = { drums: 1, bass: 1, keys: 1, chimes: 1, swell: 1, fx: 1 };
@@ -326,12 +326,12 @@
       { id: 'crystal-cave', label: 'CRYSTAL CAVE' },
     ],
     mood: [
-      { id: 'minor', label: 'MINOR' },
-      { id: 'major', label: 'MAJOR' },
-      { id: 'blues', label: 'BLUES' },
-      { id: 'dorian', label: 'DORIAN' },
-      { id: 'egyptian', label: 'EGYPTIAN' },
-      { id: 'hirajoshi', label: 'HIRO' },
+      { id: 'minor', label: 'MOODY' },
+      { id: 'major', label: 'HAPPY' },
+      { id: 'blues', label: 'GRITTY' },
+      { id: 'dorian', label: 'FLOATY' },
+      { id: 'egyptian', label: 'DESERT' },
+      { id: 'hirajoshi', label: 'DREAMY' },
     ],
     tempo: [
       { id: 'chill', label: 'CHILL', beatMs: 340 },
@@ -352,19 +352,19 @@
   // Palettes: key center + instrument character. Never breaks the pentatonic guarantee.
   const STYLE_DEFS = {
     'space-funk': { root: 110.00, rootSemi: 9, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'triangle', drumVol: 1, shimmer: 1, bassWeight: 1.08, keyGlow: 1, echo: 0.9, resonance: 1.05 },
-    'dream-synth': { root: 123.47, rootSemi: 11, bassWave: 'sine', keysWave: 'sine', chimeWave: 'triangle', drumVol: 0.8, shimmer: 1.5, bassWeight: 0.86, keyGlow: 1.3, echo: 1.35, resonance: 0.85 },
-    'boss-rave': { root: 116.54, rootSemi: 10, bassWave: 'sawtooth', keysWave: 'triangle', chimeWave: 'triangle', drumVol: 1.22, shimmer: 1.1, bassWeight: 1.22, keyGlow: 1.08, echo: 0.75, resonance: 1.35, master: 1.06 },
+    'dream-synth': { root: 123.47, rootSemi: 11, bassWave: 'sine', keysWave: 'sine', chimeWave: 'triangle', drumVol: 0.88, shimmer: 1.5, bassWeight: 0.86, keyGlow: 1.3, echo: 1.35, resonance: 0.85 },
+    'boss-rave': { root: 116.54, rootSemi: 10, bassWave: 'sawtooth', keysWave: 'triangle', chimeWave: 'triangle', drumVol: 1.15, shimmer: 1.1, bassWeight: 1.22, keyGlow: 1.08, echo: 0.75, resonance: 1.35, master: 1.06 },
     'chiptune': { root: 146.83, rootSemi: 2, bassWave: 'square', keysWave: 'square', chimeWave: 'square', drumVol: 0.85, shimmer: 0.8, bassWeight: 0.9, keyGlow: 0.86, echo: 0.35, resonance: 1.65 },
     'dark-minor': { root: 103.83, rootSemi: 8, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'triangle', drumVol: 1.05, shimmer: 0.7, bassWeight: 1.18, keyGlow: 0.9, echo: 0.7, resonance: 1.12, forceMinor: true },
-    'vaporwave': { root: 92.50, rootSemi: 6, bassWave: 'sine', keysWave: 'sine', chimeWave: 'triangle', drumVol: 0.72, shimmer: 1.8, bassWeight: 0.8, keyGlow: 1.45, echo: 1.8, resonance: 0.7 },
-    'toy-box': { root: 130.81, rootSemi: 0, bassWave: 'triangle', keysWave: 'square', chimeWave: 'sine', drumVol: 0.74, shimmer: 1.35, bassWeight: 0.76, keyGlow: 0.94, echo: 0.65, resonance: 1.45 },
+    'vaporwave': { root: 92.50, rootSemi: 6, bassWave: 'sine', keysWave: 'sine', chimeWave: 'triangle', drumVol: 0.85, shimmer: 1.8, bassWeight: 0.8, keyGlow: 1.45, echo: 1.8, resonance: 0.7 },
+    'toy-box': { root: 130.81, rootSemi: 0, bassWave: 'triangle', keysWave: 'square', chimeWave: 'sine', drumVol: 0.85, shimmer: 1.35, bassWeight: 0.76, keyGlow: 0.94, echo: 0.65, resonance: 1.45 },
     'steel-island': { root: 98.00, rootSemi: 7, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.92, shimmer: 2.2, bassWeight: 1, keyGlow: 1.08, echo: 1.15, resonance: 1.7 },
     'jazz-club': { root: 116.54, rootSemi: 10, bassWave: 'sine', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.86, shimmer: 0.9, bassWeight: 0.94, keyGlow: 0.82, echo: 0.55, resonance: 0.95, master: 0.96 },
-    'velvet-hall': { root: 98.00, rootSemi: 7, bassWave: 'sine', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.68, shimmer: 0.72, bassWeight: 1.06, keyGlow: 0.78, echo: 1.2, resonance: 1.28, master: 0.94 },
-    'haunted-organ': { root: 87.31, rootSemi: 5, bassWave: 'triangle', keysWave: 'sine', chimeWave: 'triangle', drumVol: 0.78, shimmer: 0.55, bassWeight: 1.12, keyGlow: 1.12, echo: 1.05, resonance: 1.25, forceMinor: true },
+    'velvet-hall': { root: 98.00, rootSemi: 7, bassWave: 'sine', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.85, shimmer: 0.72, bassWeight: 1.06, keyGlow: 0.78, echo: 1.2, resonance: 1.28, master: 0.94 },
+    'haunted-organ': { root: 87.31, rootSemi: 5, bassWave: 'triangle', keysWave: 'sine', chimeWave: 'triangle', drumVol: 0.86, shimmer: 0.55, bassWeight: 1.12, keyGlow: 1.12, echo: 1.05, resonance: 1.25, forceMinor: true },
     'desert-caravan': { root: 146.83, rootSemi: 2, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.95, shimmer: 1.15, bassWeight: 0.94, keyGlow: 0.96, echo: 0.82, resonance: 1.55 },
-    'cyber-garage': { root: 123.47, rootSemi: 11, bassWave: 'sawtooth', keysWave: 'square', chimeWave: 'square', drumVol: 1.35, shimmer: 0.7, bassWeight: 1.25, keyGlow: 1, echo: 0.45, resonance: 1.9, master: 1.08 },
-    'crystal-cave': { root: 104.65, rootSemi: 8, bassWave: 'sine', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.66, shimmer: 2.5, bassWeight: 0.74, keyGlow: 1.35, echo: 1.55, resonance: 1.6 },
+    'cyber-garage': { root: 123.47, rootSemi: 11, bassWave: 'sawtooth', keysWave: 'square', chimeWave: 'square', drumVol: 1.15, shimmer: 0.7, bassWeight: 1.25, keyGlow: 1, echo: 0.45, resonance: 1.9, master: 1.08 },
+    'crystal-cave': { root: 104.65, rootSemi: 8, bassWave: 'sine', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.85, shimmer: 2.5, bassWeight: 0.74, keyGlow: 1.35, echo: 1.55, resonance: 1.6 },
   };
 
   let canvas = null, ctx = null, overlay = null, loopButton = null, resetButton = null, undoButton = null, signalExitButton = null, guidedControls = null, guidedControlsKey = '';
@@ -385,7 +385,7 @@
   let undoSeq = 0;
   let replayBall = null, replayHazards = [], replayPickups = [], replayToyScore = 0, replaySpawnAt = 0;
   let jukeboxRows = [], jukeboxBackTarget = 'intro';
-  let playAlongPattern = null, playAlongRoundIndex = 0, playAlongInput = [], playAlongResult = null;
+  let playAlongPattern = null, playAlongRoundIndex = 0, playAlongInput = [], playAlongResult = null, playAlongStage = 'listen', playAlongPrevSettings = null;
   let signalSettings = { style: 'space-funk', mood: 'minor', tempo: 'medium', grooveAssist: 'snap', recordingStyle: 'guided' };
   let layerVolumes = { ...DEFAULT_LAYER_VOLUMES };
   let beatMs = DEFAULT_BEAT_MS;
@@ -455,17 +455,20 @@
   }
   function activeLayer() { return LAYERS[clamp(currentLayerIndex, 0, LAYERS.length - 1)] || LAYERS[0]; }
   function guidedCoachActive() { return isGuidedBuildMode() && state === 'playing' && phase === 'build'; }
-  function playFieldTop() { return guidedCoachActive() ? 296 : 146; }
+  // Bottom edge of the loop-grid HUD (title + layer rows + step dots) drawn
+  // in drawHud. Every instrument surface must start below this line.
+  function loopGridBottom() { return 72 + LAYERS.length * 11 + 8; }
+  function playFieldTop() { return guidedCoachActive() ? 296 : loopGridBottom() + 18; }
   function playFieldBottom(limit) {
     const base = H - LOOP_PANEL_H - (guidedCoachActive() ? 118 : 20);
     if (!guidedCoachActive() || !limit) return base;
     return Math.min(base, playFieldTop() + limit);
   }
-  function swellSurfaceTop() { return guidedCoachActive() ? 296 : 158; }
+  function swellSurfaceTop() { return playFieldTop(); }
   function swellSurfaceBottom() { return playFieldBottom(guidedCoachActive() ? 390 : 0); }
   function activeLayerLabel() {
     if (isFreeMode()) return `FREE PLAY: ${activeLayer().name}`;
-    if (isPlayAlongMode()) return `PLAY ALONG: ${activeLayer().name}`;
+    if (isPlayAlongMode()) return `PLAY ALONG · ${playAlongStage === 'listen' ? 'LISTEN' : 'YOUR TURN'}`;
     if (isGuidedBuildMode()) return `${guidedStage === 'record' ? 'RECORD' : guidedStage === 'review' ? 'REVIEW' : 'PRACTICE'} ${activeLayer().name}`;
     return `PLAY ${activeLayer().name}`;
   }
@@ -653,11 +656,15 @@
   function updateLoopButton() {
     if (!loopButton) return;
     const show = state === 'playing' && phase !== 'countin' && phase !== 'countdown';
+    // In Guided build the big coach buttons at the bottom own every action.
+    // The top bar keeps only UNDO (while recording) and the exit ×.
+    const guidedBuild = isGuidedBuildMode() && phase === 'build';
+    const showLoop = show && !guidedBuild;
     const wasHidden = loopButton.classList.contains('hidden');
-    loopButton.classList.toggle('hidden', !show);
-    if (wasHidden === show) fitCanvas();
-    if (resetButton) resetButton.classList.toggle('hidden', !(show && phase === 'build' && !isPlayAlongMode()));
-    if (undoButton) undoButton.classList.toggle('hidden', !(show && phase === 'build' && !isPlayAlongMode()));
+    loopButton.classList.toggle('hidden', !showLoop);
+    if (wasHidden === showLoop) fitCanvas();
+    if (resetButton) resetButton.classList.toggle('hidden', !(show && phase === 'build' && !isPlayAlongMode() && !guidedBuild));
+    if (undoButton) undoButton.classList.toggle('hidden', !(show && phase === 'build' && !isPlayAlongMode() && (!guidedBuild || guidedStage === 'record')));
     if (!show) {
       loopButton.disabled = false;
       updateFreeControls();
@@ -675,41 +682,27 @@
         resetButton.title = 'Clear Free Mode loop';
         resetButton.setAttribute('aria-label', 'Clear Free Mode loop');
       }
-    } else {
+    } else if (!guidedBuild) {
       if (isPlayAlongMode() && phase === 'build') {
-        loopButton.textContent = 'PLAYING...';
+        loopButton.textContent = playAlongStage === 'listen' ? 'LISTEN...' : 'YOUR TURN';
         loopButton.disabled = true;
-      } else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'practice') {
-        loopButton.textContent = 'READY';
-      } else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'waiting') {
-        loopButton.textContent = 'PLAY WHEN READY';
-        loopButton.disabled = true;
-      } else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'record') {
-        loopButton.textContent = 'RECORDING...';
-        loopButton.disabled = true;
-      } else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'review') {
-        loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISH TRACK' : 'KEEP';
       } else if (loopEndArmed) loopButton.textContent = 'SAVING LOOP...';
       else loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISH TRACK' : 'NEXT LAYER ›';
       // Reset (↻) only while actively building a layer — not during count-in.
       if (resetButton) {
-        const showSkip = isGuidedBuildMode() && phase === 'build' && guidedStage === 'practice';
-        const showStartOver = isGuidedBuildMode() && phase === 'build' && guidedStage === 'review';
-        resetButton.classList.toggle('hidden', phase !== 'build' || isPlayAlongMode() || (isGuidedBuildMode() && guidedStage === 'record'));
-        resetButton.textContent = showStartOver ? 'START OVER' : showSkip ? 'SKIP LAYER' : 'CLEAR';
-        resetButton.title = showStartOver ? 'Start this layer over' : showSkip ? 'Skip this layer' : 'Clear this layer';
-        resetButton.setAttribute('aria-label', showStartOver ? 'Start this layer over' : showSkip ? 'Skip this layer' : 'Clear this layer');
+        resetButton.classList.toggle('hidden', phase !== 'build' || isPlayAlongMode());
+        resetButton.textContent = 'CLEAR';
+        resetButton.title = 'Clear this layer';
+        resetButton.setAttribute('aria-label', 'Clear this layer');
       }
     }
     if (undoButton) {
-      const guidedReview = isGuidedBuildMode() && phase === 'build' && guidedStage === 'review';
-      undoButton.classList.toggle('hidden', phase !== 'build' || isPlayAlongMode() || (isGuidedBuildMode() && !guidedReview));
-      undoButton.disabled = guidedReview ? false : !canUndo;
-      undoButton.textContent = guidedReview ? 'ADD MORE' : 'UNDO';
-      undoButton.title = guidedReview ? 'Add more to this layer' : canUndo ? 'Undo last note' : 'Nothing to undo yet';
-      undoButton.setAttribute('aria-label', guidedReview ? 'Add more to this layer' : canUndo ? 'Undo last note' : 'Nothing to undo yet');
-      undoButton.style.opacity = guidedReview || canUndo ? '1' : '0.46';
-      undoButton.style.cursor = guidedReview || canUndo ? 'pointer' : 'default';
+      undoButton.disabled = !canUndo;
+      undoButton.textContent = 'UNDO';
+      undoButton.title = canUndo ? 'Undo last note' : 'Nothing to undo yet';
+      undoButton.setAttribute('aria-label', canUndo ? 'Undo last note' : 'Nothing to undo yet');
+      undoButton.style.opacity = canUndo ? '1' : '0.46';
+      undoButton.style.cursor = canUndo ? 'pointer' : 'default';
     }
     updateFreeControls();
     syncSignalChrome();
@@ -768,11 +761,11 @@
       signalMasterGain = c.createGain();
       signalLimiter = c.createDynamicsCompressor();
       signalMasterGain.gain.value = SIGNAL_MASTER_GAIN;
-      signalLimiter.threshold.value = -3;
-      signalLimiter.knee.value = 10;
-      signalLimiter.ratio.value = 2.5;
-      signalLimiter.attack.value = 0.008;
-      signalLimiter.release.value = 0.18;
+      signalLimiter.threshold.value = -6;
+      signalLimiter.knee.value = 6;
+      signalLimiter.ratio.value = 6;
+      signalLimiter.attack.value = 0.004;
+      signalLimiter.release.value = 0.16;
       signalMasterGain.connect(signalLimiter);
       signalLimiter.connect(c.destination);
     }
@@ -783,13 +776,14 @@
   function refreshSignalOutput() {
     if (!signalMasterGain || !signalLimiter) return;
     const d = soundProfile();
-    const arcadeMuted = typeof ArcadeMusic !== 'undefined' && !!ArcadeMusic.muted;
-    signalMasterGain.gain.value = arcadeMuted ? 0 : SIGNAL_MASTER_GAIN * (d.master || 1);
-    signalLimiter.threshold.value = -4;
-    signalLimiter.knee.value = 12;
-    signalLimiter.ratio.value = 3.2;
-    signalLimiter.attack.value = 0.006;
-    signalLimiter.release.value = 0.14;
+    // The ♪ toggle mutes the arcade's background music, not the instrument
+    // the player is holding — game audio stays live regardless.
+    signalMasterGain.gain.value = SIGNAL_MASTER_GAIN * (d.master || 1);
+    signalLimiter.threshold.value = -6;
+    signalLimiter.knee.value = 6;
+    signalLimiter.ratio.value = 6;
+    signalLimiter.attack.value = 0.004;
+    signalLimiter.release.value = 0.16;
   }
 
   function tone(freq, type, delay, dur, vol, endFreq) {
@@ -1158,21 +1152,13 @@
   }
 
   function playPulseBed() {
-    // In Guided, avoid the old noisy pulse bed once the player has a real
-    // loop going. It could sound like random guiro/shaker hits underneath
-    // the track during review. For an empty first layer, use one soft kick
-    // at the top instead of high noise.
-    if (isGuidedBuildMode() && state === 'playing' && phase === 'build') {
-      if (hasNonFoundationLoopContent() || currentLayerIndex > 0) return;
-      if (stepIndex === 0 && guidedStage !== 'review') playDrumPiece('kick', 0.22, 0);
-      return;
-    }
-    // The session band behind the player: a quiet high bed in their key
-    // and tempo. The player's kick owns the low pulse during the build.
-    if (stepIndex % 4 === 2) noise(0.004, 0.024, 0.007, true);
-    if (stepIndex === 0) {
-      noise(0.004, 0.020, 0.010, true);
-    }
+    // Once the player has recorded anything, the loop speaks for itself —
+    // no bed underneath in any mode. On an empty loop, one soft kick at the
+    // top keeps the pulse findable without sounding like stray percussion.
+    if (hasNonFoundationLoopContent()) return;
+    if (state !== 'playing' || phase !== 'build') return;
+    if (isGuidedBuildMode() && (currentLayerIndex > 0 || guidedStage === 'review')) return;
+    if (stepIndex === 0) playDrumPiece('kick', 0.22, 0);
   }
 
   function playBossMotif() {
@@ -1289,7 +1275,7 @@
         updateLoopButton();
         showLayerToast();
       }, false));
-      el.appendChild(guidedControlButton('START WITH REST', startGuidedRecordingWithRest, true));
+      el.appendChild(guidedControlButton('START EMPTY', startGuidedRecordingWithRest, true));
       return;
     }
     if (guidedStage === 'record') {
@@ -1312,17 +1298,29 @@
     }
     if (guidedStage === 'review') {
       el.style.gridTemplateColumns = '1fr 1fr';
+      const lastLayer = currentLayerIndex >= LAYERS.length - 1;
       if (guidedOverdubBase) {
         el.appendChild(guidedControlButton('REDO ADD', undoLastGuidedOverdub, false));
         el.appendChild(guidedControlButton('START OVER', captureRetryLayer, false));
-      } else {
-        el.appendChild(guidedControlButton('START OVER', captureRetryLayer, false));
         el.appendChild(guidedControlButton('ADD MORE', captureAddMoreLayer, false));
+        el.appendChild(guidedControlButton(lastLayer ? 'FINISH TRACK' : 'KEEP', captureNextLayer, true));
+        return;
       }
-      if (guidedOverdubBase) el.appendChild(guidedControlButton('ADD MORE', captureAddMoreLayer, false));
-      const keep = guidedControlButton(currentLayerIndex >= LAYERS.length - 1 ? 'FINISH TRACK' : 'KEEP', captureNextLayer, true);
-      if (!guidedOverdubBase) keep.style.gridColumn = '1 / -1';
-      el.appendChild(keep);
+      el.appendChild(guidedControlButton('START OVER', captureRetryLayer, false));
+      el.appendChild(guidedControlButton('ADD MORE', captureAddMoreLayer, false));
+      if (lastLayer) {
+        const keep = guidedControlButton('FINISH TRACK', captureNextLayer, true);
+        keep.style.gridColumn = '1 / -1';
+        el.appendChild(keep);
+        return;
+      }
+      // A proud two-layer loop is a finished track too — no need to march
+      // through all six layers to reach the mix screen.
+      el.appendChild(guidedControlButton('FINISH TRACK', () => {
+        guidedOverdubBase = null;
+        finishTrack();
+      }, false));
+      el.appendChild(guidedControlButton('KEEP', captureNextLayer, true));
     }
   }
 
@@ -1362,8 +1360,7 @@
       undoButton.addEventListener('click', e => {
         e.preventDefault();
         e.stopPropagation();
-        if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'review') captureAddMoreLayer();
-    else if (canUndoLastStamp()) undoLastStamp();
+        if (canUndoLastStamp()) undoLastStamp();
       });
     }
     if (undoButton.parentNode !== row) row.appendChild(undoButton);
@@ -1420,6 +1417,10 @@
         btn.style.justifyContent = 'center';
         btn.style.flexShrink = '0';
       });
+      // No scores in this game — the shared leaderboard button doesn't apply.
+      Array.from(actions.querySelectorAll('.arcade-lb-btn')).forEach(btn => {
+        btn.style.display = 'none';
+      });
     }
     if (headerBack) {
       if (!signalHeaderBackStyles) signalHeaderBackStyles = snapshotStyles(headerBack, ['order', 'marginLeft', 'flexShrink', 'height', 'boxSizing', 'display', 'alignItems', 'justifyContent', 'fontSize', 'letterSpacing', 'padding', 'maxWidth', 'whiteSpace']);
@@ -1456,7 +1457,7 @@
     row.style.maxWidth = 'none';
     row.style.margin = '0';
     row.style.zIndex = '60';
-    row.style.gridTemplateColumns = isGuidedReviewStage() ? '92px 74px minmax(0, 1fr) 42px' : '58px 58px minmax(0, 1fr) 42px';
+    row.style.gridTemplateColumns = '58px 58px minmax(0, 1fr) 42px';
     row.style.gap = '5px';
     row.style.alignItems = 'stretch';
     row.style.justifyContent = 'stretch';
@@ -1478,7 +1479,7 @@
     if (resetButton) {
       if (!signalResetButtonStyles) signalResetButtonStyles = snapshotStyles(resetButton, ['gridColumn', 'width', 'minHeight', 'fontSize', 'letterSpacing', 'padding', 'boxSizing']);
       resetButton.style.gridColumn = '1';
-      resetButton.style.width = isGuidedReviewStage() ? '92px' : '58px';
+      resetButton.style.width = '58px';
       resetButton.style.minHeight = '40px';
       resetButton.style.fontSize = '8px';
       resetButton.style.letterSpacing = '0.4px';
@@ -1488,14 +1489,13 @@
     if (undo) {
       if (!signalUndoButtonStyles) signalUndoButtonStyles = snapshotStyles(undo, ['gridColumn', 'width', 'minHeight', 'fontSize', 'letterSpacing', 'padding', 'boxSizing', 'opacity', 'cursor']);
       const canUndo = canUndoLastStamp();
-      const guidedReview = isGuidedBuildMode() && phase === 'build' && guidedStage === 'review';
-      undo.classList.toggle('hidden', phase !== 'build' || isPlayAlongMode() || (isGuidedBuildMode() && !guidedReview));
-      undo.disabled = guidedReview ? false : !canUndo;
-      undo.textContent = guidedReview ? 'ADD MORE' : 'UNDO';
-      undo.style.opacity = guidedReview || canUndo ? '1' : '0.46';
-      undo.style.cursor = guidedReview || canUndo ? 'pointer' : 'default';
+      undo.classList.toggle('hidden', phase !== 'build' || isPlayAlongMode() || (isGuidedBuildMode() && guidedStage !== 'record'));
+      undo.disabled = !canUndo;
+      undo.textContent = 'UNDO';
+      undo.style.opacity = canUndo ? '1' : '0.46';
+      undo.style.cursor = canUndo ? 'pointer' : 'default';
       undo.style.gridColumn = '2';
-      undo.style.width = isGuidedReviewStage() ? '74px' : '58px';
+      undo.style.width = '58px';
       undo.style.minHeight = '40px';
       undo.style.fontSize = '8px';
       undo.style.letterSpacing = '0.4px';
@@ -1665,6 +1665,7 @@
     playAlongRoundIndex = 0;
     playAlongInput = [];
     playAlongResult = null;
+    playAlongStage = 'listen';
     layerVolumes = { ...DEFAULT_LAYER_VOLUMES };
     applyLayerOptions();
     laneFlash = [0, 0, 0];
@@ -1940,7 +1941,15 @@
   }
 
   function thereminCenter() {
-    return { x: W / 2, y: guidedCoachActive() ? (playFieldTop() + (playFieldBottom(430) - playFieldTop()) * 0.52) : (H - LOOP_PANEL_H) * 0.52, maxR: guidedCoachActive() ? Math.min(W * 0.42, Math.max(110, (playFieldBottom(430) - playFieldTop()) * 0.45)) : Math.min(W, H - LOOP_PANEL_H) * 0.44 };
+    // Always size the orb from the playfield bounds so its rings and note
+    // wheel never reach up into the loop grid.
+    const top = playFieldTop();
+    const bottom = playFieldBottom(guidedCoachActive() ? 430 : 0);
+    return {
+      x: W / 2,
+      y: top + (bottom - top) * 0.52,
+      maxR: Math.min(W * 0.44, Math.max(110, (bottom - top) * 0.45)),
+    };
   }
 
   function orbPullState() {
@@ -2176,6 +2185,73 @@
     return true;
   }
 
+  // Swell mirrors the chimes promise: the first touch IS the first note and
+  // starts the recording pass from the top of the loop.
+  function startGuidedSwellFromTouch(pos, t) {
+    if (!(isGuidedBuildMode() && state === 'playing' && phase === 'build' && guidedStage === 'waiting' && swellActive())) return false;
+    if (pos) { pointerX = pos.x; pointerY = pos.y; pointerActive = true; }
+    guidedStage = 'record';
+    undoStack = [];
+    rocks = [];
+    bullets = [];
+    pinchActive = false;
+    restartLoopPlayback();
+    pointerActive = true;
+    const pick = swellPickAt(pos || { x: W * 0.5, y: (swellSurfaceTop() + swellSurfaceBottom()) * 0.5 });
+    const note = degreeFreq(pick.deg, activeLayer().mult);
+    playSwellChord(note, 0.4 + pick.openness * 0.42, 0, { openness: pick.openness, tension: pick.tension });
+    stampNote({ lane: 1, label: noteNameForDegree(pick.deg), color: '#ffe61a' }, 0, note, true, false);
+    swellInk = Math.max(swellInk, 0.3);
+    thereminPulse = 1;
+    updateLoopButton();
+    showLayerToast();
+    return true;
+  }
+
+  function swellPickAt(pos) {
+    const top = swellSurfaceTop();
+    const bottom = swellSurfaceBottom();
+    const usableH = Math.max(1, bottom - top);
+    const xT = clamp(pos.x / Math.max(1, W), 0, 1);
+    const yT = clamp((pos.y - top) / usableH, 0, 1);
+    const deg = clamp(Math.round(xT * 9), 0, 9);
+    const openness = 1 - yT;
+    return { deg, openness, tension: 0.25 + xT * 0.5 + openness * 0.25 };
+  }
+
+  // A plain tap on the swell field answers with one chord at the touched
+  // spot. Holding and sliding still paints the slow waves.
+  function tapSwell(pos) {
+    const t = performance.now();
+    const pick = swellPickAt(pos);
+    const note = degreeFreq(pick.deg, activeLayer().mult);
+    playSwellChord(note, 0.4 + pick.openness * 0.42, 0, { openness: pick.openness, tension: pick.tension });
+    const timing = captureTiming(t);
+    stampNote({ lane: 1, label: noteNameForDegree(pick.deg), color: '#ffe61a' }, timing.target, note, timing.tight, timing.isNextStep);
+    pointerActive = true;
+    pointerX = pos.x;
+    pointerY = pos.y;
+    swellInk = Math.max(swellInk, 0.3);
+    thereminPulse = 1;
+    return true;
+  }
+
+  // The chimes orb stays hold-and-pull, but the first tap answers instantly
+  // with the note at the pulled angle instead of waiting for a step boundary.
+  function tapChimes(pos, t) {
+    pointerX = pos.x;
+    pointerY = pos.y;
+    pointerActive = true;
+    const pull = orbPullState();
+    if (pull.dist <= 0.12) return false;
+    const note = degreeFreq(pull.deg, activeLayer().mult);
+    playPitched('chimes', note, 0.7, 0);
+    const timing = captureTiming(t || performance.now());
+    stampNote({ lane: 1, label: noteNameForDegree(pull.deg), color: '#ff2db8' }, timing.target, note, timing.tight, timing.isNextStep);
+    thereminPulse = 1;
+    return true;
+  }
+
   function captureTiming(t) {
     if (startGuidedRecordingFromFirstNote(t)) {
       return { isNextStep: false, tight: true, target: 0 };
@@ -2216,8 +2292,17 @@
       manualFireAt = t + 160;
       return;
     }
+    if (isPlayAlongMode() && phase === 'build' && playAlongStage === 'listen') {
+      // Demonstration pass: watch and listen. Your turn comes next loop.
+      manualFireAt = t + 120;
+      return;
+    }
     if (startGuidedChimesFromTouch(pos, t)) {
       manualFireAt = t + 120;
+      return;
+    }
+    if (startGuidedSwellFromTouch(pos, t)) {
+      manualFireAt = t + 140;
       return;
     }
     if (drumsActive()) {
@@ -2235,7 +2320,17 @@
       manualFireAt = t + 96;
       return;
     }
-    shoot();
+    if (swellActive()) {
+      if (pos) tapSwell(pos);
+      manualFireAt = t + 140;
+      return;
+    }
+    if (chimesActive()) {
+      if (pos) tapChimes(pos, t);
+      manualFireAt = t + 90;
+      return;
+    }
+    // Music layers never fall through to the dormant shooter path.
     manualFireAt = t + 125;
   }
 
@@ -2310,7 +2405,7 @@
   }
 
   function collectPlayAlongHit(rock, target) {
-    if (!isPlayAlongMode()) return;
+    if (!isPlayAlongMode() || playAlongStage !== 'respond') return;
     const layer = activeLayer();
     playAlongInput.push({
       step: wrapStep(target),
@@ -2438,7 +2533,9 @@
     phase = 'countdown';
     countdown = {
       start: t,
-      beat: COUNTDOWN_STEP_MS,
+      // Count in at the loop's own pulse so 3-2-1 teaches the tempo the
+      // player is about to play against.
+      beat: Math.max(480, tempoBeatMs()),
       last: 0,
       afterClear: !!opts.afterClear,
       guidedRecord: !!opts.guidedRecord,
@@ -2647,6 +2744,7 @@
     additionsThisLayer = 0;
     playAlongInput = [];
     playAlongResult = null;
+    playAlongStage = 'listen';
     applyLayerOptions();
     laneFlash = [1, 1, 1];
     state = 'playing';
@@ -2905,7 +3003,7 @@
   function layerHintText() {
     if (phase === 'countin') return 'SET TEMPO';
     if (phase === 'countdown') return 'GET READY';
-    if (isGuidedBuildMode() && phase === 'build') return guidedStage === 'record' ? 'PLAY FOR ONE LOOP' : guidedStage === 'waiting' ? 'PLAY OR REST' : guidedStage === 'review' ? 'LISTEN BACK' : 'NOTHING RECORDS YET';
+    if (isGuidedBuildMode() && phase === 'build') return guidedStage === 'record' ? 'PLAY FOR ONE LOOP' : guidedStage === 'waiting' ? 'PLAY TO START' : guidedStage === 'review' ? 'LISTEN BACK' : 'NOTHING RECORDS YET';
     if (drumsActive()) return 'TAP DRUM PADS';
     if (rockTapActive()) return 'TAP THE ROCKS';
     if (fxActive()) return 'TAP + PINCH JUNK';
@@ -3071,6 +3169,19 @@
       playStamp(v);
     });
     lastLoopStep = stepIndex;
+    if (isPlayAlongMode() && phase === 'build' && playAlongStage === 'listen') {
+      // Demonstration pass: light up the grid and the surface the player
+      // will use, so listening doubles as showing where to play.
+      bucket.forEach(v => {
+        if (v.skip > 0) return;
+        if (loopFlash[stepIndex]) loopFlash[stepIndex] = { pulse: 1, color: v.color || COLOR, row: v.layerIndex || 0 };
+        if (v.inst === 'drums' && v.pieces && drumsActive()) {
+          v.pieces.forEach(p => { const pad = pads.find(pd => pd.piece === p); if (pad) pad.flash = 1; });
+        } else if ((v.inst === 'bass' || v.inst === 'keys') && rockTapActive()) {
+          rocks.forEach(r => { if (r.lane === v.lane) r.pulse = 1; });
+        }
+      });
+    }
     // Orb drift (chimes theremin / swell pads): while the player holds and
     // pulls from the center, distance picks the scale degree and the density.
     const orbInst = pointerActive ? orbLayerInst() : null;
@@ -3128,8 +3239,19 @@
       }
     }
     if (isPlayAlongMode() && phase === 'build' && previousStep + advance >= LOOP_STEPS) {
-      finishPlayAlongRound();
-      return;
+      if (playAlongStage === 'listen') {
+        // The demonstration pass just finished — same loop keeps rolling,
+        // now the player's hits count.
+        playAlongStage = 'respond';
+        playAlongInput = [];
+        addFloatText('YOUR TURN', W * 0.5, H * 0.32, '#ffe61a', 1500);
+        playPitched('keys', degreeFreq(4, 2), 0.6, 0);
+        playPitched('keys', degreeFreq(7, 2), 0.5, 0.09);
+        updateLoopButton();
+      } else {
+        finishPlayAlongRound();
+        return;
+      }
     }
     if (isCaptureBuildMode() && phase === 'build' && previousStep + advance >= LOOP_STEPS) {
       finishCaptureLayer();
@@ -3588,7 +3710,7 @@
   function drawPads(c) {
     const t = now();
     c.save();
-    c.font = "8px 'VCR', monospace";
+    c.font = "10px 'VCR', monospace";
     c.textAlign = 'center';
     c.textBaseline = 'middle';
     PAD_ROWS.forEach((rowDef, row) => {
@@ -3683,9 +3805,9 @@
     } else {
       c.globalAlpha = 0.72;
       c.fillStyle = 'rgba(234,255,255,0.7)';
-      c.font = "9px 'VCR', monospace";
+      c.font = "12px 'VCR', monospace";
       c.textAlign = 'center';
-      c.fillText('HOLD + SLIDE', W * 0.5, top + h * 0.54);
+      c.fillText('TAP OR HOLD + SLIDE', W * 0.5, top + h * 0.54);
     }
     c.restore();
   }
@@ -3734,9 +3856,9 @@
     });
     c.globalAlpha = 0.62;
     c.fillStyle = 'rgba(234,255,255,0.72)';
-    c.font = "9px 'VCR', monospace";
+    c.font = "12px 'VCR', monospace";
     c.textAlign = 'center';
-    c.fillText('PINCH JUNK OPEN', W * 0.5, H - LOOP_PANEL_H - 42);
+    c.fillText('TAP OR PINCH THE JUNK', W * 0.5, H - LOOP_PANEL_H - 42);
     c.restore();
   }
 
@@ -3810,7 +3932,7 @@
     c.fillRect(player.x - 30, player.y - 13, 60, 12);
     c.strokeRect(player.x - 30.5, player.y - 13.5, 61, 13);
     c.fillStyle = 'rgba(234,255,255,0.68)';
-    c.font = "8px 'VCR', monospace";
+    c.font = "10px 'VCR', monospace";
     c.textAlign = 'center';
     c.fillText('KEEP THE LOOP ALIVE', W * 0.5, H - LOOP_PANEL_H - 50);
     c.textAlign = 'right';
@@ -3947,7 +4069,7 @@
     } else {
       c.globalAlpha = 0.6;
       c.fillStyle = 'rgba(234,255,255,0.7)';
-      c.font = "9px 'VCR', monospace";
+      c.font = "12px 'VCR', monospace";
       c.textAlign = 'center';
       c.textBaseline = 'middle';
       c.fillText(isFx ? 'HOLD + SHAPE FX' : isSwell ? 'HOLD + PULL — SLOW WAVES' : 'HOLD + PULL', tc.x, tc.y + tc.maxR * 0.55);
@@ -3976,7 +4098,7 @@
       c.lineWidth = isSelected ? 2 : 1;
       c.strokeRect(x + 5, baseY, lw - 10, 34);
       c.globalAlpha = 0.95;
-      c.font = "9px 'VCR', monospace";
+      c.font = "11px 'VCR', monospace";
       c.textAlign = 'center';
       c.textBaseline = 'middle';
       c.fillText(lane.label, x + lw * 0.5, baseY + 17);
@@ -3990,7 +4112,7 @@
     const layer = activeLayer();
     const name = layer.name;
     const main = guidedStage === 'record' ? `RECORD ${name}` : guidedStage === 'waiting' ? 'PLAY WHEN READY' : guidedStage === 'review' ? `${name} ADDED` : `PRACTICE ${name}`;
-    const sub = guidedStage === 'record' ? 'Keep playing until the bar fills.' : guidedStage === 'waiting' ? 'First note starts recording. Or start with a rest.' : guidedStage === 'review' ? 'Listen back. Add more or keep going.' : 'Try the sounds. Nothing records yet.';
+    const sub = guidedStage === 'record' ? 'Keep playing until the bar fills.' : guidedStage === 'waiting' ? 'Your first note starts the take.' : guidedStage === 'review' ? 'Listen back. Keep it, add more, or start over.' : 'Try the sounds. Nothing records yet.';
     const y = 218;
     c.save();
     c.textAlign = 'center';
@@ -4000,32 +4122,37 @@
     c.lineWidth = 2;
     const panelW = Math.min(W - 28, 520);
     const panelX = (W - panelW) / 2;
-    c.fillRect(panelX, y - 40, panelW, 86);
-    c.strokeRect(panelX + 0.5, y - 39.5, panelW - 1, 85);
+    c.fillRect(panelX, y - 46, panelW, 98);
+    c.strokeRect(panelX + 0.5, y - 45.5, panelW - 1, 97);
+    c.globalAlpha = 0.62;
+    c.fillStyle = '#eaffff';
+    c.font = "10px 'VCR', monospace";
+    c.fillText(`LAYER ${currentLayerIndex + 1} OF ${LAYERS.length}`, W * 0.5, y - 34);
+    c.globalAlpha = 1;
     c.shadowColor = guidedStage === 'record' || guidedStage === 'waiting' ? '#ffe61a' : COLOR;
     c.shadowBlur = 16;
     c.fillStyle = guidedStage === 'record' || guidedStage === 'waiting' ? '#ffe61a' : COLOR;
     c.font = "24px 'VCR', monospace";
-    c.fillText(main, W * 0.5, y - 12);
+    c.fillText(main, W * 0.5, y - 8);
     c.shadowBlur = 0;
     c.fillStyle = 'rgba(234,255,255,0.94)';
     c.font = "14px 'VCR', monospace";
-    c.fillText(sub, W * 0.5, y + 22);
+    c.fillText(sub, W * 0.5, y + 24);
     if (guidedStage === 'record') {
       const total = Math.max(1, LOOP_STEPS * beatMs);
       const progress = clamp(((stepIndex * beatMs) + Math.max(0, performance.now() - (beatAt - beatMs))) / total, 0, 1);
       const bw = panelW - 42;
       c.fillStyle = 'rgba(234,255,255,0.16)';
-      c.fillRect(panelX + 21, y + 37, bw, 5);
+      c.fillRect(panelX + 21, y + 39, bw, 5);
       c.fillStyle = '#ffe61a';
-      c.fillRect(panelX + 21, y + 37, bw * progress, 5);
+      c.fillRect(panelX + 21, y + 39, bw * progress, 5);
     }
     c.restore();
   }
 
   function drawHud(c) {
     c.save();
-    c.font = "10px 'VCR', monospace";
+    c.font = "12px 'VCR', monospace";
     c.textBaseline = 'top';
     if (state === 'playing' || state === 'replay' || state === 'mix') {
       const titleY = 58;
@@ -4055,7 +4182,7 @@
         const y = loopY + row * (rowH + rowGap);
         c.globalAlpha = row === currentLayerIndex && state === 'playing' ? 0.95 : 0.58;
         c.fillStyle = layer.options[0].color;
-        c.font = "6px 'VCR', monospace";
+        c.font = "8px 'VCR', monospace";
         c.textAlign = 'right';
         c.fillText(String(row + 1), loopX - 6, y + rowH + 1);
         for (let i = 0; i < LOOP_STEPS; i++) {
@@ -4113,7 +4240,7 @@
 
     if (lastGrooveToast && state !== 'replay') {
       const layer = LAYERS[lastGrooveToast.layerIndex] || LAYERS[0];
-      c.font = "7px 'VCR', monospace";
+      c.font = "10px 'VCR', monospace";
       c.fillStyle = '#ffe61a';
       c.textAlign = 'center';
       c.fillText(`${layer.name} ADDED`, W * 0.5, 128);
@@ -4199,7 +4326,8 @@
     if ((phase === 'countin' || phase === 'countdown') && state === 'playing') {
       c.save();
       const cx = W * 0.5;
-      const cy = phase === 'countdown' ? 132 : H * 0.42;
+      // Keep the 3-2-1 circle below the loop grid, over the playfield.
+      const cy = phase === 'countdown' ? Math.max(playFieldTop() + 70, H * 0.3) : H * 0.42;
       const pulse = countKickPulse;
       const r = (phase === 'countdown' ? 38 : 58) + pulse * (phase === 'countdown' ? 8 : 12);
       c.shadowColor = COLOR;
@@ -4246,7 +4374,7 @@
       c.save();
       c.textAlign = 'center';
       c.textBaseline = 'middle';
-      c.font = "10px 'VCR', monospace";
+      c.font = "12px 'VCR', monospace";
       floatTexts.forEach(f => {
         c.globalAlpha = clamp(1 - f.age / f.life, 0, 1);
         c.fillStyle = f.color;
@@ -4299,6 +4427,7 @@
       phase = 'build';
       guidedStage = 'practice';
       restartLoopPlayback();
+      updateLoopButton();
       showLayerToast();
     } else {
       beginLoopCountdown();
@@ -4329,6 +4458,11 @@
 
   function showIntro() {
     cancelAnimationFrame(raf);
+    if (playAlongPrevSettings) {
+      signalSettings = { ...playAlongPrevSettings };
+      playAlongPrevSettings = null;
+      applySettings();
+    }
     mode = 'arcade';
     pendingStartMode = 'arcade';
     setupOpen = false;
@@ -4386,7 +4520,9 @@
   }
 
   function startPlayAlongDifficulty(diff) {
-    const pattern = PLAY_ALONG_PATTERNS.find(p => String(p.difficulty).toUpperCase() === String(diff).toUpperCase()) || PLAY_ALONG_PATTERNS[0];
+    const wanted = String(diff).toUpperCase();
+    const candidates = PLAY_ALONG_PATTERNS.filter(p => String(p.difficulty).toUpperCase() === wanted);
+    const pattern = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : PLAY_ALONG_PATTERNS[0];
     if (pattern) startPlayAlong(pattern.id);
   }
 
@@ -4399,6 +4535,9 @@
     playAlongRoundIndex = 0;
     playAlongInput = [];
     playAlongResult = null;
+    // Patterns borrow their own palette/tempo; the player's Build A Track
+    // choices come back when they leave Play Along.
+    if (!playAlongPrevSettings) playAlongPrevSettings = { ...signalSettings };
     signalSettings = { ...signalSettings, ...(pattern.settings || {}), grooveAssist: 'snap', recordingStyle: signalSettings.recordingStyle || 'guided' };
     applySettings();
     loop = loopFromPlayAlongPattern(pattern);
@@ -4541,15 +4680,17 @@
     const rows = LAYERS.map((layer, index) => `
       <button class="signal-chip ${index === freeLayerIndex ? 'active' : ''}" style="min-height:38px" onclick="signalChooseFreeLayer(${index})">▶ ${layer.name}</button>
     `).join('');
+    const hasLoop = freeLayerMenuKeepsLoop && freeHasRecordedLoop();
     return `
       <div class="signal-panel">
         <div class="signal-title">FREE PLAY</div>
-        <div class="signal-subtitle">TAP A LAYER TO START FREE PLAY.</div>
+        <div class="signal-subtitle">${hasLoop ? 'PICK A LAYER — YOUR LOOP KEEPS PLAYING.' : 'TAP A LAYER TO START FREE PLAY.'}</div>
         <div class="signal-tempo-box" style="margin:10px 0 12px;padding:12px">
           <div id="signal-tempo-value" class="signal-tempo-value" style="font-size:22px">${tempoBpm()} BPM</div>
           <input class="signal-tempo-slider" type="range" min="${MIN_TEMPO_BPM}" max="${MAX_TEMPO_BPM}" value="${tempoBpm()}" oninput="signalSetTempo(this.value, true)">
         </div>
         <div class="signal-presets" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:7px">${rows}</div>
+        ${hasLoop ? '<button class="signal-btn secondary" onclick="signalShowFreeSave()">SAVE LOOP</button>' : ''}
         <button class="signal-btn secondary" onclick="signalShowIntro()">BACK TO MENU</button>
       </div>`;
   }
@@ -4610,16 +4751,9 @@
       return;
     }
     freeLayerMenuKeepsLoop = false;
+    // Switching instruments keeps everything already recorded — the sandbox
+    // is for layering, not for losing work.
     const nextLayer = clamp(Math.floor(index || 0), 0, LAYERS.length - 1);
-    if (nextLayer !== currentLayerIndex && freeHasRecordedLoop()) {
-      loop = Array.from({ length: LOOP_STEPS }, () => []);
-      recordedChoices = [];
-      undoStack = [];
-      grooveByLayer = Array.from({ length: LAYERS.length }, () => null);
-      additionsThisLayer = 0;
-      totalAdditions = 0;
-      score = 0;
-    }
     switchFreeLayer(nextLayer);
     state = 'playing';
     phase = 'build';
@@ -5082,7 +5216,7 @@
           <div class="signal-jukebox-meta">${row.extra || 'SAVED TRACK'}</div>
           <div class="signal-jukebox-seq">${recipeSummary(row.recipe)}</div>
         </div>
-        <button class="signal-chip active" onclick="signalPlayRecipe('${row.id}')">PLAY</button>
+        <button class="signal-chip" style="min-height:44px;padding:0 16px;border:1.5px solid rgba(0,229,255,.72);background:rgba(0,229,255,.14);color:#eaffff;font-size:12px" onclick="signalPlayRecipe('${row.id}')">▶ PLAY</button>
       </div>`).join('') : '<div class="signal-subtitle">NO SAVED TRACKS YET.</div>';
     overlay.innerHTML = `
       <div class="signal-panel">
@@ -5231,6 +5365,7 @@
   window.signalStartFreeMode = startFreeMode;
   window.signalChooseFreeLayer = chooseFreeLayer;
   window.signalResumeFreeMode = resumeFreeMode;
+  window.signalShowFreeSave = showFreeSave;
   window.signalEndLoop = function(e) {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
@@ -5248,8 +5383,7 @@
   window.signalUndoLoop = function(e) {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-    if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'review') captureAddMoreLayer();
-    else if (canUndoLastStamp()) undoLastStamp();
+    if (canUndoLastStamp()) undoLastStamp();
   };
   window.signalSaveScore = saveScore;
   window.signalSaveRecipe = saveRecipe;
