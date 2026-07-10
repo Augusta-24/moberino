@@ -385,7 +385,7 @@
   let undoSeq = 0;
   let replayBall = null, replayHazards = [], replayPickups = [], replayToyScore = 0, replaySpawnAt = 0;
   let jukeboxRows = [], jukeboxBackTarget = 'intro';
-  let playAlongPattern = null, playAlongRoundIndex = 0, playAlongInput = [], playAlongResult = null, playAlongStage = 'listen', playAlongPrevSettings = null;
+  let playAlongPattern = null, playAlongRoundIndex = 0, playAlongListenLoops = 0, playAlongInput = [], playAlongResult = null, playAlongStage = 'listen', playAlongPrevSettings = null;
   let signalSettings = { style: 'space-funk', mood: 'minor', tempo: 'medium', grooveAssist: 'snap', recordingStyle: 'guided' };
   let layerVolumes = { ...DEFAULT_LAYER_VOLUMES };
   let beatMs = DEFAULT_BEAT_MS;
@@ -458,9 +458,9 @@
   // Bottom edge of the loop-grid HUD (title + layer rows + step dots) drawn
   // in drawHud. Every instrument surface must start below this line.
   function loopGridBottom() { return 72 + LAYERS.length * 11 + 8; }
-  function playFieldTop() { return guidedCoachActive() ? 296 : loopGridBottom() + 18; }
+  function playFieldTop() { return guidedCoachActive() ? 286 : loopGridBottom() + 18; }
   function playFieldBottom(limit) {
-    const base = H - LOOP_PANEL_H - (guidedCoachActive() ? 118 : 20);
+    const base = H - LOOP_PANEL_H - (guidedCoachActive() ? 124 : 20);
     if (!guidedCoachActive() || !limit) return base;
     return Math.min(base, playFieldTop() + limit);
   }
@@ -468,7 +468,7 @@
   function swellSurfaceBottom() { return playFieldBottom(guidedCoachActive() ? 390 : 0); }
   function activeLayerLabel() {
     if (isFreeMode()) return `FREE PLAY: ${activeLayer().name}`;
-    if (isPlayAlongMode()) return `PLAY ALONG · ${playAlongStage === 'listen' ? 'LISTEN' : 'YOUR TURN'}`;
+    if (isPlayAlongMode()) return playAlongStatusLabel();
     if (isGuidedBuildMode()) return `${guidedStage === 'record' ? 'RECORD' : guidedStage === 'review' ? 'REVIEW' : 'PRACTICE'} ${activeLayer().name}`;
     return `PLAY ${activeLayer().name}`;
   }
@@ -684,7 +684,7 @@
       }
     } else if (!guidedBuild) {
       if (isPlayAlongMode() && phase === 'build') {
-        loopButton.textContent = playAlongStage === 'listen' ? 'LISTEN...' : 'YOUR TURN';
+        loopButton.textContent = playAlongStage === 'listen' ? `WATCH ${Math.min(playAlongListenLoops + 1, playAlongDemoLoopGoal())}/${playAlongDemoLoopGoal()}` : 'YOUR TURN';
         loopButton.disabled = true;
       } else if (loopEndArmed) loopButton.textContent = 'SAVING LOOP...';
       else loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISH TRACK' : 'NEXT LAYER ›';
@@ -1191,13 +1191,13 @@
     guidedControls.id = 'signal-guided-controls';
     Object.assign(guidedControls.style, {
       position: 'fixed',
-      left: '12px',
-      right: '12px',
-      bottom: 'calc(env(safe-area-inset-bottom, 0px) + 22px)',
+      left: '10px',
+      right: '10px',
+      bottom: 'calc(env(safe-area-inset-bottom, 0px) + 10px)',
       zIndex: '999999',
       display: 'none',
       gridTemplateColumns: '1fr 1fr',
-      gap: '12px',
+      gap: '8px',
       pointerEvents: 'auto',
       boxSizing: 'border-box',
     });
@@ -1211,16 +1211,18 @@
     btn.className = primary ? 'signal-loop-btn' : 'signal-reset-btn';
     btn.textContent = label;
     Object.assign(btn.style, {
-      minHeight: '64px',
+      minHeight: '48px',
       width: '100%',
       maxWidth: 'none',
-      fontSize: '13px',
-      letterSpacing: '1.8px',
-      padding: '0 12px',
+      minWidth: '0',
+      fontSize: '11px',
+      letterSpacing: '1.15px',
+      lineHeight: '1.12',
+      padding: '0 8px',
       boxSizing: 'border-box',
       pointerEvents: 'auto',
-      whiteSpace: 'nowrap',
-      borderRadius: '14px',
+      whiteSpace: 'normal',
+      borderRadius: '11px',
       border: primary ? '2px solid rgba(0,229,255,.95)' : '2px solid rgba(255,255,255,.45)',
       background: primary ? 'rgba(0,229,255,.20)' : 'rgba(2,4,14,.94)',
       color: primary ? '#eaffff' : '#eaffff',
@@ -1262,6 +1264,7 @@
 
     guidedControlsKey = key;
     el.innerHTML = '';
+    el.style.gap = '8px';
     if (guidedStage === 'practice') {
       el.style.gridTemplateColumns = '1fr 1fr';
       el.appendChild(guidedControlButton('SKIP LAYER', skipGuidedLayer, false));
@@ -1283,12 +1286,12 @@
       const label = document.createElement('div');
       label.textContent = 'RECORDING...';
       Object.assign(label.style, {
-        minHeight: '52px',
+        minHeight: '44px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: '13px',
-        letterSpacing: '2px',
+        fontSize: '12px',
+        letterSpacing: '1.5px',
         color: '#ffe61a',
         textShadow: '0 0 14px rgba(255,230,26,.6)',
         pointerEvents: 'none',
@@ -1297,7 +1300,7 @@
       return;
     }
     if (guidedStage === 'review') {
-      el.style.gridTemplateColumns = '1fr 1fr';
+      el.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
       const lastLayer = currentLayerIndex >= LAYERS.length - 1;
       if (guidedOverdubBase) {
         el.appendChild(guidedControlButton('REDO ADD', undoLastGuidedOverdub, false));
@@ -1663,6 +1666,7 @@
     replayUntil = 0;
     playAlongPattern = null;
     playAlongRoundIndex = 0;
+    playAlongListenLoops = 0;
     playAlongInput = [];
     playAlongResult = null;
     playAlongStage = 'listen';
@@ -2368,7 +2372,33 @@
     return (playAlongPattern.rounds && playAlongPattern.rounds[playAlongRoundIndex]) || [];
   }
 
-  function patternHitToStamp(hit) {
+  function playAlongDifficulty() {
+    return String(playAlongPattern && playAlongPattern.difficulty || 'EASY').toUpperCase();
+  }
+
+  function playAlongDemoLoopGoal() {
+    const diff = playAlongDifficulty();
+    return diff === 'HARD' || diff === 'EXPERT' ? 3 : 2;
+  }
+
+  function playAlongLearnBeatMs() {
+    const diff = playAlongDifficulty();
+    if (diff === 'EASY') return 420;
+    if (diff === 'MEDIUM') return 390;
+    if (diff === 'HARD') return 360;
+    return 340;
+  }
+
+  function applyPlayAlongTempo() {
+    if (isPlayAlongMode() && playAlongPattern) beatMs = Math.max(beatMs, playAlongLearnBeatMs());
+  }
+
+  function playAlongStatusLabel() {
+    if (playAlongStage === 'listen') return `PLAY ALONG · WATCH ${Math.min(playAlongListenLoops + 1, playAlongDemoLoopGoal())}/${playAlongDemoLoopGoal()}`;
+    return 'PLAY ALONG · YOUR TURN';
+  }
+
+  function patternHitToStamp(hit, roundIndex) {
     const layer = LAYERS[choiceLayerIndex(hit)] || LAYERS[0];
     const color = hit.color || (layer.options[hit.lane || 0] && layer.options[hit.lane || 0].color) || COLOR;
     const stamp = {
@@ -2378,6 +2408,7 @@
       color,
       label: hit.label || '',
       lane: Number.isFinite(hit.lane) ? hit.lane : 1,
+      playAlongRound: Number.isFinite(roundIndex) ? roundIndex : 0,
       tight: true,
       vel: hit.vel || 0.86,
       skip: 0,
@@ -2394,12 +2425,16 @@
     return stamp;
   }
 
-  function loopFromPlayAlongPattern(pattern) {
+  function loopFromPlayAlongPattern(pattern, throughRoundIndex) {
     const nextLoop = Array.from({ length: LOOP_STEPS }, () => []);
-    (pattern.rounds || []).flat().forEach(hit => {
-      const target = wrapStep(hit.step);
-      nextLoop[target].push(patternHitToStamp(hit));
-      while (nextLoop[target].length > 5) nextLoop[target].shift();
+    const rounds = pattern.rounds || [];
+    const lastRound = Number.isFinite(throughRoundIndex) ? clamp(Math.floor(throughRoundIndex), 0, Math.max(0, rounds.length - 1)) : Math.max(0, rounds.length - 1);
+    rounds.slice(0, lastRound + 1).forEach((round, roundIndex) => {
+      (round || []).forEach(hit => {
+        const target = wrapStep(hit.step);
+        nextLoop[target].push(patternHitToStamp(hit, roundIndex));
+        while (nextLoop[target].length > 5) nextLoop[target].shift();
+      });
     });
     return nextLoop;
   }
@@ -2728,7 +2763,7 @@
     overlay.innerHTML = `
       <div class="signal-panel">
         <div class="signal-title">${matched ? 'MATCHED' : 'TRY AGAIN'}</div>
-        <div class="signal-subtitle">${playAlongPattern ? playAlongPattern.title : 'PLAY ALONG'}</div>
+        <div class="signal-subtitle">${playAlongPattern ? `${playAlongPattern.title} · ROUND ${playAlongRoundIndex + 1}` : 'PLAY ALONG'}</div>
         ${matched && !isFinalRound ? `<button class="signal-btn" onclick="signalPlayAlongNextRound()">NEXT</button>` : ''}
         ${matched && isFinalRound ? `<button class="signal-btn" onclick="signalShowPlayAlong()">MORE PATTERNS</button>` : ''}
         <button class="signal-btn secondary" onclick="signalPlayAlongRetry()">TRY AGAIN</button>
@@ -2742,9 +2777,12 @@
     const firstLayer = LAYERS[choiceLayerIndex(expected[0] || {})] || LAYERS[0];
     currentLayerIndex = firstLayer ? LAYERS.indexOf(firstLayer) : 0;
     additionsThisLayer = 0;
+    playAlongListenLoops = 0;
     playAlongInput = [];
     playAlongResult = null;
     playAlongStage = 'listen';
+    loop = loopFromPlayAlongPattern(playAlongPattern, playAlongRoundIndex);
+    applyPlayAlongTempo();
     applyLayerOptions();
     laneFlash = [1, 1, 1];
     state = 'playing';
@@ -3166,6 +3204,7 @@
     const bucket = loop[stepIndex];
     bucket.forEach(v => {
       if (v.skip > 0) { v.skip -= 1; return; }
+      if (isPlayAlongMode() && phase === 'build' && playAlongStage === 'respond' && v.playAlongRound === playAlongRoundIndex) return;
       playStamp(v);
     });
     lastLoopStep = stepIndex;
@@ -3174,6 +3213,7 @@
       // will use, so listening doubles as showing where to play.
       bucket.forEach(v => {
         if (v.skip > 0) return;
+        if (v.playAlongRound !== playAlongRoundIndex) return;
         if (loopFlash[stepIndex]) loopFlash[stepIndex] = { pulse: 1, color: v.color || COLOR, row: v.layerIndex || 0 };
         if (v.inst === 'drums' && v.pieces && drumsActive()) {
           v.pieces.forEach(p => { const pad = pads.find(pd => pd.piece === p); if (pad) pad.flash = 1; });
@@ -3240,8 +3280,14 @@
     }
     if (isPlayAlongMode() && phase === 'build' && previousStep + advance >= LOOP_STEPS) {
       if (playAlongStage === 'listen') {
-        // The demonstration pass just finished — same loop keeps rolling,
-        // now the player's hits count.
+        playAlongListenLoops += 1;
+        if (playAlongListenLoops < playAlongDemoLoopGoal()) {
+          addFloatText(`WATCH ${playAlongListenLoops + 1}`, W * 0.5, H * 0.32, COLOR, 1100);
+          updateLoopButton();
+          return;
+        }
+        // The teaching passes just finished. The loop keeps rolling, but
+        // the current phrase is muted so the player's hits are the answer.
         playAlongStage = 'respond';
         playAlongInput = [];
         addFloatText('YOUR TURN', W * 0.5, H * 0.32, '#ffe61a', 1500);
@@ -4106,6 +4152,30 @@
     c.restore();
   }
 
+  function drawWrappedCanvasText(c, text, x, y, maxWidth, lineHeight, maxLines) {
+    const words = String(text || '').trim().split(/\s+/).filter(Boolean);
+    const lines = [];
+    let line = '';
+    words.forEach(word => {
+      const next = line ? `${line} ${word}` : word;
+      if (line && c.measureText(next).width > maxWidth) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = next;
+      }
+    });
+    if (line) lines.push(line);
+    const visible = lines.slice(0, maxLines || lines.length);
+    if (lines.length > visible.length && visible.length) {
+      let last = visible[visible.length - 1];
+      while (last.length > 1 && c.measureText(`${last}...`).width > maxWidth) last = last.slice(0, -1);
+      visible[visible.length - 1] = `${last}...`;
+    }
+    const start = y - ((visible.length - 1) * lineHeight) / 2;
+    visible.forEach((l, i) => c.fillText(l, x, start + i * lineHeight));
+  }
+
 
   function drawGuidedCoach(c) {
     if (!isGuidedBuildMode() || state !== 'playing' || phase !== 'build') return;
@@ -4113,31 +4183,32 @@
     const name = layer.name;
     const main = guidedStage === 'record' ? `RECORD ${name}` : guidedStage === 'waiting' ? 'PLAY WHEN READY' : guidedStage === 'review' ? `${name} ADDED` : `PRACTICE ${name}`;
     const sub = guidedStage === 'record' ? 'Keep playing until the bar fills.' : guidedStage === 'waiting' ? 'Your first note starts the take.' : guidedStage === 'review' ? 'Listen back. Keep it, add more, or start over.' : 'Try the sounds. Nothing records yet.';
-    const y = 218;
+    const y = 212;
     c.save();
     c.textAlign = 'center';
     c.textBaseline = 'middle';
     c.fillStyle = 'rgba(2,4,14,0.72)';
     c.strokeStyle = 'rgba(0,229,255,0.45)';
     c.lineWidth = 2;
-    const panelW = Math.min(W - 28, 520);
+    const panelW = Math.min(W - 34, 520);
     const panelX = (W - panelW) / 2;
-    c.fillRect(panelX, y - 46, panelW, 98);
-    c.strokeRect(panelX + 0.5, y - 45.5, panelW - 1, 97);
+    const panelH = guidedStage === 'review' ? 108 : 98;
+    c.fillRect(panelX, y - panelH * 0.5, panelW, panelH);
+    c.strokeRect(panelX + 0.5, y - panelH * 0.5 + 0.5, panelW - 1, panelH - 1);
     c.globalAlpha = 0.62;
     c.fillStyle = '#eaffff';
     c.font = "10px 'VCR', monospace";
-    c.fillText(`LAYER ${currentLayerIndex + 1} OF ${LAYERS.length}`, W * 0.5, y - 34);
+    c.fillText(`LAYER ${currentLayerIndex + 1} OF ${LAYERS.length}`, W * 0.5, y - panelH * 0.5 + 16);
     c.globalAlpha = 1;
     c.shadowColor = guidedStage === 'record' || guidedStage === 'waiting' ? '#ffe61a' : COLOR;
     c.shadowBlur = 16;
     c.fillStyle = guidedStage === 'record' || guidedStage === 'waiting' ? '#ffe61a' : COLOR;
-    c.font = "24px 'VCR', monospace";
+    c.font = `${W < 380 ? 21 : 24}px 'VCR', monospace`;
     c.fillText(main, W * 0.5, y - 8);
     c.shadowBlur = 0;
     c.fillStyle = 'rgba(234,255,255,0.94)';
-    c.font = "14px 'VCR', monospace";
-    c.fillText(sub, W * 0.5, y + 24);
+    c.font = `${W < 380 ? 11 : 12}px 'VCR', monospace`;
+    drawWrappedCanvasText(c, sub, W * 0.5, y + 26, panelW - 28, 15, 2);
     if (guidedStage === 'record') {
       const total = Math.max(1, LOOP_STEPS * beatMs);
       const progress = clamp(((stepIndex * beatMs) + Math.max(0, performance.now() - (beatAt - beatMs))) / total, 0, 1);
@@ -4483,7 +4554,7 @@
           BUILD A TRACK<br><span style="display:block;font-size:14px;letter-spacing:1px;line-height:1.25;color:#eaffff;opacity:.95;margin-top:8px">Make a song one layer at a time.</span>
         </button>
         <button class="signal-btn secondary" style="min-height:82px;font-size:17px;line-height:1.15;margin-bottom:10px;background:rgba(5,20,42,.78) !important;border:2px solid rgba(0,229,255,.72) !important;color:#00e5ff !important;box-shadow:none !important" onclick="signalShowPlayAlong()">
-          PLAY ALONG<br><span style="display:block;font-size:14px;letter-spacing:1px;line-height:1.25;color:#eaffff;opacity:.95;margin-top:8px">Listen, then repeat the pattern.</span>
+          PLAY ALONG<br><span style="display:block;font-size:14px;letter-spacing:1px;line-height:1.25;color:#eaffff;opacity:.95;margin-top:8px">Watch a phrase, then play it back.</span>
         </button>
         <button class="signal-btn secondary" style="min-height:82px;font-size:17px;line-height:1.15;margin-bottom:10px;background:rgba(5,20,42,.78) !important;border:2px solid rgba(0,229,255,.72) !important;color:#00e5ff !important;box-shadow:none !important" onclick="signalShowSetup('free')">
           FREE PLAY<br><span style="display:block;font-size:14px;letter-spacing:1px;line-height:1.25;color:#eaffff;opacity:.95;margin-top:8px">Mess around with sounds.</span>
@@ -4513,7 +4584,7 @@
     overlay.innerHTML = `
       <div class="signal-panel">
         <div class="signal-title">PLAY ALONG</div>
-        <div class="signal-subtitle">LISTEN, THEN REPEAT THE PATTERN.</div>
+        <div class="signal-subtitle">WATCH A SHORT PHRASE. THEN PLAY IT BACK.</div>
         ${rows}
         <button class="signal-btn secondary" onclick="signalShowIntro()">BACK TO MENU</button>
       </div>`;
@@ -4540,7 +4611,8 @@
     if (!playAlongPrevSettings) playAlongPrevSettings = { ...signalSettings };
     signalSettings = { ...signalSettings, ...(pattern.settings || {}), grooveAssist: 'snap', recordingStyle: signalSettings.recordingStyle || 'guided' };
     applySettings();
-    loop = loopFromPlayAlongPattern(pattern);
+    applyPlayAlongTempo();
+    loop = loopFromPlayAlongPattern(pattern, 0);
     recordedChoices = [];
     silenceArcadeMusic();
     restartPlayAlongRound();
@@ -4548,9 +4620,9 @@
 
   function setupNavButtonsHTML(primaryLabel, primaryAction, backAction) {
     return `
-      <div style="display:grid;grid-template-columns:.72fr 1fr;gap:12px;margin-top:16px">
-        <button class="signal-btn secondary" style="min-height:54px;font-size:12px" onclick="${backAction || 'signalShowIntro()'}">BACK</button>
-        <button class="signal-btn secondary" style="min-height:54px;font-size:13px;background:rgba(2,4,14,.94) !important;border:2px solid rgba(0,229,255,.72) !important;color:#eaffff !important;box-shadow:0 0 14px rgba(0,229,255,.16) !important" onclick="${primaryAction}">${primaryLabel}</button>
+      <div style="position:sticky;bottom:0;z-index:2;display:grid;grid-template-columns:.72fr 1fr;gap:10px;margin-top:12px;padding:10px 0 2px;background:linear-gradient(180deg,rgba(3,12,32,0),rgba(3,12,32,.96) 30%,rgba(6,3,22,.98))">
+        <button class="signal-btn secondary" style="min-height:46px;font-size:11px;margin-top:0" onclick="${backAction || 'signalShowIntro()'}">BACK</button>
+        <button class="signal-btn secondary" style="min-height:46px;font-size:12px;margin-top:0;background:rgba(2,4,14,.94) !important;border:2px solid rgba(0,229,255,.72) !important;color:#eaffff !important;box-shadow:0 0 14px rgba(0,229,255,.16) !important" onclick="${primaryAction}">${primaryLabel}</button>
       </div>`;
   }
 
@@ -4567,7 +4639,7 @@
         'align-items:center',
         'justify-content:center',
         'text-align:center',
-        `min-height:${key === 'style' ? '58px' : '54px'}`,
+        `min-height:${key === 'style' ? '50px' : '46px'}`,
         `font-size:${key === 'style' ? '12px' : '12px'}`,
         'line-height:1.08',
         'letter-spacing:1px',
@@ -4576,7 +4648,19 @@
       ].join(';');
       return `<button type="button" class="signal-chip ${selected ? 'active' : ''}" style="${style}" onclick="signalSetPreset('${key}', '${item.id}')">${selected ? '✓ ' : ''}${item.label}</button>`;
     }).join('');
-    return `<div style="display:grid !important;grid-template-columns:repeat(${cols}, minmax(0, 1fr)) !important;gap:10px;width:100%;box-sizing:border-box;align-items:stretch">${chips}</div>`;
+    return `<div style="display:grid !important;grid-template-columns:repeat(${cols}, minmax(0, 1fr)) !important;gap:8px;width:100%;box-sizing:border-box;align-items:stretch">${chips}</div>`;
+  }
+
+  function setupPanelStyle() {
+    return [
+      'width:min(500px,calc(100vw - 24px))',
+      'max-width:500px',
+      'max-height:calc(100dvh - 84px - env(safe-area-inset-bottom, 0px))',
+      'overflow-y:auto',
+      '-webkit-overflow-scrolling:touch',
+      'padding:14px 14px calc(env(safe-area-inset-bottom, 0px) + 12px)',
+      'box-sizing:border-box',
+    ].join(';');
   }
 
   function showSetup(nextMode, step) {
@@ -4604,7 +4688,7 @@
     overlay.classList.remove('hidden');
     overlay.classList.add('signal-menu-mode');
     overlay.classList.remove('signal-tempo-mode');
-    const panelStyle = 'width:min(500px,calc(100vw - 24px));max-width:500px;padding:16px;box-sizing:border-box';
+    const panelStyle = setupPanelStyle();
     if (setupStep === 'feel') {
       overlay.innerHTML = `
         <div class="signal-panel" style="${panelStyle}">
@@ -4620,7 +4704,7 @@
     if (setupStep === 'style') {
       const active = signalSettings.recordingStyle || 'guided';
       const card = (id, title, sub) => `
-        <button type="button" class="signal-chip ${active === id ? 'active' : ''}" style="min-height:92px;font-size:16px;line-height:1.15;letter-spacing:1.2px;text-align:left;padding:14px 16px;border-width:${active === id ? '2px' : '1px'};box-shadow:${active === id ? '0 0 22px rgba(0,229,255,.38)' : 'none'}" onclick="signalChooseBuildStyle('${id}')">
+        <button type="button" class="signal-chip ${active === id ? 'active' : ''}" style="min-height:82px;font-size:15px;line-height:1.15;letter-spacing:1.1px;text-align:left;padding:12px 14px;border-width:${active === id ? '2px' : '1px'};box-shadow:${active === id ? '0 0 22px rgba(0,229,255,.38)' : 'none'}" onclick="signalChooseBuildStyle('${id}')">
           <span style="font-size:17px">${active === id ? '✓ ' : ''}${title}</span><br>
           <span style="display:block;font-size:13px;letter-spacing:.7px;line-height:1.25;opacity:.92;margin-top:7px">${sub}</span>
         </button>`;
@@ -4631,10 +4715,7 @@
             ${card('guided', 'GUIDED', 'Practice first, then record in steps.')}
             ${card('freebuild', 'FREE BUILD', 'Loop runs while you add notes freely.')}
           </div>
-          <div style="display:grid;grid-template-columns:.72fr 1fr;gap:12px;margin-top:16px">
-            <button class="signal-btn secondary" style="min-height:54px;font-size:12px" onclick="signalSetupStep('feel')">BACK</button>
-            <button class="signal-btn secondary" style="min-height:54px;font-size:13px;background:rgba(2,4,14,.94) !important;border:2px solid rgba(0,229,255,.72) !important;color:#eaffff !important;box-shadow:0 0 14px rgba(0,229,255,.16) !important" onclick="signalConfirmSetup()">START ›</button>
-          </div>
+          ${setupNavButtonsHTML('START ›', 'signalConfirmSetup()', "signalSetupStep('feel')")}
         </div>`;
       return;
     }
