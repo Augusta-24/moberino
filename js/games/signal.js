@@ -664,7 +664,7 @@
     const wasHidden = loopButton.classList.contains('hidden');
     loopButton.classList.toggle('hidden', !showLoop);
     if (wasHidden === showLoop) fitCanvas();
-    if (resetButton) resetButton.classList.toggle('hidden', !(show && phase === 'build' && !isPlayAlongMode() && (!guidedBuild || state === 'replay')));
+    if (resetButton) resetButton.classList.toggle('hidden', !(show && phase === 'build' && !isPlayAlongMode() && !guidedBuild));
     if (undoButton) undoButton.classList.toggle('hidden', !(show && phase === 'build' && !isPlayAlongMode() && (!guidedBuild || guidedStage === 'record')));
     if (!show) {
       loopButton.disabled = false;
@@ -686,12 +686,7 @@
     } else if (!guidedBuild) {
       if (state === 'replay') {
         loopButton.textContent = 'END REPLAY';
-        if (resetButton) {
-          resetButton.classList.remove('hidden');
-          resetButton.textContent = 'SAVE SCREEN';
-          resetButton.title = 'Go to save screen';
-          resetButton.setAttribute('aria-label', 'Go to save screen');
-        }
+        if (resetButton) resetButton.classList.add('hidden');
       } else if (isPlayAlongMode() && phase === 'build') {
         loopButton.textContent = playAlongStage === 'listen' ? `WATCH ${Math.min(playAlongListenLoops + 1, playAlongDemoLoopGoal())}/${playAlongDemoLoopGoal()}` : 'YOUR TURN';
         loopButton.disabled = true;
@@ -3096,13 +3091,6 @@
     replaying = false;
     replayUntil = 0;
     showMixScreen();
-  }
-
-  function stopReplayToSave() {
-    if (state !== 'replay') return;
-    replaying = false;
-    replayUntil = 0;
-    endBuiltRun();
   }
 
   function startMixAudition() {
@@ -5545,8 +5533,8 @@
   window.signalResetLoop = function(e) {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-    if (state === 'replay') stopReplayToSave();
-    else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'practice') skipGuidedLayer();
+    if (state === 'replay') return;
+    if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'practice') skipGuidedLayer();
     else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'review') captureRetryLayer();
     else resetCurrentLoop();
   };
