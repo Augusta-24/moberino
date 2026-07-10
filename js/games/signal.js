@@ -194,7 +194,8 @@
   let undoSeq = 0;
   let replayBall = null, replayHazards = [], replayPickups = [], replayToyScore = 0, replaySpawnAt = 0;
   let jukeboxRows = [], jukeboxBackTarget = 'intro';
-  let signalSettings = { style: 'space-funk', mood: 'minor', tempo: 'medium', grooveAssist: 'snap', recordingStyle: 'guided' };
+  let signalSettings = { style: 'space-funk', mood: 'minor', tempo: 'medium', grooveAssist: 'light', recordingStyle: 'guided' };
+  let bpmPreviewTimer = null;
   let layerVolumes = { ...DEFAULT_LAYER_VOLUMES };
   let beatMs = DEFAULT_BEAT_MS;
   let randomSfxAt = 0;
@@ -227,7 +228,6 @@
   function laneCenter(i) { return laneWidth() * (i + 0.5); }
   function isFreeMode() { return mode === 'free'; }
   function isGuidedBuildMode() { return mode === 'arcade' && (signalSettings.recordingStyle || 'guided') === 'guided'; }
-  function isFreeBuildMode() { return mode === 'arcade' && signalSettings.recordingStyle === 'freebuild'; }
   function shouldRecordStamp() { return !(isGuidedBuildMode() && (guidedStage === 'practice' || guidedStage === 'waiting')) && (!isFreeMode() || freeRecording); }
   function freeHasRecordedLoop() { return gridStamps().length > 0; }
   function styleDef() { return STYLE_DEFS[signalSettings.style] || STYLE_DEFS['space-funk']; }
@@ -552,6 +552,24 @@
     tempoPreviewBeatAt = t + tempoBeatMs();
     countKickPulse = 0.9;
     playDrumPiece('kick', 0.65, 0);
+  }
+  // Steady kick pulse while the BPM slider is on screen, so the player can
+  // hear the tempo. It re-reads tempoBeatMs() each tick, so dragging the
+  // slider speeds up / slows down the pulse.
+  function startBpmPreview() {
+    stopBpmPreview();
+    const tick = () => {
+      if (!(setupOpen && setupStep === 'feel')) { bpmPreviewTimer = null; return; }
+      try { audioCtx(); playDrumPiece('kick', 0.6, 0); } catch (e) {}
+      bpmPreviewTimer = setTimeout(tick, tempoBeatMs());
+    };
+    bpmPreviewTimer = setTimeout(tick, 260);
+  }
+  function stopBpmPreview() {
+    if (bpmPreviewTimer) { clearTimeout(bpmPreviewTimer); bpmPreviewTimer = null; }
+  }
+  function retimeBpmPreview() {
+    if (bpmPreviewTimer) startBpmPreview();
   }
   function withTimeout(promise, ms) {
     return Promise.race([
@@ -1144,21 +1162,14 @@
       return;
     }
     if (guidedStage === 'record') {
-      // The loop just keeps running while the player adds notes. No forced
-      // one-loop stop: they leave when they press KEEP (or FINISH TRACK).
-      el.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
+      // The loop just keeps running while the player adds notes. Two stacked
+      // full-width buttons only — UNDO NOTE lives across the top bar. To end
+      // early, SKIP LAYER through the rest during practice; KEEP on the last
+      // layer finishes the track.
+      el.style.gridTemplateColumns = '1fr';
       const lastLayer = currentLayerIndex >= LAYERS.length - 1;
       el.appendChild(guidedControlButton('RESTART LAYER', captureRetryLayer, false));
-      if (lastLayer) {
-        el.appendChild(guidedControlButton('FINISH TRACK', captureNextLayer, true));
-        return;
-      }
-      // A proud two-layer loop is a finished track too — no need to march
-      // through all six layers to reach the mix screen.
-      el.appendChild(guidedControlButton('FINISH TRACK', () => finishTrack(), false));
-      const keep = guidedControlButton('KEEP · NEXT', captureNextLayer, true);
-      keep.style.gridColumn = '1 / -1';
-      el.appendChild(keep);
+      el.appendChild(guidedControlButton(lastLayer ? 'FINISH TRACK' : 'KEEP · NEXT', captureNextLayer, true));
     }
   }
 
@@ -1295,7 +1306,10 @@
     row.style.maxWidth = 'none';
     row.style.margin = '0';
     row.style.zIndex = '60';
-    row.style.gridTemplateColumns = '76px 58px minmax(0, 1fr) 42px';
+    // Guided build owns its actions in the big bottom buttons, so the top bar
+    // is just a full-width UNDO NOTE plus the × quit in the corner.
+    const guidedTop = isGuidedBuildMode() && phase === 'build';
+    row.style.gridTemplateColumns = guidedTop ? 'minmax(0, 1fr) 42px' : '76px 58px minmax(0, 1fr) 42px';
     row.style.gap = '5px';
     row.style.alignItems = 'stretch';
     row.style.justifyContent = 'stretch';
@@ -1329,19 +1343,20 @@
       const canUndo = canUndoLastStamp();
       undo.classList.toggle('hidden', phase !== 'build' || (isGuidedBuildMode() && guidedStage !== 'record'));
       undo.disabled = !canUndo;
-      undo.textContent = 'UNDO';
+      undo.textContent = guidedTop ? 'UNDO NOTE' : 'UNDO';
       undo.style.opacity = canUndo ? '1' : '0.46';
       undo.style.cursor = canUndo ? 'pointer' : 'default';
-      undo.style.gridColumn = '2';
-      undo.style.width = '58px';
+      undo.style.gridColumn = guidedTop ? '1' : '2';
+      undo.style.width = guidedTop ? '100%' : '58px';
+      undo.style.maxWidth = 'none';
       undo.style.minHeight = '40px';
-      undo.style.fontSize = '8px';
-      undo.style.letterSpacing = '0.4px';
-      undo.style.padding = '0 3px';
+      undo.style.fontSize = guidedTop ? '11px' : '8px';
+      undo.style.letterSpacing = guidedTop ? '2px' : '0.4px';
+      undo.style.padding = '0 6px';
       undo.style.boxSizing = 'border-box';
     }
     if (exit) {
-      exit.style.gridColumn = '4';
+      exit.style.gridColumn = guidedTop ? '2' : '4';
       exit.style.width = '42px';
       exit.style.minWidth = '42px';
       exit.style.minHeight = '40px';
@@ -1803,7 +1818,10 @@
 
   function padRect(row, col) {
     const left = 38, right = 16, top = playFieldTop();
-    const bottom = playFieldBottom(430);
+    // The bottom buttons are fixed to the viewport, below the canvas, so the
+    // pad grid can grow most of the way down the canvas — much closer than the
+    // shared playFieldBottom reserve allows. Keep a margin above the footer.
+    const bottom = Math.max(top + 150, Math.min(H - LOOP_PANEL_H - 44, top + 560));
     const colGap = 10, rowGap = 12;
     const gw = (W - left - right - (PAD_COLS - 1) * colGap) / PAD_COLS;
     const gh = (bottom - top - 2 * rowGap) / 3;
@@ -1970,7 +1988,7 @@
     const base = wrapStep(Math.floor(raw));
     const nearest = wrapStep(Math.round(raw));
     const distance = Math.abs(raw - Math.round(raw));
-    const level = assist || signalSettings.grooveAssist || 'snap';
+    const level = assist || signalSettings.grooveAssist || 'light';
     if (level === 'raw') return base;
     if (level === 'light') return distance <= 0.28 ? nearest : base;
     return nearest;
@@ -4061,6 +4079,7 @@
 
   function showIntro() {
     cancelAnimationFrame(raf);
+    stopBpmPreview();
     mode = 'arcade';
     pendingStartMode = 'arcade';
     setupOpen = false;
@@ -4083,8 +4102,8 @@
         <button class="signal-btn secondary" style="min-height:82px;font-size:17px;line-height:1.15;margin-bottom:10px;background:rgba(5,20,42,.78) !important;border:2px solid rgba(0,229,255,.72) !important;color:#00e5ff !important;box-shadow:none !important" onclick="signalShowSetup('free')">
           FREE PLAY<br><span style="display:block;font-size:14px;letter-spacing:1px;line-height:1.25;color:#eaffff;opacity:.95;margin-top:8px">Mess around with sounds.</span>
         </button>
-        <button class="signal-btn secondary" style="min-height:82px;font-size:17px;line-height:1.15;background:rgba(5,20,42,.78) !important;border:2px solid rgba(0,229,255,.72) !important;color:#00e5ff !important;box-shadow:none !important" onclick="signalShowJukebox()">
-          JUKEBOX<br><span style="display:block;font-size:14px;letter-spacing:1px;line-height:1.25;color:#eaffff;opacity:.95;margin-top:8px">Play your saved loops.</span>
+        <button class="signal-btn secondary" style="min-height:82px;font-size:17px;line-height:1.15;background:rgba(6,26,16,.78) !important;border:2px solid rgba(51,255,102,.68) !important;color:#33ff66 !important;box-shadow:none !important" onclick="signalShowJukebox()">
+          ♪ JUKEBOX ♫<br><span style="display:block;font-size:14px;letter-spacing:1px;line-height:1.25;color:#eaffff;opacity:.95;margin-top:8px">Play back your saved loops.</span>
         </button>
       </div>`;
   }
@@ -4154,20 +4173,25 @@
     overlay.classList.remove('hidden');
     overlay.classList.add('signal-menu-mode');
     overlay.classList.remove('signal-tempo-mode');
+    stopBpmPreview();
     const panelStyle = setupPanelStyle();
     const free = pendingStartMode === 'free';
     const modeTag = free ? 'FREE PLAY' : 'BUILD A TRACK';
+    // Build A Track is always Guided now: palette -> feel (2 steps).
+    // Free Play adds a "start on" layer pick (3 steps).
+    const totalSteps = free ? 3 : 2;
     if (setupStep === 'feel') {
       overlay.innerHTML = `
         <div class="signal-panel" style="${panelStyle}">
-          <div class="signal-subtitle" style="margin:0 0 4px">${modeTag} · STEP 2 OF 3</div>
+          <div class="signal-subtitle" style="margin:0 0 4px">${modeTag} · STEP 2 OF ${totalSteps}</div>
           <div class="signal-title" style="font-size:22px;margin-bottom:14px">CHOOSE FEEL</div>
           <div class="signal-preset-label" style="font-size:12px;margin-bottom:8px">MOOD</div>
           ${setupChipGridHTML('mood', SIGNAL_PRESETS.mood, 2)}
           <div class="signal-preset-label" style="font-size:12px;margin-top:14px;margin-bottom:8px">TEMPO</div>
           ${bpmSliderHTML()}
-          ${setupNavButtonsHTML('NEXT ›', free ? "signalSetupStep('layer')" : "signalSetupStep('style')", "signalSetupStep('palette')")}
+          ${setupNavButtonsHTML(free ? 'NEXT ›' : 'START ›', free ? "signalSetupStep('layer')" : 'signalConfirmSetup()', "signalSetupStep('palette')")}
         </div>`;
+      startBpmPreview();
       return;
     }
     if (setupStep === 'layer' && free) {
@@ -4185,29 +4209,10 @@
         </div>`;
       return;
     }
-    if (setupStep === 'style' && !free) {
-      const active = signalSettings.recordingStyle || 'guided';
-      const card = (id, title, sub) => `
-        <button type="button" class="signal-chip ${active === id ? 'active' : ''}" style="min-height:82px;font-size:15px;line-height:1.15;letter-spacing:1.1px;text-align:left;padding:12px 14px;border-width:${active === id ? '2px' : '1px'};box-shadow:${active === id ? '0 0 22px rgba(0,229,255,.38)' : 'none'}" onclick="signalChooseBuildStyle('${id}')">
-          <span style="font-size:17px">${active === id ? '✓ ' : ''}${title}</span><br>
-          <span style="display:block;font-size:13px;letter-spacing:.7px;line-height:1.25;opacity:.92;margin-top:7px">${sub}</span>
-        </button>`;
-      overlay.innerHTML = `
-        <div class="signal-panel" style="${panelStyle}">
-          <div class="signal-subtitle" style="margin:0 0 4px">BUILD A TRACK · STEP 3 OF 3</div>
-          <div class="signal-title" style="font-size:22px;line-height:1.15;margin-bottom:14px">HOW DO YOU WANT TO BUILD?</div>
-          <div style="display:grid;grid-template-columns:1fr;gap:12px">
-            ${card('guided', 'GUIDED', 'Practice first, then record in steps.')}
-            ${card('freebuild', 'FREE BUILD', 'Loop runs while you add notes freely.')}
-          </div>
-          ${setupNavButtonsHTML('START ›', 'signalConfirmSetup()', "signalSetupStep('feel')")}
-        </div>`;
-      return;
-    }
     setupStep = 'palette';
     overlay.innerHTML = `
       <div class="signal-panel" style="${panelStyle}">
-        <div class="signal-subtitle" style="margin:0 0 4px">${modeTag} · STEP 1 OF 3</div>
+        <div class="signal-subtitle" style="margin:0 0 4px">${modeTag} · STEP 1 OF ${totalSteps}</div>
         <div class="signal-title" style="font-size:22px;margin-bottom:14px">CHOOSE PALETTE</div>
         ${setupChipGridHTML('style', SIGNAL_PRESETS.style, 2)}
         ${setupNavButtonsHTML('NEXT ›', "signalSetupStep('feel')", "signalShowIntro()")}
@@ -4216,14 +4221,13 @@
 
   function confirmSetup() {
     setupOpen = false;
+    stopBpmPreview();
     if (pendingStartMode === 'free') {
+      signalSettings.grooveAssist = 'light';
       startFreeMode(freeLayerIndex);
     } else {
-      if ((signalSettings.recordingStyle || 'guided') === 'freebuild') signalSettings.grooveAssist = 'light';
-      else {
-        signalSettings.recordingStyle = 'guided';
-        signalSettings.grooveAssist = 'snap';
-      }
+      signalSettings.recordingStyle = 'guided';
+      signalSettings.grooveAssist = 'light';
       start();
     }
   }
@@ -4529,7 +4533,7 @@
         ${compactTrackStatsHTML()}
         ${mixControlsHTML()}
         <button class="signal-btn" onclick="signalReplayTrack()">REPLAY TRACK</button>
-        <button class="signal-btn secondary" onclick="signalEndRun()">SAVE SCREEN</button>
+        <button class="signal-btn secondary" onclick="signalEndRun()">SAVE</button>
       </div>`;
     startMixAudition();
   }
@@ -4892,11 +4896,6 @@
     setupStep = step || 'palette';
     renderBuildSetup();
   };
-  window.signalChooseBuildStyle = function(style) {
-    signalSettings.recordingStyle = style === 'freebuild' ? 'freebuild' : 'guided';
-    signalSettings.grooveAssist = signalSettings.recordingStyle === 'freebuild' ? 'light' : 'snap';
-    renderBuildSetup();
-  };
   window.signalSetFreeLayer = function(index) {
     freeLayerIndex = clamp(Math.floor(Number(index) || 0), 0, LAYERS.length - 1);
     if (setupOpen) renderBuildSetup();
@@ -4904,7 +4903,9 @@
   window.signalSetTempo = function(value, preview) {
     audioCtx();
     setTempoBpm(Number(value));
-    if (preview) previewTempoKick();
+    // Keep the steady BPM-preview pulse in sync with the dragged tempo.
+    if (bpmPreviewTimer) retimeBpmPreview();
+    else if (preview) previewTempoKick();
   };
   window.signalStartTempo = function() {
     skipCountIn();
