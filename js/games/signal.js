@@ -14,9 +14,9 @@
   const MAX_SPARKS = 120;
   const MAX_DRUM_STACK = 6;
   const MAX_PIANO_STACK = 6;
-  const SIGNAL_MASTER_GAIN = 1.00;
+  const SIGNAL_MASTER_GAIN = 1.35;
   const COUNTDOWN_STEP_MS = 1000;
-  const DRUM_BUS_GAIN = 0.78;
+  const DRUM_BUS_GAIN = 0.94;
   const DEFAULT_LAYER_VOLUMES = { drums: 1, bass: 1, keys: 1, chimes: 1, swell: 1, fx: 1 };
   const DRUM_PIECE_GAINS = {
     kick: 0.92,
@@ -380,6 +380,7 @@
   let freeLayerMenuKeepsLoop = false;
   let pendingStartMode = 'arcade';
   let setupOpen = false, setupStep = 'palette', guidedStage = 'practice';
+  let guidedOverdubBase = null;
   let recordedChoices = [], undoStack = [], grooveByLayer = [], lastGrooveToast = null, replaying = false, replayUntil = 0;
   let undoSeq = 0;
   let replayBall = null, replayHazards = [], replayPickups = [], replayToyScore = 0, replaySpawnAt = 0;
@@ -782,12 +783,13 @@
   function refreshSignalOutput() {
     if (!signalMasterGain || !signalLimiter) return;
     const d = soundProfile();
-    signalMasterGain.gain.value = SIGNAL_MASTER_GAIN * (d.master || 1);
-    signalLimiter.threshold.value = -3;
-    signalLimiter.knee.value = 10;
-    signalLimiter.ratio.value = 2.5;
-    signalLimiter.attack.value = 0.008;
-    signalLimiter.release.value = 0.18;
+    const arcadeMuted = typeof ArcadeMusic !== 'undefined' && !!ArcadeMusic.muted;
+    signalMasterGain.gain.value = arcadeMuted ? 0 : SIGNAL_MASTER_GAIN * (d.master || 1);
+    signalLimiter.threshold.value = -4;
+    signalLimiter.knee.value = 12;
+    signalLimiter.ratio.value = 3.2;
+    signalLimiter.attack.value = 0.006;
+    signalLimiter.release.value = 0.14;
   }
 
   function tone(freq, type, delay, dur, vol, endFreq) {
@@ -1144,14 +1146,27 @@
 
   function playStamp(slot) {
     if (!slot || !slot.inst) return;
-    const vel = (slot.vel || 1) * 0.8 * layerVolumeForId(slotLayerId(slot));
+    const vel = (slot.vel || 1) * layerVolumeForId(slotLayerId(slot));
     if (slot.inst === 'drums') playInstrument('drums', { pieces: slot.pieces, tunes: slot.tunes, vel });
     else if (slot.inst === 'keys' && slot.notes && slot.notes.length) playInstrument(slot.inst, { notes: slot.notes, vel });
     else if (slot.inst === 'fx') playInstrument(slot.inst, { note: slot.note, piece: slot.piece, vel });
     else playInstrument(slot.inst, { note: slot.note, vel });
   }
 
+  function hasNonFoundationLoopContent() {
+    return loop && loop.some(bucket => (bucket || []).some(slot => slot && !slot.foundation));
+  }
+
   function playPulseBed() {
+    // In Guided, avoid the old noisy pulse bed once the player has a real
+    // loop going. It could sound like random guiro/shaker hits underneath
+    // the track during review. For an empty first layer, use one soft kick
+    // at the top instead of high noise.
+    if (isGuidedBuildMode() && state === 'playing' && phase === 'build') {
+      if (hasNonFoundationLoopContent() || currentLayerIndex > 0) return;
+      if (stepIndex === 0 && guidedStage !== 'review') playDrumPiece('kick', 0.22, 0);
+      return;
+    }
     // The session band behind the player: a quiet high bed in their key
     // and tempo. The player's kick owns the low pulse during the build.
     if (stepIndex % 4 === 2) noise(0.004, 0.024, 0.007, true);
@@ -1253,7 +1268,7 @@
       return;
     }
 
-    const key = `${guidedStage}:${currentLayerIndex}:${LAYERS.length}`;
+    const key = `${guidedStage}:${currentLayerIndex}:${LAYERS.length}:${guidedOverdubBase ? 'redo' : 'base'}`;
     el.style.display = 'grid';
     // Do not rebuild the buttons every animation frame. Recreating the DOM
     // while a finger is down can swallow the click/tap before READY fires.
@@ -1268,12 +1283,13 @@
       return;
     }
     if (guidedStage === 'waiting') {
-      el.style.gridTemplateColumns = '1fr';
+      el.style.gridTemplateColumns = '1fr 1fr';
       el.appendChild(guidedControlButton('BACK TO PRACTICE', () => {
         guidedStage = 'practice';
         updateLoopButton();
         showLayerToast();
       }, false));
+      el.appendChild(guidedControlButton('START WITH REST', startGuidedRecordingWithRest, true));
       return;
     }
     if (guidedStage === 'record') {
@@ -1296,10 +1312,16 @@
     }
     if (guidedStage === 'review') {
       el.style.gridTemplateColumns = '1fr 1fr';
-      el.appendChild(guidedControlButton('START OVER', captureRetryLayer, false));
-      el.appendChild(guidedControlButton('ADD MORE', captureAddMoreLayer, false));
+      if (guidedOverdubBase) {
+        el.appendChild(guidedControlButton('REDO ADD', undoLastGuidedOverdub, false));
+        el.appendChild(guidedControlButton('START OVER', captureRetryLayer, false));
+      } else {
+        el.appendChild(guidedControlButton('START OVER', captureRetryLayer, false));
+        el.appendChild(guidedControlButton('ADD MORE', captureAddMoreLayer, false));
+      }
+      if (guidedOverdubBase) el.appendChild(guidedControlButton('ADD MORE', captureAddMoreLayer, false));
       const keep = guidedControlButton(currentLayerIndex >= LAYERS.length - 1 ? 'FINISH TRACK' : 'KEEP', captureNextLayer, true);
-      keep.style.gridColumn = '1 / -1';
+      if (!guidedOverdubBase) keep.style.gridColumn = '1 / -1';
       el.appendChild(keep);
     }
   }
@@ -1421,49 +1443,6 @@
     row.style.display = runBarVisible ? 'grid' : 'none';
     if (!runBarVisible) return;
     const exit = ensureSignalExitButton();
-
-    // Guided uses the large fixed bottom controls. Keep only the top-right X
-    // here so the player does not see duplicate READY / SKIP controls.
-    if (isGuidedBuildMode() && phase === 'build') {
-      if (resetButton) resetButton.classList.add('hidden');
-      if (undoButton) undoButton.classList.add('hidden');
-      if (loopButton) loopButton.classList.add('hidden');
-      if (exit && exit.parentNode === row) row.appendChild(exit);
-      row.style.position = 'absolute';
-      row.style.top = 'calc(env(safe-area-inset-top, 0px) + 6px)';
-      row.style.left = 'auto';
-      row.style.right = '10px';
-      row.style.width = '42px';
-      row.style.maxWidth = '42px';
-      row.style.margin = '0';
-      row.style.zIndex = '60';
-      row.style.display = 'grid';
-      row.style.gridTemplateColumns = '42px';
-      row.style.gap = '0';
-      row.style.alignItems = 'stretch';
-      row.style.justifyContent = 'end';
-      row.style.boxSizing = 'border-box';
-      row.style.padding = '0';
-      row.style.pointerEvents = 'auto';
-      if (exit) {
-        exit.style.gridColumn = '1';
-        exit.style.width = '42px';
-        exit.style.minWidth = '42px';
-        exit.style.minHeight = '40px';
-        exit.style.padding = '0';
-        exit.style.fontSize = '20px';
-        exit.style.letterSpacing = '0';
-        exit.style.borderColor = 'rgba(255,0,204,0.45)';
-        exit.style.background = 'rgba(2,4,14,0.88)';
-        exit.style.color = '#ff2db8';
-        exit.style.boxShadow = '0 0 14px rgba(255,45,184,0.18)';
-        exit.style.display = 'inline-flex';
-        exit.style.alignItems = 'center';
-        exit.style.justifyContent = 'center';
-      }
-      return;
-    }
-
     const undo = ensureSignalUndoButton();
     if (resetButton && resetButton.parentNode === row) row.appendChild(resetButton);
     if (undo && undo.parentNode === row) row.appendChild(undo);
@@ -2165,6 +2144,38 @@
     return true;
   }
 
+  function startGuidedRecordingWithRest() {
+    if (!(isGuidedBuildMode() && state === 'playing' && phase === 'build' && guidedStage === 'waiting')) return;
+    guidedStage = 'record';
+    undoStack = [];
+    rocks = [];
+    bullets = [];
+    pointerActive = false;
+    pinchActive = false;
+    restartLoopPlayback();
+    updateLoopButton();
+    showLayerToast();
+  }
+
+  function startGuidedChimesFromTouch(pos, t) {
+    if (!(isGuidedBuildMode() && state === 'playing' && phase === 'build' && guidedStage === 'waiting' && chimesActive())) return false;
+    if (pos) { pointerX = pos.x; pointerY = pos.y; pointerActive = true; }
+    guidedStage = 'record';
+    undoStack = [];
+    rocks = [];
+    bullets = [];
+    pinchActive = false;
+    restartLoopPlayback();
+    const pull = orbPullState();
+    const note = degreeFreq(pull.deg, activeLayer().mult);
+    playPitched('chimes', note, 0.7, 0);
+    stampNote({ lane: 1, label: noteNameForDegree(pull.deg), color: '#ff2db8' }, 0, note, true, false);
+    thereminPulse = 1;
+    updateLoopButton();
+    showLayerToast();
+    return true;
+  }
+
   function captureTiming(t) {
     if (startGuidedRecordingFromFirstNote(t)) {
       return { isNextStep: false, tight: true, target: 0 };
@@ -2193,10 +2204,20 @@
       manualFireAt = t + 150;
       return;
     }
+    if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'review') {
+      // Review is for listening back and choosing KEEP / ADD MORE / START OVER.
+      // Do not let hidden/under-panel canvas taps preview random drum pads.
+      manualFireAt = t + 120;
+      return;
+    }
     if ((phase === 'countin' || phase === 'countdown') && state === 'playing') {
       playDrumPiece('kick', 0.45, 0);
       countKickPulse = 0.8;
       manualFireAt = t + 160;
+      return;
+    }
+    if (startGuidedChimesFromTouch(pos, t)) {
+      manualFireAt = t + 120;
       return;
     }
     if (drumsActive()) {
@@ -2338,6 +2359,42 @@
 
   function snapshotBucket(bucket) {
     return (bucket || []).map(cloneLoopSlot);
+  }
+
+  function snapshotGuidedState() {
+    return {
+      loop: loop.map(bucket => snapshotBucket(bucket)),
+      recordedChoices: recordedChoices.map(ch => ({ ...ch })),
+      undoStack: undoStack.map(u => ({ ...u, beforeBucket: snapshotBucket(u.beforeBucket) })),
+      additionsThisLayer,
+      totalAdditions,
+      combo,
+      bestCombo,
+    };
+  }
+
+  function restoreGuidedState(snap) {
+    if (!snap) return;
+    loop = snap.loop.map(bucket => snapshotBucket(bucket));
+    recordedChoices = snap.recordedChoices.map(ch => ({ ...ch }));
+    undoStack = snap.undoStack.map(u => ({ ...u, beforeBucket: snapshotBucket(u.beforeBucket) }));
+    additionsThisLayer = snap.additionsThisLayer || 0;
+    totalAdditions = snap.totalAdditions || 0;
+    combo = snap.combo || 0;
+    bestCombo = snap.bestCombo || 0;
+    grooveByLayer[currentLayerIndex] = null;
+  }
+
+  function undoLastGuidedOverdub() {
+    if (!isGuidedReviewStage() || !guidedOverdubBase) return;
+    restoreGuidedState(guidedOverdubBase);
+    guidedStage = 'waiting';
+    state = 'playing';
+    phase = 'build';
+    overlay.classList.add('hidden');
+    updateLoopButton();
+    restartLoopPlayback();
+    showLayerToast();
   }
 
   function undoLastStamp() {
@@ -2627,10 +2684,12 @@
   function captureNextLayer() {
     if (!(isGuidedReviewStage() && state === 'playing' && phase === 'build')) return;
     if (currentLayerIndex >= LAYERS.length - 1) {
+      guidedOverdubBase = null;
       state = 'playing';
       finishTrack();
       return;
     }
+    guidedOverdubBase = null;
     currentLayerIndex += 1;
     if (isGuidedBuildMode()) guidedStage = 'practice';
     additionsThisLayer = 0;
@@ -2654,6 +2713,7 @@
 
   function captureAddMoreLayer() {
     if (!(isGuidedReviewStage() && state === 'playing' && phase === 'build')) return;
+    guidedOverdubBase = snapshotGuidedState();
     guidedStage = 'waiting';
     state = 'playing';
     phase = 'build';
@@ -2667,6 +2727,7 @@
 
   function captureRetryLayer() {
     if (!(isGuidedReviewStage() && state === 'playing' && phase === 'build')) return;
+    guidedOverdubBase = null;
     guidedStage = 'practice';
     state = 'playing';
     phase = 'build';
@@ -2724,6 +2785,7 @@
 
   function startGuidedRecordPass() {
     if (!isGuidedBuildMode() || state !== 'playing' || phase !== 'build') return;
+    guidedOverdubBase = null;
     guidedStage = 'waiting';
     undoStack = [];
     overlay.classList.add('hidden');
@@ -2739,6 +2801,7 @@
       finishTrack();
       return;
     }
+    guidedOverdubBase = null;
     currentLayerIndex += 1;
     guidedStage = 'practice';
     additionsThisLayer = 0;
@@ -2842,7 +2905,7 @@
   function layerHintText() {
     if (phase === 'countin') return 'SET TEMPO';
     if (phase === 'countdown') return 'GET READY';
-    if (isGuidedBuildMode() && phase === 'build') return guidedStage === 'record' ? 'PLAY FOR ONE LOOP' : guidedStage === 'waiting' ? 'FIRST NOTE STARTS' : guidedStage === 'review' ? 'LISTEN BACK' : 'NOTHING RECORDS YET';
+    if (isGuidedBuildMode() && phase === 'build') return guidedStage === 'record' ? 'PLAY FOR ONE LOOP' : guidedStage === 'waiting' ? 'PLAY OR REST' : guidedStage === 'review' ? 'LISTEN BACK' : 'NOTHING RECORDS YET';
     if (drumsActive()) return 'TAP DRUM PADS';
     if (rockTapActive()) return 'TAP THE ROCKS';
     if (fxActive()) return 'TAP + PINCH JUNK';
@@ -3927,7 +3990,7 @@
     const layer = activeLayer();
     const name = layer.name;
     const main = guidedStage === 'record' ? `RECORD ${name}` : guidedStage === 'waiting' ? 'PLAY WHEN READY' : guidedStage === 'review' ? `${name} ADDED` : `PRACTICE ${name}`;
-    const sub = guidedStage === 'record' ? 'Keep playing until the bar fills.' : guidedStage === 'waiting' ? 'First note starts recording from the top.' : guidedStage === 'review' ? 'Listen back. Add more or keep going.' : 'Try the sounds. Nothing records yet.';
+    const sub = guidedStage === 'record' ? 'Keep playing until the bar fills.' : guidedStage === 'waiting' ? 'First note starts recording. Or start with a rest.' : guidedStage === 'review' ? 'Listen back. Add more or keep going.' : 'Try the sounds. Nothing records yet.';
     const y = 218;
     c.save();
     c.textAlign = 'center';
@@ -3937,25 +4000,25 @@
     c.lineWidth = 2;
     const panelW = Math.min(W - 28, 520);
     const panelX = (W - panelW) / 2;
-    c.fillRect(panelX, y - 34, panelW, 72);
-    c.strokeRect(panelX + 0.5, y - 33.5, panelW - 1, 71);
+    c.fillRect(panelX, y - 40, panelW, 86);
+    c.strokeRect(panelX + 0.5, y - 39.5, panelW - 1, 85);
     c.shadowColor = guidedStage === 'record' || guidedStage === 'waiting' ? '#ffe61a' : COLOR;
     c.shadowBlur = 16;
     c.fillStyle = guidedStage === 'record' || guidedStage === 'waiting' ? '#ffe61a' : COLOR;
     c.font = "24px 'VCR', monospace";
-    c.fillText(main, W * 0.5, y - 10);
+    c.fillText(main, W * 0.5, y - 12);
     c.shadowBlur = 0;
-    c.fillStyle = 'rgba(234,255,255,0.92)';
-    c.font = "11px 'VCR', monospace";
-    c.fillText(sub, W * 0.5, y + 20);
+    c.fillStyle = 'rgba(234,255,255,0.94)';
+    c.font = "14px 'VCR', monospace";
+    c.fillText(sub, W * 0.5, y + 22);
     if (guidedStage === 'record') {
       const total = Math.max(1, LOOP_STEPS * beatMs);
       const progress = clamp(((stepIndex * beatMs) + Math.max(0, performance.now() - (beatAt - beatMs))) / total, 0, 1);
       const bw = panelW - 42;
       c.fillStyle = 'rgba(234,255,255,0.16)';
-      c.fillRect(panelX + 21, y + 33, bw, 5);
+      c.fillRect(panelX + 21, y + 37, bw, 5);
       c.fillStyle = '#ffe61a';
-      c.fillRect(panelX + 21, y + 33, bw * progress, 5);
+      c.fillRect(panelX + 21, y + 37, bw * progress, 5);
     }
     c.restore();
   }
