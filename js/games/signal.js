@@ -389,6 +389,7 @@
   let signalSettings = { style: 'space-funk', mood: 'minor', tempo: 'medium', grooveAssist: 'snap', recordingStyle: 'guided' };
   let layerVolumes = { ...DEFAULT_LAYER_VOLUMES };
   let beatMs = DEFAULT_BEAT_MS;
+  let randomSfxAt = 0;
   let laneFlash = [0, 0, 0];
   let loopFlash = [];
   let spawnAt = 0, manualFireAt = 0, beatAt = 0, stepIndex = 0, lastLoopStep = -1;
@@ -655,15 +656,15 @@
   }
   function updateLoopButton() {
     if (!loopButton) return;
-    const show = state === 'playing' && phase !== 'countin' && phase !== 'countdown';
+    const show = (state === 'playing' || state === 'replay') && phase !== 'countin' && phase !== 'countdown';
     // In Guided build the big coach buttons at the bottom own every action.
     // The top bar keeps only UNDO (while recording) and the exit ×.
-    const guidedBuild = isGuidedBuildMode() && phase === 'build';
+    const guidedBuild = state === 'playing' && isGuidedBuildMode() && phase === 'build';
     const showLoop = show && !guidedBuild;
     const wasHidden = loopButton.classList.contains('hidden');
     loopButton.classList.toggle('hidden', !showLoop);
     if (wasHidden === showLoop) fitCanvas();
-    if (resetButton) resetButton.classList.toggle('hidden', !(show && phase === 'build' && !isPlayAlongMode() && !guidedBuild));
+    if (resetButton) resetButton.classList.toggle('hidden', !(show && phase === 'build' && !isPlayAlongMode() && (!guidedBuild || state === 'replay')));
     if (undoButton) undoButton.classList.toggle('hidden', !(show && phase === 'build' && !isPlayAlongMode() && (!guidedBuild || guidedStage === 'record')));
     if (!show) {
       loopButton.disabled = false;
@@ -683,14 +684,22 @@
         resetButton.setAttribute('aria-label', 'Clear Free Mode loop');
       }
     } else if (!guidedBuild) {
-      if (isPlayAlongMode() && phase === 'build') {
+      if (state === 'replay') {
+        loopButton.textContent = 'END REPLAY';
+        if (resetButton) {
+          resetButton.classList.remove('hidden');
+          resetButton.textContent = 'SAVE SCREEN';
+          resetButton.title = 'Go to save screen';
+          resetButton.setAttribute('aria-label', 'Go to save screen');
+        }
+      } else if (isPlayAlongMode() && phase === 'build') {
         loopButton.textContent = playAlongStage === 'listen' ? `WATCH ${Math.min(playAlongListenLoops + 1, playAlongDemoLoopGoal())}/${playAlongDemoLoopGoal()}` : 'YOUR TURN';
         loopButton.disabled = true;
       } else if (loopEndArmed) loopButton.textContent = 'SAVING LOOP...';
       else loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISH TRACK' : 'NEXT LAYER ›';
       // Reset (↻) only while actively building a layer — not during count-in.
       if (resetButton) {
-        resetButton.classList.toggle('hidden', phase !== 'build' || isPlayAlongMode());
+        resetButton.classList.toggle('hidden', phase !== 'build' || isPlayAlongMode() || state === 'replay');
         resetButton.textContent = 'CLEAR';
         resetButton.title = 'Clear this layer';
         resetButton.setAttribute('aria-label', 'Clear this layer');
@@ -898,6 +907,57 @@
     g.connect(signalOutput());
     src.start(t0);
     src.stop(t0 + dur + 0.02);
+  }
+
+  function playRandomSfx(kind, chance) {
+    if (chance != null && Math.random() > chance) return;
+    const nowMs = performance.now();
+    if (nowMs < randomSfxAt) return;
+    randomSfxAt = nowMs + (kind === 'success' || kind === 'save' ? 520 : 240);
+    const root = styleDef().root || 110;
+    const pool = {
+      hit: ['blip', 'spark', 'tick'],
+      fx: ['zap', 'flutter', 'spark'],
+      success: ['rise', 'coin', 'bloom'],
+      replay: ['coin', 'zap', 'tick'],
+      save: ['coin', 'bloom'],
+      miss: ['drop', 'fizz'],
+    }[kind] || ['blip', 'spark', 'tick'];
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    if (pick === 'blip') {
+      const f = root * (4 + Math.random() * 2.2);
+      tone(f, 'sine', 0, 0.055, 0.014, f * (1.35 + Math.random() * 0.28));
+      tone(f * 2.01, 'triangle', 0.018, 0.045, 0.006, f * 2.22);
+    } else if (pick === 'spark') {
+      filteredNoise(0, 0.040, 0.010, 'highpass', 5400 + Math.random() * 1800, 1.2);
+      tone(root * (6 + Math.random() * 2), 'sine', 0.006, 0.070, 0.007, root * 8);
+    } else if (pick === 'tick') {
+      filteredNoise(0, 0.018, 0.014, 'bandpass', 1900 + Math.random() * 1200, 5.2);
+    } else if (pick === 'zap') {
+      const f = root * (5.4 + Math.random() * 2);
+      synth(f, 'sawtooth', 0, 0.075, 0.010, { filter: 'bandpass', cutoff: 2200 + Math.random() * 1600, endFreq: f * 0.58, endCutoff: 900, q: 3.2 });
+      filteredNoise(0.006, 0.030, 0.008, 'highpass', 4200, 0.9);
+    } else if (pick === 'flutter') {
+      [0, 1, 2].forEach(i => {
+        const f = root * (3.8 + i * 0.72 + Math.random() * 0.22);
+        tone(f, i === 1 ? 'triangle' : 'sine', i * 0.026, 0.070, 0.006, f * 1.12);
+      });
+    } else if (pick === 'rise') {
+      const f = root * (2.4 + Math.random() * 0.8);
+      synth(f, 'triangle', 0, 0.22, 0.014, { filter: 'lowpass', cutoff: 900, endFreq: f * 2.04, endCutoff: 2600, q: 0.9, echo: true, echoGain: 0.08 });
+      filteredNoise(0.035, 0.16, 0.007, 'highpass', 3000, 0.8, 6400);
+    } else if (pick === 'coin') {
+      const f = root * (5.0 + Math.random() * 1.4);
+      tone(f, 'sine', 0, 0.14, 0.016, f * 1.002);
+      tone(f * 1.5, 'sine', 0.028, 0.12, 0.008, f * 1.49);
+    } else if (pick === 'bloom') {
+      [0, 2, 4].forEach((deg, i) => playPitched('chimes', degreeFreq(deg, 4), 0.18, i * 0.045));
+    } else if (pick === 'drop') {
+      const f = root * (2.4 + Math.random() * 0.8);
+      tone(f, 'triangle', 0, 0.12, 0.014, f * 0.45);
+    } else if (pick === 'fizz') {
+      filteredNoise(0, 0.070, 0.012, 'highpass', 3600, 0.7, 1800);
+    }
   }
 
   // ── Instrument recipes ported from space.js: little acoustic caricatures
@@ -1304,12 +1364,12 @@
       const lastLayer = currentLayerIndex >= LAYERS.length - 1;
       if (guidedOverdubBase) {
         el.appendChild(guidedControlButton('REDO ADD', undoLastGuidedOverdub, false));
-        el.appendChild(guidedControlButton('START OVER', captureRetryLayer, false));
+        el.appendChild(guidedControlButton('RESTART LAYER', captureRetryLayer, false));
         el.appendChild(guidedControlButton('ADD MORE', captureAddMoreLayer, false));
         el.appendChild(guidedControlButton(lastLayer ? 'FINISH TRACK' : 'KEEP', captureNextLayer, true));
         return;
       }
-      el.appendChild(guidedControlButton('START OVER', captureRetryLayer, false));
+      el.appendChild(guidedControlButton('RESTART LAYER', captureRetryLayer, false));
       el.appendChild(guidedControlButton('ADD MORE', captureAddMoreLayer, false));
       if (lastLayer) {
         const keep = guidedControlButton('FINISH TRACK', captureNextLayer, true);
@@ -1460,7 +1520,7 @@
     row.style.maxWidth = 'none';
     row.style.margin = '0';
     row.style.zIndex = '60';
-    row.style.gridTemplateColumns = '58px 58px minmax(0, 1fr) 42px';
+    row.style.gridTemplateColumns = '76px 58px minmax(0, 1fr) 42px';
     row.style.gap = '5px';
     row.style.alignItems = 'stretch';
     row.style.justifyContent = 'stretch';
@@ -1482,7 +1542,7 @@
     if (resetButton) {
       if (!signalResetButtonStyles) signalResetButtonStyles = snapshotStyles(resetButton, ['gridColumn', 'width', 'minHeight', 'fontSize', 'letterSpacing', 'padding', 'boxSizing']);
       resetButton.style.gridColumn = '1';
-      resetButton.style.width = '58px';
+      resetButton.style.width = '76px';
       resetButton.style.minHeight = '40px';
       resetButton.style.fontSize = '8px';
       resetButton.style.letterSpacing = '0.4px';
@@ -1832,6 +1892,7 @@
       b.pulse = 1;
       replayToyScore += 1;
       playDrumPiece('rim', 0.55, 0, (off + 1) * 0.5);
+      playRandomSfx('replay', 0.24);
       burst(b.x, b.y, b.color, 6);
     }
 
@@ -1856,6 +1917,7 @@
         b.pulse = 1;
         replayToyScore += 2;
         playDrumPiece(h.hp <= 0 ? 'snare' : 'tom', 0.55, 0, clamp(h.x / W, 0, 1));
+        playRandomSfx(h.hp <= 0 ? 'success' : 'replay', h.hp <= 0 ? 0.5 : 0.28);
         burst(h.x, h.y, h.color, 8);
         if (h.hp <= 0) h.broken = true;
       }
@@ -1871,6 +1933,7 @@
         b.pulse = 1;
         replayToyScore += 3;
         playPitched('chimes', degreeFreq(p.deg, 4), 0.55, 0);
+        playRandomSfx('success', 0.75);
         burst(p.x, p.y, p.color, 10);
       }
     });
@@ -1887,6 +1950,7 @@
           h.pulse = 1;
           replayToyScore += 2;
           playFxGesture(h.hp <= 0 ? 'warp' : 'echo', degreeFreq(4 + h.hp, 4), 0.34, 0, { intensity: 0.45, tension: 0.7 });
+          playRandomSfx('fx', 0.42);
           burst(h.x, h.y, h.color, 12);
           if (h.hp <= 0) replayHazards.splice(i, 1);
           break;
@@ -2285,7 +2349,7 @@
       return;
     }
     if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'review') {
-      // Review is for listening back and choosing KEEP / ADD MORE / START OVER.
+      // Review is for listening back and choosing KEEP / ADD MORE / RESTART LAYER.
       // Do not let hidden/under-panel canvas taps preview random drum pads.
       manualFireAt = t + 120;
       return;
@@ -2347,6 +2411,7 @@
     const tune = pad.col / Math.max(1, PAD_COLS - 1);
     playDrumPiece(pad.piece, 1, 0, tune);
     const timing = captureTiming(t);
+    playRandomSfx('hit', timing.tight ? 0.16 : 0.06);
     stampNote({ ...pad, tune }, timing.target, null, timing.tight, timing.isNextStep);
     const r = padRect(pad.row, pad.col);
     burst(r.x + r.w / 2, r.y + r.h / 2, pad.color, timing.tight ? 8 : 4);
@@ -2719,6 +2784,7 @@
     beginLoopCountdown();
     updateLoopButton();
     [0, 2, 4].forEach((deg, i) => playPitched('keys', degreeFreq(deg, 2), 0.8, 0.05 + i * 0.09));
+    playRandomSfx('success', 0.8);
   }
 
   function finishCaptureLayer() {
@@ -2737,11 +2803,13 @@
     pinchActive = false;
     showCaptureReview(committedLayerIndex);
     [0, 2, 4].forEach((deg, i) => playPitched('keys', degreeFreq(deg, 2), 0.64, 0.04 + i * 0.08));
+    playRandomSfx('success', 0.72);
   }
 
   function finishPlayAlongRound() {
     if (state !== 'playing' || !isPlayAlongMode()) return;
     playAlongResult = playAlongRoundMatched() ? 'matched' : 'try-again';
+    playRandomSfx(playAlongResult === 'matched' ? 'success' : 'miss', 1);
     state = 'built';
     phase = 'playalong-review';
     loopEndArmed = false;
@@ -2985,6 +3053,7 @@
     cancelAnimationFrame(raf);
     signal = Math.max(signal, 82);
     [0, 1, 2, 4, 5].forEach((deg, i) => playPitched('chimes', degreeFreq(deg, 4), 0.8, 0.05 + i * 0.07));
+    playRandomSfx('success', 1);
     showMixScreen();
   }
 
@@ -3020,6 +3089,20 @@
     last = performance.now();
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(frame);
+  }
+
+  function stopReplayToMix() {
+    if (state !== 'replay') return;
+    replaying = false;
+    replayUntil = 0;
+    showMixScreen();
+  }
+
+  function stopReplayToSave() {
+    if (state !== 'replay') return;
+    replaying = false;
+    replayUntil = 0;
+    endBuiltRun();
   }
 
   function startMixAudition() {
@@ -3130,6 +3213,7 @@
     const note = rock.inst === 'drums' ? null : degreeFreq(rock.deg, activeLayer().mult);
     if (rock.inst !== 'drums') rock.label = noteNameForDegree(rock.deg);
     playInstrument(rock.inst, { note, piece: rock.piece, vel: 1 });
+    playRandomSfx(rock.inst === 'fx' ? 'fx' : 'hit', tight ? 0.18 : 0.06);
     stampNote(rock, target, note, tight, isNextStep);
     rock.pulse = 1;
     burst(rock.x, rock.y, rock.color, tight ? 8 : 4);
@@ -3174,6 +3258,7 @@
     junk.pulse = 1.35;
     junk.armed = 1;
     playFxGesture(junk.piece, note, 0.62 + power * 0.42, 0, { intensity: 0.5 + power * 0.5, tension: power });
+    playRandomSfx('fx', timing.tight ? 0.34 : 0.14);
     stampNote({ ...junk, lane: junk.lane }, timing.target, note, timing.tight, timing.isNextStep);
     burst(junk.x, junk.y, junk.color, timing.tight ? 14 : 8);
     combo = timing.tight ? combo + 1 : 0;
@@ -3187,6 +3272,7 @@
     distortion = clamp(distortion + 8, 0, 100);
     tone(90, 'sine', 0, 0.12, 0.05, 55);
     noise(0, 0.06, 0.028, false);
+    playRandomSfx('miss', 0.85);
     burst(player.x, player.y, '#ff8a3d', 10);
     addFloatText('CLAM', player.x, player.y - 34, '#ff8a3d');
   }
@@ -5180,6 +5266,7 @@
     }
     if (status) status.textContent = recipeOnline ? 'SAVED ONLINE · JUKEBOX READY' : 'SAVED LOCAL · JUKEBOX READY';
     if (button) button.textContent = recipeOnline ? 'Saved online' : 'Saved local';
+    playRandomSfx('save', 1);
   }
 
   function recipeToLoop(recipe) {
@@ -5451,13 +5538,15 @@
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
     if (phase === 'countin' && state === 'playing') skipCountIn();
+    else if (state === 'replay') stopReplayToMix();
     else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'review') captureNextLayer();
     else requestLoopEnd();
   };
   window.signalResetLoop = function(e) {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-    if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'practice') skipGuidedLayer();
+    if (state === 'replay') stopReplayToSave();
+    else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'practice') skipGuidedLayer();
     else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'review') captureRetryLayer();
     else resetCurrentLoop();
   };
