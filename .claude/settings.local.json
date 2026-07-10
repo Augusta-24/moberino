@@ -56,7 +56,9 @@
       "Bash(awk -F: '$2 > 4450 && $2 < 4535')",
       "Bash(git -C /Users/kevinseverino/Documents/moberino diff --stat)",
       "Bash(git -C /Users/kevinseverino/Documents/moberino diff js/games/signal.js)",
-      "Bash(node --check /Users/kevinseverino/Documents/moberino/js/games/signal.js)"
+      "Bash(node --check /Users/kevinseverino/Documents/moberino/js/games/signal.js)",
+      "Bash(node -c js/games/signal.js)",
+      "Bash(echo \"exit $?\")"
     ]
   }
 }

@@ -117,197 +117,6 @@
     swell: [2, 8],
     fx: [1, 4],
   };
-  const PLAY_ALONG_PATTERNS = [
-    { id: 'easy-kick-lights', title: 'KICK LIGHTS', difficulty: 'EASY', settings: { style: 'space-funk', mood: 'minor', tempo: 'medium' }, rounds: [[
-      { step: 0, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-      { step: 4, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-      { step: 8, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-      { step: 12, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-    ]] },
-    { id: 'easy-hat-walk', title: 'HAT WALK', difficulty: 'EASY', settings: { style: 'dream-synth', mood: 'major', tempo: 'chill' }, rounds: [[
-      { step: 0, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-      { step: 2, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'hat', label: 'HAT', lane: 2 },
-      { step: 4, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'snare', label: 'SNARE', lane: 1 },
-      { step: 6, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'hat', label: 'HAT', lane: 2 },
-      { step: 8, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-      { step: 10, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'hat', label: 'HAT', lane: 2 },
-      { step: 12, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'snare', label: 'SNARE', lane: 1 },
-      { step: 14, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'hat', label: 'HAT', lane: 2 },
-    ]] },
-    { id: 'easy-tom-answer', title: 'TOM ANSWER', difficulty: 'EASY', settings: { style: 'toy-box', mood: 'major', tempo: 'medium' }, rounds: [[
-      { step: 0, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-      { step: 3, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'tom', label: 'TOM', lane: 1 },
-      { step: 4, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'snare', label: 'SNARE', lane: 1 },
-      { step: 8, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-      { step: 11, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'tom', label: 'TOM', lane: 1 },
-      { step: 12, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'snare', label: 'SNARE', lane: 1 },
-    ]] },
-    { id: 'easy-clap-corners', title: 'CLAP CORNERS', difficulty: 'EASY', settings: { style: 'vaporwave', mood: 'minor', tempo: 'chill' }, rounds: [[
-      { step: 0, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-      { step: 4, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'clap', label: 'CLAP', lane: 1 },
-      { step: 8, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-      { step: 12, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'clap', label: 'CLAP', lane: 1 },
-    ]] },
-    { id: 'easy-rim-spark', title: 'RIM SPARK', difficulty: 'EASY', settings: { style: 'chiptune', mood: 'dorian', tempo: 'medium' }, rounds: [[
-      { step: 0, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-      { step: 4, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'rim', label: 'RIM', lane: 1 },
-      { step: 6, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'hat', label: 'HAT', lane: 2 },
-      { step: 8, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-      { step: 12, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'rim', label: 'RIM', lane: 1 },
-      { step: 14, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'hat', label: 'HAT', lane: 2 },
-    ]] },
-    { id: 'easy-shaker-steps', title: 'SHAKER STEPS', difficulty: 'EASY', settings: { style: 'steel-island', mood: 'egyptian', tempo: 'medium' }, rounds: [[
-      { step: 0, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-      { step: 2, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'shaker', label: 'SHAKER', lane: 2 },
-      { step: 4, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'snare', label: 'SNARE', lane: 1 },
-      { step: 8, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-      { step: 10, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'shaker', label: 'SHAKER', lane: 2 },
-      { step: 12, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'snare', label: 'SNARE', lane: 1 },
-    ]] },
-    { id: 'medium-bass-anchor', title: 'BASS ANCHOR', difficulty: 'MEDIUM', settings: { style: 'space-funk', mood: 'minor', tempo: 'medium' }, rounds: [
-      [
-        { step: 0, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-        { step: 4, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'snare', label: 'SNARE', lane: 1 },
-        { step: 8, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-        { step: 12, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'snare', label: 'SNARE', lane: 1 },
-      ],
-      [
-        { step: 0, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 0, label: 'LOW', lane: 0 },
-        { step: 7, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 2, label: 'LOW', lane: 0 },
-        { step: 8, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 4, label: 'MID', lane: 1 },
-        { step: 14, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 3, label: 'MID', lane: 1 },
-      ],
-    ] },
-    { id: 'medium-disco-steps', title: 'DISCO STEPS', difficulty: 'MEDIUM', settings: { style: 'boss-rave', mood: 'dorian', tempo: 'fast' }, rounds: [
-      [
-        { step: 0, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-        { step: 3, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'hat', label: 'HAT', lane: 2 },
-        { step: 4, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'snare', label: 'SNARE', lane: 1 },
-        { step: 8, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-        { step: 11, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'hat', label: 'HAT', lane: 2 },
-        { step: 12, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'snare', label: 'SNARE', lane: 1 },
-      ],
-      [
-        { step: 0, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 0, label: 'LOW', lane: 0 },
-        { step: 4, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 3, label: 'MID', lane: 1 },
-        { step: 8, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 5, label: 'MID', lane: 1 },
-        { step: 12, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 3, label: 'MID', lane: 1 },
-      ],
-    ] },
-    { id: 'medium-low-skip', title: 'LOW SKIP', difficulty: 'MEDIUM', settings: { style: 'dark-minor', mood: 'minor', tempo: 'medium' }, rounds: [
-      [
-        { step: 0, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-        { step: 5, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'rim', label: 'RIM', lane: 1 },
-        { step: 8, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-        { step: 12, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'snare', label: 'SNARE', lane: 1 },
-      ],
-      [
-        { step: 0, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 0, label: 'LOW', lane: 0 },
-        { step: 6, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 1, label: 'LOW', lane: 0 },
-        { step: 10, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 4, label: 'MID', lane: 1 },
-        { step: 15, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 2, label: 'LOW', lane: 0 },
-      ],
-    ] },
-    { id: 'medium-toy-bounce', title: 'TOY BOUNCE', difficulty: 'MEDIUM', settings: { style: 'toy-box', mood: 'major', tempo: 'medium' }, rounds: [
-      [
-        { step: 0, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-        { step: 2, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'clave', label: 'CLAVE', lane: 2 },
-        { step: 4, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'clap', label: 'CLAP', lane: 1 },
-        { step: 8, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-        { step: 10, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'clave', label: 'CLAVE', lane: 2 },
-        { step: 12, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'clap', label: 'CLAP', lane: 1 },
-      ],
-      [
-        { step: 0, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 0, label: 'LOW', lane: 0 },
-        { step: 3, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 2, label: 'LOW', lane: 0 },
-        { step: 8, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 4, label: 'MID', lane: 1 },
-        { step: 11, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 2, label: 'LOW', lane: 0 },
-      ],
-    ] },
-    { id: 'medium-crystal-bass', title: 'CRYSTAL BASS', difficulty: 'MEDIUM', settings: { style: 'crystal-cave', mood: 'hirajoshi', tempo: 'chill' }, rounds: [
-      [
-        { step: 0, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-        { step: 4, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'bell', label: 'BELL', lane: 2 },
-        { step: 8, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-        { step: 12, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'bell', label: 'BELL', lane: 2 },
-      ],
-      [
-        { step: 0, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 0, label: 'LOW', lane: 0 },
-        { step: 5, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 3, label: 'MID', lane: 1 },
-        { step: 8, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 5, label: 'MID', lane: 1 },
-        { step: 13, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 2, label: 'LOW', lane: 0 },
-      ],
-    ] },
-    { id: 'medium-garage-pulse', title: 'GARAGE PULSE', difficulty: 'MEDIUM', settings: { style: 'cyber-garage', mood: 'blues', tempo: 'fast' }, rounds: [
-      [
-        { step: 0, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-        { step: 3, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'hat', label: 'HAT', lane: 2 },
-        { step: 4, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'snare', label: 'SNARE', lane: 1 },
-        { step: 7, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'hat', label: 'HAT', lane: 2 },
-        { step: 8, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-        { step: 12, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'snare', label: 'SNARE', lane: 1 },
-      ],
-      [
-        { step: 0, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 0, label: 'LOW', lane: 0 },
-        { step: 4, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 4, label: 'MID', lane: 1 },
-        { step: 7, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 5, label: 'MID', lane: 1 },
-        { step: 10, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 7, label: 'HIGH', lane: 2 },
-        { step: 14, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 4, label: 'MID', lane: 1 },
-      ],
-    ] },
-    { id: 'hard-neon-stack', title: 'NEON STACK', difficulty: 'HARD', settings: { style: 'boss-rave', mood: 'minor', tempo: 'fast' }, rounds: [[
-      { step: 0, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-      { step: 4, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'snare', label: 'SNARE', lane: 1 },
-      { step: 8, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 5, label: 'MID', lane: 1 },
-      { step: 10, layerId: 'keys', layerIndex: 2, inst: 'keys', degree: 7, label: 'HIGH', lane: 2 },
-      { step: 12, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'snare', label: 'SNARE', lane: 1 },
-      { step: 14, layerId: 'chimes', layerIndex: 3, inst: 'chimes', degree: 9, label: 'HIGH', lane: 2 },
-    ]] },
-    { id: 'hard-moon-ladder', title: 'MOON LADDER', difficulty: 'HARD', settings: { style: 'dark-minor', mood: 'minor', tempo: 'medium' }, rounds: [[
-      { step: 0, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 0, label: 'LOW', lane: 0 },
-      { step: 3, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'rim', label: 'RIM', lane: 1 },
-      { step: 5, layerId: 'keys', layerIndex: 2, inst: 'keys', degree: 3, label: 'MID', lane: 1 },
-      { step: 8, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 5, label: 'MID', lane: 1 },
-      { step: 11, layerId: 'chimes', layerIndex: 3, inst: 'chimes', degree: 7, label: 'HIGH', lane: 2 },
-      { step: 13, layerId: 'fx', layerIndex: 5, inst: 'fx', piece: 'echo', label: 'ECHO', lane: 0 },
-    ]] },
-    { id: 'hard-steel-weave', title: 'STEEL WEAVE', difficulty: 'HARD', settings: { style: 'steel-island', mood: 'egyptian', tempo: 'medium' }, rounds: [[
-      { step: 0, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-      { step: 2, layerId: 'chimes', layerIndex: 3, inst: 'chimes', degree: 2, label: 'LOW', lane: 0 },
-      { step: 4, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'bell', label: 'BELL', lane: 2 },
-      { step: 6, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 3, label: 'MID', lane: 1 },
-      { step: 9, layerId: 'keys', layerIndex: 2, inst: 'keys', degree: 5, label: 'MID', lane: 1 },
-      { step: 12, layerId: 'swell', layerIndex: 4, inst: 'swell', degree: 7, label: 'HIGH', lane: 2 },
-    ]] },
-    { id: 'hard-vapor-drift', title: 'VAPOR DRIFT', difficulty: 'HARD', settings: { style: 'vaporwave', mood: 'major', tempo: 'chill' }, rounds: [[
-      { step: 0, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 0, label: 'LOW', lane: 0 },
-      { step: 4, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'clap', label: 'CLAP', lane: 1 },
-      { step: 5, layerId: 'keys', layerIndex: 2, inst: 'keys', degree: 4, label: 'MID', lane: 1 },
-      { step: 8, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 5, label: 'MID', lane: 1 },
-      { step: 10, layerId: 'chimes', layerIndex: 3, inst: 'chimes', degree: 7, label: 'HIGH', lane: 2 },
-      { step: 15, layerId: 'fx', layerIndex: 5, inst: 'fx', piece: 'rise', label: 'RISE', lane: 1 },
-    ]] },
-    { id: 'expert-orbit-split', title: 'ORBIT SPLIT', difficulty: 'EXPERT', settings: { style: 'crystal-cave', mood: 'hirajoshi', tempo: 'fast' }, rounds: [[
-      { step: 0, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'kick', label: 'KICK', lane: 0 },
-      { step: 1, layerId: 'keys', layerIndex: 2, inst: 'keys', degree: 2, label: 'LOW', lane: 0 },
-      { step: 3, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 3, label: 'MID', lane: 1 },
-      { step: 6, layerId: 'chimes', layerIndex: 3, inst: 'chimes', degree: 6, label: 'HIGH', lane: 2 },
-      { step: 8, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'snare', label: 'SNARE', lane: 1 },
-      { step: 9, layerId: 'swell', layerIndex: 4, inst: 'swell', degree: 7, label: 'HIGH', lane: 2 },
-      { step: 11, layerId: 'fx', layerIndex: 5, inst: 'fx', piece: 'warp', label: 'WARP', lane: 2 },
-      { step: 14, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 4, label: 'MID', lane: 1 },
-    ]] },
-    { id: 'expert-blackbox', title: 'BLACKBOX', difficulty: 'EXPERT', settings: { style: 'cyber-garage', mood: 'blues', tempo: 'fast' }, rounds: [[
-      { step: 0, layerId: 'bass', layerIndex: 1, inst: 'bass', degree: 0, label: 'LOW', lane: 0 },
-      { step: 2, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'hat', label: 'HAT', lane: 2 },
-      { step: 4, layerId: 'keys', layerIndex: 2, inst: 'keys', degree: 5, label: 'MID', lane: 1 },
-      { step: 5, layerId: 'fx', layerIndex: 5, inst: 'fx', piece: 'echo', label: 'ECHO', lane: 0 },
-      { step: 7, layerId: 'drums', layerIndex: 0, inst: 'drums', piece: 'rim', label: 'RIM', lane: 1 },
-      { step: 9, layerId: 'chimes', layerIndex: 3, inst: 'chimes', degree: 8, label: 'HIGH', lane: 2 },
-      { step: 12, layerId: 'swell', layerIndex: 4, inst: 'swell', degree: 4, label: 'MID', lane: 1 },
-      { step: 15, layerId: 'fx', layerIndex: 5, inst: 'fx', piece: 'rise', label: 'RISE', lane: 1 },
-    ]] },
-  ];
   const SIGNAL_PRESETS = {
     style: [
       { id: 'space-funk', label: 'SPACE FUNK' },
@@ -385,7 +194,6 @@
   let undoSeq = 0;
   let replayBall = null, replayHazards = [], replayPickups = [], replayToyScore = 0, replaySpawnAt = 0;
   let jukeboxRows = [], jukeboxBackTarget = 'intro';
-  let playAlongPattern = null, playAlongRoundIndex = 0, playAlongListenLoops = 0, playAlongInput = [], playAlongResult = null, playAlongStage = 'listen', playAlongPrevSettings = null;
   let signalSettings = { style: 'space-funk', mood: 'minor', tempo: 'medium', grooveAssist: 'snap', recordingStyle: 'guided' };
   let layerVolumes = { ...DEFAULT_LAYER_VOLUMES };
   let beatMs = DEFAULT_BEAT_MS;
@@ -418,12 +226,9 @@
   function laneIndexForX(x) { return clamp(Math.floor(x / Math.max(1, laneWidth())), 0, LANES.length - 1); }
   function laneCenter(i) { return laneWidth() * (i + 0.5); }
   function isFreeMode() { return mode === 'free'; }
-  function isPlayAlongMode() { return mode === 'playalong'; }
   function isGuidedBuildMode() { return mode === 'arcade' && (signalSettings.recordingStyle || 'guided') === 'guided'; }
   function isFreeBuildMode() { return mode === 'arcade' && signalSettings.recordingStyle === 'freebuild'; }
-  function isCaptureBuildMode() { return isGuidedBuildMode() && guidedStage === 'record'; }
-  function isGuidedReviewStage() { return isGuidedBuildMode() && guidedStage === 'review'; }
-  function shouldRecordStamp() { return !isPlayAlongMode() && !(isGuidedBuildMode() && (guidedStage === 'practice' || guidedStage === 'waiting' || guidedStage === 'review')) && (!isFreeMode() || freeRecording); }
+  function shouldRecordStamp() { return !(isGuidedBuildMode() && (guidedStage === 'practice' || guidedStage === 'waiting')) && (!isFreeMode() || freeRecording); }
   function freeHasRecordedLoop() { return gridStamps().length > 0; }
   function styleDef() { return STYLE_DEFS[signalSettings.style] || STYLE_DEFS['space-funk']; }
   function soundProfile() {
@@ -469,8 +274,7 @@
   function swellSurfaceBottom() { return playFieldBottom(guidedCoachActive() ? 390 : 0); }
   function activeLayerLabel() {
     if (isFreeMode()) return `FREE PLAY: ${activeLayer().name}`;
-    if (isPlayAlongMode()) return playAlongStatusLabel();
-    if (isGuidedBuildMode()) return `${guidedStage === 'record' ? 'RECORD' : guidedStage === 'review' ? 'REVIEW' : 'PRACTICE'} ${activeLayer().name}`;
+    if (isGuidedBuildMode()) return `${guidedStage === 'record' ? 'RECORD' : 'PRACTICE'} ${activeLayer().name}`;
     return `PLAY ${activeLayer().name}`;
   }
   function fallbackStepsForType(type) {
@@ -664,8 +468,8 @@
     const wasHidden = loopButton.classList.contains('hidden');
     loopButton.classList.toggle('hidden', !showLoop);
     if (wasHidden === showLoop) fitCanvas();
-    if (resetButton) resetButton.classList.toggle('hidden', !(show && phase === 'build' && !isPlayAlongMode() && !guidedBuild));
-    if (undoButton) undoButton.classList.toggle('hidden', !(show && phase === 'build' && !isPlayAlongMode() && (!guidedBuild || guidedStage === 'record')));
+    if (resetButton) resetButton.classList.toggle('hidden', !(show && phase === 'build' && !guidedBuild));
+    if (undoButton) undoButton.classList.toggle('hidden', !(show && phase === 'build' && (!guidedBuild || guidedStage === 'record')));
     if (!show) {
       loopButton.disabled = false;
       updateFreeControls();
@@ -687,14 +491,11 @@
       if (state === 'replay') {
         loopButton.textContent = 'END REPLAY';
         if (resetButton) resetButton.classList.add('hidden');
-      } else if (isPlayAlongMode() && phase === 'build') {
-        loopButton.textContent = playAlongStage === 'listen' ? `WATCH ${Math.min(playAlongListenLoops + 1, playAlongDemoLoopGoal())}/${playAlongDemoLoopGoal()}` : 'YOUR TURN';
-        loopButton.disabled = true;
       } else if (loopEndArmed) loopButton.textContent = 'SAVING LOOP...';
       else loopButton.textContent = currentLayerIndex >= LAYERS.length - 1 ? 'FINISH TRACK' : 'NEXT LAYER ›';
       // Reset (↻) only while actively building a layer — not during count-in.
       if (resetButton) {
-        resetButton.classList.toggle('hidden', phase !== 'build' || isPlayAlongMode() || state === 'replay');
+        resetButton.classList.toggle('hidden', phase !== 'build' || state === 'replay');
         resetButton.textContent = 'CLEAR';
         resetButton.title = 'Clear this layer';
         resetButton.setAttribute('aria-label', 'Clear this layer');
@@ -720,8 +521,13 @@
     return `${presetLabel('style', signalSettings.style)} · ${presetLabel('mood', signalSettings.mood)}`;
   }
   function applySettings() {
-    const tempo = SIGNAL_PRESETS.tempo.find(t => t.id === signalSettings.tempo) || SIGNAL_PRESETS.tempo[1];
-    beatMs = tempo.beatMs || DEFAULT_BEAT_MS;
+    // A BPM chosen on the slider wins; otherwise fall back to the tempo preset.
+    if (Number.isFinite(signalSettings.bpm)) {
+      beatMs = beatMsForBpm(signalSettings.bpm);
+    } else {
+      const tempo = SIGNAL_PRESETS.tempo.find(t => t.id === signalSettings.tempo) || SIGNAL_PRESETS.tempo[1];
+      beatMs = tempo.beatMs || DEFAULT_BEAT_MS;
+    }
     refreshSignalOutput();
   }
   function tempoBpm() {
@@ -735,6 +541,7 @@
   }
   function setTempoBpm(bpm) {
     beatMs = beatMsForBpm(bpm);
+    signalSettings.bpm = tempoBpm();
     const label = document.getElementById('signal-tempo-value');
     if (label) label.textContent = `${tempoBpm()} BPM`;
   }
@@ -1212,7 +1019,7 @@
     // top keeps the pulse findable without sounding like stray percussion.
     if (hasNonFoundationLoopContent()) return;
     if (state !== 'playing' || phase !== 'build') return;
-    if (isGuidedBuildMode() && (currentLayerIndex > 0 || guidedStage === 'review')) return;
+    if (isGuidedBuildMode() && currentLayerIndex > 0) return;
     if (stepIndex === 0) playDrumPiece('kick', 0.22, 0);
   }
 
@@ -1311,7 +1118,7 @@
       return;
     }
 
-    const key = `${guidedStage}:${currentLayerIndex}:${LAYERS.length}:${guidedOverdubBase ? 'redo' : 'base'}`;
+    const key = `${guidedStage}:${currentLayerIndex}:${LAYERS.length}`;
     el.style.display = 'grid';
     // Do not rebuild the buttons every animation frame. Recreating the DOM
     // while a finger is down can swallow the click/tap before READY fires.
@@ -1337,48 +1144,21 @@
       return;
     }
     if (guidedStage === 'record') {
-      el.style.gridTemplateColumns = '1fr';
-      const label = document.createElement('div');
-      label.textContent = 'RECORDING...';
-      Object.assign(label.style, {
-        minHeight: '44px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '12px',
-        letterSpacing: '1.5px',
-        color: '#ffe61a',
-        textShadow: '0 0 14px rgba(255,230,26,.6)',
-        pointerEvents: 'none',
-      });
-      el.appendChild(label);
-      return;
-    }
-    if (guidedStage === 'review') {
+      // The loop just keeps running while the player adds notes. No forced
+      // one-loop stop: they leave when they press KEEP (or FINISH TRACK).
       el.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
       const lastLayer = currentLayerIndex >= LAYERS.length - 1;
-      if (guidedOverdubBase) {
-        el.appendChild(guidedControlButton('REDO ADD', undoLastGuidedOverdub, false));
-        el.appendChild(guidedControlButton('RESTART LAYER', captureRetryLayer, false));
-        el.appendChild(guidedControlButton('ADD MORE', captureAddMoreLayer, false));
-        el.appendChild(guidedControlButton(lastLayer ? 'FINISH TRACK' : 'KEEP', captureNextLayer, true));
-        return;
-      }
       el.appendChild(guidedControlButton('RESTART LAYER', captureRetryLayer, false));
-      el.appendChild(guidedControlButton('ADD MORE', captureAddMoreLayer, false));
       if (lastLayer) {
-        const keep = guidedControlButton('FINISH TRACK', captureNextLayer, true);
-        keep.style.gridColumn = '1 / -1';
-        el.appendChild(keep);
+        el.appendChild(guidedControlButton('FINISH TRACK', captureNextLayer, true));
         return;
       }
       // A proud two-layer loop is a finished track too — no need to march
       // through all six layers to reach the mix screen.
-      el.appendChild(guidedControlButton('FINISH TRACK', () => {
-        guidedOverdubBase = null;
-        finishTrack();
-      }, false));
-      el.appendChild(guidedControlButton('KEEP', captureNextLayer, true));
+      el.appendChild(guidedControlButton('FINISH TRACK', () => finishTrack(), false));
+      const keep = guidedControlButton('KEEP · NEXT', captureNextLayer, true);
+      keep.style.gridColumn = '1 / -1';
+      el.appendChild(keep);
     }
   }
 
@@ -1547,7 +1327,7 @@
     if (undo) {
       if (!signalUndoButtonStyles) signalUndoButtonStyles = snapshotStyles(undo, ['gridColumn', 'width', 'minHeight', 'fontSize', 'letterSpacing', 'padding', 'boxSizing', 'opacity', 'cursor']);
       const canUndo = canUndoLastStamp();
-      undo.classList.toggle('hidden', phase !== 'build' || isPlayAlongMode() || (isGuidedBuildMode() && guidedStage !== 'record'));
+      undo.classList.toggle('hidden', phase !== 'build' || (isGuidedBuildMode() && guidedStage !== 'record'));
       undo.disabled = !canUndo;
       undo.textContent = 'UNDO';
       undo.style.opacity = canUndo ? '1' : '0.46';
@@ -1719,12 +1499,6 @@
     lastGrooveToast = null;
     replaying = false;
     replayUntil = 0;
-    playAlongPattern = null;
-    playAlongRoundIndex = 0;
-    playAlongListenLoops = 0;
-    playAlongInput = [];
-    playAlongResult = null;
-    playAlongStage = 'listen';
     layerVolumes = { ...DEFAULT_LAYER_VOLUMES };
     applyLayerOptions();
     laneFlash = [0, 0, 0];
@@ -2343,21 +2117,10 @@
       manualFireAt = t + 150;
       return;
     }
-    if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'review') {
-      // Review is for listening back and choosing KEEP / ADD MORE / RESTART LAYER.
-      // Do not let hidden/under-panel canvas taps preview random drum pads.
-      manualFireAt = t + 120;
-      return;
-    }
     if ((phase === 'countin' || phase === 'countdown') && state === 'playing') {
       playDrumPiece('kick', 0.45, 0);
       countKickPulse = 0.8;
       manualFireAt = t + 160;
-      return;
-    }
-    if (isPlayAlongMode() && phase === 'build' && playAlongStage === 'listen') {
-      // Demonstration pass: watch and listen. Your turn comes next loop.
-      manualFireAt = t + 120;
       return;
     }
     if (startGuidedChimesFromTouch(pos, t)) {
@@ -2427,116 +2190,6 @@
     }
   }
 
-  function playAlongExpectedHits() {
-    if (!playAlongPattern) return [];
-    return (playAlongPattern.rounds && playAlongPattern.rounds[playAlongRoundIndex]) || [];
-  }
-
-  function playAlongDifficulty() {
-    return String(playAlongPattern && playAlongPattern.difficulty || 'EASY').toUpperCase();
-  }
-
-  function playAlongDemoLoopGoal() {
-    const diff = playAlongDifficulty();
-    return diff === 'HARD' || diff === 'EXPERT' ? 3 : 2;
-  }
-
-  function playAlongLearnBeatMs() {
-    const diff = playAlongDifficulty();
-    if (diff === 'EASY') return 420;
-    if (diff === 'MEDIUM') return 390;
-    if (diff === 'HARD') return 360;
-    return 340;
-  }
-
-  function applyPlayAlongTempo() {
-    if (isPlayAlongMode() && playAlongPattern) beatMs = Math.max(beatMs, playAlongLearnBeatMs());
-  }
-
-  function playAlongStatusLabel() {
-    if (playAlongStage === 'listen') return `PLAY ALONG · WATCH ${Math.min(playAlongListenLoops + 1, playAlongDemoLoopGoal())}/${playAlongDemoLoopGoal()}`;
-    return 'PLAY ALONG · YOUR TURN';
-  }
-
-  function patternHitToStamp(hit, roundIndex) {
-    const layer = LAYERS[choiceLayerIndex(hit)] || LAYERS[0];
-    const color = hit.color || (layer.options[hit.lane || 0] && layer.options[hit.lane || 0].color) || COLOR;
-    const stamp = {
-      layerId: hit.layerId || layer.id,
-      layerIndex: choiceLayerIndex(hit),
-      inst: hit.inst || layer.inst,
-      color,
-      label: hit.label || '',
-      lane: Number.isFinite(hit.lane) ? hit.lane : 1,
-      playAlongRound: Number.isFinite(roundIndex) ? roundIndex : 0,
-      tight: true,
-      vel: hit.vel || 0.86,
-      skip: 0,
-    };
-    if (stamp.inst === 'drums') {
-      stamp.pieces = [hit.piece || 'kick'];
-      stamp.tunes = [hit.tune == null ? 0.5 : hit.tune];
-    } else if (hit.piece) {
-      stamp.piece = hit.piece;
-      stamp.note = hit.note || null;
-    } else {
-      stamp.note = hit.note || degreeFreq(hit.degree || 0, layer.mult);
-    }
-    return stamp;
-  }
-
-  function loopFromPlayAlongPattern(pattern, throughRoundIndex) {
-    const nextLoop = Array.from({ length: LOOP_STEPS }, () => []);
-    const rounds = pattern.rounds || [];
-    const lastRound = Number.isFinite(throughRoundIndex) ? clamp(Math.floor(throughRoundIndex), 0, Math.max(0, rounds.length - 1)) : Math.max(0, rounds.length - 1);
-    rounds.slice(0, lastRound + 1).forEach((round, roundIndex) => {
-      (round || []).forEach(hit => {
-        const target = wrapStep(hit.step);
-        nextLoop[target].push(patternHitToStamp(hit, roundIndex));
-        while (nextLoop[target].length > 5) nextLoop[target].shift();
-      });
-    });
-    return nextLoop;
-  }
-
-  function collectPlayAlongHit(rock, target) {
-    if (!isPlayAlongMode() || playAlongStage !== 'respond') return;
-    const layer = activeLayer();
-    playAlongInput.push({
-      step: wrapStep(target),
-      layerId: layer.id,
-      layerIndex: currentLayerIndex,
-      inst: layer.inst,
-      piece: rock.piece || null,
-      lane: rock.lane,
-      label: rock.label,
-    });
-    if (playAlongInput.length > 64) playAlongInput.shift();
-  }
-
-  function playAlongStepDistance(a, b) {
-    const d = Math.abs(wrapStep(a) - wrapStep(b));
-    return Math.min(d, LOOP_STEPS - d);
-  }
-
-  function playAlongHitMatches(expected, actual) {
-    if (playAlongStepDistance(expected.step, actual.step) > 1) return false;
-    if (Number.isFinite(expected.lane) && Number.isFinite(actual.lane) && expected.lane !== actual.lane) return false;
-    return true;
-  }
-
-  function playAlongRoundMatched() {
-    const used = new Set();
-    const expected = playAlongExpectedHits();
-    if (!expected.length) return false;
-    return expected.every(hit => {
-      const found = playAlongInput.findIndex((actual, index) => !used.has(index) && playAlongHitMatches(hit, actual));
-      if (found < 0) return false;
-      used.add(found);
-      return true;
-    });
-  }
-
   function cloneLoopSlot(slot) {
     return {
       ...slot,
@@ -2549,42 +2202,6 @@
 
   function snapshotBucket(bucket) {
     return (bucket || []).map(cloneLoopSlot);
-  }
-
-  function snapshotGuidedState() {
-    return {
-      loop: loop.map(bucket => snapshotBucket(bucket)),
-      recordedChoices: recordedChoices.map(ch => ({ ...ch })),
-      undoStack: undoStack.map(u => ({ ...u, beforeBucket: snapshotBucket(u.beforeBucket) })),
-      additionsThisLayer,
-      totalAdditions,
-      combo,
-      bestCombo,
-    };
-  }
-
-  function restoreGuidedState(snap) {
-    if (!snap) return;
-    loop = snap.loop.map(bucket => snapshotBucket(bucket));
-    recordedChoices = snap.recordedChoices.map(ch => ({ ...ch }));
-    undoStack = snap.undoStack.map(u => ({ ...u, beforeBucket: snapshotBucket(u.beforeBucket) }));
-    additionsThisLayer = snap.additionsThisLayer || 0;
-    totalAdditions = snap.totalAdditions || 0;
-    combo = snap.combo || 0;
-    bestCombo = snap.bestCombo || 0;
-    grooveByLayer[currentLayerIndex] = null;
-  }
-
-  function undoLastGuidedOverdub() {
-    if (!isGuidedReviewStage() || !guidedOverdubBase) return;
-    restoreGuidedState(guidedOverdubBase);
-    guidedStage = 'waiting';
-    state = 'playing';
-    phase = 'build';
-    overlay.classList.add('hidden');
-    updateLoopButton();
-    restartLoopPlayback();
-    showLayerToast();
   }
 
   function undoLastStamp() {
@@ -2661,7 +2278,6 @@
   function stampNote(rock, target, note, tight, isNextStep) {
     const layer = activeLayer();
     const vel = tight ? 1 : 0.62;
-    if (isPlayAlongMode()) collectPlayAlongHit(rock, target);
     if (!shouldRecordStamp()) {
       laneFlash[rock.lane] = Math.max(laneFlash[rock.lane] || 0, tight ? 0.9 : 0.55);
       return;
@@ -2782,116 +2398,21 @@
     playRandomSfx('success', 0.8);
   }
 
-  function finishCaptureLayer() {
-    if (state !== 'playing' || isFreeMode() || !isCaptureBuildMode()) return;
-    const committedLayerIndex = currentLayerIndex;
-    grooveByLayer[committedLayerIndex] = scoreLayerGrid(committedLayerIndex);
-    lastGrooveToast = null;
-    state = 'playing';
-    phase = 'build';
-    guidedStage = 'review';
-    loopEndArmed = false;
-    undoStack = [];
-    rocks = [];
-    bullets = [];
-    pointerActive = false;
-    pinchActive = false;
-    showCaptureReview(committedLayerIndex);
-    [0, 2, 4].forEach((deg, i) => playPitched('keys', degreeFreq(deg, 2), 0.64, 0.04 + i * 0.08));
-    playRandomSfx('success', 0.72);
-  }
-
-  function finishPlayAlongRound() {
-    if (state !== 'playing' || !isPlayAlongMode()) return;
-    playAlongResult = playAlongRoundMatched() ? 'matched' : 'try-again';
-    playRandomSfx(playAlongResult === 'matched' ? 'success' : 'miss', 1);
-    state = 'built';
-    phase = 'playalong-review';
-    loopEndArmed = false;
-    rocks = [];
-    bullets = [];
-    pointerActive = false;
-    pinchActive = false;
-    updateLoopButton();
-    cancelAnimationFrame(raf);
-    showPlayAlongResult();
-  }
-
-  function showPlayAlongResult() {
-    const matched = playAlongResult === 'matched';
-    const isFinalRound = !playAlongPattern || playAlongRoundIndex >= (playAlongPattern.rounds || []).length - 1;
-    overlay.classList.remove('hidden');
-    overlay.classList.remove('signal-tempo-mode');
-    overlay.classList.remove('signal-menu-mode');
-    overlay.innerHTML = `
-      <div class="signal-panel">
-        <div class="signal-title">${matched ? 'MATCHED' : 'TRY AGAIN'}</div>
-        <div class="signal-subtitle">${playAlongPattern ? `${playAlongPattern.title} · ROUND ${playAlongRoundIndex + 1}` : 'PLAY ALONG'}</div>
-        ${matched && !isFinalRound ? `<button class="signal-btn" onclick="signalPlayAlongNextRound()">NEXT</button>` : ''}
-        ${matched && isFinalRound ? `<button class="signal-btn" onclick="signalShowPlayAlong()">MORE PATTERNS</button>` : ''}
-        <button class="signal-btn secondary" onclick="signalPlayAlongRetry()">TRY AGAIN</button>
-        <button class="signal-btn secondary" onclick="signalShowIntro()">MENU</button>
-      </div>`;
-  }
-
-  function restartPlayAlongRound() {
-    if (!playAlongPattern) return;
-    const expected = playAlongExpectedHits();
-    const firstLayer = LAYERS[choiceLayerIndex(expected[0] || {})] || LAYERS[0];
-    currentLayerIndex = firstLayer ? LAYERS.indexOf(firstLayer) : 0;
-    additionsThisLayer = 0;
-    playAlongListenLoops = 0;
-    playAlongInput = [];
-    playAlongResult = null;
-    playAlongStage = 'listen';
-    loop = loopFromPlayAlongPattern(playAlongPattern, playAlongRoundIndex);
-    applyPlayAlongTempo();
-    applyLayerOptions();
-    laneFlash = [1, 1, 1];
-    state = 'playing';
-    phase = 'build';
-    overlay.classList.add('hidden');
-    updateLoopButton();
-    beginLoopCountdown();
-    last = performance.now();
-    cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(frame);
-  }
-
-  function playAlongRetry() {
-    if (!isPlayAlongMode() || !playAlongPattern) return;
-    restartPlayAlongRound();
-  }
-
-  function playAlongNextRound() {
-    if (!isPlayAlongMode() || !playAlongPattern) return;
-    playAlongRoundIndex = Math.min((playAlongPattern.rounds || []).length - 1, playAlongRoundIndex + 1);
-    restartPlayAlongRound();
-  }
-
-  function showCaptureReview(layerIndex) {
-    const layer = LAYERS[layerIndex] || activeLayer();
-    guidedStage = 'review';
-    state = 'playing';
-    phase = 'build';
-    overlay.classList.add('hidden');
-    addFloatText(`${layer.name} ADDED`, W * 0.5, 118, '#ffe61a', 1400);
-    restartLoopPlayback();
-    updateLoopButton();
-  }
-
+  // KEEP: commit the layer the player has been looping on and move to the
+  // next layer's practice stage (or finish the track on the last layer).
   function captureNextLayer() {
-    if (!(isGuidedReviewStage() && state === 'playing' && phase === 'build')) return;
+    if (!(isGuidedBuildMode() && guidedStage === 'record' && state === 'playing' && phase === 'build')) return;
+    grooveByLayer[currentLayerIndex] = scoreLayerGrid(currentLayerIndex);
+    lastGrooveToast = null;
     if (currentLayerIndex >= LAYERS.length - 1) {
-      guidedOverdubBase = null;
       state = 'playing';
       finishTrack();
       return;
     }
-    guidedOverdubBase = null;
     currentLayerIndex += 1;
-    if (isGuidedBuildMode()) guidedStage = 'practice';
+    guidedStage = 'practice';
     additionsThisLayer = 0;
+    undoStack = [];
     rocks = [];
     bullets = [];
     pointerActive = false;
@@ -2910,23 +2431,10 @@
     raf = requestAnimationFrame(frame);
   }
 
-  function captureAddMoreLayer() {
-    if (!(isGuidedReviewStage() && state === 'playing' && phase === 'build')) return;
-    guidedOverdubBase = snapshotGuidedState();
-    guidedStage = 'waiting';
-    state = 'playing';
-    phase = 'build';
-    overlay.classList.add('hidden');
-    updateLoopButton();
-    showLayerToast();
-    last = performance.now();
-    cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(frame);
-  }
-
+  // RESTART LAYER: scrap this layer's take and drop back to practice so the
+  // player can find it again before recording. Earlier layers are untouched.
   function captureRetryLayer() {
-    if (!(isGuidedReviewStage() && state === 'playing' && phase === 'build')) return;
-    guidedOverdubBase = null;
+    if (!(isGuidedBuildMode() && guidedStage === 'record' && state === 'playing' && phase === 'build')) return;
     guidedStage = 'practice';
     state = 'playing';
     phase = 'build';
@@ -3019,10 +2527,9 @@
   function requestLoopEnd() {
     if (state !== 'playing' || loopEndArmed) return;
     if (phase !== 'build') return;
-    if (isPlayAlongMode()) return;
     if (isGuidedBuildMode()) {
       if (guidedStage === 'practice') startGuidedRecordPass();
-      else if (guidedStage === 'review') captureNextLayer();
+      else if (guidedStage === 'record') captureNextLayer();
       return;
     }
     if (isFreeMode()) {
@@ -3112,7 +2619,7 @@
   function layerHintText() {
     if (phase === 'countin') return 'SET TEMPO';
     if (phase === 'countdown') return 'GET READY';
-    if (isGuidedBuildMode() && phase === 'build') return guidedStage === 'record' ? 'PLAY FOR ONE LOOP' : guidedStage === 'waiting' ? 'PLAY TO START' : guidedStage === 'review' ? 'LISTEN BACK' : 'NOTHING RECORDS YET';
+    if (isGuidedBuildMode() && phase === 'build') return guidedStage === 'record' ? 'KEEP ADDING · KEEP WHEN HAPPY' : guidedStage === 'waiting' ? 'PLAY TO START' : 'NOTHING RECORDS YET';
     if (drumsActive()) return 'TAP DRUM PADS';
     if (rockTapActive()) return 'TAP THE ROCKS';
     if (fxActive()) return 'TAP + PINCH JUNK';
@@ -3125,7 +2632,7 @@
   function showLayerToast() {
     const layer = activeLayer();
     const hint = layerHintText();
-    addFloatText(isGuidedBuildMode() ? `${guidedStage === 'record' ? 'RECORD' : guidedStage === 'waiting' ? 'PLAY WHEN READY' : guidedStage === 'review' ? 'REVIEW' : 'PRACTICE'} ${layer.name}` : (hint ? `${layer.name} · ${hint}` : layer.name), W * 0.5, 132, layer.options[0].color || COLOR, 1800);
+    addFloatText(isGuidedBuildMode() ? `${guidedStage === 'record' ? 'RECORD' : guidedStage === 'waiting' ? 'PLAY WHEN READY' : 'PRACTICE'} ${layer.name}` : (hint ? `${layer.name} · ${hint}` : layer.name), W * 0.5, 132, layer.options[0].color || COLOR, 1800);
   }
 
   function addFloatText(text, x, y, color, life) {
@@ -3278,24 +2785,9 @@
     const bucket = loop[stepIndex];
     bucket.forEach(v => {
       if (v.skip > 0) { v.skip -= 1; return; }
-      if (isPlayAlongMode() && phase === 'build' && playAlongStage === 'respond' && v.playAlongRound === playAlongRoundIndex) return;
       playStamp(v);
     });
     lastLoopStep = stepIndex;
-    if (isPlayAlongMode() && phase === 'build' && playAlongStage === 'listen') {
-      // Demonstration pass: light up the grid and the surface the player
-      // will use, so listening doubles as showing where to play.
-      bucket.forEach(v => {
-        if (v.skip > 0) return;
-        if (v.playAlongRound !== playAlongRoundIndex) return;
-        if (loopFlash[stepIndex]) loopFlash[stepIndex] = { pulse: 1, color: v.color || COLOR, row: v.layerIndex || 0 };
-        if (v.inst === 'drums' && v.pieces && drumsActive()) {
-          v.pieces.forEach(p => { const pad = pads.find(pd => pd.piece === p); if (pad) pad.flash = 1; });
-        } else if ((v.inst === 'bass' || v.inst === 'keys') && rockTapActive()) {
-          rocks.forEach(r => { if (r.lane === v.lane) r.pulse = 1; });
-        }
-      });
-    }
     // Orb drift (chimes theremin / swell pads): while the player holds and
     // pulls from the center, distance picks the scale degree and the density.
     const orbInst = pointerActive ? orbLayerInst() : null;
@@ -3351,31 +2843,6 @@
           stampNote({ lane: 1, label: noteNameForDegree(deg), color: '#ffe61a' }, stepIndex, note, true, false);
         }
       }
-    }
-    if (isPlayAlongMode() && phase === 'build' && previousStep + advance >= LOOP_STEPS) {
-      if (playAlongStage === 'listen') {
-        playAlongListenLoops += 1;
-        if (playAlongListenLoops < playAlongDemoLoopGoal()) {
-          addFloatText(`WATCH ${playAlongListenLoops + 1}`, W * 0.5, H * 0.32, COLOR, 1100);
-          updateLoopButton();
-          return;
-        }
-        // The teaching passes just finished. The loop keeps rolling, but
-        // the current phrase is muted so the player's hits are the answer.
-        playAlongStage = 'respond';
-        playAlongInput = [];
-        addFloatText('YOUR TURN', W * 0.5, H * 0.32, '#ffe61a', 1500);
-        playPitched('keys', degreeFreq(4, 2), 0.6, 0);
-        playPitched('keys', degreeFreq(7, 2), 0.5, 0.09);
-        updateLoopButton();
-      } else {
-        finishPlayAlongRound();
-        return;
-      }
-    }
-    if (isCaptureBuildMode() && phase === 'build' && previousStep + advance >= LOOP_STEPS) {
-      finishCaptureLayer();
-      return;
     }
     if (!isFreeMode() && loopEndArmed && stepIndex === 0) endCurrentLoop(false);
     distortion = clamp(distortion - 0.4, 0, 100);
@@ -4255,8 +3722,8 @@
     if (!isGuidedBuildMode() || state !== 'playing' || phase !== 'build') return;
     const layer = activeLayer();
     const name = layer.name;
-    const main = guidedStage === 'record' ? `RECORD ${name}` : guidedStage === 'waiting' ? 'PLAY WHEN READY' : guidedStage === 'review' ? `${name} ADDED` : `PRACTICE ${name}`;
-    const sub = guidedStage === 'record' ? 'Keep playing until the bar fills.' : guidedStage === 'waiting' ? 'Your first note starts the take.' : guidedStage === 'review' ? 'Listen back. Keep it, add more, or start over.' : 'Try the sounds. Nothing records yet.';
+    const main = guidedStage === 'record' ? `${name} — LIVE` : guidedStage === 'waiting' ? 'PLAY WHEN READY' : `PRACTICE ${name}`;
+    const sub = guidedStage === 'record' ? 'The loop keeps running. Tap KEEP when you like it.' : guidedStage === 'waiting' ? 'Your first note starts the loop.' : 'Try the sounds. Nothing records yet.';
     const y = 212;
     c.save();
     c.textAlign = 'center';
@@ -4266,7 +3733,7 @@
     c.lineWidth = 2;
     const panelW = Math.min(W - 34, 520);
     const panelX = (W - panelW) / 2;
-    const panelH = guidedStage === 'review' ? 108 : 98;
+    const panelH = 98;
     c.fillRect(panelX, y - panelH * 0.5, panelW, panelH);
     c.strokeRect(panelX + 0.5, y - panelH * 0.5 + 0.5, panelW - 1, panelH - 1);
     c.globalAlpha = 0.62;
@@ -4283,15 +3750,6 @@
     c.fillStyle = 'rgba(234,255,255,0.94)';
     c.font = `${W < 380 ? 11 : 12}px 'VCR', monospace`;
     drawWrappedCanvasText(c, sub, W * 0.5, y + 26, panelW - 28, 15, 2);
-    if (guidedStage === 'record') {
-      const total = Math.max(1, LOOP_STEPS * beatMs);
-      const progress = clamp(((stepIndex * beatMs) + Math.max(0, performance.now() - (beatAt - beatMs))) / total, 0, 1);
-      const bw = panelW - 42;
-      c.fillStyle = 'rgba(234,255,255,0.16)';
-      c.fillRect(panelX + 21, y + 39, bw, 5);
-      c.fillStyle = '#ffe61a';
-      c.fillRect(panelX + 21, y + 39, bw * progress, 5);
-    }
     c.restore();
   }
 
@@ -4603,11 +4061,6 @@
 
   function showIntro() {
     cancelAnimationFrame(raf);
-    if (playAlongPrevSettings) {
-      signalSettings = { ...playAlongPrevSettings };
-      playAlongPrevSettings = null;
-      applySettings();
-    }
     mode = 'arcade';
     pendingStartMode = 'arcade';
     setupOpen = false;
@@ -4627,9 +4080,6 @@
         <button class="signal-btn secondary" style="min-height:82px;font-size:17px;line-height:1.15;margin-bottom:10px;background:rgba(5,20,42,.78) !important;border:2px solid rgba(0,229,255,.72) !important;color:#00e5ff !important;box-shadow:none !important" onclick="signalShowSetup('arcade')">
           BUILD A TRACK<br><span style="display:block;font-size:14px;letter-spacing:1px;line-height:1.25;color:#eaffff;opacity:.95;margin-top:8px">Make a song one layer at a time.</span>
         </button>
-        <button class="signal-btn secondary" style="min-height:82px;font-size:17px;line-height:1.15;margin-bottom:10px;background:rgba(5,20,42,.78) !important;border:2px solid rgba(0,229,255,.72) !important;color:#00e5ff !important;box-shadow:none !important" onclick="signalShowPlayAlong()">
-          PLAY ALONG<br><span style="display:block;font-size:14px;letter-spacing:1px;line-height:1.25;color:#eaffff;opacity:.95;margin-top:8px">Watch a phrase, then play it back.</span>
-        </button>
         <button class="signal-btn secondary" style="min-height:82px;font-size:17px;line-height:1.15;margin-bottom:10px;background:rgba(5,20,42,.78) !important;border:2px solid rgba(0,229,255,.72) !important;color:#00e5ff !important;box-shadow:none !important" onclick="signalShowSetup('free')">
           FREE PLAY<br><span style="display:block;font-size:14px;letter-spacing:1px;line-height:1.25;color:#eaffff;opacity:.95;margin-top:8px">Mess around with sounds.</span>
         </button>
@@ -4637,59 +4087,6 @@
           JUKEBOX<br><span style="display:block;font-size:14px;letter-spacing:1px;line-height:1.25;color:#eaffff;opacity:.95;margin-top:8px">Play your saved loops.</span>
         </button>
       </div>`;
-  }
-
-  function showPlayAlongMenu() {
-    cancelAnimationFrame(raf);
-    mode = 'playalong';
-    pendingStartMode = 'playalong';
-    setupOpen = false;
-    state = 'idle';
-    replaying = false;
-    loopEndArmed = false;
-    updateLoopButton();
-    overlay.classList.remove('hidden');
-    overlay.classList.remove('signal-tempo-mode');
-    overlay.classList.add('signal-menu-mode');
-    const diffs = ['EASY', 'MEDIUM', 'HARD', 'EXPERT'];
-    const rows = diffs.map(diff => `
-      <button class="signal-btn secondary" onclick="signalStartPlayAlongDifficulty('${diff}')">${diff}</button>
-    `).join('');
-    overlay.innerHTML = `
-      <div class="signal-panel">
-        <div class="signal-title">PLAY ALONG</div>
-        <div class="signal-subtitle">WATCH A SHORT PHRASE. THEN PLAY IT BACK.</div>
-        ${rows}
-        <button class="signal-btn secondary" onclick="signalShowIntro()">BACK TO MENU</button>
-      </div>`;
-  }
-
-  function startPlayAlongDifficulty(diff) {
-    const wanted = String(diff).toUpperCase();
-    const candidates = PLAY_ALONG_PATTERNS.filter(p => String(p.difficulty).toUpperCase() === wanted);
-    const pattern = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : PLAY_ALONG_PATTERNS[0];
-    if (pattern) startPlayAlong(pattern.id);
-  }
-
-  function startPlayAlong(patternId) {
-    const pattern = PLAY_ALONG_PATTERNS.find(p => p.id === patternId) || PLAY_ALONG_PATTERNS[0];
-    if (!pattern) return;
-    fitCanvas();
-    resetRun('playalong');
-    playAlongPattern = pattern;
-    playAlongRoundIndex = 0;
-    playAlongInput = [];
-    playAlongResult = null;
-    // Patterns borrow their own palette/tempo; the player's Build A Track
-    // choices come back when they leave Play Along.
-    if (!playAlongPrevSettings) playAlongPrevSettings = { ...signalSettings };
-    signalSettings = { ...signalSettings, ...(pattern.settings || {}), grooveAssist: 'snap', recordingStyle: signalSettings.recordingStyle || 'guided' };
-    applySettings();
-    applyPlayAlongTempo();
-    loop = loopFromPlayAlongPattern(pattern, 0);
-    recordedChoices = [];
-    silenceArcadeMusic();
-    restartPlayAlongRound();
   }
 
   function setupNavButtonsHTML(primaryLabel, primaryAction, backAction) {
@@ -4725,6 +4122,15 @@
     return `<div style="display:grid !important;grid-template-columns:repeat(${cols}, minmax(0, 1fr)) !important;gap:8px;width:100%;box-sizing:border-box;align-items:stretch">${chips}</div>`;
   }
 
+  function bpmSliderHTML() {
+    return `
+      <div class="signal-tempo-box" style="margin:0;padding:12px 14px">
+        <div id="signal-tempo-value" class="signal-tempo-value" style="font-size:22px">${tempoBpm()} BPM</div>
+        <input class="signal-tempo-slider" type="range" min="${MIN_TEMPO_BPM}" max="${MAX_TEMPO_BPM}" value="${tempoBpm()}" oninput="signalSetTempo(this.value, true)">
+        <div class="signal-tempo-scale"><span>SLOW</span><span>FAST</span></div>
+      </div>`;
+  }
+
   function setupPanelStyle() {
     return [
       'width:min(500px,calc(100vw - 24px))',
@@ -4740,20 +4146,6 @@
   function showSetup(nextMode, step) {
     pendingStartMode = nextMode === 'free' ? 'free' : 'arcade';
     setupOpen = true;
-    if (pendingStartMode === 'free') {
-      overlay.classList.remove('hidden');
-      overlay.classList.add('signal-menu-mode');
-      overlay.classList.remove('signal-tempo-mode');
-      overlay.innerHTML = `
-        <div class="signal-panel">
-          <div class="signal-title">FREE PLAY</div>
-          <div class="signal-subtitle">MESS AROUND WITH SOUNDS.</div>
-          ${presetControlsHTML(true)}
-          <button class="signal-btn" onclick="signalConfirmSetup()">CHOOSE LAYER</button>
-          <button class="signal-btn secondary" onclick="signalShowIntro()">BACK TO MENU</button>
-        </div>`;
-      return;
-    }
     setupStep = step || setupStep || 'palette';
     renderBuildSetup();
   }
@@ -4763,19 +4155,37 @@
     overlay.classList.add('signal-menu-mode');
     overlay.classList.remove('signal-tempo-mode');
     const panelStyle = setupPanelStyle();
+    const free = pendingStartMode === 'free';
+    const modeTag = free ? 'FREE PLAY' : 'BUILD A TRACK';
     if (setupStep === 'feel') {
       overlay.innerHTML = `
         <div class="signal-panel" style="${panelStyle}">
+          <div class="signal-subtitle" style="margin:0 0 4px">${modeTag} · STEP 2 OF 3</div>
           <div class="signal-title" style="font-size:22px;margin-bottom:14px">CHOOSE FEEL</div>
           <div class="signal-preset-label" style="font-size:12px;margin-bottom:8px">MOOD</div>
           ${setupChipGridHTML('mood', SIGNAL_PRESETS.mood, 2)}
           <div class="signal-preset-label" style="font-size:12px;margin-top:14px;margin-bottom:8px">TEMPO</div>
-          ${setupChipGridHTML('tempo', SIGNAL_PRESETS.tempo, 3)}
-          ${setupNavButtonsHTML('NEXT ›', "signalSetupStep('style')", "signalSetupStep('palette')")}
+          ${bpmSliderHTML()}
+          ${setupNavButtonsHTML('NEXT ›', free ? "signalSetupStep('layer')" : "signalSetupStep('style')", "signalSetupStep('palette')")}
         </div>`;
       return;
     }
-    if (setupStep === 'style') {
+    if (setupStep === 'layer' && free) {
+      const rows = LAYERS.map((layer, index) => {
+        const on = index === freeLayerIndex;
+        return `<button type="button" class="signal-chip ${on ? 'active' : ''}" style="min-height:54px;font-size:14px;letter-spacing:1px;border-width:${on ? '2px' : '1px'};box-shadow:${on ? '0 0 20px rgba(0,229,255,.35)' : 'none'}" onclick="signalSetFreeLayer(${index})">${on ? '✓ ' : ''}${layer.name}</button>`;
+      }).join('');
+      overlay.innerHTML = `
+        <div class="signal-panel" style="${panelStyle}">
+          <div class="signal-subtitle" style="margin:0 0 4px">FREE PLAY · STEP 3 OF 3</div>
+          <div class="signal-title" style="font-size:22px;margin-bottom:6px">START ON</div>
+          <div class="signal-subtitle" style="margin-bottom:12px">Pick your first instrument — you can switch anytime.</div>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${rows}</div>
+          ${setupNavButtonsHTML('START ›', 'signalConfirmSetup()', "signalSetupStep('feel')")}
+        </div>`;
+      return;
+    }
+    if (setupStep === 'style' && !free) {
       const active = signalSettings.recordingStyle || 'guided';
       const card = (id, title, sub) => `
         <button type="button" class="signal-chip ${active === id ? 'active' : ''}" style="min-height:82px;font-size:15px;line-height:1.15;letter-spacing:1.1px;text-align:left;padding:12px 14px;border-width:${active === id ? '2px' : '1px'};box-shadow:${active === id ? '0 0 22px rgba(0,229,255,.38)' : 'none'}" onclick="signalChooseBuildStyle('${id}')">
@@ -4784,6 +4194,7 @@
         </button>`;
       overlay.innerHTML = `
         <div class="signal-panel" style="${panelStyle}">
+          <div class="signal-subtitle" style="margin:0 0 4px">BUILD A TRACK · STEP 3 OF 3</div>
           <div class="signal-title" style="font-size:22px;line-height:1.15;margin-bottom:14px">HOW DO YOU WANT TO BUILD?</div>
           <div style="display:grid;grid-template-columns:1fr;gap:12px">
             ${card('guided', 'GUIDED', 'Practice first, then record in steps.')}
@@ -4796,6 +4207,7 @@
     setupStep = 'palette';
     overlay.innerHTML = `
       <div class="signal-panel" style="${panelStyle}">
+        <div class="signal-subtitle" style="margin:0 0 4px">${modeTag} · STEP 1 OF 3</div>
         <div class="signal-title" style="font-size:22px;margin-bottom:14px">CHOOSE PALETTE</div>
         ${setupChipGridHTML('style', SIGNAL_PRESETS.style, 2)}
         ${setupNavButtonsHTML('NEXT ›', "signalSetupStep('feel')", "signalShowIntro()")}
@@ -4804,8 +4216,9 @@
 
   function confirmSetup() {
     setupOpen = false;
-    if (pendingStartMode === 'free') showFreeLayerMenu(false);
-    else {
+    if (pendingStartMode === 'free') {
+      startFreeMode(freeLayerIndex);
+    } else {
       if ((signalSettings.recordingStyle || 'guided') === 'freebuild') signalSettings.grooveAssist = 'light';
       else {
         signalSettings.recordingStyle = 'guided';
@@ -4959,28 +4372,6 @@
   function backButtonHTML() {
     return `<div style="display:flex;justify-content:flex-end;margin-top:14px">
       <button class="signal-btn secondary" style="width:auto;min-width:176px;margin:0;padding:0 14px" onclick="nav('lobby')">BACK TO ARCADE</button>
-    </div>`;
-  }
-
-  function presetControlsHTML(freeOnly) {
-    const group = (key, label) => {
-      const items = SIGNAL_PRESETS[key] || [];
-      const compact = key !== 'style';
-      const chips = items.map(item => `
-        <button type="button" class="signal-chip ${signalSettings[key] === item.id ? 'active' : ''}" style="${compact ? 'min-height:38px' : 'min-height:44px'};font-size:11px" onclick="signalSetPreset('${key}', '${item.id}')">${item.label}</button>
-      `).join('');
-      return `
-      <div class="signal-preset-row">
-        <div class="signal-preset-label">${label}</div>
-        <div class="signal-preset-chip-grid ${compact ? 'compact' : 'wide'}" role="group" aria-label="${label}">
-          ${chips}
-        </div>
-      </div>`;
-    };
-    return `<div class="signal-presets">
-      ${group('style', 'PALETTE')}
-      ${group('mood', 'MOOD')}
-      ${group('tempo', 'TEMPO')}
     </div>`;
   }
 
@@ -5506,7 +4897,10 @@
     signalSettings.grooveAssist = signalSettings.recordingStyle === 'freebuild' ? 'light' : 'snap';
     renderBuildSetup();
   };
-  window.signalStartPlayAlongDifficulty = startPlayAlongDifficulty;
+  window.signalSetFreeLayer = function(index) {
+    freeLayerIndex = clamp(Math.floor(Number(index) || 0), 0, LAYERS.length - 1);
+    if (setupOpen) renderBuildSetup();
+  };
   window.signalSetTempo = function(value, preview) {
     audioCtx();
     setTempoBpm(Number(value));
@@ -5527,7 +4921,7 @@
     if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
     if (phase === 'countin' && state === 'playing') skipCountIn();
     else if (state === 'replay') stopReplayToMix();
-    else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'review') captureNextLayer();
+    else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'record') captureNextLayer();
     else requestLoopEnd();
   };
   window.signalResetLoop = function(e) {
@@ -5535,7 +4929,7 @@
     if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
     if (state === 'replay') return;
     if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'practice') skipGuidedLayer();
-    else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'review') captureRetryLayer();
+    else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'record') captureRetryLayer();
     else resetCurrentLoop();
   };
   window.signalUndoLoop = function(e) {
@@ -5549,14 +4943,9 @@
   window.signalLoopAgain = continueLooping;
   window.signalCaptureNext = captureNextLayer;
   window.signalCaptureRetry = captureRetryLayer;
-  window.signalCaptureAddMore = captureAddMoreLayer;
   window.signalEndRun = endBuiltRun;
   window.signalShowMix = showMixScreen;
   window.signalSetLayerVolume = setLayerVolume;
-  window.signalShowPlayAlong = showPlayAlongMenu;
-  window.signalStartPlayAlong = startPlayAlong;
-  window.signalPlayAlongRetry = playAlongRetry;
-  window.signalPlayAlongNextRound = playAlongNextRound;
   window.signalShowJukebox = showJukebox;
   window.signalJukeboxBack = function() {
     if (jukeboxBackTarget === 'result') showResult(true);
