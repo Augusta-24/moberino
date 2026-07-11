@@ -14,7 +14,7 @@
   const MAX_SPARKS = 120;
   const MAX_DRUM_STACK = 6;
   const MAX_PIANO_STACK = 6;
-  const SIGNAL_MASTER_GAIN = 2.6;
+  const SIGNAL_MASTER_GAIN = 1.4;
   const COUNTDOWN_STEP_MS = 1000;
   const DRUM_BUS_GAIN = 0.94;
   const DEFAULT_LAYER_VOLUMES = { drums: 1, bass: 1, keys: 1, chimes: 1, swell: 1, fx: 1 };
@@ -211,6 +211,8 @@
   let leftHeld = false, rightHeld = false, pointerActive = false, pointerX = 0, pointerY = 0;
   let pinchActive = false, pinchStartDist = 0, pinchJunk = null, pinchStamped = false;
   let thereminPulse = 0;
+  let expressiveVoice = null;
+  let expressiveTapSeq = 0;
   let resizeHandler = null, keyDownHandler = null, keyUpHandler = null;
   let signalShellApplied = false, gestureGuardHandler = null, gestureStartHandler = null, signalHeaderStyles = null, signalHeaderActionStyles = null, signalHeaderBackStyles = null, signalPageStyles = null, signalCanvasStyles = null, signalLoopRowStyles = null, signalLoopButtonStyles = null, signalResetButtonStyles = null, signalUndoButtonStyles = null;
   let imagesReady = false, pilotImg = null;
@@ -590,11 +592,11 @@
       signalMasterGain = c.createGain();
       signalLimiter = c.createDynamicsCompressor();
       signalMasterGain.gain.value = SIGNAL_MASTER_GAIN;
-      signalLimiter.threshold.value = -6;
-      signalLimiter.knee.value = 6;
-      signalLimiter.ratio.value = 6;
-      signalLimiter.attack.value = 0.004;
-      signalLimiter.release.value = 0.16;
+      signalLimiter.threshold.value = -8;
+      signalLimiter.knee.value = 10;
+      signalLimiter.ratio.value = 3.5;
+      signalLimiter.attack.value = 0.012;
+      signalLimiter.release.value = 0.28;
       signalMasterGain.connect(signalLimiter);
       signalLimiter.connect(c.destination);
     }
@@ -608,11 +610,85 @@
     // The ♪ toggle mutes the arcade's background music, not the instrument
     // the player is holding — game audio stays live regardless.
     signalMasterGain.gain.value = SIGNAL_MASTER_GAIN * (d.master || 1);
-    signalLimiter.threshold.value = -6;
-    signalLimiter.knee.value = 6;
-    signalLimiter.ratio.value = 6;
-    signalLimiter.attack.value = 0.004;
-    signalLimiter.release.value = 0.16;
+    signalLimiter.threshold.value = -8;
+    signalLimiter.knee.value = 10;
+    signalLimiter.ratio.value = 3.5;
+    signalLimiter.attack.value = 0.012;
+    signalLimiter.release.value = 0.28;
+  }
+
+  // A gesture owns one live voice and one recorded note. Hold time changes
+  // articulation; movement changes pitch/brightness without flooding the loop.
+  function startExpressiveVoice(inst, note, pos) {
+    endExpressiveVoice();
+    const c = audioCtx();
+    const output = signalOutput();
+    if (!c || !output || !note) return;
+    const t = c.currentTime;
+    const osc = c.createOscillator();
+    const filter = c.createBiquadFilter();
+    const gain = c.createGain();
+    const d = soundProfile();
+    expressiveTapSeq += 1;
+    const alternate = expressiveTapSeq % 2 === 0;
+    osc.type = inst === 'bass' ? (d.bassWave || 'triangle') : inst === 'keys' ? (alternate ? 'sine' : (d.keysWave || 'triangle')) : (alternate ? 'triangle' : 'sine');
+    osc.frequency.setValueAtTime(note, t);
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(inst === 'bass' ? 720 : 1250, t);
+    filter.Q.setValueAtTime(0.8, t);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.linearRampToValueAtTime(inst === 'bass' ? 0.038 : 0.026, t + 0.018);
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(output);
+    osc.start(t);
+    expressiveVoice = { inst, note, osc, filter, gain, harmonic: null, startedAt: performance.now(), startX: pos.x, startY: pos.y, x: pos.x, y: pos.y, morphed: false };
+  }
+
+  function updateExpressiveVoice(pos) {
+    const v = expressiveVoice;
+    const c = audioCtx();
+    if (!v || !c || !pos) return;
+    v.x = pos.x;
+    v.y = pos.y;
+    const held = performance.now() - v.startedAt;
+    const dx = clamp((pos.x - v.startX) / Math.max(80, W * 0.22), -1, 1);
+    const brightness = clamp(1 - pos.y / Math.max(1, H), 0, 1);
+    // A restrained continuous bend keeps the selected scale note recognizable.
+    v.osc.frequency.setTargetAtTime(v.note * Math.pow(2, dx * 2 / 12), c.currentTime, 0.035);
+    v.filter.frequency.setTargetAtTime(520 + brightness * 2500 + Math.min(held, 700) * 1.1, c.currentTime, 0.045);
+    if (held >= 550 && !v.morphed) {
+      v.morphed = true;
+      const harmonic = c.createOscillator();
+      const hg = c.createGain();
+      harmonic.type = 'sine';
+      harmonic.frequency.setValueAtTime(v.note * 2.01, c.currentTime);
+      hg.gain.setValueAtTime(0.0001, c.currentTime);
+      hg.gain.linearRampToValueAtTime(0.009, c.currentTime + 0.18);
+      harmonic.connect(hg);
+      hg.connect(signalOutput());
+      harmonic.start();
+      v.harmonic = { osc: harmonic, gain: hg };
+    }
+  }
+
+  function endExpressiveVoice() {
+    const v = expressiveVoice;
+    if (!v) return;
+    expressiveVoice = null;
+    const c = audioCtx();
+    if (!c) return;
+    const held = performance.now() - v.startedAt;
+    const release = held < 180 ? 0.10 : held < 550 ? 0.24 : 0.38;
+    const stopAt = c.currentTime + release + 0.04;
+    v.gain.gain.cancelScheduledValues(c.currentTime);
+    v.gain.gain.setTargetAtTime(0.0001, c.currentTime, release / 4);
+    v.osc.stop(stopAt);
+    if (v.harmonic) {
+      v.harmonic.gain.gain.cancelScheduledValues(c.currentTime);
+      v.harmonic.gain.gain.setTargetAtTime(0.0001, c.currentTime, release / 3);
+      v.harmonic.osc.stop(stopAt);
+    }
   }
 
   function tone(freq, type, delay, dur, vol, endFreq) {
@@ -2032,7 +2108,7 @@
     restartLoopPlayback();
     const pull = orbPullState();
     const note = degreeFreq(pull.deg, activeLayer().mult);
-    playPitched('chimes', note, 0.7, 0);
+    startExpressiveVoice('chimes', note, pos);
     stampNote({ lane: 1, label: noteNameForDegree(pull.deg), color: '#ff2db8' }, 0, note, true, false);
     thereminPulse = 1;
     updateLoopButton();
@@ -2054,7 +2130,7 @@
     pointerActive = true;
     const pick = swellPickAt(pos || { x: W * 0.5, y: (swellSurfaceTop() + swellSurfaceBottom()) * 0.5 });
     const note = degreeFreq(pick.deg, activeLayer().mult);
-    playSwellChord(note, 0.4 + pick.openness * 0.42, 0, { openness: pick.openness, tension: pick.tension });
+    startExpressiveVoice('swell', note, pos);
     stampNote({ lane: 1, label: noteNameForDegree(pick.deg), color: '#ffe61a' }, 0, note, true, false);
     swellInk = Math.max(swellInk, 0.3);
     thereminPulse = 1;
@@ -2080,7 +2156,7 @@
     const t = performance.now();
     const pick = swellPickAt(pos);
     const note = degreeFreq(pick.deg, activeLayer().mult);
-    playSwellChord(note, 0.4 + pick.openness * 0.42, 0, { openness: pick.openness, tension: pick.tension });
+    startExpressiveVoice('swell', note, pos);
     const timing = captureTiming(t);
     stampNote({ lane: 1, label: noteNameForDegree(pick.deg), color: '#ffe61a' }, timing.target, note, timing.tight, timing.isNextStep);
     pointerActive = true;
@@ -2100,7 +2176,7 @@
     const pull = orbPullState();
     if (pull.dist <= 0.12) return false;
     const note = degreeFreq(pull.deg, activeLayer().mult);
-    playPitched('chimes', note, 0.7, 0);
+    startExpressiveVoice('chimes', note, pos);
     const timing = captureTiming(t || performance.now());
     stampNote({ lane: 1, label: noteNameForDegree(pull.deg), color: '#ff2db8' }, timing.target, note, timing.tight, timing.isNextStep);
     thereminPulse = 1;
@@ -2718,14 +2794,15 @@
     }
   }
 
-  function hitRock(rock) {
+  function hitRock(rock, pos) {
     const t = performance.now();
     // The note plays NOW; it lands on the loop at the nearest step —
     // the player's timing is the rhythm.
     const { target, tight, isNextStep } = captureTiming(t);
     const note = rock.inst === 'drums' ? null : degreeFreq(rock.deg, activeLayer().mult);
     if (rock.inst !== 'drums') rock.label = noteNameForDegree(rock.deg);
-    playInstrument(rock.inst, { note, piece: rock.piece, vel: 1 });
+    if (rock.inst === 'bass' || rock.inst === 'keys') startExpressiveVoice(rock.inst, note, pos || rock);
+    else playInstrument(rock.inst, { note, piece: rock.piece, vel: 0.78 });
     playRandomSfx(rock.inst === 'fx' ? 'fx' : 'hit', tight ? 0.18 : 0.06);
     stampNote(rock, target, note, tight, isNextStep);
     rock.pulse = 1;
@@ -2751,7 +2828,7 @@
       }
     });
     if (!best) return false;
-    if (hitRock(best.rock) && !best.rock.surface) rocks.splice(best.index, 1);
+    if (hitRock(best.rock, pos) && !best.rock.surface) rocks.splice(best.index, 1);
     return true;
   }
 
@@ -2809,7 +2886,7 @@
     // Orb drift (chimes theremin / swell pads): while the player holds and
     // pulls from the center, distance picks the scale degree and the density.
     const orbInst = pointerActive ? orbLayerInst() : null;
-    if (orbInst) {
+    if (orbInst && !expressiveVoice) {
       const pull = orbPullState();
       if (pull.dist > 0.12) {
         const isSwell = orbInst === 'swell';
@@ -2843,7 +2920,7 @@
         }
       }
     }
-    if (pointerActive && swellActive()) {
+    if (pointerActive && swellActive() && !expressiveVoice) {
       const top = swellSurfaceTop();
       const bottom = swellSurfaceBottom();
       const usableH = Math.max(1, bottom - top);
@@ -2874,6 +2951,7 @@
 
   function update(dt, t) {
     elapsed += dt;
+    if (expressiveVoice && pointerActive) updateExpressiveVoice({ x: pointerX, y: pointerY });
     if (phase === 'countdown' && state === 'playing') {
       if (!countdown) beginLoopCountdown();
       const elapsedCount = Math.max(0, t - countdown.start);
@@ -4869,15 +4947,16 @@
       const p = pointerPos(e);
       pointerX = p.x;
       pointerY = p.y;
+      updateExpressiveVoice(p);
     }, { passive: false });
-    canvas.addEventListener('touchend', () => { pointerActive = false; pinchActive = false; pinchJunk = null; }, { passive: true });
-    canvas.addEventListener('touchcancel', () => { pointerActive = false; pinchActive = false; pinchJunk = null; }, { passive: true });
+    canvas.addEventListener('touchend', () => { endExpressiveVoice(); pointerActive = false; pinchActive = false; pinchJunk = null; }, { passive: true });
+    canvas.addEventListener('touchcancel', () => { endExpressiveVoice(); pointerActive = false; pinchActive = false; pinchJunk = null; }, { passive: true });
     canvas.addEventListener('mousemove', e => {
       if (state !== 'playing' && state !== 'replay') return;
       const p = pointerPos(e);
-      pointerActive = true;
       pointerX = p.x;
       pointerY = p.y;
+      if (pointerActive) updateExpressiveVoice(p);
     });
     canvas.addEventListener('mousedown', e => {
       if (state !== 'playing' && state !== 'replay') return;
@@ -4888,7 +4967,8 @@
       audioCtx();
       tapShoot(p);
     });
-    canvas.addEventListener('mouseleave', () => { pointerActive = false; });
+    canvas.addEventListener('mouseup', () => { endExpressiveVoice(); pointerActive = false; });
+    canvas.addEventListener('mouseleave', () => { endExpressiveVoice(); pointerActive = false; });
   }
 
   window.signalStart = start;
@@ -5023,6 +5103,7 @@
 
   window.signalBack = function() {
     cancelAnimationFrame(raf);
+    endExpressiveVoice();
     state = 'idle';
     loopEndArmed = false;
     updateLoopButton();
