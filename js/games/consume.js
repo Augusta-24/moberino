@@ -61,6 +61,20 @@
     for (const k in st) t += st[k];
     return t;
   }
+  // Rename the active profile to a player-chosen code, carrying stars along.
+  function setCustomTag(raw) {
+    const tag = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+    if (tag.length < 2) return { ok: false, msg: '2-12 LETTERS/NUMBERS' };
+    const s = ensureProfile();
+    if (tag === s.active) return { ok: true };
+    const cur = (s.profiles[s.active] && s.profiles[s.active].stars) || {};
+    if (!s.profiles[tag]) s.profiles[tag] = { stars: {} };
+    const dest = s.profiles[tag].stars;
+    for (const k in cur) if ((cur[k] || 0) > (dest[k] || 0)) dest[k] = cur[k];
+    s.active = tag;
+    saveStore(s);
+    return { ok: true };
+  }
   function adoptTag(tag, upToLevel) {
     const s = ensureProfile();
     if (!s.profiles[tag]) s.profiles[tag] = { stars: {} };
@@ -407,8 +421,15 @@
       `<div class="cw-sub">SPELL · SHATTER · RECOMBINE</div>` +
       `<div class="cw-me"><span class="cw-me-label">SAVE CODE</span>` +
       `<span class="cw-me-name">${esc(store.active)}</span>` +
-      `<span class="cw-me-stars">★ ${totalStars(st)}</span></div>` +
-      `<div class="cw-tagnote">YOUR JOURNEY SAVES UNDER THIS CODE</div>` +
+      `<span class="cw-me-stars">★ ${totalStars(st)}</span>` +
+      `<button class="cw-btn cw-tag-edit" id="cw-tag-edit" type="button">CHANGE</button></div>` +
+      `<div class="cw-tag-editor" id="cw-tag-editor" hidden>` +
+      `<span>NEW CODE</span>` +
+      `<input id="cw-tag-in" type="text" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="TACOCAT7">` +
+      `<button class="cw-btn" id="cw-tag-set">SET</button>` +
+      `<span class="cw-find-msg" id="cw-tag-msg"></span></div>` +
+      `<div class="cw-tagnote">YOUR JOURNEY SAVES UNDER THIS CODE · TAP CHANGE TO PICK YOUR OWN</div>` +
+      `<div class="cw-tagnote cw-tagwarn">CODES ARE PUBLIC — USE A FUN PHRASE, NEVER A REAL PASSWORD OR PIN</div>` +
       `<div class="cw-level-grid">` +
       LEVELS.map(lvl => {
         const stars = st[lvl.n] || 0;
@@ -417,10 +438,11 @@
           `<span>${lvl.n}</span>${stars ? `<em>${'★'.repeat(stars)}</em>` : ''}</button>`;
       }).join('') +
       `</div>` +
-      `<div class="cw-jump">PLAYED ELSEWHERE? ENTER CODE ` +
-      `<input id="cw-find-in" type="text" maxlength="8" autocapitalize="characters" autocomplete="off" placeholder="FROG4">` +
+      `<div class="cw-jump">PLAYED ELSEWHERE? ENTER YOUR CODE ` +
+      `<input id="cw-find-in" type="text" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="FROG4">` +
       `<button class="cw-btn" id="cw-find-go">ENTER</button>` +
       `<span class="cw-find-msg" id="cw-find-msg"></span></div>` +
+      `<div class="cw-tagnote cw-tagwarn">SAVE CODES ARE JUST FUN PHRASES — NEVER TYPE A REAL PASSWORD OR PIN HERE</div>` +
       `</div>`;
     wrap.querySelector('.cw-level-grid').addEventListener('click', e => {
       const node = e.target.closest('[data-level]');
@@ -433,6 +455,24 @@
     wrap.querySelector('[data-act="modes"]').addEventListener('click', () => {
       SFX.menuSelect();
       if (typeof window.renderConsumeModes === 'function') window.renderConsumeModes();
+    });
+    wrap.querySelector('#cw-tag-edit').addEventListener('click', () => {
+      SFX.menuSelect();
+      const editor = wrap.querySelector('#cw-tag-editor');
+      editor.hidden = !editor.hidden;
+      if (!editor.hidden) wrap.querySelector('#cw-tag-in').focus();
+    });
+    const applyTag = () => {
+      const msg = wrap.querySelector('#cw-tag-msg');
+      const res = setCustomTag(wrap.querySelector('#cw-tag-in').value);
+      if (!res.ok) { msg.textContent = res.msg; CSFX.bad(); return; }
+      SFX.menuSelect();
+      syncJourney();
+      renderJourney();
+    };
+    wrap.querySelector('#cw-tag-set').addEventListener('click', applyTag);
+    wrap.querySelector('#cw-tag-in').addEventListener('keydown', e => {
+      if (e.key === 'Enter') applyTag();
     });
     wrap.querySelector('#cw-find-go').addEventListener('click', () => {
       const inp = wrap.querySelector('#cw-find-in');
