@@ -30,6 +30,10 @@
   flex-direction: column;
   align-items: center;
 }
+.cw-mode-return {
+  align-self: flex-start;
+  margin-bottom: 12px;
+}
 .cw-title {
   font-family: 'Bebas Neue', 'Arial Narrow', Impact, sans-serif;
   font-size: clamp(46px, 10vw, 68px);

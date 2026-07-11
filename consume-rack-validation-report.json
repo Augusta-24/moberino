@@ -1,0 +1,452 @@
+{
+  "levels": [
+    {
+      "mode": "words",
+      "level": 1,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 14,
+        "brokenGroups": 3,
+        "untouchedGroups": 0,
+        "effort": 44
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 2,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 10,
+        "brokenGroups": 3,
+        "untouchedGroups": 0,
+        "effort": 40
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 3,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 12,
+        "brokenGroups": 3,
+        "untouchedGroups": 0,
+        "effort": 42
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 4,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 12,
+        "brokenGroups": 3,
+        "untouchedGroups": 0,
+        "effort": 42
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 5,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 12,
+        "brokenGroups": 3,
+        "untouchedGroups": 0,
+        "effort": 42
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 6,
+      "solutions": 4,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 13,
+        "brokenGroups": 3,
+        "untouchedGroups": 0,
+        "effort": 43
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 7,
+      "solutions": 3,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 11,
+        "brokenGroups": 3,
+        "untouchedGroups": 1,
+        "effort": 41
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 8,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 19,
+        "brokenGroups": 4,
+        "untouchedGroups": 0,
+        "effort": 59
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 9,
+      "solutions": 8,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 12,
+        "brokenGroups": 3,
+        "untouchedGroups": 1,
+        "effort": 42
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 10,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 15,
+        "brokenGroups": 4,
+        "untouchedGroups": 0,
+        "effort": 55
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 11,
+      "solutions": 3,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 17,
+        "brokenGroups": 4,
+        "untouchedGroups": 0,
+        "effort": 57
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 12,
+      "solutions": 2,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 15,
+        "brokenGroups": 4,
+        "untouchedGroups": 0,
+        "effort": 55
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 13,
+      "solutions": 9,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 20,
+        "brokenGroups": 5,
+        "untouchedGroups": 0,
+        "effort": 70
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 14,
+      "solutions": 3,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 15,
+        "brokenGroups": 4,
+        "untouchedGroups": 1,
+        "effort": 55
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 15,
+      "solutions": 35,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 22,
+        "brokenGroups": 5,
+        "untouchedGroups": 0,
+        "effort": 72
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 16,
+      "solutions": 14,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 22,
+        "brokenGroups": 5,
+        "untouchedGroups": 0,
+        "effort": 72
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 1,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 9,
+        "brokenGroups": 3,
+        "untouchedGroups": 0,
+        "effort": 39
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 2,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 10,
+        "brokenGroups": 3,
+        "untouchedGroups": 0,
+        "effort": 40
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 3,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 6,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 26
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 4,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 6,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 26
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 5,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 6,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 26
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 6,
+      "solutions": 2,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 6,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 26
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 7,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 6,
+        "brokenGroups": 2,
+        "untouchedGroups": 2,
+        "effort": 26
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 8,
+      "solutions": 2,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 6,
+        "brokenGroups": 2,
+        "untouchedGroups": 2,
+        "effort": 26
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 9,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 9,
+        "brokenGroups": 3,
+        "untouchedGroups": 1,
+        "effort": 39
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 10,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 6,
+        "brokenGroups": 2,
+        "untouchedGroups": 2,
+        "effort": 26
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 11,
+      "solutions": 3,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 9,
+        "brokenGroups": 3,
+        "untouchedGroups": 1,
+        "effort": 39
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 12,
+      "solutions": 3,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 6,
+        "brokenGroups": 2,
+        "untouchedGroups": 2,
+        "effort": 26
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 13,
+      "solutions": 2,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 10,
+        "brokenGroups": 3,
+        "untouchedGroups": 2,
+        "effort": 40
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 14,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 9,
+        "brokenGroups": 3,
+        "untouchedGroups": 2,
+        "effort": 39
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 15,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 9,
+        "brokenGroups": 3,
+        "untouchedGroups": 2,
+        "effort": 39
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 16,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 9,
+        "brokenGroups": 3,
+        "untouchedGroups": 2,
+        "effort": 39
+      },
+      "valid": true,
+      "errors": []
+    }
+  ]
+}
