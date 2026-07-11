@@ -871,6 +871,7 @@ const RemoteLB = (() => {
     space:                { col: 'score',   dir: 'desc' },
     signal:               { col: 'score',   dir: 'desc' },
     snoob:                { col: 'score',   dir: 'desc' },
+    'snoob-journey':      { col: 'score',   dir: 'desc' },
     consume:              { col: 'score',   dir: 'desc' },
     'consume-words':      { col: 'score',   dir: 'desc' },
     'consume-numbers':    { col: 'score',   dir: 'desc' },
