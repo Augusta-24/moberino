@@ -2,7 +2,7 @@
 (function() {
   const modes = {
     words: { title: 'WORDS', accent: '#ff75d5', intro: 'Rearrange every tile into real words.' },
-    numbers: { title: 'RUNS', accent: '#ffb35c', intro: 'Rearrange every tile into number runs or sets.' },
+    numbers: { title: 'RUMMY', accent: '#ffb35c', intro: 'Rearrange every tile into number runs or sets.' },
   };
   const TAGS = ['FROG', 'MINT', 'TACO', 'DUCK', 'MOON', 'STAR', 'WAVE', 'COMET', 'BAGEL', 'SPARK', 'TURBO', 'COSMO'];
   let mode = null, wrap = null, state = null, nextTile = 1;
@@ -33,32 +33,68 @@
     const data = levels()[n - 1]; if (!data) return;
     nextTile = 1;
     const tile = value => ({ id: nextTile++, value });
-    state = { n, moves: 0, held: null, groups: data.groups.map((group, id) => ({ id, tiles: group.map(tile) })), rack: data.rack.map(tile), won: false };
+    state = { n, moves: 0, selectedId: null, pointer: null, suppressClick: false, groups: data.groups.map((group, id) => ({ id, tiles: group.map(tile) })), rack: data.rack.map(tile), won: false };
     renderPlay();
   }
-  function pick(tile, source, groupId) {
-    if (state.held) return;
-    state.held = tile;
-    if (source === 'rack') state.rack = state.rack.filter(item => item !== tile);
-    else { const group = state.groups.find(item => item.id === groupId); group.tiles = group.tiles.filter(item => item !== tile); }
-    cleanGroups(); update();
+  function tileById(id) {
+    for (const group of state.groups) { const tile = group.tiles.find(item => item.id === id); if (tile) return { tile, group }; }
+    const tile = state.rack.find(item => item.id === id);
+    return tile ? { tile, rack: true } : null;
   }
-  function placeGroup(groupId) { if (!state.held) return; const group = state.groups.find(item => item.id === groupId); group.tiles.push(state.held); state.held = null; state.moves++; checkWin(); update(); }
-  function placeRack() { if (!state.held) return; state.rack.push(state.held); state.held = null; update(); }
-  function newGroup() { if (!state.held) return; state.groups.push({ id: Math.max(-1, ...state.groups.map(group => group.id)) + 1, tiles: [state.held] }); state.held = null; state.moves++; update(); }
+  function selectTile(id) { if (!state || state.won) return; state.selectedId = state.selectedId === id ? null : id; update(); }
+  function moveTile(id, targetGroupId) {
+    const found = tileById(id), target = state.groups.find(group => group.id === targetGroupId);
+    if (!found || !target || (!found.rack && found.group.id === targetGroupId)) return;
+    if (found.rack) state.rack = state.rack.filter(tile => tile.id !== id);
+    else found.group.tiles = found.group.tiles.filter(tile => tile.id !== id);
+    target.tiles.push(found.tile); state.selectedId = null; state.moves++; cleanGroups(); update();
+  }
+  function moveToRack(id) {
+    const found = tileById(id); if (!found || found.rack) return;
+    found.group.tiles = found.group.tiles.filter(tile => tile.id !== id);
+    state.rack.push(found.tile); state.selectedId = null; state.moves++; cleanGroups(); update();
+  }
+  function newGroup(id) {
+    const found = tileById(id ?? state.selectedId); if (!found) return;
+    if (found.rack) state.rack = state.rack.filter(tile => tile.id !== found.tile.id);
+    else found.group.tiles = found.group.tiles.filter(tile => tile.id !== found.tile.id);
+    state.groups.push({ id: Math.max(-1, ...state.groups.map(group => group.id)) + 1, tiles: [found.tile] });
+    state.selectedId = null; state.moves++; cleanGroups(); update();
+  }
+  function pointerDown(event) {
+    const tile = event.target.closest('[data-tile]'); if (!tile || !state || state.won) return;
+    state.pointer = { id: Number(tile.dataset.tile), x: event.clientX, y: event.clientY, moved: false, element: tile };
+    tile.setPointerCapture?.(event.pointerId);
+  }
+  function pointerMove(event) {
+    if (!state?.pointer) return;
+    const drag = state.pointer;
+    if (Math.hypot(event.clientX - drag.x, event.clientY - drag.y) > 6) { drag.moved = true; drag.element.classList.add('dragging'); }
+  }
+  function pointerUp(event) {
+    if (!state?.pointer) return;
+    const drag = state.pointer; state.pointer = null; drag.element.classList.remove('dragging');
+    state.suppressClick = true; setTimeout(() => { if (state) state.suppressClick = false; }, 0);
+    if (!drag.moved) { selectTile(drag.id); return; }
+    const target = document.elementFromPoint(event.clientX, event.clientY);
+    const group = target?.closest('[data-group]');
+    if (group) moveTile(drag.id, Number(group.dataset.group));
+    else if (target?.closest('[data-new-group]')) newGroup(drag.id);
+    else if (target?.closest('[data-rack-drop]')) moveToRack(drag.id);
+  }
   function cleanGroups() { state.groups = state.groups.filter(group => group.tiles.length); }
-  function checkWin() { cleanGroups(); if (!state.held && !state.rack.length && state.groups.length && state.groups.every(group => validGroup(group.tiles))) win(); }
-  function win() { if (state.won) return; state.won = true; const stars = state.moves <= Math.max(2, state.n + 1) ? 3 : state.moves <= state.n + 4 ? 2 : 1; record(state.n, stars); sync(); if (typeof SFX !== 'undefined') SFX.win(); const next = state.n < levels().length; const overlay = document.createElement('div'); overlay.className = 'kt-win'; overlay.innerHTML = `<strong>COMPLETE</strong><span>${'★'.repeat(stars)}<i>${'★'.repeat(3 - stars)}</i></span><div>${next ? '<button data-next>NEXT</button>' : ''}<button data-replay>REPLAY</button><button data-journey>JOURNEY</button></div>`; wrap.appendChild(overlay); overlay.addEventListener('click', event => { if (event.target.dataset.next) start(state.n + 1); if (event.target.dataset.replay) start(state.n); if (event.target.dataset.journey) journey(); }); }
-  function groupMarkup(group) { const valid = validGroup(group.tiles); return `<div class="kt-group ${valid ? 'valid' : ''}" data-group="${group.id}">${group.tiles.map(tile => `<button class="kt-tile ${mode === 'numbers' ? `suit-${tile.value[0]}` : ''}" data-tile="${tile.id}">${esc(mode === 'numbers' ? tile.value.slice(1) : tile.value.toUpperCase())}</button>`).join('')}</div>`; }
-  function renderPlay() { wrap.style.setProperty('--kt', cfg().accent); wrap.innerHTML = `<div class="kt-hud"><button data-journey>JOURNEY</button><strong>${cfg().title} · LEVEL ${state.n}</strong><button data-reset>RESET</button></div><div class="kt-table" id="kt-table"></div><div class="kt-held" id="kt-held"></div><div class="kt-actions"><button id="kt-new">NEW GROUP</button></div><div class="kt-rack" id="kt-rack"></div>`; wrap.querySelector('.kt-hud').addEventListener('click', event => { if (event.target.dataset.journey) journey(); if (event.target.dataset.reset) start(state.n); }); wrap.querySelector('#kt-table').addEventListener('click', event => { const tile = event.target.closest('[data-tile]'), group = event.target.closest('[data-group]'); if (tile && !state.held) { const parent = state.groups.find(item => item.tiles.some(item => item.id === Number(tile.dataset.tile))); pick(parent.tiles.find(item => item.id === Number(tile.dataset.tile)), 'group', parent.id); } else if (group) placeGroup(Number(group.dataset.group)); }); wrap.querySelector('#kt-rack').addEventListener('click', event => { const tile = event.target.closest('[data-rack-tile]'); if (tile && !state.held) pick(state.rack.find(item => item.id === Number(tile.dataset.rackTile)), 'rack'); else if (!tile) placeRack(); }); wrap.querySelector('#kt-new').addEventListener('click', newGroup); update(); }
-  function update() { if (!state || !wrap) return; const table = wrap.querySelector('#kt-table'), rack = wrap.querySelector('#kt-rack'), held = wrap.querySelector('#kt-held'); table.innerHTML = state.groups.map(groupMarkup).join(''); rack.innerHTML = state.rack.map(tile => `<button class="kt-tile ${mode === 'numbers' ? `suit-${tile.value[0]}` : ''}" data-rack-tile="${tile.id}">${esc(mode === 'numbers' ? tile.value.slice(1) : tile.value.toUpperCase())}</button>`).join(''); held.innerHTML = state.held ? `<span>HELD</span><button class="kt-tile ${mode === 'numbers' ? `suit-${state.held.value[0]}` : ''}">${esc(mode === 'numbers' ? state.held.value.slice(1) : state.held.value.toUpperCase())}</button>` : ''; }
+  function checkWin() { cleanGroups(); return !state.selectedId && !state.rack.length && state.groups.length && state.groups.every(group => validGroup(group.tiles)); }
+  function win() { if (state.won) return; state.won = true; const stars = state.moves <= Math.max(2, state.n + 1) ? 3 : state.moves <= state.n + 4 ? 2 : 1; record(state.n, stars); sync(); if (typeof SFX !== 'undefined') SFX.win(); const next = state.n < levels().length; const overlay = document.createElement('div'); overlay.className = 'kt-win'; overlay.innerHTML = `<strong>COMPLETE</strong><span>${'★'.repeat(stars)}<i>${'★'.repeat(3 - stars)}</i></span><div>${next ? '<button data-next>NEXT</button>' : ''}<button data-replay>REPLAY</button><button data-journey>JOURNEY</button></div>`; wrap.appendChild(overlay); overlay.addEventListener('click', event => { if (event.target.hasAttribute('data-next')) start(state.n + 1); if (event.target.hasAttribute('data-replay')) start(state.n); if (event.target.hasAttribute('data-journey')) journey(); }); }
+  function groupMarkup(group) { const valid = validGroup(group.tiles); return `<div class="kt-group ${valid ? 'valid' : ''}" data-group="${group.id}">${group.tiles.map(tile => `<button class="kt-tile ${state.selectedId === tile.id ? 'selected' : ''} ${mode === 'numbers' ? `suit-${tile.value[0]}` : ''}" data-tile="${tile.id}">${esc(mode === 'numbers' ? tile.value.slice(1) : tile.value.toUpperCase())}</button>`).join('')}</div>`; }
+  function renderPlay() { wrap.style.setProperty('--kt', cfg().accent); wrap.innerHTML = `<div class="kt-hud"><button data-journey>JOURNEY</button><strong>${cfg().title} · LEVEL ${state.n}</strong><button data-reset>RESET</button></div><div class="kt-table" id="kt-table"></div><div class="kt-actions"><button id="kt-new">NEW GROUP</button><button id="kt-check">CHECK</button></div><div class="kt-rack" id="kt-rack" data-rack-drop></div>`; wrap.querySelector('.kt-hud').addEventListener('click', event => { if (event.target.hasAttribute('data-journey')) journey(); if (event.target.hasAttribute('data-reset')) start(state.n); }); const table = wrap.querySelector('#kt-table'); table.addEventListener('pointerdown', pointerDown); table.addEventListener('pointermove', pointerMove); table.addEventListener('pointerup', pointerUp); table.addEventListener('click', event => { if (state.suppressClick) { state.suppressClick = false; return; } const tile = event.target.closest('[data-tile]'), group = event.target.closest('[data-group]'), fresh = event.target.closest('[data-new-group]'); if (tile) { const found = tileById(Number(tile.dataset.tile)); if (state.selectedId && found?.group && found.group.id !== tile.closest('[data-group]')?.dataset.group * 1) moveTile(state.selectedId, found.group.id); else if (state.selectedId && found?.rack) moveToRack(state.selectedId); else selectTile(Number(tile.dataset.tile)); } else if (group && state.selectedId) moveTile(state.selectedId, Number(group.dataset.group)); else if (fresh && state.selectedId) newGroup(); }); const rack = wrap.querySelector('#kt-rack'); rack.addEventListener('pointerdown', pointerDown); rack.addEventListener('pointermove', pointerMove); rack.addEventListener('pointerup', pointerUp); rack.addEventListener('click', event => { if (state.suppressClick) { state.suppressClick = false; return; } const tile = event.target.closest('[data-tile]'); if (tile && state.selectedId) moveToRack(state.selectedId); else if (tile) selectTile(Number(tile.dataset.tile)); else if (state.selectedId) moveToRack(state.selectedId); }); wrap.querySelector('#kt-new').addEventListener('click', () => newGroup()); wrap.querySelector('#kt-check').addEventListener('click', () => { if (checkWin()) win(); else { table.classList.remove('bad'); void wrap.offsetWidth; table.classList.add('bad'); if (typeof SFX !== 'undefined') SFX.mismatch(); } }); update(); }
+  function update() { if (!state || !wrap) return; const table = wrap.querySelector('#kt-table'), rack = wrap.querySelector('#kt-rack'); table.innerHTML = state.groups.map(groupMarkup).join('') + `<div class="kt-new-drop" data-new-group>DROP TO START A NEW GROUP</div>`; rack.innerHTML = `<span>RACK</span>` + state.rack.map(tile => `<button class="kt-tile ${state.selectedId === tile.id ? 'selected' : ''} ${mode === 'numbers' ? `suit-${tile.value[0]}` : ''}" data-tile="${tile.id}">${esc(mode === 'numbers' ? tile.value.slice(1) : tile.value.toUpperCase())}</button>`).join(''); }
   function journey() {
     state = null;
     const data = profile(), stars = data.profiles[data.active].stars, unlocked = done(stars) + 1;
     wrap.style.setProperty('--kt', cfg().accent);
     wrap.innerHTML = `<div class="kt-journey">
       <button data-modes>MODES</button>
-      <h1>KNOT SWAP</h1>
+      <h1>${cfg().title}</h1>
       <p>${cfg().intro} Start with working groups, then use the rack tiles to make every group valid.</p>
       <h2>LEVELS</h2>
       <div class="kt-levels">${levels().map(level => { const value = stars[level.n] || 0, locked = level.n > unlocked; return `<button class="${locked ? 'locked' : ''}" data-level="${level.n}">${level.n}${value ? `<i>${'★'.repeat(value)}</i>` : ''}</button>`; }).join('')}</div>
@@ -84,5 +120,5 @@
   }
   window.initConsumeRack = next => { mode = next; wrap = document.getElementById('consume-wrap'); journey(); };
   window.consumeRackBack = () => { state = null; mode = null; };
-  window.renderConsumeModes = () => { wrap = document.getElementById('consume-wrap'); if (!wrap) return; wrap.innerHTML = `<div class="consume-modes"><div class="cw-title">KNOT SWAP</div><div class="cw-intro">Choose a way to untangle the tiles.</div><button data-mode="grid"><strong>GRID</strong><span>Build real words from a shared tile grid.</span></button><button data-mode="words"><strong>WORDS</strong><span>Rearrange tabletop tiles into real words.</span></button><button data-mode="numbers"><strong>RUNS</strong><span>Rearrange tabletop tiles into runs and sets.</span></button></div>`; wrap.querySelector('.consume-modes').addEventListener('click', event => { const button = event.target.closest('[data-mode]'); if (!button) return; if (button.dataset.mode === 'grid') window.initConsumeGrid(); else window.initConsumeRack(button.dataset.mode); }); };
+  window.renderConsumeModes = () => { wrap = document.getElementById('consume-wrap'); if (!wrap) return; wrap.innerHTML = `<div class="consume-modes"><div class="cw-title">KNOT SWAP</div><div class="cw-intro">Choose a way to untangle the tiles.</div><button data-mode="grid"><strong>GRID</strong><span>Build real words from a shared tile grid.</span></button><button data-mode="words"><strong>WORDS</strong><span>Rearrange tabletop tiles into real words.</span></button><button data-mode="numbers"><strong>RUMMY</strong><span>Rearrange tabletop tiles into runs and sets.</span></button></div>`; wrap.querySelector('.consume-modes').addEventListener('click', event => { const button = event.target.closest('[data-mode]'); if (!button) return; if (button.dataset.mode === 'grid') window.initConsumeGrid(); else window.initConsumeRack(button.dataset.mode); }); };
 })();

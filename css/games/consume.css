@@ -56,8 +56,8 @@
 .cw-section-label { width: 100%; margin: 20px 0 8px; color: var(--cw); }
 .cw-level-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
   width: 100%;
 }
 .cw-node {
@@ -90,7 +90,7 @@
 @keyframes cwPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 .cw-node span {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 30px;
+  font-size: 25px;
   letter-spacing: 3px;
   color: var(--cw);
   text-shadow: 0 0 12px #38d8ff77;

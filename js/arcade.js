@@ -805,7 +805,7 @@ function getLeaderboardBoards() {
     { key: 'snoob', label: 'SNOOB', color: '#e4b65f', field: 'score' },
     { key: 'consume', label: 'KNOT SWAP · GRID', color: '#38d8ff', field: 'score' },
     { key: 'consume-words', label: 'KNOT SWAP · WORDS', color: '#ff75d5', field: 'score' },
-    { key: 'consume-numbers', label: 'KNOT SWAP · NUMBERS', color: '#ffb35c', field: 'score' },
+    { key: 'consume-numbers', label: 'KNOT SWAP · RUMMY', color: '#ffb35c', field: 'score' },
   ];
 }
 
