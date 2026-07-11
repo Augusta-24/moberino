@@ -47,11 +47,12 @@
   text-align: center;
   margin: 8px 10px 18px;
 }
-.cw-code-card { width: 100%; padding: 12px; border: 1px solid rgba(56,216,255,0.28); background: rgba(56,216,255,0.055); }
-.cw-code-title,
-.cw-section-label { font-family: 'VCR', monospace; font-size: 11px; letter-spacing: 2px; color: rgba(242,239,232,0.62); }
-.cw-code-title { text-align: center; }
-.cw-code-note { font: 11px/1.45 'VCR', monospace; letter-spacing: .7px; text-align: center; color: rgba(242,239,232,0.62); }
+.cw-code-card { width: 100%; margin-top: 16px; padding: 16px; border: 1px solid rgba(56,216,255,0.32); border-radius: 8px; background: rgba(56,216,255,0.055); }
+.cw-code-row { display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content max-content; align-items: center; gap: 9px; }
+.cw-code-row.cw-code-enter { grid-template-columns: max-content minmax(0, 1fr) max-content; }
+.cw-code-label,.cw-section-label { font-family: 'VCR', monospace; font-size: 11px; letter-spacing: 1.4px; color: rgba(242,239,232,0.62); white-space: nowrap; }
+.cw-code-note { margin-top: 12px; font: 11px/1.45 'VCR', monospace; letter-spacing: .7px; text-align: center; color: rgba(242,239,232,0.68); }
+.cw-code-divider { height: 1px; margin: 14px 0; background: rgba(242,239,232,0.14); }
 .cw-section-label { width: 100%; margin: 20px 0 8px; color: var(--cw); }
 .cw-level-grid {
   display: grid;
@@ -171,6 +172,7 @@
   border: 1px solid rgba(242,239,232,0.25);
   border-radius: 6px;
 }
+.cw-code-enter input { width: 100%; min-width: 0; padding: 8px 6px; text-transform: uppercase; letter-spacing: 2px; font-family: 'VCR', monospace; font-size: 14px; text-align: center; background: rgba(255,255,255,0.05); color: #f2efe8; border: 1px solid rgba(242,239,232,0.25); border-radius: 6px; }
 .cw-jump {
   margin-top: 16px;
   font-family: 'VCR', monospace;
@@ -500,6 +502,10 @@
   .cw-board { --cw-tile: 46px; gap: 7px; }
   .cw-tile { font-size: 18px; }
   .cw-hud { gap: 5px; }
+  .cw-code-card { padding: 14px 12px; }
+  .cw-code-row { gap: 7px; }
+  .cw-code-label { font-size: 10px; letter-spacing: .8px; }
+  .cw-me-name { font-size: 25px; letter-spacing: 3px; }
   .cw-btn, .cw-spell { font-size: 11px; padding: 9px 9px; }
   .cw-meta { font-size: 8px; letter-spacing: 1px; }
   .cw-chip-tile { width: 29px; height: 29px; font-size: 15px; }

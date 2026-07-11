@@ -1683,7 +1683,7 @@
               <span class="snoob-find-msg" id="snoob-tag-msg"></span>
             </div>
             <div class="snoob-codebox-divider"></div>
-            <div class="snoob-codebox-row">
+            <div class="snoob-codebox-row snoob-codebox-enter">
               <span class="snoob-codebox-label">PLAYED ELSEWHERE?</span>
               <input id="snoob-find-in" type="text" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="FROG4">
               <button class="snoob-btn" id="snoob-find-go">ENTER</button>

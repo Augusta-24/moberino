@@ -436,10 +436,10 @@
   background: rgba(228,182,95,0.05);
 }
 .snoob-codebox-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content max-content;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
   font-family: 'VCR', monospace;
   font-size: 15px;
   letter-spacing: 1.5px;
@@ -488,8 +488,8 @@
   text-align: center;
 }
 .snoob-codebox input {
-  flex: 1 1 100px;
-  min-width: 90px;
+  width: 100%;
+  min-width: 0;
   padding: 8px 6px;
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -500,6 +500,13 @@
   color: #f7f1df;
   border: 1px solid rgba(247,241,223,0.25);
   border-radius: 6px;
+}
+.snoob-codebox-enter { grid-template-columns: max-content minmax(0, 1fr) max-content; }
+@media (max-width: 430px) {
+  .snoob-codebox { padding: 14px 12px; }
+  .snoob-codebox-row { gap: 7px; }
+  .snoob-codebox-label { font-size: 10px; letter-spacing: .8px; }
+  .snoob-me-name { font-size: 25px; letter-spacing: 3px; }
 }
 .snoob-level-grid {
   display: grid;

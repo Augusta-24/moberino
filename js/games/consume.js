@@ -403,17 +403,6 @@
       `<button class="cw-mode-return" type="button" data-act="modes">MODES</button>` +
       `<div class="cw-title">KNOT SWAP</div>` +
       `<div class="cw-intro">Make real words from the grid. Tap a completed word to return its tiles and rearrange them.</div>` +
-      `<div class="cw-code-card"><div class="cw-code-title">SAVE CODE</div>` +
-      `<div class="cw-me">` +
-      `<span class="cw-me-name">${esc(store.active)}</span>` +
-      `<span class="cw-me-stars">★ ${totalStars(st)}</span>` +
-      `<button class="cw-btn cw-tag-edit" id="cw-tag-edit" type="button">CHANGE</button></div>` +
-      `<div class="cw-tag-editor" id="cw-tag-editor" hidden>` +
-      `<span>NEW CODE</span>` +
-      `<input id="cw-tag-in" type="text" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="TACOCAT7">` +
-      `<button class="cw-btn" id="cw-tag-set">SET</button>` +
-      `<span class="cw-find-msg" id="cw-tag-msg"></span></div>` +
-      `<div class="cw-code-note">Use this public code to continue on another device. Never use a password or PIN.</div></div>` +
       `<div class="cw-section-label">LEVELS</div>` +
       `<div class="cw-level-grid">` +
       LEVELS.map(lvl => {
@@ -423,10 +412,21 @@
           `<span>${lvl.n}</span>${stars ? `<em>${'★'.repeat(stars)}</em>` : ''}</button>`;
       }).join('') +
       `</div>` +
-      `<div class="cw-jump"><span>ENTER A SAVE CODE</span>` +
+      `<div class="cw-code-card">` +
+      `<div class="cw-code-row"><span class="cw-code-label">YOUR CODE</span>` +
+      `<span class="cw-me-name">${esc(store.active)}</span>` +
+      `<span class="cw-me-stars">★ ${totalStars(st)}</span>` +
+      `<button class="cw-btn cw-tag-edit" id="cw-tag-edit" type="button">CHANGE</button></div>` +
+      `<div class="cw-tag-editor" id="cw-tag-editor" hidden>` +
+      `<input id="cw-tag-in" type="text" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="TACOCAT7">` +
+      `<button class="cw-btn" id="cw-tag-set">SET</button>` +
+      `<span class="cw-find-msg" id="cw-tag-msg"></span></div>` +
+      `<div class="cw-code-divider"></div>` +
+      `<div class="cw-code-row cw-code-enter"><span class="cw-code-label">PLAYED ELSEWHERE?</span>` +
       `<input id="cw-find-in" type="text" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="FROG4">` +
-      `<button class="cw-btn" id="cw-find-go">ENTER</button>` +
-      `<span class="cw-find-msg" id="cw-find-msg"></span></div>` +
+      `<button class="cw-btn" id="cw-find-go">ENTER</button></div>` +
+      `<span class="cw-find-msg" id="cw-find-msg"></span>` +
+      `<div class="cw-code-note">CODES ARE PUBLIC — USE A FUN PHRASE, NEVER A REAL PASSWORD OR PIN.</div></div>` +
       `</div>`;
     wrap.querySelector('.cw-level-grid').addEventListener('click', e => {
       const node = e.target.closest('[data-level]');
