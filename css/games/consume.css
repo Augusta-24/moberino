@@ -127,6 +127,41 @@
   margin: -2px 0 12px;
   text-align: center;
 }
+.cw-tagwarn {
+  color: #ffe61a;
+  opacity: 0.72;
+  margin-top: -8px;
+}
+.cw-tag-edit {
+  font-size: 9px;
+  padding: 5px 8px;
+}
+.cw-tag-editor {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: -2px 0 10px;
+  font-family: 'VCR', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: rgba(242,239,232,0.55);
+}
+.cw-tag-editor[hidden] { display: none; }
+.cw-tag-editor input {
+  width: 120px;
+  padding: 7px 6px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-family: 'VCR', monospace;
+  font-size: 14px;
+  text-align: center;
+  background: rgba(255,255,255,0.05);
+  color: #f2efe8;
+  border: 1px solid rgba(242,239,232,0.25);
+  border-radius: 6px;
+}
 .cw-jump {
   margin-top: 14px;
   font-family: 'VCR', monospace;

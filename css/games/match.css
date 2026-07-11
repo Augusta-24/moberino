@@ -26,6 +26,45 @@
 }
 .match-card-wrap { width: var(--card); height: var(--card); perspective: 700px; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 .match-mode-btn { width: 100%; box-sizing: border-box; padding: 12px 16px; margin-top: 0; }
+.match-flip-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  width: min(100%, 280px);
+  margin: 0 auto 16px;
+}
+.match-flip-toggle button {
+  font-family: 'VCR', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: rgba(242,239,232,0.62);
+  background: rgba(242,239,232,0.04);
+  border: 1px solid rgba(242,239,232,0.18);
+  border-radius: 5px;
+  padding: 10px 8px;
+  cursor: pointer;
+}
+.match-flip-toggle button.active {
+  color: #050310;
+  background: #33ff66;
+  border-color: #33ff66;
+  box-shadow: 0 0 14px rgba(51,255,102,0.32);
+}
+.match-manual-flip-hint {
+  min-height: 16px;
+  font-family: 'VCR', monospace;
+  font-size: 10px;
+  letter-spacing: 1.6px;
+  color: rgba(255,230,26,0);
+  text-align: center;
+  text-transform: uppercase;
+  transition: color 0.12s ease, text-shadow 0.12s ease;
+  pointer-events: none;
+}
+.match-manual-flip-hint.visible {
+  color: rgba(255,230,26,0.86);
+  text-shadow: 0 0 12px rgba(255,230,26,0.45);
+}
 .match-card {
   width: 100%; height: 100%; position: relative;
   transform-style: preserve-3d;

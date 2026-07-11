@@ -10,6 +10,10 @@
   const IMPOSSIBLE_MOVE_CUTOFF = 55;
   let matchMode = 'hard'; // 'free' | 'hard' | 'challenge' | 'impossible'
   let freePlayCharCount = 8; // 4–20, how many distinct characters appear in free play
+  let freePlayFlipMode = 'auto'; // 'auto' | 'manual'
+  let manualFlipPending = false;
+  let manualFlipPair = null;
+  let manualFlipHandler = null;
   window._matchMode = matchMode;
   window._matchFreePairs = freePlayCharCount;
   // Hard = the old "timed" mode. Challenge/Impossible add a target-moves benchmark to
@@ -125,6 +129,11 @@
               <button onclick="matchAdjChar(1)" style="${btnStyle}">+</button>
             </div>
             <div class="match-sub" style="opacity:0.4">4 – 20</div>
+            <div class="match-sub" style="margin-top:4px">MISSED MATCHES</div>
+            <div class="match-flip-toggle" role="group" aria-label="Free play flip mode">
+              <button class="${freePlayFlipMode === 'auto' ? 'active' : ''}" onclick="matchSetFreeFlipMode('auto')" type="button">AUTO FLIP</button>
+              <button class="${freePlayFlipMode === 'manual' ? 'active' : ''}" onclick="matchSetFreeFlipMode('manual')" type="button">MANUAL FLIP</button>
+            </div>
           </div>
           <div class="arcade-cab-foot" style="display:flex;flex-direction:column;gap:8px;align-items:stretch">
             <button class="whack-btn match-mode-btn" style="border-color:#ffe61a;background:rgba(255,230,26,0.14)" onclick="matchPlay('free')">▶ START</button>
@@ -188,7 +197,8 @@
               </div>
             </div>`;
           }).join('')
-        }</div>`;
+        }</div>
+        ${matchMode === 'free' && freePlayFlipMode === 'manual' ? '<div id="match-manual-flip-hint" class="match-manual-flip-hint">Tap Anywhere to Flip</div>' : ''}`;
       return;
     }
 
@@ -335,21 +345,67 @@
             if (back) back.innerHTML = charFace(GAME_CHARS[cards[idx].ci], 'sad');
           }
         });
-        setTimeout(() => {
-          [a, b].forEach(idx => {
-            cards[idx].flipped = false;
-            const el = document.getElementById(`mc-${idx}`);
-            if (el) el.classList.remove('flipped','miss-flash');
-            const back = el && el.querySelector('.match-card-back');
-            if (back) back.innerHTML = charFace(GAME_CHARS[cards[idx].ci], 'normal');
-          });
-          flipped = [];
-          locked = false;
-          checkMoveCutoff();
-        }, 280);
+        if (matchMode === 'free' && freePlayFlipMode === 'manual') {
+          beginManualMismatchFlip(a, b);
+        } else {
+          setTimeout(() => resetMismatchedPair(a, b), 280);
+        }
       }
     }, 180);
   };
+
+  function resetMismatchedPair(a, b) {
+    [a, b].forEach(idx => {
+      cards[idx].flipped = false;
+      const el = document.getElementById(`mc-${idx}`);
+      if (el) el.classList.remove('flipped','miss-flash');
+      const back = el && el.querySelector('.match-card-back');
+      if (back) back.innerHTML = charFace(GAME_CHARS[cards[idx].ci], 'normal');
+    });
+    flipped = [];
+    locked = false;
+    clearManualMismatchFlip();
+    checkMoveCutoff();
+  }
+
+  function beginManualMismatchFlip(a, b) {
+    manualFlipPending = true;
+    manualFlipPair = [a, b];
+    const hint = document.getElementById('match-manual-flip-hint');
+    if (hint) hint.classList.add('visible');
+    clearManualFlipHandlerOnly();
+    manualFlipHandler = function(evt) {
+      if (!manualFlipPending || state !== 'playing') return;
+      try {
+        if (evt && typeof evt.preventDefault === 'function') evt.preventDefault();
+        if (evt && typeof evt.stopPropagation === 'function') evt.stopPropagation();
+        if (evt && typeof evt.stopImmediatePropagation === 'function') evt.stopImmediatePropagation();
+      } catch (e) {}
+      const pair = manualFlipPair;
+      if (!pair) return;
+      resetMismatchedPair(pair[0], pair[1]);
+    };
+    setTimeout(() => {
+      if (manualFlipHandler) {
+        document.addEventListener('pointerdown', manualFlipHandler, { once: true, capture: true });
+      }
+    }, 0);
+  }
+
+  function clearManualFlipHandlerOnly() {
+    if (manualFlipHandler) {
+      document.removeEventListener('pointerdown', manualFlipHandler, true);
+      manualFlipHandler = null;
+    }
+  }
+
+  function clearManualMismatchFlip() {
+    manualFlipPending = false;
+    manualFlipPair = null;
+    clearManualFlipHandlerOnly();
+    const hint = document.getElementById('match-manual-flip-hint');
+    if (hint) hint.classList.remove('visible');
+  }
 
   // Impossible mode's hard fail-state: run out of moves before clearing the board.
   function checkMoveCutoff() {
@@ -510,6 +566,7 @@
     removeMatchSideBar();
     if (matchMode === 'hard' || matchMode === 'challenge') timeLimit = MODE_CONFIG[matchMode].time;
     cards = makeCards(); flipped=[]; locked=false; moves=0; matched=0; matchOutOfMoves=false; matchCutoffWaived=false;
+    clearManualMismatchFlip();
     matchTimer=0;
     clearInterval(timerInt); clearInterval(previewInt);
     ArcadeMusic.stop();
@@ -564,6 +621,7 @@
     clearInterval(timerInt);
     clearInterval(previewInt);
     removeMatchSideBar();
+    clearManualMismatchFlip();
     const cutoff = document.getElementById('match-cutoff-modal');
     if (cutoff) cutoff.remove();
     document.querySelectorAll('.match-intro-overlay').forEach(el => el.remove());
@@ -582,6 +640,14 @@
     window._matchFreePairs = freePlayCharCount;
     const el = document.getElementById('match-char-ct');
     if (el) el.textContent = freePlayCharCount;
+  };
+
+  window.matchSetFreeFlipMode = function(mode) {
+    freePlayFlipMode = mode === 'manual' ? 'manual' : 'auto';
+    document.querySelectorAll('.match-flip-toggle button').forEach(btn => {
+      const isActive = btn.textContent.toLowerCase().includes(freePlayFlipMode);
+      btn.classList.toggle('active', isActive);
+    });
   };
 
   function closeMatchFreeSetup() {
@@ -613,6 +679,11 @@
           <button onclick="matchAdjChar(1)" style="${btnStyle}" aria-label="More matches">+</button>
         </div>
         <div class="match-sub" style="opacity:0.45;margin-bottom:16px">4 - 20</div>
+        <div class="match-sub" style="color:rgba(242,239,232,0.72);margin-bottom:8px">MISSED MATCHES</div>
+        <div class="match-flip-toggle" role="group" aria-label="Free play flip mode">
+          <button class="${freePlayFlipMode === 'auto' ? 'active' : ''}" onclick="matchSetFreeFlipMode('auto')" type="button">AUTO FLIP</button>
+          <button class="${freePlayFlipMode === 'manual' ? 'active' : ''}" onclick="matchSetFreeFlipMode('manual')" type="button">MANUAL FLIP</button>
+        </div>
         <div style="display:flex;flex-direction:column;gap:9px">
           <button class="whack-btn match-mode-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.16)" onclick="matchStartFreeFromPopup()">▶ START</button>
           <button class="whack-btn match-mode-btn" style="border-color:rgba(242,239,232,0.18);background:none;font-size:10px;color:rgba(242,239,232,0.6)" onclick="matchGoIdle()">CANCEL</button>
@@ -637,6 +708,7 @@
 
   window.initMatch = function() {
     removeMatchSideBar();
+    clearManualMismatchFlip();
     state='idle'; cards=[]; flipped=[]; locked=false; render();
   };
 
@@ -647,6 +719,7 @@
   window.matchBack = function() {
     clearInterval(timerInt); clearInterval(previewInt);
     removeMatchSideBar();
+    clearManualMismatchFlip();
     closeMatchFreeSetup();
     document.querySelectorAll('.match-intro-overlay').forEach(el => el.remove());
   };
