@@ -964,9 +964,9 @@
     const r = radius();
     const railW = Math.max(10, r * 0.28);
     const red = ctx.createLinearGradient(0, 0, 0, topH);
-    red.addColorStop(0, '#e24a2e');
-    red.addColorStop(0.55, '#bb2418');
-    red.addColorStop(1, '#8f160f');
+    red.addColorStop(0, '#d5432c');
+    red.addColorStop(0.55, '#9c1f16');
+    red.addColorStop(1, '#611009');
     ctx.fillStyle = red;
     ctx.fillRect(0, 0, W, Math.max(topH * 0.34, r * 0.46));
     ctx.fillStyle = 'rgba(255,255,255,0.14)';
@@ -1146,7 +1146,7 @@
     const h = H - baseH - topH - r * 0.34;
     ctx.save();
     ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';
     ctx.beginPath();
     ctx.ellipse(x + w * 0.78, y + h * 0.17, r * 0.42, r * 0.08, -0.28, 0, Math.PI * 2);
     ctx.fill();
@@ -1156,6 +1156,29 @@
     ctx.moveTo(x + w * 0.05, y + r * 0.1);
     ctx.lineTo(x + w * 0.95, y + r * 0.1);
     ctx.stroke();
+    // Neon room-light streaks reflected in the glass.
+    const sheenP = ctx.createLinearGradient(x + w * 0.06, y, x + w * 0.3, y + h);
+    sheenP.addColorStop(0, 'rgba(255,0,204,0.055)');
+    sheenP.addColorStop(0.5, 'rgba(255,0,204,0)');
+    ctx.fillStyle = sheenP;
+    ctx.beginPath();
+    ctx.moveTo(x + w * 0.02, y);
+    ctx.lineTo(x + w * 0.16, y);
+    ctx.lineTo(x + w * 0.30, y + h);
+    ctx.lineTo(x + w * 0.10, y + h);
+    ctx.closePath();
+    ctx.fill();
+    const sheenB = ctx.createLinearGradient(x + w * 0.68, y, x + w * 0.9, y + h);
+    sheenB.addColorStop(0, 'rgba(140,200,255,0.05)');
+    sheenB.addColorStop(0.55, 'rgba(140,200,255,0)');
+    ctx.fillStyle = sheenB;
+    ctx.beginPath();
+    ctx.moveTo(x + w * 0.66, y);
+    ctx.lineTo(x + w * 0.74, y);
+    ctx.lineTo(x + w * 0.9, y + h);
+    ctx.lineTo(x + w * 0.78, y + h);
+    ctx.closePath();
+    ctx.fill();
     ctx.restore();
   }
 
@@ -1382,8 +1405,19 @@
     }
 
     c.save();
+    // Colored glass edge: the dome rim carries the capsule color so groups
+    // read at a glance without covering the face inside.
     capsuleDomePath(c, r);
-    c.strokeStyle = 'rgba(30,34,38,0.36)';
+    c.strokeStyle = color;
+    c.globalAlpha *= 0.8;
+    c.lineWidth = Math.max(1.5, r * 0.05);
+    c.shadowColor = color;
+    c.shadowBlur = r * 0.22;
+    c.stroke();
+    c.shadowBlur = 0;
+    c.globalAlpha = alpha == null ? 1 : alpha;
+    capsuleDomePath(c, r);
+    c.strokeStyle = 'rgba(30,34,38,0.4)';
     c.lineWidth = Math.max(1, r * 0.022);
     c.stroke();
     c.fillStyle = 'rgba(255,255,255,0.66)';
