@@ -31,6 +31,7 @@
   let fallingPieces = [];
   let faceFlashes = [];
   let rattles = [];
+  let dustMotes = [];
   let tokenTypes = [];
   let score = 0, shots = 0, drops = 0, rowsAdded = 0, missStreak = 0, wave = 1;
   let current = null, currentType = 0, nextType = 0, shooter = { x: 0, y: 0 };
@@ -423,6 +424,7 @@
     updateFallingPieces(dt);
     updateFaceFlashes(dt);
     updateRattles(dt);
+    updateDustMotes(dt);
     if (crankSpin > 0) crankSpin = Math.max(0, crankSpin - dt);
     if (!current) return;
     const r = radius();
@@ -446,6 +448,64 @@
       p.life -= dt;
     });
     fallingPieces = fallingPieces.filter(p => p.life > 0 && p.y < H + r * 3);
+  }
+
+  // A little gold pixie dust wherever a chain connects — one small burst per
+  // matched capsule so the whole cleared shape twinkles, not just one point.
+  function spawnPixieDust(x, y) {
+    const n = 3 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const speed = 18 + Math.random() * 46;
+      dustMotes.push({
+        x, y,
+        vx: Math.cos(a) * speed,
+        vy: Math.sin(a) * speed - 24,
+        size: 1.4 + Math.random() * 2.2,
+        life: 0.5 + Math.random() * 0.4,
+        maxLife: 0.9,
+        twinkle: Math.random() * Math.PI * 2,
+        color: Math.random() < 0.6 ? '#ffe38a' : '#fff4d6',
+      });
+    }
+  }
+
+  function updateDustMotes(dt) {
+    if (!dustMotes.length) return;
+    dustMotes.forEach(m => {
+      m.vy += 40 * dt;
+      m.x += m.vx * dt;
+      m.y += m.vy * dt;
+      m.life -= dt;
+      m.twinkle += dt * 9;
+    });
+    dustMotes = dustMotes.filter(m => m.life > 0);
+  }
+
+  function drawDustMotes() {
+    if (!dustMotes.length) return;
+    ctx.save();
+    dustMotes.forEach(m => {
+      const t = Math.max(0, m.life / m.maxLife);
+      const twinkle = 0.5 + 0.5 * Math.sin(m.twinkle);
+      ctx.globalAlpha = t * (0.4 + twinkle * 0.6);
+      ctx.fillStyle = m.color;
+      ctx.shadowColor = m.color;
+      ctx.shadowBlur = m.size * 3;
+      const s = m.size * (0.6 + twinkle * 0.5);
+      ctx.beginPath();
+      ctx.moveTo(m.x, m.y - s);
+      ctx.lineTo(m.x + s * 0.35, m.y - s * 0.35);
+      ctx.lineTo(m.x + s, m.y);
+      ctx.lineTo(m.x + s * 0.35, m.y + s * 0.35);
+      ctx.lineTo(m.x, m.y + s);
+      ctx.lineTo(m.x - s * 0.35, m.y + s * 0.35);
+      ctx.lineTo(m.x - s, m.y);
+      ctx.lineTo(m.x - s * 0.35, m.y - s * 0.35);
+      ctx.closePath();
+      ctx.fill();
+    });
+    ctx.restore();
   }
 
   function updateFaceFlashes(dt) {
@@ -643,6 +703,7 @@
     group.forEach((p, i) => {
       const pos = cellPos(p.row, p.col);
       spawnFallingPiece(pos.x, pos.y, board[p.row][p.col], true, i);
+      spawnPixieDust(pos.x, pos.y);
       board[p.row][p.col] = null;
       if (pieceVisuals[p.row]) pieceVisuals[p.row][p.col] = null;
     });
@@ -1171,6 +1232,7 @@
       }
     }
     fallingPieces.forEach((p, i) => drawToken(ctx, p.x, p.y, r * 0.985, p.type, Math.max(0, Math.min(1, p.life)), p.mood, p.rot, 500 + i));
+    drawDustMotes();
     drawGlassOverlay();
     drawAim();
     drawShooter();
@@ -1178,21 +1240,17 @@
     drawNextUpBadge();
   }
 
-  // Journey strips the aim assist away as levels climb: full guide early,
-  // a short stub with the landing hidden mid-game, no line at all by the
-  // last stretch. Endless always keeps full assist — its difficulty comes
-  // from the miss-streak/row-add pressure instead.
+  // Journey opens with the full guide, then drops to the short stub from
+  // level 5 on and stays there through the end — one step down, not a ramp
+  // to nothing. Endless keeps the full guide throughout.
   function aimAssistTier() {
     if (mode !== 'journey') return 'full';
-    if (journeyN <= 4) return 'full';
-    if (journeyN <= 8) return 'short';
-    return 'none';
+    return journeyN <= 4 ? 'full' : 'short';
   }
 
   function drawAim() {
     if (current) return;
     const tier = aimAssistTier();
-    if (tier === 'none') return;
     const path = predictLanding();
     const color = CAPSULE_COLORS[currentType % CAPSULE_COLORS.length] || '#e4b65f';
     const armed = aimArmed;
@@ -1722,6 +1780,7 @@
     tokenTypes = playableChars();
     score = 0; shots = 0; drops = 0; rowsAdded = 0; missStreak = 0;
     current = null; aim = -Math.PI / 2; aimArmed = false;
+    dustMotes = [];
     clearPendingAimTouch();
     loadJourneyBoard(data);
     currentType = randQueuedType();
@@ -1771,6 +1830,7 @@
     tokenTypes = playableChars();
     score = 0; shots = 0; drops = 0; rowsAdded = 0; missStreak = 0; wave = 1;
     current = null; aim = -Math.PI / 2; aimArmed = false;
+    dustMotes = [];
     clearPendingAimTouch();
     resetBoard();
     currentType = randQueuedType();

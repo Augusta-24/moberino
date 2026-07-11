@@ -135,32 +135,11 @@
 
 #ci-snoob .game-card {
   background:
-    radial-gradient(circle at 50% 34%, rgba(228,182,95,0.09), rgba(5,2,18,0) 48%),
-    rgba(5,2,18,0.86);
-}
-#ci-snoob .game-card-art {
-  background: linear-gradient(160deg,#050214 0%,#10131d 58%,#1a1024 100%) !important;
-}
-#ci-snoob .game-card-art svg {
-  width: 122% !important;
-  height: 122% !important;
-  left: 50% !important;
-  top: 48% !important;
-  opacity: 0.42;
-  transform: translate(-50%, -50%) rotate(-4deg);
-  filter: saturate(0.72) brightness(0.88) contrast(0.9);
-}
-#ci-snoob .game-card-art::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 50% 22%, rgba(255,255,255,0.07), rgba(255,255,255,0) 34%),
-    linear-gradient(to top, rgba(5,2,18,0.68), rgba(5,2,18,0.16) 58%, rgba(5,2,18,0.28));
-  pointer-events: none;
+    radial-gradient(circle at 50% 34%, rgba(228,182,95,0.09), rgba(10,11,20,0) 48%),
+    rgba(10,11,20,0.9);
 }
 #ci-snoob .game-card-info {
-  background: linear-gradient(to top, rgba(5,2,18,0.96) 58%, rgba(5,2,18,0.24));
+  background: linear-gradient(to top, rgba(10,11,20,0.96) 58%, rgba(10,11,20,0.24));
 }
 .snoob-btn {
   width: 100%;
