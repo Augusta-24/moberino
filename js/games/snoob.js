@@ -32,7 +32,7 @@
   let faceFlashes = [];
   let rattles = [];
   let tokenTypes = [];
-  let score = 0, shots = 0, drops = 0, rowsAdded = 0, missStreak = 0;
+  let score = 0, shots = 0, drops = 0, rowsAdded = 0, missStreak = 0, wave = 1;
   let current = null, currentType = 0, nextType = 0, shooter = { x: 0, y: 0 };
   let aim = -Math.PI / 2;
   let aimArmed = false;
@@ -163,7 +163,7 @@
   }
 
   function cabinetBaseH() {
-    return Math.max(radius() * 1.34, 46);
+    return Math.max(radius() * 1.7, 58);
   }
 
   function cellPos(row, col) {
@@ -189,7 +189,7 @@
     return { rot };
   }
 
-  function resetBoard() {
+  function resetBoard(rows) {
     board = [];
     pieceVisuals = [];
     rowPhase = 0;
@@ -197,9 +197,10 @@
     faceFlashes = [];
     rattles = [];
     ensureBoardRows(MAX_ROWS);
-    for (let r = 0; r < START_ROWS; r++) {
+    const startRows = rows || START_ROWS;
+    for (let r = 0; r < startRows; r++) {
       for (let c = 0; c < COLS; c++) {
-        if (r === START_ROWS - 1 && (c === 0 || c === COLS - 1)) continue;
+        if (r === startRows - 1 && (c === 0 || c === COLS - 1)) continue;
         board[r][c] = randType();
         pieceVisuals[r][c] = makePieceVisual(r * COLS + c + 17);
       }
@@ -217,7 +218,6 @@
         <div class="snoob-hud">
           <div><div class="snoob-stat-label" id="snoob-l-label">SCORE</div><div class="snoob-stat-value" id="snoob-score">0</div></div>
           <div class="snoob-aim-stack">
-            <div class="snoob-next" id="snoob-next"></div>
             <div class="snoob-aim-switch" id="snoob-aim-switch" aria-live="polite">
               <span>AIM</span><i></i><span>SHOOT</span>
             </div>
@@ -248,13 +248,13 @@
       boardKey: BOARD_KEY,
       artGame: 'snoob',
       color: COLOR,
-      marquee: boardCleared() ? 'CLEARED!' : 'GAME OVER',
+      marquee: 'GAME OVER',
       marqueeEnd: '#5b6f9a',
       scoreLabel: 'YOUR SCORE',
       scoreValue: score,
       saveValue: score,
       field: 'score',
-      extra: `${shots} SHOTS · ${drops} DROPS`,
+      extra: `WAVE ${wave} · ${shots} SHOTS · ${drops} DROPS`,
       buttons: `
         <button class="whack-btn" style="border-color:#e4b65f;background:rgba(228,182,95,0.24)" onclick="snoobStart()">PLAY AGAIN</button>
         <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.24)" onclick="nav('lobby')">BACK TO ARCADE</button>
@@ -276,15 +276,6 @@
       if (ll) ll.textContent = 'SCORE';
       if (s) s.textContent = score;
       if (sh) sh.textContent = shots;
-    }
-    const next = document.getElementById('snoob-next');
-    if (next) {
-      next.innerHTML = '';
-      const mini = document.createElement('canvas');
-      mini.width = 52; mini.height = 52;
-      mini.style.width = '46px'; mini.style.height = '46px';
-      next.appendChild(mini);
-      drawToken(mini.getContext('2d'), 26, 26, 20, currentType, 1);
     }
     const aimSwitch = document.getElementById('snoob-aim-switch');
     if (aimSwitch) {
@@ -592,16 +583,25 @@
     syncQueuedTypesToBoard();
     updateHud();
     if (boardCleared()) {
-      state = 'over';
-      playSnoobWin();
       if (mode === 'journey') {
+        state = 'over';
+        playSnoobWin();
         const stars = journeyStars();
         jRecord(journeyN, stars);
         jSync();
         setTimeout(() => renderJourneyResult(true, stars), 500);
       } else {
+        // Endless: clearing the board starts the next wave instead of ending
+        // the run — only the danger line or a full stack actually ends it.
         score += 1000 + Math.max(0, 40 - shots) * 25;
-        setTimeout(renderOver, 500);
+        wave++;
+        missStreak = 0;
+        showToast(`WAVE ${wave}`);
+        playSnoobWin();
+        resetBoard(Math.min(MAX_ROWS - 4, START_ROWS + Math.floor((wave - 1) / 2)));
+        currentType = randQueuedType();
+        nextType = randQueuedType();
+        updateHud();
       }
     } else if (isDanger()) {
       endSnoobGame();
@@ -825,16 +825,16 @@
     const chamberY = topH;
     const chamberW = W;
     const chamberH = H - baseH - topH;
-    const redTop = ctx.createLinearGradient(0, 0, 0, topH);
-    redTop.addColorStop(0, '#d5432c');
-    redTop.addColorStop(0.62, '#9c1f16');
-    redTop.addColorStop(1, '#5f100b');
-    ctx.fillStyle = redTop;
+    const topPanel = ctx.createLinearGradient(0, 0, 0, topH);
+    topPanel.addColorStop(0, '#1b1f30');
+    topPanel.addColorStop(1, '#0d0f1a');
+    ctx.fillStyle = topPanel;
     ctx.fillRect(0, 0, W, topH);
-    ctx.fillStyle = '#8f1d12';
+    const basePanel = ctx.createLinearGradient(0, H - baseH, 0, H);
+    basePanel.addColorStop(0, '#161a2a');
+    basePanel.addColorStop(1, '#0a0b14');
+    ctx.fillStyle = basePanel;
     ctx.fillRect(0, H - baseH, W, baseH);
-    ctx.fillStyle = 'rgba(0,0,0,0.22)';
-    ctx.fillRect(0, H - baseH, W, Math.max(5, radius() * 0.14));
     drawFrostedWallpaper(chamberX, chamberY, chamberW, chamberH);
     const frost = ctx.createRadialGradient(W * 0.5, H * 0.34, radius(), W * 0.5, H * 0.42, W * 0.72);
     frost.addColorStop(0, 'rgba(140,165,255,0.10)');
@@ -850,7 +850,6 @@
     ctx.fillStyle = edgeFog;
     ctx.fillRect(chamberX, chamberY, chamberW, chamberH);
     drawChamberWear(chamberX, chamberY, chamberW, chamberH);
-    drawBackRods(topH, baseH);
     drawCabinetFrame(topH, baseH);
     drawCrankMachineParts(topH, baseH);
   }
@@ -935,191 +934,142 @@
     ctx.restore();
   }
 
-  function drawBackRods(topH, baseH) {
-    const r = radius();
-    const y0 = topH + r * 0.14;
-    const y1 = H - baseH - r * 0.1;
-    const rods = [0.5];
-    rods.forEach((pct, i) => {
-      const x = W * pct + (i - 1) * r * 0.08;
-      const metal = ctx.createLinearGradient(x - r * 0.055, 0, x + r * 0.055, 0);
-      metal.addColorStop(0, 'rgba(20,21,22,0.58)');
-      metal.addColorStop(0.46, 'rgba(92,94,94,0.78)');
-      metal.addColorStop(1, 'rgba(16,17,18,0.64)');
-      ctx.strokeStyle = metal;
-      ctx.lineWidth = Math.max(2, r * 0.052);
-      ctx.beginPath();
-      ctx.moveTo(x, y0);
-      ctx.lineTo(x, y1);
-      ctx.stroke();
-      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(x + r * 0.08, y0);
-      ctx.lineTo(x + r * 0.08, y1);
-      ctx.stroke();
-    });
-  }
-
   function drawCabinetFrame(topH, baseH) {
     const r = radius();
-    const railW = Math.max(10, r * 0.28);
-    const red = ctx.createLinearGradient(0, 0, 0, topH);
-    red.addColorStop(0, '#d5432c');
-    red.addColorStop(0.55, '#9c1f16');
-    red.addColorStop(1, '#611009');
-    ctx.fillStyle = red;
-    ctx.fillRect(0, 0, W, Math.max(topH * 0.34, r * 0.46));
-    ctx.fillStyle = 'rgba(255,255,255,0.14)';
-    ctx.fillRect(r * 0.62, r * 0.12, W - r * 1.24, 1);
-    const rail = ctx.createLinearGradient(0, 0, railW, 0);
-    rail.addColorStop(0, '#4b4d48');
-    rail.addColorStop(0.28, '#d6d1c5');
-    rail.addColorStop(0.56, '#77776f');
-    rail.addColorStop(1, '#242521');
+    const railW = Math.max(8, r * 0.2);
+    // Thin neon-edged side rails instead of brushed-aluminum trim.
+    ctx.save();
     [0, W - railW].forEach(x => {
-      ctx.fillStyle = rail;
+      ctx.fillStyle = '#0a0b14';
       ctx.fillRect(x, 0, railW, H);
-      ctx.fillStyle = 'rgba(255,255,255,0.16)';
-      ctx.fillRect(x + railW * 0.38, topH * 0.2, 1, H - baseH - topH * 0.25);
-      ctx.fillStyle = 'rgba(0,0,0,0.24)';
-      ctx.fillRect(x + (x === 0 ? railW - 2 : 1), 0, 2, H);
+      ctx.strokeStyle = 'rgba(228,182,95,0.55)';
+      ctx.shadowColor = 'rgba(228,182,95,0.6)';
+      ctx.shadowBlur = r * 0.16;
+      ctx.lineWidth = Math.max(1, r * 0.03);
+      ctx.beginPath();
+      const lineX = x === 0 ? x + railW : x;
+      ctx.moveTo(lineX, topH * 0.5);
+      ctx.lineTo(lineX, H - baseH * 0.5);
+      ctx.stroke();
     });
-    const railY = H - baseH - Math.max(5, r * 0.16);
-    const railH = Math.max(6, r * 0.18);
-    const divider = ctx.createLinearGradient(0, railY, 0, railY + railH);
-    divider.addColorStop(0, '#3c3d39');
-    divider.addColorStop(0.18, '#d7d2c7');
-    divider.addColorStop(0.45, '#8d8a82');
-    divider.addColorStop(0.72, '#2f302d');
-    divider.addColorStop(1, '#111318');
-    ctx.fillStyle = divider;
-    ctx.fillRect(0, railY, W, railH);
-    ctx.fillStyle = 'rgba(255,255,255,0.55)';
-    ctx.fillRect(railW * 0.7, railY + railH * 0.18, W - railW * 1.4, 1);
+    ctx.restore();
+    // A slim glowing accent line under the top panel and above the base panel,
+    // in place of the old glossy-plastic bevel stack.
+    ctx.save();
+    ctx.strokeStyle = 'rgba(228,182,95,0.7)';
+    ctx.shadowColor = 'rgba(228,182,95,0.55)';
+    ctx.shadowBlur = r * 0.2;
+    ctx.lineWidth = Math.max(1.5, r * 0.035);
+    ctx.beginPath();
+    ctx.moveTo(railW, topH);
+    ctx.lineTo(W - railW, topH);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(railW, H - baseH);
+    ctx.lineTo(W - railW, H - baseH);
+    ctx.stroke();
+    ctx.restore();
   }
 
   function drawCrankMachineParts(topH, baseH) {
     const r = radius();
-    const panelW = Math.min(W * 0.62, r * 6.8);
-    const panelH = Math.min(baseH * 0.68, r * 1.02);
+    const panelW = Math.min(W * 0.64, r * 7.2);
+    const panelH = Math.min(baseH * 0.72, r * 1.5);
     const panelX = W * 0.07;
-    const panelY = H - baseH + Math.max(5, baseH * 0.14);
+    const panelY = H - baseH + (baseH - panelH) / 2;
     ctx.save();
-    ctx.fillStyle = 'rgba(17,19,24,0.13)';
+    // Flat instrument console — dark panel, thin neon border, no chrome/screws.
+    ctx.fillStyle = '#12141f';
     ctx.beginPath();
-    roundRectPath(ctx, W * 0.06, H - baseH + baseH * 0.1, W * 0.88, baseH * 0.78, r * 0.12);
+    roundRectPath(ctx, panelX, panelY, panelW, panelH, r * 0.16);
     ctx.fill();
-    const metal = ctx.createLinearGradient(panelX, panelY, panelX + panelW, panelY + panelH);
-    metal.addColorStop(0, '#a6a39a');
-    metal.addColorStop(0.18, '#f1efe5');
-    metal.addColorStop(0.36, '#8f8c84');
-    metal.addColorStop(0.56, '#d8d4c6');
-    metal.addColorStop(0.78, '#77736c');
-    metal.addColorStop(1, '#c9c4b7');
-    ctx.fillStyle = metal;
-    ctx.strokeStyle = '#111318';
-    ctx.lineWidth = Math.max(3, r * 0.11);
-    ctx.beginPath();
-    roundRectPath(ctx, panelX, panelY, panelW, panelH, r * 0.12);
-    ctx.fill();
+    ctx.strokeStyle = 'rgba(228,182,95,0.55)';
+    ctx.shadowColor = 'rgba(228,182,95,0.5)';
+    ctx.shadowBlur = r * 0.14;
+    ctx.lineWidth = Math.max(1.5, r * 0.04);
     ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,0.48)';
-    ctx.lineWidth = 1;
-    for (let i = 0; i < 9; i++) {
-      const x = panelX + r * 0.26 + i * (panelW - r * 0.52) / 8;
-      ctx.beginPath(); ctx.moveTo(x, panelY + r * 0.16); ctx.lineTo(x - r * 0.16, panelY + panelH - r * 0.18); ctx.stroke();
-    }
-    [[panelX + r * 0.24, panelY + r * 0.24], [panelX + panelW - r * 0.24, panelY + r * 0.24], [panelX + r * 0.24, panelY + panelH - r * 0.24], [panelX + panelW - r * 0.24, panelY + panelH - r * 0.24]].forEach(([x, y]) => {
-      ctx.fillStyle = '#4e4b46';
-      ctx.beginPath(); ctx.arc(x, y, r * 0.07, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.45)';
-      ctx.beginPath(); ctx.moveTo(x - r * 0.06, y); ctx.lineTo(x + r * 0.06, y); ctx.stroke();
-    });
-    const slotX = panelX + panelW * 0.1;
-    const slotY = panelY + panelH * 0.34;
-    ctx.fillStyle = '#111318';
-    ctx.beginPath();
-    roundRectPath(ctx, slotX, slotY, panelW * 0.24, Math.max(4, r * 0.13), r * 0.04);
-    ctx.fill();
-    ctx.strokeStyle = '#ebe7dc';
-    ctx.lineWidth = 1.4;
-    ctx.stroke();
-    ctx.fillStyle = '#2d2a25';
-    ctx.font = `${Math.max(7, Math.round(r * 0.24))}px sans-serif`;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('INSERT 25¢', slotX, panelY + panelH * 0.66);
+    ctx.shadowBlur = 0;
 
+    // LED status row, standing in for the old coin slot.
+    const ledColors = ['#e4b65f', '#00e5ff', '#ff2aa3'];
+    const ledY = panelY + panelH * 0.32;
+    for (let i = 0; i < 3; i++) {
+      const lx = panelX + r * 0.32 + i * r * 0.34;
+      ctx.fillStyle = ledColors[i];
+      ctx.shadowColor = ledColors[i];
+      ctx.shadowBlur = r * 0.22;
+      ctx.beginPath();
+      ctx.arc(lx, ledY, r * 0.075, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(228,182,95,0.28)';
+    ctx.lineWidth = Math.max(1, r * 0.02);
+    ctx.beginPath();
+    ctx.moveTo(panelX + r * 0.22, panelY + panelH * 0.62);
+    ctx.lineTo(panelX + panelW * 0.32, panelY + panelH * 0.62);
+    ctx.stroke();
+
+    // Loading throat — dark socket with a thin neon ring instead of a metal chute.
     const throatW = r * 1.55;
     const throatH = Math.max(10, r * 0.34);
     const throatX = shooter.x - throatW / 2;
-    const throatY = panelY + panelH * 0.14;
-    const throat = ctx.createLinearGradient(throatX, throatY, throatX, throatY + throatH);
-    throat.addColorStop(0, '#3f3e38');
-    throat.addColorStop(0.45, '#f0eadc');
-    throat.addColorStop(1, '#23231f');
-    ctx.fillStyle = throat;
-    ctx.strokeStyle = '#111318';
-    ctx.lineWidth = Math.max(2, r * 0.06);
+    const throatY = panelY + panelH * 0.16;
+    ctx.fillStyle = '#0a0b14';
+    ctx.strokeStyle = 'rgba(228,182,95,0.5)';
+    ctx.shadowColor = 'rgba(228,182,95,0.4)';
+    ctx.shadowBlur = r * 0.12;
+    ctx.lineWidth = Math.max(1.5, r * 0.04);
     ctx.beginPath();
-    roundRectPath(ctx, throatX, throatY, throatW, throatH, r * 0.08);
+    roundRectPath(ctx, throatX, throatY, throatW, throatH, r * 0.1);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = 'rgba(17,19,24,0.6)';
-    ctx.beginPath();
-    roundRectPath(ctx, throatX + r * 0.2, throatY + throatH * 0.42, throatW - r * 0.4, throatH * 0.36, r * 0.05);
-    ctx.fill();
+    ctx.shadowBlur = 0;
 
-    const crankX = panelX + panelW * 0.76;
-    const crankY = panelY + panelH * 0.5;
+    // Neon lever — a glowing shaft + tip that swings with aim, replacing the chrome crank.
+    const crankX = panelX + panelW * 0.78;
+    const crankY = panelY + panelH * 0.56;
+    const dialR = r * 0.4;
+    const dial = ctx.createRadialGradient(crankX, crankY, dialR * 0.2, crankX, crankY, dialR);
+    dial.addColorStop(0, 'rgba(228,182,95,0.14)');
+    dial.addColorStop(1, 'rgba(228,182,95,0)');
+    ctx.fillStyle = dial;
+    ctx.beginPath();
+    ctx.arc(crankX, crankY, dialR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(228,182,95,0.4)';
+    ctx.lineWidth = Math.max(1, r * 0.025);
+    ctx.beginPath();
+    ctx.arc(crankX, crankY, dialR, 0, Math.PI * 2);
+    ctx.stroke();
+
     const spin = crankSpin > 0 ? (1 - crankSpin / 0.38) * Math.PI * 2.2 : 0;
     const crankAngle = aim + Math.PI / 2 + spin + Math.sin(crankSpin * 42) * crankSpin * 0.6;
-    const knob = ctx.createRadialGradient(crankX - r * 0.13, crankY - r * 0.16, r * 0.05, crankX, crankY, r * 0.44);
-    knob.addColorStop(0, '#ffffff');
-    knob.addColorStop(0.45, '#bdb8aa');
-    knob.addColorStop(1, '#5f5a51');
-    ctx.fillStyle = knob;
-    ctx.strokeStyle = '#111318';
-    ctx.lineWidth = Math.max(2, r * 0.08);
-    ctx.beginPath();
-    ctx.arc(crankX, crankY, r * 0.34, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
     ctx.save();
     ctx.translate(crankX, crankY);
     ctx.rotate(crankAngle);
-    ctx.strokeStyle = '#25231f';
-    ctx.lineWidth = Math.max(4, r * 0.14);
+    ctx.strokeStyle = '#e4b65f';
+    ctx.shadowColor = '#e4b65f';
+    ctx.shadowBlur = r * 0.24;
+    ctx.lineWidth = Math.max(2.5, r * 0.09);
     ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.lineTo(r * 0.66, 0);
+    ctx.lineTo(r * 0.68, 0);
     ctx.stroke();
-    const handleGrad = ctx.createLinearGradient(r * 0.48, -r * 0.18, r * 0.9, r * 0.18);
-    handleGrad.addColorStop(0, '#77736a');
-    handleGrad.addColorStop(0.45, '#f7f2e7');
-    handleGrad.addColorStop(1, '#6a665e');
-    ctx.fillStyle = handleGrad;
-    ctx.strokeStyle = '#111318';
-    ctx.lineWidth = Math.max(2, r * 0.06);
+    const tip = ctx.createRadialGradient(r * 0.78, 0, r * 0.02, r * 0.78, 0, r * 0.2);
+    tip.addColorStop(0, '#fff6df');
+    tip.addColorStop(1, '#e4b65f');
+    ctx.fillStyle = tip;
     ctx.beginPath();
-    ctx.ellipse(r * 0.78, 0, r * 0.24, r * 0.18, 0, 0, Math.PI * 2);
+    ctx.arc(r * 0.78, 0, r * 0.16, 0, Math.PI * 2);
     ctx.fill();
-    ctx.stroke();
     ctx.restore();
-    ctx.fillStyle = '#292620';
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#e4b65f';
     ctx.beginPath();
-    ctx.arc(crankX, crankY, r * 0.11, 0, Math.PI * 2);
+    ctx.arc(crankX, crankY, r * 0.06, 0, Math.PI * 2);
     ctx.fill();
-    const doorX = shooter.x - r * 0.5;
-    const doorY = panelY + panelH * 0.58;
-    ctx.fillStyle = 'rgba(17,19,24,0.78)';
-    ctx.beginPath();
-    roundRectPath(ctx, doorX, doorY, r, Math.max(8, r * 0.25), r * 0.07);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.16)';
-    ctx.fillRect(doorX + r * 0.1, doorY + r * 0.06, r * 0.8, r * 0.04);
     ctx.restore();
   }
 
@@ -1228,10 +1178,22 @@
     drawNextUpBadge();
   }
 
+  // Journey strips the aim assist away as levels climb: full guide early,
+  // a short stub with the landing hidden mid-game, no line at all by the
+  // last stretch. Endless always keeps full assist — its difficulty comes
+  // from the miss-streak/row-add pressure instead.
+  function aimAssistTier() {
+    if (mode !== 'journey') return 'full';
+    if (journeyN <= 4) return 'full';
+    if (journeyN <= 8) return 'short';
+    return 'none';
+  }
+
   function drawAim() {
     if (current) return;
+    const tier = aimAssistTier();
+    if (tier === 'none') return;
     const path = predictLanding();
-    const r = radius();
     const color = CAPSULE_COLORS[currentType % CAPSULE_COLORS.length] || '#e4b65f';
     const armed = aimArmed;
     ctx.save();
@@ -1244,22 +1206,28 @@
     ctx.shadowBlur = armed ? 10 : 4;
     ctx.beginPath();
     ctx.moveTo(shooter.x, shooter.y);
-    path.pts.forEach(p => ctx.lineTo(p.x, p.y));
-    ctx.stroke();
-    if (path.cell) {
-      const p = cellPos(path.cell.row, path.cell.col);
-      ctx.setLineDash([5, 5]);
-      ctx.lineWidth = armed ? 2.4 : 1.6;
-      ctx.globalAlpha = armed ? 0.85 : 0.45;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, r * 0.74, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.globalAlpha = armed ? 0.16 : 0.08;
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, r * 0.74, 0, Math.PI * 2);
-      ctx.fill();
+    if (tier === 'full') {
+      path.pts.forEach(p => ctx.lineTo(p.x, p.y));
+    } else {
+      // 'short': trim the guide to a fixed distance and never reveal the
+      // landing point, so the player still gets a sightline but has to
+      // judge the rest of the shot themselves.
+      const maxLen = radius() * 5.5;
+      let travelled = 0;
+      let lastX = shooter.x, lastY = shooter.y;
+      for (const p of path.pts) {
+        const segLen = Math.hypot(p.x - lastX, p.y - lastY);
+        if (travelled + segLen > maxLen) {
+          const t = (maxLen - travelled) / segLen;
+          ctx.lineTo(lastX + (p.x - lastX) * t, lastY + (p.y - lastY) * t);
+          break;
+        }
+        ctx.lineTo(p.x, p.y);
+        travelled += segLen;
+        lastX = p.x; lastY = p.y;
+      }
     }
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -1296,25 +1264,21 @@
     ctx.beginPath();
     ctx.ellipse(0, r * 0.28, r * 1.02, r * 0.38, 0, 0, Math.PI * 2);
     ctx.fill();
-    const launcherMetal = ctx.createLinearGradient(-r * 1.08, -r * 0.42, r * 1.08, r * 0.32);
-    launcherMetal.addColorStop(0, '#85827b');
-    launcherMetal.addColorStop(0.25, '#f2efe5');
-    launcherMetal.addColorStop(0.52, '#aaa59b');
-    launcherMetal.addColorStop(0.78, '#ffffff');
-    launcherMetal.addColorStop(1, '#746f66');
-    ctx.fillStyle = launcherMetal;
-    ctx.strokeStyle = '#111318';
-    ctx.lineWidth = Math.max(2, r * 0.07);
+    // Flat neon launcher — dark body, thin glowing gold edge — matches the console below.
+    ctx.fillStyle = '#12141f';
+    ctx.strokeStyle = 'rgba(228,182,95,0.6)';
+    ctx.shadowColor = 'rgba(228,182,95,0.5)';
+    ctx.shadowBlur = r * 0.16;
+    ctx.lineWidth = Math.max(1.5, r * 0.045);
     ctx.beginPath();
-    roundRectPath(ctx, -r * 1.08, -r * 0.38, r * 2.16, r * 0.74, r * 0.11);
+    roundRectPath(ctx, -r * 1.08, -r * 0.38, r * 2.16, r * 0.74, r * 0.14);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = 'rgba(17,19,24,0.72)';
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(228,182,95,0.14)';
     ctx.beginPath();
     roundRectPath(ctx, -r * 0.72, -r * 0.08, r * 1.44, r * 0.28, r * 0.08);
     ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.38)';
-    ctx.fillRect(-r * 0.86, -r * 0.26, r * 1.72, 1);
     ctx.restore();
     if (!current) drawToken(ctx, shooter.x, shooter.y - r * 0.9, r * 0.86, currentType, 1, 'normal', 0, 950 + currentType);
   }
@@ -1805,7 +1769,7 @@
   window.snoobStart = function() {
     mode = 'endless';
     tokenTypes = playableChars();
-    score = 0; shots = 0; drops = 0; rowsAdded = 0; missStreak = 0;
+    score = 0; shots = 0; drops = 0; rowsAdded = 0; missStreak = 0; wave = 1;
     current = null; aim = -Math.PI / 2; aimArmed = false;
     clearPendingAimTouch();
     resetBoard();

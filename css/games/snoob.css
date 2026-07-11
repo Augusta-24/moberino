@@ -16,18 +16,20 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   padding: max(4px, calc(env(safe-area-inset-top, 0px) + 4px)) clamp(4px, 1.2vw, 16px) max(4px, env(safe-area-inset-bottom, 0px));
   overflow: hidden;
 }
 .snoob-wrap.mode-select-layout {
   overflow-y: auto;
+  justify-content: flex-start;
   padding-top: max(52px, calc(env(safe-area-inset-top, 0px) + 48px));
 }
 
 .snoob-shell {
-  width: min(100%, 720px, calc((var(--app-vh, 100dvh) - 12px) * 0.68));
-  height: 100%;
+  width: min(100%, 720px, calc((var(--app-vh, 100dvh) - 12px) * 0.6));
+  aspect-ratio: 0.6;
+  max-height: 100%;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -35,8 +37,8 @@
   padding: 5px;
   box-sizing: border-box;
   border-radius: 16px 16px 10px 10px;
-  background: linear-gradient(90deg, #8f170f 0 14px, #2b2c28 14px 20px, transparent 20px calc(100% - 20px), #2b2c28 calc(100% - 20px) calc(100% - 14px), #8f170f calc(100% - 14px));
-  box-shadow: 0 14px 34px rgba(0,0,0,0.34);
+  background: linear-gradient(90deg, #12141f 0 3px, #e4b65f 3px 5px, transparent 5px calc(100% - 5px), #e4b65f calc(100% - 5px) calc(100% - 3px), #12141f calc(100% - 3px));
+  box-shadow: 0 14px 34px rgba(0,0,0,0.4), 0 0 24px rgba(228,182,95,0.08);
 }
 .snoob-title {
   font-family: 'Bebas Neue', 'Arial Narrow', Impact, sans-serif;
@@ -185,9 +187,10 @@
   gap: 8px;
   color: #f7f1df;
   background:
-    linear-gradient(180deg, #d5432c 0%, #9c1f16 62%, #5f100b 100%);
-  border: 3px solid #111318;
-  box-shadow: 3px 4px 0 rgba(0,0,0,0.4), inset 0 -8px 0 rgba(17,19,24,0.14), 0 0 22px rgba(228,182,95,0.08);
+    radial-gradient(circle at 50% -20%, rgba(228,182,95,0.14), rgba(9,10,18,0) 60%),
+    linear-gradient(180deg, #1b1f30 0%, #12141f 100%);
+  border: 2px solid rgba(228,182,95,0.4);
+  box-shadow: 3px 4px 0 rgba(0,0,0,0.4), 0 0 22px rgba(228,182,95,0.1);
   border-radius: 7px 7px 3px 3px;
   padding: 5px 10px;
   box-sizing: border-box;
@@ -204,13 +207,6 @@
   font-size: 25px;
   letter-spacing: 2px;
   line-height: 0.95;
-}
-.snoob-next {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-width: 46px;
-  min-height: 46px;
 }
 .snoob-aim-stack {
   display: flex;
@@ -312,7 +308,7 @@
 
 @media (min-width: 700px) {
   .snoob-shell {
-    width: min(100%, 760px, calc((var(--app-vh, 100dvh) - 16px) * 0.7));
+    width: min(100%, 760px, calc((var(--app-vh, 100dvh) - 16px) * 0.6));
   }
   .snoob-hud {
     min-height: 56px;
@@ -323,10 +319,6 @@
   }
   .snoob-stat-value {
     font-size: 34px;
-  }
-  .snoob-next {
-    min-width: 60px;
-    min-height: 60px;
   }
   .snoob-aim-stack {
     min-width: 128px;
