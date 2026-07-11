@@ -22,6 +22,8 @@
   };
 
   let state = 'idle'; // idle | playing | over
+  let mode = 'endless'; // 'endless' | 'journey'
+  let journeyN = 0, journeyPar = 0, journeyColors = 0;
   let canvas = null, ctx = null, wrap = null;
   let W = 0, H = 0, dpr = 1;
   let board = [];
@@ -204,33 +206,6 @@
     }
   }
 
-  function renderIdle() {
-    const host = document.getElementById('snoob-wrap');
-    if (!host) return;
-    host.classList.add('mode-select-layout');
-    document.body.classList.add('arcade-selection-open');
-    setArcadeExitVisible(true);
-    host.innerHTML = `
-      <div class="whack-mode-shell" style="max-width:440px;margin-top:24px">
-        <div class="game-card whack-mode-card snoob-mode-card" style="border-color:#e4b65f77;cursor:default;overflow:hidden">
-          <div class="game-card-art snoob-menu-art">
-            <div class="snoob-menu-capsules">
-              ${CAPSULE_COLORS.slice(0, 7).map((color, i) => `
-                <div class="snoob-menu-capsule" style="--cap:${color};--rot:${[-28, 18, 38, -16, 24, -31, 11][i]}deg;--x:${[-164, -44, 116, -124, 84, -196, 178][i]}px;--y:${[-94, -122, -84, 18, 48, 126, 118][i]}px;--s:${[1.18, 1.28, 1.1, 1.34, 1.22, 1.08, 1.02][i]}"></div>
-              `).join('')}
-            </div>
-          </div>
-          <div class="snoob-card-copy">
-            <div class="snoob-title">SNOOB</div>
-            <div class="snoob-sub">RETRO STICKER SHOOTER<br>AIM · MATCH 3 · DROP CLUSTERS</div>
-            <button class="snoob-btn" onclick="snoobStart()" style="margin-top:18px">▶ PLAY</button>
-          </div>
-        </div>
-      </div>`;
-    if (!ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
-    else ArcadeMusic.unduck();
-  }
-
   function renderPlaying() {
     const host = document.getElementById('snoob-wrap');
     if (!host) return;
@@ -240,7 +215,7 @@
     host.innerHTML = `
       <div class="snoob-shell">
         <div class="snoob-hud">
-          <div><div class="snoob-stat-label">SCORE</div><div class="snoob-stat-value" id="snoob-score">0</div></div>
+          <div><div class="snoob-stat-label" id="snoob-l-label">SCORE</div><div class="snoob-stat-value" id="snoob-score">0</div></div>
           <div class="snoob-aim-stack">
             <div class="snoob-next" id="snoob-next"></div>
             <div class="snoob-aim-switch" id="snoob-aim-switch" aria-live="polite">
@@ -292,8 +267,16 @@
   function updateHud() {
     const s = document.getElementById('snoob-score');
     const sh = document.getElementById('snoob-shots');
-    if (s) s.textContent = score;
-    if (sh) sh.textContent = shots;
+    const ll = document.getElementById('snoob-l-label');
+    if (mode === 'journey') {
+      if (ll) ll.textContent = 'LEVEL';
+      if (s) s.textContent = journeyN;
+      if (sh) sh.textContent = `${shots}/${journeyPar}`;
+    } else {
+      if (ll) ll.textContent = 'SCORE';
+      if (s) s.textContent = score;
+      if (sh) sh.textContent = shots;
+    }
     const next = document.getElementById('snoob-next');
     if (next) {
       next.innerHTML = '';
@@ -571,7 +554,8 @@
     clearPendingAimTouch();
     state = 'over';
     playSnoobSound('over');
-    setTimeout(renderOver, 500);
+    if (mode === 'journey') setTimeout(() => renderJourneyResult(false, 0), 500);
+    else setTimeout(renderOver, 500);
   }
 
   function snapCurrent() {
@@ -608,13 +592,27 @@
     syncQueuedTypesToBoard();
     updateHud();
     if (boardCleared()) {
-      score += 1000 + Math.max(0, 40 - shots) * 25;
       state = 'over';
       playSnoobWin();
-      setTimeout(renderOver, 500);
+      if (mode === 'journey') {
+        const stars = journeyStars();
+        jRecord(journeyN, stars);
+        jSync();
+        setTimeout(() => renderJourneyResult(true, stars), 500);
+      } else {
+        score += 1000 + Math.max(0, 40 - shots) * 25;
+        setTimeout(renderOver, 500);
+      }
     } else if (isDanger()) {
       endSnoobGame();
     }
+  }
+
+  function journeyStars() {
+    const par = journeyPar || 999;
+    if (shots <= par) return 3;
+    if (shots <= Math.ceil(par * 1.5)) return 2;
+    return 1;
   }
 
   function neighbors(row, col) {
@@ -701,7 +699,11 @@
     pieceVisuals.pop();
     const rowSeed = rowsAdded * 101 + shots * 13 + 29;
     rowPhase = (rowPhase + 1) % 2;
-    board.unshift(Array.from({ length: COLS }, () => randType()));
+    // Journey keeps new rows inside the level's palette so a stalled board never
+    // gains an off-palette color the shooter can't clear.
+    const rowType = () => (mode === 'journey' && journeyColors)
+      ? Math.floor(Math.random() * journeyColors) : randType();
+    board.unshift(Array.from({ length: COLS }, rowType));
     pieceVisuals.unshift(Array.from({ length: COLS }, (_, i) => makePieceVisual(rowSeed + i * 17)));
     rowsAdded++;
     showToast('ROW DOWN');
@@ -1186,14 +1188,28 @@
     drawBackground();
     const r = radius();
     const dangerY = shooter.y - r * 1.6;
-    if (isDanger()) {
-      ctx.save();
-      ctx.strokeStyle = 'rgba(185,45,45,0.86)';
-      ctx.setLineDash([8, 7]);
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(radius() * 0.8, dangerY); ctx.lineTo(W - radius() * 0.8, dangerY); ctx.stroke();
-      ctx.restore();
+    // Always-visible fail line, etched into the glass; heats up as the stack closes in.
+    let lowY = -Infinity;
+    for (let row = 0; row < board.length; row++) {
+      for (let col = 0; col < COLS; col++) {
+        if (board[row][col] != null) lowY = Math.max(lowY, cellPos(row, col).y);
+      }
     }
+    const close = lowY > dangerY - r * 3.2;
+    ctx.save();
+    ctx.setLineDash([8, 7]);
+    if (close) {
+      const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 170);
+      ctx.strokeStyle = `rgba(255,64,64,${(0.35 + pulse * 0.5).toFixed(3)})`;
+      ctx.shadowColor = 'rgba(255,64,64,0.8)';
+      ctx.shadowBlur = 6 + pulse * 6;
+      ctx.lineWidth = 2;
+    } else {
+      ctx.strokeStyle = 'rgba(228,182,95,0.20)';
+      ctx.lineWidth = 1.5;
+    }
+    ctx.beginPath(); ctx.moveTo(r * 0.8, dangerY); ctx.lineTo(W - r * 0.8, dangerY); ctx.stroke();
+    ctx.restore();
 
     for (let row = 0; row < board.length; row++) {
       for (let col = 0; col < COLS; col++) {
@@ -1214,42 +1230,59 @@
 
   function drawAim() {
     if (current) return;
-    const pts = aimPoints();
+    const path = predictLanding();
+    const r = radius();
+    const color = CAPSULE_COLORS[currentType % CAPSULE_COLORS.length] || '#e4b65f';
+    const armed = aimArmed;
     ctx.save();
-    ctx.strokeStyle = 'rgba(17,19,24,0.42)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([3, 8]);
     ctx.lineCap = 'round';
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = armed ? 0.9 : 0.5;
+    ctx.lineWidth = armed ? 2.6 : 1.8;
+    ctx.setLineDash(armed ? [10, 7] : [3, 9]);
+    ctx.shadowColor = color;
+    ctx.shadowBlur = armed ? 10 : 4;
     ctx.beginPath();
     ctx.moveTo(shooter.x, shooter.y);
-    pts.forEach(p => ctx.lineTo(p.x, p.y));
+    path.pts.forEach(p => ctx.lineTo(p.x, p.y));
     ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,0.24)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(shooter.x, shooter.y);
-    pts.forEach(p => ctx.lineTo(p.x, p.y));
-    ctx.stroke();
+    if (path.cell) {
+      const p = cellPos(path.cell.row, path.cell.col);
+      ctx.setLineDash([5, 5]);
+      ctx.lineWidth = armed ? 2.4 : 1.6;
+      ctx.globalAlpha = armed ? 0.85 : 0.45;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r * 0.74, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = armed ? 0.16 : 0.08;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r * 0.74, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 
-  function aimPoints() {
+  // Step the shot forward (same wall bounce + hit rules as update) so the
+  // guide shows the true path and where the capsule will actually stick.
+  function predictLanding() {
     const r = radius();
     let x = shooter.x, y = shooter.y;
     let vx = Math.cos(aim), vy = Math.sin(aim);
+    const step = r * 0.22;
     const pts = [];
-    for (let i = 0; i < 2; i++) {
-      const targetY = boardTop();
-      let tY = vy < 0 ? (targetY - y) / vy : Infinity;
-      let wallX = vx < 0 ? r : W - r;
-      let tX = (wallX - x) / vx;
-      if (tX > 0 && tX < tY) {
-        x += vx * tX; y += vy * tX; pts.push({ x, y }); vx *= -1;
-      } else {
-        x += vx * tY; y += vy * tY; pts.push({ x, y }); break;
+    for (let i = 0; i < 600; i++) {
+      x += vx * step;
+      y += vy * step;
+      if (x < r) { x = r; vx = Math.abs(vx); pts.push({ x, y }); }
+      if (x > W - r) { x = W - r; vx = -Math.abs(vx); pts.push({ x, y }); }
+      if (y <= boardTop() + r * 0.2 || collides(x, y, r)) {
+        pts.push({ x, y });
+        return { pts, cell: nearestCell(x, y) };
       }
     }
-    return pts;
+    pts.push({ x, y });
+    return { pts, cell: null };
   }
 
   function drawShooter() {
@@ -1512,7 +1545,265 @@
     return { a, b, c };
   }
 
+  // ══════════════════════════════════════
+  //  JOURNEY — designed levels + save-code progress (mirrors Consume)
+  // ══════════════════════════════════════
+  const JOURNEY_KEY = 'moberino-snoob-v1';
+  const JOURNEY_GAME = 'snoob-journey';
+  const JOURNEY = (typeof SNOOB_DATA !== 'undefined') ? SNOOB_DATA : { levels: [] };
+  const JLEVELS = JOURNEY.levels || [];
+  const TAG_WORDS = ['FROG','MINT','TACO','DUCK','MOON','STAR','WAVE','COMET','MANGO',
+    'PIZZA','NEON','DISCO','LASER','LEMON','BERRY','MAPLE','SODA','JELLY','BAGEL',
+    'NACHO','SPARK','TURBO','COSMO','ASTRO','LUNA','NOVA','BLIP','ZOOM','DINO',
+    'ROCKET','BANJO','KAZOO','YOYO','SNOOB','CRANK','CAPSULE'];
+
+  function jLoad() { try { return JSON.parse(localStorage.getItem(JOURNEY_KEY) || '{}'); } catch(e) { return {}; } }
+  function jSave(d) { try { localStorage.setItem(JOURNEY_KEY, JSON.stringify(d)); } catch(e) {} }
+  function jGenTag(taken) {
+    for (let i = 0; i < 200; i++) {
+      const t = TAG_WORDS[Math.floor(Math.random() * TAG_WORDS.length)] + (2 + Math.floor(Math.random() * 8));
+      if (!taken[t]) return t;
+    }
+    return 'MOBE' + Math.floor(Math.random() * 90 + 10);
+  }
+  function jProfile() {
+    const s = jLoad();
+    if (!s.profiles) s.profiles = {};
+    if (!s.active || !s.profiles[s.active]) {
+      s.active = jGenTag(s.profiles);
+      s.profiles[s.active] = { stars: {} };
+      jSave(s);
+    }
+    return s;
+  }
+  function jStars() { const s = jProfile(); return s.profiles[s.active].stars || {}; }
+  function jRecord(n, stars) {
+    const s = jProfile(); const p = s.profiles[s.active];
+    if (stars > (p.stars[n] || 0)) { p.stars[n] = stars; jSave(s); }
+  }
+  function jHighest(st) { let m = 0; const s = st || jStars(); for (const k in s) m = Math.max(m, +k); return m; }
+  function jTotal(st) { let t = 0; const s = st || jStars(); for (const k in s) t += s[k]; return t; }
+  function jSetTag(raw) {
+    const tag = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+    if (tag.length < 2) return { ok: false, msg: '2-12 LETTERS/NUMBERS' };
+    const s = jProfile();
+    if (tag === s.active) return { ok: true };
+    const cur = (s.profiles[s.active] && s.profiles[s.active].stars) || {};
+    if (!s.profiles[tag]) s.profiles[tag] = { stars: {} };
+    const dest = s.profiles[tag].stars;
+    for (const k in cur) if ((cur[k] || 0) > (dest[k] || 0)) dest[k] = cur[k];
+    s.active = tag; jSave(s);
+    return { ok: true };
+  }
+  function jAdopt(tag, upTo) {
+    const s = jProfile();
+    if (!s.profiles[tag]) s.profiles[tag] = { stars: {} };
+    for (let n = 1; n <= upTo; n++) if (!s.profiles[tag].stars[n]) s.profiles[tag].stars[n] = 1;
+    s.active = tag; jSave(s);
+  }
+  function jSync() {
+    try {
+      if (typeof RemoteLB === 'undefined' || !RemoteLB.submit) return;
+      const hi = jHighest(); if (!hi) return;
+      RemoteLB.submit(JOURNEY_GAME, jProfile().active, hi, 0, '★' + jTotal() + ' · L' + hi).catch(() => {});
+    } catch(e) {}
+  }
+  function jEsc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[ch]));
+  }
+
+  function prepHost() {
+    const host = document.getElementById('snoob-wrap');
+    if (!host) return null;
+    cancelAnimationFrame(raf);
+    host.classList.add('mode-select-layout');
+    document.body.classList.add('arcade-selection-open');
+    if (!ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
+    else ArcadeMusic.unduck();
+    return host;
+  }
+
+  function renderModes() {
+    const host = prepHost();
+    if (!host) return;
+    setArcadeExitVisible(true);
+    host.innerHTML = `
+      <div class="snoob-cabinet-frame">
+        <div class="snoob-menu-shell">
+          <div class="snoob-title">SNOOB</div>
+          <div class="snoob-sub">RETRO STICKER SHOOTER</div>
+          <div class="snoob-modes">
+            <button class="snoob-mode-btn" onclick="snoobJourney()">
+              <strong>JOURNEY</strong><span>CLEAR EACH BOARD · EARN STARS</span>
+            </button>
+            <button class="snoob-mode-btn" onclick="snoobStart()">
+              <strong>ENDLESS</strong><span>SURVIVE · CHASE A HIGH SCORE</span>
+            </button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // One tight panel holds everything code-related — your code, changing it,
+  // adopting someone else's, and the privacy note — so it's a single glance
+  // instead of scattered notes above and below the level grid.
+  function renderJourney() {
+    const host = prepHost();
+    if (!host) return;
+    setArcadeExitVisible(true);
+    const store = jProfile();
+    const st = store.profiles[store.active].stars || {};
+    const done = jHighest(st);
+    const next = Math.min(done + 1, JLEVELS.length);
+    host.innerHTML = `
+      <div class="snoob-cabinet-frame">
+        <div class="snoob-journey">
+          <button class="snoob-mode-return" onclick="snoobModes()">MODES</button>
+          <div class="snoob-title">SNOOB</div>
+          <div class="snoob-sub">JOURNEY · CLEAR EVERY CAPSULE</div>
+          <div class="snoob-level-grid">
+            ${JLEVELS.map(lvl => {
+              const stars = st[lvl.n] || 0;
+              const cls = stars ? 'done' : (lvl.n === next ? 'next' : 'lock');
+              return `<button class="snoob-node ${cls}" type="button" data-level="${lvl.n}"><span>${lvl.n}</span>${stars ? `<em>${'★'.repeat(stars)}</em>` : ''}</button>`;
+            }).join('')}
+          </div>
+          <div class="snoob-codebox">
+            <div class="snoob-codebox-row">
+              <span class="snoob-codebox-label">YOUR CODE</span>
+              <span class="snoob-me-name">${jEsc(store.active)}</span>
+              <span class="snoob-me-stars">★ ${jTotal(st)}</span>
+              <button class="snoob-btn snoob-tag-edit" id="snoob-tag-edit" type="button">CHANGE</button>
+            </div>
+            <div class="snoob-tag-editor" id="snoob-tag-editor" hidden>
+              <input id="snoob-tag-in" type="text" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="TACOCAT7">
+              <button class="snoob-btn" id="snoob-tag-set">SET</button>
+              <span class="snoob-find-msg" id="snoob-tag-msg"></span>
+            </div>
+            <div class="snoob-codebox-divider"></div>
+            <div class="snoob-codebox-row">
+              <span class="snoob-codebox-label">PLAYED ELSEWHERE?</span>
+              <input id="snoob-find-in" type="text" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="FROG4">
+              <button class="snoob-btn" id="snoob-find-go">ENTER</button>
+              <span class="snoob-find-msg" id="snoob-find-msg"></span>
+            </div>
+            <div class="snoob-codebox-note">CODES ARE PUBLIC — USE A FUN PHRASE, NEVER A REAL PASSWORD OR PIN.</div>
+          </div>
+        </div>
+      </div>`;
+    host.querySelector('.snoob-level-grid').addEventListener('click', e => {
+      const node = e.target.closest('[data-level]');
+      if (!node) return;
+      const n = +node.getAttribute('data-level');
+      if (n > done + 1) { playSnoobSound('miss'); return; }
+      startJourneyLevel(n);
+    });
+    host.querySelector('#snoob-tag-edit').addEventListener('click', () => {
+      const ed = host.querySelector('#snoob-tag-editor');
+      ed.hidden = !ed.hidden;
+      if (!ed.hidden) host.querySelector('#snoob-tag-in').focus();
+    });
+    const applyTag = () => {
+      const msg = host.querySelector('#snoob-tag-msg');
+      const res = jSetTag(host.querySelector('#snoob-tag-in').value);
+      if (!res.ok) { msg.textContent = res.msg; return; }
+      jSync();
+      renderJourney();
+    };
+    host.querySelector('#snoob-tag-set').addEventListener('click', applyTag);
+    host.querySelector('#snoob-tag-in').addEventListener('keydown', e => { if (e.key === 'Enter') applyTag(); });
+    host.querySelector('#snoob-find-go').addEventListener('click', () => {
+      const inp = host.querySelector('#snoob-find-in');
+      const msg = host.querySelector('#snoob-find-msg');
+      const tag = (inp.value || '').trim().toUpperCase();
+      if (!tag) return;
+      msg.textContent = 'CHECKING...';
+      if (typeof RemoteLB === 'undefined' || !RemoteLB.lookup) { msg.textContent = 'NO CONNECTION'; return; }
+      RemoteLB.lookup(JOURNEY_GAME, tag).then(row => {
+        if (!row) { msg.textContent = 'CODE NOT FOUND'; return; }
+        jAdopt(row.name, Math.min(row.score, JLEVELS.length));
+        renderJourney();
+      });
+    });
+  }
+
+  function loadJourneyBoard(data) {
+    board = [];
+    pieceVisuals = [];
+    rowPhase = 0;
+    fallingPieces = [];
+    faceFlashes = [];
+    rattles = [];
+    ensureBoardRows(MAX_ROWS);
+    const rows = data.board || [];
+    for (let r = 0; r < rows.length && r < MAX_ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const t = rows[r][c];
+        if (t == null) continue;
+        board[r][c] = t;
+        pieceVisuals[r][c] = makePieceVisual(r * COLS + c + 17);
+      }
+    }
+  }
+
+  function startJourneyLevel(n) {
+    const data = JLEVELS[n - 1];
+    if (!data) return;
+    mode = 'journey';
+    journeyN = n;
+    journeyPar = data.par || 0;
+    journeyColors = data.colors || TYPES;
+    tokenTypes = playableChars();
+    score = 0; shots = 0; drops = 0; rowsAdded = 0; missStreak = 0;
+    current = null; aim = -Math.PI / 2; aimArmed = false;
+    clearPendingAimTouch();
+    loadJourneyBoard(data);
+    currentType = randQueuedType();
+    nextType = randQueuedType();
+    state = 'playing';
+    renderPlaying();
+    if (ArcadeMusic && ArcadeMusic.duck) ArcadeMusic.duck();
+    last = performance.now();
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(step);
+  }
+
+  function renderJourneyResult(win, stars) {
+    cancelAnimationFrame(raf);
+    const host = document.getElementById('snoob-wrap');
+    if (!host) return;
+    host.classList.add('mode-select-layout');
+    document.body.classList.add('arcade-selection-open');
+    setArcadeExitVisible(false);
+    const hasNext = win && journeyN < JLEVELS.length;
+    const starRow = win
+      ? `<div class="snoob-result-stars">${[1, 2, 3].map(i => `<span class="${i <= stars ? 'on' : ''}">★</span>`).join('')}</div>`
+      : '';
+    host.innerHTML = `
+      <div class="snoob-cabinet-frame">
+        <div class="snoob-result">
+          <div class="snoob-title" style="color:${win ? '#e4b65f' : '#ff5b6f'}">${win ? 'LEVEL ' + journeyN + ' CLEAR' : 'LEVEL FAILED'}</div>
+          ${starRow}
+          <div class="snoob-sub">${win ? `${shots} SHOTS · PAR ${journeyPar}` : 'THE STACK REACHED THE LINE'}</div>
+          <div class="snoob-result-btns">
+            ${hasNext ? `<button class="snoob-btn snoob-btn-go" onclick="snoobNextLevel()">NEXT LEVEL ▶</button>` : ''}
+            ${win && !hasNext ? `<button class="snoob-btn snoob-btn-go" onclick="snoobJourney()">ALL CLEAR!</button>` : ''}
+            <button class="snoob-btn" onclick="snoobRetryLevel()">${win ? 'REPLAY' : 'RETRY'}</button>
+            <button class="snoob-btn" onclick="snoobJourney()">LEVELS</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  window.snoobModes = function() { renderModes(); };
+  window.snoobJourney = function() { renderJourney(); };
+  window.snoobNextLevel = function() { startJourneyLevel(Math.min(journeyN + 1, JLEVELS.length)); };
+  window.snoobRetryLevel = function() { startJourneyLevel(journeyN); };
+
   window.snoobStart = function() {
+    mode = 'endless';
     tokenTypes = playableChars();
     score = 0; shots = 0; drops = 0; rowsAdded = 0; missStreak = 0;
     current = null; aim = -Math.PI / 2; aimArmed = false;
@@ -1532,7 +1823,7 @@
     if (!tokenTypes.length) tokenTypes = playableChars();
     state = 'idle';
     cancelAnimationFrame(raf);
-    renderIdle();
+    renderModes();
   };
 
   window.snoobBack = function() {

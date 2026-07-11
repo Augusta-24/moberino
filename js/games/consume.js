@@ -236,7 +236,6 @@
       S.bad = true;
       CSFX.bad();
       updateTray();
-      updateCoach();
       later(() => {
         if (!S) return;
         S.bad = false;
@@ -315,18 +314,15 @@
     wrap.innerHTML =
       `<div class="cw-hud">` +
       `<button class="cw-btn" data-act="journey">◀ JOURNEY</button>` +
-      `<div class="cw-hud-mid"><span class="cw-lvl">LEVEL ${S.n}</span><span class="cw-meta">${S.data.solutionCount} SOLUTIONS · ${S.data.trapCount} TRAPS</span></div>` +
+      `<div class="cw-hud-mid"><span class="cw-lvl">LEVEL ${S.n}</span></div>` +
       `<button class="cw-btn" data-act="reset">RESET</button>` +
       `</div>` +
-      `<div class="cw-coach" id="cw-coach"></div>` +
       `<div class="cw-board" id="cw-board" style="--cw-cols:${S.boardCols}"></div>` +
       `<div class="cw-tray-shell">` +
-      `<div class="cw-label">CURRENT WORD</div>` +
       `<div class="cw-tray" id="cw-tray"></div>` +
       `<button class="cw-spell" data-act="submit">SPELL IT</button>` +
       `</div>` +
       `<div class="cw-tableau-shell">` +
-      `<div class="cw-label">SPELLED WORDS</div>` +
       `<div class="cw-tableau" id="cw-tableau"></div>` +
       `</div>`;
     wrap.querySelector('.cw-hud').addEventListener('click', e => {
@@ -354,7 +350,6 @@
     updateBoard();
     updateTray();
     updateTableau();
-    updateCoach();
   }
 
   function updateBoard() {
@@ -379,7 +374,7 @@
     tray.classList.toggle('bad', !!S.bad);
     tray.innerHTML = S.tray.length
       ? S.tray.map(t => `<button class="cw-tile tray" type="button" data-tray-tile="${t.id}">${esc(t.ch.toUpperCase())}</button>`).join('')
-      : `<div class="cw-tray-empty">tap letters above</div>`;
+      : '';
     const btn = wrap.querySelector('.cw-spell');
     if (btn) btn.disabled = S.tray.length < 3;
   }
@@ -393,18 +388,7 @@
         entry.word.toUpperCase().split('').map(ch => `<span class="cw-chip-tile">${esc(ch)}</span>`).join('') +
         `</button>`
       ).join('')
-      : `<div class="cw-tableau-empty">submitted words collect here</div>`;
-  }
-
-  function updateCoach() {
-    const el = wrap && wrap.querySelector('#cw-coach');
-    if (!el || !S) return;
-    const stuck = stuckText();
-    if (S.bad) el.textContent = 'Not a word yet.';
-    else if (stuck) el.textContent = stuck;
-    else if (S.n <= 2 && !S.tableau.length) el.textContent = 'Build any real word, then use the bottom chips to break and recombine.';
-    else el.textContent = 'Consume every tile. Break words apart whenever the leftovers get weird.';
-    el.classList.toggle('stuck', !!stuck);
+      : '';
   }
 
   function renderJourney() {
@@ -418,8 +402,9 @@
       `<div class="cw-levels">` +
       `<button class="cw-mode-return" type="button" data-act="modes">MODES</button>` +
       `<div class="cw-title">KNOT SWAP</div>` +
-      `<div class="cw-sub">SPELL · SHATTER · RECOMBINE</div>` +
-      `<div class="cw-me"><span class="cw-me-label">SAVE CODE</span>` +
+      `<div class="cw-intro">Make real words from the grid. Tap a completed word to return its tiles and rearrange them.</div>` +
+      `<div class="cw-code-card"><div class="cw-code-title">SAVE CODE</div>` +
+      `<div class="cw-me">` +
       `<span class="cw-me-name">${esc(store.active)}</span>` +
       `<span class="cw-me-stars">★ ${totalStars(st)}</span>` +
       `<button class="cw-btn cw-tag-edit" id="cw-tag-edit" type="button">CHANGE</button></div>` +
@@ -428,8 +413,8 @@
       `<input id="cw-tag-in" type="text" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="TACOCAT7">` +
       `<button class="cw-btn" id="cw-tag-set">SET</button>` +
       `<span class="cw-find-msg" id="cw-tag-msg"></span></div>` +
-      `<div class="cw-tagnote">YOUR JOURNEY SAVES UNDER THIS CODE · TAP CHANGE TO PICK YOUR OWN</div>` +
-      `<div class="cw-tagnote cw-tagwarn">CODES ARE PUBLIC — USE A FUN PHRASE, NEVER A REAL PASSWORD OR PIN</div>` +
+      `<div class="cw-code-note">Use this public code to continue on another device. Never use a password or PIN.</div></div>` +
+      `<div class="cw-section-label">LEVELS</div>` +
       `<div class="cw-level-grid">` +
       LEVELS.map(lvl => {
         const stars = st[lvl.n] || 0;
@@ -438,11 +423,10 @@
           `<span>${lvl.n}</span>${stars ? `<em>${'★'.repeat(stars)}</em>` : ''}</button>`;
       }).join('') +
       `</div>` +
-      `<div class="cw-jump">PLAYED ELSEWHERE? ENTER YOUR CODE ` +
+      `<div class="cw-jump"><span>ENTER A SAVE CODE</span>` +
       `<input id="cw-find-in" type="text" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="FROG4">` +
       `<button class="cw-btn" id="cw-find-go">ENTER</button>` +
       `<span class="cw-find-msg" id="cw-find-msg"></span></div>` +
-      `<div class="cw-tagnote cw-tagwarn">SAVE CODES ARE JUST FUN PHRASES — NEVER TYPE A REAL PASSWORD OR PIN HERE</div>` +
       `</div>`;
     wrap.querySelector('.cw-level-grid').addEventListener('click', e => {
       const node = e.target.closest('[data-level]');

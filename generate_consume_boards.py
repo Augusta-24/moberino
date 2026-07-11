@@ -37,7 +37,9 @@ STOP = {"info", "index", "unix", "faq", "faqs", "gif", "gifs", "url", "utc",
         "jeff", "larry", "gary", "keith", "carl", "luis", "jose", "juan",
         "ian", "kim", "amy", "ann", "sue", "kevin", "sarah", "laura",
         "linda", "mary", "susan", "karen", "lisa", "nancy", "helen", "emma",
-        "alice", "julia", "diana", "anne", "dan", "don", "ted", "roy", "leo"}
+        "alice", "julia", "diana", "anne", "dan", "don", "ted", "roy", "leo",
+        # Keep player-facing vocabulary free of terms that can be used as slurs.
+        "gay"}
 
 THREE_OK = {
     "ace", "act", "add", "age", "ago", "aid", "aim", "air", "ale", "all",

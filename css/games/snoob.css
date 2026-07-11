@@ -349,3 +349,231 @@
     min-height: 300px;
   }
 }
+
+/* ── Mode select · journey · results ─────────────────────────── */
+/* Same housing the gameplay canvas sits in — red/black side rails — so these
+   screens read as part of the machine instead of floating text on the void. */
+.snoob-cabinet-frame {
+  width: min(100%, 500px);
+  box-sizing: border-box;
+  padding: 22px clamp(18px, 4vw, 34px) 24px;
+  border-radius: 16px 16px 10px 10px;
+  background:
+    linear-gradient(90deg, #8f170f 0 5px, #2b2c28 5px 8px, transparent 8px calc(100% - 8px), #2b2c28 calc(100% - 8px) calc(100% - 5px), #8f170f calc(100% - 5px)),
+    radial-gradient(circle at 50% 0%, rgba(228,182,95,0.07), rgba(10,11,20,0) 55%),
+    #0d0e18;
+  box-shadow: 0 14px 34px rgba(0,0,0,0.4), inset 0 0 40px rgba(0,0,0,0.35);
+}
+.snoob-menu-shell,
+.snoob-journey,
+.snoob-result {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.snoob-modes {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 22px;
+}
+.snoob-mode-btn {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 18px 20px;
+  border: 2px solid rgba(228,182,95,0.5);
+  border-radius: 8px;
+  background: radial-gradient(circle at 50% 20%, rgba(228,182,95,0.12), rgba(5,2,18,0) 60%), rgba(5,2,18,0.72);
+  color: #f7f1df;
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.16s, transform 0.1s, box-shadow 0.16s;
+}
+.snoob-mode-btn:hover { border-color: #e4b65f; box-shadow: 0 0 18px rgba(228,182,95,0.28); }
+.snoob-mode-btn:active { transform: scale(0.98); }
+.snoob-mode-btn strong {
+  font-family: 'Bebas Neue', 'Arial Narrow', Impact, sans-serif;
+  font-size: 30px;
+  letter-spacing: 4px;
+  color: #e4b65f;
+  text-shadow: 0 0 12px rgba(228,182,95,0.4);
+}
+.snoob-mode-btn span {
+  font-family: 'VCR', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: rgba(247,241,223,0.6);
+}
+.snoob-mode-return {
+  align-self: flex-start;
+  font-family: 'VCR', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: rgba(247,241,223,0.72);
+  background: none;
+  border: 1px solid rgba(247,241,223,0.25);
+  border-radius: 6px;
+  padding: 7px 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.snoob-btn { width: auto; padding: 8px 12px; min-height: 0; font-size: 11px; }
+
+/* Everything code-related — your code, changing it, adopting another one,
+   the privacy note — lives in this single panel at the bottom. */
+.snoob-codebox {
+  width: 100%;
+  margin-top: 16px;
+  padding: 16px 16px 14px;
+  border: 1px solid rgba(228,182,95,0.3);
+  border-radius: 10px;
+  background: rgba(228,182,95,0.05);
+}
+.snoob-codebox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-family: 'VCR', monospace;
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  color: #f7f1df;
+}
+.snoob-codebox-label {
+  font-size: 11px;
+  letter-spacing: 1.6px;
+  color: rgba(247,241,223,0.55);
+  white-space: nowrap;
+}
+.snoob-me-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 4px;
+  color: #e4b65f;
+  text-shadow: 0 0 14px rgba(228,182,95,0.5);
+}
+.snoob-me-stars { font-size: 16px; color: #ffe000; text-shadow: 0 0 10px rgba(255,224,0,0.45); }
+.snoob-tag-edit { font-size: 10px; padding: 6px 10px; margin-left: auto; }
+.snoob-tag-editor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  font-family: 'VCR', monospace;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  color: rgba(247,241,223,0.6);
+}
+.snoob-tag-editor[hidden] { display: none; }
+.snoob-codebox-divider {
+  height: 1px;
+  margin: 14px 0;
+  background: rgba(247,241,223,0.12);
+}
+.snoob-codebox-note {
+  margin-top: 12px;
+  font-family: 'VCR', monospace;
+  font-size: 11px;
+  letter-spacing: 1.3px;
+  line-height: 1.55;
+  color: #ffe000;
+  opacity: 0.75;
+  text-align: center;
+}
+.snoob-codebox input {
+  flex: 1 1 100px;
+  min-width: 90px;
+  padding: 8px 6px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-family: 'VCR', monospace;
+  font-size: 14px;
+  text-align: center;
+  background: rgba(255,255,255,0.05);
+  color: #f7f1df;
+  border: 1px solid rgba(247,241,223,0.25);
+  border-radius: 6px;
+}
+.snoob-level-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  margin: 4px 0 14px;
+}
+.snoob-node {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  border: 1px solid rgba(228,182,95,0.38);
+  background: rgba(228,182,95,0.07);
+  color: #f7f1df;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-family: 'VCR', monospace;
+  -webkit-tap-highlight-color: transparent;
+}
+.snoob-node.done { border-color: rgba(228,182,95,0.66); background: rgba(228,182,95,0.14); }
+.snoob-node.next {
+  border-color: #e4b65f;
+  box-shadow: 0 0 14px rgba(228,182,95,0.4);
+  animation: snoobNodePulse 1.6s ease-in-out infinite;
+}
+.snoob-node.lock { opacity: 0.32; cursor: default; }
+@keyframes snoobNodePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+.snoob-node span {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 2px;
+  color: #e4b65f;
+  text-shadow: 0 0 12px rgba(228,182,95,0.5);
+}
+.snoob-node em {
+  font-style: normal;
+  min-height: 11px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #ffe000;
+  text-shadow: 0 0 8px rgba(255,224,0,0.4);
+}
+.snoob-jump {
+  margin-top: 4px;
+  font-family: 'VCR', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: rgba(247,241,223,0.55);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.snoob-find-msg { color: #e4b65f; min-width: 90px; }
+.snoob-result-stars {
+  display: flex;
+  gap: 10px;
+  margin: 14px 0 6px;
+  font-size: 40px;
+  line-height: 1;
+}
+.snoob-result-stars span { color: rgba(247,241,223,0.18); }
+.snoob-result-stars span.on { color: #ffe000; text-shadow: 0 0 16px rgba(255,224,0,0.6); }
+.snoob-result-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 22px;
+}
+.snoob-result-btns .snoob-btn { width: 100%; min-height: 46px; font-size: 13px; letter-spacing: 3px; }
+.snoob-btn-go { background: rgba(228,182,95,0.26); }
