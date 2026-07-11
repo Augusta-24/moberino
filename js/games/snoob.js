@@ -183,8 +183,7 @@
   function makePieceVisual(seed) {
     const n = shapeNoise(seed);
     let rot = n.c * 0.1;
-    if (Math.abs(n.a) > 0.84) rot += n.a > 0 ? Math.PI : -Math.PI;
-    else if (Math.abs(n.b) > 0.68) rot += n.b > 0 ? 0.24 : -0.24;
+    if (Math.abs(n.b) > 0.68) rot += n.b > 0 ? 0.24 : -0.24;
     return { rot };
   }
 
@@ -813,9 +812,9 @@
 
   function drawBackground() {
     const chamber = ctx.createLinearGradient(0, 0, 0, H);
-    chamber.addColorStop(0, '#c9c8c0');
-    chamber.addColorStop(0.48, '#bdbab0');
-    chamber.addColorStop(1, '#969188');
+    chamber.addColorStop(0, '#252a3e');
+    chamber.addColorStop(0.48, '#171a29');
+    chamber.addColorStop(1, '#0a0b14');
     ctx.fillStyle = chamber;
     ctx.fillRect(0, 0, W, H);
     const topH = cabinetTopH();
@@ -825,27 +824,27 @@
     const chamberW = W;
     const chamberH = H - baseH - topH;
     const redTop = ctx.createLinearGradient(0, 0, 0, topH);
-    redTop.addColorStop(0, '#e64b31');
-    redTop.addColorStop(0.62, '#bc281b');
-    redTop.addColorStop(1, '#85170f');
+    redTop.addColorStop(0, '#d5432c');
+    redTop.addColorStop(0.62, '#9c1f16');
+    redTop.addColorStop(1, '#5f100b');
     ctx.fillStyle = redTop;
     ctx.fillRect(0, 0, W, topH);
-    ctx.fillStyle = '#c83220';
+    ctx.fillStyle = '#8f1d12';
     ctx.fillRect(0, H - baseH, W, baseH);
-    ctx.fillStyle = 'rgba(0,0,0,0.10)';
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
     ctx.fillRect(0, H - baseH, W, Math.max(5, radius() * 0.14));
     drawFrostedWallpaper(chamberX, chamberY, chamberW, chamberH);
     const frost = ctx.createRadialGradient(W * 0.5, H * 0.34, radius(), W * 0.5, H * 0.42, W * 0.72);
-    frost.addColorStop(0, 'rgba(255,255,255,0.34)');
-    frost.addColorStop(0.45, 'rgba(255,255,255,0.16)');
-    frost.addColorStop(1, 'rgba(42,43,45,0.18)');
+    frost.addColorStop(0, 'rgba(140,165,255,0.10)');
+    frost.addColorStop(0.45, 'rgba(140,165,255,0.04)');
+    frost.addColorStop(1, 'rgba(0,0,0,0.30)');
     ctx.fillStyle = frost;
     ctx.fillRect(chamberX, chamberY, chamberW, chamberH);
     const edgeFog = ctx.createLinearGradient(chamberX, 0, chamberX + chamberW, 0);
-    edgeFog.addColorStop(0, 'rgba(22,23,24,0.28)');
-    edgeFog.addColorStop(0.18, 'rgba(255,255,255,0)');
-    edgeFog.addColorStop(0.82, 'rgba(255,255,255,0)');
-    edgeFog.addColorStop(1, 'rgba(22,23,24,0.26)');
+    edgeFog.addColorStop(0, 'rgba(0,0,2,0.42)');
+    edgeFog.addColorStop(0.18, 'rgba(0,0,0,0)');
+    edgeFog.addColorStop(0.82, 'rgba(0,0,0,0)');
+    edgeFog.addColorStop(1, 'rgba(0,0,2,0.40)');
     ctx.fillStyle = edgeFog;
     ctx.fillRect(chamberX, chamberY, chamberW, chamberH);
     drawChamberWear(chamberX, chamberY, chamberW, chamberH);
@@ -860,9 +859,9 @@
     ctx.beginPath();
     ctx.rect(x, y, w, h);
     ctx.clip();
-    ctx.globalAlpha = 0.07;
-    ctx.strokeStyle = '#49454f';
-    ctx.fillStyle = 'rgba(62,58,70,0.16)';
+    ctx.globalAlpha = 0.10;
+    ctx.strokeStyle = 'rgba(228,182,95,0.7)';
+    ctx.fillStyle = 'rgba(228,182,95,0.22)';
     const step = Math.max(72, r * 2.7);
     for (let yy = y + r * 0.9; yy < y + h + step; yy += step) {
       for (let xx = x + r * 0.9; xx < x + w + step; xx += step) {
@@ -896,9 +895,9 @@
     }
     ctx.globalAlpha = 0.34;
     const cloudy = ctx.createLinearGradient(x, y, x + w, y + h);
-    cloudy.addColorStop(0, 'rgba(70,70,70,0.16)');
-    cloudy.addColorStop(0.5, 'rgba(255,255,255,0.08)');
-    cloudy.addColorStop(1, 'rgba(45,45,45,0.18)');
+    cloudy.addColorStop(0, 'rgba(255,0,204,0.05)');
+    cloudy.addColorStop(0.5, 'rgba(140,165,255,0.05)');
+    cloudy.addColorStop(1, 'rgba(0,0,0,0.20)');
     ctx.fillStyle = cloudy;
     ctx.fillRect(x, y, w, h);
     ctx.restore();
@@ -910,18 +909,18 @@
     ctx.beginPath();
     ctx.rect(x, y, w, h);
     ctx.clip();
-    ctx.globalAlpha = 0.24;
+    ctx.globalAlpha = 0.20;
     for (let i = 0; i < 14; i++) {
       const px = x + ((i * 47) % Math.max(1, w));
       const py = y + ((i * 83) % Math.max(1, h));
       const spot = ctx.createRadialGradient(px, py, r * 0.08, px, py, r * (0.8 + (i % 3) * 0.22));
-      spot.addColorStop(0, i % 2 ? 'rgba(74,68,58,0.18)' : 'rgba(255,255,255,0.12)');
+      spot.addColorStop(0, i % 2 ? 'rgba(0,0,0,0.22)' : 'rgba(160,180,255,0.10)');
       spot.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = spot;
       ctx.fillRect(px - r * 1.4, py - r * 1.4, r * 2.8, r * 2.8);
     }
-    ctx.globalAlpha = 0.24;
-    ctx.strokeStyle = 'rgba(50,48,46,0.46)';
+    ctx.globalAlpha = 0.20;
+    ctx.strokeStyle = 'rgba(200,215,255,0.22)';
     ctx.lineWidth = 1;
     for (let i = 0; i < 18; i++) {
       const sx = x + ((i * 31 + 13) % Math.max(1, w));
