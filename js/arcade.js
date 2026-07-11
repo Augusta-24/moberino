@@ -99,7 +99,7 @@
 
   let arcadeEdgeSwipe = null;
   function arcadeSwipeGuardActive() {
-    return document.body.matches('.on-lobby,.on-char,.on-whack,.on-match,.on-space,.on-signal,.on-snoob');
+    return document.body.matches('.on-lobby,.on-char,.on-whack,.on-match,.on-space,.on-signal,.on-snoob,.on-consume');
   }
 
   document.addEventListener('touchstart', e => {
@@ -205,6 +205,7 @@
     const onSpace = p === 'space';
     const onSignal = p === 'signal';
     const onSnoob = p === 'snoob';
+    const onConsume = p === 'consume';
     document.body.classList.toggle('on-lobby', onLobby);
     document.body.classList.toggle('on-char', onCharSelect);
     document.body.classList.toggle('on-whack', onWhack);
@@ -212,13 +213,14 @@
     document.body.classList.toggle('on-space', onSpace);
     document.body.classList.toggle('on-signal', onSignal);
     document.body.classList.toggle('on-snoob', onSnoob);
+    document.body.classList.toggle('on-consume', onConsume);
     document.documentElement.classList.add('arcade-root');
 
     try {
-      if ((onLobby || onCharSelect || onWhack || onMatch || onSpace || onSignal || onSnoob) && typeof ArcadeMusic !== 'undefined' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
+      if ((onLobby || onCharSelect || onWhack || onMatch || onSpace || onSignal || onSnoob || onConsume) && typeof ArcadeMusic !== 'undefined' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
       if (typeof ArcadeMusic !== 'undefined') {
         if (onLobby || onCharSelect) ArcadeMusic.unduck();
-        if (onWhack || onMatch || onSpace || onSignal || onSnoob) ArcadeMusic.duck();
+        if (onWhack || onMatch || onSpace || onSignal || onSnoob || onConsume) ArcadeMusic.duck();
       }
     } catch(e) {}
 
@@ -238,11 +240,14 @@
     if (onSpace && typeof initSpace === 'function') initSpace();
     if (onSignal && typeof initSignal === 'function') initSignal();
     if (onSnoob && typeof initSnoob === 'function') initSnoob();
+    if (onConsume && typeof initConsume === 'function') initConsume();
     if (!onSpace && typeof spacePause === 'function') spacePause();
     if (!onSignal && typeof signalBack === 'function') signalBack();
     if (!onWhack && typeof whackBack === 'function') whackBack();
     if (!onMatch && typeof matchBack === 'function') matchBack();
     if (!onSnoob && typeof snoobBack === 'function') snoobBack();
+    if (!onConsume && typeof consumeBack === 'function') consumeBack();
+    if (!onConsume && typeof consumeRackBack === 'function') consumeRackBack();
   };
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -679,7 +684,7 @@ const ArcadeMusic = (() => {
 // autoplay (cold load / browser blocked it), never to fight a deliberate
 // ArcadeMusic.stop() from a game that's actively silencing music for gameplay.
 document.addEventListener('click', function() {
-  const onArcade = document.body.matches('.on-lobby,.on-whack,.on-match,.on-space,.on-signal,.on-snoob,.on-char');
+  const onArcade = document.body.matches('.on-lobby,.on-whack,.on-match,.on-space,.on-signal,.on-snoob,.on-consume,.on-char');
     if (onArcade && !ArcadeMusic.playing && !ArcadeMusic.muted && !ArcadeMusic.suppressAutoResume) {
       ArcadeMusic.start();
       updateArcadeMusicPrompt();
@@ -687,7 +692,7 @@ document.addEventListener('click', function() {
     }
 }, { passive: true });
 document.addEventListener('touchstart', function() {
-  const onArcade = document.body.matches('.on-lobby,.on-whack,.on-match,.on-space,.on-signal,.on-snoob,.on-char');
+  const onArcade = document.body.matches('.on-lobby,.on-whack,.on-match,.on-space,.on-signal,.on-snoob,.on-consume,.on-char');
     if (onArcade && !ArcadeMusic.playing && !ArcadeMusic.muted && !ArcadeMusic.suppressAutoResume) {
       ArcadeMusic.start();
       updateArcadeMusicPrompt();
@@ -779,10 +784,11 @@ function getLeaderboardKey(game, options) {
   const opts = options || {};
   if (game === 'whack') return opts.key || getWhackLeaderboardKey();
   if (game === 'match') return opts.key || getMatchLeaderboardKey();
-  if (game === 'space') return opts.key || getSpaceLeaderboardKey();
-  if (game === 'signal') return opts.key || 'signal';
-  if (game === 'snoob') return opts.key || 'snoob';
-  return opts.key || game;
+    if (game === 'space') return opts.key || getSpaceLeaderboardKey();
+    if (game === 'signal') return opts.key || 'signal';
+    if (game === 'snoob') return opts.key || 'snoob';
+    if (game === 'consume') return opts.key || 'consume';
+    return opts.key || game;
 }
 
 function getLeaderboardBoards() {
@@ -797,6 +803,9 @@ function getLeaderboardBoards() {
     { key: 'space', label: 'SPACE MOBE', color: '#33ff66', field: 'score' },
     { key: 'signal', label: 'SIGNAL DRIFT', color: '#00e5ff', field: 'score' },
     { key: 'snoob', label: 'SNOOB', color: '#e4b65f', field: 'score' },
+    { key: 'consume', label: 'KNOT SWAP · GRID', color: '#38d8ff', field: 'score' },
+    { key: 'consume-words', label: 'KNOT SWAP · WORDS', color: '#ff75d5', field: 'score' },
+    { key: 'consume-numbers', label: 'KNOT SWAP · NUMBERS', color: '#ffb35c', field: 'score' },
   ];
 }
 
@@ -808,6 +817,7 @@ function getLeaderboardGroups() {
     { title: 'SPACE', keys: ['space'] },
     { title: 'SIGNAL', keys: ['signal'] },
     { title: 'SNOOB', keys: ['snoob'] },
+    { title: 'KNOT SWAP', keys: ['consume', 'consume-words', 'consume-numbers'] },
   ].map(group => ({ ...group, boards: group.keys.map(key => boards.find(b => b.key === key)).filter(Boolean) }));
 }
 
@@ -815,7 +825,7 @@ function getLeaderboardBoardMeta(game, options) {
   const key = getLeaderboardKey(game, options);
   const board = getLeaderboardBoards().find(b => b.key === key);
   if (board) return board;
-  const fallbackColor = game === 'whack' ? '#ff00cc' : game === 'match' ? '#ffe61a' : game === 'signal' ? '#00e5ff' : game === 'snoob' ? '#e4b65f' : '#33ff66';
+  const fallbackColor = game === 'whack' ? '#ff00cc' : game === 'match' ? '#ffe61a' : game === 'signal' ? '#00e5ff' : game === 'snoob' ? '#e4b65f' : game === 'consume' ? '#38d8ff' : '#33ff66';
   return { key, label: key.toUpperCase(), color: fallbackColor, field: 'score' };
 }
 
@@ -861,6 +871,9 @@ const RemoteLB = (() => {
     space:                { col: 'score',   dir: 'desc' },
     signal:               { col: 'score',   dir: 'desc' },
     snoob:                { col: 'score',   dir: 'desc' },
+    consume:              { col: 'score',   dir: 'desc' },
+    'consume-words':      { col: 'score',   dir: 'desc' },
+    'consume-numbers':    { col: 'score',   dir: 'desc' },
   };
 
   function isConfigured(game) { return !!SORT[game]; }
@@ -885,10 +898,24 @@ const RemoteLB = (() => {
   function fetchTop(game, count) {
     if (!isConfigured(game)) return Promise.resolve(null);
     const s = SORT[game];
-    const url = `${TABLE_URL}?game=eq.${encodeURIComponent(game)}&order=${s.col}.${s.dir}&limit=${count || 5}`;
-    return fetch(url, { headers: HEADERS }).then(r => r.json()).then(rows =>
-      (rows || []).map(r => ({ name: r.name, score: r.score, seconds: r.seconds, extra: r.extra }))
-    ).catch(e => { console.warn('[RemoteLB] fetch failed:', game, e); return null; });
+    const limit = count || 5;
+    const url = `${TABLE_URL}?game=eq.${encodeURIComponent(game)}&order=${s.col}.${s.dir}&limit=${limit}`;
+    return fetch(url, { headers: HEADERS }).then(r => r.json()).then(rows => {
+      let out = (rows || []).map(r => ({ name: r.name, score: r.score, seconds: r.seconds, extra: r.extra }));
+      return out;
+    }).catch(e => { console.warn('[RemoteLB] fetch failed:', game, e); return null; });
+  }
+
+  // Best remote row for a specific tag — lets a journey restore across devices.
+  function lookup(game, name) {
+    if (!isConfigured(game)) return Promise.resolve(null);
+    const s = SORT[game];
+    const tag = String(name || '').trim().toUpperCase().slice(0, 12);
+    if (!tag) return Promise.resolve(null);
+    const url = `${TABLE_URL}?game=eq.${encodeURIComponent(game)}&name=eq.${encodeURIComponent(tag)}&order=${s.col}.${s.dir}&limit=1`;
+    return fetch(url, { headers: HEADERS }).then(r => r.json())
+      .then(rows => (rows && rows[0]) ? { name: rows[0].name, score: rows[0].score, extra: rows[0].extra } : null)
+      .catch(() => null);
   }
 
   window.SignalRecipeRemote = {
@@ -925,7 +952,7 @@ const RemoteLB = (() => {
     },
   };
 
-  return { submit, fetchTop, isConfigured };
+  return { submit, fetchTop, lookup, isConfigured };
 })();
 window.RemoteLB = RemoteLB;
 
@@ -965,6 +992,7 @@ function mountSelectionArt(targetId, game) {
     match: 'position:absolute;left:50%;top:50%;width:130%;height:130%;transform:translate(-50%,-53%) scale(1.08);transform-origin:center center',
     space: 'position:absolute;left:50%;top:50%;width:130%;height:130%;transform:translate(-50%,-54%) scale(1.08);transform-origin:center center',
     snoob: 'position:absolute;left:50%;top:50%;width:130%;height:130%;transform:translate(-50%,-53%) scale(1.08);transform-origin:center center',
+    consume: 'position:absolute;left:50%;top:50%;width:130%;height:130%;transform:translate(-50%,-53%) scale(1.08);transform-origin:center center',
   };
   art.style.cssText = artFrames[game] || artFrames.whack;
   artFrame.appendChild(art);
@@ -1264,9 +1292,10 @@ window.openLeaderboard = function() {
   const active = window._lbActiveTab || (
     document.body.classList.contains('on-match') ? getMatchLeaderboardKey()
       : document.body.classList.contains('on-space') ? 'space'
-        : document.body.classList.contains('on-signal') ? 'signal'
-          : document.body.classList.contains('on-snoob') ? 'snoob'
-            : getWhackLeaderboardKey()
+          : document.body.classList.contains('on-signal') ? 'signal'
+            : document.body.classList.contains('on-snoob') ? 'snoob'
+            : document.body.classList.contains('on-consume') ? 'consume'
+              : getWhackLeaderboardKey()
   );
   renderLbTabs(active);
 };

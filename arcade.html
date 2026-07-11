@@ -23,6 +23,8 @@
 <link rel="stylesheet" href="css/games/signal.css">
 <link rel="stylesheet" href="css/games/match.css">
 <link rel="stylesheet" href="css/games/snoob.css">
+<link rel="stylesheet" href="css/games/consume.css">
+<link rel="stylesheet" href="css/games/consume-rack.css">
 <script>
 
 // Locks #pg-home's height to a JS-measured pixel value instead of letting the browser
@@ -376,6 +378,69 @@
 </div>
 </div>
 </div>
+<div class="carousel-item" id="ci-consume">
+<div class="game-card" onclick="SFX.menuSelect();nav('consume')" style="border-color:#38d8ff66;cursor:pointer">
+<div class="game-card-art" style="background:#031018">
+<svg height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0" viewBox="0 0 200 240" width="100%">
+<rect fill="#031018" height="240" width="200"/>
+<g opacity="0.16" stroke="#38d8ff" stroke-width="1">
+<path d="M0 58 H200"/>
+<path d="M0 118 H200"/>
+<path d="M0 178 H200"/>
+<path d="M42 0 V240"/>
+<path d="M100 0 V240"/>
+<path d="M158 0 V240"/>
+</g>
+<g font-family="'VCR',monospace" font-size="24" text-anchor="middle">
+<g transform="translate(31 42) rotate(-8)">
+<rect fill="#102438" height="38" rx="7" stroke="#f2efe8" stroke-opacity=".32" width="38"/>
+<text fill="#f2efe8" x="19" y="27">C</text>
+</g>
+<g transform="translate(80 32) rotate(5)">
+<rect fill="#102438" height="38" rx="7" stroke="#38d8ff" width="38"/>
+<text fill="#38d8ff" x="19" y="27">A</text>
+</g>
+<g transform="translate(130 47) rotate(8)">
+<rect fill="#102438" height="38" rx="7" stroke="#f2efe8" stroke-opacity=".32" width="38"/>
+<text fill="#f2efe8" x="19" y="27">T</text>
+</g>
+<g transform="translate(49 96) rotate(4)">
+<rect fill="#102438" height="38" rx="7" stroke="#f2efe8" stroke-opacity=".32" width="38"/>
+<text fill="#f2efe8" x="19" y="27">S</text>
+</g>
+<g transform="translate(108 102) rotate(-5)">
+<rect fill="#102438" height="38" rx="7" stroke="#f2efe8" stroke-opacity=".32" width="38"/>
+<text fill="#f2efe8" x="19" y="27">E</text>
+</g>
+<g transform="translate(24 150) rotate(6)">
+<rect fill="#352614" height="32" rx="6" stroke="#ffb35c" stroke-opacity=".78" width="32"/>
+<text fill="#ffb35c" font-size="20" x="16" y="23">8</text>
+</g>
+<g transform="translate(142 141) rotate(-7)">
+<rect fill="#352614" height="32" rx="6" stroke="#ffb35c" stroke-opacity=".78" width="32"/>
+<text fill="#ffb35c" font-size="20" x="16" y="23">3</text>
+</g>
+<g transform="translate(98 204) rotate(4)">
+<rect fill="#352614" height="32" rx="6" stroke="#ffb35c" stroke-opacity=".78" width="32"/>
+<text fill="#ffb35c" font-size="20" x="16" y="23">7</text>
+</g>
+<path d="M45 169 C66 153 89 153 110 169 S153 185 174 169" fill="none" stroke="#38d8ff" stroke-linecap="round" stroke-width="3"/>
+<rect fill="#38d8ff22" height="38" rx="9" stroke="#38d8ff" width="116" x="42" y="162"/>
+<text fill="#38d8ff" font-family="'Bebas Neue',sans-serif" font-size="32" letter-spacing="5" x="100" y="190">TILES</text>
+</g>
+<circle cx="38" cy="205" fill="#ffe61a" opacity=".75" r="3"/>
+<circle cx="166" cy="28" fill="#38d8ff" opacity=".55" r="4"/>
+<circle cx="158" cy="210" fill="#ff4bd8" opacity=".55" r="3"/>
+</svg>
+</div>
+<div class="game-card-info">
+<div class="game-card-badge" style="background:#38d8ff22;color:#38d8ff;border:1px solid #38d8ff66">PUZZLE</div>
+<div class="game-card-marquee" style="color:#38d8ff;text-shadow:0 0 20px #38d8ff88">KNOT SWAP</div>
+<div class="game-card-desc">GRID · WORD RACK · NUMBER RACK</div>
+<div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#38d8ff22;border:1.5px solid #38d8ff;border-radius:5px;padding:10px 24px;color:#38d8ff;width:100%;text-shadow:0 0 8px #38d8ff66;text-align:center">▶ PLAY</div>
+</div>
+</div>
+</div>
 </div>
 <div class="carousel-nav-row" style="justify-content:space-between;align-items:center;padding:6px 14px 0">
 <button onclick="scrollCarousel(-1)" style="font-size:22px;background:none;border:none;color:rgba(242,239,232,0.4);cursor:pointer;padding:8px">◀</button>
@@ -463,6 +528,19 @@
 </div>
 </div>
 
+<div class="page" id="pg-consume">
+<div class="cats-header">
+<button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE MENU</button>
+<div class="arcade-header-actions" style="display:flex;align-items:center;gap:8px">
+<button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
+<button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
+</div>
+</div>
+<div class="consume-wrap" id="consume-wrap">
+<!-- Filled by JS -->
+</div>
+</div>
+
 <div id="arcade-float"></div>
 
 <button aria-label="Exit game" class="arcade-exit-btn" id="arcade-game-exit" onclick="confirmExitArcade()">✕</button>
@@ -492,5 +570,9 @@
 <script src="js/games/space.js"></script>
 <script src="js/games/signal.js"></script>
 <script src="js/games/snoob.js"></script>
+<script src="js/games/consume-boards.js"></script>
+<script src="js/games/consume.js"></script>
+<script src="js/games/consume-rack-boards.js"></script>
+<script src="js/games/consume-rack.js"></script>
 </body>
 </html>

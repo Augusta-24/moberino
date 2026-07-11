@@ -58,7 +58,21 @@
       "Bash(git -C /Users/kevinseverino/Documents/moberino diff js/games/signal.js)",
       "Bash(node --check /Users/kevinseverino/Documents/moberino/js/games/signal.js)",
       "Bash(node -c js/games/signal.js)",
-      "Bash(echo \"exit $?\")"
+      "Bash(echo \"exit $?\")",
+      "mcp__visualize__read_me",
+      "mcp__visualize__show_widget",
+      "Bash(python3 wordgame_gen.py --samples 0 --words 6 --batch 200)",
+      "Bash(python3 wordgame_gen.py --samples 0 --words 7 --batch 100)",
+      "Bash(curl -s --max-time 20 -o word_list_10k.txt https://raw.githubusercontent.com/first20hours/google-10000-english/master/google-10000-english-no-swears.txt)",
+      "Bash(python3 generate_word_boards.py)",
+      "Bash(python3 generate_word_boards.py --analyze)",
+      "Bash(pkill -f generate_word_boards.py)",
+      "Bash(python3 -u generate_word_boards.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/a14cafb3-424b-4cd2-b697-f966efc3dba5/scratchpad/inspect_board.py 9)",
+      "Bash(python3 /private/tmp/claude-501/-Users-kevinseverino-Documents-moberino/a14cafb3-424b-4cd2-b697-f966efc3dba5/scratchpad/inspect_board.py 9 26)",
+      "Bash(awk '{print $3, $4, $10}')",
+      "Bash(timeout 240 python3 -u consume_search.py)",
+      "Bash(python3 -u -c ' *)"
     ]
   }
 }
