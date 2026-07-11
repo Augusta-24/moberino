@@ -1,0 +1,234 @@
+/* WORD MOBE styles only. Shared arcade shell styles stay in ../arcade.css. */
+#pg-word {
+  height: var(--app-vh, 100dvh);
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  display: none;
+  flex-direction: column;
+  background: transparent;
+}
+#pg-word.active { display: flex; }
+
+.word-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: max(52px, calc(env(safe-area-inset-top, 0px) + 48px)) 10px max(10px, env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  width: 100%;
+}
+
+/* ---------- journey ---------- */
+.wm-journey { width: min(100%, 460px); display: flex; flex-direction: column; align-items: center; }
+.wm-title {
+  font-family: 'Bebas Neue', 'Arial Narrow', Impact, sans-serif;
+  font-size: clamp(40px, 9vw, 60px);
+  letter-spacing: 8px;
+  line-height: 0.95;
+  color: #ff4bd8;
+  text-shadow: 0 0 22px #ff4bd888, 3px 3px 0 #11031a;
+}
+.wm-sub {
+  font-family: 'VCR', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: rgba(242,239,232,0.55);
+  margin: 4px 0 14px;
+}
+.wm-me {
+  display: flex; align-items: center; gap: 10px;
+  font-family: 'VCR', monospace; font-size: 15px; letter-spacing: 2px;
+  color: #f2efe8; margin-bottom: 14px;
+}
+.wm-me-label { font-size: 10px; color: rgba(242,239,232,0.45); }
+.wm-me-name {
+  font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 4px;
+  color: #ff4bd8; text-shadow: 0 0 14px #ff4bd877;
+}
+.wm-me-stars { color: #ffe61a; text-shadow: 0 0 10px #ffe61a66; }
+.wm-tagnote {
+  font-family: 'VCR', monospace; font-size: 9px; letter-spacing: 2px;
+  color: rgba(242,239,232,0.4); margin: -8px 0 12px; text-align: center;
+}
+.wm-switch {
+  display: flex; gap: 6px; margin-top: 14px; flex-wrap: wrap; justify-content: center;
+}
+.wm-find-msg { color: #ff4bd8; min-width: 90px; }
+
+.wm-nodes {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+  width: 100%;
+}
+.wm-node {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-family: 'VCR', monospace;
+  cursor: pointer;
+  border: 1px solid rgba(242,239,232,0.14);
+  background: rgba(255,255,255,0.03);
+  color: rgba(242,239,232,0.85);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.wm-node span { font-size: 15px; letter-spacing: 1px; }
+.wm-node em { font-style: normal; font-size: 8px; letter-spacing: 1px; margin-top: 2px; color: #ffe61a; }
+.wm-node.done { border-color: #ff4bd866; background: #ff4bd814; }
+.wm-node.next { border-color: #ff4bd8; box-shadow: 0 0 14px #ff4bd855; animation: wmPulse 1.6s ease-in-out infinite; }
+.wm-node.next em { color: #ff4bd8; }
+.wm-node.lock { opacity: 0.32; cursor: default; }
+.wm-node.lock em { color: rgba(242,239,232,0.5); }
+@keyframes wmPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+
+.wm-jump {
+  margin-top: 16px;
+  font-family: 'VCR', monospace; font-size: 10px; letter-spacing: 2px;
+  color: rgba(242,239,232,0.55);
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center;
+}
+.wm-jump input {
+  width: 84px; padding: 7px 6px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-family: 'VCR', monospace; font-size: 14px; text-align: center;
+  background: rgba(255,255,255,0.05); color: #f2efe8;
+  border: 1px solid rgba(242,239,232,0.25); border-radius: 6px;
+}
+/* ---------- play ---------- */
+.wm-hud {
+  width: min(100%, 560px);
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  margin-bottom: 8px; flex-wrap: wrap;
+}
+.wm-hud-mid { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.wm-hud-btns { display: flex; gap: 5px; }
+.wm-lvl { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 3px; color: #ff4bd8; text-shadow: 0 0 12px #ff4bd866; }
+.wm-swaps { font-family: 'VCR', monospace; font-size: 10px; letter-spacing: 2px; color: rgba(242,239,232,0.6); }
+.wm-btn {
+  font-family: 'VCR', monospace; font-size: 11px; letter-spacing: 2px;
+  background: none; color: rgba(242,239,232,0.8);
+  border: 1px solid rgba(242,239,232,0.25); border-radius: 6px;
+  padding: 8px 10px; cursor: pointer;
+}
+.wm-btn:active { transform: scale(0.96); }
+.wm-btn.primary { border-color: #ff4bd8; color: #ff4bd8; box-shadow: 0 0 12px #ff4bd844; }
+
+.wm-coach {
+  font-family: 'VCR', monospace; font-size: 10px; letter-spacing: 1.5px; line-height: 1.7;
+  color: #ffe61a; text-align: center; margin-bottom: 8px;
+  text-shadow: 0 0 8px #ffe61a44;
+}
+
+.wm-stage { display: flex; justify-content: center; width: 100%; padding: 8px 0 4px; }
+.wm-board {
+  position: relative;
+  border-radius: 12px;
+  background: rgba(10, 4, 24, 0.55);
+  box-shadow: inset 0 0 30px rgba(255, 75, 216, 0.06), 0 10px 30px rgba(0,0,0,0.35);
+}
+.wm-tile {
+  position: absolute;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'VCR', monospace; font-weight: 400;
+  color: #f2efe8;
+  background: #241d3e;
+  border: 1px solid rgba(242,239,232,0.32);
+  box-shadow: 0 3px 0 rgba(0,0,0,0.45);
+  border-radius: 7px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: left 0.24s ease, top 0.34s cubic-bezier(0.25, 0.8, 0.35, 1.15),
+              transform 0.22s ease, opacity 0.22s ease, background 0.2s, border-color 0.2s;
+}
+.wm-tile.new { transform: translateY(-14px); opacity: 0; }
+.wm-tile.red {
+  background: #4d1136;
+  border-color: #ff4bd8;
+  color: #ffb3ef;
+  box-shadow: 0 0 14px #ff4bd866, 0 3px 0 rgba(0,0,0,0.45);
+}
+.wm-tile.pop { transform: scale(1.55) rotate(4deg); opacity: 0; pointer-events: none; }
+.wm-outline {
+  position: absolute;
+  border: 1px solid rgba(242,239,232,0.22);
+  border-radius: 10px;
+  pointer-events: none;
+  transition: left 0.24s ease, top 0.34s cubic-bezier(0.25, 0.8, 0.35, 1.15),
+              width 0.24s ease, border-color 0.3s;
+}
+.wm-outline.frag { border-style: dashed; border-color: rgba(255, 230, 26, 0.4); }
+.wm-outline.pop { opacity: 0; transition: opacity 0.25s; }
+.wm-outline.flash { border-color: #ff4bd8; box-shadow: 0 0 18px #ff4bd866; border-style: solid; }
+
+.wm-float {
+  position: absolute;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px; letter-spacing: 3px;
+  color: #ff4bd8; text-shadow: 0 0 14px #ff4bd8aa;
+  pointer-events: none;
+  animation: wmFloat 0.9s ease-out forwards;
+  z-index: 5;
+}
+@keyframes wmFloat {
+  0% { transform: translateY(0); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translateY(-44px); opacity: 0; }
+}
+
+.wm-rack-label {
+  font-family: 'VCR', monospace; font-size: 9px; letter-spacing: 2px;
+  color: rgba(242,239,232,0.45); margin-top: 10px;
+}
+.wm-rack {
+  display: flex; gap: 7px; margin-top: 6px; flex-wrap: wrap; justify-content: center;
+  min-height: 46px;
+}
+.wm-rack.nudge { animation: wmNudge 0.3s ease; }
+@keyframes wmNudge { 0%,100% { transform: translateX(0); } 30% { transform: translateX(-5px); } 60% { transform: translateX(5px); } }
+.wm-rk {
+  width: 42px; height: 42px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'VCR', monospace; font-size: 20px;
+  color: #0b0313;
+  background: #ffe61a;
+  border: 1px solid #ffe61a;
+  border-radius: 7px;
+  box-shadow: 0 3px 0 #8a7a00, 0 0 10px #ffe61a33;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.wm-rk.sel {
+  transform: translateY(-6px) scale(1.08);
+  box-shadow: 0 6px 0 #8a7a00, 0 0 20px #ffe61aaa;
+}
+
+/* ---------- win overlay ---------- */
+.wm-win {
+  position: absolute;
+  inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px;
+  background: rgba(5, 2, 18, 0.88);
+  backdrop-filter: blur(6px);
+  z-index: 40;
+  animation: wmWinIn 0.35s ease;
+}
+@keyframes wmWinIn { from { opacity: 0; } to { opacity: 1; } }
+.wm-win-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(38px, 9vw, 56px); letter-spacing: 6px;
+  color: #ff4bd8; text-shadow: 0 0 24px #ff4bd888;
+}
+.wm-win-stars { font-size: 42px; color: #ffe61a; text-shadow: 0 0 18px #ffe61a88; letter-spacing: 6px; }
+.wm-win-stars span { color: rgba(242,239,232,0.15); text-shadow: none; }
+.wm-win-sub { font-family: 'VCR', monospace; font-size: 12px; letter-spacing: 3px; color: rgba(242,239,232,0.6); }
+.wm-win-btns { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; justify-content: center; }
