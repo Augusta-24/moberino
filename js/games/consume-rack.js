@@ -1,7 +1,7 @@
 // Knot Swap tabletop modes: directly drag every tile until every group works.
 (function() {
   const modes = {
-    words: { title: 'WORDS', accent: '#ff75d5', intro: 'Rearrange every tile into valid words.' },
+    words: { title: 'WORDS', accent: '#ff75d5', intro: 'Rearrange words or create new words to use all tiles.' },
     numbers: { title: 'RUMMY', accent: '#ffb35c', intro: 'Rearrange every tile into number runs or sets.' },
   };
   const TAGS = ['FROG', 'MINT', 'TACO', 'DUCK', 'MOON', 'STAR', 'WAVE', 'COMET', 'BAGEL', 'SPARK', 'TURBO', 'COSMO'];
@@ -42,7 +42,7 @@
   function done(stars) { return Math.max(0, ...Object.keys(stars || profile().profiles[profile().active].stars).map(Number)); }
   function total(stars) { return Object.values(stars || profile().profiles[profile().active].stars).reduce((sum, n) => sum + n, 0); }
   function record(n, value) { const data = profile(), stars = data.profiles[data.active].stars; stars[n] = Math.max(stars[n] || 0, value); save(data); }
-  function sync() { try { const data = profile(), high = done(data.profiles[data.active].stars); if (high && typeof RemoteLB !== 'undefined') RemoteLB.submit(cfg().title === 'WORDS' ? 'consume-words' : 'consume-numbers', data.active, high, 0, `★${total(data.profiles[data.active].stars)} · L${high}`).catch(() => {}); } catch (e) {} }
+  function sync() { try { const data = profile(), high = done(data.profiles[data.active].stars); if (high && typeof RemoteLB !== 'undefined') RemoteLB.submit(cfg().title === 'WORDS' ? 'consume-words' : 'consume-numbers', data.active, high, 0, `L${high}`).catch(() => {}); } catch (e) {} }
 
   function validGroup(group) {
     if (group.length < 3) return false;
@@ -60,7 +60,14 @@
     nextTile = 1;
     const tile = value => ({ id: nextTile++, value });
     state = { n, moves: 0, drag: null, groups: data.groups.map((group, id) => ({ id, tiles: group.map(tile) })), rack: data.rack.map(tile), won: false };
+    sortRummyGroups();
     renderPlay();
+  }
+
+  function rummyRank(tile) { return Number(tile.value.slice(1)); }
+  function sortRummyGroups() {
+    if (mode !== 'numbers') return;
+    state.groups.forEach(group => group.tiles.sort((a, b) => rummyRank(a) - rummyRank(b) || a.value.localeCompare(b.value)));
   }
 
   function tileLocation(id) {
@@ -97,14 +104,29 @@
     return tiles.length;
   }
 
+  function dropContainerAt(x, y) {
+    const hit = document.elementFromPoint(x, y);
+    const direct = hit?.closest('[data-group], [data-rack-drop]');
+    if (direct) return direct;
+    let nearest = null, nearestDistance = 28;
+    wrap.querySelectorAll('[data-group], [data-rack-drop]').forEach(container => {
+      const rect = container.getBoundingClientRect();
+      const dx = Math.max(rect.left - x, 0, x - rect.right);
+      const dy = Math.max(rect.top - y, 0, y - rect.bottom);
+      const distance = Math.hypot(dx, dy);
+      if (distance < nearestDistance) { nearest = container; nearestDistance = distance; }
+    });
+    return nearest;
+  }
+
   function showDropCue(x, y) {
     clearDropCue();
     const drag = state?.drag; if (!drag) return;
     const hit = document.elementFromPoint(x, y);
-    const group = hit?.closest('[data-group]');
-    const rack = hit?.closest('[data-rack-drop]');
+    const container = dropContainerAt(x, y);
+    const group = container?.matches('[data-group]') ? container : null;
+    const rack = container?.matches('[data-rack-drop]') ? container : null;
     const table = hit?.closest('#kt-table');
-    const container = group || rack;
     if (!container && table) {
       drag.target = { type: 'new-group' };
       table.classList.add('drop-target');
@@ -114,7 +136,11 @@
     }
     if (!container) { drag.target = null; return; }
     const target = group ? { type: 'group', groupId: Number(group.dataset.group) } : { type: 'rack' };
-    target.index = insertionIndex(container, x, y, drag.id);
+    target.index = mode === 'numbers' && group
+      ? [...group.querySelectorAll('[data-tile]')].filter(element => Number(element.dataset.tile) !== drag.id)
+        .findIndex(element => rummyRank(drag.tile) < rummyRank(tileLocation(Number(element.dataset.tile)).tile))
+      : insertionIndex(container, x, y, drag.id);
+    if (target.index < 0) target.index = [...container.querySelectorAll('[data-tile]')].filter(element => Number(element.dataset.tile) !== drag.id).length;
     drag.target = target;
     container.classList.add('drop-target');
     const marker = ghostTile(drag.tile);
@@ -173,6 +199,7 @@
           } else sourceList.splice(source.index, 0, tile);
         }
         state.groups = state.groups.filter(group => group.tiles.length);
+        sortRummyGroups();
       }
     }
     state.drag = null;
@@ -181,7 +208,7 @@
   }
 
   function checkWin() { return !state.rack.length && state.groups.length && state.groups.every(group => validGroup(group.tiles)); }
-  function win() { if (state.won) return; state.won = true; const stars = state.moves <= Math.max(2, state.n + 1) ? 3 : state.moves <= state.n + 4 ? 2 : 1; record(state.n, stars); sync(); if (typeof SFX !== 'undefined') SFX.win(); const next = state.n < levels().length; const overlay = document.createElement('div'); overlay.className = 'kt-win'; overlay.innerHTML = `<strong>COMPLETE</strong><span>${'★'.repeat(stars)}<i>${'★'.repeat(3 - stars)}</i></span><div>${next ? '<button data-next>NEXT</button>' : ''}<button data-replay>REPLAY</button><button data-journey>JOURNEY</button></div>`; wrap.appendChild(overlay); overlay.addEventListener('click', event => { if (event.target.hasAttribute('data-next')) start(state.n + 1); if (event.target.hasAttribute('data-replay')) start(state.n); if (event.target.hasAttribute('data-journey')) journey(); }); }
+  function win() { if (state.won) return; state.won = true; record(state.n, 1); sync(); if (typeof SFX !== 'undefined') SFX.win(); const next = state.n < levels().length; const overlay = document.createElement('div'); overlay.className = 'kt-win'; overlay.innerHTML = `<strong>PUZZLE SOLVED!</strong><div>${next ? '<button data-next>NEXT</button>' : ''}<button data-replay>REPLAY</button><button data-journey>JOURNEY</button></div>`; wrap.appendChild(overlay); overlay.addEventListener('click', event => { if (event.target.hasAttribute('data-next')) start(state.n + 1); if (event.target.hasAttribute('data-replay')) start(state.n); if (event.target.hasAttribute('data-journey')) journey(); }); }
 
   function renderPlay() {
     wrap.style.setProperty('--kt', cfg().accent);
@@ -200,12 +227,24 @@
     wrap.querySelector('#kt-rack').innerHTML = `<span>RACK</span>${state.rack.map(tileMarkup).join('')}`;
   }
 
+  function showHowToPlay() {
+    const words = mode === 'words';
+    const overlay = document.createElement('div');
+    overlay.className = 'kt-help';
+    overlay.innerHTML = words
+      ? `<section role="dialog" aria-modal="true" aria-label="How to play WORDS"><button class="kt-help-close" data-close aria-label="Close">×</button><h2>HOW TO PLAY</h2><p>Drag tiles between groups, or onto empty tabletop space to make a new group.</p><p>Use every tile. Each group must spell a real word with at least <strong>3 LETTERS</strong>.</p><p>Tap <strong>CHECK</strong> when the rack is empty.</p></section>`
+      : `<section role="dialog" aria-modal="true" aria-label="How to play RUMMY"><button class="kt-help-close" data-close aria-label="Close">×</button><h2>HOW TO PLAY</h2><p>Drag tiles between groups, or onto empty tabletop space to make a new group.</p><dl><div><dt>RUN / STRAIGHT</dt><dd>3 or more consecutive numbers in the <strong>same color</strong>.</dd></div><div><dt>SET</dt><dd>3 or more matching numbers, with <strong>one tile of each color</strong>.</dd></div></dl><p>Use every tile, then tap <strong>CHECK</strong>.</p></section>`;
+    overlay.addEventListener('click', event => { if (event.target === overlay || event.target.hasAttribute('data-close')) overlay.remove(); });
+    wrap.appendChild(overlay);
+  }
+
   function journey() {
     state = null;
     const data = profile(), stars = data.profiles[data.active].stars, unlocked = done(stars) + 1;
     wrap.style.setProperty('--kt', cfg().accent);
-    wrap.innerHTML = `<div class="kt-journey"><button data-modes>MODES</button><h1>${cfg().title}</h1><p>${cfg().intro}</p><h2>LEVELS</h2><div class="kt-levels">${levels().map(level => { const value = stars[level.n] || 0, locked = level.n > unlocked; return `<button class="${locked ? 'locked' : ''}" data-level="${level.n}">${level.n}${value ? `<i>${'★'.repeat(value)}</i>` : ''}</button>`; }).join('')}</div><section class="kt-codebox"><div class="kt-code-row"><span>YOUR CODE</span><strong>${esc(data.active)}</strong><span class="kt-code-actions"><em>★ ${total(stars)}</em><button data-change>CHANGE</button></span></div><div class="kt-code-row kt-code-enter" id="kt-rename-row" hidden><span>NEW CODE</span><input id="kt-new-code" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="TACOCAT7"><button id="kt-rename-go">SET</button></div><div class="kt-code-divider"></div><div class="kt-code-row kt-code-enter"><span>PLAYED ELSEWHERE?</span><input id="kt-code" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="FROG4"><button id="kt-enter">ENTER</button></div><small>CODES ARE PUBLIC — USE A FUN PHRASE, NEVER A REAL PASSWORD OR PIN.</small></section></div>`;
+    wrap.innerHTML = `<div class="kt-journey"><div class="kt-journey-actions"><button data-modes>MODES</button><button data-help>HOW TO PLAY</button></div><h1>${cfg().title}</h1><p>${cfg().intro}</p><h2>LEVELS</h2><div class="kt-levels">${levels().map(level => { const locked = level.n > unlocked; return `<button class="${locked ? 'locked' : ''}" data-level="${level.n}">${level.n}</button>`; }).join('')}</div><section class="kt-codebox"><div class="kt-code-row"><span>YOUR CODE</span><strong>${esc(data.active)}</strong><span class="kt-code-actions"><button data-change>CHANGE</button></span></div><div class="kt-code-row kt-code-enter" id="kt-rename-row" hidden><span>NEW CODE</span><input id="kt-new-code" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="TACOCAT7"><button id="kt-rename-go">SET</button></div><div class="kt-code-divider"></div><div class="kt-code-row kt-code-enter"><span>PLAYED ELSEWHERE?</span><input id="kt-code" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="FROG4"><button id="kt-enter">ENTER</button></div><small>CODES ARE PUBLIC — USE A FUN PHRASE, NEVER A REAL PASSWORD OR PIN.</small></section></div>`;
     wrap.querySelector('[data-modes]').addEventListener('click', () => window.renderConsumeModes());
+    wrap.querySelector('[data-help]').addEventListener('click', showHowToPlay);
     wrap.querySelector('.kt-levels').addEventListener('click', event => { const button = event.target.closest('[data-level]'); if (button && !button.classList.contains('locked')) start(Number(button.dataset.level)); });
     wrap.querySelector('[data-change]').addEventListener('click', () => { const row = wrap.querySelector('#kt-rename-row'); row.hidden = !row.hidden; if (!row.hidden) wrap.querySelector('#kt-new-code').focus(); });
     wrap.querySelector('#kt-rename-go').addEventListener('click', () => { const res = setTag(wrap.querySelector('#kt-new-code').value); if (res.ok) journey(); });

@@ -100,7 +100,7 @@
       const hi = highestDone();
       if (!hi) return;
       const st = myStars();
-      RemoteLB.submit('consume', ensureProfile().active, hi, 0, '★' + totalStars(st) + ' · L' + hi)
+      RemoteLB.submit('consume', ensureProfile().active, hi, 0, 'L' + hi)
         .catch(() => {});
     } catch(e) {}
   }
@@ -283,27 +283,17 @@
     }, 420);
   }
 
-  function starsForWin() {
-    if (!S) return 1;
-    const used = S.tableau.length;
-    const min = S.data.minWords || used;
-    return used <= min ? 3 : used === min + 1 ? 2 : 1;
-  }
-
   function win() {
     if (!S || S.won) return;
     S.won = true;
-    const stars = starsForWin();
-    recordStars(S.n, stars);
+    recordStars(S.n, 1);
     syncJourney();
     CSFX.win();
     const hasNext = S.n < LEVELS.length;
     const ov = document.createElement('div');
     ov.className = 'cw-win';
     ov.innerHTML =
-      `<div class="cw-win-title">GRID SOLVED!</div>` +
-      `<div class="cw-win-stars">${'★'.repeat(stars)}<span>${'★'.repeat(3 - stars)}</span></div>` +
-      `<div class="cw-win-sub">${S.tableau.length} WORDS · BEST PATH ${S.data.minWords || S.tableau.length}</div>` +
+      `<div class="cw-win-title">PUZZLE SOLVED!</div>` +
       `<div class="cw-win-btns">` +
       (hasNext ? `<button class="cw-btn primary" data-act="next">NEXT LEVEL ▶</button>` : '') +
       `<button class="cw-btn" data-act="replay">REPLAY</button>` +
@@ -419,16 +409,15 @@
       `<div class="cw-section-label">LEVELS</div>` +
       `<div class="cw-level-grid">` +
       LEVELS.map(lvl => {
-        const stars = st[lvl.n] || 0;
-        const cls = stars ? 'done' : (lvl.n === next ? 'next' : 'lock');
+        const complete = st[lvl.n] || 0;
+        const cls = complete ? 'done' : (lvl.n === next ? 'next' : 'lock');
         return `<button class="cw-node ${cls}" type="button" data-level="${lvl.n}">` +
-          `<span>${lvl.n}</span>${stars ? `<em>${'★'.repeat(stars)}</em>` : ''}</button>`;
+          `<span>${lvl.n}</span></button>`;
       }).join('') +
       `</div>` +
       `<div class="cw-code-card">` +
       `<div class="cw-code-row"><span class="cw-code-label">YOUR CODE</span>` +
       `<span class="cw-me-name">${esc(store.active)}</span>` +
-      `<span class="cw-me-stars">★ ${totalStars(st)}</span>` +
       `<button class="cw-btn cw-tag-edit" id="cw-tag-edit" type="button">CHANGE</button></div>` +
       `<div class="cw-tag-editor" id="cw-tag-editor" hidden>` +
       `<input id="cw-tag-in" type="text" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="TACOCAT7">` +

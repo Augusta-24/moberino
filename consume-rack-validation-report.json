@@ -225,15 +225,71 @@
       "errors": []
     },
     {
+      "mode": "words",
+      "level": 17,
+      "solutions": 196,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 14,
+        "brokenGroups": 3,
+        "untouchedGroups": 1,
+        "effort": 44
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 18,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 14,
+        "brokenGroups": 3,
+        "untouchedGroups": 0,
+        "effort": 44
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 19,
+      "solutions": 13,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 16,
+        "brokenGroups": 4,
+        "untouchedGroups": 1,
+        "effort": 56
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 20,
+      "solutions": 18,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 12,
+        "brokenGroups": 3,
+        "untouchedGroups": 1,
+        "effort": 42
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
       "mode": "numbers",
       "level": 1,
       "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 9,
-        "brokenGroups": 3,
+        "movedTiles": 12,
+        "brokenGroups": 4,
         "untouchedGroups": 0,
-        "effort": 39
+        "effort": 52
       },
       "valid": true,
       "errors": []
@@ -444,6 +500,62 @@
         "brokenGroups": 3,
         "untouchedGroups": 2,
         "effort": 39
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 17,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 9,
+        "brokenGroups": 3,
+        "untouchedGroups": 0,
+        "effort": 39
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 18,
+      "solutions": 2,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 12,
+        "brokenGroups": 4,
+        "untouchedGroups": 0,
+        "effort": 52
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 19,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 12,
+        "brokenGroups": 4,
+        "untouchedGroups": 1,
+        "effort": 52
+      },
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 20,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 13,
+        "brokenGroups": 4,
+        "untouchedGroups": 0,
+        "effort": 53
       },
       "valid": true,
       "errors": []
