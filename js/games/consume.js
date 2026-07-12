@@ -35,11 +35,19 @@
       delete s.stars;
     }
     if (!s.profiles) s.profiles = {};
-    if (!s.active || !s.profiles[s.active]) {
+    // Retroactively adopt the shared cross-game code if it differs — old
+    // progress under the previous tag stays put, just no longer active.
+    const shared = typeof window.PlayerID !== 'undefined' ? window.PlayerID.get() : null;
+    if (shared && shared !== s.active) {
+      if (!s.profiles[shared]) s.profiles[shared] = { stars: {} };
+      s.active = shared;
+      saveStore(s);
+    } else if (!s.active || !s.profiles[s.active]) {
       s.active = genTag(s.profiles);
       s.profiles[s.active] = { stars: {} };
       saveStore(s);
     }
+    if (typeof window.PlayerID !== 'undefined') window.PlayerID.set(s.active);
     return s;
   }
   function myStars() { const s = ensureProfile(); return s.profiles[s.active].stars || {}; }
@@ -73,6 +81,7 @@
     for (const k in cur) if ((cur[k] || 0) > (dest[k] || 0)) dest[k] = cur[k];
     s.active = tag;
     saveStore(s);
+    if (typeof window.PlayerID !== 'undefined') window.PlayerID.set(tag);
     return { ok: true };
   }
   function adoptTag(tag, upToLevel) {
@@ -83,6 +92,7 @@
     }
     s.active = tag;
     saveStore(s);
+    if (typeof window.PlayerID !== 'undefined') window.PlayerID.set(tag);
   }
   function syncJourney() {
     try {
@@ -401,7 +411,7 @@
     wrap.innerHTML =
       `<div class="cw-levels">` +
       `<button class="cw-mode-return" type="button" data-act="modes">MODES</button>` +
-      `<div class="cw-title">KNOT SWAP</div>` +
+      `<div class="cw-title">TILE SWAP</div>` +
       `<div class="cw-intro">Make real words from the grid. Tap a completed word to return its tiles and rearrange them.</div>` +
       `<div class="cw-section-label">LEVELS</div>` +
       `<div class="cw-level-grid">` +

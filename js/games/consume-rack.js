@@ -15,7 +15,30 @@
   function load() { try { return JSON.parse(localStorage.getItem(key()) || '{}'); } catch (e) { return {}; } }
   function save(data) { try { localStorage.setItem(key(), JSON.stringify(data)); } catch (e) {} }
   function makeTag(profiles) { for (let i = 0; i < 100; i++) { const tag = TAGS[Math.floor(Math.random() * TAGS.length)] + (2 + Math.floor(Math.random() * 8)); if (!profiles[tag]) return tag; } return `KNOT${Math.floor(Math.random() * 90 + 10)}`; }
-  function profile() { const data = load(); data.profiles ||= {}; if (!data.active || !data.profiles[data.active]) { data.active = makeTag(data.profiles); data.profiles[data.active] = { stars: {} }; save(data); } return data; }
+  function profile() {
+    const data = load(); data.profiles ||= {};
+    // Retroactively adopt the shared cross-game code if it differs — old
+    // progress under the previous tag stays put, just no longer active.
+    const shared = typeof window.PlayerID !== 'undefined' ? window.PlayerID.get() : null;
+    if (shared && shared !== data.active) { data.profiles[shared] ||= { stars: {} }; data.active = shared; save(data); }
+    else if (!data.active || !data.profiles[data.active]) { data.active = makeTag(data.profiles); data.profiles[data.active] = { stars: {} }; save(data); }
+    if (typeof window.PlayerID !== 'undefined') window.PlayerID.set(data.active);
+    return data;
+  }
+  function setTag(raw) {
+    const tag = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+    if (tag.length < 2) return { ok: false, msg: '2-12 LETTERS/NUMBERS' };
+    const data = profile();
+    if (tag !== data.active) {
+      const cur = (data.profiles[data.active] && data.profiles[data.active].stars) || {};
+      data.profiles[tag] ||= { stars: {} };
+      const dest = data.profiles[tag].stars;
+      for (const k in cur) if ((cur[k] || 0) > (dest[k] || 0)) dest[k] = cur[k];
+      data.active = tag; save(data);
+      if (typeof window.PlayerID !== 'undefined') window.PlayerID.set(tag);
+    }
+    return { ok: true };
+  }
   function done(stars) { return Math.max(0, ...Object.keys(stars || profile().profiles[profile().active].stars).map(Number)); }
   function total(stars) { return Object.values(stars || profile().profiles[profile().active].stars).reduce((sum, n) => sum + n, 0); }
   function record(n, value) { const data = profile(), stars = data.profiles[data.active].stars; stars[n] = Math.max(stars[n] || 0, value); save(data); }
@@ -160,12 +183,15 @@
     state = null;
     const data = profile(), stars = data.profiles[data.active].stars, unlocked = done(stars) + 1;
     wrap.style.setProperty('--kt', cfg().accent);
-    wrap.innerHTML = `<div class="kt-journey"><button data-modes>MODES</button><h1>${cfg().title}</h1><p>${cfg().intro}</p><h2>LEVELS</h2><div class="kt-levels">${levels().map(level => { const value = stars[level.n] || 0, locked = level.n > unlocked; return `<button class="${locked ? 'locked' : ''}" data-level="${level.n}">${level.n}${value ? `<i>${'★'.repeat(value)}</i>` : ''}</button>`; }).join('')}</div><section class="kt-codebox"><div class="kt-code-row"><span>YOUR CODE</span><strong>${esc(data.active)}</strong><em>★ ${total(stars)}</em></div><div class="kt-code-divider"></div><div class="kt-code-row kt-code-enter"><span>PLAYED ELSEWHERE?</span><input id="kt-code" maxlength="12" placeholder="FROG4"><button id="kt-enter">ENTER</button></div><small>CODES ARE PUBLIC — USE A FUN PHRASE, NEVER A REAL PASSWORD OR PIN.</small></section></div>`;
+    wrap.innerHTML = `<div class="kt-journey"><button data-modes>MODES</button><h1>${cfg().title}</h1><p>${cfg().intro}</p><h2>LEVELS</h2><div class="kt-levels">${levels().map(level => { const value = stars[level.n] || 0, locked = level.n > unlocked; return `<button class="${locked ? 'locked' : ''}" data-level="${level.n}">${level.n}${value ? `<i>${'★'.repeat(value)}</i>` : ''}</button>`; }).join('')}</div><section class="kt-codebox"><div class="kt-code-row"><span>YOUR CODE</span><strong>${esc(data.active)}</strong><span class="kt-code-actions"><em>★ ${total(stars)}</em><button data-change>CHANGE</button></span></div><div class="kt-code-row kt-code-enter" id="kt-rename-row" hidden><span>NEW CODE</span><input id="kt-new-code" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="TACOCAT7"><button id="kt-rename-go">SET</button></div><div class="kt-code-divider"></div><div class="kt-code-row kt-code-enter"><span>PLAYED ELSEWHERE?</span><input id="kt-code" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="FROG4"><button id="kt-enter">ENTER</button></div><small>CODES ARE PUBLIC — USE A FUN PHRASE, NEVER A REAL PASSWORD OR PIN.</small></section></div>`;
     wrap.querySelector('[data-modes]').addEventListener('click', () => window.renderConsumeModes());
     wrap.querySelector('.kt-levels').addEventListener('click', event => { const button = event.target.closest('[data-level]'); if (button && !button.classList.contains('locked')) start(Number(button.dataset.level)); });
-    wrap.querySelector('#kt-enter').addEventListener('click', () => { const code = wrap.querySelector('#kt-code').value.trim().toUpperCase(); if (!code || typeof RemoteLB === 'undefined') return; RemoteLB.lookup(mode === 'words' ? 'consume-words' : 'consume-numbers', code).then(row => { if (!row) return; const store = profile(); store.profiles[code] ||= { stars: {} }; for (let n = 1; n <= row.score; n++) store.profiles[code].stars[n] ||= 1; store.active = code; save(store); journey(); }); });
+    wrap.querySelector('[data-change]').addEventListener('click', () => { const row = wrap.querySelector('#kt-rename-row'); row.hidden = !row.hidden; if (!row.hidden) wrap.querySelector('#kt-new-code').focus(); });
+    wrap.querySelector('#kt-rename-go').addEventListener('click', () => { const res = setTag(wrap.querySelector('#kt-new-code').value); if (res.ok) journey(); });
+    wrap.querySelector('#kt-new-code').addEventListener('keydown', event => { if (event.key === 'Enter') wrap.querySelector('#kt-rename-go').click(); });
+    wrap.querySelector('#kt-enter').addEventListener('click', () => { const code = wrap.querySelector('#kt-code').value.trim().toUpperCase(); if (!code || typeof RemoteLB === 'undefined') return; RemoteLB.lookup(mode === 'words' ? 'consume-words' : 'consume-numbers', code).then(row => { if (!row) return; const store = profile(); store.profiles[code] ||= { stars: {} }; for (let n = 1; n <= row.score; n++) store.profiles[code].stars[n] ||= 1; store.active = code; save(store); if (typeof window.PlayerID !== 'undefined') window.PlayerID.set(code); journey(); }); });
   }
   window.initConsumeRack = next => { mode = next; wrap = document.getElementById('consume-wrap'); journey(); };
   window.consumeRackBack = () => { state = null; mode = null; };
-  window.renderConsumeModes = () => { wrap = document.getElementById('consume-wrap'); if (!wrap) return; wrap.innerHTML = `<div class="consume-modes"><div class="cw-title">KNOT SWAP</div><div class="cw-intro">Choose a way to untangle the tiles.</div><button data-mode="grid"><strong>GRID</strong><span>Build real words from a shared tile grid.</span></button><button data-mode="words"><strong>WORDS</strong><span>Rearrange every tile into valid words.</span></button><button data-mode="numbers"><strong>RUMMY</strong><span>Rearrange every tile into runs and sets.</span></button></div>`; wrap.querySelector('.consume-modes').addEventListener('click', event => { const button = event.target.closest('[data-mode]'); if (!button) return; if (button.dataset.mode === 'grid') window.initConsumeGrid(); else window.initConsumeRack(button.dataset.mode); }); };
+  window.renderConsumeModes = () => { wrap = document.getElementById('consume-wrap'); if (!wrap) return; wrap.innerHTML = `<div class="consume-modes"><div class="cw-title">TILE SWAP</div><div class="cw-intro">Choose a way to untangle the tiles.</div><button data-mode="grid"><strong>GRID</strong><span>Build real words from a shared tile grid.</span></button><button data-mode="words"><strong>WORDS</strong><span>Rearrange every tile into valid words.</span></button><button data-mode="numbers"><strong>RUMMY</strong><span>Rearrange every tile into runs and sets.</span></button></div>`; wrap.querySelector('.consume-modes').addEventListener('click', event => { const button = event.target.closest('[data-mode]'); if (!button) return; if (button.dataset.mode === 'grid') window.initConsumeGrid(); else window.initConsumeRack(button.dataset.mode); }); };
 })();

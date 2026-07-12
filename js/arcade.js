@@ -803,9 +803,9 @@ function getLeaderboardBoards() {
     { key: 'space', label: 'SPACE MOBE', color: '#33ff66', field: 'score' },
     { key: 'signal', label: 'SIGNAL DRIFT', color: '#00e5ff', field: 'score' },
     { key: 'snoob', label: 'SNOOB', color: '#e4b65f', field: 'score' },
-    { key: 'consume', label: 'KNOT SWAP · GRID', color: '#38d8ff', field: 'score' },
-    { key: 'consume-words', label: 'KNOT SWAP · WORDS', color: '#ff75d5', field: 'score' },
-    { key: 'consume-numbers', label: 'KNOT SWAP · RUMMY', color: '#ffb35c', field: 'score' },
+    { key: 'consume', label: 'TILE SWAP · GRID', color: '#38d8ff', field: 'score' },
+    { key: 'consume-words', label: 'TILE SWAP · WORDS', color: '#ff75d5', field: 'score' },
+    { key: 'consume-numbers', label: 'TILE SWAP · RUMMY', color: '#ffb35c', field: 'score' },
   ];
 }
 
@@ -817,7 +817,7 @@ function getLeaderboardGroups() {
     { title: 'SPACE', keys: ['space'] },
     { title: 'SIGNAL', keys: ['signal'] },
     { title: 'SNOOB', keys: ['snoob'] },
-    { title: 'KNOT SWAP', keys: ['consume', 'consume-words', 'consume-numbers'] },
+    { title: 'TILE SWAP', keys: ['consume', 'consume-words', 'consume-numbers'] },
   ].map(group => ({ ...group, boards: group.keys.map(key => boards.find(b => b.key === key)).filter(Boolean) }));
 }
 
@@ -828,6 +828,24 @@ function getLeaderboardBoardMeta(game, options) {
   const fallbackColor = game === 'whack' ? '#ff00cc' : game === 'match' ? '#ffe61a' : game === 'signal' ? '#00e5ff' : game === 'snoob' ? '#e4b65f' : game === 'consume' ? '#38d8ff' : '#33ff66';
   return { key, label: key.toUpperCase(), color: fallbackColor, field: 'score' };
 }
+
+// ══════════════════════════════════════
+//  SHARED PLAYER IDENTITY (one save code across every journey/rack game)
+// ══════════════════════════════════════
+// Each game keeps its own progress store (profiles keyed by tag), so switching
+// which tag is "active" never deletes anything — old codes just sit unused
+// under their own key until re-entered. This just tracks which tag should be
+// active by default: games check it on load and retroactively adopt it, and
+// any rename/adopt in one game writes back here so the others pick it up too.
+const PLAYER_TAG_KEY = 'moberino-player-tag';
+window.PlayerID = {
+  get() {
+    try { return localStorage.getItem(PLAYER_TAG_KEY) || null; } catch (e) { return null; }
+  },
+  set(tag) {
+    try { if (tag) localStorage.setItem(PLAYER_TAG_KEY, tag); } catch (e) {}
+  },
+};
 
 // ══════════════════════════════════════
 //  SHARED LEADERBOARD (Supabase — one table, public anon read+insert via RLS)

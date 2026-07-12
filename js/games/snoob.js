@@ -1591,11 +1591,19 @@
   function jProfile() {
     const s = jLoad();
     if (!s.profiles) s.profiles = {};
-    if (!s.active || !s.profiles[s.active]) {
+    // Retroactively adopt the shared cross-game code if it differs — old
+    // progress under the previous tag stays put, just no longer active.
+    const shared = typeof window.PlayerID !== 'undefined' ? window.PlayerID.get() : null;
+    if (shared && shared !== s.active) {
+      if (!s.profiles[shared]) s.profiles[shared] = { stars: {} };
+      s.active = shared;
+      jSave(s);
+    } else if (!s.active || !s.profiles[s.active]) {
       s.active = jGenTag(s.profiles);
       s.profiles[s.active] = { stars: {} };
       jSave(s);
     }
+    if (typeof window.PlayerID !== 'undefined') window.PlayerID.set(s.active);
     return s;
   }
   function jStars() { const s = jProfile(); return s.profiles[s.active].stars || {}; }
@@ -1615,6 +1623,7 @@
     const dest = s.profiles[tag].stars;
     for (const k in cur) if ((cur[k] || 0) > (dest[k] || 0)) dest[k] = cur[k];
     s.active = tag; jSave(s);
+    if (typeof window.PlayerID !== 'undefined') window.PlayerID.set(tag);
     return { ok: true };
   }
   function jAdopt(tag, upTo) {
@@ -1622,6 +1631,7 @@
     if (!s.profiles[tag]) s.profiles[tag] = { stars: {} };
     for (let n = 1; n <= upTo; n++) if (!s.profiles[tag].stars[n]) s.profiles[tag].stars[n] = 1;
     s.active = tag; jSave(s);
+    if (typeof window.PlayerID !== 'undefined') window.PlayerID.set(tag);
   }
   function jSync() {
     try {
