@@ -78,11 +78,11 @@ NUMBER_LEVELS = [
     ([['B7','B8','B9'], ['R2','B2','Y2'], ['G7','G8','G9']], ['G10','B6','G11']),
     ([['R2','G2','Y2'], ['R3','R4','R5'], ['Y7','Y8','Y9']], ['R7','R6','B2']),
     ([['Y2','Y3','Y4'], ['R11','G11','Y11'], ['Y5','Y6','Y7'], ['R8','B8','G8']], ['Y9','B2','Y8','R2']),
-    ([['G2','G3','G4'], ['R9','R10','R11'], ['R7','B7','Y7'], ['B10','G10','Y10']], ['R12','G7','G6','G5']),
-    ([['R1','B1','G1','Y1'], ['B4','B5','B6'], ['Y7','Y8','Y9'], ['Y4','Y5','Y6']], ['Y13','Y12','B3','Y11']),
+    ([['R2','B2','Y2'], ['G8','G9','G10'], ['B5','G5','Y5'], ['R7','B7','Y7']], ['G2','B9','B8','G7']),
+    ([['R8','B8','Y8'], ['R12','B12','G12','Y12'], ['Y5','Y6','Y7'], ['R1','G1','Y1']], ['G8','Y13','Y10','Y11']),
     ([['B2','B3','B4'], ['Y1','Y2','Y3'], ['Y4','Y5','Y6'], ['G8','G9','G10']], ['G7','B1','B5','G6']),
     ([['B10','G10','Y10'], ['B7','B8','B9'], ['G4','G5','G6'], ['R11','B11','G11']], ['G2','G3','R10','Y11']),
-    ([['Y1','Y2','Y3'], ['Y5','Y6','Y7'], ['R1','B1','G1'], ['B2','B3','B4']], ['Y4','G12','B12','Y12']),
+    ([['G10','G11','G12'], ['R7','R8','R9'], ['R2','R3','R4'], ['B7','G7','Y7']], ['G8','G13','G9','R1']),
     ([['R4','B4','G4','Y4'], ['R8','R9','R10'], ['R7','B7','G7','Y7'], ['Y10','Y11','Y12'], ['G9','G10','G11']], ['Y9','R6','R5','R11']),
     ([['R6','B6','G6'], ['G7','G8','G9'], ['B1','B2','B3'], ['Y3','Y4','Y5'], ['Y6','Y7','Y8']], ['R8','B8','B4','Y2']),
     ([['G6','G7','G8'], ['B10','B11','B12'], ['B1','G1','Y1'], ['R5','R6','R7'], ['R3','B3','G3']], ['G5','B13','R8','R9']),
@@ -233,9 +233,8 @@ def audit_level(mode, number, groups, rack):
     pool = [tile for group in groups for tile in group] + list(rack)
     solutions, capped = (word_partitions("".join(pool)) if mode == "words"
                          else rummy_partitions(pool))
-    # The tabletop has a fixed number of editable groups and no new-group
-    # control, so only partitions that fit those exact group slots are playable.
-    solutions = [solution for solution in solutions if len(solution) == len(groups)]
+    # Groups are player-created, so every valid full partition must be graded;
+    # a solution using a different number of groups is still a real shortcut.
     scored = [(effort(groups, solution), solution) for solution in solutions]
     scored.sort(key=lambda item: (item[0]["effort"], item[0]["movedTiles"]))
     minimum = scored[0][0] if scored else None

@@ -77,8 +77,15 @@
   }
 
   function clearDropCue() {
-    wrap.querySelector('.kt-insert')?.remove();
+    wrap.querySelectorAll('.kt-ghost-slot, .kt-new-group-cue').forEach(element => element.remove());
     wrap.querySelectorAll('.drop-target').forEach(element => element.classList.remove('drop-target'));
+  }
+
+  function ghostTile(tile) {
+    const ghost = document.createElement('i');
+    ghost.className = `kt-tile kt-ghost-slot ${mode === 'numbers' ? `suit-${tile.value[0]}` : ''}`;
+    ghost.textContent = mode === 'numbers' ? tile.value.slice(1) : tile.value.toUpperCase();
+    return ghost;
   }
 
   function insertionIndex(container, x, y, draggedId) {
@@ -96,13 +103,21 @@
     const hit = document.elementFromPoint(x, y);
     const group = hit?.closest('[data-group]');
     const rack = hit?.closest('[data-rack-drop]');
+    const table = hit?.closest('#kt-table');
     const container = group || rack;
+    if (!container && table) {
+      drag.target = { type: 'new-group' };
+      table.classList.add('drop-target');
+      const cue = document.createElement('i'); cue.className = 'kt-new-group-cue'; cue.appendChild(ghostTile(drag.tile));
+      table.appendChild(cue);
+      return;
+    }
     if (!container) { drag.target = null; return; }
     const target = group ? { type: 'group', groupId: Number(group.dataset.group) } : { type: 'rack' };
     target.index = insertionIndex(container, x, y, drag.id);
     drag.target = target;
     container.classList.add('drop-target');
-    const marker = document.createElement('i'); marker.className = 'kt-insert';
+    const marker = ghostTile(drag.tile);
     const remaining = [...container.querySelectorAll('[data-tile]')].filter(element => Number(element.dataset.tile) !== drag.id);
     if (target.index < remaining.length) container.insertBefore(marker, remaining[target.index]); else container.appendChild(marker);
   }
@@ -118,7 +133,7 @@
     proxy.style.width = `${rect.width}px`; proxy.style.height = `${rect.height}px`;
     document.body.appendChild(proxy);
     element.classList.add('kt-drag-origin');
-    state.drag = { id: source.tile.id, sourceType: source.type, sourceGroupId: source.group?.id,
+    state.drag = { id: source.tile.id, tile: source.tile, sourceType: source.type, sourceGroupId: source.group?.id,
       sourceIndex: source.index, element, proxy, pointerId: event.pointerId,
       offsetX: event.clientX - rect.left, offsetY: event.clientY - rect.top, target: null };
     element.setPointerCapture?.(event.pointerId);
@@ -146,12 +161,18 @@
       if (source) {
         const sourceList = source.type === 'rack' ? state.rack : source.group.tiles;
         const [tile] = sourceList.splice(source.index, 1);
-        const targetList = target.type === 'rack' ? state.rack : state.groups.find(group => group.id === target.groupId)?.tiles;
-        if (targetList) {
-          const index = target.index;
-          targetList.splice(Math.max(0, Math.min(index, targetList.length)), 0, tile);
-          if (sourceList !== targetList || source.index !== index) state.moves++;
-        } else sourceList.splice(source.index, 0, tile);
+        if (target.type === 'new-group') {
+          state.groups.push({ id: Math.max(-1, ...state.groups.map(group => group.id)) + 1, tiles: [tile] });
+          state.moves++;
+        } else {
+          const targetList = target.type === 'rack' ? state.rack : state.groups.find(group => group.id === target.groupId)?.tiles;
+          if (targetList) {
+            const index = target.index;
+            targetList.splice(Math.max(0, Math.min(index, targetList.length)), 0, tile);
+            if (sourceList !== targetList || source.index !== index) state.moves++;
+          } else sourceList.splice(source.index, 0, tile);
+        }
+        state.groups = state.groups.filter(group => group.tiles.length);
       }
     }
     state.drag = null;
@@ -159,7 +180,7 @@
     update();
   }
 
-  function checkWin() { return !state.rack.length && state.groups.every(group => validGroup(group.tiles)); }
+  function checkWin() { return !state.rack.length && state.groups.length && state.groups.every(group => validGroup(group.tiles)); }
   function win() { if (state.won) return; state.won = true; const stars = state.moves <= Math.max(2, state.n + 1) ? 3 : state.moves <= state.n + 4 ? 2 : 1; record(state.n, stars); sync(); if (typeof SFX !== 'undefined') SFX.win(); const next = state.n < levels().length; const overlay = document.createElement('div'); overlay.className = 'kt-win'; overlay.innerHTML = `<strong>COMPLETE</strong><span>${'★'.repeat(stars)}<i>${'★'.repeat(3 - stars)}</i></span><div>${next ? '<button data-next>NEXT</button>' : ''}<button data-replay>REPLAY</button><button data-journey>JOURNEY</button></div>`; wrap.appendChild(overlay); overlay.addEventListener('click', event => { if (event.target.hasAttribute('data-next')) start(state.n + 1); if (event.target.hasAttribute('data-replay')) start(state.n); if (event.target.hasAttribute('data-journey')) journey(); }); }
 
   function renderPlay() {

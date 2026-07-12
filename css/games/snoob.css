@@ -10,6 +10,17 @@
 }
 #pg-snoob.active { display: flex; }
 
+#pg-snoob,
+#pg-snoob * {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+#pg-snoob input {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 .snoob-wrap {
   flex: 1;
   min-height: 0;

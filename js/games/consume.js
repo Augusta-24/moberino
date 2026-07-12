@@ -301,7 +301,7 @@
     const ov = document.createElement('div');
     ov.className = 'cw-win';
     ov.innerHTML =
-      `<div class="cw-win-title">KNOT UNTIED!</div>` +
+      `<div class="cw-win-title">GRID SOLVED!</div>` +
       `<div class="cw-win-stars">${'★'.repeat(stars)}<span>${'★'.repeat(3 - stars)}</span></div>` +
       `<div class="cw-win-sub">${S.tableau.length} WORDS · BEST PATH ${S.data.minWords || S.tableau.length}</div>` +
       `<div class="cw-win-btns">` +
@@ -334,6 +334,7 @@
       `</div>` +
       `<div class="cw-tableau-shell">` +
       `<div class="cw-tableau" id="cw-tableau"></div>` +
+      `<div class="cw-return-hint">TAP TO RETURN WORD</div>` +
       `</div>`;
     wrap.querySelector('.cw-hud').addEventListener('click', e => {
       const act = e.target.getAttribute && e.target.getAttribute('data-act');
@@ -392,6 +393,8 @@
   function updateTableau() {
     const tab = wrap && wrap.querySelector('#cw-tableau');
     if (!tab || !S) return;
+    const hint = wrap.querySelector('.cw-return-hint');
+    if (hint) hint.hidden = !S.tableau.length;
     tab.innerHTML = S.tableau.length
       ? S.tableau.map(entry =>
         `<button class="cw-chip word-${((entry.id - 1) % 6) + 1}" type="button" data-word-id="${entry.id}">` +

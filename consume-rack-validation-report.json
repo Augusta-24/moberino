@@ -3,13 +3,13 @@
     {
       "mode": "words",
       "level": 1,
-      "solutions": 1,
+      "solutions": 65,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 14,
-        "brokenGroups": 3,
-        "untouchedGroups": 0,
-        "effort": 44
+        "movedTiles": 9,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 29
       },
       "valid": true,
       "errors": []
@@ -31,7 +31,7 @@
     {
       "mode": "words",
       "level": 3,
-      "solutions": 1,
+      "solutions": 2,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 12,
@@ -59,13 +59,13 @@
     {
       "mode": "words",
       "level": 5,
-      "solutions": 1,
+      "solutions": 8,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 12,
-        "brokenGroups": 3,
-        "untouchedGroups": 0,
-        "effort": 42
+        "movedTiles": 8,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 28
       },
       "valid": true,
       "errors": []
@@ -73,7 +73,7 @@
     {
       "mode": "words",
       "level": 6,
-      "solutions": 4,
+      "solutions": 11,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 13,
@@ -87,7 +87,7 @@
     {
       "mode": "words",
       "level": 7,
-      "solutions": 3,
+      "solutions": 4,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 11,
@@ -101,13 +101,13 @@
     {
       "mode": "words",
       "level": 8,
-      "solutions": 1,
+      "solutions": 32,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 19,
-        "brokenGroups": 4,
-        "untouchedGroups": 0,
-        "effort": 59
+        "movedTiles": 14,
+        "brokenGroups": 3,
+        "untouchedGroups": 1,
+        "effort": 44
       },
       "valid": true,
       "errors": []
@@ -115,7 +115,7 @@
     {
       "mode": "words",
       "level": 9,
-      "solutions": 8,
+      "solutions": 37,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 12,
@@ -129,7 +129,7 @@
     {
       "mode": "words",
       "level": 10,
-      "solutions": 1,
+      "solutions": 2,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 15,
@@ -143,7 +143,7 @@
     {
       "mode": "words",
       "level": 11,
-      "solutions": 3,
+      "solutions": 6,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 17,
@@ -185,7 +185,7 @@
     {
       "mode": "words",
       "level": 14,
-      "solutions": 3,
+      "solutions": 4,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 15,
@@ -199,13 +199,13 @@
     {
       "mode": "words",
       "level": 15,
-      "solutions": 35,
+      "solutions": 233,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 22,
-        "brokenGroups": 5,
-        "untouchedGroups": 0,
-        "effort": 72
+        "movedTiles": 14,
+        "brokenGroups": 3,
+        "untouchedGroups": 2,
+        "effort": 44
       },
       "valid": true,
       "errors": []
@@ -213,13 +213,13 @@
     {
       "mode": "words",
       "level": 16,
-      "solutions": 14,
+      "solutions": 166,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 22,
-        "brokenGroups": 5,
-        "untouchedGroups": 0,
-        "effort": 72
+        "movedTiles": 14,
+        "brokenGroups": 3,
+        "untouchedGroups": 2,
+        "effort": 44
       },
       "valid": true,
       "errors": []
@@ -241,13 +241,13 @@
     {
       "mode": "numbers",
       "level": 2,
-      "solutions": 1,
+      "solutions": 3,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 10,
-        "brokenGroups": 3,
-        "untouchedGroups": 0,
-        "effort": 40
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
       },
       "valid": true,
       "errors": []
@@ -297,7 +297,7 @@
     {
       "mode": "numbers",
       "level": 6,
-      "solutions": 2,
+      "solutions": 3,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 6,
@@ -311,7 +311,7 @@
     {
       "mode": "numbers",
       "level": 7,
-      "solutions": 1,
+      "solutions": 3,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 6,
@@ -325,7 +325,7 @@
     {
       "mode": "numbers",
       "level": 8,
-      "solutions": 2,
+      "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 6,
@@ -339,13 +339,13 @@
     {
       "mode": "numbers",
       "level": 9,
-      "solutions": 1,
+      "solutions": 2,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 9,
-        "brokenGroups": 3,
-        "untouchedGroups": 1,
-        "effort": 39
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 2,
+        "effort": 27
       },
       "valid": true,
       "errors": []
@@ -353,7 +353,7 @@
     {
       "mode": "numbers",
       "level": 10,
-      "solutions": 1,
+      "solutions": 2,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 6,
@@ -381,7 +381,7 @@
     {
       "mode": "numbers",
       "level": 12,
-      "solutions": 3,
+      "solutions": 2,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 6,
@@ -395,7 +395,7 @@
     {
       "mode": "numbers",
       "level": 13,
-      "solutions": 2,
+      "solutions": 8,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 10,
@@ -409,7 +409,7 @@
     {
       "mode": "numbers",
       "level": 14,
-      "solutions": 1,
+      "solutions": 2,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 9,

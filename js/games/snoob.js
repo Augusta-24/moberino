@@ -38,6 +38,7 @@
   let aim = -Math.PI / 2;
   let aimArmed = false;
   let pendingAimTouch = null;
+  let journeyClearPending = false, journeyClearStars = 0;
   let rowPhase = 0;
   let crankSpin = 0;
   let raf = 0, last = 0, resizeHandler = null;
@@ -46,7 +47,7 @@
   const imageBoundsCache = new WeakMap();
   const soundCache = new Map();
   const REAIM_HOLD_MS = 220;
-  const TOUCH_AIM_BLEND = 0.82;
+  const TOUCH_AIM_BLEND = 0.42;
 
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
@@ -304,6 +305,8 @@
     canvas.onpointermove = handlePointer;
     canvas.onpointerup = handlePointerUp;
     canvas.onpointercancel = clearPendingAimTouch;
+    canvas.onselectstart = e => e.preventDefault();
+    canvas.oncontextmenu = e => e.preventDefault();
     window.onkeydown = handleKeyDown;
     resizeHandler = resize;
     window.addEventListener('resize', resizeHandler);
@@ -333,7 +336,7 @@
   }
 
   function handlePointer(e) {
-    if (state !== 'playing' || !canvas || current) return;
+    if (state !== 'playing' || !canvas || current || journeyClearPending) return;
     if (pendingAimTouch) {
       pendingAimTouch.clientX = e.clientX;
       pendingAimTouch.clientY = e.clientY;
@@ -344,7 +347,7 @@
   }
 
   function handlePointerDown(e) {
-    if (state !== 'playing' || !canvas || current) return;
+    if (state !== 'playing' || !canvas || current || journeyClearPending) return;
     if (e.preventDefault) e.preventDefault();
     if (canvas.setPointerCapture && e.pointerId != null) {
       try { canvas.setPointerCapture(e.pointerId); } catch(err) {}
@@ -376,14 +379,14 @@
   }
 
   function handlePointerUp(e) {
-    if (state !== 'playing' || !pendingAimTouch) return;
+    if (state !== 'playing' || journeyClearPending || !pendingAimTouch) return;
     const wasReaiming = pendingAimTouch.reaiming;
     clearPendingAimTouch();
     if (!wasReaiming && !current) shoot();
   }
 
   function handleKeyDown(e) {
-    if (state !== 'playing') return;
+    if (state !== 'playing' || journeyClearPending) return;
     if (e.code === 'Space' || e.code === 'Enter') {
       e.preventDefault();
       shoot();
@@ -391,7 +394,7 @@
   }
 
   function shoot() {
-    if (state !== 'playing' || current) return;
+    if (state !== 'playing' || current || journeyClearPending) return;
     clearPendingAimTouch();
     const speed = 720;
     current = {
@@ -426,6 +429,10 @@
     updateRattles(dt);
     updateDustMotes(dt);
     if (crankSpin > 0) crankSpin = Math.max(0, crankSpin - dt);
+    if (journeyClearPending) {
+      if (!fallingPieces.length && !dustMotes.length) finishJourneyClear();
+      return;
+    }
     if (!current) return;
     const r = radius();
     current.x += current.vx * dt;
@@ -644,12 +651,8 @@
     updateHud();
     if (boardCleared()) {
       if (mode === 'journey') {
-        state = 'over';
-        playSnoobWin();
         const stars = journeyStars();
-        jRecord(journeyN, stars);
-        jSync();
-        setTimeout(() => renderJourneyResult(true, stars), 500);
+        beginJourneyClear(stars);
       } else {
         // Endless: clearing the board starts the next wave instead of ending
         // the run — only the danger line or a full stack actually ends it.
@@ -673,6 +676,24 @@
     if (shots <= par) return 3;
     if (shots <= Math.ceil(par * 1.5)) return 2;
     return 1;
+  }
+
+  function beginJourneyClear(stars) {
+    journeyClearPending = true;
+    journeyClearStars = stars;
+    aimArmed = false;
+    clearPendingAimTouch();
+    jRecord(journeyN, stars);
+    jSync();
+    showToast('BOARD CLEAR');
+    playSnoobWin();
+  }
+
+  function finishJourneyClear() {
+    if (!journeyClearPending) return;
+    journeyClearPending = false;
+    state = 'over';
+    renderJourneyResult(true, journeyClearStars);
   }
 
   function neighbors(row, col) {
@@ -1257,11 +1278,11 @@
     ctx.save();
     ctx.lineCap = 'round';
     ctx.strokeStyle = color;
-    ctx.globalAlpha = armed ? 0.9 : 0.5;
-    ctx.lineWidth = armed ? 2.6 : 1.8;
+    ctx.globalAlpha = armed ? 0.72 : 0.4;
+    ctx.lineWidth = armed ? 1.8 : 1.2;
     ctx.setLineDash(armed ? [10, 7] : [3, 9]);
     ctx.shadowColor = color;
-    ctx.shadowBlur = armed ? 10 : 4;
+    ctx.shadowBlur = armed ? 6 : 2;
     ctx.beginPath();
     ctx.moveTo(shooter.x, shooter.y);
     if (tier === 'full') {
@@ -1790,6 +1811,7 @@
     tokenTypes = playableChars();
     score = 0; shots = 0; drops = 0; rowsAdded = 0; missStreak = 0;
     current = null; aim = -Math.PI / 2; aimArmed = false;
+    journeyClearPending = false; journeyClearStars = 0;
     dustMotes = [];
     clearPendingAimTouch();
     loadJourneyBoard(data);
@@ -1840,6 +1862,7 @@
     tokenTypes = playableChars();
     score = 0; shots = 0; drops = 0; rowsAdded = 0; missStreak = 0; wave = 1;
     current = null; aim = -Math.PI / 2; aimArmed = false;
+    journeyClearPending = false; journeyClearStars = 0;
     dustMotes = [];
     clearPendingAimTouch();
     resetBoard();
