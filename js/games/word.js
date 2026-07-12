@@ -30,11 +30,17 @@
   function ensureProfile() {
     const s = loadStore();
     if (!s.profiles) s.profiles = {};
-    if (!s.active || !s.profiles[s.active]) {
+    const shared = typeof window.PlayerID !== 'undefined' ? window.PlayerID.get() : null;
+    if (shared && shared !== s.active) {
+      if (!s.profiles[shared]) s.profiles[shared] = { stars: {} };
+      s.active = shared;
+      saveStore(s);
+    } else if (!s.active || !s.profiles[s.active]) {
       s.active = genTag(s.profiles);
       s.profiles[s.active] = { stars: {} };
       saveStore(s);
     }
+    if (typeof window.PlayerID !== 'undefined') window.PlayerID.set(s.active);
     return s;
   }
   function myTag() { return ensureProfile().active; }
@@ -53,14 +59,16 @@
     }
     s.active = tag;
     saveStore(s);
+    if (typeof window.PlayerID !== 'undefined') window.PlayerID.set(tag);
   }
-  function switchTag(tag) { const s = ensureProfile(); if (s.profiles[tag]) { s.active = tag; saveStore(s); } }
+  function switchTag(tag) { const s = ensureProfile(); if (s.profiles[tag]) { s.active = tag; saveStore(s); if (typeof window.PlayerID !== 'undefined') window.PlayerID.set(tag); } }
   function newTag() {
     const s = ensureProfile();
     const t = genTag(s.profiles);
     s.profiles[t] = { stars: {} };
     s.active = t;
     saveStore(s);
+    if (typeof window.PlayerID !== 'undefined') window.PlayerID.set(t);
     return t;
   }
   function highestDone() { let m = 0; const st = myStars(); for (const k in st) m = Math.max(m, +k); return m; }

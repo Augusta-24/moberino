@@ -416,19 +416,8 @@
       }).join('') +
       `</div>` +
       `<div class="cw-code-card">` +
-      `<div class="cw-code-row"><span class="cw-code-label">YOUR CODE</span>` +
-      `<span class="cw-me-name">${esc(store.active)}</span>` +
-      `<button class="cw-btn cw-tag-edit" id="cw-tag-edit" type="button">CHANGE</button></div>` +
-      `<div class="cw-tag-editor" id="cw-tag-editor" hidden>` +
-      `<input id="cw-tag-in" type="text" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="TACOCAT7">` +
-      `<button class="cw-btn" id="cw-tag-set">SET</button>` +
-      `<span class="cw-find-msg" id="cw-tag-msg"></span></div>` +
-      `<div class="cw-code-divider"></div>` +
-      `<div class="cw-code-row cw-code-enter"><span class="cw-code-label">PLAYED ELSEWHERE?</span>` +
-      `<input id="cw-find-in" type="text" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="FROG4">` +
-      `<button class="cw-btn" id="cw-find-go">ENTER</button></div>` +
-      `<span class="cw-find-msg" id="cw-find-msg"></span>` +
-      `<div class="cw-code-note">CODES ARE PUBLIC — USE A FUN PHRASE, NEVER A REAL PASSWORD OR PIN.</div></div>` +
+      `<div class="cw-code-row"><span class="cw-code-label">LOGGED IN AS</span>` +
+      `<span class="cw-me-name">${esc(store.active)}</span></div></div>` +
       `</div>`;
     wrap.querySelector('.cw-level-grid').addEventListener('click', e => {
       const node = e.target.closest('[data-level]');
@@ -441,39 +430,6 @@
     wrap.querySelector('[data-act="modes"]').addEventListener('click', () => {
       SFX.menuSelect();
       if (typeof window.renderConsumeModes === 'function') window.renderConsumeModes();
-    });
-    wrap.querySelector('#cw-tag-edit').addEventListener('click', () => {
-      SFX.menuSelect();
-      const editor = wrap.querySelector('#cw-tag-editor');
-      editor.hidden = !editor.hidden;
-      if (!editor.hidden) wrap.querySelector('#cw-tag-in').focus();
-    });
-    const applyTag = () => {
-      const msg = wrap.querySelector('#cw-tag-msg');
-      const res = setCustomTag(wrap.querySelector('#cw-tag-in').value);
-      if (!res.ok) { msg.textContent = res.msg; CSFX.bad(); return; }
-      SFX.menuSelect();
-      syncJourney();
-      renderJourney();
-    };
-    wrap.querySelector('#cw-tag-set').addEventListener('click', applyTag);
-    wrap.querySelector('#cw-tag-in').addEventListener('keydown', e => {
-      if (e.key === 'Enter') applyTag();
-    });
-    wrap.querySelector('#cw-find-go').addEventListener('click', () => {
-      const inp = wrap.querySelector('#cw-find-in');
-      const msg = wrap.querySelector('#cw-find-msg');
-      const tag = (inp.value || '').trim().toUpperCase();
-      if (!tag) return;
-      SFX.menuSelect();
-      msg.textContent = 'CHECKING...';
-      if (typeof RemoteLB === 'undefined' || !RemoteLB.lookup) { msg.textContent = 'NO CONNECTION'; return; }
-      RemoteLB.lookup('consume', tag).then(row => {
-        if (!row) { msg.textContent = 'CODE NOT FOUND'; CSFX.bad(); return; }
-        adoptTag(row.name, Math.min(row.score, LEVELS.length));
-        CSFX.word(4);
-        renderJourney();
-      });
     });
   }
 

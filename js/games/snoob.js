@@ -1725,24 +1725,10 @@
           </div>
           <div class="snoob-codebox">
             <div class="snoob-codebox-row">
-              <span class="snoob-codebox-label">YOUR CODE</span>
+              <span class="snoob-codebox-label">LOGGED IN AS</span>
               <span class="snoob-me-name">${jEsc(store.active)}</span>
               <span class="snoob-me-stars">★ ${jTotal(st)}</span>
-              <button class="snoob-btn snoob-tag-edit" id="snoob-tag-edit" type="button">CHANGE</button>
             </div>
-            <div class="snoob-tag-editor" id="snoob-tag-editor" hidden>
-              <input id="snoob-tag-in" type="text" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="TACOCAT7">
-              <button class="snoob-btn" id="snoob-tag-set">SET</button>
-              <span class="snoob-find-msg" id="snoob-tag-msg"></span>
-            </div>
-            <div class="snoob-codebox-divider"></div>
-            <div class="snoob-codebox-row snoob-codebox-enter">
-              <span class="snoob-codebox-label">PLAYED ELSEWHERE?</span>
-              <input id="snoob-find-in" type="text" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="FROG4">
-              <button class="snoob-btn" id="snoob-find-go">ENTER</button>
-              <span class="snoob-find-msg" id="snoob-find-msg"></span>
-            </div>
-            <div class="snoob-codebox-note">CODES ARE PUBLIC — USE A FUN PHRASE, NEVER A REAL PASSWORD OR PIN.</div>
           </div>
         </div>
       </div>`;
@@ -1752,33 +1738,6 @@
       const n = +node.getAttribute('data-level');
       if (n > done + 1) { playSnoobSound('miss'); return; }
       startJourneyLevel(n);
-    });
-    host.querySelector('#snoob-tag-edit').addEventListener('click', () => {
-      const ed = host.querySelector('#snoob-tag-editor');
-      ed.hidden = !ed.hidden;
-      if (!ed.hidden) host.querySelector('#snoob-tag-in').focus();
-    });
-    const applyTag = () => {
-      const msg = host.querySelector('#snoob-tag-msg');
-      const res = jSetTag(host.querySelector('#snoob-tag-in').value);
-      if (!res.ok) { msg.textContent = res.msg; return; }
-      jSync();
-      renderJourney();
-    };
-    host.querySelector('#snoob-tag-set').addEventListener('click', applyTag);
-    host.querySelector('#snoob-tag-in').addEventListener('keydown', e => { if (e.key === 'Enter') applyTag(); });
-    host.querySelector('#snoob-find-go').addEventListener('click', () => {
-      const inp = host.querySelector('#snoob-find-in');
-      const msg = host.querySelector('#snoob-find-msg');
-      const tag = (inp.value || '').trim().toUpperCase();
-      if (!tag) return;
-      msg.textContent = 'CHECKING...';
-      if (typeof RemoteLB === 'undefined' || !RemoteLB.lookup) { msg.textContent = 'NO CONNECTION'; return; }
-      RemoteLB.lookup(JOURNEY_GAME, tag).then(row => {
-        if (!row) { msg.textContent = 'CODE NOT FOUND'; return; }
-        jAdopt(row.name, Math.min(row.score, JLEVELS.length));
-        renderJourney();
-      });
     });
   }
 

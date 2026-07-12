@@ -51,7 +51,7 @@ body.on-home {
   padding-bottom: 0;
 }
 /* Neon arcade floor — even diamond grid, fills full viewport */
-body.on-lobby, body.on-char, body.on-whack, body.on-match, body.on-space, body.on-signal, body.on-snoob, body.on-consume {
+body.on-lobby, body.on-char, body.on-signin, body.on-whack, body.on-match, body.on-space, body.on-signal, body.on-snoob, body.on-consume {
   min-height: var(--app-vh, 100dvh);
   background-color: #02040e;
   overflow: hidden;
@@ -87,7 +87,7 @@ body.on-char {
     repeating-linear-gradient(-45deg, rgba(0,229,255,0.04) 0px, rgba(0,229,255,0.04) 1px, transparent 1px, transparent 31px);
   background-size: auto, 44px 44px, 44px 44px;
 }
-#pg-lobby, #pg-charselect, #pg-whack, #pg-match, #pg-space, #pg-signal, #pg-snoob, #pg-consume {
+#pg-lobby, #pg-charselect, #pg-signin, #pg-whack, #pg-match, #pg-space, #pg-signal, #pg-snoob, #pg-consume {
   background: transparent;
 }
 
@@ -487,6 +487,26 @@ body.on-match .mobe-face-img {
 }
 #pg-lobby { height: var(--app-vh, 100dvh); overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; z-index: 1; }
 .lobby-wrap { padding: 10px 0 max(28px, env(safe-area-inset-bottom, 0px) + 18px); display: flex; flex-direction: column; gap: 12px; position: relative; }
+#arcade-player-status { align-self:center; font-family:'VCR',monospace; font-size:10px; letter-spacing:2px; color:rgba(242,239,232,.55); border:1px solid rgba(0,229,255,.28); background:rgba(0,229,255,.08); border-radius:999px; padding:7px 12px; }
+#arcade-player-status strong { color:#00e5ff; text-shadow:0 0 9px rgba(0,229,255,.6); }
+
+/* ── Universal arcade sign-in ── */
+#pg-signin { position:fixed; inset:0; height:var(--app-vh,100dvh); align-items:center; justify-content:center; overflow-y:auto; padding:24px 16px; }
+#pg-signin.active { display:flex; }
+#arcade-signin-screen { width:min(100%,440px); text-align:center; border:2px solid rgba(0,229,255,.5); border-radius:14px; padding:clamp(24px,5vh,42px) clamp(18px,5vw,34px); background:rgba(5,2,18,.94); box-shadow:0 0 36px rgba(0,229,255,.14),inset 0 0 30px rgba(255,0,204,.05); }
+.arcade-signin-kicker { font-family:'VCR',monospace; font-size:9px; letter-spacing:3px; color:#ff00cc; margin-bottom:12px; }
+.arcade-signin-title { font-family:'Bebas Neue',Impact,sans-serif; font-size:clamp(44px,12vw,64px); line-height:.88; letter-spacing:5px; color:#ffe61a; text-shadow:0 0 20px rgba(255,230,26,.65); margin-bottom:22px; }
+.arcade-signin-copy { font-family:'VCR',monospace; font-size:10px; line-height:1.55; letter-spacing:1px; color:rgba(242,239,232,.68); margin:0 0 10px; }
+.arcade-signin-entry { display:flex; gap:8px; }
+.arcade-signin-entry input { min-width:0; flex:1; height:46px; border:2px solid rgba(242,239,232,.28); border-radius:6px; background:#09051a; color:#fff; padding:0 12px; font-family:'VCR',monospace; font-size:16px; letter-spacing:2px; text-transform:uppercase; }
+.arcade-signin-entry button,.arcade-signin-entry input:focus { border-color:#00e5ff; outline:none; }
+.arcade-signin-entry button { border:2px solid #00e5ff; border-radius:6px; background:rgba(0,229,255,.14); color:#00e5ff; padding:0 13px; font-family:'VCR',monospace; font-size:9px; letter-spacing:1px; cursor:pointer; }
+#arcade-signin-error { min-height:24px; padding-top:7px; font-family:'VCR',monospace; font-size:8px; letter-spacing:1px; color:#ff5577; }
+.arcade-signin-divider { display:flex; align-items:center; gap:12px; margin:4px 0 14px; color:rgba(242,239,232,.3); font-family:'VCR',monospace; font-size:9px; }
+.arcade-signin-divider::before,.arcade-signin-divider::after { content:''; height:1px; flex:1; background:rgba(242,239,232,.16); }
+#arcade-random-code { width:100%; min-height:54px; display:flex; align-items:center; justify-content:center; gap:12px; border:2px solid #ffe61a; border-radius:7px; background:rgba(255,230,26,.13); color:#ffe61a; font-family:'VCR',monospace; font-size:10px; letter-spacing:2px; cursor:pointer; box-shadow:0 0 18px rgba(255,230,26,.14); }
+#arcade-random-code strong { font-size:17px; color:#fff; text-shadow:0 0 10px #ffe61a; }
+.arcade-signin-note { display:block; margin-top:16px; font-family:'VCR',monospace; font-size:7px; line-height:1.5; letter-spacing:1px; color:rgba(242,239,232,.35); }
 
 /* ── Character Select Screen ── */
 #pg-charselect {

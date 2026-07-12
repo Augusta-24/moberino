@@ -99,7 +99,7 @@
 
   let arcadeEdgeSwipe = null;
   function arcadeSwipeGuardActive() {
-    return document.body.matches('.on-lobby,.on-char,.on-whack,.on-match,.on-space,.on-signal,.on-snoob,.on-consume');
+    return document.body.matches('.on-lobby,.on-char,.on-signin,.on-whack,.on-match,.on-space,.on-signal,.on-snoob,.on-consume');
   }
 
   document.addEventListener('touchstart', e => {
@@ -200,6 +200,7 @@
 
     const onLobby = p === 'lobby';
     const onCharSelect = p === 'charselect';
+    const onSignIn = p === 'signin';
     const onWhack = p === 'whack';
     const onMatch = p === 'match';
     const onSpace = p === 'space';
@@ -208,6 +209,7 @@
     const onConsume = p === 'consume';
     document.body.classList.toggle('on-lobby', onLobby);
     document.body.classList.toggle('on-char', onCharSelect);
+    document.body.classList.toggle('on-signin', onSignIn);
     document.body.classList.toggle('on-whack', onWhack);
     document.body.classList.toggle('on-match', onMatch);
     document.body.classList.toggle('on-space', onSpace);
@@ -217,9 +219,9 @@
     document.documentElement.classList.add('arcade-root');
 
     try {
-      if ((onLobby || onCharSelect || onWhack || onMatch || onSpace || onSignal || onSnoob || onConsume) && typeof ArcadeMusic !== 'undefined' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
+      if ((onLobby || onCharSelect || onSignIn || onWhack || onMatch || onSpace || onSignal || onSnoob || onConsume) && typeof ArcadeMusic !== 'undefined' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
       if (typeof ArcadeMusic !== 'undefined') {
-        if (onLobby || onCharSelect) ArcadeMusic.unduck();
+        if (onLobby || onCharSelect || onSignIn) ArcadeMusic.unduck();
         if (onWhack || onMatch || onSpace || onSignal || onSnoob || onConsume) ArcadeMusic.duck();
       }
     } catch(e) {}
@@ -232,7 +234,9 @@
       if (typeof initArcadeFloat === 'function') initArcadeFloat();
       if (typeof drawPixelIcons === 'function') drawPixelIcons();
       if (typeof initCarousel === 'function') initCarousel();
+      if (typeof updatePlayerStatus === 'function') updatePlayerStatus();
     }
+    if (onSignIn && typeof preparePlayerSignIn === 'function') preparePlayerSignIn();
     updateArcadeInstallPrompt();
     updateArcadeMusicPrompt();
     if (onWhack && typeof initWhack === 'function') initWhack();
@@ -684,7 +688,7 @@ const ArcadeMusic = (() => {
 // autoplay (cold load / browser blocked it), never to fight a deliberate
 // ArcadeMusic.stop() from a game that's actively silencing music for gameplay.
 document.addEventListener('click', function() {
-  const onArcade = document.body.matches('.on-lobby,.on-whack,.on-match,.on-space,.on-signal,.on-snoob,.on-consume,.on-char');
+  const onArcade = document.body.matches('.on-lobby,.on-signin,.on-whack,.on-match,.on-space,.on-signal,.on-snoob,.on-consume,.on-char');
     if (onArcade && !ArcadeMusic.playing && !ArcadeMusic.muted && !ArcadeMusic.suppressAutoResume) {
       ArcadeMusic.start();
       updateArcadeMusicPrompt();
@@ -692,7 +696,7 @@ document.addEventListener('click', function() {
     }
 }, { passive: true });
 document.addEventListener('touchstart', function() {
-  const onArcade = document.body.matches('.on-lobby,.on-whack,.on-match,.on-space,.on-signal,.on-snoob,.on-consume,.on-char');
+  const onArcade = document.body.matches('.on-lobby,.on-signin,.on-whack,.on-match,.on-space,.on-signal,.on-snoob,.on-consume,.on-char');
     if (onArcade && !ArcadeMusic.playing && !ArcadeMusic.muted && !ArcadeMusic.suppressAutoResume) {
       ArcadeMusic.start();
       updateArcadeMusicPrompt();
@@ -847,6 +851,104 @@ window.PlayerID = {
   },
 };
 
+const PLAYER_TAG_WORDS = ['FROG','MINT','TACO','DUCK','MOON','STAR','WAVE','COMET','MANGO',
+  'PIZZA','NEON','DISCO','LASER','LEMON','BERRY','MAPLE','SODA','JELLY','BAGEL',
+  'NACHO','SPARK','TURBO','COSMO','ASTRO','LUNA','NOVA','BLIP','ZOOM','DINO'];
+let proposedPlayerTag = '';
+
+function cleanPlayerTag(raw) {
+  return String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+}
+function makePlayerTag() {
+  return PLAYER_TAG_WORDS[Math.floor(Math.random() * PLAYER_TAG_WORDS.length)] + (2 + Math.floor(Math.random() * 8));
+}
+function preparePlayerSignIn() {
+  if (PlayerID.get()) { nav('lobby'); return; }
+  proposedPlayerTag = makePlayerTag();
+  const value = document.getElementById('arcade-random-code-value');
+  const input = document.getElementById('arcade-signin-input');
+  const error = document.getElementById('arcade-signin-error');
+  if (value) value.textContent = proposedPlayerTag;
+  if (input) input.value = '';
+  if (error) error.textContent = '';
+}
+function seedJourneyStore(storageKey, tag, highestLevel) {
+  if (!highestLevel) return;
+  try {
+    const data = JSON.parse(localStorage.getItem(storageKey) || '{}');
+    data.profiles ||= {};
+    data.profiles[tag] ||= { stars: {} };
+    data.profiles[tag].stars ||= {};
+    for (let level = 1; level <= highestLevel; level++) data.profiles[tag].stars[level] ||= 1;
+    data.active = tag;
+    localStorage.setItem(storageKey, JSON.stringify(data));
+  } catch (e) { console.warn('[PlayerID] could not restore', storageKey, e); }
+}
+async function restorePlayerProgress(tag) {
+  if (typeof RemoteLB === 'undefined' || !RemoteLB.lookup) return;
+  const journeys = [
+    ['consume', 'moberino-consume-v1'],
+    ['consume-words', 'moberino-knot-swap-words-v2'],
+    ['consume-numbers', 'moberino-knot-swap-numbers-v2'],
+    ['snoob-journey', 'moberino-snoob-v1'],
+    ['word', 'moberino-word-v1'],
+  ];
+  const rows = await Promise.all(journeys.map(([game]) => RemoteLB.lookup(game, tag)));
+  rows.forEach((row, index) => {
+    if (row) seedJourneyStore(journeys[index][1], tag, Math.max(0, Math.round(Number(row.score) || 0)));
+  });
+}
+async function finishPlayerSignIn(tag, restore) {
+  PlayerID.set(tag);
+  if (restore) await restorePlayerProgress(tag);
+  updatePlayerStatus();
+  SFX.menuSelect();
+  nav('lobby');
+}
+window.useEnteredPlayerCode = async function() {
+  const input = document.getElementById('arcade-signin-input');
+  const error = document.getElementById('arcade-signin-error');
+  const button = document.querySelector('.arcade-signin-entry button');
+  const tag = cleanPlayerTag(input && input.value);
+  if (tag.length < 2) {
+    if (error) error.textContent = 'ENTER 2–12 LETTERS OR NUMBERS';
+    if (input) input.focus();
+    return;
+  }
+  if (input) input.disabled = true;
+  if (button) { button.disabled = true; button.textContent = 'CHECKING...'; }
+  if (error) error.textContent = 'RESTORING PROGRESS...';
+  try { await finishPlayerSignIn(tag, true); }
+  finally {
+    if (input) input.disabled = false;
+    if (button) { button.disabled = false; button.textContent = 'ENTER CODE'; }
+  }
+};
+window.useRandomPlayerCode = async function() {
+  const button = document.getElementById('arcade-random-code');
+  if (button) button.disabled = true;
+  try {
+    let tag = proposedPlayerTag || makePlayerTag();
+    if (typeof RemoteLB !== 'undefined' && RemoteLB.tagExists) {
+      for (let attempt = 0; attempt < 12 && await RemoteLB.tagExists(tag); attempt++) tag = makePlayerTag();
+    }
+    proposedPlayerTag = tag;
+    const value = document.getElementById('arcade-random-code-value');
+    if (value) value.textContent = tag;
+    await finishPlayerSignIn(tag, false);
+  } finally {
+    if (button) button.disabled = false;
+  }
+};
+window.updatePlayerStatus = function() {
+  const status = document.getElementById('arcade-player-status');
+  const tag = PlayerID.get();
+  if (!status) return;
+  status.hidden = !tag;
+  const strong = status.querySelector('strong');
+  if (strong) strong.textContent = tag || '';
+};
+
 // ══════════════════════════════════════
 //  SHARED LEADERBOARD (Supabase — one table, public anon read+insert via RLS)
 // ══════════════════════════════════════
@@ -890,6 +992,7 @@ const RemoteLB = (() => {
     signal:               { col: 'score',   dir: 'desc' },
     snoob:                { col: 'score',   dir: 'desc' },
     'snoob-journey':      { col: 'score',   dir: 'desc' },
+    word:                 { col: 'score',   dir: 'desc' },
     consume:              { col: 'score',   dir: 'desc' },
     'consume-words':      { col: 'score',   dir: 'desc' },
     'consume-numbers':    { col: 'score',   dir: 'desc' },
@@ -937,6 +1040,19 @@ const RemoteLB = (() => {
       .catch(() => null);
   }
 
+  // Generated player codes must not collide with any code that already has remote
+  // progress, regardless of which journey created it first.
+  function tagExists(name) {
+    const tag = String(name || '').trim().toUpperCase().slice(0, 12);
+    if (!tag) return Promise.resolve(false);
+    const url = `${TABLE_URL}?select=name&name=eq.${encodeURIComponent(tag)}&limit=1`;
+    return fetch(url, { headers: HEADERS }).then(async r => {
+      if (!r.ok) throw new Error((await r.text()) || `HTTP ${r.status}`);
+      const rows = await r.json();
+      return !!(rows && rows.length);
+    }).catch(() => false);
+  }
+
   window.SignalRecipeRemote = {
     submit(name, score, extra, recipe) {
       const body = {
@@ -971,7 +1087,7 @@ const RemoteLB = (() => {
     },
   };
 
-  return { submit, fetchTop, lookup, isConfigured };
+  return { submit, fetchTop, lookup, tagExists, isConfigured };
 })();
 window.RemoteLB = RemoteLB;
 
@@ -1524,7 +1640,8 @@ function updateCharPreview(i) {
 }
 
 window.confirmCharSelect = function() {
-  nav(window._charSelectReturn || 'lobby');
+  const returnTo = window._charSelectReturn || 'lobby';
+  nav(returnTo === 'lobby' && !PlayerID.get() ? 'signin' : returnTo);
 };
 
 // ── ARCADE FLOATING COINS + TICKETS ──────────────────────────────────────────

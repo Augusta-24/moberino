@@ -100,6 +100,23 @@
 </div>
 </div>
 
+<div class="page" id="pg-signin">
+<div id="arcade-signin-screen">
+<div class="arcade-signin-kicker">ONE CODE · EVERY GAME</div>
+<div class="arcade-signin-title">SAVE YOUR<br>PROGRESS</div>
+<p class="arcade-signin-copy">Already have an arcade code? Enter it here.</p>
+<div class="arcade-signin-entry">
+<input id="arcade-signin-input" type="text" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="FROG5" aria-label="Arcade code" onkeydown="if(event.key==='Enter')useEnteredPlayerCode()">
+<button type="button" onclick="useEnteredPlayerCode()">ENTER CODE</button>
+</div>
+<div id="arcade-signin-error" role="alert" aria-live="polite"></div>
+<div class="arcade-signin-divider"><span>OR</span></div>
+<p class="arcade-signin-copy">New player? We made a code for you.</p>
+<button id="arcade-random-code" type="button" onclick="useRandomPlayerCode()"><span>PLAY AS</span><strong id="arcade-random-code-value">FROG5</strong><span>▶</span></button>
+<small class="arcade-signin-note">Remember this code to continue on another device. It is not a password.</small>
+</div>
+</div>
+
 <div class="page" id="pg-lobby">
 <div class="cats-header">
 <button class="arcade-exit-btn" onclick="SFX.menuSelect();window.location.href='index.html'">✕ EXIT ARCADE</button>
@@ -110,6 +127,7 @@
 </div>
 </div>
 <div class="lobby-wrap">
+<div id="arcade-player-status" aria-live="polite">LOGGED IN AS <strong></strong></div>
 <div style="text-align:center;padding:4px 0 0">
 <img alt="MOBERINO ARCADE" src="arcade_title.PNG" style="width:67.5%;max-width:450px;height:auto;display:block;margin:0 auto;filter:drop-shadow(0 0 12px rgba(255,0,204,0.5)) drop-shadow(0 0 28px rgba(255,0,204,0.2))"/>
 <div style="font-family:'VCR',monospace;font-size:9px;letter-spacing:3px;color:rgba(242,239,232,0.45);margin-top:7px">ARCADE — INSERT COIN TO PLAY</div>
