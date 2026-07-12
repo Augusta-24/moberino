@@ -863,7 +863,7 @@ function makePlayerTag() {
   return PLAYER_TAG_WORDS[Math.floor(Math.random() * PLAYER_TAG_WORDS.length)] + (2 + Math.floor(Math.random() * 8));
 }
 function preparePlayerSignIn() {
-  if (PlayerID.get()) { nav('lobby'); return; }
+  if (PlayerID.get() && !window._forcePlayerSignIn) { nav('lobby'); return; }
   proposedPlayerTag = makePlayerTag();
   const value = document.getElementById('arcade-random-code-value');
   const input = document.getElementById('arcade-signin-input');
@@ -901,6 +901,7 @@ async function restorePlayerProgress(tag) {
 async function finishPlayerSignIn(tag, restore) {
   PlayerID.set(tag);
   if (restore) await restorePlayerProgress(tag);
+  window._forcePlayerSignIn = false;
   updatePlayerStatus();
   SFX.menuSelect();
   nav('lobby');
@@ -947,6 +948,11 @@ window.updatePlayerStatus = function() {
   status.hidden = !tag;
   const strong = status.querySelector('strong');
   if (strong) strong.textContent = tag || '';
+};
+window.openPlayerSignIn = function() {
+  window._forcePlayerSignIn = true;
+  SFX.menuSelect();
+  nav('signin');
 };
 
 // ══════════════════════════════════════

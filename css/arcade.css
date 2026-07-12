@@ -487,7 +487,8 @@ body.on-match .mobe-face-img {
 }
 #pg-lobby { height: var(--app-vh, 100dvh); overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; z-index: 1; }
 .lobby-wrap { padding: 10px 0 max(28px, env(safe-area-inset-bottom, 0px) + 18px); display: flex; flex-direction: column; gap: 12px; position: relative; }
-#arcade-player-status { align-self:center; font-family:'VCR',monospace; font-size:10px; letter-spacing:2px; color:rgba(242,239,232,.55); border:1px solid rgba(0,229,255,.28); background:rgba(0,229,255,.08); border-radius:999px; padding:7px 12px; }
+#arcade-player-status { align-self:center; font-family:'VCR',monospace; font-size:10px; letter-spacing:2px; color:rgba(242,239,232,.55); border:1px solid rgba(0,229,255,.28); background:rgba(0,229,255,.08); border-radius:999px; padding:7px 12px; cursor:pointer; }
+#arcade-player-status:hover,#arcade-player-status:focus-visible { border-color:#00e5ff; outline:none; box-shadow:0 0 14px rgba(0,229,255,.22); }
 #arcade-player-status strong { color:#00e5ff; text-shadow:0 0 9px rgba(0,229,255,.6); }
 
 /* ── Universal arcade sign-in ── */
@@ -507,6 +508,8 @@ body.on-match .mobe-face-img {
 #arcade-random-code { width:100%; min-height:54px; display:flex; align-items:center; justify-content:center; gap:12px; border:2px solid #ffe61a; border-radius:7px; background:rgba(255,230,26,.13); color:#ffe61a; font-family:'VCR',monospace; font-size:10px; letter-spacing:2px; cursor:pointer; box-shadow:0 0 18px rgba(255,230,26,.14); }
 #arcade-random-code strong { font-size:17px; color:#fff; text-shadow:0 0 10px #ffe61a; }
 .arcade-signin-note { display:block; margin-top:16px; font-family:'VCR',monospace; font-size:7px; line-height:1.5; letter-spacing:1px; color:rgba(242,239,232,.35); }
+.player-login-switch { cursor:pointer; }
+.player-login-switch:hover,.player-login-switch:focus-visible { outline:1px solid currentColor; outline-offset:3px; }
 
 /* ── Character Select Screen ── */
 #pg-charselect {

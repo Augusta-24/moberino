@@ -1711,11 +1711,12 @@
     const done = jHighest(st);
     const next = Math.min(done + 1, JLEVELS.length);
     host.innerHTML = `
-      <div class="snoob-cabinet-frame">
+      <div class="snoob-cabinet-frame snoob-journey-frame">
         <div class="snoob-journey">
           <button class="snoob-mode-return" onclick="snoobModes()">MODES</button>
           <div class="snoob-title">SNOOB</div>
           <div class="snoob-sub">JOURNEY · CLEAR EVERY CAPSULE</div>
+          <div class="snoob-level-label">LEVELS</div>
           <div class="snoob-level-grid">
             ${JLEVELS.map(lvl => {
               const stars = st[lvl.n] || 0;
@@ -1723,7 +1724,7 @@
               return `<button class="snoob-node ${cls}" type="button" data-level="${lvl.n}"><span>${lvl.n}</span>${stars ? `<em>${'★'.repeat(stars)}</em>` : ''}</button>`;
             }).join('')}
           </div>
-          <div class="snoob-codebox">
+          <div class="snoob-codebox player-login-switch" role="button" tabindex="0" onclick="openPlayerSignIn()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPlayerSignIn()}" aria-label="Change arcade login">
             <div class="snoob-codebox-row">
               <span class="snoob-codebox-label">LOGGED IN AS</span>
               <span class="snoob-me-name">${jEsc(store.active)}</span>

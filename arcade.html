@@ -113,7 +113,7 @@
 <div class="arcade-signin-divider"><span>OR</span></div>
 <p class="arcade-signin-copy">New player? We made a code for you.</p>
 <button id="arcade-random-code" type="button" onclick="useRandomPlayerCode()"><span>PLAY AS</span><strong id="arcade-random-code-value">FROG5</strong><span>▶</span></button>
-<small class="arcade-signin-note">Remember this code to continue on another device. It is not a password.</small>
+<small class="arcade-signin-note">CODES ARE PUBLIC — USE A FUN PHRASE, NEVER A REAL PASSWORD OR PIN.</small>
 </div>
 </div>
 
@@ -127,7 +127,7 @@
 </div>
 </div>
 <div class="lobby-wrap">
-<div id="arcade-player-status" aria-live="polite">LOGGED IN AS <strong></strong></div>
+<button id="arcade-player-status" type="button" onclick="openPlayerSignIn()" aria-label="Change arcade login">LOGGED IN AS <strong></strong></button>
 <div style="text-align:center;padding:4px 0 0">
 <img alt="MOBERINO ARCADE" src="arcade_title.PNG" style="width:67.5%;max-width:450px;height:auto;display:block;margin:0 auto;filter:drop-shadow(0 0 12px rgba(255,0,204,0.5)) drop-shadow(0 0 28px rgba(255,0,204,0.2))"/>
 <div style="font-family:'VCR',monospace;font-size:9px;letter-spacing:3px;color:rgba(242,239,232,0.45);margin-top:7px">ARCADE — INSERT COIN TO PLAY</div>

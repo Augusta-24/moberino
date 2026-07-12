@@ -29,7 +29,7 @@
 .kt-check { color: #fffdf5; background: color-mix(in srgb, var(--kt) 16%, rgba(12,26,39,0.94)); }
 .kt-levels button { color: #f7f4ec; border-color: rgba(247,244,236,0.42); background: rgba(12,26,39,0.88); }
 .kt-codebox { box-sizing: border-box; background: rgba(8,18,28,0.84); border-color: rgba(247,244,236,0.28); }
-.kt-journey-actions { align-self:stretch; display:flex; justify-content:space-between; gap:8px; }
+.kt-journey-actions { position:fixed; top:max(10px,env(safe-area-inset-top,10px)); left:max(10px,env(safe-area-inset-left,10px)); right:52px; z-index:9998; display:flex; justify-content:space-between; gap:8px; }
 .kt-journey-actions button { padding:8px 10px; border:1px solid rgba(247,244,236,0.38); border-radius:5px; background:rgba(12,26,39,0.9); color:#f7f4ec; font:10px 'VCR',monospace; letter-spacing:1px; cursor:pointer; }
 .kt-help { position:absolute; inset:0; z-index:60; display:grid; place-items:center; padding:20px; background:rgba(2,7,14,0.78); }
 .kt-help section { position:relative; width:min(100%,420px); box-sizing:border-box; padding:27px 25px 22px; border:1px solid rgba(247,244,236,0.46); border-radius:9px; background:#0c1a27; box-shadow:0 18px 46px rgba(0,0,0,0.62); color:#f7f4ec; }

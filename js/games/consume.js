@@ -415,7 +415,7 @@
           `<span>${lvl.n}</span></button>`;
       }).join('') +
       `</div>` +
-      `<div class="cw-code-card">` +
+      `<div class="cw-code-card player-login-switch" role="button" tabindex="0" onclick="openPlayerSignIn()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPlayerSignIn()}" aria-label="Change arcade login">` +
       `<div class="cw-code-row"><span class="cw-code-label">LOGGED IN AS</span>` +
       `<span class="cw-me-name">${esc(store.active)}</span></div></div>` +
       `</div>`;
