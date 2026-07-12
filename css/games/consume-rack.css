@@ -19,6 +19,12 @@
 .kt-rack { border-color: rgba(247,244,236,0.38); background: rgba(5,14,20,0.62); }
 .kt-rack > span { color: rgba(247,244,236,0.72); }
 .kt-tile { border-color: rgba(247,244,236,0.52); background: #132b40; color: #fffdf5; font-weight: 700; }
+.kt-tile.suit-R { --kt-suit:#ff778e; }
+.kt-tile.suit-B { --kt-suit:#70caff; }
+.kt-tile.suit-G { --kt-suit:#a9f07d; }
+.kt-tile.suit-Y { --kt-suit:#ffe26c; }
+.kt-tile[class*="suit-"] { position:relative; border-color:color-mix(in srgb,var(--kt-suit) 78%,#f7f4ec); background:color-mix(in srgb,var(--kt-suit) 18%,#132b40); color:var(--kt-suit); text-shadow:0 1px 0 rgba(0,0,0,0.55); }
+.kt-suit-mark { position:absolute; right:5px; bottom:3px; font:10px/1 sans-serif; color:var(--kt-suit); text-shadow:none; }
 .kt-check { color: #fffdf5; background: color-mix(in srgb, var(--kt) 16%, rgba(12,26,39,0.94)); }
 .kt-levels button { color: #f7f4ec; border-color: rgba(247,244,236,0.42); background: rgba(12,26,39,0.88); }
 .kt-codebox { box-sizing: border-box; background: rgba(8,18,28,0.84); border-color: rgba(247,244,236,0.28); }

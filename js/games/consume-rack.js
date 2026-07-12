@@ -77,7 +77,9 @@
   }
 
   function tileMarkup(tile) {
-    return `<button class="kt-tile ${mode === 'numbers' ? `suit-${tile.value[0]}` : ''}" data-tile="${tile.id}">${esc(mode === 'numbers' ? tile.value.slice(1) : tile.value.toUpperCase())}</button>`;
+    const suit = mode === 'numbers' ? tile.value[0] : '';
+    const mark = { R: '◆', B: '●', G: '▲', Y: '■' }[suit] || '';
+    return `<button class="kt-tile ${suit ? `suit-${suit}` : ''}" data-tile="${tile.id}"><span>${esc(suit ? tile.value.slice(1) : tile.value.toUpperCase())}</span>${mark ? `<i class="kt-suit-mark" aria-hidden="true">${mark}</i>` : ''}</button>`;
   }
   function groupMarkup(group) {
     return `<div class="kt-group ${validGroup(group.tiles) ? 'valid' : 'invalid'}" data-group="${group.id}">${group.tiles.map(tileMarkup).join('')}</div>`;
@@ -90,8 +92,9 @@
 
   function ghostTile(tile) {
     const ghost = document.createElement('i');
-    ghost.className = `kt-tile kt-ghost-slot ${mode === 'numbers' ? `suit-${tile.value[0]}` : ''}`;
-    ghost.textContent = mode === 'numbers' ? tile.value.slice(1) : tile.value.toUpperCase();
+    const suit = mode === 'numbers' ? tile.value[0] : '';
+    ghost.className = `kt-tile kt-ghost-slot ${suit ? `suit-${suit}` : ''}`;
+    ghost.innerHTML = `<span>${esc(suit ? tile.value.slice(1) : tile.value.toUpperCase())}</span>${suit ? `<i class="kt-suit-mark" aria-hidden="true">${{ R: '◆', B: '●', G: '▲', Y: '■' }[suit]}</i>` : ''}`;
     return ghost;
   }
 
