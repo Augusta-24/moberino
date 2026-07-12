@@ -403,8 +403,8 @@
     const next = Math.min(done + 1, LEVELS.length);
     wrap.innerHTML =
       `<div class="cw-levels">` +
-      `<button class="cw-mode-return" type="button" data-act="modes">MODES</button>` +
-      `<div class="cw-title">TILE SWAP</div>` +
+      `<button class="cw-btn cw-mode-return" type="button" data-act="modes">MODES</button>` +
+      `<div class="cw-title">WORD GRID</div>` +
       `<div class="cw-intro">Make real words from the grid. Tap a completed word to return its tiles and rearrange them.</div>` +
       `<div class="cw-section-label">LEVELS</div>` +
       `<div class="cw-level-grid">` +

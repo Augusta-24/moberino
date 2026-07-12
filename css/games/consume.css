@@ -26,6 +26,7 @@
 
 .cw-levels {
   width: min(100%, 480px);
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -35,12 +36,14 @@
   margin-bottom: 12px;
 }
 .cw-title {
+  max-width: 100%;
   font-family: 'Bebas Neue', 'Arial Narrow', Impact, sans-serif;
   font-size: clamp(46px, 10vw, 68px);
   letter-spacing: 8px;
   line-height: 0.95;
   color: var(--cw);
   text-shadow: 0 0 22px #38d8ff88, 3px 3px 0 #031421;
+  text-align: center;
 }
 .cw-intro {
   font-family: 'VCR', monospace;

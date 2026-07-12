@@ -566,3 +566,35 @@
 }
 .snoob-result-btns .snoob-btn { width: 100%; min-height: 46px; font-size: 13px; letter-spacing: 3px; }
 .snoob-btn-go { background: rgba(228,182,95,0.26); }
+
+/* Mode picker follows the shared arcade menu language instead of the cabinet
+   housing used while SNOOB is in play. */
+.snoob-mode-frame {
+  width: min(100%, 560px);
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.snoob-mode-frame .snoob-menu-shell { gap: 0; }
+.snoob-mode-frame .snoob-title {
+  color: #f7f1df;
+  text-shadow: 0 0 18px rgba(228,182,95,0.34), 3px 3px 0 #031421;
+}
+.snoob-mode-frame .snoob-sub { color: rgba(247,241,223,0.82); }
+.snoob-mode-frame .snoob-modes { margin-top: 18px; gap: 10px; }
+.snoob-mode-frame .snoob-mode-btn {
+  min-height: 92px;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border: 1px solid rgba(247,241,223,0.46);
+  border-radius: 7px;
+  background: rgba(12,26,39,0.9);
+}
+.snoob-mode-frame .snoob-mode-btn:hover {
+  border-color: #e4b65f;
+  background: color-mix(in srgb, #e4b65f 13%, rgba(12,26,39,0.94));
+  box-shadow: 0 0 14px rgba(228,182,95,0.2);
+}
+.snoob-mode-frame .snoob-mode-btn strong { color: #f7f1df; text-shadow: none; }
+.snoob-mode-frame .snoob-mode-btn span { color: rgba(247,241,223,0.78); }

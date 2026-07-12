@@ -1683,7 +1683,7 @@
     if (!host) return;
     setArcadeExitVisible(true);
     host.innerHTML = `
-      <div class="snoob-cabinet-frame">
+      <div class="snoob-cabinet-frame snoob-mode-frame">
         <div class="snoob-menu-shell">
           <div class="snoob-title">SNOOB</div>
           <div class="snoob-sub">RETRO STICKER SHOOTER</div>
