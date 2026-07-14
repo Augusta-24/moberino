@@ -20,7 +20,7 @@ ROOT = Path(__file__).parent
 OUT = ROOT / "js" / "games" / "consume-boards.js"
 N_LEVELS = 16
 ALPH = "abcdefghijklmnopqrstuvwxyz"
-ENABLE_SOURCE = ROOT / "word_list_enable.pm"
+COMMON_RANK_LIMIT = 4000
 
 VOWELS = set("aeiou")
 RARE = set("jqxzv")
@@ -39,6 +39,9 @@ STOP = {"info", "index", "unix", "faq", "faqs", "gif", "gifs", "url", "utc",
         "ian", "kim", "amy", "ann", "sue", "kevin", "sarah", "laura",
         "linda", "mary", "susan", "karen", "lisa", "nancy", "helen", "emma",
         "alice", "julia", "diana", "anne", "dan", "don", "ted", "roy", "leo",
+        # Dictionary-valid words that players overwhelmingly read as names or
+        # places. Frequency alone cannot distinguish these usages.
+        "kirk", "troy", "york",
         # Keep player-facing vocabulary free of terms that can be used as slurs.
         "gay"}
 
@@ -68,26 +71,59 @@ THREE_OK = {
 
 # Common, unambiguous words missing from the compact frequency source. Keep this
 # list deliberately small: additions here become playable in the GRID mode.
-EXTRA_PLAY_WORDS = {"ore"}
+EXTRA_PLAY_WORDS = {
+    # Familiar inflections can rank surprisingly low in a web-frequency list;
+    # keep this hand-reviewed escape hatch small and explicit.
+    "feet", "forms", "lines", "ore", "paid", "prints", "shoes", "terms",
+}
 
-# ENABLE is public domain, but it is a word-game list rather than a child-safe
-# vocabulary. These are excluded in addition to STOP before it reaches either
-# player-facing dictionary.
-ENABLE_DENYLIST = {
+# Keep the common vocabulary appropriate for the arcade as well as familiar.
+CONTENT_DENYLIST = {
     "anal", "anus", "asshole", "bastard", "bitch", "clit", "cunt", "dick",
     "dildo", "fag", "faggot", "fuck", "fucker", "fucking", "homo", "nigger",
     "nigga", "penis", "porn", "prick", "pussy", "rape", "rapist", "retard",
     "retarded", "sex", "sexual", "shit", "slut", "spic", "tits", "twat",
     "whore",
 }
-ENABLE_DENY_STEMS = (
+CONTENT_DENY_STEMS = (
     "anal", "cunt", "dick", "dildo", "fag", "fuck", "homo", "nigg",
     "porn", "prick", "rape", "retard", "sex", "slut", "spic", "twat",
     "whore",
 )
 
+# Proper nouns are disallowed in standard word-game play.  Homographs with an
+# ordinary lowercase meaning (for example, "van", "grant", or "jersey") stay
+# legal; entries here have no familiar lowercase use worth testing a player on.
+PROPER_ONLY = {
+    "africa", "african", "alabama", "alaska", "america", "american",
+    "anderson", "antonio", "arab", "arizona", "arkansas", "atlanta",
+    "atlantic", "austin", "austria", "barbara", "boston", "britain",
+    "british", "canada", "canadian", "carolina", "chinese", "christ",
+    "colorado", "columbia", "czech", "dakota", "delaware", "denmark",
+    "dutch", "edward", "egypt", "english", "european", "florida",
+    "francisco", "french", "georgia", "german", "greek", "guinea",
+    "idaho", "illinois", "india", "indian", "indiana", "iowa", "iran",
+    "iraq", "irish", "israel", "italian", "japan", "japanese", "jewish",
+    "jones", "jordan", "kentucky", "kelly", "lewis", "lincoln", "louis",
+    "maine", "marshall", "maryland", "miami", "michigan", "missouri",
+    "montana", "nevada", "norway", "ohio", "oklahoma", "orlando",
+    "orleans", "oxford", "paris", "patrick", "phoenix", "rome", "russia",
+    "russian", "santa", "spanish", "sterling", "stephen", "swiss", "texas",
+    "turkey", "utah", "vermont", "victoria", "virginia", "wilson",
+    "january", "february", "april", "june", "july", "august", "october",
+    "november", "december", "monday", "tuesday", "thursday", "friday",
+    "saturday", "sunday",
+}
+
 
 def load_words():
+    """Build the single common-word vocabulary used by solver and runtime.
+
+    The source list is frequency-ranked.  Four-plus-letter words must be in its
+    top COMMON_RANK_LIMIT entries and in the system dictionary; three-letter
+    words use the hand-reviewed THREE_OK list because short frequency lists are
+    especially noisy.  STOP handles names, abbreviations, and web artifacts.
+    """
     freq = [w.strip().lower() for w in (ROOT / "word_list_10k.txt").read_text().splitlines()]
     freq = [w for w in freq if w.isalpha() and w.isascii()]
     sysdict = set()
@@ -97,51 +133,43 @@ def load_words():
                    if w.strip().islower() and w.strip().isalpha()}
 
     ranks = {}
-    play_words = []
-    solutions = []
+    common_words = []
     for rank, w in enumerate(freq):
         if not (3 <= len(w) <= 8):
             continue
-        if w in STOP or not (set(w) & VOWELS):
+        if rank >= COMMON_RANK_LIMIT:
+            continue
+        if (w in STOP or w in PROPER_ONLY or w in CONTENT_DENYLIST
+                or w.startswith(CONTENT_DENY_STEMS) or not (set(w) & VOWELS)):
             continue
         if sysdict and w not in sysdict:
+            continue
+        if len(w) == 3 and w not in THREE_OK:
             continue
         if w in ranks:
             continue
         ranks[w] = rank
-        play_words.append(w)
-        if rank < 5500 and len(w) <= 6 and (len(w) != 3 or w in THREE_OK):
-            solutions.append(w)
+        common_words.append(w)
     for w in sorted(THREE_OK):
-        if w in STOP or (sysdict and w not in sysdict) or w in ranks:
+        if (w in STOP or w in PROPER_ONLY or w in CONTENT_DENYLIST
+                or w.startswith(CONTENT_DENY_STEMS)
+                or (sysdict and w not in sysdict) or w in ranks):
             continue
         ranks[w] = len(ranks) + 100000
-        play_words.append(w)
+        common_words.append(w)
     for w in sorted(EXTRA_PLAY_WORDS):
         if w in STOP or w in ranks:
             continue
         ranks[w] = len(ranks) + 100001
-        play_words.append(w)
-    return play_words, solutions, ranks
+        common_words.append(w)
+    solutions = [w for w in common_words if len(w) <= 6]
+    return common_words, solutions, ranks
 
 
 PLAY_WORDS, SOLUTION_WORDS, RANKS = load_words()
-
-
-def load_runtime_words():
-    """Broader public-domain vocabulary used for player word acceptance."""
-    if not ENABLE_SOURCE.exists():
-        raise FileNotFoundError(f"missing ENABLE source: {ENABLE_SOURCE}")
-    raw = ENABLE_SOURCE.read_text().split("__DATA__\n", 1)[1]
-    def acceptable(word):
-        return (word.isascii() and word.isalpha() and 3 <= len(word) <= 8
-                and word not in STOP and word not in ENABLE_DENYLIST
-                and not word.startswith(ENABLE_DENY_STEMS))
-    return {word for word in set(PLAY_WORDS) | set(raw.split()) | EXTRA_PLAY_WORDS
-            if acceptable(word)}
-
-
-RUNTIME_WORDS = load_runtime_words()
+# Deliberately the same set: accepting a broader runtime dictionary makes the
+# solver's solution/trap counts untrue and rewards random obscure-word guesses.
+RUNTIME_WORDS = frozenset(PLAY_WORDS)
 WORD_COUNTS = {w: tuple(Counter(w).get(ch, 0) for ch in ALPH) for w in PLAY_WORDS}
 SOLUTION_BY_LEN = {n: [w for w in SOLUTION_WORDS if len(w) == n] for n in range(3, 7)}
 SHARP_SOLUTION_BY_LEN = {

@@ -3,7 +3,7 @@
     {
       "mode": "words",
       "level": 1,
-      "solutions": 65,
+      "solutions": 46,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 9,
@@ -17,13 +17,13 @@
     {
       "mode": "words",
       "level": 2,
-      "solutions": 1,
+      "solutions": 10,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 10,
-        "brokenGroups": 3,
-        "untouchedGroups": 0,
-        "effort": 40
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
       },
       "valid": true,
       "errors": []
@@ -31,7 +31,7 @@
     {
       "mode": "words",
       "level": 3,
-      "solutions": 2,
+      "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 12,
@@ -59,7 +59,7 @@
     {
       "mode": "words",
       "level": 5,
-      "solutions": 8,
+      "solutions": 3,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 8,
@@ -76,10 +76,10 @@
       "solutions": 11,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 13,
-        "brokenGroups": 3,
-        "untouchedGroups": 0,
-        "effort": 43
+        "movedTiles": 9,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 29
       },
       "valid": true,
       "errors": []
@@ -101,13 +101,13 @@
     {
       "mode": "words",
       "level": 8,
-      "solutions": 32,
+      "solutions": 31,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 14,
+        "movedTiles": 15,
         "brokenGroups": 3,
         "untouchedGroups": 1,
-        "effort": 44
+        "effort": 45
       },
       "valid": true,
       "errors": []
@@ -115,7 +115,7 @@
     {
       "mode": "words",
       "level": 9,
-      "solutions": 37,
+      "solutions": 50,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 12,
@@ -129,7 +129,7 @@
     {
       "mode": "words",
       "level": 10,
-      "solutions": 2,
+      "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 15,
@@ -143,13 +143,13 @@
     {
       "mode": "words",
       "level": 11,
-      "solutions": 6,
+      "solutions": 38,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 17,
-        "brokenGroups": 4,
-        "untouchedGroups": 0,
-        "effort": 57
+        "movedTiles": 14,
+        "brokenGroups": 3,
+        "untouchedGroups": 1,
+        "effort": 44
       },
       "valid": true,
       "errors": []
@@ -157,7 +157,7 @@
     {
       "mode": "words",
       "level": 12,
-      "solutions": 2,
+      "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 15,
@@ -171,7 +171,7 @@
     {
       "mode": "words",
       "level": 13,
-      "solutions": 9,
+      "solutions": 42,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 20,
@@ -185,7 +185,7 @@
     {
       "mode": "words",
       "level": 14,
-      "solutions": 4,
+      "solutions": 13,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 15,
@@ -199,13 +199,13 @@
     {
       "mode": "words",
       "level": 15,
-      "solutions": 233,
+      "solutions": 264,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 14,
-        "brokenGroups": 3,
-        "untouchedGroups": 2,
-        "effort": 44
+        "movedTiles": 17,
+        "brokenGroups": 4,
+        "untouchedGroups": 1,
+        "effort": 57
       },
       "valid": true,
       "errors": []
@@ -213,7 +213,7 @@
     {
       "mode": "words",
       "level": 16,
-      "solutions": 166,
+      "solutions": 309,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 14,
@@ -227,13 +227,13 @@
     {
       "mode": "words",
       "level": 17,
-      "solutions": 196,
+      "solutions": 97,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 14,
-        "brokenGroups": 3,
-        "untouchedGroups": 1,
-        "effort": 44
+        "movedTiles": 9,
+        "brokenGroups": 2,
+        "untouchedGroups": 2,
+        "effort": 29
       },
       "valid": true,
       "errors": []
@@ -255,13 +255,13 @@
     {
       "mode": "words",
       "level": 19,
-      "solutions": 13,
+      "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 16,
+        "movedTiles": 14,
         "brokenGroups": 4,
         "untouchedGroups": 1,
-        "effort": 56
+        "effort": 54
       },
       "valid": true,
       "errors": []
@@ -269,7 +269,7 @@
     {
       "mode": "words",
       "level": 20,
-      "solutions": 18,
+      "solutions": 39,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 12,
@@ -286,10 +286,10 @@
       "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 12,
-        "brokenGroups": 4,
-        "untouchedGroups": 0,
-        "effort": 52
+        "tableTilesMoved": 1,
+        "tableGroupsTouched": 1,
+        "rackTilesPlaced": 3,
+        "minimumDrags": 4
       },
       "valid": true,
       "errors": []
@@ -297,13 +297,13 @@
     {
       "mode": "numbers",
       "level": 2,
-      "solutions": 3,
+      "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 7,
-        "brokenGroups": 2,
-        "untouchedGroups": 1,
-        "effort": 27
+        "tableTilesMoved": 1,
+        "tableGroupsTouched": 1,
+        "rackTilesPlaced": 3,
+        "minimumDrags": 4
       },
       "valid": true,
       "errors": []
@@ -314,10 +314,10 @@
       "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 6,
-        "brokenGroups": 2,
-        "untouchedGroups": 1,
-        "effort": 26
+        "tableTilesMoved": 2,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 3,
+        "minimumDrags": 5
       },
       "valid": true,
       "errors": []
@@ -328,10 +328,10 @@
       "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 6,
-        "brokenGroups": 2,
-        "untouchedGroups": 1,
-        "effort": 26
+        "tableTilesMoved": 2,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 3,
+        "minimumDrags": 5
       },
       "valid": true,
       "errors": []
@@ -342,10 +342,10 @@
       "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 6,
-        "brokenGroups": 2,
-        "untouchedGroups": 1,
-        "effort": 26
+        "tableTilesMoved": 2,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 6
       },
       "valid": true,
       "errors": []
@@ -356,10 +356,10 @@
       "solutions": 3,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 6,
-        "brokenGroups": 2,
-        "untouchedGroups": 1,
-        "effort": 26
+        "tableTilesMoved": 3,
+        "tableGroupsTouched": 3,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 7
       },
       "valid": true,
       "errors": []
@@ -367,13 +367,13 @@
     {
       "mode": "numbers",
       "level": 7,
-      "solutions": 3,
+      "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 6,
-        "brokenGroups": 2,
-        "untouchedGroups": 2,
-        "effort": 26
+        "tableTilesMoved": 3,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 7
       },
       "valid": true,
       "errors": []
@@ -381,13 +381,13 @@
     {
       "mode": "numbers",
       "level": 8,
-      "solutions": 1,
+      "solutions": 2,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 6,
-        "brokenGroups": 2,
-        "untouchedGroups": 2,
-        "effort": 26
+        "tableTilesMoved": 3,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 7
       },
       "valid": true,
       "errors": []
@@ -395,13 +395,13 @@
     {
       "mode": "numbers",
       "level": 9,
-      "solutions": 2,
+      "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 7,
-        "brokenGroups": 2,
-        "untouchedGroups": 2,
-        "effort": 27
+        "tableTilesMoved": 4,
+        "tableGroupsTouched": 3,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 8
       },
       "valid": true,
       "errors": []
@@ -409,13 +409,13 @@
     {
       "mode": "numbers",
       "level": 10,
-      "solutions": 2,
+      "solutions": 6,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 6,
-        "brokenGroups": 2,
-        "untouchedGroups": 2,
-        "effort": 26
+        "tableTilesMoved": 4,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 8
       },
       "valid": true,
       "errors": []
@@ -423,13 +423,13 @@
     {
       "mode": "numbers",
       "level": 11,
-      "solutions": 3,
+      "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 9,
-        "brokenGroups": 3,
-        "untouchedGroups": 1,
-        "effort": 39
+        "tableTilesMoved": 5,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 9
       },
       "valid": true,
       "errors": []
@@ -437,13 +437,13 @@
     {
       "mode": "numbers",
       "level": 12,
-      "solutions": 2,
+      "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 6,
-        "brokenGroups": 2,
-        "untouchedGroups": 2,
-        "effort": 26
+        "tableTilesMoved": 6,
+        "tableGroupsTouched": 3,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 10
       },
       "valid": true,
       "errors": []
@@ -451,13 +451,13 @@
     {
       "mode": "numbers",
       "level": 13,
-      "solutions": 8,
+      "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 10,
-        "brokenGroups": 3,
-        "untouchedGroups": 2,
-        "effort": 40
+        "tableTilesMoved": 6,
+        "tableGroupsTouched": 5,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 10
       },
       "valid": true,
       "errors": []
@@ -465,13 +465,13 @@
     {
       "mode": "numbers",
       "level": 14,
-      "solutions": 2,
+      "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 9,
-        "brokenGroups": 3,
-        "untouchedGroups": 2,
-        "effort": 39
+        "tableTilesMoved": 7,
+        "tableGroupsTouched": 4,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 11
       },
       "valid": true,
       "errors": []
@@ -482,10 +482,10 @@
       "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 9,
-        "brokenGroups": 3,
-        "untouchedGroups": 2,
-        "effort": 39
+        "tableTilesMoved": 7,
+        "tableGroupsTouched": 4,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 11
       },
       "valid": true,
       "errors": []
@@ -493,13 +493,13 @@
     {
       "mode": "numbers",
       "level": 16,
-      "solutions": 1,
+      "solutions": 7,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 9,
-        "brokenGroups": 3,
-        "untouchedGroups": 2,
-        "effort": 39
+        "tableTilesMoved": 7,
+        "tableGroupsTouched": 4,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 11
       },
       "valid": true,
       "errors": []
@@ -510,10 +510,10 @@
       "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 9,
-        "brokenGroups": 3,
-        "untouchedGroups": 0,
-        "effort": 39
+        "tableTilesMoved": 10,
+        "tableGroupsTouched": 5,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 14
       },
       "valid": true,
       "errors": []
@@ -521,13 +521,13 @@
     {
       "mode": "numbers",
       "level": 18,
-      "solutions": 2,
+      "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 12,
-        "brokenGroups": 4,
-        "untouchedGroups": 0,
-        "effort": 52
+        "tableTilesMoved": 10,
+        "tableGroupsTouched": 4,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 14
       },
       "valid": true,
       "errors": []
@@ -535,13 +535,13 @@
     {
       "mode": "numbers",
       "level": 19,
-      "solutions": 1,
+      "solutions": 2,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 12,
-        "brokenGroups": 4,
-        "untouchedGroups": 1,
-        "effort": 52
+        "tableTilesMoved": 10,
+        "tableGroupsTouched": 4,
+        "rackTilesPlaced": 5,
+        "minimumDrags": 15
       },
       "valid": true,
       "errors": []
@@ -552,10 +552,10 @@
       "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 13,
-        "brokenGroups": 4,
-        "untouchedGroups": 0,
-        "effort": 53
+        "tableTilesMoved": 10,
+        "tableGroupsTouched": 4,
+        "rackTilesPlaced": 5,
+        "minimumDrags": 15
       },
       "valid": true,
       "errors": []

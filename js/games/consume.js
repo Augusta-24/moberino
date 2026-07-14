@@ -313,8 +313,8 @@
     if (!wrap || !S) return;
     wrap.innerHTML =
       `<div class="cw-hud">` +
-      `<button class="cw-btn" data-act="journey">◀ JOURNEY</button>` +
-      `<div class="cw-hud-mid"><span class="cw-lvl">LEVEL ${S.n}</span></div>` +
+      `<button class="cw-btn" data-act="journey">JOURNEY</button>` +
+      `<strong>GRID · LEVEL ${S.n}</strong>` +
       `<button class="cw-btn" data-act="reset">RESET</button>` +
       `</div>` +
       `<div class="cw-board" id="cw-board" style="--cw-cols:${S.boardCols}"></div>` +
@@ -356,9 +356,19 @@
   function updateBoard() {
     const board = wrap && wrap.querySelector('#cw-board');
     if (!board || !S) return;
-    board.innerHTML = S.tiles.map(t =>
-      `<button class="${tileClass(t)}" type="button" data-board-tile="${t.id}">${esc(t.ch.toUpperCase())}</button>`
-    ).join('');
+    const current = [...board.querySelectorAll('[data-board-tile]')];
+    const stable = current.length === S.tiles.length && current.every((element, index) =>
+      Number(element.dataset.boardTile) === S.tiles[index].id
+    );
+    if (!stable) {
+      board.innerHTML = S.tiles.map(t =>
+        `<button class="${tileClass(t)}" type="button" data-board-tile="${t.id}">${esc(t.ch.toUpperCase())}</button>`
+      ).join('');
+      return;
+    }
+    // Preserve the button nodes between taps. Replacing them here could destroy
+    // the target of a quick follow-up touch before its click event was delivered.
+    current.forEach((element, index) => { element.className = tileClass(S.tiles[index]); });
   }
 
   function tileClass(t) {

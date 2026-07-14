@@ -15,45 +15,22 @@ from collections import Counter
 from functools import lru_cache
 from itertools import combinations, product
 from pathlib import Path
-from generate_consume_boards import STOP as BASE_STOP, THREE_OK, EXTRA_PLAY_WORDS, RUNTIME_WORDS
+from generate_consume_boards import RUNTIME_WORDS
 
 ROOT = Path(__file__).parent
 OUT = ROOT / "js" / "games" / "consume-rack-boards.js"
 REPORT = ROOT / "consume-rack-validation-report.json"
 SUITS = "RBGY"
 
-# Kept deliberately ordinary and screened more tightly than the runtime's broad
-# play dictionary.  The runtime still accepts every legal alternate partition.
-STOP = BASE_STOP | {"gay", "queer", "slut", "whore", "rape", "raped", "rapes",
-        "nazi", "slave", "idiot", "moron", "retard", "retarded",
-        "iraq", "linux", "russia", "kong", "july", "york"}
-
-
-def load_words():
-    words = []
-    seen = set()
-    for rank, raw in enumerate((ROOT / "word_list_10k.txt").read_text().splitlines()):
-        word = raw.strip().lower()
-        if (word in seen or word in STOP or not word.isascii() or not word.isalpha()
-                or not 3 <= len(word) <= 6 or rank >= 3500
-                or (len(word) == 3 and word not in THREE_OK)):
-            continue
-        seen.add(word)
-        words.append((word, rank))
-    play = {word for word, _ in words} | EXTRA_PLAY_WORDS
-    # Source words used on the visible table. Alternates are audited against the
-    # complete runtime dictionary above.
-    source = [word for word, rank in words if rank < 1600 and len(word) <= 5]
-    return play, source
-
-
-PLAY_WORDS, SOURCE_WORDS = load_words()
+# Solver and gameplay intentionally use the exact same common-word set. A wider
+# runtime vocabulary would create un-audited obscure-word shortcuts.
+PLAY_WORDS = set(RUNTIME_WORDS)
 
 # Solver-checked seeds.  These are data, not exact answers: the audit enumerates
 # every valid partition and retains boards only when the easiest one is hard.
 WORD_LEVELS = [
     (["gift", "shoes", "lines"], "xat"),
-    (["set", "been", "bed"], "xso"),
+    (["set", "been", "bed"], "eow"),
     (["main", "sell", "fine"], "xrt"),
     (["list", "out", "death"], "xsr"),
     (["none", "teen", "gift"], "xil"),
@@ -61,7 +38,7 @@ WORD_LEVELS = [
     (["west", "oil", "each", "full"], "xtr"),
     (["focus", "grade", "with", "state"], "xrl"),
     (["sea", "write", "under", "sent"], "xlo"),
-    (["born", "bay", "wide", "seen"], "xsn"),
+    (["born", "bay", "wide", "seen"], "fjx"),
     (["get", "doing", "does", "field"], "xse"),
     (["hit", "south", "say", "week"], "qrl"),
     (["list", "tour", "car", "share", "wide"], "qel"),
@@ -69,32 +46,32 @@ WORD_LEVELS = [
     (["sign", "paid", "turn", "forms", "heart"], "xts"),
     (["song", "feet", "guest", "game", "trial"], "qoa"),
     (["lack", "often", "terms", "trust"], "oime"),
-    (["cook", "desk", "prints"], "sfc"),
-    (["ask", "fan", "greece", "rich", "the"], "aaic"),
+    (["cook", "desk", "prints"], "ajj"),
+    (["ask", "fan", "with", "rich", "the"], "aaic"),
     (["auto", "film", "were", "wine"], "votn"),
 ]
 
 NUMBER_LEVELS = [
-    ([['G4','R4','Y4'], ['G7','R7','Y7'], ['R10','R11','R12'], ['Y10','Y11','Y9']], ['B7','B4','Y12','R9']),
-    ([['G8','G9','G10'], ['R5','B5','G5','Y5'], ['R6','B6','G6']], ['Y6','G4','G7']),
-    ([['B8','B9','B10'], ['R12','B12','Y12'], ['R2','B2','Y2']], ['B7','B11','G2']),
-    ([['Y8','Y9','Y10'], ['B5','G5','Y5'], ['G9','G10','G11']], ['G8','Y7','G7']),
-    ([['B7','B8','B9'], ['R2','B2','Y2'], ['G7','G8','G9']], ['G10','B6','G11']),
-    ([['R2','G2','Y2'], ['R3','R4','R5'], ['Y7','Y8','Y9']], ['R7','R6','B2']),
-    ([['Y2','Y3','Y4'], ['R11','G11','Y11'], ['Y5','Y6','Y7'], ['R8','B8','G8']], ['Y9','B2','Y8','R2']),
-    ([['R2','B2','Y2'], ['G8','G9','G10'], ['B5','G5','Y5'], ['R7','B7','Y7']], ['G2','B9','B8','G7']),
-    ([['R8','B8','Y8'], ['R12','B12','G12','Y12'], ['Y5','Y6','Y7'], ['R1','G1','Y1']], ['G8','Y13','Y10','Y11']),
-    ([['B2','B3','B4'], ['Y1','Y2','Y3'], ['Y4','Y5','Y6'], ['G8','G9','G10']], ['G7','B1','B5','G6']),
-    ([['B10','G10','Y10'], ['B7','B8','B9'], ['G4','G5','G6'], ['R11','B11','G11']], ['G2','G3','R10','Y11']),
-    ([['G10','G11','G12'], ['R7','R8','R9'], ['R2','R3','R4'], ['B7','G7','Y7']], ['G8','G13','G9','R1']),
-    ([['R4','B4','G4','Y4'], ['R8','R9','R10'], ['R7','B7','G7','Y7'], ['Y10','Y11','Y12'], ['G9','G10','G11']], ['Y9','R6','R5','R11']),
-    ([['R6','B6','G6'], ['G7','G8','G9'], ['B1','B2','B3'], ['Y3','Y4','Y5'], ['Y6','Y7','Y8']], ['R8','B8','B4','Y2']),
-    ([['G6','G7','G8'], ['B10','B11','B12'], ['B1','G1','Y1'], ['R5','R6','R7'], ['R3','B3','G3']], ['G5','B13','R8','R9']),
-    ([['B3','B4','B5'], ['Y7','Y8','Y9'], ['Y1','Y2','Y3'], ['G4','G5','G6'], ['G9','G10','G11']], ['B2','Y10','G3','G2']),
-    ([['G9','G10','G11'], ['R2','G2','Y2'], ['R5','B5','Y5']], ['B2','G5','G8']),
-    ([['B2','B3','B4'], ['B7','G7','Y7'], ['G10','G11','G9'], ['Y10','Y11','Y12']], ['G8','B1','R7','Y13']),
-    ([['B1','R1','Y1'], ['B4','R4','Y4'], ['B8','G8','R8'], ['G6','R6','Y6'], ['Y10','Y11','Y9']], ['G4','G1','Y12','B6']),
-    ([['B10','G10','R10'], ['G6','G7','G8','G9'], ['R6','R7','R8'], ['Y10','Y8','Y9']], ['B8','R9','R5','R4']),
+    ([['R3', 'R4', 'R5'], ['G6', 'G7', 'G8', 'G9'], ['Y2', 'Y3', 'Y4']], ['R2', 'G2', 'Y5']),
+    ([['G5', 'G6', 'G7', 'G8'], ['B10', 'B11', 'B12'], ['Y4', 'Y5', 'Y6', 'Y7']], ['B4', 'R4', 'Y8']),
+    ([['R9', 'G9', 'Y9'], ['R10', 'G10', 'Y10'], ['R4', 'B4', 'G4']], ['R8', 'B9', 'B10']),
+    ([['R5', 'B5', 'G5', 'Y5'], ['R3', 'B3', 'G3', 'Y3'], ['R11', 'G11', 'Y11']], ['R2', 'R4', 'R6']),
+    ([['R9', 'B9', 'Y9'], ['R4', 'R5', 'R6'], ['R11', 'B11', 'G11', 'Y11'], ['R3', 'B3', 'Y3']], ['R2', 'R12', 'G3', 'R10']),
+    ([['Y7', 'Y8', 'Y9', 'Y10'], ['G11', 'G12', 'G13'], ['B9', 'B10', 'B11', 'B12', 'B13'], ['B6', 'B7', 'B8']], ['G10', 'R7', 'G7', 'R13']),
+    ([['R2', 'R3', 'R4', 'R5', 'R6'], ['R12', 'G12', 'Y12'], ['B11', 'G11', 'Y11'], ['R8', 'B8', 'G8', 'Y8']], ['R7', 'R11', 'Y5', 'G5']),
+    ([['G9', 'G10', 'G11'], ['G4', 'G5', 'G6', 'G7', 'G8'], ['Y3', 'Y4', 'Y5', 'Y6', 'Y7'], ['R11', 'B11', 'Y11']], ['B7', 'R9', 'Y9', 'B9']),
+    ([['R6', 'R7', 'R8', 'R9', 'R10'], ['R2', 'R3', 'R4', 'R5'], ['B4', 'B5', 'B6'], ['Y9', 'Y10', 'Y11', 'Y12']], ['G4', 'Y4', 'Y5', 'Y6']),
+    ([['R6', 'R7', 'R8', 'R9', 'R10'], ['B2', 'B3', 'B4', 'B5', 'B6'], ['Y9', 'Y10', 'Y11', 'Y12', 'Y13'], ['G7', 'G8', 'G9']], ['B10', 'B9', 'B7', 'G6']),
+    ([['Y5', 'Y6', 'Y7', 'Y8', 'Y9'], ['R10', 'R11', 'R12'], ['R7', 'R8', 'R9'], ['B1', 'B2', 'B3', 'B4', 'B5']], ['Y4', 'B7', 'G8', 'B9']),
+    ([['G1', 'G2', 'G3', 'G4'], ['R10', 'B10', 'G10'], ['B5', 'G5', 'Y5'], ['B1', 'B2', 'B3', 'B4']], ['Y2', 'Y6', 'Y7', 'Y1']),
+    ([['R9', 'B9', 'G9', 'Y9'], ['R5', 'B5', 'G5'], ['R1', 'R2', 'R3', 'R4'], ['Y5', 'Y6', 'Y7', 'Y8'], ['R6', 'B6', 'G6']], ['G1', 'G7', 'G4', 'B1']),
+    ([['R5', 'R6', 'R7', 'R8', 'R9'], ['G8', 'G9', 'G10', 'G11', 'G12'], ['G1', 'G2', 'G3'], ['B5', 'B6', 'B7'], ['B8', 'B9', 'B10', 'B11', 'B12']], ['Y5', 'R12', 'G4', 'R11']),
+    ([['B2', 'B3', 'B4'], ['R3', 'R4', 'R5', 'R6', 'R7'], ['Y4', 'Y5', 'Y6', 'Y7'], ['Y8', 'Y9', 'Y10', 'Y11', 'Y12', 'Y13'], ['B7', 'B8', 'B9', 'B10', 'B11', 'B12']], ['B13', 'R8', 'B5', 'G9']),
+    ([['B6', 'B7', 'B8', 'B9', 'B10', 'B11'], ['R2', 'R3', 'R4', 'R5'], ['R12', 'G12', 'Y12'], ['G5', 'G6', 'G7', 'G8', 'G9', 'G10'], ['Y2', 'Y3', 'Y4', 'Y5', 'Y6']], ['R7', 'Y7', 'B13', 'B12']),
+    ([['G6', 'G7', 'G8', 'G9'], ['G1', 'G2', 'G3', 'G4', 'G5'], ['R1', 'R2', 'R3', 'R4', 'R5'], ['R8', 'R9', 'R10', 'R11', 'R12'], ['B1', 'B2', 'B3', 'B4']], ['Y2', 'Y9', 'R13', 'Y8']),
+    ([['R2', 'R3', 'R4', 'R5', 'R6', 'R7'], ['Y5', 'Y6', 'Y7', 'Y8', 'Y9'], ['R11', 'B11', 'G11'], ['Y2', 'Y3', 'Y4'], ['B7', 'B8', 'B9']], ['G2', 'B3', 'R9', 'G8']),
+    ([['R3', 'R4', 'R5', 'R6', 'R7', 'R8'], ['B5', 'B6', 'B7', 'B8'], ['R11', 'G11', 'Y11'], ['Y5', 'Y6', 'Y7', 'Y8'], ['R2', 'G2', 'Y2']], ['B2', 'B9', 'G8', 'G7', 'B10']),
+    ([['Y9', 'Y10', 'Y11', 'Y12', 'Y13'], ['G10', 'G11', 'G12'], ['B1', 'B2', 'B3', 'B4', 'B5'], ['G4', 'G5', 'G6', 'G7', 'G8', 'G9'], ['B8', 'B9', 'B10', 'B11', 'B12', 'B13']], ['B7', 'R10', 'R5', 'Y4', 'B6']),
 ]
 
 
@@ -237,19 +214,72 @@ def effort(groups, solution):
             "effort": (broken * 10) + (sum(map(len, groups)) - kept)}
 
 
+def rummy_effort(groups, solution, rack_size):
+    """Lower bound on the physical drags required by a RUMMY solution.
+
+    A table tile stays put when its original group can map to one final group
+    that still contains it. Adding rack tiles to that group is free for the
+    table tile; splitting it out into another group is a real table move.
+    """
+    old = [Counter(group) for group in groups]
+    new = [Counter(group) for group in solution]
+
+    @lru_cache(None)
+    def best(i, used):
+        if i == len(old):
+            return (0, ())
+        score, trail = best(i + 1, used)
+        options = [(score, (0,) + trail)]
+        for j, target in enumerate(new):
+            if not used >> j & 1:
+                kept_here = sum((old[i] & target).values())
+                score, trail = best(i + 1, used | (1 << j))
+                options.append((kept_here + score, (kept_here,) + trail))
+        return max(options, key=lambda value: value[0])
+
+    kept, per_group = best(0, 0)
+    table_tiles = sum(map(len, groups))
+    moved = table_tiles - kept
+    touched = sum(value < len(old[i]) for i, value in enumerate(per_group))
+    return {"tableTilesMoved": moved,
+            "tableGroupsTouched": touched,
+            "rackTilesPlaced": rack_size,
+            "minimumDrags": moved + rack_size}
+
+
+def rummy_requirements(number):
+    """Minimum real table manipulation for each step in the journey."""
+    return [
+        (1, 1), (1, 1), (2, 1), (2, 2),
+        (2, 2), (3, 2), (3, 2), (3, 2), (3, 2), (3, 2),
+        (4, 2), (4, 2), (4, 3), (4, 3), (5, 3), (5, 3),
+        (6, 3), (7, 3), (8, 4), (9, 4),
+    ][number - 1]
+
+
 def audit_level(mode, number, groups, rack):
     pool = [tile for group in groups for tile in group] + list(rack)
     solutions, capped = (word_partitions("".join(pool)) if mode == "words"
                          else rummy_partitions(pool))
     # Groups are player-created, so every valid full partition must be graded;
     # a solution using a different number of groups is still a real shortcut.
-    scored = [(effort(groups, solution), solution) for solution in solutions]
-    scored.sort(key=lambda item: (item[0]["effort"], item[0]["movedTiles"]))
+    if mode == "numbers":
+        scored = [(rummy_effort(groups, solution, len(rack)), solution)
+                  for solution in solutions]
+        scored.sort(key=lambda item: (item[0]["tableTilesMoved"],
+                                      item[0]["tableGroupsTouched"]))
+        required_moved, required_touched = rummy_requirements(number)
+        low_effort = sum(score["tableTilesMoved"] < required_moved
+                         or score["tableGroupsTouched"] < required_touched
+                         for score, _ in scored)
+    else:
+        scored = [(effort(groups, solution), solution) for solution in solutions]
+        scored.sort(key=lambda item: (item[0]["effort"], item[0]["movedTiles"]))
+        required_broken = 2 if len(groups) <= 4 else 3
+        max_untouched = max((score["untouchedGroups"] for score, _ in scored), default=0)
+        low_effort = sum(score["brokenGroups"] < required_broken or score["movedTiles"] < 3
+                         for score, _ in scored)
     minimum = scored[0][0] if scored else None
-    required_broken = 2 if len(groups) <= 4 else 3
-    max_untouched = max((score["untouchedGroups"] for score, _ in scored), default=0)
-    low_effort = sum(score["brokenGroups"] < required_broken or score["movedTiles"] < 3
-                     for score, _ in scored)
     errors = []
     if mode == "words" and any("".join(group) not in PLAY_WORDS for group in groups):
         errors.append("invalid starting word")
@@ -259,12 +289,17 @@ def audit_level(mode, number, groups, rack):
     if capped: errors.append("too many valid partitions")
     if rack_shortcut(mode, groups, list(rack)): errors.append("rack shortcut")
     if len(groups) < 3: errors.append("fewer than three table groups")
-    if minimum and minimum["brokenGroups"] < required_broken:
-        errors.append(f"easy solution breaks fewer than {required_broken} groups")
-    if minimum and minimum["movedTiles"] < 3: errors.append("easy solution moves fewer than three table tiles")
-    if max_untouched > len(groups) - required_broken:
-        errors.append("a solution leaves most groups untouched")
-    if low_effort: errors.append(f"{low_effort} low-effort partition(s)")
+    if mode == "numbers" and low_effort:
+        errors.append(f"{low_effort} solution(s) miss the level's real table-move floor")
+    if mode == "words":
+        if minimum and minimum["brokenGroups"] < required_broken:
+            errors.append(f"easy solution breaks fewer than {required_broken} groups")
+        if minimum and minimum["movedTiles"] < 3:
+            errors.append("easy solution moves fewer than three table tiles")
+        if max_untouched > len(groups) - required_broken:
+            errors.append("a solution leaves most groups untouched")
+    if mode == "words" and low_effort:
+        errors.append(f"{low_effort} low-effort partition(s)")
     return {"mode": mode, "level": number, "solutions": len(solutions),
             "solutionsCapped": capped, "minimumRearrangementEffort": minimum,
             "valid": not errors, "errors": errors}
@@ -291,9 +326,16 @@ def main():
     payload, report = make_payload_and_report()
     for row in report:
         metric = row["minimumRearrangementEffort"] or {}
+        if row["mode"] == "numbers":
+            detail = (f"table moves {metric.get('tableTilesMoved', '-')}; "
+                      f"groups touched {metric.get('tableGroupsTouched', '-')}; "
+                      f"min drags {metric.get('minimumDrags', '-')}")
+        else:
+            detail = (f"min effort {metric.get('effort', '-')}; "
+                      f"moved {metric.get('movedTiles', '-')}; "
+                      f"broken {metric.get('brokenGroups', '-')}")
         print(f"{row['mode']:7} L{row['level']:02}: {row['solutions']:4} solutions; "
-              f"min effort {metric.get('effort', '-')}; moved {metric.get('movedTiles', '-')}; "
-              f"broken {metric.get('brokenGroups', '-')}  {'PASS' if row['valid'] else 'FAIL'}")
+              f"{detail}  {'PASS' if row['valid'] else 'FAIL'}")
         for error in row["errors"]:
             print(f"  - {error}")
     if not all(row["valid"] for row in report):

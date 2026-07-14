@@ -78,7 +78,8 @@
       "Bash(node --check /Users/kevinseverino/Documents/moberino/js/games/snoob.js)",
       "Bash(node --check /Users/kevinseverino/Documents/moberino/js/games/consume.js)",
       "Bash(node --check /Users/kevinseverino/Documents/moberino/js/games/consume-rack.js)",
-      "Bash(node --check /Users/kevinseverino/Documents/moberino/js/arcade.js)"
+      "Bash(node --check /Users/kevinseverino/Documents/moberino/js/arcade.js)",
+      "Bash(pkill -f \"http.server 897\")"
     ]
   }
 }

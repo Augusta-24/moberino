@@ -211,25 +211,19 @@
 }
 
 .cw-hud {
-  width: min(100%, 560px);
+  width: min(100%, 600px);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
-.cw-hud-mid {
+.cw-hud strong {
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-.cw-lvl {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 24px;
+  color: #f7f4ec;
+  font: 25px 'Bebas Neue', sans-serif;
   letter-spacing: 3px;
-  color: var(--cw);
-  text-shadow: 0 0 12px #38d8ff66;
+  text-align: center;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--cw) 38%, transparent);
 }
 .cw-meta {
   font-family: 'VCR', monospace;
@@ -249,6 +243,11 @@
   border-radius: 6px;
   padding: 8px 10px;
   cursor: pointer;
+}
+.cw-hud .cw-btn {
+  padding: 9px 10px;
+  border-radius: 5px;
+  letter-spacing: 1px;
 }
 .cw-btn:active,
 .cw-spell:active,
@@ -309,6 +308,7 @@
   font-family: 'VCR', monospace;
   font-size: 19px;
   cursor: pointer;
+  touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
   transition: transform 0.14s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
@@ -519,6 +519,7 @@
   .cw-board { --cw-tile: 46px; gap: 7px; }
   .cw-tile { font-size: 18px; }
   .cw-hud { gap: 5px; }
+  .cw-hud strong { font-size: 22px; }
   .cw-code-card { padding: 14px 12px; }
   .cw-code-row { gap: 7px; }
   .cw-code-label { font-size: 10px; letter-spacing: .8px; }

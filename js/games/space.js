@@ -470,7 +470,8 @@
       holdMs: opts.holdMs || 0,
       startedAt: Date.now(),
       size: size || 20,
-      tag: opts.tag || null
+      tag: opts.tag || null,
+      icon: opts.icon || null
     });
   }
 
@@ -1333,6 +1334,17 @@
     return clamp(ratio, 0, 1);
   }
 
+  // BLASTER DOWN teaching window: the first few enemies come one at a time at
+  // half speed so "fly into them" actually registers, then both the on-screen
+  // cap and the fall speed ramp up to full pressure over the next several.
+  const SWARM_TEACH_SPAWNS = 3;
+  const SWARM_RAMP_SPAWNS = 5;
+  function swarmRampT() {
+    if (swarmRainIndex < SWARM_TEACH_SPAWNS) return 0;
+    if (swarmRainIndex < SWARM_TEACH_SPAWNS + SWARM_RAMP_SPAWNS) return (swarmRainIndex - SWARM_TEACH_SPAWNS) / SWARM_RAMP_SPAWNS;
+    return 1;
+  }
+
   function _spawnObstacleReal(cfg, opts) {
     // Themed waves bend the asteroid/enemy mix and a few spawn stats without
     // touching waveConfig(cfg) itself — purely a local override of this one roll.
@@ -1428,14 +1440,15 @@
         ];
         const beat = pattern[swarmRainIndex % pattern.length];
         const lap = Math.floor(swarmRainIndex / pattern.length);
+        const paceMult = 0.5 + 0.5 * swarmRampT();
         swarmRainIndex++;
         const laneX = clamp(beat[0] * W, r, W - r);
         const side = beat[1];
         const speed = cfg.speed || O_SPEED_BASE;
         obstacles.push({
           type:'face', behavior:'shieldBomber', x:laneX, y:-r-10,
-          vx: side * speed * (0.22 + Math.min(0.09, lap * 0.012)),
-          vy: speed * (2.02 + Math.min(0.20, lap * 0.022)),
+          vx: side * speed * (0.22 + Math.min(0.09, lap * 0.012)) * paceMult,
+          vy: speed * (2.02 + Math.min(0.20, lap * 0.022)) * paceMult,
           r, ci: nextMissionEnemyIndex(), hp: 99, isTrapped:false, ringHp:0,
           pausedBurstDone:true, paused:false, pauseUntil:0, burstShotsLeft:0,
           lastBurstShot:0, isBomber:true, isShieldBomber:true, collisionDamage:20,
@@ -2329,7 +2342,7 @@
     blasterDisabledUntil = now + 1500;
     spawnBlackoutBatteryJunk(authoredCampaignEncounter);
     addFloatText(campaignBlackout ? 'BLACKOUT' : 'BLACKOUT TEST C', W / 2, H * 0.25, '#ffe61a', 25, { vy: 0, holdMs: 4200, fade: 0.010 });
-    addFloatText('CATCH 5 OF 10 TO PASS!', W / 2, H * 0.25 + 34, '#33ff66', 24, { vy: 0, holdMs: 4200, fade: 0.010 });
+    addFloatText('CATCH 5 BATTERIES TO RESTORE THE LIGHT', W / 2, H * 0.25 + 34, '#33ff66', 21, { vy: 0, holdMs: 4200, fade: 0.010, icon: 'battery' });
   }
 
   function startBlackoutTestEncounter(mode) {
@@ -4852,8 +4865,13 @@
       if (spawnsRemaining <= 0) return; // pool exhausted — let the board clear naturally, no forced wipe
       // SWARM: cap how many enemies are falling at once. Same total pool over the
       // wave (we re-queue rather than consume a spawn), just fewer on screen
-      // simultaneously so it reads as a steady stream, not a flood.
-      const activeCap = cfg.activeObstacleCap || (waveTheme === 'swarm' ? (cfg.swarmCap || 5) : 0);
+      // simultaneously so it reads as a steady stream, not a flood. During the
+      // teaching window this cap is pinned to 1 (one enemy, cleared, then the
+      // next) and ramps up to the full cap alongside the speed/cadence ramp.
+      const fullActiveCap = cfg.activeObstacleCap || (waveTheme === 'swarm' ? (cfg.swarmCap || 5) : 0);
+      const activeCap = waveTheme === 'swarm' && fullActiveCap
+        ? Math.max(1, Math.round(1 + (fullActiveCap - 1) * swarmRampT()))
+        : fullActiveCap;
       const activeThreats = obstacles.filter(o => o.alive !== false && !o.isTrapped).length;
       if (activeCap && activeThreats >= activeCap) { spawnTimer = setTimeout(doSpawn, 260); return; }
       const spawnIndex = totalSpawns - spawnsRemaining + 1;
@@ -4877,9 +4895,12 @@
       // make one bomb erase the whole mode or create impossible clumps.
       const themeSpeedup = waveTheme === 'swarm' ? 0.78 : waveTheme === 'goldrush' ? 0.6 : waveTheme === 'asteroids' ? 0.95 : waveTheme === 'mirror' ? 1.25 : waveTheme === 'bomber' ? 1.18 : 1;
       const balanceCadence = cfg.spawnCadenceMult == null ? 1 : cfg.spawnCadenceMult;
-      spawnTimer = setTimeout(doSpawn, cfg.spawnMs * 0.8 * themeSpeedup * balanceCadence * (0.7 + Math.random()*0.6));
+      // Teaching window: spawns land far apart (one... one...) then close up
+      // toward the normal fast cadence as swarmRampT climbs from 0 to 1.
+      const swarmCadenceMult = waveTheme === 'swarm' ? (2.6 - 1.6 * swarmRampT()) : 1;
+      spawnTimer = setTimeout(doSpawn, cfg.spawnMs * 0.8 * themeSpeedup * balanceCadence * swarmCadenceMult * (0.7 + Math.random()*0.6));
     }
-    spawnTimer = setTimeout(doSpawn, waveTheme === 'swarm' ? 420 : 1500);
+    spawnTimer = setTimeout(doSpawn, waveTheme === 'swarm' ? 700 : 1500);
   }
 
   // Phase 2B transition/pacing audit note:
@@ -5213,7 +5234,7 @@ function nextWave() {
   function skillCalloutForWave() {
     if (wave === 1) return 'FIND THE GAP';
     if (wave === 2) return 'LET IT LOCK. THEN MOVE.';
-    if (wave === 3) return 'STAY IN THE EYE. BREAK THE CLOUDS.';
+    if (wave === 3) return 'STAY IN THE ORB. BREAK THE CLOUDS.';
     if (wave === 4) return 'FIRST CAPTIVE. BEAT THE BOSS.';
     if (wave === 5) return null;
     if (wave === 6) return 'BREAK THE RAIN. THEN BREAK THE LOCK.';
@@ -5240,9 +5261,8 @@ function nextWave() {
       const flowToken = spaceFlowToken;
       setTimeout(() => {
         if (flowToken !== spaceFlowToken || state !== 'playing' || (waveTransitioning && !opts.allowDuringTransition)) return;
-        addFloatText('BLASTER DISABLED', W / 2, H * 0.34, '#ff3030', 36, { vy: 0, holdMs: 3800, fade: 0.012 });
-        addFloatText('EMERGENCY SHIELD UP', W / 2, H * 0.34 + 40, '#00e5ff', 26, { vy: 0, holdMs: 3800, fade: 0.012 });
-        addFloatText('RAM SWARMERS TO DEFLECT THEM', W / 2, H * 0.34 + 72, '#33ff66', 22, { vy: 0, holdMs: 3800, fade: 0.012 });
+        addFloatText('FLY INTO ENEMIES TO DESTROY THEM', W / 2, H * 0.34, '#33ff66', 34, { vy: 0, holdMs: 3800, fade: 0.012 });
+        addFloatText('SHIELD ACTIVATED', W / 2, H * 0.34 + 40, '#00e5ff', 24, { vy: 0, holdMs: 3800, fade: 0.012 });
       }, opts.delayMs != null ? opts.delayMs : 420);
       return;
     }
@@ -5253,15 +5273,15 @@ function nextWave() {
       if (flowToken !== spaceFlowToken || state !== 'playing' || (waveTransitioning && !opts.allowDuringTransition)) return;
       if (waveTheme === 'blackout') {
         addFloatText('BLACKOUT!', W / 2, H * 0.35, '#ffe61a', 38, { holdMs: 3800, fade: 0.012 });
-        addFloatText('FIND THE FLASH', W / 2, H * 0.35 + 38, '#33ff66', 24, { holdMs: 3800, fade: 0.012 });
+        addFloatText('CATCH 5 BATTERIES TO RESTORE THE LIGHT', W / 2, H * 0.35 + 38, '#33ff66', 22, { holdMs: 3800, fade: 0.012, icon: 'battery' });
       } else if (wave === 6 && currentCfg && currentCfg.authoredRescue) {
-        addFloatText('STAY IN THE EYE', W / 2, H * 0.42, '#7dffff', 36, { vy: 0, holdMs: 3800, fade: 0.012 });
+        addFloatText('STAY IN THE ORB', W / 2, H * 0.42, '#7dffff', 36, { vy: 0, holdMs: 3800, fade: 0.012 });
         addFloatText('SHOOT THE LOCK WHILE YOU SURVIVE', W / 2, H * 0.42 + 38, '#33ff66', 24, { vy: 0, holdMs: 3800, fade: 0.012 });
       } else if (wave >= 1 && wave <= 3 && currentCfg && currentCfg.authoredEncounter) {
         const openingInstruction = {
           1: ['SURVIVE 30 SECONDS', 'FIND THE GAP'],
           2: ['RED CHARGED SHOT', 'LET IT LOCK. THEN MOVE.'],
-          3: ['PURPLE RAIN', 'STAY IN THE EYE. BREAK THE CLOUDS.'],
+          3: ['PURPLE RAIN', 'STAY IN THE ORB. BREAK THE CLOUDS.'],
         }[wave];
         const instructionHold = wave === 1 ? 3000 : 3800;
         addFloatText(openingInstruction[0], W / 2, H * 0.35, wave === 1 ? '#ffe61a' : wave === 2 ? '#ff765d' : '#d7a4ff', 36, { vy: 0, holdMs: instructionHold, fade: 0.012 });
@@ -8464,6 +8484,17 @@ function nextWave() {
       ctx.textAlign = 'center';
       ctx.fillStyle = t.color;
       ctx.fillText(t.text, t.x, t.y);
+      if (t.icon === 'battery') {
+        // Right after the text, but clamped inside the canvas — on a narrow
+        // phone width, a long instruction line can be wider than the screen,
+        // and offsetting purely by half the text width pushed the icon off
+        // the left edge entirely. Clamping keeps it beside the words and
+        // always visible instead.
+        const textWidth = ctx.measureText(t.text).width;
+        const iconR = Math.max(12, t.size * 0.42);
+        const iconX = clamp(t.x + textWidth / 2 + iconR + 10, iconR + 6, W - iconR - 6);
+        drawBlackoutBatteryIcon({ x: iconX, y: t.y - t.size * 0.34, r: iconR, rot: 0, bob: 0 });
+      }
       ctx.restore();
     });
 

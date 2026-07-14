@@ -191,6 +191,7 @@
   let setupOpen = false, setupStep = 'palette', guidedStage = 'practice';
   let guidedOverdubBase = null;
   let recordedChoices = [], undoStack = [], grooveByLayer = [], lastGrooveToast = null, replaying = false, replayUntil = 0;
+  let replayOrigin = 'built';
   let undoSeq = 0;
   let replayBall = null, replayHazards = [], replayPickups = [], replayToyScore = 0, replaySpawnAt = 0;
   let jukeboxRows = [], jukeboxBackTarget = 'intro';
@@ -1041,20 +1042,18 @@
     const f = Math.max(30, note || d.root);
     if (inst === 'bass') {
       const wave = d.bassWave || 'triangle';
-      if (wave === 'sawtooth' || wave === 'square') {
-        synth(f, wave, dl, 0.26, 0.085 * v * d.bassWeight, { cutoff: 900 * d.resonance, endCutoff: 260, q: 1.4 * d.resonance, endFreq: f * 0.988 });
-      } else {
-        tone(f, wave, dl, 0.26, 0.085 * v * d.bassWeight, f * 0.988);
-      }
+      // Same lowpass shaping as the held live voice (startExpressiveVoice) so a
+      // recorded/replayed step matches what the player heard while playing it.
+      synth(f, wave, dl, 0.26, 0.085 * v * d.bassWeight, { cutoff: 720 * d.resonance, q: 0.8, endFreq: f * 0.988 });
       tone(f * 2.01, 'sine', dl + 0.004, 0.11, 0.020 * v * d.bassWeight, f * 1.98);
     } else if (inst === 'keys') {
       // The space.js piano: triangle + sine an octave up, both drifting slightly flat.
-      tone(f, d.keysWave || 'triangle', dl, 0.150, 0.070 * v * d.keyGlow, f * 0.992);
+      synth(f, d.keysWave || 'triangle', dl, 0.150, 0.070 * v * d.keyGlow, { cutoff: 1250 * d.resonance, q: 0.8, endFreq: f * 0.992 });
       tone(f * 2.01, 'sine', dl + 0.003, 0.065, 0.021 * v * d.keyGlow * d.shimmer, f * 1.99);
     } else {
       // Handpan / music box: soft metallic tap with an overtone stack.
       const sh = d.shimmer || 1;
-      tone(f, d.chimeWave || 'triangle', dl, 0.160, 0.048 * v, f * 1.004);
+      synth(f, d.chimeWave || 'triangle', dl, 0.160, 0.048 * v, { cutoff: 1250 * d.resonance, q: 0.8, endFreq: f * 1.004 });
       tone(f * 2.01, 'sine', dl + 0.002, 0.090, 0.015 * v * sh, f * 2.02);
       tone(f * 3.02, 'sine', dl + 0.014, 0.055, 0.008 * v * sh, f * 3.03);
     }
@@ -1305,7 +1304,9 @@
     const headerBack = document.querySelector('#pg-signal .arcade-exit-btn');
     const row = document.querySelector('#pg-signal .signal-loop-row');
     const inRun = state === 'playing' || state === 'replay';
-    const runBarVisible = state === 'playing' && phase === 'build';
+    // Replay is a run state too — without it here the whole button row (and
+    // the only way back to the save screen, END REPLAY) stays display:none.
+    const runBarVisible = inRun && phase === 'build';
 
     if (header) {
       if (!signalHeaderStyles) signalHeaderStyles = snapshotStyles(header, ['display', 'height', 'padding', 'background', 'backdropFilter', 'webkitBackdropFilter', 'alignItems', 'justifyContent', 'gap', 'position', 'zIndex', 'left', 'right', 'top', 'pointerEvents', 'width', 'alignSelf', 'boxSizing', 'flexWrap']);
@@ -1384,7 +1385,7 @@
     row.style.zIndex = '60';
     // Guided build owns its actions in the big bottom buttons, so the top bar
     // is just a full-width UNDO NOTE plus the × quit in the corner.
-    const guidedTop = isGuidedBuildMode() && phase === 'build';
+    const guidedTop = isGuidedBuildMode() && phase === 'build' && state !== 'replay';
     row.style.gridTemplateColumns = guidedTop ? 'minmax(0, 1fr) 42px' : '76px 58px minmax(0, 1fr) 42px';
     row.style.gap = '5px';
     row.style.alignItems = 'stretch';
@@ -1417,7 +1418,7 @@
     if (undo) {
       if (!signalUndoButtonStyles) signalUndoButtonStyles = snapshotStyles(undo, ['gridColumn', 'width', 'minHeight', 'fontSize', 'letterSpacing', 'padding', 'boxSizing', 'opacity', 'cursor']);
       const canUndo = canUndoLastStamp();
-      undo.classList.toggle('hidden', phase !== 'build' || (isGuidedBuildMode() && guidedStage !== 'record'));
+      undo.classList.toggle('hidden', phase !== 'build' || state === 'replay' || (isGuidedBuildMode() && guidedStage !== 'record'));
       undo.disabled = !canUndo;
       undo.textContent = guidedTop ? 'UNDO NOTE' : 'UNDO';
       undo.style.opacity = canUndo ? '1' : '0.46';
@@ -2672,6 +2673,9 @@
   }
 
   function startReplay() {
+    // Remember which screen asked for the replay (Track Built, Mix, or the
+    // save screen) so ending it returns there instead of always landing on Mix.
+    replayOrigin = state === 'mix' ? 'mix' : state === 'over' ? 'result' : 'built';
     state = 'replay';
     phase = 'build';
     loopEndArmed = false;
@@ -2691,7 +2695,9 @@
     if (state !== 'replay') return;
     replaying = false;
     replayUntil = 0;
-    showMixScreen();
+    if (replayOrigin === 'result') showResult(true);
+    else if (replayOrigin === 'mix') showMixScreen();
+    else showBuiltChoice();
   }
 
   function startMixAudition() {
@@ -4646,6 +4652,7 @@
             <button id="signal-save-btn" class="signal-btn" style="width:58px;margin:0" onclick="signalSaveRecipe()">▶</button>
           </div>
           <div id="signal-save-status" class="signal-subtitle" style="min-height:18px;margin-top:8px"></div>` : ''}
+        ${canSave ? `<button class="signal-btn secondary" onclick="signalReplayTrack()">REPLAY TRACK</button>` : ''}
         ${canSave ? `<button class="signal-btn secondary" onclick="signalShowMix()">MIX</button>` : ''}
         ${won ? `<button class="signal-btn secondary" onclick="signalShowJukebox()">JUKEBOX</button>` : ''}
         <button class="signal-btn secondary" onclick="signalShowIntro()">MENU</button>
