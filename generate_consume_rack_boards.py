@@ -22,9 +22,14 @@ OUT = ROOT / "js" / "games" / "consume-rack-boards.js"
 REPORT = ROOT / "consume-rack-validation-report.json"
 SUITS = "RBGY"
 
-# Solver and gameplay intentionally use the exact same common-word set. A wider
-# runtime vocabulary would create un-audited obscure-word shortcuts.
-PLAY_WORDS = set(RUNTIME_WORDS)
+# Solver and gameplay intentionally use the exact same common-word set. Keep
+# small, reviewed additions here when the frequency list misses an ordinary
+# playable word; every addition is still run through the full-board audit, so it
+# cannot silently introduce an easier shortcut.
+COMMON_WORD_ADDITIONS = {
+    "webbed",
+}
+PLAY_WORDS = set(RUNTIME_WORDS) | COMMON_WORD_ADDITIONS
 
 # Solver-checked seeds.  These are data, not exact answers: the audit enumerates
 # every valid partition and retains boards only when the easiest one is hard.
@@ -307,7 +312,7 @@ def audit_level(mode, number, groups, rack):
 
 def make_payload_and_report():
     payload = {"words": {"levels": []}, "numbers": {"levels": []}}
-    payload["wordDictionary"] = sorted(RUNTIME_WORDS)
+    payload["wordDictionary"] = sorted(PLAY_WORDS)
     report = []
     for mode, rows in (("words", WORD_LEVELS), ("numbers", NUMBER_LEVELS)):
         for number, (groups, rack) in enumerate(rows, 1):

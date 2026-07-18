@@ -76,17 +76,17 @@
     return index >= 0 ? { type: 'rack', index, tile: state.rack[index] } : null;
   }
 
-  function tileMarkup(tile) {
+  function tileMarkup(tile, movedId) {
     const suit = mode === 'numbers' ? tile.value[0] : '';
     const mark = { R: '◆', B: '●', G: '▲', Y: '■' }[suit] || '';
-    return `<button class="kt-tile ${suit ? `suit-${suit}` : ''}" data-tile="${tile.id}"><span>${esc(suit ? tile.value.slice(1) : tile.value.toUpperCase())}</span>${mark ? `<i class="kt-suit-mark" aria-hidden="true">${mark}</i>` : ''}</button>`;
+    return `<button class="kt-tile ${suit ? `suit-${suit}` : ''}${tile.id === movedId ? ' kt-just-moved' : ''}" data-tile="${tile.id}"><span>${esc(suit ? tile.value.slice(1) : tile.value.toUpperCase())}</span>${mark ? `<i class="kt-suit-mark" aria-hidden="true">${mark}</i>` : ''}</button>`;
   }
-  function groupMarkup(group) {
-    return `<div class="kt-group ${validGroup(group.tiles) ? 'valid' : 'invalid'}" data-group="${group.id}">${group.tiles.map(tileMarkup).join('')}</div>`;
+  function groupMarkup(group, movedId) {
+    return `<div class="kt-group ${validGroup(group.tiles) ? 'valid' : 'invalid'}" data-group="${group.id}">${group.tiles.map(tile => tileMarkup(tile, movedId)).join('')}</div>`;
   }
 
   function clearDropCue() {
-    wrap.querySelectorAll('.kt-ghost-slot, .kt-new-group-cue').forEach(element => element.remove());
+    wrap.querySelectorAll('.kt-ghost-slot, .kt-insert-marker, .kt-new-group-cue').forEach(element => element.remove());
     wrap.querySelectorAll('.drop-target').forEach(element => element.classList.remove('drop-target'));
   }
 
@@ -96,6 +96,12 @@
     ghost.className = `kt-tile kt-ghost-slot ${suit ? `suit-${suit}` : ''}`;
     ghost.innerHTML = `<span>${esc(suit ? tile.value.slice(1) : tile.value.toUpperCase())}</span>${suit ? `<i class="kt-suit-mark" aria-hidden="true">${{ R: '◆', B: '●', G: '▲', Y: '■' }[suit]}</i>` : ''}`;
     return ghost;
+  }
+
+  function insertionMarker() {
+    const marker = document.createElement('i');
+    marker.className = 'kt-insert-marker';
+    return marker;
   }
 
   function insertionIndex(container, x, y, draggedId) {
@@ -146,7 +152,10 @@
     if (target.index < 0) target.index = [...container.querySelectorAll('[data-tile]')].filter(element => Number(element.dataset.tile) !== drag.id).length;
     drag.target = target;
     container.classList.add('drop-target');
-    const marker = ghostTile(drag.tile);
+    // A thin caret shows the insertion point without adding another tile-width
+    // to a centered group. The old full-size ghost made the group shift under
+    // the pointer and could make neighboring insertion targets oscillate.
+    const marker = insertionMarker();
     const remaining = [...container.querySelectorAll('[data-tile]')].filter(element => Number(element.dataset.tile) !== drag.id);
     if (target.index < remaining.length) container.insertBefore(marker, remaining[target.index]); else container.appendChild(marker);
   }
@@ -207,7 +216,7 @@
     }
     state.drag = null;
     setTimeout(() => drag.proxy.remove(), 110);
-    update();
+    update(drag.id);
   }
 
   function checkWin() { return !state.rack.length && state.groups.length && state.groups.every(group => validGroup(group.tiles)); }
@@ -224,10 +233,10 @@
     wrap.querySelector('#kt-check').addEventListener('click', () => { const table = wrap.querySelector('#kt-table'); if (checkWin()) win(); else { table.classList.remove('bad'); void wrap.offsetWidth; table.classList.add('bad'); if (typeof SFX !== 'undefined') SFX.mismatch(); } });
     update();
   }
-  function update() {
+  function update(movedId) {
     if (!state || !wrap) return;
-    wrap.querySelector('#kt-table').innerHTML = state.groups.map(groupMarkup).join('');
-    wrap.querySelector('#kt-rack').innerHTML = `<span>RACK</span>${state.rack.map(tileMarkup).join('')}`;
+    wrap.querySelector('#kt-table').innerHTML = state.groups.map(group => groupMarkup(group, movedId)).join('');
+    wrap.querySelector('#kt-rack').innerHTML = `<span>RACK</span>${state.rack.map(tile => tileMarkup(tile, movedId)).join('')}`;
   }
 
   function showHowToPlay() {
