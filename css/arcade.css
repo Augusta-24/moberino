@@ -51,13 +51,14 @@ body.on-home {
   padding-bottom: 0;
 }
 /* Neon arcade floor — even diamond grid, fills full viewport */
-body.on-lobby, body.on-char, body.on-signin, body.on-whack, body.on-match, body.on-space, body.on-signal, body.on-snoob, body.on-consume {
+body.on-lobby, body.on-char, body.on-signin, body.on-facefactory, body.on-whack, body.on-match, body.on-space, body.on-signal, body.on-snoob, body.on-consume {
   min-height: var(--app-vh, 100dvh);
   background-color: #02040e;
   overflow: hidden;
   overscroll-behavior: none;
   overscroll-behavior-x: none;
 }
+body.on-facefactory,
 body.on-whack,
 body.on-match,
 body.on-space,
@@ -87,7 +88,7 @@ body.on-char {
     repeating-linear-gradient(-45deg, rgba(0,229,255,0.04) 0px, rgba(0,229,255,0.04) 1px, transparent 1px, transparent 31px);
   background-size: auto, 44px 44px, 44px 44px;
 }
-#pg-lobby, #pg-charselect, #pg-signin, #pg-whack, #pg-match, #pg-space, #pg-signal, #pg-snoob, #pg-consume {
+#pg-lobby, #pg-charselect, #pg-signin, #pg-facefactory, #pg-whack, #pg-match, #pg-space, #pg-signal, #pg-snoob, #pg-consume {
   background: transparent;
 }
 
@@ -200,6 +201,7 @@ body.on-consume .cats-header {
   border-radius: 6px;
   box-shadow: 0 6px 18px rgba(0,0,0,0.35);
 }
+body.on-facefactory #arcade-game-exit,
 body.on-whack #arcade-game-exit,
 body.on-match #arcade-game-exit,
 body.on-space #arcade-game-exit,

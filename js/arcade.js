@@ -99,7 +99,7 @@
 
   let arcadeEdgeSwipe = null;
   function arcadeSwipeGuardActive() {
-    return document.body.matches('.on-lobby,.on-char,.on-signin,.on-whack,.on-match,.on-space,.on-signal,.on-snoob,.on-consume');
+    return document.body.matches('.on-lobby,.on-char,.on-signin,.on-facefactory,.on-whack,.on-match,.on-space,.on-signal,.on-snoob,.on-consume');
   }
 
   document.addEventListener('touchstart', e => {
@@ -201,6 +201,7 @@
     const onLobby = p === 'lobby';
     const onCharSelect = p === 'charselect';
     const onSignIn = p === 'signin';
+    const onFaceFactory = p === 'facefactory';
     const onWhack = p === 'whack';
     const onMatch = p === 'match';
     const onSpace = p === 'space';
@@ -210,6 +211,7 @@
     document.body.classList.toggle('on-lobby', onLobby);
     document.body.classList.toggle('on-char', onCharSelect);
     document.body.classList.toggle('on-signin', onSignIn);
+    document.body.classList.toggle('on-facefactory', onFaceFactory);
     document.body.classList.toggle('on-whack', onWhack);
     document.body.classList.toggle('on-match', onMatch);
     document.body.classList.toggle('on-space', onSpace);
@@ -219,10 +221,10 @@
     document.documentElement.classList.add('arcade-root');
 
     try {
-      if ((onLobby || onCharSelect || onSignIn || onWhack || onMatch || onSpace || onSignal || onSnoob || onConsume) && typeof ArcadeMusic !== 'undefined' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
+      if ((onLobby || onCharSelect || onSignIn || onFaceFactory || onWhack || onMatch || onSpace || onSignal || onSnoob || onConsume) && typeof ArcadeMusic !== 'undefined' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
       if (typeof ArcadeMusic !== 'undefined') {
         if (onLobby || onCharSelect || onSignIn) ArcadeMusic.unduck();
-        if (onWhack || onMatch || onSpace || onSignal || onSnoob || onConsume) ArcadeMusic.duck();
+        if (onFaceFactory || onWhack || onMatch || onSpace || onSignal || onSnoob || onConsume) ArcadeMusic.duck();
       }
     } catch(e) {}
 
@@ -239,6 +241,7 @@
     if (onSignIn && typeof preparePlayerSignIn === 'function') preparePlayerSignIn();
     updateArcadeInstallPrompt();
     updateArcadeMusicPrompt();
+    if (onFaceFactory && typeof initFaceFactory === 'function') initFaceFactory();
     if (onWhack && typeof initWhack === 'function') initWhack();
     if (onMatch && typeof initMatch === 'function') initMatch();
     if (onSpace && typeof initSpace === 'function') initSpace();
@@ -247,6 +250,7 @@
     if (onConsume && typeof initConsume === 'function') initConsume();
     if (!onSpace && typeof spacePause === 'function') spacePause();
     if (!onSignal && typeof signalBack === 'function') signalBack();
+    if (!onFaceFactory && typeof faceFactoryBack === 'function') faceFactoryBack();
     if (!onWhack && typeof whackBack === 'function') whackBack();
     if (!onMatch && typeof matchBack === 'function') matchBack();
     if (!onSnoob && typeof snoobBack === 'function') snoobBack();

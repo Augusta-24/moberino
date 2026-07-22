@@ -18,6 +18,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Russo+One&family=Permanent+Marker&display=swap" rel="stylesheet">
 <link rel="preload" as="fetch" href="arcademusic.mp3" type="audio/mpeg" crossorigin="anonymous">
 <link rel="stylesheet" href="css/arcade.css">
+<link rel="stylesheet" href="css/games/face-factory.css">
 <link rel="stylesheet" href="css/games/whack.css">
 <link rel="stylesheet" href="css/games/space.css">
 <link rel="stylesheet" href="css/games/signal.css">
@@ -133,6 +134,23 @@
 <div style="font-family:'VCR',monospace;font-size:9px;letter-spacing:3px;color:rgba(242,239,232,0.45);margin-top:7px">ARCADE — INSERT COIN TO PLAY</div>
 </div>
 <div id="game-carousel">
+<div class="carousel-item" id="ci-facefactory">
+<div class="game-card" onclick="SFX.menuSelect();nav('facefactory')" style="border-color:#ff66dd55;cursor:pointer">
+<div class="game-card-art ff-card-art">
+  <div class="ff-card-slice ff-card-slice-1" style="background-image:url('characters/tony.png')"></div>
+  <div class="ff-card-slice ff-card-slice-2" style="background-image:url('characters/kevin.png')"></div>
+  <div class="ff-card-slice ff-card-slice-3" style="background-image:url('characters/grandma.png')"></div>
+  <div class="ff-card-lever"><span></span></div>
+  <div class="ff-card-stars">✦ &nbsp; ✦</div>
+</div>
+<div class="game-card-info">
+<div class="game-card-badge" style="background:#ff66dd22;color:#ff66dd;border:1px solid #ff66dd66">FAMILY FUN</div>
+<div class="game-card-marquee" style="color:#ff66dd;text-shadow:0 0 20px #ff66dd88">FACE FACTORY</div>
+<div class="game-card-desc">SPIN · BUILD · MIX FAMILY FACES</div>
+<div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#ff66dd22;border:1.5px solid #ff66dd;border-radius:5px;padding:10px 24px;color:#ff66dd;width:100%;text-shadow:0 0 8px #ff66dd66;text-align:center">▶ PLAY</div>
+</div>
+</div>
+</div>
 <div class="carousel-item" id="ci-whack">
 <div class="game-card" onclick="SFX.menuSelect();nav('whack')" style="border-color:#ff993344;cursor:pointer">
 <div class="game-card-art" style="background:#0d0a1e">
@@ -461,6 +479,12 @@
 </div>
 </div>
 
+<div class="page" id="pg-facefactory">
+<div class="face-factory-wrap" id="face-factory-wrap">
+<!-- Filled by JS -->
+</div>
+</div>
+
 <div class="page" id="pg-whack">
 <div class="cats-header">
 <button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE MENU</button>
@@ -569,6 +593,7 @@
   <button class="arcade-install-btn" id="arcade-music-btn" type="button">START MUSIC</button>
 </div>
 <script src="js/arcade.js"></script>
+<script src="js/games/face-factory.js"></script>
 <script src="js/games/whack.js"></script>
 <script src="js/games/match.js"></script>
 <script src="js/games/space.js"></script>
