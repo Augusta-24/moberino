@@ -462,6 +462,15 @@ body.arcade-mode-select.on-consume .consume-wrap {
   letter-spacing: 1.8px;
   color: rgba(242,239,232,0.42);
 }
+.cw-return-hint.stuck {
+  color: var(--cw);
+}
+.cw-chip.hintable {
+  animation: cwHintPulse 1.2s ease-in-out infinite;
+}
+@keyframes cwHintPulse {
+  50% { transform: translateY(-2px); box-shadow: 0 0 22px var(--word-border); }
+}
 .cw-chip {
   min-height: 44px;
   display: inline-flex;

@@ -217,7 +217,16 @@
     if (!S || S.won || S.tray.length || S.tableau.length === 0) return '';
     const left = activeTiles();
     if (!left.length) return '';
-    return anyWordFits(left) ? '' : "No word fits what's left - shatter one apart.";
+    return anyWordFits(left) ? '' : 'TAP A GLOWING WORD TO FREE ITS TILES';
+  }
+
+  function hintableWordIds() {
+    if (!stuckText()) return new Set();
+    const active = activeTiles();
+    return new Set(S.tableau.filter(entry => {
+      const freed = entry.tileIds.map(id => S.tiles.find(tile => tile.id === id)).filter(Boolean);
+      return anyWordFits(active.concat(freed));
+    }).map(entry => entry.id));
   }
 
   function tapBoard(id) {
@@ -435,10 +444,16 @@
     const tab = wrap && wrap.querySelector('#cw-tableau');
     if (!tab || !S) return;
     const hint = wrap.querySelector('.cw-return-hint');
-    if (hint) hint.hidden = !S.tableau.length;
+    const stuck = stuckText();
+    const hintable = hintableWordIds();
+    if (hint) {
+      hint.hidden = !S.tableau.length;
+      hint.textContent = stuck || 'TAP TO RETURN WORD';
+      hint.classList.toggle('stuck', !!stuck);
+    }
     tab.innerHTML = S.tableau.length
       ? S.tableau.map(entry =>
-        `<button class="cw-chip word-${((entry.id - 1) % 6) + 1}" type="button" data-word-id="${entry.id}">` +
+        `<button class="cw-chip word-${((entry.id - 1) % 6) + 1}${hintable.has(entry.id) ? ' hintable' : ''}" type="button" data-word-id="${entry.id}">` +
         entry.word.toUpperCase().split('').map(ch => `<span class="cw-chip-tile">${esc(ch)}</span>`).join('') +
         `</button>`
       ).join('')
