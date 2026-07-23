@@ -120,16 +120,18 @@ test('the cockpit centers the route and moves detail into ship and log views', (
   );
 });
 
-test('the opening story uses the patient Space Mobe cinematic cadence', () => {
+test('the opening story uses a slower journey cinematic cadence and reusable status warning', () => {
   const controller = fs.readFileSync(
     path.join(__dirname, '..', 'js', 'games', 'journey.js'),
     'utf8'
   );
 
-  assert.match(controller, /duration:\s*4500/);
-  assert.match(controller, /duration:\s*5200/);
+  assert.match(controller, /duration:\s*6000/);
+  assert.match(controller, /duration:\s*6800/);
   assert.match(controller, /setTimeout\(showBeat,\s*beat\.duration\)/);
-  assert.doesNotMatch(controller, /setTimeout\(showBeat,\s*index === beats\.length \? 3000 : 2600\)/);
+  assert.match(controller, /shipStatusAlert\('warning', 'LOW FUEL'/);
+  assert.match(controller, /currentShipWarning/);
+  assert.doesNotMatch(controller, /duration:\s*(2600|3000|4500|5200)/);
 });
 
 test('Journey combat is isolated from storage and exposes lifecycle methods', () => {

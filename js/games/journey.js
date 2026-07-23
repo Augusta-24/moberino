@@ -47,6 +47,31 @@
     ).join('')}</div>`;
   }
 
+  function shipStatusAlert(level, title, detail) {
+    return `
+      <div class="journey-status-alert is-${level || 'warning'}" role="status">
+        <i aria-hidden="true">!</i>
+        <div><span>SHIP STATUS</span><strong>${title}</strong><small>${detail}</small></div>
+      </div>`;
+  }
+
+  function currentShipWarning(state) {
+    const resources = state.resources;
+    if (state.timers.repairCompleteAt) {
+      return { title: 'REPAIRS ACTIVE', detail: 'DEPARTURE LOCKED UNTIL COMPLETE' };
+    }
+    if (resources.hull < 25) {
+      return { title: 'CRITICAL HULL', detail: `${Math.round(resources.hull)} / ${Math.round(resources.maxHull)} · REPAIR REQUIRED` };
+    }
+    if (resources.fuel <= resources.maxFuel * .35) {
+      return { title: 'LOW FUEL', detail: `${Math.round(resources.fuel)} / ${Math.round(resources.maxFuel)} · REFUEL AT LANTERN` };
+    }
+    if (resources.pilot < 20) {
+      return { title: 'PILOT EXHAUSTED', detail: `${Math.round(resources.pilot)} / 100 · REST REQUIRED` };
+    }
+    return null;
+  }
+
   function clearStoryTimers() {
     storyTimers.forEach(clearTimeout);
     storyTimers = [];
@@ -60,31 +85,31 @@
     const hero = selectedHero();
     const beats = [
       {
-        duration: 4500,
+        duration: 6000,
         eyebrow: 'A QUIET MORNING · HOME ORBIT',
         title: `${hero.name} FOUND AN EMPTY VAULT`,
         visual: `${heroPortrait('sad')}${crystalCluster(7)}`,
         line: 'The seven Star Crystals were gone.'
       },
       {
-        duration: 4500,
+        duration: 6000,
         eyebrow: 'THE THIEVES LEFT ONE TRAIL',
         title: 'A SIGNAL LEADING OUTWARD',
         visual: `<div class="journey-story-signal"><span></span><span></span><span></span></div>`,
         line: 'Bosses, raiders, and old ruins stand between us and the truth.'
       },
       {
-        duration: 5200,
+        duration: 6800,
         eyebrow: 'THE WAYFARER · READY TO LAUNCH',
         title: `${hero.name} TAKES THE HUNT`,
         visual: `<div class="journey-story-ship">${shipIllustration('journey-intro-ship')}</div>`,
         line: 'Follow the route. Recover the crystals. Bring our friends home.'
       },
       {
-        duration: 4500,
-        eyebrow: 'FIRST LEAD · LANTERN STATION',
-        title: 'LOW FUEL. FIRST STOP: LANTERN.',
-        visual: `<div class="journey-story-route"><i></i><b></b><i></i></div>`,
+        duration: 6000,
+        eyebrow: 'FIRST LEAD',
+        title: 'FIRST STOP: LANTERN STATION',
+        visual: shipStatusAlert('warning', 'LOW FUEL', '12 / 40 · REFUEL REQUIRED'),
         line: 'Fill the Wayfarer’s tanks. Then follow the crystal signal.'
       }
     ];
@@ -113,9 +138,8 @@
         requestAnimationFrame(() => stage.classList.add('is-visible'));
       }, 180);
       storyTimers.push(swapTimer);
-      // Match Space Mobe's deliberately patient cinematic cadence. These are full
-      // story beats, not loading messages: standard cards hold for 4.5 seconds and
-      // the denser mission card gets Space's longer 5.2-second hold.
+      // Journey story cards deliberately hold longer than the already-patient Space
+      // tutorial: six seconds normally and extra time for the mission statement.
       const nextTimer = setTimeout(showBeat, beat.duration);
       storyTimers.push(nextTimer);
     }
@@ -355,6 +379,7 @@
     const canDepart = !!(departure && departure.ok);
     const unreadIntelId = JourneyState.getUnreadTransmissionIds()[0] || null;
     const unreadIntel = unreadIntelId && JourneyData.getTransmission(unreadIntelId);
+    const systemWarning = currentShipWarning(state);
     const hero = selectedHero();
     const notice = repairCheck.ok
       ? 'HULL REPAIRS COMPLETE'
@@ -375,10 +400,10 @@
             <small>${hero.name}</small>
           </div>
         </header>
-        <button class="journey-message-bar" type="button" onclick="${unreadIntel ? `journeyReadIntel('${unreadIntel.id}')` : 'journeyOpenLog()'}">
-          <span>${unreadIntel ? 'INCOMING INTEL' : 'SHIP MESSAGE'}</span>
-          <strong>${unreadIntel ? unreadIntel.title : notice}</strong>
-          <i>${unreadIntel ? 'OPEN →' : 'LOG →'}</i>
+        <button class="journey-message-bar ${!unreadIntel && systemWarning ? 'is-status-warning' : ''}" type="button" onclick="${unreadIntel ? `journeyReadIntel('${unreadIntel.id}')` : systemWarning ? 'journeyOpenEngineering()' : 'journeyOpenLog()'}">
+          <span>${unreadIntel ? 'INCOMING INTEL' : systemWarning ? '⚠ SHIP STATUS' : 'SHIP MESSAGE'}</span>
+          <strong>${unreadIntel ? unreadIntel.title : systemWarning ? `${systemWarning.title} · ${systemWarning.detail}` : notice}</strong>
+          <i>${unreadIntel ? 'OPEN →' : systemWarning ? 'WARNING' : 'LOG →'}</i>
         </button>
         <section class="journey-map-panel">
           <div class="journey-map-title"><span>CHAPTER ONE · CRYSTAL TRAIL</span><strong>${state.currency.crystals} / 7 CRYSTALS</strong></div>
@@ -609,7 +634,7 @@
         if (fill) fill.style.width = `${startPercent + (100 - startPercent) * progress}%`;
         if (value) value.textContent = displayedFuel;
         if (status && step === 2) status.textContent = 'COUPLER LOCKED · FUEL FLOWING';
-      }, 1250 + step * 190);
+      }, 2700 + step * 220);
       storyTimers.push(timer);
     }
     const finishTimer = setTimeout(() => {
@@ -620,7 +645,7 @@
         button.disabled = false;
         button.innerHTML = `CONTINUE → <small>${Math.round(maxFuel)} / ${Math.round(maxFuel)} FUEL</small>`;
       }
-    }, 4700);
+    }, 6600);
     storyTimers.push(finishTimer);
   }
 
