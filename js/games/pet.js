@@ -1,38 +1,38 @@
 // ══════════════════════════════════════
-//  PET MOBE — original virtual pet (Tamagotchi loop + Bitzee touches)
+//  PET MOBE — game-led virtual pet care inside the arcade
 // ══════════════════════════════════════
 // Self-contained IIFE mirroring snoob.js / signal.js. Exposes window.initPet
 // (nav-in) and window.petBack (nav-out). One "species" — the MOBLING — hatched
 // from an egg, grown through baby -> juvenile -> adult, branching into one of
 // four collectible adult forms based on how it was raised.
 //
-// Design decisions (see PR/commit notes):
-//  - Accent: coral/pink #ff6ec7 (previously unclaimed neon slot).
-//  - NO permanent death. Sustained neglect sends the pet to a recoverable
-//    "wandered off" dormant state; a short care streak brings it back, and it
-//    loses only its progress toward the CURRENT evolution stage, never the save
-//    or forms already collected.
-//  - Four adult forms: SOLARA (happiness-led), VOLT (energy-led),
-//    HARMON (balanced care), EMBER (raised back from neglect).
-//  - Five stats: Hunger, Happiness, Energy, Safety (each with its own action +
-//    mini-game), plus Health, derived from the weakest of the other four.
-//  - Every mini-game is an objective to clear (goal-based), not a timer — it
-//    ramps in difficulty as the pet grows from baby -> juvenile -> adult.
-//  - Icons are the existing arcade `projectiles/*.png` asset bank (no emoji);
-//    the one glyph with no matching asset (a heart, for Happiness/PET) is
-//    drawn as an inline SVG shape, same as everything else in the arcade.
+// Design principles:
+//  - Feed, play, rest, and guard are arcade games. The first meaningful beat
+//    banks useful care; longer/skilled runs improve grades, tickets, and traits.
+//  - Affection is direct, unlimited, and deliberately separate from progression.
+//  - Needs communicate personality and opportunity, never punishment: they
+//    decay slowly, stop at a safe floor, and do not erase growth or collections.
+//  - Four adult forms reflect how the player actually played: joy, spark,
+//    balance, or brave comebacks after imperfect runs.
+//  - Icons reuse the arcade `projectiles/*.png` asset bank; the heart is SVG.
 (function() {
   const COLOR = '#ff6ec7';
   const BOARD_KEY = 'pet';
   const SAVE_KEY = 'moberino-pet-v1';
 
-  // ── Tunables (playtest-adjust; kept modest so evolution is observable) ──
-  const DECAY = { hunger: 0.55, happiness: 0.48, energy: 0.42, safety: 0.50 };   // per real minute
-  const MAX_GAP_MIN = 60 * 24 * 3;   // cap catch-up decay at ~3 days of absence
+  // ── Tunables ─────────────────────────────────────────────────────────────
+  // Needs describe the pet's current comfort; they are not a punishment clock.
+  // A full bar takes roughly two days to reach the safe floor, and nothing falls
+  // below that floor while the player is away. Challenge lives in the games.
+  const DECAY = { hunger: 0.026, happiness: 0.020, energy: 0.018, safety: 0.016 }; // per real minute
+  const NEED_FLOOR = 24;
+  const MAX_GAP_MIN = 60 * 24 * 7;
+  const MOMENT_EVERY_MIN = 60 * 8;
+  const MAX_MOMENTS = 3;
   const STAGE_NAMES = ['EGG', 'BABY', 'JUVENILE', 'ADULT'];
   const STAGE_THRESHOLD = [5, 10, 16];   // care-progress needed to leave egg / baby / juvenile
   const STAGE_MIN_ACTIONS = [4, 6, 8];   // soft gate so evolution never fires on one big tick
-  const COOLDOWN = { feed: 12000, play: 18000, rest: 28000, pet: 6000, guard: 20000 };
+  const COOLDOWN = { feed: 12000, play: 18000, rest: 24000, pet: 0, guard: 18000 };
   const ACTION_COLOR = {
     feed: ['#ff9933', 'rgba(255,153,51,0.06)'],
     play: ['#ff6ec7', 'rgba(255,110,199,0.06)'],
@@ -40,11 +40,29 @@
     pet: ['#ff6ec7', 'rgba(255,110,199,0.06)'],
     guard: ['#4fd8ff', 'rgba(79,216,255,0.06)'],
   };
-  const DORMANT_RECOVERY = 4;            // care actions to wake a wandered pet
   const MOOD_TAGS = {
     idle: 'CONTENT', happy: 'HAPPY!', hungry: 'HUNGRY', tired: 'SLEEPY',
-    sick: 'NOT WELL', alert: 'ON GUARD', celebrate: 'YAY!', dormant: 'WANDERED OFF',
+    lonely: 'LONELY', sick: 'NOT WELL', alert: 'NERVOUS', celebrate: 'YAY!',
+    dormant: 'RESTING',
   };
+  const MOOD_SPEECH = {
+    idle: 'WHAT SHOULD WE DO?',
+    happy: 'I SAVED THIS SMILE FOR YOU!',
+    hungry: 'MY TUMMY IS BEEPING…',
+    tired: 'ONE SOFT SONG?',
+    lonely: 'STAY A MINUTE?',
+    sick: 'I NEED A GENTLE ROUND.',
+    alert: 'LET’S PRACTICE A DODGE!',
+    celebrate: 'WE DID IT!',
+    dormant: 'I’M TAKING A QUIET BREAK.',
+  };
+  const RETURN_MOMENTS = [
+    { text: 'MOBLING FOUND AN ARCADE TOKEN UNDER THE BED.', tickets: 2 },
+    { text: 'MOBLING DREAMED UP A NEW HIGH-SCORE POSE.', tickets: 2 },
+    { text: 'A TINY PRIZE CAPSULE ROLLED INTO THE VIVARIUM.', tickets: 3 },
+    { text: 'MOBLING SAVED A SHINY STAR JUST FOR YOU.', tickets: 2 },
+    { text: 'THE ARCADE LEFT A WELCOME-BACK BONUS.', tickets: 3 },
+  ];
 
   const SOUND_FILES = {
     fanfare1: 'snoob/FANFARE.WAV',
@@ -60,9 +78,18 @@
     solara: { name: 'SOLARA', how: 'RAISED ON HIGH HAPPINESS' },
     volt:   { name: 'VOLT',   how: 'RAISED ON HIGH ENERGY' },
     harmon: { name: 'HARMON', how: 'RAISED ON BALANCED CARE' },
-    ember:  { name: 'EMBER',  how: 'BROUGHT BACK FROM NEGLECT' },
+    ember:  { name: 'EMBER',  how: 'RAISED THROUGH BRAVE COMEBACKS' },
   };
   const FORM_ORDER = ['solara', 'volt', 'harmon', 'ember'];
+
+  const PRIZES = {
+    lamp:   { name: 'STAR LAMP',    cost: 4,  how: 'MORE TWINKLE IN THE VIVARIUM' },
+    bed:    { name: 'MOON BED',     cost: 6,  how: 'A COZY SLEEP CORNER' },
+    ball:   { name: 'ARCADE BALL',  cost: 8,  how: 'A BOUNCY IDLE TOY' },
+    drone:  { name: 'SHIELD DRONE', cost: 10, how: 'A TINY FLOATING GUARD' },
+    crown:  { name: 'NEON CROWN',   cost: 12, how: 'ROYAL ARCADE GLOW' },
+    comet:  { name: 'COMET TRAIL',  cost: 15, how: 'SPARKS FOLLOW EVERY BOUNCE' },
+  };
 
   // Cosmetic hatch customization — tints the egg/baby/juvenile only. Adult
   // forms take over with their own signature palette (that's the collectible
@@ -123,11 +150,11 @@
   // Per-stage mini-game objectives — accomplished, not timed. Ramp up as the
   // pet grows; baby is doable, not trivial.
   const GOALS = {
-    feed:  { 1: 10, 2: 15, 3: 20 },
-    play:  { 1: 10, 2: 15, 3: 20 },
-    rest:  { 1: 8, 2: 12, 3: 16 },
+    feed:  { 1: 3, 2: 3, 3: 3 },
+    play:  { 1: 8, 2: 12, 3: 16 },
+    rest:  { 1: 6, 2: 9, 3: 12 },
     pet:   { 1: 1, 2: 1, 3: 1 },      // always a full clear
-    guard: { 1: 8, 2: 12, 3: 16 },
+    guard: { 1: 4, 2: 6, 3: 8 },
   };
   // Foil grid size scales with stage too, so a full (100%) clear stays a real
   // objective rather than a shrinking target.
@@ -155,6 +182,7 @@
   let cdTimer = null;
   let saveTimer = null;
   let mini = null;         // active mini-interaction descriptor
+  let openPanel = null;    // prize shelf / dex / generation confirmation
   let soundCache = new Map();
   let lastMood = '';
   let pickerState = { color: 'coral', shape: 'round' };
@@ -192,6 +220,7 @@
       tag,
       name: 'MOBLING',
       createdAt: now,
+      familyStartedAt: now,
       lastTick: now,
       stage: 0,                 // 0 egg, 1 baby, 2 juvenile, 3 adult
       form: null,
@@ -203,11 +232,18 @@
       hunger: 100, happiness: 100, energy: 100, safety: 100, health: 100,
       stageProgress: 0,         // care-quality accumulated toward next stage
       stageActions: 0,          // beneficial actions this stage
-      care: { happy: 0, energy: 0, balance: 0 },  // branch tallies (adult decision)
+      care: { happy: 0, energy: 0, balance: 0, comeback: 0 },
+      activityCounts: { feed: 0, play: 0, rest: 0, guard: 0 },
       happinessSum: 0, happinessCount: 0,          // lifetime averages
       safetySum: 0, safetyCount: 0,
       streak: { days: 1, lastDay: dayIndex(now) },
       collected: [],            // forms reached (dex)
+      tickets: 0,
+      moments: [],
+      unlocks: [],
+      equipped: null,
+      generations: 0,
+      memories: 0,
       dormant: false,
       wasDormant: false,        // ever recovered from neglect -> EMBER eligible
       recovery: 0,
@@ -230,10 +266,19 @@
       // backfill any fields added after a save was written
       pet.tag = tag;
       pet.care ||= { happy: 0, energy: 0, balance: 0 };
+      if (typeof pet.care.comeback !== 'number') pet.care.comeback = 0;
+      pet.activityCounts ||= { feed: 0, play: 0, rest: 0, guard: 0 };
       pet.streak ||= { days: 1, lastDay: dayIndex(Date.now()) };
       pet.cd ||= { feed: 0, play: 0, rest: 0, pet: 0, guard: 0 };
       if (pet.cd.guard == null) pet.cd.guard = 0;
       pet.collected ||= [];
+      if (typeof pet.tickets !== 'number') pet.tickets = 0;
+      pet.moments ||= [];
+      pet.unlocks ||= [];
+      if (typeof pet.equipped === 'undefined') pet.equipped = null;
+      if (typeof pet.generations !== 'number') pet.generations = 0;
+      if (typeof pet.memories !== 'number') pet.memories = 0;
+      pet.familyStartedAt ||= pet.createdAt || Date.now();
       if (typeof pet.health !== 'number') pet.health = 100;
       if (typeof pet.safety !== 'number') pet.safety = 100;
       if (typeof pet.safetySum !== 'number') { pet.safetySum = 0; pet.safetyCount = 0; }
@@ -245,6 +290,15 @@
       pet.sawIntro = true;
       pet.tipsSeen ||= [];
       if (typeof pet.lowHintDismissed !== 'boolean') pet.lowHintDismissed = false;
+      // Migrate the old punitive "wandered off" state into a safe resting state.
+      if (pet.dormant) {
+        pet.dormant = false;
+        pet.recovery = 0;
+        pet.hunger = Math.max(NEED_FLOOR, pet.hunger || 0);
+        pet.happiness = Math.max(NEED_FLOOR, pet.happiness || 0);
+        pet.energy = Math.max(NEED_FLOOR, pet.energy || 0);
+        pet.safety = Math.max(NEED_FLOOR, pet.safety || 0);
+      }
     } else {
       pet = newPet(tag);
       persist();
@@ -258,47 +312,36 @@
     pet.lastTick = now;
     if (gap <= 0) return;
     gap = Math.min(gap, MAX_GAP_MIN);
-    if (pet.stage === 0) return; // eggs don't starve while you're away
-    if (pet.dormant) return;     // already wandered — nothing left to decay
+    if (pet.stage === 0) return; // eggs don't need care while you're away
     applyDecay(gap, true);
+    addReturnMoments(gap);
   }
 
   function applyDecay(minutes, isGap) {
-    pet.hunger = clamp(pet.hunger - DECAY.hunger * minutes, 0, 100);
-    pet.happiness = clamp(pet.happiness - DECAY.happiness * minutes, 0, 100);
-    pet.energy = clamp(pet.energy - DECAY.energy * minutes, 0, 100);
-    pet.safety = clamp(pet.safety - DECAY.safety * minutes, 0, 100);
-    // Health trends toward the weakest stat: running low actually hurts it.
-    const weakest = Math.min(pet.hunger, pet.happiness, pet.energy, pet.safety);
-    if (weakest < 22) pet.health = clamp(pet.health - (22 - weakest) * 0.12 * minutes, 0, 100);
-    else pet.health = clamp(pet.health + 1.4 * minutes, 0, 100);
+    pet.hunger = clamp(pet.hunger - DECAY.hunger * minutes, NEED_FLOOR, 100);
+    pet.happiness = clamp(pet.happiness - DECAY.happiness * minutes, NEED_FLOOR, 100);
+    pet.energy = clamp(pet.energy - DECAY.energy * minutes, NEED_FLOOR, 100);
+    pet.safety = clamp(pet.safety - DECAY.safety * minutes, NEED_FLOOR, 100);
+    pet.health = (pet.hunger + pet.happiness + pet.energy + pet.safety) / 4;
     // Lifetime averages sampled on the gap too (weighted lightly).
     if (isGap) {
-      pet.happinessSum += pet.happiness; pet.happinessCount += Math.min(minutes / 5, 6);
-      pet.safetySum += pet.safety; pet.safetyCount += Math.min(minutes / 5, 6);
+      const samples = Math.min(minutes / 5, 6);
+      pet.happinessSum += pet.happiness * samples; pet.happinessCount += samples;
+      pet.safetySum += pet.safety * samples; pet.safetyCount += samples;
     }
-    // Neglect check: bottomed out AND unhealthy -> wander off (recoverable).
-    if (!pet.dormant && pet.health <= 0 && weakest <= 4) enterDormant();
   }
 
-  function enterDormant() {
-    if (pet.dormant) return;
-    pet.dormant = true;
-    pet.wasDormant = true;
-    pet.recovery = 0;
-    // Losing progress toward the CURRENT stage only — save + forms are kept.
-    pet.stageProgress = 0;
-    pet.stageActions = 0;
-    playSound('whoosh');
+  function addReturnMoments(gapMinutes) {
+    if (gapMinutes < MOMENT_EVERY_MIN || pet.moments.length >= MAX_MOMENTS) return;
+    const count = Math.min(MAX_MOMENTS - pet.moments.length, Math.floor(gapMinutes / MOMENT_EVERY_MIN));
+    for (let i = 0; i < count; i++) {
+      const moment = RETURN_MOMENTS[(pet.memories + i) % RETURN_MOMENTS.length];
+      pet.moments.push({ ...moment, id: `${Date.now()}-${i}` });
+    }
   }
 
-  function wakeFromDormant() {
-    pet.dormant = false;
-    pet.recovery = 0;
-    pet.hunger = 55; pet.happiness = 55; pet.energy = 55; pet.safety = 55; pet.health = 55;
-    pet.lastTick = Date.now();
-    playFanfare();
-    fx(heartSVG(22));
+  function daysTogether() {
+    return Math.max(1, Math.floor((Date.now() - (pet.familyStartedAt || pet.createdAt || Date.now())) / 86400000) + 1);
   }
 
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
@@ -309,9 +352,13 @@
     if (pet.stage === 0) return 'idle';
     if (pet._celebrateUntil && Date.now() < pet._celebrateUntil) return 'celebrate';
     if (pet.health < 30) return 'sick';
-    if (pet.hunger < 28) return 'hungry';
-    if (pet.safety < 28) return 'alert';
-    if (pet.energy < 28) return 'tired';
+    const lowest = [
+      ['hungry', pet.hunger],
+      ['lonely', pet.happiness],
+      ['tired', pet.energy],
+      ['alert', pet.safety],
+    ].sort((a, b) => a[1] - b[1])[0];
+    if (lowest[1] < 42) return lowest[0];
     if (pet.hunger > 70 && pet.happiness > 70 && pet.energy > 55) return 'happy';
     return 'idle';
   }
@@ -362,7 +409,7 @@
       return pts.join(' ');
     };
     const polys = nodes.map((note, i) => `
-      <g class="pet-rest-node" data-note="${note.deg}" tabindex="-1">
+      <g class="pet-rest-node" data-note="${note.deg}" tabindex="0" focusable="true" role="button" aria-label="Play note ${note.letter}">
         <polygon points="${hexPoints(xs[i], y, r)}" fill="rgba(5,2,16,0.65)" stroke="${color}" stroke-width="2.5" style="filter:drop-shadow(0 0 6px ${color}aa)"/>
         <text x="${xs[i]}" y="${y + 6}" text-anchor="middle" font-family="'VCR',monospace" font-size="16" fill="${color}">${note.letter}</text>
       </g>`).join('');
@@ -463,6 +510,10 @@
     if (mood === 'tired') return `
       <path d="M38 70 q7 5 14 0" stroke="#3a2030" stroke-width="3" fill="none" stroke-linecap="round"/>
       <path d="M68 70 q7 5 14 0" stroke="#3a2030" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+    if (mood === 'lonely') return `
+      <path d="M38 71 q7 -4 14 1" stroke="#3a2030" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M68 72 q7 -5 14 -1" stroke="#3a2030" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <circle cx="79" cy="80" r="2.4" fill="#9de9ff" opacity="0.9"/>`;
     if (mood === 'happy' || mood === 'celebrate') return `
       <path d="M38 72 q7 -9 14 0" stroke="#2a1420" stroke-width="3.4" fill="none" stroke-linecap="round"/>
       <path d="M68 72 q7 -9 14 0" stroke="#2a1420" stroke-width="3.4" fill="none" stroke-linecap="round"/>`;
@@ -484,6 +535,7 @@
     if (mood === 'hungry') return `<ellipse cx="60" cy="90" rx="7" ry="8" fill="#7a2647"/>`;
     if (mood === 'sick') return `<path d="M50 92 q10 -6 20 0" stroke="#2a1420" stroke-width="3" fill="none" stroke-linecap="round"/>`;
     if (mood === 'tired') return `<ellipse cx="60" cy="90" rx="5" ry="6" fill="#7a2647"/>`;
+    if (mood === 'lonely') return `<path d="M51 93 q9 -7 18 0" stroke="#2a1420" stroke-width="3" fill="none" stroke-linecap="round"/>`;
     if (mood === 'alert') return `<ellipse cx="60" cy="90" rx="4" ry="5" fill="#7a2647"/>`;
     return `<path d="M52 89 q8 6 16 0" stroke="#2a1420" stroke-width="3" fill="none" stroke-linecap="round"/>`;
   }
@@ -520,12 +572,47 @@
     ).join('');
   }
 
+  function statusFx(mood) {
+    if (mood === 'hungry') return `<div class="pet-status-fx pet-status-fx-hungry">${iconImg(ICON.hunger, 24)}</div>`;
+    if (mood === 'tired') return `<div class="pet-status-fx pet-status-fx-tired"><i>Z</i><i>Z</i><i>Z</i></div>`;
+    if (mood === 'lonely') return `<div class="pet-status-fx pet-status-fx-lonely">${heartSVG(23, '#8b6a86')}</div>`;
+    if (mood === 'alert') return `<div class="pet-status-fx pet-status-fx-alert">${iconImg(ICON.safety, 25)}</div>`;
+    if (mood === 'sick') return `<div class="pet-status-fx pet-status-fx-sick">+ + +</div>`;
+    return '';
+  }
+
+  function needChips() {
+    const needs = [
+      ['hunger', pet.hunger, iconImg(ICON.hunger, 13), 'HUNGRY'],
+      ['happiness', pet.happiness, heartSVG(12), 'LONELY'],
+      ['energy', pet.energy, iconImg(ICON.energy, 13), 'SLEEPY'],
+      ['safety', pet.safety, iconImg(ICON.safety, 13), 'NERVOUS'],
+    ].filter(([, value]) => value < 55).sort((a, b) => a[1] - b[1]);
+    if (!needs.length) return '';
+    return `<div class="pet-need-chips">${needs.map(([key, value, icon, label]) =>
+      `<span class="${value < 38 ? 'urgent' : ''}" data-need="${key}">${icon}<b>${label}</b></span>`).join('')}</div>`;
+  }
+
+  function roomDecor() {
+    if (!pet.equipped) return '';
+    const decor = {
+      lamp: `<span class="pet-room-item pet-room-lamp">✦</span>`,
+      bed: `<span class="pet-room-item pet-room-bed">☾</span>`,
+      ball: `<span class="pet-room-item pet-room-ball">${iconImg(ICON.play, 26)}</span>`,
+      drone: `<span class="pet-room-item pet-room-drone">${iconImg(ICON.safety, 24)}</span>`,
+      crown: `<span class="pet-room-item pet-room-crown">♛</span>`,
+      comet: `<span class="pet-room-item pet-room-comet">✦</span>`,
+    };
+    return decor[pet.equipped] || '';
+  }
+
   // ══════════════════════════════════════
   //  RENDER
   // ══════════════════════════════════════
   function render() {
     const host = document.getElementById('pet-wrap');
     if (!host) return;
+    openPanel = null;
     const mood = currentMood();
     const stageLabel = pet.stage === 3 && pet.form ? FORMS[pet.form].name : STAGE_NAMES[pet.stage];
     host.innerHTML = `
@@ -535,43 +622,52 @@
             <div class="pet-name" id="pet-name">${escapeHtml(pet.name)}</div>
             <div class="pet-stage-label">${stageLabel} · MOBLING</div>
           </div>
-          <div class="pet-streak">STREAK<b id="pet-streak">${pet.streak.days}</b>DAYS</div>
+          <div class="pet-life-meta">
+            <span>TOGETHER <b id="pet-days">${daysTogether()}D</b></span>
+            <span class="pet-ticket-count">TICKETS <b id="pet-tickets">${pet.tickets}</b></span>
+          </div>
         </div>
 
-        <div class="pet-tank" id="pet-tank">
+        <div class="pet-tank mood-${mood}" id="pet-tank" data-decor="${pet.equipped || ''}">
           <div class="pet-tank-rail"></div>
           <div class="pet-tank-stars" id="pet-tank-stars">${starsSVG()}</div>
           <div class="pet-tank-floor"></div>
           <div class="pet-tank-mood-tag" id="pet-mood-tag">${MOOD_TAGS[mood]}</div>
           ${growthProgress()}
-          ${pet.stage === 1 && pet.stageActions < 6 ? '<div class="pet-goal-copy">RAISE YOUR MOBLING TO ADULTHOOD — HOW YOU CARE FOR IT DECIDES WHAT IT BECOMES</div>' : ''}
-          <div id="pet-avatar">${petSVG(pet.stage, pet.form, mood)}</div>
+          ${pet.stage === 1 && pet.stageActions < 3 ? '<div class="pet-goal-copy">EVERY GAME BUILDS A TRAIT — PLAY YOUR WAY</div>' : ''}
+          <div class="pet-speech" id="pet-speech" aria-live="polite">${MOOD_SPEECH[mood]}</div>
+          <div id="pet-need-cues" aria-live="polite">${needChips()}</div>
+          ${roomDecor()}
+          <div id="pet-status-cues" aria-hidden="true">${statusFx(mood)}</div>
+          <div id="pet-avatar" role="button" tabindex="0" aria-label="Pet your Mobling">${petSVG(pet.stage, pet.form, mood)}</div>
           <div class="pet-mini" id="pet-mini"></div>
           <div class="pet-dex" id="pet-dex"></div>
+          <div class="pet-prizes" id="pet-prizes"></div>
+          <div class="pet-generation" id="pet-generation"></div>
         </div>
 
-        ${pet.dormant ? dormantNote() : ''}
-
+        ${returnMoment()}
         <div class="pet-tip-slot" id="pet-tip-slot"></div>
         <div class="pet-stats">
           ${statRow('hunger', iconImg(ICON.hunger, 17), 'f-hunger')}
           ${statRow('happiness', heartSVG(16), 'f-happy')}
           ${statRow('energy', iconImg(ICON.energy, 17), 'f-energy')}
           ${statRow('safety', iconImg(ICON.safety, 17), 'f-safety')}
-          ${statRow('health', iconImg(ICON.health, 17), 'f-health')}
         </div>
 
         <div class="pet-actions">
-          ${actBtn('feed', iconImg(ICON.hunger, 22), 'FEED')}
-          ${actBtn('play', iconImg(ICON.play, 22), 'PLAY')}
-          ${actBtn('rest', iconImg(ICON.energy, 22), 'REST')}
-          ${actBtn('pet', heartSVG(20), 'PET')}
-          ${actBtn('guard', iconImg(ICON.safety, 22), 'GUARD')}
+          ${actBtn('feed', iconImg(ICON.hunger, 22), 'FEED', 'SNACK ORDER')}
+          ${actBtn('play', iconImg(ICON.play, 22), 'PLAY', 'BOP RUN')}
+          ${actBtn('rest', iconImg(ICON.energy, 22), 'REST', 'LULLABY')}
+          ${actBtn('pet', heartSVG(20), 'CUDDLE', 'ANYTIME')}
+          ${actBtn('guard', iconImg(ICON.safety, 22), 'GUARD', 'DODGE TRAINING')}
         </div>
 
         <div class="pet-footer">
+          <button class="pet-foot-btn prize" onclick="petOpenPrizes()">PRIZES <b>${pet.tickets}</b></button>
           <button class="pet-foot-btn" onclick="petOpenDex()">FORM DEX</button>
           <button class="pet-foot-btn alt" onclick="petStatus()">STATUS</button>
+          ${pet.stage === 3 ? '<button class="pet-foot-btn generation" onclick="petOpenGeneration()">NEXT EGG</button>' : ''}
         </div>
       </div>`;
     lastMood = mood;
@@ -584,7 +680,15 @@
       if (av) av.onclick = () => { if (pet.stage === 0 && !mini) hatchTap(); };
     } else {
       const av = document.getElementById('pet-avatar');
-      if (av) av.onclick = () => { if (allOnCooldown() && !mini) idlePetTap(); };
+      if (av) {
+        av.onclick = () => { if (!mini) directAffection(); };
+        av.onkeydown = e => {
+          if ((e.key === 'Enter' || e.key === ' ') && !mini) {
+            e.preventDefault();
+            directAffection();
+          }
+        };
+      }
     }
     updateStats();
     updateCooldowns();
@@ -665,30 +769,37 @@
       SFX && SFX.menuSelect && SFX.menuSelect();
       lastMood = '';
       render();
-      showTip('care_intro', "KEEP YOUR MOBLING'S STATS UP — TAP AN ACTION WHEN A BAR RUNS LOW.");
+      showTip('care_intro', 'CARE BANKS AS YOU PLAY — KEEP GOING ONLY WHEN YOU WANT THE BIGGER PRIZE.');
     };
   }
 
-  function dormantNote() {
-    return `<div class="pet-dormant-note">YOUR MOBLING WANDERED OFF FROM NEGLECT.<br>KEEP CARING FOR IT — ${pet.recovery}/${DORMANT_RECOVERY} — TO COAX IT BACK.</div>`;
+  function returnMoment() {
+    if (!pet.moments || !pet.moments.length) return '';
+    const moment = pet.moments[0];
+    return `<button class="pet-return-moment" type="button" onclick="petClaimMoment()">
+      <span>WELCOME-BACK SURPRISE</span>
+      <b>${escapeHtml(moment.text)}</b>
+      <small>TAP TO OPEN · +${moment.tickets} TICKETS</small>
+    </button>`;
   }
 
   function statRow(key, iconHtml, cls) {
+    const names = { hunger: 'FULL', happiness: 'JOY', energy: 'ENERGY', safety: 'COURAGE', health: 'OVERALL' };
     return `
-      <div class="pet-stat-row ${key === 'health' ? 'pet-stat-health' : ''}">
+      <div class="pet-stat-row ${key === 'health' ? 'pet-stat-health' : ''}" aria-label="${names[key]}">
         <div class="pet-stat-icon">${iconHtml}</div>
-        ${key === 'health' ? '<span class="pet-stat-overall">OVERALL</span>' : ''}
+        <span class="pet-stat-name">${names[key]}</span>
         <div class="pet-stat-track"><div class="pet-stat-fill ${cls}" id="pet-fill-${key}"></div></div>
         <div class="pet-stat-val" id="pet-val-${key}">0</div>
       </div>`;
   }
 
-  function actBtn(key, iconHtml, label) {
+  function actBtn(key, iconHtml, label, detail) {
     const [color, tint] = ACTION_COLOR[key];
     return `
       <button class="pet-act-btn" id="pet-act-${key}" data-act="${key}" style="--act-color:${color};--act-tint:${tint}">
         <span class="pet-act-icon">${iconHtml}</span>
-        <span>${label}</span>
+        <span class="pet-act-copy">${label}<small>${detail}</small></span>
         <span class="pet-act-cd" id="pet-cd-${key}"></span>
       </button>`;
   }
@@ -707,23 +818,31 @@
       });
     const tag = document.getElementById('pet-mood-tag');
     if (tag) tag.textContent = MOOD_TAGS[currentMood()];
-    const streak = document.getElementById('pet-streak');
-    if (streak) streak.textContent = pet.streak.days;
+    const tickets = document.getElementById('pet-tickets');
+    if (tickets) tickets.textContent = pet.tickets;
     const tank = document.getElementById('pet-tank');
-    if (tank) tank.classList.toggle('mood-bright', currentMood() === 'happy' || currentMood() === 'celebrate');
+    if (tank) {
+      tank.className = `pet-tank mood-${currentMood()}${currentMood() === 'happy' || currentMood() === 'celebrate' ? ' mood-bright' : ''}`;
+    }
     const low = [['hunger', 'feed', 'HUNGRY', 'FEED'], ['happiness', 'pet', 'LONELY', 'PET'], ['energy', 'rest', 'TIRED', 'REST'], ['safety', 'guard', 'UNSAFE', 'GUARD']]
       .find(([stat]) => pet[stat] < 30);
     const guideLow = !!low && pet.stageActions < 5 && !pet.lowHintDismissed;
     document.querySelectorAll('.pet-act-btn').forEach(btn => btn.classList.toggle('needs-care', guideLow && btn.dataset.act === low[1]));
-    if (guideLow) showTip('low_stat', `YOUR MOBLING IS ${low[2]} — TRY ${low[3]}!`);
+    if (guideLow) showTip('low_stat', `${low[2]} OPPORTUNITY READY — ${low[3]} WILL HELP, AND YOUR REWARD BANKS AS YOU PLAY.`);
   }
 
   function refreshAvatarIfMoodChanged() {
     const mood = currentMood();
+    const needs = document.getElementById('pet-need-cues');
+    if (needs) needs.innerHTML = needChips();
     if (mood === lastMood) return;
     lastMood = mood;
     const av = document.getElementById('pet-avatar');
     if (av) av.innerHTML = petSVG(pet.stage, pet.form, mood);
+    const speech = document.getElementById('pet-speech');
+    if (speech) speech.textContent = MOOD_SPEECH[mood];
+    const status = document.getElementById('pet-status-cues');
+    if (status) status.innerHTML = statusFx(mood);
   }
 
   function updateCooldowns() {
@@ -732,15 +851,23 @@
       const btn = document.getElementById(`pet-act-${key}`);
       const bar = document.getElementById(`pet-cd-${key}`);
       if (!btn || !bar) return;
+      if (key === 'pet') {
+        btn.disabled = !!mini || !!openPanel;
+        bar.style.width = '0%';
+        return;
+      }
       const until = pet.cd[key] || 0;
       const remain = until - now;
       if (remain > 0) {
         btn.disabled = true;
         bar.style.width = (100 * remain / COOLDOWN[key]) + '%';
       } else {
-        btn.disabled = !!mini;
+        btn.disabled = !!mini || !!openPanel;
         bar.style.width = '0%';
       }
+    });
+    document.querySelectorAll('.pet-footer .pet-foot-btn').forEach(btn => {
+      btn.disabled = !!openPanel || !!mini;
     });
   }
 
@@ -759,7 +886,7 @@
     return ['feed', 'play', 'rest', 'pet', 'guard'].every(key => (pet.cd[key] || 0) > now);
   }
 
-  function idlePetTap() {
+  function directAffection() {
     const av = document.getElementById('pet-avatar');
     const tank = document.getElementById('pet-tank');
     if (!av || !tank) return;
@@ -771,24 +898,36 @@
       setTimeout(() => svg.classList.remove('idle-tapped'), 240);
     }
     pentaNote(Math.floor(Math.random() * PENTA.length), 0.045, 0.12);
+    pet.happiness = clamp(pet.happiness + 3, 0, 100);
+    pet.energy = clamp(pet.energy + 0.5, 0, 100);
+    pet.health = (pet.hunger + pet.happiness + pet.energy + pet.safety) / 4;
     const bubble = document.createElement('span');
     bubble.className = 'pet-idle-reaction';
-    bubble.textContent = Math.random() < 0.5 ? '!' : '~';
+    bubble.textContent = ['♥', 'PURR', '!', '~'][Math.floor(Math.random() * 4)];
     tank.appendChild(bubble);
     setTimeout(() => bubble.remove(), 520);
+    const speech = document.getElementById('pet-speech');
+    if (speech) speech.textContent = ['AGAIN!', 'I LIKE THAT.', 'YOU FOUND THE SPOT!', 'STAY A LITTLE LONGER.'][Math.floor(Math.random() * 4)];
+    fx(heartSVG(17));
+    updateStats();
+    schedulePersist();
   }
 
-  // Each action is a compact mini modeled on one of the other arcade games.
-  // Every mini is goal-based (accomplished, not timed) and ramps by stage.
+  // Each care action is a compact mini modeled on another arcade game.
+  // The objective is aspirational; leaving early keeps whatever care was banked.
   function startAction(key) {
-    if (mini || onCooldown(key)) return;
+    if (mini || openPanel) return;
+    if (pet.stage > 0 && key === 'pet') {
+      directAffection();
+      return;
+    }
+    if (onCooldown(key)) return;
     pet.lowHintDismissed = true;
     document.querySelectorAll('.pet-act-btn').forEach(btn => btn.classList.remove('needs-care'));
     if (pet.stage === 0) { hatchTap(); return; }
     if (key === 'feed') miniCatch();        // visible snack-order matching
     else if (key === 'play') miniWhack();   // WHACK — bop the popping toys
     else if (key === 'rest') miniPads();    // SIGNAL — pentatonic lullaby pads
-    else if (key === 'pet') miniScratch();  // holographic scratch-off foil
     else if (key === 'guard') miniGuard();  // SPACE red-enemy — dodge telegraphed threats
   }
 
@@ -800,6 +939,8 @@
     if (egg) { egg.classList.add('wobbling'); setTimeout(() => egg.classList.remove('wobbling'), 340); }
     pentaNote(pet.stageActions + 2, 0.09);
     fx(starSVG(20, '#ffe61a'));
+    const progress = document.getElementById('pet-growth-fill');
+    if (progress) progress.style.width = clamp((pet.stageProgress / STAGE_THRESHOLD[0]) * 100, 0, 100) + '%';
     if (pet.stageProgress >= STAGE_THRESHOLD[0] && pet.stageActions >= STAGE_MIN_ACTIONS[0]) evolve();
     else schedulePersist();
   }
@@ -818,13 +959,107 @@
     close.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      if (mini && mini.key) {
-        pet.cd[mini.key] = Date.now() + COOLDOWN[mini.key];
-        schedulePersist();
-      }
-      endMini();
+      settleMini(false);
     };
     el.appendChild(close);
+    const reward = document.createElement('div');
+    reward.className = 'pet-mini-reward';
+    reward.innerHTML = `
+      <div class="pet-mini-reward-copy"><span id="pet-mini-grade" aria-live="polite">PLAY TO BANK CARE</span><b id="pet-mini-ticket-preview">+0 TICKETS</b></div>
+      <div class="pet-mini-reward-track"><i id="pet-mini-reward-fill"></i></div>
+      <small>✕ KEEPS WHAT YOU EARN</small>`;
+    el.appendChild(reward);
+  }
+
+  function miniProgressAmount(state) {
+    state = state || mini;
+    if (!state) return 0;
+    if (state.key === 'feed') return state.orders;
+    if (state.key === 'play') return state.hits;
+    if (state.key === 'rest') return state.notes;
+    if (state.key === 'guard') return state.dodged + (state.training || 0);
+    return 0;
+  }
+
+  function miniRawProgress(state) {
+    state = state || mini;
+    return state && state.goal ? miniProgressAmount(state) / state.goal : 0;
+  }
+
+  function miniQuality(state) {
+    state = state || mini;
+    if (!state) return 0;
+    const amount = miniProgressAmount(state);
+    const bankAt = state.bankAt || 1;
+    if (amount < bankAt) return 0;
+    const mastered = clamp((amount - bankAt) / Math.max(1, state.goal - bankAt), 0, 1);
+    return clamp(0.60 + mastered * 0.40 - Math.min(0.18, (state.mistakes || 0) * 0.025), 0.35, 1);
+  }
+
+  function miniGrade(quality) {
+    if (quality >= 0.96) return 'JACKPOT CARE';
+    if (quality >= 0.84) return 'GOLD CARE';
+    if (quality >= 0.70) return 'SILVER CARE';
+    if (quality > 0) return 'CARE BANKED';
+    return 'PLAY TO BANK CARE';
+  }
+
+  function ticketReward(quality, complete) {
+    if (quality <= 0) return 0;
+    return Math.max(1, Math.floor(quality * 3) + (complete && quality >= 0.9 ? 1 : 0));
+  }
+
+  function updateMiniReward() {
+    if (!mini) return;
+    const quality = miniQuality(mini);
+    const raw = clamp(miniRawProgress(mini), 0, 1);
+    const fill = document.getElementById('pet-mini-reward-fill');
+    const grade = document.getElementById('pet-mini-grade');
+    const tickets = document.getElementById('pet-mini-ticket-preview');
+    if (fill) fill.style.width = (raw * 100) + '%';
+    if (grade) grade.textContent = quality > 0 ? miniGrade(quality) : raw > 0 ? 'ALMOST BANKED' : 'PLAY TO BANK CARE';
+    if (tickets) tickets.textContent = `+${ticketReward(quality, raw >= 1)} TICKETS`;
+  }
+
+  function settleMini(complete, title) {
+    if (!mini) return;
+    const state = mini;
+    const quality = miniQuality(state);
+    const applyFn = { feed: applyFeed, play: applyPlay, rest: applyRest, guard: applyGuard }[state.key];
+    const finish = () => {
+      endMini();
+      if (quality > 0 && applyFn) {
+        applyFn(quality, {
+          tickets: ticketReward(quality, complete),
+          complete,
+          mistakes: state.mistakes || 0,
+        });
+      } else {
+        pet.cd[state.key] = Date.now() + 2000;
+        schedulePersist();
+        updateCooldowns();
+      }
+    };
+    if (!complete) {
+      finish();
+      return;
+    }
+    if (state.raf) cancelAnimationFrame(state.raf);
+    if (state.timer) clearTimeout(state.timer);
+    if (state.iv) clearInterval(state.iv);
+    if (state.timeouts) state.timeouts.forEach(clearTimeout);
+    state.raf = 0; state.timer = 0; state.iv = 0;
+    const el = miniEl();
+    if (el) {
+      el.onpointerdown = el.onpointermove = el.onpointerup = el.onpointercancel = null;
+      el.innerHTML = `<div class="pet-mini-complete">
+        <div class="pet-mini-complete-check">${heartSVG(40, '#33ff99')}</div>
+        <div class="pet-mini-complete-text">${title || 'CARE BANKED!'}</div>
+        <div class="pet-mini-complete-grade">${miniGrade(quality)} · +${ticketReward(quality, true)} TICKETS</div>
+      </div>`;
+    }
+    playConfirm();
+    setTimeout(finish, 650);
   }
 
   function endMini() {
@@ -859,24 +1094,8 @@
   // the apply*/afterAction pipeline, so finishing an objective is felt, not
   // just silently absorbed. Stops the mini's own loop/interval first so it
   // can't keep redrawing over the celebration markup.
-  function completeMini(title, applyFn) {
-    if (mini) {
-      if (mini.raf) cancelAnimationFrame(mini.raf);
-      if (mini.timer) clearTimeout(mini.timer);
-      if (mini.iv) clearInterval(mini.iv);
-      if (mini.timeouts) mini.timeouts.forEach(clearTimeout);
-      mini.raf = 0; mini.timer = 0; mini.iv = 0;
-    }
-    const el = miniEl();
-    if (el) {
-      el.onpointerdown = el.onpointermove = el.onpointerup = el.onpointercancel = null;
-      el.innerHTML = `<div class="pet-mini-complete">
-        <div class="pet-mini-complete-check">${heartSVG(40, '#33ff99')}</div>
-        <div class="pet-mini-complete-text">${title}</div>
-      </div>`;
-    }
-    playConfirm();
-    setTimeout(() => { endMini(); applyFn(1); }, 520);
+  function completeMini(title) {
+    settleMini(true, title);
   }
 
   function flashTank(kind) {
@@ -890,11 +1109,11 @@
   function miniCatch() {
     const el = miniEl();
     if (!el) return;
-    const goal = 4;
+    const goal = GOALS.feed[stageIdx()];
     const tune = FEED_TUNE[stageIdx()];
     el.innerHTML = `
       <div class="pet-mini-title">SNACK ORDER</div>
-      <div class="pet-mini-hint" id="pet-feed-hint">SERVE THE RECIPE FROM LEFT TO RIGHT</div>
+      <div class="pet-mini-hint" id="pet-feed-hint">ONE ORDER EARNS CARE · KEEP GOING FOR GOLD</div>
       <div class="pet-feed-order" id="pet-feed-order"></div>
       <div class="pet-feed-board" id="pet-feed-board"></div>
       <div class="pet-mini-count"><span id="pet-feed-n">0</span>/${goal} ORDERS</div>`;
@@ -903,7 +1122,9 @@
     const orderEl = document.getElementById('pet-feed-order');
     const hintEl = document.getElementById('pet-feed-hint');
     const nEl = document.getElementById('pet-feed-n');
-    mini = { key: 'feed', orders: 0, goal, recipe: [], step: 0, locked: false, timeouts: [] };
+    mini = { key: 'feed', orders: 0, goal, bankAt: 1, recipe: [], step: 0, locked: false, mistakes: 0, timeouts: [] };
+    updateMiniReward();
+    updateCooldowns();
 
     function snackByKey(key) { return FEED_SNACKS.find(s => s.key === key); }
     function renderOrder() {
@@ -948,16 +1169,17 @@
       const expected = mini.recipe[mini.step];
       if (btn.dataset.key !== expected) {
         mini.locked = true;
+        mini.mistakes++;
         btn.classList.add('wrong');
-        hintEl.textContent = btn.dataset.key === 'junk' ? 'NO JUNK! START THIS ORDER AGAIN' : 'WRONG SNACK — FOLLOW THE RECIPE';
+        hintEl.textContent = btn.dataset.key === 'junk' ? 'JUNK IS FUN, BUT NOT THIS RECIPE' : 'NOT THAT ONE — TRY THE SAME STEP';
         synthTone(145, 'sine', 0, 0.18, 0.05, 105);
         miniToast(btn.dataset.key === 'junk' ? 'JUNK!' : 'WRONG ORDER', 'bad');
-        mini.step = 0;
         renderOrder();
+        updateMiniReward();
         mini.timeouts.push(setTimeout(() => {
           if (!mini || mini.key !== 'feed') return;
           mini.locked = false;
-          hintEl.textContent = 'SERVE THE RECIPE FROM LEFT TO RIGHT';
+          hintEl.textContent = mini.orders ? 'CARE BANKED · KEEP GOING FOR A BIGGER PRIZE' : 'ONE ORDER EARNS CARE · KEEP GOING FOR GOLD';
           fillBoard();
         }, 460));
         return;
@@ -971,8 +1193,9 @@
         nEl.textContent = mini.orders;
         miniToast('ORDER SERVED!', 'good');
         playConfirm();
+        updateMiniReward();
         if (mini.orders >= mini.goal) {
-          completeMini('SNACK ORDER CLEAR!', applyFeed);
+          completeMini('SNACK JACKPOT!');
           return;
         }
         mini.locked = true;
@@ -997,15 +1220,17 @@
     const tune = PLAY_TUNE[stageIdx()];
     el.innerHTML = `
       <div class="pet-mini-title">PLAYTIME!</div>
-      <div class="pet-mini-hint">BOP THE TOYS!</div>
+      <div class="pet-mini-hint">4 BOPS EARNS CARE · COMBOS WIN MORE</div>
       <div class="pet-whack-grid" id="pet-whack-grid">${Array.from({ length: SPOTS }, () =>
-        `<button class="pet-whack-hole" type="button"><span class="pet-whack-toy">${iconImg(ICON.play, 30)}</span></button>`).join('')}</div>
+        `<button class="pet-whack-hole" type="button" aria-label="Bop toy"><span class="pet-whack-toy">${iconImg(ICON.play, 30)}</span></button>`).join('')}</div>
       <div class="pet-whack-score-row"><div class="pet-mini-count"><span id="pet-whack-n">0</span>/${goal} BOPS</div><div class="pet-whack-combo" id="pet-whack-combo"></div></div>`;
     showMini();
     const stage = stageIdx();
     const popCount = stage === 1 ? 1 : stage === 2 ? 2 : 2 + (Math.random() < 0.5 ? 0 : 1);
     const windowMs = stage === 1 ? 1200 : stage === 2 ? 900 : 700;
-    mini = { key: 'play', hits: 0, combo: 0, goal, iv: 0, timeouts: [], popToken: 0 };
+    mini = { key: 'play', hits: 0, combo: 0, goal, bankAt: 4, mistakes: 0, iv: 0, timeouts: [], popToken: 0 };
+    updateMiniReward();
+    updateCooldowns();
     const holes = [...el.querySelectorAll('.pet-whack-hole')];
     const nEl = document.getElementById('pet-whack-n');
     const comboEl = document.getElementById('pet-whack-combo');
@@ -1030,7 +1255,8 @@
       if (nEl) nEl.textContent = mini.hits;
       if (comboEl) comboEl.textContent = mini.combo > 1 ? `×${mini.combo} COMBO` : '';
       pentaNote(mini.hits + 3, 0.09);
-      if (mini.hits >= mini.goal) { completeMini('PLAYTIME CLEAR!', applyPlay); return; }
+      updateMiniReward();
+      if (mini.hits >= mini.goal) { completeMini('PLAYTIME JACKPOT!'); return; }
     });
     function pop() {
       if (!mini || mini.key !== 'play') return;
@@ -1047,6 +1273,8 @@
           h.classList.add('missed');
           setTimeout(() => h.classList.remove('missed'), 240);
           mini.combo = 0;
+          mini.mistakes++;
+          updateMiniReward();
           if (comboEl) comboEl.textContent = '';
           if (typeof CSFX !== 'undefined' && CSFX.back) CSFX.back();
         }, windowMs);
@@ -1064,7 +1292,7 @@
     const goal = GOALS.rest[stageIdx()];
     el.innerHTML = `
       <div class="pet-mini-title">SIGNAL LULLABY</div>
-      <div class="pet-mini-hint" id="pet-rest-hint">WATCH · LISTEN · REPEAT</div>
+      <div class="pet-mini-hint" id="pet-rest-hint">ONE MELODY EARNS CARE · EVERY NOTE COUNTS</div>
       <div class="pet-rest-board" id="pet-rest-board">
         ${REST_BANDS.map(b => `
           <div class="pet-rest-band-row">
@@ -1077,7 +1305,9 @@
     const stage = stageIdx();
     const sequenceLength = stage + 2;
     const award = stage === 1 ? 2 : stage === 2 ? 3 : 4;
-    mini = { key: 'rest', notes: 0, goal, sequence: [], input: 0, accepting: false, timeouts: [] };
+    mini = { key: 'rest', notes: 0, goal, bankAt: award, sequence: [], input: 0, accepting: false, mistakes: 0, timeouts: [] };
+    updateMiniReward();
+    updateCooldowns();
     const nEl = document.getElementById('pet-rest-n');
     const board = document.getElementById('pet-rest-board');
     const hint = document.getElementById('pet-rest-hint');
@@ -1085,7 +1315,7 @@
     nodes.forEach((node, idx) => {
       node.dataset.nodeIndex = idx;
       node.dataset.letter = node.querySelector('text').textContent;
-      node.addEventListener('pointerdown', (e) => {
+      const chooseNode = (e) => {
         e.preventDefault();
         if (!mini || !mini.accepting) return;
         const deg = +node.dataset.note;
@@ -1093,9 +1323,11 @@
         const expected = mini.sequence[mini.input];
         if (idx !== expected) {
           mini.accepting = false;
+          mini.mistakes++;
           node.classList.add('wrong');
           synthTone(150, 'sine', 0, 0.18, 0.05, 110);
-          if (hint) hint.textContent = 'TRY THAT SAME MELODY AGAIN';
+          if (hint) hint.textContent = 'CUTE REMIX! TRY THE SAME MELODY AGAIN';
+          updateMiniReward();
           mini.timeouts.push(setTimeout(() => {
             node.classList.remove('wrong');
             playSequence();
@@ -1111,9 +1343,14 @@
           mini.notes += award;
           if (nEl) nEl.textContent = Math.min(mini.goal, mini.notes);
           miniToast(`ECHO! +${award}`, 'good');
-          if (mini.notes >= mini.goal) { completeMini('LULLABY CLEAR!', applyRest); return; }
+          updateMiniReward();
+          if (mini.notes >= mini.goal) { completeMini('LULLABY JACKPOT!'); return; }
           mini.timeouts.push(setTimeout(newSequence, 650));
         }
+      };
+      node.addEventListener('pointerdown', chooseNode);
+      node.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') chooseNode(e);
       });
     });
     function resetNodeLabels() {
@@ -1177,6 +1414,7 @@
     showMini();
     const nEl = document.getElementById('pet-scratch-n');
     mini = { key: 'pet', cleared: 0, total: TOTAL, goal, down: false, lastNote: 0, bonusCells };
+    updateCooldowns();
     function clearAt(x, y) {
       const cell = document.elementFromPoint(x, y);
       if (!cell || !cell.classList || !cell.classList.contains('pet-foil-cell') || cell._gone) return;
@@ -1215,13 +1453,14 @@
     const tune = GUARD_TUNE[stageIdx()];
     el.innerHTML = `
       <div class="pet-mini-title">ON GUARD</div>
-      <div class="pet-mini-hint">WATCH IT TRACK YOU · MOVE AFTER IT LOCKS</div>
+      <div class="pet-mini-hint">2 DODGES EARNS CARE · MOVE AFTER IT LOCKS</div>
       <div class="pet-guard-field" id="pet-guard-field">
         <span class="pet-guard-enemy" id="pet-guard-enemy">${shardSVG(28, '#ff3344')}</span>
         <span class="pet-guard-aim" id="pet-guard-aim"></span>
         <span class="pet-guard-reticle" id="pet-guard-reticle"></span>
         <span class="pet-guard-shot" id="pet-guard-shot">${shardSVG(20, '#ff3344')}</span>
-        <div class="pet-guard-track" id="pet-guard-track"><div class="pet-guard-ship" id="pet-guard-ship">${iconImg(ICON.safety, 26)}</div></div>
+        <div class="pet-guard-track" id="pet-guard-track" role="slider" tabindex="0" aria-label="Move shield"
+          aria-valuemin="6" aria-valuemax="94" aria-valuenow="50"><div class="pet-guard-ship" id="pet-guard-ship">${iconImg(ICON.safety, 26)}</div></div>
       </div>
       <div class="pet-mini-count"><span id="pet-guard-n">0</span>/${goal} DODGED</div>`;
     showMini();
@@ -1236,17 +1475,28 @@
     mini = {
       key: 'guard', dodged: 0, goal, shipX: 50, enemyX: 50, enemyDir: 1,
       phase: 'drift', t0: 0, t1: 0, lockX: 50, shotStartX: 50, burstLeft: 0,
-      raf: 0, prev: performance.now(), nextLockAt: performance.now() + 420,
+      bankAt: 2, mistakes: 0, training: 0, raf: 0, prev: performance.now(), nextLockAt: performance.now() + 420,
     };
+    updateMiniReward();
+    updateCooldowns();
+    function setShipPct(value) {
+      mini.shipX = clamp(value, 6, 94);
+      ship.style.left = mini.shipX + '%';
+      track.setAttribute('aria-valuenow', Math.round(mini.shipX));
+    }
     function setShipX(clientX) {
       const rect = track.getBoundingClientRect();
-      mini.shipX = clamp(((clientX - rect.left) / rect.width) * 100, 6, 94);
-      ship.style.left = mini.shipX + '%';
+      setShipPct(((clientX - rect.left) / rect.width) * 100);
     }
     track.onpointerdown = (e) => { e.preventDefault(); setShipX(e.clientX); };
     track.onpointermove = (e) => setShipX(e.clientX);
     field.onpointerdown = (e) => setShipX(e.clientX);
     field.onpointermove = (e) => { if (mini) setShipX(e.clientX); };
+    track.onkeydown = (e) => {
+      if (!mini || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+      e.preventDefault();
+      setShipPct(mini.shipX + (e.key === 'ArrowLeft' ? -14 : 14));
+    };
     enemyEl.style.left = '50%';
     shotEl.style.opacity = '0';
     aimEl.style.opacity = '0';
@@ -1269,21 +1519,23 @@
       const hit = Math.abs(mini.lockX - mini.shipX) < tune.tol;
       shotEl.style.opacity = '0';
       if (hit) {
-        mini.dodged = Math.max(0, mini.dodged - 0.5);
+        mini.mistakes++;
+        mini.training += 0.25;
         playSound('miss');
         flashTank('bad');
-        miniToast('HIT! −½', 'bad');
+        miniToast('HIT · +¼ TRAINING', 'bad');
       } else {
         mini.dodged++;
         playShieldPing();
         miniToast('DODGED! +1', 'good');
       }
       if (nEl) nEl.textContent = Math.floor(mini.dodged);
+      updateMiniReward();
       mini.burstLeft--;
       mini.phase = 'drift';
       mini.nextLockAt = performance.now() + tune.gap * (mini.burstLeft > 0 ? 1 : 2.1);
       reticleEl.style.opacity = '0';
-      if (mini.dodged >= mini.goal) completeMini('ON GUARD CLEAR!', applyGuard);
+      if (mini.dodged >= mini.goal) completeMini('GUARD JACKPOT!');
     }
     function loop(now) {
       if (!mini || mini.key !== 'guard') return;
@@ -1343,25 +1595,26 @@
     mini.raf = requestAnimationFrame(loop);
   }
 
-  // ── Apply results (quality is always 1 — minis are goal-based, not timed) ──
-  function applyFeed(q) {
-    pet.hunger = clamp(pet.hunger + 20 + 30 * q, 0, 100);
+  // ── Apply banked results. The first short game beat earns useful care;
+  // continuing improves the grade, tickets, trait influence, and jackpot.
+  function applyFeed(q, meta) {
+    pet.hunger = clamp(pet.hunger + 18 + 30 * q, 0, 100);
     pet.happiness = clamp(pet.happiness + 4, 0, 100);
-    pet.energy = clamp(pet.energy - 4, 0, 100);
-    afterAction('feed', q, 'balance', iconImg(ICON.hunger, 22));
+    pet.energy = clamp(pet.energy - 3 * q, 0, 100);
+    afterAction('feed', q, 'balance', iconImg(ICON.hunger, 22), meta);
     playConfirm();
   }
-  function applyRest(q) {
-    pet.energy = clamp(pet.energy + 22 + 30 * q, 0, 100);
+  function applyRest(q, meta) {
+    pet.energy = clamp(pet.energy + 18 + 32 * q, 0, 100);
     pet.happiness = clamp(pet.happiness + 3, 0, 100);
-    afterAction('rest', q, 'energy', iconImg(ICON.energy, 22));
+    afterAction('rest', q, 'energy', iconImg(ICON.energy, 22), meta);
     playConfirm();
   }
-  function applyPlay(q) {
-    pet.happiness = clamp(pet.happiness + 16 + 26 * q, 0, 100);
-    pet.energy = clamp(pet.energy - 14, 0, 100);
-    pet.hunger = clamp(pet.hunger - 6, 0, 100);
-    afterAction('play', q, 'happy', iconImg(ICON.play, 22));
+  function applyPlay(q, meta) {
+    pet.happiness = clamp(pet.happiness + 14 + 28 * q, 0, 100);
+    pet.energy = clamp(pet.energy - (6 + 7 * q), 0, 100);
+    pet.hunger = clamp(pet.hunger - 3 * q, 0, 100);
+    afterAction('play', q, 'happy', iconImg(ICON.play, 22), meta);
     playConfirm();
   }
   function applyPet(q) {
@@ -1371,45 +1624,58 @@
     afterAction('pet', q, 'happy', heartSVG(22));
     playConfirm();
   }
-  function applyGuard(q) {
-    pet.safety = clamp(pet.safety + 24 + 30 * q, 0, 100);
+  function applyGuard(q, meta) {
+    pet.safety = clamp(pet.safety + 18 + 32 * q, 0, 100);
     pet.happiness = clamp(pet.happiness + 2, 0, 100);
-    afterAction('guard', q, 'balance', iconImg(ICON.safety, 22));
+    afterAction('guard', q, 'energy', iconImg(ICON.safety, 22), meta);
     playConfirm();
   }
 
-  function afterAction(key, quality, careAxis, iconHtml) {
-    pet.cd[key] = Date.now() + COOLDOWN[key];
-    // Dormant recovery path
-    if (pet.dormant) {
-      pet.recovery++;
-      if (pet.recovery >= DORMANT_RECOVERY) wakeFromDormant();
-      fx(iconHtml);
-      registerCareDay();
-      render();
-      schedulePersist();
-      return;
-    }
+  function afterAction(key, quality, careAxis, iconHtml, meta) {
+    meta ||= {};
+    pet.cd[key] = Date.now() + COOLDOWN[key] * (0.35 + quality * 0.65);
+    pet.tickets += meta.tickets || 0;
+    pet.memories++;
+    pet.activityCounts[key] = (pet.activityCounts[key] || 0) + quality;
+    if (meta.complete && (meta.mistakes || 0) >= 2) pet.care.comeback += quality;
     // Stage progress from a quality action + branch tally
     if (quality > 0.35) {
       pet.stageActions++;
-      pet.stageProgress += 0.8 + quality;
+      pet.stageProgress += 0.6 + quality * 1.2;
       pet.care[careAxis] = (pet.care[careAxis] || 0) + (0.6 + quality);
     }
-    // Balanced-care bonus: if all four stats are in a healthy band after the action.
-    if (allBalanced()) pet.care.balance = (pet.care.balance || 0) + 0.8;
+    if (allBalanced()) pet.care.balance = (pet.care.balance || 0) + 0.15 * quality;
     registerCareDay();
+    pet.health = (pet.hunger + pet.happiness + pet.energy + pet.safety) / 4;
     pet._celebrateUntil = Date.now() + 1200;
-    fx(iconHtml);
     maybeEvolve();
-    refreshAvatarIfMoodChanged();
-    updateStats();
-    updateCooldowns();
-    showTip('cooldowns', 'NICE! EACH ACTION HAS A COOLDOWN — TRY A DIFFERENT ONE WHILE IT RECHARGES.');
+    if (!pet._evolving) {
+      lastMood = '';
+      render();
+    } else {
+      const growth = document.getElementById('pet-growth-fill');
+      if (growth && pet.stage < 3) growth.style.width = '100%';
+      refreshAvatarIfMoodChanged();
+      updateStats();
+      updateCooldowns();
+    }
+    fx(iconHtml);
+    showRewardReceipt(quality, meta.tickets || 0);
+    showTip('cooldowns', 'CARE BANKED! THE CABINET RECHARGES WHILE ANOTHER GAME LIGHTS UP.');
     if (pet.stage < 3 && pet.stageProgress >= STAGE_THRESHOLD[pet.stage] * 0.5) {
       showTip('growth_half', 'YOUR MOBLING IS GROWING — KEEP CARING FOR IT TO REACH THE NEXT STAGE.');
     }
     schedulePersist();
+  }
+
+  function showRewardReceipt(quality, tickets) {
+    const tank = document.getElementById('pet-tank');
+    if (!tank) return;
+    const receipt = document.createElement('div');
+    receipt.className = 'pet-reward-receipt';
+    receipt.innerHTML = `<b>${miniGrade(quality)}</b><span>+${tickets} TICKETS · +${Math.round(quality * 100)} CARE</span>`;
+    tank.appendChild(receipt);
+    setTimeout(() => receipt.remove(), 1600);
   }
 
   function allBalanced() {
@@ -1494,9 +1760,12 @@
   }
 
   function decideForm() {
-    if (pet.wasDormant) return 'ember';   // brought back from neglect
-    const c = pet.care;
-    const entries = [['solara', c.happy || 0], ['volt', c.energy || 0], ['harmon', c.balance || 0]];
+    const a = pet.activityCounts || { feed: 0, play: 0, rest: 0, guard: 0 };
+    if ((pet.care.comeback || 0) >= 2.4) return 'ember';
+    const variety = Math.min(a.feed || 0, a.play || 0, a.rest || 0, a.guard || 0) * 1.3;
+    const joy = a.play || 0;
+    const spark = ((a.rest || 0) + (a.guard || 0)) / 2;
+    const entries = [['solara', joy], ['volt', spark], ['harmon', variety]];
     entries.sort((a, b) => b[1] - a[1]);
     // If nothing clearly dominates, call it balanced.
     if (entries[0][1] - entries[1][1] < 1.2) return 'harmon';
@@ -1608,11 +1877,140 @@
   }
 
   // ══════════════════════════════════════
+  //  POSITIVE RETURN MOMENTS + PRIZE SHELF
+  // ══════════════════════════════════════
+  window.petClaimMoment = function() {
+    if (!pet || !pet.moments || !pet.moments.length) return;
+    const moment = pet.moments.shift();
+    pet.tickets += moment.tickets || 0;
+    pet.happiness = clamp(pet.happiness + 5, 0, 100);
+    pet.memories++;
+    persist();
+    render();
+    playFanfare();
+    fx(starSVG(22, '#ffe61a'));
+    showTip(`moment_${moment.id}`, `SURPRISE OPENED · +${moment.tickets} TICKETS · NOTHING EXPIRES WHILE YOU’RE AWAY.`);
+  };
+
+  function prizeArt(key) {
+    if (key === 'lamp') return starSVG(30, '#ffe61a');
+    if (key === 'bed') return `<span class="pet-prize-glyph">☾</span>`;
+    if (key === 'ball') return iconImg(ICON.play, 32);
+    if (key === 'drone') return iconImg(ICON.safety, 32);
+    if (key === 'crown') return `<span class="pet-prize-glyph">♛</span>`;
+    return `<span class="pet-prize-glyph">☄</span>`;
+  }
+
+  window.petOpenPrizes = function() {
+    const panel = document.getElementById('pet-prizes');
+    if (!panel) return;
+    openPanel = 'prizes';
+    SFX && SFX.menuSelect && SFX.menuSelect();
+    panel.innerHTML = `
+      <div class="pet-prizes-title">PRIZE SHELF</div>
+      <div class="pet-prizes-wallet">${pet.tickets} TICKETS · PLAY GAMES TO EARN MORE</div>
+      <div class="pet-prizes-grid">
+        ${Object.entries(PRIZES).map(([key, prize]) => {
+          const owned = pet.unlocks.includes(key);
+          const equipped = pet.equipped === key;
+          const disabled = !owned && pet.tickets < prize.cost;
+          return `<button class="pet-prize-cell ${owned ? 'owned' : ''} ${equipped ? 'equipped' : ''}" type="button"
+              onclick="petChoosePrize('${key}')" ${disabled ? 'disabled' : ''}>
+            <span class="pet-prize-art">${prizeArt(key)}</span>
+            <b>${prize.name}</b>
+            <small>${prize.how}</small>
+            <em>${equipped ? 'IN ROOM' : owned ? 'EQUIP' : `${prize.cost} TICKETS`}</em>
+          </button>`;
+        }).join('')}
+      </div>
+      <button class="pet-dex-close" onclick="petClosePrizes()">◀ BACK TO PET</button>`;
+    panel.classList.add('show');
+    updateCooldowns();
+  };
+
+  window.petChoosePrize = function(key) {
+    const prize = PRIZES[key];
+    if (!prize) return;
+    const owned = pet.unlocks.includes(key);
+    if (!owned) {
+      if (pet.tickets < prize.cost) return;
+      pet.tickets -= prize.cost;
+      pet.unlocks.push(key);
+      playFanfare();
+    } else {
+      SFX && SFX.menuSelect && SFX.menuSelect();
+    }
+    pet.equipped = key;
+    persist();
+    render();
+    window.petOpenPrizes();
+  };
+
+  window.petClosePrizes = function() {
+    const panel = document.getElementById('pet-prizes');
+    if (panel) panel.classList.remove('show');
+    openPanel = null;
+    SFX && SFX.menuSelect && SFX.menuSelect();
+    updateCooldowns();
+  };
+
+  // ══════════════════════════════════════
+  //  GENERATIONS — keep the grown form, raise another egg
+  // ══════════════════════════════════════
+  window.petOpenGeneration = function() {
+    if (!pet || pet.stage !== 3) return;
+    const panel = document.getElementById('pet-generation');
+    if (!panel) return;
+    openPanel = 'generation';
+    panel.innerHTML = `
+      <div class="pet-generation-art">${petSVG(3, pet.form, 'happy').replace(/class="pet-stage-svg mood-happy"/, 'class="pet-generation-svg"')}</div>
+      <div class="pet-generation-kicker">HEADLINE COMPLETE</div>
+      <div class="pet-generation-title">READY FOR A NEW EGG?</div>
+      <p>${FORMS[pet.form].name} STAYS IN YOUR FORM DEX. TICKETS, PRIZES, DAYS TOGETHER, AND EVERY DISCOVERY CARRY FORWARD.</p>
+      <div class="pet-generation-actions">
+        <button class="pet-foot-btn" onclick="petCloseGeneration()">KEEP THIS MOBLING</button>
+        <button class="pet-foot-btn alt" onclick="petConfirmGeneration()">START NEXT EGG ▶</button>
+      </div>`;
+    panel.classList.add('show');
+    updateCooldowns();
+  };
+
+  window.petCloseGeneration = function() {
+    const panel = document.getElementById('pet-generation');
+    if (panel) panel.classList.remove('show');
+    openPanel = null;
+    updateCooldowns();
+  };
+
+  window.petConfirmGeneration = function() {
+    if (!pet || pet.stage !== 3) return;
+    const previous = pet;
+    const next = newPet(previous.tag);
+    next.familyStartedAt = previous.familyStartedAt;
+    next.collected = [...previous.collected];
+    next.tickets = previous.tickets;
+    next.unlocks = [...previous.unlocks];
+    next.equipped = previous.equipped;
+    next.generations = (previous.generations || 0) + 1;
+    next.memories = previous.memories || 0;
+    next.tipsSeen = [...(previous.tipsSeen || [])];
+    next.moments = [...(previous.moments || [])];
+    pet = next;
+    pickerState = { color: 'coral', shape: 'round' };
+    lastMood = '';
+    persist();
+    render();
+    playFanfare();
+    startTick();
+  };
+
+  // ══════════════════════════════════════
   //  DEX (form gallery)
   // ══════════════════════════════════════
   window.petOpenDex = function() {
     const dex = document.getElementById('pet-dex');
     if (!dex) return;
+    openPanel = 'dex';
     SFX && SFX.menuSelect && SFX.menuSelect();
     dex.innerHTML = `
       <div class="pet-dex-title">FORM DEX</div>
@@ -1631,14 +2029,17 @@
           </div>`;
         }).join('')}
       </div>
-      <div class="pet-dex-summary">RAISED ${pet.collected.length}/4 FORMS · EACH MOBLING BRANCHES ON HOW YOU RAISE IT</div>
+      <div class="pet-dex-summary">RAISED ${pet.collected.length}/4 FORMS · ${pet.generations} COMPLETED GENERATIONS</div>
       <button class="pet-dex-close" onclick="petCloseDex()">◀ BACK TO PET</button>`;
     dex.classList.add('show');
+    updateCooldowns();
   };
   window.petCloseDex = function() {
     const dex = document.getElementById('pet-dex');
     if (dex) dex.classList.remove('show');
+    openPanel = null;
     SFX && SFX.menuSelect && SFX.menuSelect();
+    updateCooldowns();
   };
 
   // ══════════════════════════════════════
@@ -1653,10 +2054,9 @@
     return pet.safetySum / pet.safetyCount;
   }
   function composeScore() {
-    const streakDays = pet.streak.days || 1;
-    const stageIndex = pet.stage;
     const happy = clamp(Math.round(lifetimeHappyAvg()), 0, 99);
-    return (streakDays * 1000) + (stageIndex * 100) + happy;
+    return (daysTogether() * 100) + (pet.stage * 200) + (pet.collected.length * 500) +
+      (pet.memories * 25) + (pet.unlocks.length * 100) + happy;
   }
 
   function statMini(iconHtml, val, cls) {
@@ -1688,8 +2088,8 @@
     if (!host) return;
     const score = composeScore();
     const formName = pet.stage === 3 && pet.form ? FORMS[pet.form].name : STAGE_NAMES[pet.stage];
-    const streakDays = pet.streak.days || 1;
-    const extra = `${formName} · ${streakDays}D`;
+    const together = daysTogether();
+    const extra = `${formName} · ${together}D`;
     const happyAvg = clamp(Math.round(lifetimeHappyAvg()), 0, 99);
     const safetyAvg = clamp(Math.round(lifetimeSafetyAvg()), 0, 99);
     const tendingForm = pet.stage >= 1 && pet.stage <= 2 ? decideForm() : null;
@@ -1705,7 +2105,7 @@
           <div class="pet-status-marquee">STATUS</div>
           <div class="pet-status-score-label">CARE SCORE</div>
           <div class="pet-status-score">${score}</div>
-          <div class="pet-status-sub">${formName} · ${STAGE_NAMES[pet.stage]} · ${streakDays} DAY STREAK</div>
+          <div class="pet-status-sub">${formName} · ${together} DAYS TOGETHER · ${pet.tickets} TICKETS</div>
           <div class="pet-status-stats">
             ${statMini(iconImg(ICON.hunger, 16), pet.hunger, 'f-hunger')}
             ${statMini(heartSVG(15), pet.happiness, 'f-happy')}
@@ -1714,7 +2114,7 @@
             ${statMini(iconImg(ICON.health, 16), pet.health, 'f-health')}
           </div>
           ${tendency ? `<div class="pet-status-tendency">TRENDING TOWARD: <b style="color:${tendencyTint}">${tendency.name}</b><span>${tendency.how}</span></div>` : ''}
-          <div class="pet-status-meta">HAPPINESS AVG ${happyAvg} · SAFETY AVG ${safetyAvg} · FORMS ${pet.collected.length}/4</div>
+          <div class="pet-status-meta">JOY AVG ${happyAvg} · COURAGE AVG ${safetyAvg} · FORMS ${pet.collected.length}/4 · GENERATIONS ${pet.generations}</div>
           <div class="pet-status-saved" id="pet-status-saved">SAVING…</div>
           <div class="pet-status-btns">
             <button class="pet-foot-btn" onclick="petResume()">◀ BACK TO PET</button>
