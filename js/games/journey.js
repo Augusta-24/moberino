@@ -88,6 +88,19 @@
     const canRefuel = location.id === 'fuel-stop-1' && r.fuel < r.maxFuel;
     const canRest = r.pilot < 100;
     const canDepart = !!destination && destination.implemented && r.fuel >= destination.fuelCost;
+    const guidance = destination
+      ? {
+          label: 'ROUTE READY',
+          message: `${destination.name} selected. The ship has enough fuel to depart.`,
+          action: 'DEPART NOW',
+          handler: 'journeyDepart()'
+        }
+      : {
+          label: 'NEXT STEP',
+          message: 'Open Route and select Lantern Fuel Stop to begin the journey.',
+          action: 'OPEN ROUTE',
+          handler: 'journeyRoute()'
+        };
     root.innerHTML = `
       <main class="journey-ship-screen" aria-labelledby="journey-ship-title">
         <header class="journey-topbar">
@@ -98,9 +111,10 @@
           </div>
           <span class="journey-save-status">SAVED</span>
         </header>
-        <section class="journey-return-panel" ${notices.length ? '' : 'hidden'}>
-          <strong>SHIP LOG</strong>
-          <span>${notices.join(' ')}</span>
+        <section class="journey-return-panel ${notices.length ? '' : 'is-guidance'}">
+          <strong>${notices.length ? 'SHIP LOG' : guidance.label}</strong>
+          <span>${notices.length ? notices.join(' ') : guidance.message}</span>
+          ${notices.length ? '' : `<button type="button" onclick="${guidance.handler}">${guidance.action} →</button>`}
         </section>
         <section class="journey-ship-bay">
           <div class="journey-ship-visual" aria-label="Your patched-up ship">
@@ -122,7 +136,7 @@
           </div>
         </section>
         <nav class="journey-ship-actions" aria-label="Ship actions">
-          <button type="button" onclick="journeyRoute()">ROUTE <small>CHOOSE A STOP</small></button>
+          <button class="${destination ? '' : 'is-recommended'}" type="button" onclick="journeyRoute()">ROUTE <small>${destination ? 'CHANGE DESTINATION' : 'START HERE · CHOOSE A STOP'}</small></button>
           <button type="button" onclick="journeyRepair()" ${canRepair ? '' : 'disabled'}>REPAIR <small>${r.hull >= r.maxHull ? 'HULL FULL' : state.currency.salvage < 5 ? 'NEEDS 5 SALVAGE' : '5 SALVAGE'}</small></button>
           <button type="button" onclick="journeyRefuel()" ${canRefuel ? '' : 'disabled'}>REFUEL <small>${r.fuel >= r.maxFuel ? 'TANK FULL' : location.id !== 'fuel-stop-1' ? 'FIND A FUEL STOP' : 'STATION SERVICE'}</small></button>
           <button type="button" onclick="journeyRest()" ${canRest ? '' : 'disabled'}>REST <small>${canRest ? 'RESTORE 25' : 'PILOT READY'}</small></button>
