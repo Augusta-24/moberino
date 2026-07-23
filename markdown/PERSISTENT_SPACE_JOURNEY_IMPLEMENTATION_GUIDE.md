@@ -1,0 +1,2241 @@
+# Codex Implementation Plan: Persistent Space Journey Game
+
+## Project goal
+
+Create a new, standalone arcade game built from copies of selected systems in the existing pet game and `space.js`.
+
+The new game is a persistent space journey rather than:
+
+- a growing-pet game,
+- a traditional wave campaign,
+- or an alternate mode inside Space Mobe.
+
+The player maintains a small ship and pilot while traveling through a long route across space. The player returns over multiple real-world sessions to:
+
+- check the ship,
+- refuel,
+- repair damage,
+- restore power,
+- care for the pilot,
+- choose routes,
+- respond to transmissions,
+- rescue characters,
+- install upgrades,
+- unlock cosmetics,
+- and play action encounters.
+
+Some sessions should involve a full shooting encounter. Other sessions should be short, quiet check-ins.
+
+The existing Space Mobe must remain unchanged as its own standalone arcade game.
+
+---
+
+# Critical architecture rule
+
+## Do not convert or replace Space Mobe
+
+The existing Space Mobe must retain:
+
+- its current arcade card,
+- its current launch behavior,
+- Campaign,
+- Endless,
+- Boss Run,
+- Tutorial,
+- scores,
+- saves,
+- balancing,
+- and all existing functionality.
+
+The new journey game must have:
+
+- its own arcade card,
+- its own launch route,
+- its own container,
+- its own JavaScript,
+- its own CSS,
+- its own save key,
+- its own menu,
+- its own tutorial,
+- and its own progression.
+
+Do not make the journey game call the live `space.js` file directly.
+
+Copy the needed systems from `space.js` into a new journey-specific combat file. This prevents changes to either game from breaking the other.
+
+The two games may share assets such as audio or images when safe, but their runtime logic should remain separate.
+
+---
+
+# Recommended file structure
+
+Adapt the exact names to the existing project conventions, but use a separation similar to:
+
+```text
+js/games/space.js
+css/games/space.css
+
+js/games/journey.js
+js/games/journey-state.js
+js/games/journey-data.js
+js/games/journey-combat.js
+js/games/journey-travel.js
+css/games/journey.css
+```
+
+Optional future files:
+
+```text
+js/games/journey-events.js
+js/games/journey-upgrades.js
+js/games/journey-passengers.js
+js/games/journey-tutorial.js
+```
+
+Responsibilities:
+
+### `journey.js`
+
+Owns the overall game controller:
+
+- launch and cleanup,
+- screen transitions,
+- ship screen,
+- route screen,
+- destination screen,
+- menus,
+- encounter startup,
+- encounter results,
+- reward presentation.
+
+### `journey-state.js`
+
+Owns:
+
+- default save state,
+- save/load,
+- save migration,
+- offline elapsed-time calculations,
+- resources,
+- route progress,
+- upgrades,
+- cosmetics,
+- passengers,
+- discoveries,
+- completed encounters.
+
+### `journey-data.js`
+
+Contains configuration rather than runtime logic:
+
+- regions,
+- route nodes,
+- destinations,
+- encounters,
+- bosses,
+- upgrade definitions,
+- cosmetics,
+- passengers,
+- reward tables,
+- dialogue and transmission text.
+
+### `journey-combat.js`
+
+Begins as a copied and isolated version of the useful action systems from `space.js`.
+
+Owns:
+
+- player movement,
+- shooting,
+- enemies,
+- projectiles,
+- asteroids,
+- bosses,
+- health during encounters,
+- rescue mechanics,
+- pickups,
+- encounter announcements,
+- encounter completion.
+
+It must not contain the new persistent route or ship-management systems.
+
+### `journey-travel.js`
+
+Added later for forward-scrolling travel levels.
+
+Owns:
+
+- forward travel,
+- speed,
+- braking,
+- boost,
+- reverse movement,
+- scrolling hazards,
+- distance objectives,
+- fuel pickups,
+- route-specific travel gameplay.
+
+---
+
+# Product identity
+
+The game needs a temporary internal ID immediately, even before the final public name is chosen.
+
+Use something like:
+
+```js
+gameId: 'journey'
+saveKey: 'moberinoJourneySave'
+```
+
+Do not reuse pet or Space Mobe save keys.
+
+The public name can be updated later without changing the internal identifiers.
+
+---
+
+# Core game concept
+
+The player owns a patched-up ship and travels toward a distant destination.
+
+Progress is measured through:
+
+- route nodes,
+- regions,
+- destinations reached,
+- and total distance traveled.
+
+The player does not age or evolve through life stages.
+
+The journey replaces the pet’s maturity system.
+
+The ship and pilot persist between visits.
+
+The player should feel like they are returning to an expedition already in progress.
+
+---
+
+# Core design principles
+
+## 1. Persistent but forgiving
+
+The game should reward returning without punishing absence.
+
+Good offline effects:
+
+- power restores,
+- the pilot rests,
+- repairs complete,
+- transmissions arrive,
+- passive tasks finish,
+- quiet discoveries occur.
+
+Do not allow these while the player is away:
+
+- hull damage,
+- attacks that harm the ship,
+- important missions expiring,
+- fuel disappearing,
+- the pilot becoming critically unwell,
+- permanent losses.
+
+A player returning after several days should feel curious and welcomed, not guilty.
+
+## 2. Not every session is combat
+
+Some visits should be meaningful in 20–60 seconds.
+
+The player may:
+
+- refuel,
+- repair,
+- collect restored power,
+- rest the pilot,
+- read a transmission,
+- install a cosmetic,
+- inspect the route,
+- select the next destination,
+- or complete a short ship interaction.
+
+## 3. Combat must matter to the journey
+
+Combat results should affect persistent state.
+
+Examples:
+
+- hull damage carries back to the ship,
+- salvage becomes currency,
+- fuel pickups increase fuel,
+- rescues add passengers,
+- boss victories unlock route progress,
+- optional objectives award cosmetics or upgrades.
+
+## 4. Failure delays progress but does not erase it
+
+On encounter failure:
+
+- keep all previously completed route progress,
+- keep rescued characters,
+- keep permanent upgrades,
+- do not reset the journey.
+
+Possible consequences:
+
+- retreat to the previous safe node,
+- lose some fuel,
+- return with hull damage,
+- require repair before trying again.
+
+## 5. Keep the first version small
+
+Do not begin by implementing the complete galaxy.
+
+First prove that the basic loop is enjoyable:
+
+```text
+Check ship → prepare → travel → play encounter → receive result → return to ship
+```
+
+---
+
+# Persistent resources
+
+Use four primary meters.
+
+## Fuel
+
+Purpose:
+
+- required to depart,
+- consumed when traveling between route nodes.
+
+Fuel sources:
+
+- station refueling,
+- encounter pickups,
+- salvage rewards,
+- rescue rewards,
+- route events.
+
+Low fuel should prevent departure but should not kill the player.
+
+## Hull
+
+Purpose:
+
+- persistent ship durability,
+- reduced by combat and hazards,
+- repaired at the ship or stations.
+
+Hull must not decay while offline.
+
+Encounter health and persistent hull may use the same numeric range initially, such as 0–100.
+
+## Power
+
+Purpose:
+
+- ship-system energy,
+- can support shields, weapons, scans, repairs, or emergency actions.
+
+Power may recharge over real time to encourage check-ins.
+
+For the first playable version, keep power simple. It can be required for starting certain encounters or performing a repair.
+
+## Pilot readiness
+
+One combined pilot condition representing:
+
+- rest,
+- morale,
+- focus,
+- food,
+- basic well-being.
+
+Do not create four separate pilot meters.
+
+The interface can describe the specific need contextually:
+
+- “The pilot needs sleep.”
+- “The pilot could use a meal.”
+- “The pilot is ready to fly.”
+- “The pilot needs a break.”
+
+Pilot readiness may recover through rest and simple interactions.
+
+Do not make low readiness cause catastrophic failure. It may:
+
+- slightly reduce starting power,
+- block optional difficult missions,
+- or prompt the player to rest before departing.
+
+---
+
+# Temporary conditions
+
+Do not place all status information into permanent meters.
+
+Support temporary conditions separately, such as:
+
+- engine damaged,
+- shield offline,
+- cargo full,
+- passenger aboard,
+- distress signal detected,
+- weapon overheated,
+- repair underway,
+- route scanned.
+
+These should appear as compact status messages or badges.
+
+---
+
+# Currency and rewards
+
+Use one general journey currency initially.
+
+Possible names:
+
+- salvage,
+- credits,
+- star tokens,
+- scrap.
+
+Use the existing ticket/prize logic as inspiration, but store the new currency separately.
+
+Currency purchases:
+
+- functional upgrades,
+- cosmetics,
+- repairs,
+- fuel,
+- optional supplies.
+
+Avoid multiple currencies during the first implementation.
+
+---
+
+# Functional upgrades
+
+Create a small number of clear upgrade tracks.
+
+Initial recommended tracks:
+
+## Fuel tank
+
+- increases maximum fuel.
+
+## Hull plating
+
+- increases maximum hull or reduces encounter damage.
+
+## Blaster
+
+- increases firing speed or projectile effectiveness.
+
+## Power core
+
+- increases maximum power or recharge speed.
+
+## Salvage magnet
+
+- increases pickup range.
+
+## Passenger berth
+
+- increases the number of simultaneous passengers or mission characters.
+
+The first playable build only needs one or two upgrades.
+
+Do not build a large randomized equipment system.
+
+Use deterministic upgrade levels:
+
+```js
+fuelTankLevel: 0
+hullLevel: 0
+blasterLevel: 0
+powerCoreLevel: 0
+salvageMagnetLevel: 0
+passengerBerthLevel: 0
+```
+
+Each upgrade definition should contain:
+
+```js
+{
+  id,
+  name,
+  description,
+  maxLevel,
+  costs,
+  effects
+}
+```
+
+---
+
+# Cosmetics
+
+Cosmetics should become a major long-term reward category.
+
+Possible cosmetic categories:
+
+- hull color,
+- hull decal,
+- cockpit window,
+- engine trail,
+- wing shape,
+- antenna,
+- dashboard decoration,
+- pilot outfit,
+- projectile style,
+- cabin theme,
+- passenger charm,
+- boss trophy.
+
+For the first playable version, implement:
+
+- one selectable hull color,
+- and one boss-earned cosmetic.
+
+Cosmetics must never overwrite Space Mobe cosmetics or pet cosmetics.
+
+---
+
+# Passengers and rescued characters
+
+Rescued characters should persist after the encounter.
+
+Store passengers and discovered characters in the journey save.
+
+Possible passenger behavior:
+
+- appear on the ship screen,
+- provide a small passive effect,
+- send dialogue,
+- unlock a route node,
+- request a detour,
+- give a reward,
+- leave when reaching their destination,
+- become permanent crew.
+
+Passenger data structure:
+
+```js
+{
+  id,
+  name,
+  role,
+  status,
+  boardedAtNode,
+  destinationNode,
+  bonus,
+  dialogueState
+}
+```
+
+The first playable version needs only one rescued passenger.
+
+The passenger must visibly appear or be acknowledged on the ship screen after rescue. Do not reduce the rescue to only a collection flag.
+
+---
+
+# Overall screen structure
+
+The journey game should have its own internal screens.
+
+Recommended flow:
+
+## Main title/menu
+
+Options:
+
+- Continue Journey
+- New Journey
+- How to Play
+- Back
+
+Do not show Continue when no save exists.
+
+## Ship screen
+
+This is the central home screen.
+
+Show:
+
+- ship and pilot,
+- current location,
+- next destination,
+- route progress,
+- hull,
+- fuel,
+- power,
+- pilot readiness,
+- active passenger,
+- available actions.
+
+Possible actions:
+
+- Route
+- Repair
+- Refuel
+- Rest
+- Upgrades
+- Customize
+- Log
+- Depart
+
+The first version can simplify this to:
+
+- Route
+- Repair
+- Refuel
+- Rest
+- Depart
+
+## Route screen
+
+Shows:
+
+- current node,
+- available connected nodes,
+- fuel costs,
+- node types,
+- known rewards or risks,
+- locked paths.
+
+The first prototype does not need a free-roaming galaxy map. Use a clear route path made from nodes and connectors.
+
+## Encounter screen
+
+Runs combat or travel gameplay.
+
+## Results screen
+
+Show:
+
+- success or failure,
+- hull remaining,
+- fuel spent and earned,
+- salvage earned,
+- passenger rescued,
+- objective progress,
+- route outcome.
+
+Then return to the ship screen.
+
+## Upgrade screen
+
+Added after the first validation gate.
+
+## Customization screen
+
+Added after the first validation gate.
+
+## Captain’s log
+
+Added later.
+
+Tracks:
+
+- regions visited,
+- bosses defeated,
+- passengers rescued,
+- discoveries,
+- transmissions,
+- cosmetics,
+- total distance.
+
+---
+
+# Route model
+
+Use a data-driven graph.
+
+Example node:
+
+```js
+{
+  id: 'home-orbit',
+  regionId: 'region-1',
+  name: 'Home Orbit',
+  type: 'safe',
+  connections: ['fuel-stop-1'],
+  firstVisitEvent: 'journey-begins',
+  repeatable: true
+}
+```
+
+Example encounter node:
+
+```js
+{
+  id: 'scrap-belt',
+  regionId: 'region-1',
+  name: 'Scrap Belt',
+  type: 'encounter',
+  encounterId: 'asteroid-salvage-1',
+  fuelCost: 8,
+  connections: ['distress-signal', 'repair-moon']
+}
+```
+
+Example boss node:
+
+```js
+{
+  id: 'ogre-gate',
+  regionId: 'region-1',
+  name: 'Ogre Gate',
+  type: 'boss',
+  encounterId: 'boss-ogre-1',
+  fuelCost: 12,
+  connections: ['first-settlement'],
+  unlockRequirements: {
+    rescuedPassengers: ['first-rescue']
+  }
+}
+```
+
+Store completed nodes separately from route definitions.
+
+Do not mutate the route configuration objects.
+
+---
+
+# Save state
+
+Create a versioned save structure.
+
+Example:
+
+```js
+const DEFAULT_JOURNEY_SAVE = {
+  version: 1,
+
+  createdAt: null,
+  lastPlayedAt: null,
+
+  currentRegionId: 'region-1',
+  currentNodeId: 'home-orbit',
+  selectedDestinationId: null,
+
+  totalDistance: 0,
+
+  resources: {
+    hull: 100,
+    maxHull: 100,
+    fuel: 40,
+    maxFuel: 40,
+    power: 100,
+    maxPower: 100,
+    pilot: 100
+  },
+
+  currency: {
+    salvage: 0
+  },
+
+  upgrades: {
+    fuelTankLevel: 0,
+    hullLevel: 0,
+    blasterLevel: 0,
+    powerCoreLevel: 0,
+    salvageMagnetLevel: 0,
+    passengerBerthLevel: 0
+  },
+
+  cosmetics: {
+    unlocked: ['default-hull'],
+    equipped: {
+      hull: 'default-hull',
+      trail: 'default-trail',
+      cockpit: 'default-cockpit'
+    }
+  },
+
+  passengers: {
+    active: [],
+    rescued: []
+  },
+
+  route: {
+    visitedNodes: ['home-orbit'],
+    completedNodes: [],
+    unlockedNodes: ['home-orbit', 'fuel-stop-1'],
+    defeatedBosses: []
+  },
+
+  encounters: {
+    completed: {},
+    failed: {}
+  },
+
+  log: {
+    transmissions: [],
+    discoveries: []
+  },
+
+  timers: {
+    repairCompleteAt: null,
+    powerUpdatedAt: null,
+    pilotUpdatedAt: null
+  },
+
+  settings: {
+    tutorialComplete: false
+  }
+};
+```
+
+Requirements:
+
+- validate loaded values,
+- clamp meters,
+- recover safely from malformed saves,
+- never allow one broken property to prevent the game from launching,
+- include a version number,
+- centralize save writes,
+- avoid writing on every animation frame.
+
+Use one save function such as:
+
+```js
+saveJourneyState(reason)
+```
+
+---
+
+# Offline progression
+
+On launch:
+
+1. Read `lastPlayedAt`.
+2. Calculate elapsed real time.
+3. Cap the elapsed duration.
+4. Apply only positive or neutral recovery.
+5. Save the updated timestamp.
+
+Initial offline behavior:
+
+- power regenerates,
+- pilot readiness regenerates,
+- an active repair timer may complete.
+
+Do not consume fuel offline.
+
+Do not damage hull offline.
+
+Do not auto-complete major route encounters offline.
+
+Cap offline benefits, for example at 12 or 24 hours, so values remain predictable.
+
+---
+
+# Encounter architecture
+
+`journey-combat.js` should expose a clean entry point.
+
+Example:
+
+```js
+JourneyCombat.start({
+  encounterId: 'asteroid-salvage-1',
+  encounterType: 'asteroids',
+  difficulty: 1,
+
+  startingHull: journeyState.resources.hull,
+
+  shipStats: {
+    blasterLevel: 0,
+    hullLevel: 0,
+    salvageMagnetLevel: 0
+  },
+
+  objectives: {
+    surviveSeconds: 35,
+    salvageTarget: 5
+  },
+
+  rewards: {
+    salvage: 20,
+    fuel: 5
+  },
+
+  onComplete: handleJourneyEncounterComplete
+});
+```
+
+Completion result:
+
+```js
+{
+  encounterId: 'asteroid-salvage-1',
+  outcome: 'success',
+  hullRemaining: 72,
+  damageTaken: 28,
+  fuelCollected: 4,
+  salvageCollected: 8,
+  objectiveComplete: true,
+  rescuedPassengerId: null,
+  bossDefeated: null,
+  stats: {
+    shotsFired: 40,
+    enemiesDefeated: 0,
+    durationMs: 38000
+  }
+}
+```
+
+Failure result:
+
+```js
+{
+  encounterId: 'asteroid-salvage-1',
+  outcome: 'failure',
+  hullRemaining: 10,
+  damageTaken: 90,
+  fuelCollected: 1,
+  salvageCollected: 2,
+  objectiveComplete: false,
+  rescuedPassengerId: null,
+  bossDefeated: null
+}
+```
+
+The journey controller applies the result to persistent state.
+
+The combat module must not write directly to local storage.
+
+---
+
+# Combat systems to copy from `space.js`
+
+Copy only what is needed, preserving working behavior as much as possible.
+
+Initial copied systems:
+
+- canvas setup,
+- animation loop,
+- player ship,
+- keyboard controls,
+- touch controls,
+- firing,
+- projectiles,
+- enemy projectiles,
+- asteroid spawning,
+- enemy spawning,
+- enemy movement,
+- collisions,
+- explosions,
+- pickups,
+- health display,
+- announcements,
+- encounter cleanup,
+- audio hooks.
+
+Later copied systems:
+
+- captive/rescue logic,
+- Ogre boss,
+- other bosses,
+- special boss projectiles,
+- Battery Catch,
+- blackout or sensor effects,
+- escort mechanics,
+- other wave-specific behaviors.
+
+Do not copy:
+
+- Campaign sequencing,
+- Campaign wave number handling,
+- Endless mode loops,
+- Boss Run menu flow,
+- Space Academy flow,
+- Space Mobe score storage,
+- Space Mobe mode selection,
+- Space Mobe game-over navigation.
+
+Replace those systems with encounter configuration and callbacks.
+
+---
+
+# Initial encounter types
+
+The complete game should eventually support:
+
+## Combat encounter
+
+Defeat enemies or survive an ambush.
+
+## Asteroid encounter
+
+Survive, destroy hazards, or collect salvage.
+
+## Rescue encounter
+
+Reach or defend a captive and return safely.
+
+## Boss encounter
+
+Defeat a route guardian or major antagonist.
+
+## Fuel collection encounter
+
+Collect enough fuel before time or hazards end the attempt.
+
+## Escort encounter
+
+Protect another ship.
+
+## Defense encounter
+
+Protect a station, gate, or ship system.
+
+## Battery/power encounter
+
+Adapt Battery Catch into emergency power restoration.
+
+## Travel encounter
+
+Move through a scrolling area using acceleration, braking, and reverse movement.
+
+## Peaceful event
+
+No action gameplay. Present a choice, discovery, merchant, transmission, or passenger moment.
+
+The first playable version should only include:
+
+- asteroid encounter,
+- rescue encounter,
+- Ogre boss,
+- peaceful fuel stop.
+
+---
+
+# Travel gameplay
+
+Do not rewrite all combat encounters to support free vertical movement.
+
+Keep classic combat encounters close to the existing Space Mobe arena.
+
+Build a separate travel gameplay system later.
+
+Travel encounter controls:
+
+- left/right steering,
+- accelerate,
+- brake,
+- optional reverse,
+- fire when the encounter includes hazards or attackers.
+
+Travel mechanics:
+
+- world scroll speed,
+- distance remaining,
+- debris,
+- gates,
+- moving hazards,
+- fuel pickups,
+- optional side routes,
+- speed boosts,
+- slowdown zones,
+- pursuit sequences.
+
+The player should feel like they are moving forward through space rather than sitting at the bottom of a fixed arena.
+
+Do not add this before the first validation gate.
+
+---
+
+# Initial route: Chapter One
+
+Create one short chapter.
+
+Working title:
+
+## Chapter One: Get Out of Town
+
+Recommended node sequence:
+
+```text
+Home Orbit
+    |
+Fuel Stop
+    |
+Scrap Belt
+    |
+Distress Signal
+    |
+Repair Moon
+    |
+Ogre Gate
+    |
+First Settlement
+```
+
+Optional small branch:
+
+```text
+Scrap Belt
+   ├── Distress Signal
+   └── Abandoned Cache
+```
+
+Both paths reconnect at Repair Moon.
+
+Node purposes:
+
+### Home Orbit
+
+- opening ship screen,
+- tutorial introduction,
+- choose departure.
+
+### Fuel Stop
+
+- teaches fuel,
+- peaceful interaction,
+- restores enough fuel to continue.
+
+### Scrap Belt
+
+- asteroid encounter,
+- teaches shooting and hull damage,
+- awards salvage.
+
+### Distress Signal
+
+- rescue encounter,
+- teaches passengers,
+- adds first rescued character.
+
+### Abandoned Cache
+
+- optional peaceful or short collection event,
+- awards extra salvage,
+- no passenger.
+
+### Repair Moon
+
+- teaches persistent repair,
+- restores hull,
+- introduces upgrade preview.
+
+### Ogre Gate
+
+- first boss,
+- requires completing the rescue route or another simple requirement,
+- unlocks the final node.
+
+### First Settlement
+
+- chapter completion,
+- awards a cosmetic,
+- shows future route teaser,
+- ends the first playable test build.
+
+---
+
+# Tutorial approach
+
+Do not create a long text-heavy tutorial.
+
+Teach systems when first encountered.
+
+Examples:
+
+At the ship:
+
+- “This is your hull. Damage carries home after a fight.”
+- “Fuel is used when you travel.”
+- “Power and pilot readiness recover while you are away.”
+
+At the route:
+
+- “Choose a connected destination.”
+- “Travel costs fuel.”
+
+In the asteroid encounter:
+
+- show movement,
+- show shooting,
+- show hull damage,
+- require a simple success.
+
+At the rescue:
+
+- explain rescue objective,
+- confirm that the rescued character is now aboard.
+
+At Repair Moon:
+
+- explain repairs and persistent damage.
+
+Use confirmations and allow missed tutorial actions to be repeated, following the improved Space Academy behavior.
+
+---
+
+# First implementation stages
+
+## Stage 0: Protect the existing games
+
+Before implementation:
+
+1. Confirm Space Mobe currently launches and all modes work.
+2. Confirm the existing pet game currently launches.
+3. Create a dedicated branch for the journey implementation.
+4. Record the current Space Mobe behavior with basic smoke-test notes.
+5. Do not modify `space.js` or Space Mobe’s launch registration during the initial copy.
+
+Acceptance check:
+
+- Space Mobe still behaves exactly as before.
+- No journey files are loaded when Space Mobe launches.
+
+## Stage 1: Register a separate arcade game
+
+Add:
+
+- new arcade card,
+- temporary journey title,
+- new game ID,
+- new launch path,
+- new container,
+- new CSS,
+- new JavaScript entry file,
+- back/close behavior matching other arcade games.
+
+Initially, launching Journey may display a static placeholder ship screen.
+
+Acceptance check:
+
+- Space Mobe and Journey appear as two separate cards.
+- Each launches independently.
+- Closing Journey returns to the arcade correctly.
+- Launching Journey does not initialize Space Mobe.
+- Launching Space Mobe does not initialize Journey.
+- No console errors occur when switching repeatedly between them.
+
+## Stage 2: Build persistent journey state
+
+Implement:
+
+- default save,
+- save/load,
+- versioning,
+- new journey,
+- continue journey,
+- reset journey for development,
+- timestamps,
+- resource clamping.
+
+Create a simple developer debug panel or temporary console helpers for:
+
+- set fuel,
+- set hull,
+- set power,
+- set pilot readiness,
+- jump to route node,
+- clear save.
+
+Ensure debug controls are disabled or removed for production.
+
+Acceptance check:
+
+- create a journey,
+- change a resource,
+- close the game,
+- reload,
+- confirm the state persists,
+- confirm Space Mobe saves are unchanged,
+- corrupt one optional journey save property and confirm the game still launches safely.
+
+## Stage 3: Build the ship screen
+
+Create the central home screen.
+
+First version must show:
+
+- current location,
+- next available destination,
+- hull,
+- fuel,
+- power,
+- pilot readiness,
+- ship visual,
+- pilot visual or placeholder,
+- route button,
+- repair button,
+- refuel button,
+- rest button,
+- depart button.
+
+Implement simple actions:
+
+- Refuel spends salvage or uses a free first-story refuel.
+- Repair restores hull or begins a short timer.
+- Rest restores pilot readiness.
+- Power regenerates over elapsed time.
+
+Acceptance check:
+
+- every button clearly changes state,
+- no resource exceeds its maximum,
+- insufficient-resource messages are clear,
+- state persists after closing and reopening,
+- layout works on desktop and mobile,
+- no ship-screen action affects Space Mobe.
+
+## Stage 4: Build the route system
+
+Implement the Chapter One route as data.
+
+Requirements:
+
+- show current node,
+- show connected available nodes,
+- show fuel cost,
+- prevent travel without enough fuel,
+- prevent selecting locked nodes,
+- record visited and completed nodes,
+- allow returning to safe nodes when intended.
+
+Do not build a complex map. Use a simple readable route UI.
+
+Acceptance check:
+
+- player can select Fuel Stop from Home Orbit,
+- fuel cost is previewed,
+- fuel is consumed exactly once,
+- current node updates exactly once,
+- locked nodes cannot be opened,
+- reopening the game preserves the route position.
+
+## Stage 5: Copy and isolate basic combat
+
+Create `journey-combat.js` from selected parts of `space.js`.
+
+First encounter:
+
+- Scrap Belt asteroid encounter.
+
+Do not modify the original `space.js`.
+
+Implement encounter launch configuration and completion callback.
+
+The first encounter needs:
+
+- movement,
+- shooting,
+- asteroids,
+- collisions,
+- hull,
+- success condition,
+- failure condition,
+- results screen,
+- return to ship.
+
+Acceptance check:
+
+- Journey can launch the asteroid encounter,
+- Space Mobe still launches independently,
+- damage taken updates persistent hull,
+- rewards update persistent salvage and/or fuel,
+- results apply once,
+- reloading during results does not duplicate rewards,
+- encounter cleanup removes listeners and animation loops,
+- launching the encounter multiple times does not accelerate timers or duplicate input.
+
+## Stage 6: Add the rescue encounter
+
+Copy/adapt the captive and rescue logic.
+
+Requirements:
+
+- distress-signal node launches the rescue,
+- player must successfully rescue the character,
+- rescued passenger ID is returned in results,
+- passenger is added once,
+- passenger appears or is acknowledged on the ship screen,
+- route unlocks the next required node.
+
+Acceptance check:
+
+- successful rescue adds the passenger,
+- repeating the encounter cannot add a duplicate passenger,
+- failure does not mark the rescue complete,
+- the passenger persists after reopening the game,
+- passenger dialogue or presence appears on the ship screen.
+
+## Stage 7: Add Repair Moon
+
+Create a peaceful destination that teaches persistent maintenance.
+
+Requirements:
+
+- show accumulated hull damage,
+- allow repair,
+- introduce one functional upgrade,
+- preview cosmetics,
+- prepare the player for the boss.
+
+Initial upgrade recommendation:
+
+- Blaster Level 1,
+- or Hull Plating Level 1.
+
+Acceptance check:
+
+- repair cost is clear,
+- repair cannot exceed maximum hull,
+- upgrade cost is charged once,
+- upgrade persists,
+- the upgrade has a measurable effect in combat.
+
+## Stage 8: Add Ogre boss
+
+Copy the Ogre boss into Journey’s combat file.
+
+Do not alter the Space Mobe Ogre.
+
+Requirements:
+
+- launch through the Ogre Gate route node,
+- use journey hull and upgrades,
+- return a boss-specific result,
+- unlock First Settlement after victory,
+- retreat safely after failure.
+
+Acceptance check:
+
+- boss is winnable,
+- boss failure does not reset Chapter One,
+- damage persists,
+- boss victory records exactly once,
+- boss rewards cannot be duplicated,
+- Ogre remains unchanged in Space Mobe.
+
+## Stage 9: Add chapter completion
+
+First Settlement should:
+
+- mark Chapter One complete,
+- award one cosmetic,
+- show the rescued passenger’s outcome or dialogue,
+- show total distance traveled,
+- tease the next region,
+- return the player to a stable ship screen.
+
+Do not build Chapter Two yet.
+
+---
+
+# Mandatory validation gate
+
+## Stop development here before building the rest of the game
+
+At this point, the game must include:
+
+- a separate arcade card,
+- independent launch,
+- independent save,
+- ship screen,
+- four resources,
+- simple offline recovery,
+- Chapter One route,
+- peaceful fuel stop,
+- asteroid encounter,
+- rescue encounter,
+- one passenger,
+- repair destination,
+- one functional upgrade,
+- Ogre boss,
+- one cosmetic reward,
+- chapter completion.
+
+Do not proceed directly into the full route.
+
+Test this build as a complete miniature version of the final game.
+
+---
+
+# Validation questions
+
+The build should be played across multiple sessions rather than only in one sitting.
+
+Evaluate:
+
+## Core feeling
+
+- Does this feel like a journey rather than a menu of minigames?
+- Does the route create anticipation?
+- Does returning to the ship feel meaningful?
+- Does the player understand where they are going?
+- Does arriving at the settlement feel like progress?
+
+## Session variety
+
+- Is a quiet check-in satisfying?
+- Does every session feel forced into combat?
+- Are maintenance actions meaningful without becoming chores?
+- Is it obvious when the next action can wait?
+
+## Resources
+
+- Are four meters understandable?
+- Does any meter feel redundant?
+- Does fuel create useful decisions or only annoyance?
+- Does persistent hull damage make encounters more meaningful?
+- Is pilot readiness adding personality or just another bar?
+- Is power doing enough to justify existing?
+
+## Combat integration
+
+- Does combat feel like part of the route?
+- Are rewards and damage clearly carried back?
+- Does the transition from ship to encounter feel smooth?
+- Does the copied combat still feel as responsive as Space Mobe?
+- Is encounter cleanup reliable?
+
+## Persistence
+
+- Does closing and reopening feel natural?
+- Are offline benefits pleasant?
+- Does the player ever feel punished for leaving?
+- Are save states stable?
+
+## Emotional value
+
+- Does rescuing a passenger matter after the encounter?
+- Does the ship feel more personal after receiving a cosmetic?
+- Does the boss feel like it guards progress rather than being an isolated fight?
+
+## Scope decision
+
+After testing, classify the result:
+
+### Proceed
+
+The ship/travel/combat loop already feels compelling.
+
+### Adjust
+
+The structure works, but resources, pacing, UI, or transitions need refinement.
+
+### Reconsider
+
+The action encounters feel disconnected from the persistent layer, or the ship maintenance feels like chores.
+
+Do not build the full game until the build reaches Proceed or a strong Adjust.
+
+---
+
+# Work after the validation gate
+
+Once the Chapter One build is proven, continue with the following phases.
+
+---
+
+# Phase 2: Strengthen the persistent ship
+
+## Improve ship presentation
+
+Add:
+
+- visible hull condition,
+- engine state,
+- passenger area,
+- equipped cosmetics,
+- small ambient animations,
+- current-region background,
+- contextual pilot behavior.
+
+The ship screen should change as the journey progresses.
+
+## Expand maintenance
+
+Add optional interactions such as:
+
+- patch hull damage,
+- recharge a ship system,
+- clear debris,
+- prepare provisions,
+- tune communications.
+
+These should be short and not all required every session.
+
+## Add transmissions
+
+Transmissions may:
+
+- introduce encounters,
+- deliver passenger dialogue,
+- reveal optional nodes,
+- foreshadow bosses,
+- announce repairs,
+- acknowledge return after time away.
+
+Store read/unread state.
+
+## Expand upgrades
+
+Add the initial upgrade tracks:
+
+- fuel tank,
+- hull plating,
+- blaster,
+- power core,
+- salvage magnet,
+- passenger berth.
+
+Keep upgrades deterministic and understandable.
+
+## Expand cosmetics
+
+Add unlock and equip interfaces.
+
+Cosmetic rewards should come from:
+
+- bosses,
+- route exploration,
+- rescued passengers,
+- chapter completion,
+- optional objectives.
+
+Acceptance check:
+
+- the ship visibly reflects equipment,
+- upgrade effects are real and documented,
+- no cosmetic affects gameplay unless explicitly categorized as an upgrade,
+- save migration supports new properties.
+
+---
+
+# Phase 3: Build scrolling travel encounters
+
+Create `journey-travel.js`.
+
+First travel encounter:
+
+- move through a debris corridor,
+- accelerate and brake,
+- collect fuel,
+- avoid collisions,
+- reach a distance target.
+
+Controls should support keyboard and touch.
+
+Recommended behavior:
+
+- left/right steer,
+- press/hold to accelerate,
+- release or use brake to slow,
+- limited reverse thrust,
+- firing available only where useful.
+
+Do not replace classic combat with travel movement.
+
+Use travel encounters selectively between destinations.
+
+Acceptance check:
+
+- forward motion is visually clear,
+- speed changes feel responsive,
+- reverse movement has a purpose,
+- touch controls are understandable,
+- world scrolling does not break collisions,
+- encounter state cleans up correctly,
+- classic combat encounters remain unchanged.
+
+---
+
+# Phase 4: Expand encounter library
+
+Add reusable encounter templates.
+
+## Enemy ambush
+
+- defeat a required number,
+- or survive for a duration.
+
+## Swarm passage
+
+- use existing swarmer behavior,
+- frame it as a dangerous route crossing.
+
+## Battery emergency
+
+- adapt Battery Catch,
+- restore power before travel can continue.
+
+## Escort mission
+
+- protect another ship until reaching safety.
+
+## Station defense
+
+- protect a target from waves.
+
+## Salvage run
+
+- collect valuable debris while avoiding hazards.
+
+## Blackout/sensor storm
+
+- restricted visibility,
+- optional headlight or scanner mechanic.
+
+## Captive rescue variants
+
+- direct rescue,
+- defend rescue target,
+- escort rescued character,
+- rescue during a boss fight.
+
+## Boss encounters
+
+Copy bosses individually from Space Mobe only when their route context is ready.
+
+Acceptance check for every new encounter:
+
+- configuration is data-driven,
+- it launches independently,
+- it returns a standard result,
+- persistent effects apply once,
+- failure behavior is defined,
+- tutorial messaging exists where needed,
+- Space Mobe remains unaffected.
+
+---
+
+# Phase 5: Build the complete journey route
+
+Recommended large-scale structure:
+
+## Region 1: Home Orbit and Scrap Belt
+
+Purpose:
+
+- teach resources,
+- first rescue,
+- Ogre boss.
+
+## Region 2: Ancient Route
+
+Purpose:
+
+- route gates,
+- navigation choices,
+- Knight boss,
+- first meaningful branch.
+
+## Region 3: Flooded Nebula
+
+Purpose:
+
+- limited visibility,
+- strange movement,
+- Shark boss,
+- fuel scarcity.
+
+## Region 4: Burning Corridor
+
+Purpose:
+
+- overheating,
+- fast travel,
+- Dragon boss,
+- power management.
+
+## Region 5: Gray Territory
+
+Purpose:
+
+- captives,
+- disabled systems,
+- deceptive signals,
+- Gray Visitor boss.
+
+## Region 6: Roadside Expanse
+
+Purpose:
+
+- strange stations,
+- merchants,
+- optional detours,
+- Taco and Octopus encounters.
+
+## Region 7: Lost System
+
+Purpose:
+
+- combine prior mechanics,
+- resolve passenger stories,
+- Gizmo confrontation,
+- final destination.
+
+Each region should contain:
+
+- 5–10 primary nodes,
+- at least one safe node,
+- at least one choice,
+- at least one peaceful event,
+- at least two action encounters,
+- one major reward,
+- one region climax.
+
+Do not require every player to visit every node in one journey.
+
+Branches should reconnect so players cannot permanently ruin progression.
+
+---
+
+# Boss route integration
+
+Bosses should have narrative and mechanical roles.
+
+## Ogre
+
+Blocks an early supply route.
+
+Victory:
+
+- opens the first major settlement,
+- rewards an early ship cosmetic or hull upgrade.
+
+## Knight
+
+Guards an ancient gate.
+
+Victory:
+
+- unlocks a route shortcut,
+- teaches lane-based danger.
+
+## Shark
+
+Attacks ships in a flooded nebula.
+
+Victory:
+
+- restores safe passage,
+- awards navigation or fuel equipment.
+
+## Dragon
+
+Occupies a burning star corridor.
+
+Victory:
+
+- unlocks heat-resistant plating or engine trail.
+
+## Gray Visitor
+
+Captures travelers and disrupts systems.
+
+Victory:
+
+- frees multiple captives,
+- unlocks a scanner upgrade.
+
+## Taco
+
+Runs an absurd hostile roadside station.
+
+Victory:
+
+- turns the station into a friendly stop or merchant.
+
+## Octopus
+
+Hides inside a sensor-obscuring ink cloud.
+
+Victory:
+
+- unlocks improved sensors or visibility cosmetic.
+
+## Gizmo
+
+Recurring antagonist or pursuer.
+
+Do not wait until the final battle to introduce Gizmo.
+
+Use:
+
+- transmissions,
+- distant sightings,
+- ambush aftermath,
+- stolen cargo,
+- recurring projectiles or symbols.
+
+Final victory should resolve the main journey.
+
+---
+
+# Peaceful events and choices
+
+Not every route node should start action gameplay.
+
+Event examples:
+
+- abandoned station,
+- traveler requesting fuel,
+- merchant,
+- strange radio signal,
+- shortcut with uncertain risk,
+- damaged cargo ship,
+- passenger disagreement,
+- beautiful cosmic phenomenon,
+- optional detour,
+- salvage auction,
+- ship system malfunction,
+- friendly rest stop.
+
+Choice outcomes may affect:
+
+- fuel,
+- salvage,
+- pilot readiness,
+- passenger relationships,
+- route unlocks,
+- optional encounters,
+- cosmetic rewards.
+
+Avoid invisible arbitrary punishment.
+
+Show enough information for a choice to feel informed.
+
+---
+
+# Passenger system expansion
+
+Passengers may become:
+
+- temporary travelers,
+- permanent crew,
+- recurring contacts.
+
+Possible crew bonuses:
+
+- mechanic: repairs are cheaper,
+- navigator: reveals optional route nodes,
+- musician: pilot readiness recovers faster,
+- scout: warns about ambushes,
+- engineer: increases power capacity,
+- trader: improves merchant prices.
+
+Do not stack unlimited passive bonuses.
+
+Use one active crew bonus per ship station or a small equipped crew limit.
+
+Passengers should occasionally:
+
+- speak on the ship screen,
+- react to destinations,
+- request a route,
+- give a reward,
+- leave at a destination,
+- appear in the Captain’s Log.
+
+---
+
+# Failure and recovery rules
+
+Standard encounter failure:
+
+1. Return to the previous safe node or current node.
+2. Preserve a small amount of earned salvage if appropriate.
+3. Apply hull damage.
+4. Consume some or all travel fuel.
+5. Keep the encounter available.
+6. Show a clear recovery action.
+
+Never reduce persistent hull below a safe post-failure floor unless the game has an explicit non-punitive tow system.
+
+Recommended failure floor:
+
+```js
+hull = Math.max(hullRemaining, 10);
+```
+
+If the ship cannot continue:
+
+- tow it to the nearest safe node,
+- set hull to a low but repairable value,
+- do not charge premium currency,
+- do not erase progress.
+
+---
+
+# Economy and pacing
+
+Initial target pacing:
+
+- common encounter: enough salvage for a partial repair or progress toward an upgrade,
+- optional route: better rewards with higher risk,
+- boss: guaranteed meaningful reward,
+- chapter completion: guaranteed cosmetic plus progression unlock.
+
+Avoid requiring repeated grinding of the same node.
+
+Repeatable encounters may exist but should not be mandatory for basic progression.
+
+Fuel should create route planning, not force repetitive chores.
+
+Always provide a recoverable path if the player has insufficient fuel.
+
+Examples:
+
+- free emergency fuel,
+- short fuel collection activity,
+- passenger assistance,
+- station debt,
+- nearby salvage node.
+
+---
+
+# Return-session design
+
+When the player opens the game, present one concise return summary.
+
+Examples:
+
+- “Power restored while you were away.”
+- “Hull repairs are complete.”
+- “A transmission arrived from the outer route.”
+- “Your passenger has something to tell you.”
+- “The ship is ready to depart.”
+
+Do not stack numerous modal dialogs.
+
+Use one return panel with grouped updates.
+
+---
+
+# Captain’s Log
+
+Add after several regions exist.
+
+Track:
+
+- total distance,
+- regions reached,
+- route nodes visited,
+- bosses defeated,
+- passengers rescued,
+- crew recruited,
+- transmissions,
+- discoveries,
+- cosmetics,
+- encounter records.
+
+The log is not a score screen. It should tell the story of this journey.
+
+---
+
+# New journey and replayability
+
+After completing the final destination, offer:
+
+- continue exploring,
+- post-game expedition routes,
+- New Journey Plus,
+- replay bosses,
+- alternate branches.
+
+Do not erase the first completed journey without explicit confirmation.
+
+Possible New Journey Plus carryover:
+
+- cosmetics,
+- logbook discoveries,
+- selected ship appearance.
+
+Possible reset:
+
+- route,
+- resources,
+- functional upgrades,
+- passengers.
+
+This is future work and not required before the main journey is complete.
+
+---
+
+# Audio and visual reuse
+
+Reuse existing assets only where licensing and project structure already allow it.
+
+Journey should have its own presentation even when using familiar combat assets.
+
+Distinguish Journey through:
+
+- route interface,
+- ship home screen,
+- region backgrounds,
+- travel effects,
+- calmer check-in audio,
+- transmission sounds,
+- destination arrival sequences.
+
+Space Mobe should continue to feel like an arcade shooter.
+
+Journey should feel like a persistent expedition.
+
+---
+
+# Cleanup and lifecycle requirements
+
+This project already launches multiple arcade games in one site, so cleanup is critical.
+
+Journey must clean up:
+
+- animation frames,
+- intervals,
+- timeouts,
+- keyboard listeners,
+- pointer listeners,
+- touch listeners,
+- audio loops,
+- DOM overlays,
+- combat objects,
+- travel objects,
+- temporary callbacks.
+
+Provide one top-level cleanup path:
+
+```js
+Journey.destroy()
+```
+
+Combat and travel modules should also expose cleanup methods.
+
+Repeated sequence to test:
+
+1. Launch Journey.
+2. Start encounter.
+3. Exit.
+4. Launch Space Mobe.
+5. Exit.
+6. Launch Journey again.
+7. Start another encounter.
+
+There must be no:
+
+- duplicated input,
+- accelerated timers,
+- stacked audio,
+- stale overlays,
+- old encounter objects,
+- incorrect save application.
+
+---
+
+# Accessibility and usability
+
+Requirements:
+
+- buttons must have readable text,
+- touch targets must be large enough,
+- important state must not rely only on color,
+- meters need labels or accessible names,
+- tutorial instructions must remain on screen long enough,
+- mobile controls must avoid browser zoom and scrolling conflicts,
+- results must clearly show success or failure,
+- players must understand why departure is blocked.
+
+Avoid dense technical ship terminology.
+
+Use plain language.
+
+---
+
+# Development rules for Codex
+
+1. Inspect current project patterns before adding files.
+2. Follow existing arcade registration and cleanup conventions.
+3. Make small commits by stage.
+4. Do not perform broad unrelated refactors.
+5. Do not modify Space Mobe unless explicitly required later.
+6. Prefer copied, isolated logic over a risky shared runtime dependency.
+7. Keep encounter definitions data-driven.
+8. Keep save logic centralized.
+9. Test desktop and mobile layouts.
+10. Add temporary developer tools where they materially speed testing.
+11. Remove or disable debug tools before final release.
+12. Document each encounter’s launch and completion contract.
+13. Stop at the mandatory validation gate before implementing the full game.
+
+---
+
+# Suggested commit sequence
+
+```text
+1. Add standalone Journey arcade registration and placeholder screen
+2. Add Journey save state and new/continue flow
+3. Add ship screen and persistent resources
+4. Add Chapter One route model and route screen
+5. Add peaceful Fuel Stop node
+6. Isolate Journey combat engine and add asteroid encounter
+7. Add encounter results and persistent hull/rewards
+8. Add rescue encounter and first passenger
+9. Add Repair Moon and first upgrade
+10. Add Journey-specific Ogre boss encounter
+11. Add First Settlement and chapter completion
+12. Polish and stabilize Chapter One validation build
+```
+
+Do not combine all stages into one large commit.
+
+---
+
+# Definition of first playable success
+
+The first playable build succeeds when a new player can:
+
+1. Launch Journey from its own arcade card.
+2. Start a new persistent journey.
+3. See and understand the ship’s four conditions.
+4. Refuel and prepare the ship.
+5. Select a destination on the route.
+6. Play an asteroid encounter.
+7. Return with persistent hull damage and rewards.
+8. Rescue a character in a later encounter.
+9. See that character aboard the ship.
+10. Repair and purchase one upgrade.
+11. Fight the Ogre.
+12. Reach the first settlement.
+13. Unlock one cosmetic.
+14. Close the game and resume accurately later.
+15. Launch Space Mobe and confirm it remains completely unchanged.
+
+At that point, stop and evaluate the core game before expanding.
+
+---
+
+# Final intended game
+
+The finished game should be a persistent arcade road trip through space.
+
+It combines:
+
+- a long visible journey,
+- short check-in sessions,
+- ship maintenance,
+- pilot care,
+- route choices,
+- action shooting,
+- scrolling travel,
+- rescues,
+- passengers,
+- bosses,
+- upgrades,
+- cosmetics,
+- discoveries,
+- and an evolving ship.
+
+Space Mobe remains the focused arcade shooter.
+
+Journey becomes the slower, persistent adventure built from some of the same mechanical DNA but developed as a separate game.
