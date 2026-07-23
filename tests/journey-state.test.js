@@ -186,3 +186,69 @@ test('peaceful-node completion unlocks once and refueling is safe to repeat', ()
   assert.equal(refuel.gained, 31);
   assert.equal(finalState.resources.fuel, 40);
 });
+
+test('encounter results apply persistent damage and rewards exactly once', () => {
+  const { api } = createHarness();
+  const state = api.createNew();
+  state.currentNodeId = 'scrap-belt';
+  state.route.unlockedNodes.push('scrap-belt');
+  const attempt = api.beginEncounter('asteroid-salvage-1');
+  const result = {
+    attemptId: attempt.attemptId,
+    encounterId: 'asteroid-salvage-1',
+    outcome: 'success',
+    hullRemaining: 73,
+    salvageCollected: 6,
+    fuelCollected: 2
+  };
+
+  const first = api.applyEncounterResult(result, {
+    successSalvage: 20,
+    completeNodeId: 'scrap-belt',
+    unlockNodeIds: ['distress-signal', 'abandoned-cache']
+  });
+  const duplicate = api.applyEncounterResult(result, {
+    successSalvage: 20,
+    completeNodeId: 'scrap-belt',
+    unlockNodeIds: ['distress-signal', 'abandoned-cache']
+  });
+  const finalState = api.getState();
+
+  assert.equal(first.ok, true);
+  assert.equal(duplicate.code, 'already-applied');
+  assert.equal(finalState.resources.hull, 73);
+  assert.equal(finalState.resources.fuel, 40);
+  assert.equal(finalState.currency.salvage, 26);
+  assert.equal(finalState.encounters.completed['asteroid-salvage-1'], 1);
+  assert.equal(finalState.route.completedNodes.filter(id => id === 'scrap-belt').length, 1);
+  assert.equal(finalState.route.unlockedNodes.filter(id => id === 'distress-signal').length, 1);
+  assert.equal(finalState.encounters.activeAttempt, null);
+});
+
+test('failed encounters preserve a safe hull floor and do not unlock the route', () => {
+  const { api } = createHarness();
+  const state = api.createNew();
+  state.currentNodeId = 'scrap-belt';
+  const attempt = api.beginEncounter('asteroid-salvage-1');
+
+  const applied = api.applyEncounterResult({
+    attemptId: attempt.attemptId,
+    encounterId: 'asteroid-salvage-1',
+    outcome: 'failure',
+    hullRemaining: 0,
+    salvageCollected: 2,
+    fuelCollected: 0
+  }, {
+    successSalvage: 20,
+    completeNodeId: 'scrap-belt',
+    unlockNodeIds: ['distress-signal']
+  });
+  const finalState = api.getState();
+
+  assert.equal(applied.ok, true);
+  assert.equal(finalState.resources.hull, 10);
+  assert.equal(finalState.currency.salvage, 2);
+  assert.equal(finalState.route.completedNodes.includes('scrap-belt'), false);
+  assert.equal(finalState.route.unlockedNodes.includes('distress-signal'), false);
+  assert.equal(finalState.encounters.failed['asteroid-salvage-1'], 1);
+});

@@ -51,7 +51,12 @@
       unlockedNodes: ['home-orbit', 'fuel-stop-1'],
       defeatedBosses: []
     },
-    encounters: { completed: {}, failed: {} },
+    encounters: {
+      completed: {},
+      failed: {},
+      activeAttempt: null,
+      appliedResults: []
+    },
     log: { transmissions: [], discoveries: [] },
     timers: {
       repairCompleteAt: null,
@@ -128,6 +133,26 @@
     next.route.completedNodes = uniqueStrings(next.route.completedNodes, []);
     next.route.unlockedNodes = uniqueStrings(next.route.unlockedNodes, DEFAULT_SAVE.route.unlockedNodes);
     next.route.defeatedBosses = uniqueStrings(next.route.defeatedBosses, []);
+    const savedEncounters = candidate && candidate.encounters && typeof candidate.encounters === 'object'
+      ? candidate.encounters
+      : {};
+    next.encounters.completed = savedEncounters.completed && typeof savedEncounters.completed === 'object' && !Array.isArray(savedEncounters.completed)
+      ? Object.assign({}, savedEncounters.completed)
+      : {};
+    next.encounters.failed = savedEncounters.failed && typeof savedEncounters.failed === 'object' && !Array.isArray(savedEncounters.failed)
+      ? Object.assign({}, savedEncounters.failed)
+      : {};
+    next.encounters.appliedResults = uniqueStrings(savedEncounters.appliedResults, []);
+    next.encounters.activeAttempt = savedEncounters.activeAttempt &&
+      typeof savedEncounters.activeAttempt === 'object' &&
+      typeof savedEncounters.activeAttempt.id === 'string' &&
+      typeof savedEncounters.activeAttempt.encounterId === 'string'
+      ? {
+          id: savedEncounters.activeAttempt.id,
+          encounterId: savedEncounters.activeAttempt.encounterId,
+          startedAt: finiteNumber(savedEncounters.activeAttempt.startedAt, Date.now())
+        }
+      : null;
     next.log.transmissions = uniqueStrings(next.log.transmissions, []);
     next.log.discoveries = uniqueStrings(next.log.discoveries, []);
     next.settings.tutorialComplete = !!next.settings.tutorialComplete;
@@ -317,6 +342,69 @@
     });
   }
 
+  function beginEncounter(encounterId) {
+    if (!state || typeof encounterId !== 'string') return mutationResult(false, 'no-save');
+    if (state.encounters.activeAttempt && state.encounters.activeAttempt.encounterId === encounterId) {
+      return mutationResult(true, 'resumed-attempt', {
+        attemptId: state.encounters.activeAttempt.id
+      });
+    }
+    const attemptId = `${encounterId}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    state.encounters.activeAttempt = {
+      id: attemptId,
+      encounterId,
+      startedAt: Date.now()
+    };
+    saveJourneyState('begin-encounter');
+    return mutationResult(true, 'attempt-started', { attemptId });
+  }
+
+  function applyEncounterResult(result, options) {
+    if (!state || !result || typeof result.attemptId !== 'string') {
+      return mutationResult(false, 'invalid-result');
+    }
+    if (state.encounters.appliedResults.includes(result.attemptId)) {
+      return mutationResult(false, 'already-applied');
+    }
+    const activeAttempt = state.encounters.activeAttempt;
+    if (!activeAttempt || activeAttempt.id !== result.attemptId || activeAttempt.encounterId !== result.encounterId) {
+      return mutationResult(false, 'attempt-mismatch');
+    }
+
+    const outcome = result.outcome === 'success' ? 'success' : 'failure';
+    const hullFloor = outcome === 'failure' ? 10 : 0;
+    state.resources.hull = clamp(
+      Math.max(hullFloor, finiteNumber(result.hullRemaining, state.resources.hull)),
+      0,
+      state.resources.maxHull
+    );
+    const collectedSalvage = Math.max(0, Math.floor(finiteNumber(result.salvageCollected, 0)));
+    const collectedFuel = Math.max(0, Math.floor(finiteNumber(result.fuelCollected, 0)));
+    const successSalvage = outcome === 'success'
+      ? Math.max(0, Math.floor(finiteNumber(options && options.successSalvage, 0)))
+      : 0;
+    state.currency.salvage += collectedSalvage + successSalvage;
+    state.resources.fuel = clamp(state.resources.fuel + collectedFuel, 0, state.resources.maxFuel);
+
+    const record = outcome === 'success' ? state.encounters.completed : state.encounters.failed;
+    record[result.encounterId] = Math.max(0, Math.floor(finiteNumber(record[result.encounterId], 0))) + 1;
+    if (outcome === 'success') {
+      const completeNodeId = options && options.completeNodeId;
+      if (typeof completeNodeId === 'string') addUnique(state.route.completedNodes, completeNodeId);
+      (Array.isArray(options && options.unlockNodeIds) ? options.unlockNodeIds : []).forEach(nodeId => {
+        if (typeof nodeId === 'string') addUnique(state.route.unlockedNodes, nodeId);
+      });
+    }
+    addUnique(state.encounters.appliedResults, result.attemptId);
+    state.encounters.activeAttempt = null;
+    saveJourneyState(`encounter-${outcome}`);
+    return mutationResult(true, 'result-applied', {
+      outcome,
+      salvageAwarded: collectedSalvage + successSalvage,
+      fuelAwarded: collectedFuel
+    });
+  }
+
   function clearInMemory() {
     state = null;
     returnSummary = [];
@@ -338,6 +426,8 @@
     refuelToMax,
     restPilot,
     repairHull,
+    beginEncounter,
+    applyEncounterResult,
     clearInMemory
   });
 })();

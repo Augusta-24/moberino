@@ -53,3 +53,16 @@ test('Journey controller does not own storage or load the live Space Mobe runtim
   assert.equal(controller.includes('space.js'), false);
   assert.equal(controller.includes('initSpace'), false);
 });
+
+test('Journey combat is isolated from storage and exposes lifecycle methods', () => {
+  const combat = fs.readFileSync(
+    path.join(__dirname, '..', 'js', 'games', 'journey-combat.js'),
+    'utf8'
+  );
+
+  assert.equal(combat.includes('localStorage'), false);
+  assert.equal(combat.includes('space.js'), false);
+  assert.match(combat, /window\.JourneyCombat/);
+  assert.match(combat, /\bstart\b/);
+  assert.match(combat, /\bdestroy\b/);
+});

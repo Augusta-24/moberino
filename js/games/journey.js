@@ -66,6 +66,10 @@
       renderFuelStop();
       return;
     }
+    if (node && node.type === 'encounter' && !state.route.completedNodes.includes(node.id)) {
+      renderEncounterBriefing(node);
+      return;
+    }
     renderShip();
   }
 
@@ -204,6 +208,119 @@
       </main>`;
   }
 
+  function renderEncounterBriefing(node) {
+    const root = host();
+    const state = JourneyState.getState();
+    if (!root || !state || !node || !active) return;
+    root.innerHTML = `
+      <main class="journey-briefing-screen" aria-labelledby="journey-briefing-title">
+        <section class="journey-briefing-art" aria-hidden="true">
+          <div class="journey-briefing-ship">▲</div>
+          <i></i><i></i><i></i><i></i><i></i>
+        </section>
+        <section class="journey-briefing-copy">
+          <div class="journey-kicker">ROUTE ENCOUNTER · ASTEROID SALVAGE</div>
+          <h1 id="journey-briefing-title">${node.name}</h1>
+          <p>Cross the drifting wreckage, break apart incoming asteroids, and collect what you can without losing the ship.</p>
+          <div class="journey-objective-list">
+            <span><strong>30 SEC</strong> SURVIVE THE BELT</span>
+            <span><strong>5 SALVAGE</strong> OPTIONAL TARGET</span>
+            <span><strong>${Math.round(state.resources.hull)} HULL</strong> CURRENT CONDITION</span>
+          </div>
+          <div class="journey-briefing-controls">
+            <span>DESKTOP · A/D OR ARROWS</span>
+            <span>TOUCH · DRAG TO STEER</span>
+            <span>BLASTER · AUTO-FIRE</span>
+          </div>
+          <div class="journey-briefing-actions">
+            <button class="journey-primary-btn" type="button" onclick="journeyStartEncounter()">ENTER SCRAP BELT</button>
+            <button class="journey-text-btn" type="button" onclick="journeyShip()">RETURN TO SHIP</button>
+          </div>
+        </section>
+      </main>`;
+  }
+
+  function renderCombat(node, attemptId) {
+    const root = host();
+    const state = JourneyState.getState();
+    if (!root || !state || !active) return;
+    root.innerHTML = `
+      <main class="journey-combat-screen">
+        <header class="journey-combat-hud">
+          <div><span>HULL</span><strong id="journey-combat-hull">${Math.round(state.resources.hull)}</strong></div>
+          <div class="journey-combat-title"><span>SCRAP BELT</span><strong>ASTEROID SALVAGE</strong></div>
+          <div><span>TIME</span><strong id="journey-combat-time">30</strong></div>
+          <div><span>SALVAGE</span><strong id="journey-combat-salvage">0 / 5</strong></div>
+        </header>
+        <div class="journey-combat-frame">
+          <canvas id="journey-combat-canvas" aria-label="Scrap Belt asteroid encounter"></canvas>
+          <button class="journey-combat-retreat" type="button" onclick="journeyRetreatEncounter()">RETREAT</button>
+        </div>
+        <div class="journey-combat-hint">DRAG OR USE A/D · BLASTER AUTO-FIRES</div>
+      </main>`;
+    JourneyCombat.start({
+      canvasId: 'journey-combat-canvas',
+      attemptId,
+      encounterId: node.encounterId,
+      encounterType: 'asteroids',
+      difficulty: 1,
+      startingHull: state.resources.hull,
+      shipStats: {
+        blasterLevel: state.upgrades.blasterLevel,
+        hullLevel: state.upgrades.hullLevel,
+        salvageMagnetLevel: state.upgrades.salvageMagnetLevel
+      },
+      objectives: {
+        surviveSeconds: 30,
+        salvageTarget: 5
+      },
+      onComplete: handleEncounterComplete
+    });
+  }
+
+  function handleEncounterComplete(result) {
+    if (!active) return;
+    const applied = JourneyState.applyEncounterResult(result, {
+      successSalvage: 20,
+      completeNodeId: 'scrap-belt',
+      unlockNodeIds: ['distress-signal', 'abandoned-cache']
+    });
+    if (!applied.ok) {
+      renderShip();
+      return;
+    }
+    renderEncounterResults(result, applied);
+  }
+
+  function renderEncounterResults(result, applied) {
+    const root = host();
+    const state = JourneyState.getState();
+    if (!root || !state || !active) return;
+    const success = result.outcome === 'success';
+    root.innerHTML = `
+      <main class="journey-results-screen ${success ? 'is-success' : 'is-failure'}" aria-labelledby="journey-results-title">
+        <section>
+          <div class="journey-kicker">${success ? 'ROUTE CLEARED' : 'EMERGENCY RETREAT'}</div>
+          <h1 id="journey-results-title">${success ? 'BELT CROSSED' : 'SHIP RECOVERED'}</h1>
+          <p>${success
+            ? 'The Wayfarer emerges from the wreckage with a new route blinking on the navigation board.'
+            : 'The ship made it back in one piece. Repair, refuel, and try the crossing again when ready.'}</p>
+          <div class="journey-results-grid">
+            <span>HULL REMAINING<strong>${Math.round(state.resources.hull)}</strong></span>
+            <span>DAMAGE TAKEN<strong>${Math.round(result.damageTaken)}</strong></span>
+            <span>SALVAGE AWARDED<strong>+${Math.round(applied.salvageAwarded)}</strong></span>
+            <span>FUEL RECOVERED<strong>+${Math.round(applied.fuelAwarded)}</strong></span>
+            <span>ASTEROIDS BROKEN<strong>${Math.round(result.stats.asteroidsDestroyed)}</strong></span>
+            <span>OPTIONAL TARGET<strong>${result.objectiveComplete ? 'COMPLETE' : 'MISSED'}</strong></span>
+          </div>
+          <div class="journey-results-actions">
+            <button class="journey-primary-btn" type="button" onclick="journeyReturnFromEncounter()">RETURN TO SHIP</button>
+            ${success ? '<button class="journey-secondary-btn" type="button" onclick="journeyRoute()">VIEW NEW ROUTE</button>' : ''}
+          </div>
+        </section>
+      </main>`;
+  }
+
   function renderHowToPlay() {
     const root = host();
     if (!root || !active) return;
@@ -250,7 +367,7 @@
 
   window.journeyShip = function () {
     playMenuSound();
-    renderCurrentLocation();
+    renderShip();
   };
 
   window.journeyRoute = function () {
@@ -291,6 +408,27 @@
     renderShip();
   };
 
+  window.journeyStartEncounter = function () {
+    const state = JourneyState.getState();
+    const node = state && currentNode(state);
+    if (!state || !node || node.type !== 'encounter' || !node.encounterId) return;
+    playMenuSound();
+    const attempt = JourneyState.beginEncounter(node.encounterId);
+    if (!attempt.ok) return;
+    renderCombat(node, attempt.attemptId);
+  };
+
+  window.journeyRetreatEncounter = function () {
+    playMenuSound();
+    JourneyCombat.destroy();
+    renderShip();
+  };
+
+  window.journeyReturnFromEncounter = function () {
+    playMenuSound();
+    renderShip();
+  };
+
   window.journeyRefuel = function () {
     playMenuSound();
     const state = JourneyState.getState();
@@ -320,6 +458,7 @@
   window.journeyBack = function () {
     if (!active) return;
     active = false;
+    JourneyCombat.destroy();
     JourneyState.saveJourneyState('exit');
     JourneyState.clearInMemory();
     const root = host();

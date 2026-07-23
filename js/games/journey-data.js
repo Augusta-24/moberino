@@ -52,7 +52,8 @@
       connections: ['fuel-stop-1', 'distress-signal', 'abandoned-cache'],
       fuelCost: 8,
       distance: 34,
-      implemented: false
+      implemented: true,
+      encounterId: 'asteroid-salvage-1'
     },
     {
       id: 'distress-signal',
