@@ -49,24 +49,29 @@ THREE_OK = {
     "ace", "act", "add", "age", "ago", "aid", "aim", "air", "ale", "all",
     "and", "ant", "any", "ape", "app", "arc", "are", "arm", "art", "ash",
     "ask", "ate", "awe", "bad", "bag", "bar", "bat", "bay", "bed", "bee",
-    "bet", "big", "bin", "bit", "box", "boy", "bud", "bug", "bus", "but",
-    "buy", "bye", "cab", "can", "cap", "car", "cat", "cop", "cow", "cry",
-    "cup", "cut", "day", "did", "die", "dig", "dog", "dry", "ear", "eat",
-    "egg", "end", "eye", "fan", "far", "fat", "fee", "few", "fig", "fin",
-    "fit", "fix", "fly", "fog", "for", "fox", "fun", "gap", "gas", "get",
-    "gum", "gun", "gut", "had", "ham", "has", "hat", "hen", "her", "hid",
-    "him", "hip", "his", "hit", "hog", "hop", "hot", "how", "hug", "ice",
-    "ink", "jam", "jar", "jet", "job", "joy", "key", "kid", "kit", "lab",
-    "lad", "lap", "law", "lay", "leg", "let", "lid", "lie", "lip", "log",
-    "lot", "low", "mad", "man", "map", "mat", "may", "met", "mix", "mom",
-    "mud", "mug", "net", "new", "nod", "not", "now", "nut", "odd", "off",
-    "oil", "old", "one", "our", "out", "own", "pad", "pan", "pat", "pay",
-    "pen", "pet", "pie", "pig", "pin", "pop", "pot", "put", "rag", "ran",
-    "rat", "raw", "red", "rid", "rip", "row", "run", "sad", "sat", "saw",
-    "say", "sea", "see", "set", "she", "sip", "sit", "six", "sky", "son",
-    "sun", "tag", "tap", "tar", "tea", "ten", "the", "tie", "tin", "tip",
-    "toe", "top", "toy", "try", "two", "use", "van", "wag", "war", "was", "way",
-    "web", "wet", "who", "why", "win", "wit", "won", "yes", "yet", "you",
+    "bet", "big", "bin", "bit", "bow", "box", "boy", "bud", "bug", "bus",
+    "but", "buy", "bye", "cab", "can", "cap", "car", "cat", "cop", "cow",
+    "cry", "cup", "cut", "day", "den", "dew", "did", "die", "dig", "dim",
+    "dip", "dog", "dry", "dub", "dug", "ear", "eat", "egg", "elm", "end",
+    "eye", "fan", "far", "fat", "fee", "few", "fig", "fin", "fit", "fix",
+    "fly", "fog", "for", "fox", "fun", "gap", "gas", "gem", "get", "gig",
+    "got", "gum", "gun", "gut", "gym", "had", "ham", "has", "hat", "hem",
+    "hen", "her", "hex", "hid", "him", "hip", "his", "hit", "hog", "hop",
+    "hot", "how", "hub", "hug", "ice", "ink", "jam", "jar", "jaw", "jet",
+    "job", "jog", "jot", "joy", "keg", "key", "kid", "kit", "lab", "lad",
+    "lap", "law", "lay", "leg", "let", "lid", "lie", "lip", "log", "lot",
+    "low", "mad", "man", "map", "mat", "max", "may", "met", "mix", "mom",
+    "mow", "mud", "mug", "nap", "net", "new", "nod", "not", "now", "nub",
+    "nut", "odd", "off", "oil", "old", "one", "orb", "our", "out", "own",
+    "pad", "pan", "pat", "pay", "peg", "pen", "pet", "pew", "pie", "pig",
+    "pin", "pop", "pot", "pub", "put", "rag", "ran", "rat", "raw", "red",
+    "rib", "rid", "rip", "rob", "row", "rub", "rum", "run", "sad", "sat",
+    "saw", "say", "sea", "see", "set", "she", "sip", "sit", "six", "sky",
+    "sob", "son", "sow", "sub", "sun", "tag", "tap", "tar", "tax", "tea",
+    "ten", "the", "tie", "tin", "tip", "toe", "top", "tow", "toy", "try",
+    "tub", "two", "use", "van", "wag", "war", "was", "wax", "way", "web",
+    "wet", "who", "why", "win", "wit", "won", "yes", "yet", "you", "zap",
+    "zip",
 }
 
 # Common, unambiguous words missing from the compact frequency source. Keep this
@@ -74,7 +79,14 @@ THREE_OK = {
 EXTRA_PLAY_WORDS = {
     # Familiar inflections can rank surprisingly low in a web-frequency list;
     # keep this hand-reviewed escape hatch small and explicit.
-    "feet", "forms", "lines", "ore", "paid", "prints", "shoes", "terms",
+    "bake", "beg", "bone", "brick", "cake", "cave", "chin", "chop", "clay",
+    "cone", "cord", "cove", "crop", "cub", "dine", "ding", "dove", "fake",
+    "fame", "feet", "fond", "forms", "grin", "hike", "honey", "hook", "jaw",
+    "kick", "lame", "lick", "lines", "mood", "ore", "paid", "pine", "ping",
+    "pond", "pray", "prints", "prop", "sand", "scar", "sew", "shin", "shoes",
+    "sick", "sing", "spin", "sway", "tame", "terms", "thick", "thin", "tick",
+    "tone", "tow", "tray", "trick", "vine", "vow", "wake", "wand", "wick",
+    "wing", "yard", "zing",
 }
 
 # Keep the common vocabulary appropriate for the arcade as well as familiar.
@@ -152,8 +164,7 @@ def load_words():
         common_words.append(w)
     for w in sorted(THREE_OK):
         if (w in STOP or w in PROPER_ONLY or w in CONTENT_DENYLIST
-                or w.startswith(CONTENT_DENY_STEMS)
-                or (sysdict and w not in sysdict) or w in ranks):
+                or w.startswith(CONTENT_DENY_STEMS) or w in ranks):
             continue
         ranks[w] = len(ranks) + 100000
         common_words.append(w)
