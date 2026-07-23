@@ -2395,6 +2395,212 @@ body.on-journey {
   cursor: pointer;
 }
 
+.journey-refuel-scene {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(230px, 1fr) auto auto;
+  place-items: center;
+  gap: 10px;
+  width: min(100%, 760px);
+  height: 100%;
+  margin: 0 auto;
+  padding: max(20px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom));
+  overflow: hidden;
+  color: #f5f3ec;
+  background: linear-gradient(180deg, rgba(7,18,42,.98), rgba(4,8,20,.98));
+}
+
+.journey-refuel-rig {
+  position: relative;
+  z-index: 2;
+  width: min(94vw, 650px);
+  height: min(42vh, 320px);
+  min-height: 230px;
+  overflow: visible;
+}
+
+.journey-refuel-meter {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 12px;
+  width: min(82vw, 430px);
+  transform: translateX(-50%);
+}
+
+.journey-refuel-meter > div {
+  grid-column: 1 / -1;
+  height: 20px;
+  overflow: hidden;
+  border: 2px solid var(--journey-gold);
+  border-radius: 10px;
+  background: rgba(2,7,18,.88);
+  box-shadow: 0 0 16px rgba(255,241,166,.18);
+}
+
+.journey-refuel-meter i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background:
+    repeating-linear-gradient(90deg, #fff1a6 0 16px, #ffd85c 16px 24px);
+  box-shadow: 0 0 18px rgba(255,216,92,.7);
+  transition: width 180ms linear;
+}
+
+.journey-refuel-meter span,
+.journey-refuel-meter strong {
+  color: var(--journey-gold);
+  font: 13px/1.2 'VCR', monospace;
+  letter-spacing: 1.5px;
+}
+
+.journey-refuel-meter strong {
+  justify-self: end;
+  color: #fff;
+}
+
+.journey-refuel-meter b {
+  color: var(--journey-gold);
+  font: inherit;
+}
+
+.journey-refuel-ship {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  width: min(42vw, 225px);
+  height: min(42vw, 225px);
+  transform: translateX(-50%);
+  filter: drop-shadow(0 0 18px rgba(105,215,255,.58));
+  animation: journey-refuel-ship-idle 2.4s ease-in-out infinite;
+}
+
+.journey-fuel-hose {
+  position: absolute;
+  top: 59%;
+  right: -34vw;
+  left: 57%;
+  height: 18px;
+  border: 3px solid #ffd85c;
+  border-radius: 10px 0 0 10px;
+  background: #273044;
+  box-shadow: 0 0 0 3px #111827, 0 0 18px rgba(255,216,92,.52);
+  transform: translateX(115%);
+  animation: journey-hose-connect 1.15s .25s cubic-bezier(.18,.86,.3,1.18) forwards;
+}
+
+.journey-fuel-hose::before {
+  position: absolute;
+  top: 50%;
+  left: -21px;
+  width: 26px;
+  height: 32px;
+  border: 3px solid #fff1a6;
+  border-radius: 6px;
+  background: #39445c;
+  box-shadow: 0 0 14px rgba(255,241,166,.8);
+  content: "";
+  transform: translateY(-50%);
+}
+
+.journey-fuel-hose i {
+  position: absolute;
+  top: 50%;
+  left: -28px;
+  width: 12px;
+  height: 42px;
+  border: 3px solid var(--journey-cyan);
+  border-radius: 8px;
+  content: "";
+  transform: translateY(-50%);
+  animation: journey-coupler-lock .7s 1.15s ease-out both;
+}
+
+.journey-fuel-hose b {
+  position: absolute;
+  top: 4px;
+  right: 4%;
+  width: 10px;
+  height: 5px;
+  border-radius: 4px;
+  background: #fff7bf;
+  box-shadow: 0 0 8px #ffd85c;
+  opacity: 0;
+  animation: journey-fuel-pulse 1.25s 1.35s linear infinite;
+}
+
+.journey-fuel-hose b:nth-of-type(2) { animation-delay: 1.75s; }
+.journey-fuel-hose b:nth-of-type(3) { animation-delay: 2.15s; }
+
+.journey-refuel-status {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  color: var(--journey-gold);
+  font: 13px/1.3 'VCR', monospace;
+  letter-spacing: 1.5px;
+  text-align: center;
+}
+
+.journey-refuel-scene .journey-arrival-dialogue {
+  width: min(94vw, 590px);
+}
+
+.journey-refuel-scene > button {
+  z-index: 2;
+  min-width: min(84vw, 360px);
+  min-height: 58px;
+  border: 1px solid #48f08b;
+  border-radius: 8px;
+  padding: 10px 20px;
+  background: rgba(72,240,139,.16);
+  color: #8dffb9;
+  font: 15px/1.2 'VCR', monospace;
+  cursor: pointer;
+}
+
+.journey-refuel-scene > button small {
+  display: block;
+  margin-top: 5px;
+  color: #fff;
+  font-size: 12px;
+}
+
+.journey-refuel-scene > button:disabled {
+  border-color: rgba(255,241,166,.52);
+  background: rgba(255,241,166,.07);
+  color: var(--journey-gold);
+  opacity: 1;
+  cursor: wait;
+}
+
+@keyframes journey-hose-connect {
+  0% { transform: translateX(115%); }
+  78% { transform: translateX(-3%); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes journey-coupler-lock {
+  0% { opacity: 0; transform: translateY(-50%) scale(1.8); }
+  100% { opacity: 1; transform: translateY(-50%) scale(1); }
+}
+
+@keyframes journey-fuel-pulse {
+  0% { opacity: 0; transform: translateX(0); }
+  18% { opacity: 1; }
+  82% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-240px); }
+}
+
+@keyframes journey-refuel-ship-idle {
+  0%, 100% { transform: translateX(-50%) translateY(3px); }
+  50% { transform: translateX(-50%) translateY(-5px); }
+}
+
 @media (max-width: 680px) {
   .journey-cockpit {
     grid-template-rows: auto auto minmax(145px, 1fr) auto auto;
@@ -2458,6 +2664,14 @@ body.on-journey {
   .journey-story-visual {
     min-height: 190px;
   }
+
+  .journey-refuel-scene {
+    grid-template-rows: auto minmax(210px, 1fr) auto auto;
+  }
+
+  .journey-refuel-rig {
+    min-height: 210px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -2491,7 +2705,15 @@ body.on-journey {
   .journey-story-signal span,
   .journey-story-ship,
   .journey-arrival-flight,
-  .journey-map-node.is-selectable circle {
+  .journey-map-node.is-selectable circle,
+  .journey-refuel-ship,
+  .journey-fuel-hose,
+  .journey-fuel-hose i,
+  .journey-fuel-hose b {
     animation: none;
+  }
+
+  .journey-fuel-hose {
+    transform: translateX(0);
   }
 }

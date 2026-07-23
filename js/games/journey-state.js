@@ -23,7 +23,7 @@
     resources: {
       hull: 100,
       maxHull: 100,
-      fuel: 40,
+      fuel: 12,
       maxFuel: 40,
       power: 100,
       maxPower: 100,

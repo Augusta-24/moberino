@@ -83,9 +83,9 @@
       {
         duration: 4500,
         eyebrow: 'FIRST LEAD · LANTERN STATION',
-        title: 'FUEL UP. FOLLOW THE SIGNAL.',
+        title: 'LOW FUEL. FIRST STOP: LANTERN.',
         visual: `<div class="journey-story-route"><i></i><b></b><i></i></div>`,
-        line: 'Everything begins with the next stop.'
+        line: 'Fill the Wayfarer’s tanks. Then follow the crystal signal.'
       }
     ];
     root.innerHTML = `
@@ -561,14 +561,78 @@
       </main>`;
   }
 
+  function renderLanternRefuel(startFuel, gained, firstVisit) {
+    const root = host();
+    const state = JourneyState.getState();
+    if (!root || !state || !active) return;
+    clearStoryTimers();
+    const hero = selectedHero();
+    const maxFuel = state.resources.maxFuel;
+    const startPercent = Math.max(0, Math.min(100, (startFuel / maxFuel) * 100));
+    root.innerHTML = `
+      <main class="journey-refuel-scene">
+        <div class="journey-starfield" aria-hidden="true"></div>
+        <div class="journey-arrival-location">
+          <span>DOCKED</span>
+          <strong>LANTERN STATION</strong>
+        </div>
+        <section class="journey-refuel-rig" aria-label="The Wayfarer refueling">
+          <div class="journey-refuel-meter">
+            <div><i id="journey-refuel-fill" style="width:${startPercent}%"></i></div>
+            <span>FUEL</span>
+            <strong><b id="journey-refuel-value">${Math.round(startFuel)}</b> / ${Math.round(maxFuel)}</strong>
+          </div>
+          <div class="journey-refuel-ship">${shipIllustration('journey-refuel-ship-svg')}</div>
+          <div class="journey-fuel-hose" aria-hidden="true"><i></i><b></b><b></b><b></b></div>
+          <div id="journey-refuel-status" class="journey-refuel-status">MAGNETIC COUPLER INBOUND</div>
+        </section>
+        <section class="journey-arrival-dialogue">
+          <div class="journey-arrival-speaker" style="--hero-color:${hero.color}">${typeof charFace === 'function' ? charFace(hero, 'normal') : hero.emoji}</div>
+          <div>
+            <span>${hero.name}</span>
+            <p>“Lantern has us. Fill the tanks—then we follow that crystal signal.”</p>
+          </div>
+        </section>
+        <button id="journey-refuel-continue" type="button" onclick="journeyFinishFuelService()" disabled>
+          FUELING… <small>+${Math.round(gained)} FUEL</small>
+        </button>
+      </main>`;
+
+    const steps = 16;
+    for (let step = 1; step <= steps; step += 1) {
+      const timer = setTimeout(() => {
+        const fill = document.getElementById('journey-refuel-fill');
+        const value = document.getElementById('journey-refuel-value');
+        const status = document.getElementById('journey-refuel-status');
+        const progress = step / steps;
+        const displayedFuel = Math.round(startFuel + gained * progress);
+        if (fill) fill.style.width = `${startPercent + (100 - startPercent) * progress}%`;
+        if (value) value.textContent = displayedFuel;
+        if (status && step === 2) status.textContent = 'COUPLER LOCKED · FUEL FLOWING';
+      }, 1250 + step * 190);
+      storyTimers.push(timer);
+    }
+    const finishTimer = setTimeout(() => {
+      const status = document.getElementById('journey-refuel-status');
+      const button = document.getElementById('journey-refuel-continue');
+      if (status) status.textContent = firstVisit ? 'TANK FULL · SCRAP BELT ROUTE OPEN' : 'TANK FULL · READY TO DEPART';
+      if (button) {
+        button.disabled = false;
+        button.innerHTML = `CONTINUE → <small>${Math.round(maxFuel)} / ${Math.round(maxFuel)} FUEL</small>`;
+      }
+    }, 4700);
+    storyTimers.push(finishTimer);
+  }
+
   function serviceFuelStop() {
     const state = JourneyState.getState();
     if (!state) return;
     const firstVisit = !state.route.completedNodes.includes('fuel-stop-1');
+    const startFuel = state.resources.fuel;
     const refuel = JourneyState.refuelToMax('lantern-station-service');
     if (firstVisit) JourneyState.completeNode('fuel-stop-1', ['scrap-belt']);
     shipNotice = `DOCKED AT LANTERN STATION · +${Math.round(refuel.gained)} FUEL${firstVisit ? ' · SCRAP BELT UNLOCKED' : ''}`;
-    renderArrivalScene(JourneyData.getNode('fuel-stop-1'));
+    renderLanternRefuel(startFuel, refuel.gained, firstVisit);
   }
 
   function renderIntel(transmissionId) {
@@ -970,6 +1034,12 @@
   window.journeyContinueArrival = function () {
     playMenuSound();
     renderCurrentLocation();
+  };
+
+  window.journeyFinishFuelService = function () {
+    playMenuSound();
+    clearStoryTimers();
+    renderShip();
   };
 
   window.journeyStartEncounter = function () {

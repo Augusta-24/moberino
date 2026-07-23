@@ -54,7 +54,7 @@ test('new Journey saves use an independent key and expected defaults', () => {
   assert.equal(api.saveKey, 'moberinoJourneySave');
   assert.equal(state.currentNodeId, 'home-orbit');
   assert.equal(state.resources.hull, 100);
-  assert.equal(state.resources.fuel, 40);
+  assert.equal(state.resources.fuel, 12);
   assert.equal(state.currency.crystals, 0);
   assert.equal(storage.has('moberinoJourneySave'), true);
   assert.equal(storage.has('space-best-campaign'), false);
@@ -255,7 +255,7 @@ test('travel spends fuel and advances a selected route exactly once', () => {
   assert.equal(first.ok, true);
   assert.equal(duplicate.ok, false);
   assert.equal(finalState.currentNodeId, 'fuel-stop-1');
-  assert.equal(finalState.resources.fuel, 34);
+  assert.equal(finalState.resources.fuel, 6);
   assert.equal(finalState.totalDistance, 18);
   assert.equal(finalState.route.visitedNodes.filter(id => id === 'fuel-stop-1').length, 1);
 });
@@ -348,7 +348,7 @@ test('encounter results apply persistent damage and rewards exactly once', () =>
   assert.equal(first.ok, true);
   assert.equal(duplicate.code, 'already-applied');
   assert.equal(finalState.resources.hull, 73);
-  assert.equal(finalState.resources.fuel, 40);
+  assert.equal(finalState.resources.fuel, 14);
   assert.equal(finalState.currency.salvage, 26);
   assert.equal(finalState.encounters.completed['asteroid-salvage-1'], 1);
   assert.equal(finalState.route.completedNodes.filter(id => id === 'scrap-belt').length, 1);
