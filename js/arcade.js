@@ -213,6 +213,7 @@
     const onSignal = p === 'signal';
     const onSnoob = p === 'snoob';
     const onConsume = p === 'consume';
+    const onPet = p === 'pet';
     document.body.classList.toggle('on-lobby', onLobby);
     document.body.classList.toggle('on-char', onCharSelect);
     document.body.classList.toggle('on-signin', onSignIn);
@@ -223,13 +224,14 @@
     document.body.classList.toggle('on-signal', onSignal);
     document.body.classList.toggle('on-snoob', onSnoob);
     document.body.classList.toggle('on-consume', onConsume);
+    document.body.classList.toggle('on-pet', onPet);
     document.documentElement.classList.add('arcade-root');
 
     try {
-      if ((onLobby || onCharSelect || onSignIn || onFaceFactory || onWhack || onMatch || onSpace || onSignal || onSnoob || onConsume) && typeof ArcadeMusic !== 'undefined' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
+      if ((onLobby || onCharSelect || onSignIn || onFaceFactory || onWhack || onMatch || onSpace || onSignal || onSnoob || onConsume || onPet) && typeof ArcadeMusic !== 'undefined' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
       if (typeof ArcadeMusic !== 'undefined') {
         if (onLobby || onCharSelect || onSignIn) ArcadeMusic.unduck();
-        if (onFaceFactory || onWhack || onMatch || onSpace || onSignal || onSnoob || onConsume) ArcadeMusic.duck();
+        if (onFaceFactory || onWhack || onMatch || onSpace || onSignal || onSnoob || onConsume || onPet) ArcadeMusic.duck();
       }
     } catch(e) {}
 
@@ -253,6 +255,7 @@
     if (onSignal && typeof initSignal === 'function') initSignal();
     if (onSnoob && typeof initSnoob === 'function') initSnoob();
     if (onConsume && typeof initConsume === 'function') initConsume();
+    if (onPet && typeof initPet === 'function') initPet();
     if (!onSpace && typeof spacePause === 'function') spacePause();
     if (!onSignal && typeof signalBack === 'function') signalBack();
     if (!onFaceFactory && typeof faceFactoryBack === 'function') faceFactoryBack();
@@ -261,6 +264,7 @@
     if (!onSnoob && typeof snoobBack === 'function') snoobBack();
     if (!onConsume && typeof consumeBack === 'function') consumeBack();
     if (!onConsume && typeof consumeRackBack === 'function') consumeRackBack();
+    if (!onPet && typeof petBack === 'function') petBack();
   };
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -396,6 +400,74 @@ const SFX = (() => {
       [784,988,1175,1568].forEach((f,i)=>tone(f,'triangle',0.31+i*0.07,0.19,0.068));
       tone(2093,'sine',0.48,0.34,0.045);
       tone(2637,'sine',0.57,0.28,0.035);
+    },
+    cameraShutter() {
+      const c = getAudioCtx();
+      const start = c.currentTime + 0.012;
+      const master = c.createGain();
+      const compressor = c.createDynamicsCompressor();
+      master.gain.value = 0.72;
+      compressor.threshold.value = -18;
+      compressor.knee.value = 8;
+      compressor.ratio.value = 5;
+      compressor.attack.value = 0.002;
+      compressor.release.value = 0.08;
+      master.connect(compressor);
+      compressor.connect(c.destination);
+
+      // A camera reads as two closely spaced mechanical events: the shutter
+      // opening, then the mechanism returning. Layer filtered, irregular noise
+      // with a small low-frequency body instead of using an arcade oscillator chirp.
+      const noiseSnap = (offset, duration, volume, frequency, type = 'bandpass') => {
+        const frames = Math.max(1, Math.floor(c.sampleRate * duration));
+        const buffer = c.createBuffer(1, frames, c.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < frames; i++) {
+          const envelope = Math.pow(1 - i / frames, 2.6);
+          const irregular = i % 7 === 0 ? 1.35 : 0.82;
+          data[i] = (Math.random() * 2 - 1) * envelope * irregular;
+        }
+        const source = c.createBufferSource();
+        const filter = c.createBiquadFilter();
+        const gain = c.createGain();
+        const at = start + offset;
+        source.buffer = buffer;
+        filter.type = type;
+        filter.frequency.setValueAtTime(frequency, at);
+        filter.Q.value = type === 'bandpass' ? 0.85 : 0.45;
+        gain.gain.setValueAtTime(volume, at);
+        gain.gain.exponentialRampToValueAtTime(0.001, at + duration);
+        source.connect(filter);
+        filter.connect(gain);
+        gain.connect(master);
+        source.start(at);
+        source.stop(at + duration + 0.006);
+      };
+      const bodyClack = (offset, duration, volume, from, to) => {
+        const oscillator = c.createOscillator();
+        const gain = c.createGain();
+        const at = start + offset;
+        oscillator.type = 'triangle';
+        oscillator.frequency.setValueAtTime(from, at);
+        oscillator.frequency.exponentialRampToValueAtTime(to, at + duration);
+        gain.gain.setValueAtTime(volume, at);
+        gain.gain.exponentialRampToValueAtTime(0.001, at + duration);
+        oscillator.connect(gain);
+        gain.connect(master);
+        oscillator.start(at);
+        oscillator.stop(at + duration + 0.006);
+      };
+
+      noiseSnap(0, 0.026, 0.29, 3600, 'highpass');   // shutter button: click
+      noiseSnap(0.028, 0.052, 0.34, 1900);           // shutter / mirror: clack
+      noiseSnap(0.041, 0.024, 0.18, 4200, 'highpass');
+      bodyClack(0.023, 0.046, 0.075, 330, 170);
+
+      // Leave a small, audible pause before the mechanism resets. That
+      // click–clack spacing makes the sound read as a physical camera.
+      noiseSnap(0.166, 0.043, 0.25, 1500);
+      noiseSnap(0.196, 0.029, 0.20, 3500, 'highpass');
+      bodyClack(0.158, 0.055, 0.055, 260, 135);
     },
     missionSignal() {
       [523,659,784].forEach((f,i)=>tone(f,'triangle',i*0.08,0.22,0.04));
@@ -830,6 +902,7 @@ function getLeaderboardBoards() {
     { key: 'consume', label: 'TILE SWAP · GRID', color: '#38d8ff', field: 'score' },
     { key: 'consume-words', label: 'TILE SWAP · WORDS', color: '#ff75d5', field: 'score' },
     { key: 'consume-numbers', label: 'TILE SWAP · RUMMY', color: '#ffb35c', field: 'score' },
+    { key: 'pet', label: 'PET MOBE', color: '#ff6ec7', field: 'score' },
   ];
 }
 
@@ -842,6 +915,7 @@ function getLeaderboardGroups() {
     { title: 'SIGNAL', keys: ['signal'] },
     { title: 'SNOOB', keys: ['snoob'] },
     { title: 'TILE SWAP', keys: ['consume', 'consume-words', 'consume-numbers'] },
+    { title: 'PET MOBE', keys: ['pet'] },
   ].map(group => ({ ...group, boards: group.keys.map(key => boards.find(b => b.key === key)).filter(Boolean) }));
 }
 
@@ -1022,6 +1096,7 @@ const RemoteLB = (() => {
     consume:              { col: 'score',   dir: 'desc' },
     'consume-words':      { col: 'score',   dir: 'desc' },
     'consume-numbers':    { col: 'score',   dir: 'desc' },
+    pet:                  { col: 'score',   dir: 'desc' },
   };
 
   function isConfigured(game) { return !!SORT[game]; }
@@ -1154,6 +1229,7 @@ function mountSelectionArt(targetId, game) {
     space: 'position:absolute;left:50%;top:50%;width:130%;height:130%;transform:translate(-50%,-54%) scale(1.08);transform-origin:center center',
     snoob: 'position:absolute;left:50%;top:50%;width:130%;height:130%;transform:translate(-50%,-53%) scale(1.08);transform-origin:center center',
     consume: 'position:absolute;left:50%;top:50%;width:130%;height:130%;transform:translate(-50%,-53%) scale(1.08);transform-origin:center center',
+    pet: 'position:absolute;left:50%;top:50%;width:130%;height:130%;transform:translate(-50%,-53%) scale(1.08);transform-origin:center center',
   };
   art.style.cssText = artFrames[game] || artFrames.whack;
   artFrame.appendChild(art);

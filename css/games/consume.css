@@ -23,6 +23,9 @@
   overflow-y: auto;
   width: 100%;
 }
+body.arcade-mode-select.on-consume .consume-wrap {
+  padding-top: max(82px, calc(env(safe-area-inset-top, 0px) + 78px));
+}
 
 .cw-levels {
   width: min(100%, 480px);

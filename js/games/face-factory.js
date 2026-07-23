@@ -22,6 +22,7 @@
   let reelHasSpun = false;
   let reelBusy = false;
   let reelRoundComplete = false;
+  let portraitStyleIndex = 0;
 
   const FACE_TUNING_KEY = 'face-factory-landmarks';
   const FACE_TUNING_LEGACY_KEYS = ['face-factory-landmarks-v5', 'face-factory-landmarks-v4'];
@@ -53,12 +54,16 @@
   };
   const FACE_FACTORY_CHARS = GAME_CHARS.map((character, i) => ({character, i})).filter(({character}) => character.name !== 'TONY').map(({i}) => i);
   const FIX_CHARS = FACE_FACTORY_CHARS.filter(ci => !['POPPY', 'THOMAS'].includes(GAME_CHARS[ci].name));
+  const FUNNY_START_CHARS = ['TED', 'GRANDMA', 'SHE-SHE'].map(name => GAME_CHARS.findIndex(character => character.name === name));
   const FEMALE_FACE_NAMES = new Set(['KRISTEN', 'DAWN', 'GRANDMA', 'POPPY', 'SHE-SHE', 'ROSIE', 'LEANNE', 'LINDSAY', 'DEBBIE', 'RUTH']);
   const faceGender = ci => FEMALE_FACE_NAMES.has(GAME_CHARS[ci].name) ? 'female' : 'male';
   const charsForPart = part => FACE_FACTORY_CHARS.filter(ci => {
     const name = GAME_CHARS[ci].name;
-    return !((part === 0 || part === 1) && name === 'POPPY') && !(part === 2 && name === 'THOMAS');
+    return !((part === 0 || part === 1) && name === 'POPPY')
+      && !(part === 1 && ['TED', 'EDDIE'].includes(name))
+      && !(part === 2 && name === 'THOMAS');
   });
+  const mixCharsForPart = (part, pool = mixPool) => pool.filter(ci => charsForPart(part).includes(ci));
   const randomChar = (pool = FACE_FACTORY_CHARS) => pool[rand(pool.length)];
   const distinctChars = (count, pool = FACE_FACTORY_CHARS) => shuffle(pool).slice(0, count);
   const later = (fn, ms) => {
@@ -67,7 +72,13 @@
     return id;
   };
   function clearTimers() {
-    timers.forEach(t => t.type === 'interval' ? clearInterval(t.id) : clearTimeout(t.id));
+    timers.forEach(t => {
+      if (t.type === 'interval') clearInterval(t.id);
+      else if (t.type === 'animation') {
+        try { t.id.cancel(); } catch (_) {}
+      } else if (t.type === 'raf') cancelAnimationFrame(t.id);
+      else clearTimeout(t.id);
+    });
     timers = [];
     document.querySelectorAll('.ff-coin-rain').forEach(effect => effect.remove());
   }
@@ -97,7 +108,7 @@
           const duration = payoutDuration + Math.round((Math.random() - .5) * 140);
           const drift = -34 + Math.random() * 68;
           const spin = 540 + Math.round(Math.random() * 540);
-          return `<i style="--coin-left:${left.toFixed(1)}%;--coin-delay:${delay}ms;--coin-duration:${duration}ms;--coin-drift-72:${(drift * .72).toFixed(0)}px;--coin-drift-82:${(drift * .82).toFixed(0)}px;--coin-drift-88:${(drift * .88).toFixed(0)}px;--coin-drift-94:${(drift * .94).toFixed(0)}px;--coin-drift-97:${(drift * .97).toFixed(0)}px;--coin-drift:${drift.toFixed(0)}px;--coin-spin-72:${Math.round(spin * .72)}deg;--coin-spin-82:${Math.round(spin * .82)}deg;--coin-spin-88:${Math.round(spin * .88)}deg;--coin-spin-94:${Math.round(spin * .94)}deg;--coin-spin-97:${Math.round(spin * .97)}deg;--coin-spin:${spin}deg"><b>$</b></i>`;
+          return `<i style="--coin-left:${left.toFixed(1)}%;--coin-delay:${delay}ms;--coin-duration:${duration}ms;--coin-drift:${drift.toFixed(0)}px;--coin-spin:${spin}deg"><b><span>$</span></b></i>`;
         }).join('')
       }</div>`;
     shell.appendChild(rain);
@@ -223,14 +234,14 @@
       <div class="ff-title">FACE FACTORY</div>
       <div class="ff-subtitle">THREE WAYS TO PLAY WITH THE FAMILY</div>
       <div class="ff-mode-grid">
-        <button class="ff-mode-card" style="--mode-color:#ff66dd" type="button" onclick="faceFactoryOpen('reels')">
-          ${reelsModePreview()}<strong>FACE REELS</strong><span>SPIN · HOLD<br>AND MATCH</span>
-        </button>
         <button class="ff-mode-card" style="--mode-color:#ffe61a" type="button" onclick="faceFactoryOpen('puzzle')">
           ${puzzleModePreview()}<strong>BUILD THE FACES</strong><span>TWO FACES<br>EIGHT BIG PIECES</span>
         </button>
         <button class="ff-mode-card" style="--mode-color:#00e5ff" type="button" onclick="faceFactoryOpen('crazy')">
           ${crazyModePreview()}<strong>CRAZY FACE</strong><span>MIX THE EYES<br>NOSE AND SMILE</span>
+        </button>
+        <button class="ff-mode-card" style="--mode-color:#ff66dd" type="button" onclick="faceFactoryOpen('reels')">
+          ${reelsModePreview()}<strong>FACE REELS</strong><span>SPIN · HOLD<br>AND MATCH</span>
         </button>
       </div>`, "SFX.menuSelect();nav('lobby')");
   }
@@ -249,7 +260,7 @@
   function reelCell(ci, expr) {
     const c = GAME_CHARS[ci];
     const src = expr === 'happy' ? (c.imgHappy || c.img) : c.img;
-    return `<div class="ff-reel-cell"><img src="${src}" alt="${c.name}"></div>`;
+    return `<div class="ff-reel-cell"><span class="ff-reel-name">${c.name}</span><img src="${src}" alt="${c.name}"></div>`;
   }
   function reelMarkup(ci, i) {
     return `<div class="ff-reel-unit" id="ff-reel-unit-${i}">
@@ -294,6 +305,7 @@
     const reel = document.getElementById(`ff-reel-${i}`);
     const strip = document.getElementById(`ff-reel-strip-${i}`);
     if (!reel || !strip) return;
+    strip.getAnimations?.().forEach(animation => animation.cancel());
     strip.style.transition = 'none';
     strip.style.transform = 'translateY(0)';
     strip.innerHTML = reelCell(ci, expr);
@@ -344,6 +356,19 @@
     });
     return finals;
   }
+  function startReelTickTrack(activeReels) {
+    const expectedDuration = 2000 + Math.max(0, activeReels - 1) * 800;
+    const startedAt = performance.now();
+    const tick = () => {
+      if (!reelBusy) return;
+      sound('slotTick');
+      const progress = Math.min(1, (performance.now() - startedAt) / expectedDuration);
+      const slowdown = Math.max(0, (progress - .58) / .42);
+      const delay = 80 + Math.round(105 * slowdown * slowdown);
+      later(tick, delay);
+    };
+    later(tick, 100);
+  }
   function rollReel(i, finalCi, stopOrder, done) {
     const reel = document.getElementById(`ff-reel-${i}`);
     const strip = document.getElementById(`ff-reel-strip-${i}`);
@@ -366,22 +391,33 @@
     strip.style.transform = 'translateY(0)';
     reel.classList.add('rolling');
     void strip.offsetHeight;
-    later(() => {
-      strip.style.transition = `transform ${cruiseDuration}ms linear`;
-      strip.style.transform = `translateY(-${cruiseCells * 100}%)`;
-    }, 24);
-    later(() => {
-      reel.classList.add('slowing');
-      strip.style.transition = `transform ${decelDuration}ms cubic-bezier(.28,.4,.45,1)`;
-      strip.style.transform = `translateY(-${(trail.length - 1) * 100}%)`;
-    }, cruiseDuration + 24);
-    [0.5, 0.72, 0.88, 0.97].forEach((point, tick) => later(() => sound('charPick', (i + tick) % 8), cruiseDuration + Math.round(decelDuration * point)));
-    later(() => {
+    const totalCells = trail.length - 1;
+    const decelCellsActual = totalCells - cruiseCells;
+    const startedAt = performance.now();
+    const rafTimer = { type:'raf', id:0 };
+    const settleCurve = progress => (-4 * progress ** 3 + progress ** 2 + 10 * progress) / 7;
+    const frame = now => {
+      const elapsed = Math.min(cruiseDuration + decelDuration, now - startedAt);
+      let cells;
+      if (elapsed <= cruiseDuration) {
+        cells = cruiseCells * (elapsed / cruiseDuration);
+      } else {
+        const progress = Math.min(1, (elapsed - cruiseDuration) / decelDuration);
+        cells = cruiseCells + decelCellsActual * settleCurve(progress);
+      }
+      strip.style.transform = `translateY(-${(cells * 100).toFixed(3)}%)`;
+      if (elapsed < cruiseDuration + decelDuration) {
+        rafTimer.id = requestAnimationFrame(frame);
+        return;
+      }
       setReel(i, finalCi, 'happy');
       reel.classList.add('settling');
       later(() => reel.classList.remove('settling'), 320);
       done();
-    }, cruiseDuration + decelDuration + 48);
+    };
+    timers.push(rafTimer);
+    rafTimer.id = requestAnimationFrame(frame);
+    later(() => reel.classList.add('slowing'), cruiseDuration);
   }
   window.faceFactoryToggleHold = function(i) {
     if (reelBusy || reelRoundComplete || !reelHasSpun || reelAttemptsLeft <= 0) return;
@@ -434,11 +470,13 @@
     updateHoldControls(false);
     const finals = chooseReelFinals();
     const active = [0,1,2].filter(i => !reelHeld[i]);
+    startReelTickTrack(active.length);
     const visible = [0,1,2].filter(i => reelHeld[i]);
     let stopped = 0;
     active.forEach((i, order) => {
       rollReel(i, finals[i], order, () => {
         spark(document.getElementById(`ff-reel-${i}`));
+        sound('slotLand');
         const matchesVisibleFace = visible.some(visibleIndex => finals[visibleIndex] === finals[i]);
         visible.push(i);
         const completesJackpot = visible.length === 3 && finals[0] === finals[1] && finals[1] === finals[2];
@@ -511,8 +549,13 @@
   }
 
   // ── EIGHT-PIECE / TWO-FACE PUZZLE ──────────────────────────────────────
-  function pieceStyle(ci, pos) {
-    return `--piece-color:${GAME_CHARS[ci].color}`;
+  const PUZZLE_SIDE_COLORS = ['#44ccff', '#9933e0']; // Tommy teal · Grandma purple
+  function puzzleSideColor(ci) {
+    const side = Math.max(0, puzzle?.chars.indexOf(ci) ?? 0);
+    return PUZZLE_SIDE_COLORS[Math.min(side, PUZZLE_SIDE_COLORS.length - 1)];
+  }
+  function pieceStyle(ci) {
+    return `--piece-color:${puzzleSideColor(ci)}`;
   }
   function puzzlePieceArt(ci, pos) {
     // The portraits are first normalized to their visible alpha silhouette, then
@@ -531,12 +574,13 @@
   }
   function startPuzzle() {
     const chars = distinctChars(2);
-    puzzle = { chars, placed: 0 };
+    puzzle = { chars, placed: 0, showHint: false };
     selectedPiece = null;
     const pieces = shuffle(chars.flatMap(ci => [0, 1, 2, 3].map(pos => ({ ci, pos }))));
     const boards = chars.map(ci => `<div class="ff-puzzle-person">
-      <div class="ff-person-name" style="color:${GAME_CHARS[ci].color}">${GAME_CHARS[ci].name}</div>
-      <div class="ff-puzzle-board" data-board="${ci}" style="--person-color:${GAME_CHARS[ci].color}">
+      <div class="ff-person-name" style="color:${puzzleSideColor(ci)}">${GAME_CHARS[ci].name}</div>
+      <div class="ff-puzzle-board" data-board="${ci}" style="--person-color:${puzzleSideColor(ci)}">
+        <div class="ff-puzzle-guide" aria-hidden="true"><svg viewBox="44 44 424 424" preserveAspectRatio="none">${puzzleFaceImage(ci)}</svg></div>
         ${[0,1,2,3].map(pos => `<div class="ff-target" data-ci="${ci}" data-pos="${pos}" onclick="faceFactoryPlacePiece(this)" ondragover="event.preventDefault()" ondrop="faceFactoryDropPiece(event,this)"></div>`).join('')}
       </div>
     </div>`).join('');
@@ -546,7 +590,7 @@
       <div class="ff-message" id="ff-puzzle-message">PICK ANY PIECE</div>
       <div class="ff-puzzle-stage">${boards}</div>
       <div class="ff-piece-tray" id="ff-piece-tray">${pieces.map((p, i) => makePiece(p.ci, p.pos, `ff-piece-${i}`)).join('')}</div>
-      <div class="ff-small-actions" id="ff-puzzle-actions"><button class="ff-small-btn" type="button" onclick="faceFactoryPuzzleHint()">HINT</button><button class="ff-small-btn" type="button" onclick="faceFactoryNewPuzzle()">NEW FACES</button></div>
+      <div class="ff-small-actions" id="ff-puzzle-actions"><button class="ff-small-btn" id="ff-puzzle-hint" type="button" onclick="faceFactoryPuzzleHint()">HINT</button><button class="ff-small-btn" type="button" onclick="faceFactoryNewPuzzle()">NEW FACES</button></div>
     </section>`);
   }
   window.faceFactoryNewPuzzle = function() { clearTimers(); sound('menuSelect'); startPuzzle(); };
@@ -599,12 +643,15 @@
     if (puzzle.placed === 8) later(finishPuzzle, 350);
   }
   window.faceFactoryPuzzleHint = function() {
-    const piece = document.querySelector('#ff-piece-tray .ff-piece');
-    if (!piece) return;
-    window.faceFactorySelectPiece(piece.id);
-    const target = document.querySelector(`.ff-target[data-ci="${piece.dataset.ci}"][data-pos="${piece.dataset.pos}"]`);
-    target?.classList.add('ff-hint-target');
-    later(() => target?.classList.remove('ff-hint-target'), 1700);
+    if (!puzzle) return;
+    puzzle.showHint = !puzzle.showHint;
+    document.querySelectorAll('.ff-puzzle-guide').forEach(guide => guide.classList.toggle('visible', puzzle.showHint));
+    const button = document.getElementById('ff-puzzle-hint');
+    if (button) {
+      button.classList.toggle('active', puzzle.showHint);
+      button.textContent = puzzle.showHint ? 'HIDE HINT' : 'HINT';
+    }
+    sound('menuSelect');
   };
   function finishPuzzle() {
     document.querySelectorAll('.ff-puzzle-board').forEach(spark);
@@ -803,15 +850,22 @@
     const slice = { y:FACE_BAND_EDGES[part], h:FACE_BAND_EDGES[part + 1] - FACE_BAND_EDGES[part] };
     return `<div class="ff-face-band ${tuning && tunePart === part ? 'ff-tune-selected' : ''} ${highlighted ? 'ff-guess-target' : ''}" id="ff-band-${part}" data-part="${part}" data-ci="${ci}">
       <svg viewBox="44 ${slice.y.toFixed(3)} 424 ${slice.h.toFixed(3)}" preserveAspectRatio="none" aria-hidden="true">${scrambleFaceImage(ci, expr, part)}</svg>
+      ${highlighted ? '<span class="ff-guess-chevron ff-guess-chevron-left" aria-hidden="true"></span><span class="ff-guess-chevron ff-guess-chevron-right" aria-hidden="true"></span>' : ''}
       ${controls ? `<button class="ff-band-arrow ff-band-arrow-left" type="button" aria-label="Previous ${bandLabels[part]}" onclick="event.stopPropagation();faceFactoryCycleBand(${part},-1)">◀</button><button class="ff-band-arrow ff-band-arrow-right" type="button" aria-label="Next ${bandLabels[part]}" onclick="event.stopPropagation();faceFactoryCycleBand(${part},1)">▶</button>` : ''}
       ${tuning ? `<button class="ff-tune-select" type="button" aria-label="Adjust ${GAME_CHARS[ci].name} ${bandLabels[part]}" onclick="event.stopPropagation();faceFactorySelectTuneBand(${part})">${tunePart === part ? 'ADJUSTING' : 'ADJUST'}</button>` : ''}
     </div>`;
   }
   function crazyTabs(active) {
-    return `<div class="ff-mix-tabs"><button class="ff-mix-tab ${active === 'mix' ? 'active' : ''}" type="button" onclick="faceFactoryCrazyMode('mix')">FIX IT!</button><button class="ff-mix-tab ${active === 'guess' ? 'active' : ''}" type="button" onclick="faceFactoryCrazyMode('guess')">GUESS THE PARTS</button>${builderEnabled ? `<button class="ff-mix-tab ${active === 'tune' ? 'active' : ''}" type="button" onclick="faceFactoryCrazyMode('tune')">FINE TUNE</button><button class="ff-mix-tab ${active === 'builder' ? 'active' : ''}" type="button" onclick="faceFactoryOpenBuilder()">BUILDER</button>` : ''}</div>`;
+    return `<div class="ff-mix-tabs"><button class="ff-mix-tab ${active === 'mix' ? 'active' : ''}" type="button" onclick="faceFactoryCrazyMode('mix')">MAKE FUNNY FACES</button><button class="ff-mix-tab ${active === 'guess' ? 'active' : ''}" type="button" onclick="faceFactoryCrazyMode('guess')">GUESS THE PARTS</button>${builderEnabled ? `<button class="ff-mix-tab ${active === 'tune' ? 'active' : ''}" type="button" onclick="faceFactoryCrazyMode('tune')">FINE TUNE</button><button class="ff-mix-tab ${active === 'builder' ? 'active' : ''}" type="button" onclick="faceFactoryOpenBuilder()">BUILDER</button>` : ''}</div>`;
   }
   function crazyHeading(active) {
     return `<div class="ff-crazy-heading"><div class="ff-title">CRAZY FACE</div>${crazyTabs(active)}</div>`;
+  }
+  function cameraIcon() {
+    return `<svg viewBox="0 0 64 52" aria-hidden="true"><path d="M8 14h12l5-7h14l5 7h12a5 5 0 0 1 5 5v25a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5V19a5 5 0 0 1 5-5Z"/><circle cx="32" cy="31" r="11"/><circle cx="52" cy="21" r="2"/></svg>`;
+  }
+  function randomIcon() {
+    return `<svg viewBox="0 0 64 52" aria-hidden="true"><path d="M6 13h9c13 0 16 26 31 26h12"/><path d="m51 32 7 7-7 7"/><path d="M6 39h9c5 0 9-4 13-10M36 20c3-4 6-7 10-7h12"/><path d="m51 6 7 7-7 7"/></svg>`;
   }
   function fineTuneControl(label, key, min, max, step, value, suffix = '') {
     const decimals = step < 1 ? 2 : 0;
@@ -831,6 +885,7 @@
       </div>
       <div class="ff-fine-actions">
         <button class="ff-fine-reset" type="button" onclick="faceFactoryResetFineTune()">RESTORE THIS PIECE</button>
+        <button class="ff-fine-random" type="button" onclick="faceFactoryRandomizeTune()">RANDOM FACES</button>
         <button class="ff-fine-copy" type="button" onclick="faceFactoryExportTuning()">COPY SETTINGS</button>
       </div>
       <div class="ff-fine-save-state" id="ff-fine-save-state">EACH PIECE SAVES SEPARATELY</div>
@@ -840,29 +895,46 @@
     const poolIsTuningSet = tuning && mixPool.length === FACE_FACTORY_CHARS.length && FACE_FACTORY_CHARS.every(ci => mixPool.includes(ci));
     const poolIsFixSet = !tuning && mixPool.length === FIX_POOL_SIZE && mixPool.every(ci => FIX_CHARS.includes(ci));
     if (randomize || (tuning ? !poolIsTuningSet : !poolIsFixSet)) {
-      mixPool = tuning ? FACE_FACTORY_CHARS.slice() : distinctChars(FIX_POOL_SIZE, FIX_CHARS);
-      mixChars = shuffle(mixPool).slice(0, 3);
+      if (!tuning && randomize && FUNNY_START_CHARS.every(ci => ci >= 0 && FIX_CHARS.includes(ci))) {
+        mixPool = FUNNY_START_CHARS.concat(shuffle(FIX_CHARS.filter(ci => !FUNNY_START_CHARS.includes(ci))).slice(0, FIX_POOL_SIZE - FUNNY_START_CHARS.length));
+        mixChars = FUNNY_START_CHARS.slice();
+      } else {
+        mixPool = tuning ? FACE_FACTORY_CHARS.slice() : distinctChars(FIX_POOL_SIZE, FIX_CHARS);
+        if (!mixChars.every(ci => mixPool.includes(ci))) mixChars = shuffle(mixPool).slice(0, 3);
+      }
     }
+    const used = [];
+    mixChars = [0, 1, 2].map(part => {
+      const current = mixChars[part];
+      if (mixCharsForPart(part).includes(current) && !used.includes(current)) {
+        used.push(current);
+        return current;
+      }
+      const replacement = shuffle(mixCharsForPart(part)).find(ci => !used.includes(ci));
+      used.push(replacement);
+      return replacement;
+    });
     mixWon = false;
     wrap().innerHTML = shell('CRAZY FACE', `<section class="ff-panel">
       ${crazyHeading(tuning ? 'tune' : 'mix')}
       <div class="ff-crazy-face ${tuning ? 'ff-tuning-face' : ''}" id="ff-crazy-face">${mixChars.map((ci, part) => bandMarkup(part, ci, true, undefined, tuning)).join('')}</div>
-      <div class="ff-message" id="ff-crazy-message">${tuning ? 'TAP ADJUST ON ANY FACE PART' : 'MAKE ONE WHOLE FACE'}</div>
+      <div class="ff-message" id="ff-crazy-message">${tuning ? 'TAP ADJUST ON ANY FACE PART' : 'MAKE A FUNNY FACE'}</div>
       ${tuning ? fineTunePanel() : ''}
-      <div id="ff-crazy-win-action"></div>
+      ${tuning ? '<div id="ff-crazy-win-action"></div>' : `<div class="ff-funny-actions"><button class="ff-random-button" type="button" aria-label="Make a random funny face" onclick="faceFactoryRandomizeFunny()">${randomIcon()}<span>RANDOM</span></button><button class="ff-camera-button" type="button" aria-label="Take a funny face portrait" onclick="faceFactoryTakePortrait()">${cameraIcon()}<span>PORTRAIT</span></button></div>`}
     </section>`);
   }
   window.faceFactoryCrazyMode = function(mode) {
     clearTimers();
     sound('menuSelect');
     tuneMode = mode === 'tune';
-    if (mode === 'mix' || mode === 'tune') renderCrazyMixer(false, tuneMode);
+    if (mode === 'mix' || mode === 'tune') renderCrazyMixer(mode === 'mix', tuneMode);
     else startGuessRound();
   };
   window.faceFactoryCycleBand = function(part, direction) {
     if (mixWon) return;
-    const poolIndex = mixPool.indexOf(mixChars[part]);
-    mixChars[part] = mixPool[(poolIndex + direction + mixPool.length) % mixPool.length];
+    const eligible = mixCharsForPart(part).filter(ci => !mixChars.some((selected, selectedPart) => selectedPart !== part && selected === ci));
+    const poolIndex = eligible.indexOf(mixChars[part]);
+    mixChars[part] = eligible[(poolIndex + direction + eligible.length) % eligible.length];
     if (tuneMode) {
       tunePart = part;
       renderCrazyMixer(false, true);
@@ -873,7 +945,71 @@
     if (!old) return;
     old.outerHTML = bandMarkup(part, mixChars[part], true);
     sound('charPick', mixChars[part] % 8);
-    if (mixChars.every(ci => ci === mixChars[0])) finishCrazyFix();
+  };
+  window.faceFactoryRandomizeFunny = function() {
+    if (tuneMode || !mixPool.length) return;
+    const previous = mixChars.join(',');
+    let next = mixChars.slice();
+    for (let attempt = 0; attempt < 8 && next.join(',') === previous; attempt++) {
+      const used = [];
+      next = [0, 1, 2].map(part => {
+        const ci = shuffle(mixCharsForPart(part)).find(candidate => !used.includes(candidate));
+        used.push(ci);
+        return ci;
+      });
+    }
+    mixChars = next;
+    sound('boxOpen');
+    renderCrazyMixer(false, false);
+  };
+  window.faceFactoryRandomizeTune = function() {
+    if (!tuneMode) return;
+    const previous = mixChars.join(',');
+    let next = mixChars.slice();
+    for (let attempt = 0; attempt < 8 && next.join(',') === previous; attempt++) {
+      const used = [];
+      next = [0, 1, 2].map(part => {
+        const ci = shuffle(charsForPart(part)).find(candidate => !used.includes(candidate));
+        used.push(ci);
+        return ci;
+      });
+    }
+    mixChars = next;
+    tunePart = 0;
+    sound('boxOpen');
+    renderCrazyMixer(false, true);
+  };
+  window.faceFactoryTakePortrait = function() {
+    const shellEl = document.querySelector('.ff-shell');
+    if (!shellEl || tuneMode) return;
+    document.getElementById('ff-portrait-overlay')?.remove();
+    const flash = document.createElement('div');
+    flash.className = 'ff-camera-flash';
+    shellEl.appendChild(flash);
+    sound('cameraShutter');
+    later(() => flash.remove(), 650);
+    const styles = ['neon', 'gold', 'instant'];
+    const style = styles[portraitStyleIndex % styles.length];
+    portraitStyleIndex++;
+    later(() => {
+      if (!document.querySelector('.ff-shell')) return;
+      const overlay = document.createElement('div');
+      overlay.className = 'ff-portrait-overlay';
+      overlay.id = 'ff-portrait-overlay';
+      overlay.innerHTML = `<div class="ff-portrait-card ff-portrait-${style}">
+        <button class="ff-portrait-close" type="button" aria-label="Close portrait" onclick="faceFactoryClosePortrait()">×</button>
+        <div class="ff-portrait-kicker">FACE FACTORY ORIGINAL</div>
+        <div class="ff-crazy-face ff-portrait-face">${mixChars.map((ci, part) => bandMarkup(part, ci, false)).join('')}</div>
+        <div class="ff-portrait-caption">FAMILY FUN · ${style.toUpperCase()} EDITION</div>
+        <button class="ff-portrait-retake" type="button" onclick="faceFactoryTakePortrait()">${cameraIcon()}<span>NEW STYLE</span></button>
+      </div>`;
+      shellEl.appendChild(overlay);
+      spark(overlay.querySelector('.ff-portrait-card'));
+    }, 270);
+  };
+  window.faceFactoryClosePortrait = function() {
+    document.getElementById('ff-portrait-overlay')?.remove();
+    sound('menuSelect');
   };
   window.faceFactorySelectTuneBand = function(part) {
     tunePart = Math.max(0, Math.min(2, Number(part) || 0));
@@ -1145,7 +1281,7 @@
     const choices = guessChoices(correct, part);
     wrap().innerHTML = shell('CRAZY FACE', `<section class="ff-panel">
       ${crazyHeading('guess')}
-      <div class="ff-crazy-face" id="ff-crazy-face">${guess.chars.map((ci, p) => bandMarkup(p, ci, false, undefined, false, p === part)).join('')}</div>
+      <div class="ff-crazy-face ff-guessing-face" id="ff-crazy-face">${guess.chars.map((ci, p) => bandMarkup(p, ci, false, undefined, false, p === part)).join('')}</div>
       <div class="ff-message ff-guess-question" id="ff-guess-message">WHOSE ${bandLabels[part]}?</div>
       <div class="ff-guess-score">PART ${part + 1} OF 3</div>
       <div class="ff-guess-options">${choices.map(ci => `<button class="ff-guess-choice" type="button" data-ci="${ci}" onclick="faceFactoryGuess(${ci},this)">${GAME_CHARS[ci].name}</button>`).join('')}</div>

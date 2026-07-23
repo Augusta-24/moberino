@@ -26,6 +26,7 @@
 <link rel="stylesheet" href="css/games/snoob.css">
 <link rel="stylesheet" href="css/games/consume.css">
 <link rel="stylesheet" href="css/games/consume-rack.css">
+<link rel="stylesheet" href="css/games/pet.css">
 <script>
 
 // Locks #pg-home's height to a JS-measured pixel value instead of letting the browser
@@ -500,6 +501,51 @@
 </div>
 </div>
 </div>
+<div class="carousel-item" id="ci-pet">
+<div class="game-card" onclick="SFX.menuSelect();nav('pet')" style="border-color:#7fe9a666;cursor:pointer">
+<div class="game-card-art" style="background:radial-gradient(120% 80% at 50% 20%,#0a2a1c 0%,#06180f 55%,#03100a 100%)">
+<svg height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0" viewBox="0 0 200 240" width="100%">
+<rect fill="#04140d" height="240" width="200"/>
+<g opacity=".7">
+<text fill="#7fe9a6" font-size="8" opacity=".3" x="24" y="30">♥</text>
+<text fill="#ffe61a" font-size="6" opacity=".26" x="164" y="24">✦</text>
+<text fill="#7fe9a6" font-size="6" opacity=".24" x="176" y="70">✦</text>
+<text fill="#b6f5cf" font-size="9" opacity=".24" x="20" y="96">♥</text>
+<text fill="#7fe9a6" font-size="5" opacity=".2" x="150" y="104">✦</text>
+</g>
+<defs>
+<radialGradient id="ci-pet-body" cx="42%" cy="34%" r="72%">
+<stop offset="0%" stop-color="#c2f7d8"/>
+<stop offset="58%" stop-color="#7fe9a6"/>
+<stop offset="100%" stop-color="#3aa876"/>
+</radialGradient>
+</defs>
+<g transform="translate(100 128) scale(1.35) translate(-60 -72)">
+<ellipse cx="60" cy="118" rx="30" ry="6" fill="#000" opacity="0.3"/>
+<path d="M46 34 Q40 12 32 6" stroke="#3aa876" stroke-width="4" fill="none" stroke-linecap="round"/>
+<path d="M74 34 Q80 12 88 6" stroke="#3aa876" stroke-width="4" fill="none" stroke-linecap="round"/>
+<circle cx="32" cy="6" r="7" fill="#c2f7d8"/>
+<circle cx="88" cy="6" r="7" fill="#c2f7d8"/>
+<ellipse cx="44" cy="112" rx="11" ry="7" fill="#3aa876"/>
+<ellipse cx="76" cy="112" rx="11" ry="7" fill="#3aa876"/>
+<path d="M60 34 C88 34 100 56 100 78 C100 104 82 116 60 116 C38 116 20 104 20 78 C20 56 32 34 60 34 Z" fill="url(#ci-pet-body)" stroke="#3aa876" stroke-width="2.5"/>
+<ellipse cx="60" cy="88" rx="24" ry="20" fill="#fff" opacity="0.16"/>
+<circle cx="38" cy="80" r="6" fill="#5fd691" opacity="0.4"/>
+<circle cx="82" cy="80" r="6" fill="#5fd691" opacity="0.4"/>
+<path d="M38 72 q7 -9 14 0" stroke="#153a28" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+<path d="M68 72 q7 -9 14 0" stroke="#153a28" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+<path d="M50 88 q10 12 20 0" stroke="#153a28" stroke-width="3.2" fill="#2a6047" stroke-linecap="round"/>
+</g>
+</svg>
+</div>
+<div class="game-card-info">
+<div class="game-card-badge" style="background:#7fe9a622;color:#7fe9a6;border:1px solid #7fe9a666">VIRTUAL PET</div>
+<div class="game-card-marquee" style="color:#7fe9a6;text-shadow:0 0 20px #7fe9a688">PET MOBE</div>
+<div class="game-card-desc">HATCH · CARE · EVOLVE</div>
+<div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#7fe9a622;border:1.5px solid #7fe9a6;border-radius:5px;padding:10px 24px;color:#7fe9a6;width:100%;text-shadow:0 0 8px #7fe9a666;text-align:center">▶ PLAY</div>
+</div>
+</div>
+</div>
 </div>
 <div class="carousel-nav-row" style="justify-content:space-between;align-items:center;padding:6px 14px 0">
 <button onclick="scrollCarousel(-1)" style="font-size:22px;background:none;border:none;color:rgba(242,239,232,0.4);cursor:pointer;padding:8px">◀</button>
@@ -606,6 +652,19 @@
 </div>
 </div>
 
+<div class="page" id="pg-pet">
+<div class="cats-header">
+<button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE MENU</button>
+<div class="arcade-header-actions" style="display:flex;align-items:center;gap:8px">
+<button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
+<button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
+</div>
+</div>
+<div class="pet-wrap" id="pet-wrap">
+<!-- Filled by JS -->
+</div>
+</div>
+
 <div id="arcade-float"></div>
 
 <button aria-label="Back to arcade" id="arcade-mode-back" type="button" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE</button>
@@ -643,5 +702,6 @@
 <script src="js/games/consume.js"></script>
 <script src="js/games/consume-rack-boards.js"></script>
 <script src="js/games/consume-rack.js"></script>
+<script src="js/games/pet.js"></script>
 </body>
 </html>

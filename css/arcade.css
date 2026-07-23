@@ -180,7 +180,8 @@ body.on-whack .cats-header,
 body.on-match .cats-header,
 body.on-space .cats-header,
 body.on-snoob .cats-header,
-body.on-consume .cats-header {
+body.on-consume .cats-header,
+body.on-pet .cats-header {
   display: none !important;
 }
 #arcade-game-exit {
@@ -232,7 +233,8 @@ body.on-whack #arcade-game-exit,
 body.on-match #arcade-game-exit,
 body.on-space #arcade-game-exit,
 body.on-snoob #arcade-game-exit,
-body.on-consume #arcade-game-exit {
+body.on-consume #arcade-game-exit,
+body.on-pet #arcade-game-exit {
   display: inline-flex;
 }
 /* All arcade header buttons: uniform height */
