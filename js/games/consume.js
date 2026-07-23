@@ -168,6 +168,7 @@
       bad: false,
       won: false,
       returned: new Set(),
+      flashing: new Map(),
       startTime: Date.now(),
       shatters: 0,
       wordsFormed: 0,
@@ -283,12 +284,18 @@
     }
     const wordId = nextWordId++;
     S.tray.forEach(t => { t.wordId = wordId; });
+    S.tray.forEach((tile, index) => S.flashing.set(tile.id, index));
     S.tableau.push({ id: wordId, word, tileIds: S.tray.map(t => t.id) });
     S.wordsFormed++;
     S.tray = [];
     S.bad = false;
     CSFX.word(S.tableau.length);
     updateAll();
+    later(() => {
+      if (!S) return;
+      S.flashing.clear();
+      updateBoard();
+    }, 520);
     if (S.tiles.every(t => t.wordId) && !S.tray.length) later(win, 280);
   }
 
@@ -343,10 +350,21 @@
       const act = e.target.getAttribute && e.target.getAttribute('data-act');
       if (!act) return;
       SFX.menuSelect();
-      if (act === 'next') startLevel(S.n + 1);
+      if (act === 'next') transitionToLevel(S.n + 1);
       else if (act === 'replay') startLevel(S.n);
       else renderJourney();
     });
+  }
+
+  function transitionToLevel(n) {
+    if (!S || !wrap) return;
+    wrap.classList.add('cw-level-leaving');
+    later(() => {
+      startLevel(n);
+      wrap.classList.remove('cw-level-leaving');
+      wrap.classList.add('cw-level-entering');
+      later(() => wrap?.classList.remove('cw-level-entering'), 480);
+    }, 200);
   }
 
   function renderPlay() {
@@ -408,19 +426,24 @@
     );
     if (!stable) {
       board.innerHTML = S.tiles.map(t =>
-        `<button class="${tileClass(t)}" type="button" data-board-tile="${t.id}">${esc(t.ch.toUpperCase())}</button>`
+        `<button class="${tileClass(t)}" type="button" data-board-tile="${t.id}" style="--cw-tile-index:${t.id - 1};--cw-flash-delay:${(S.flashing.get(t.id) || 0) * 40}ms">${esc(t.ch.toUpperCase())}</button>`
       ).join('');
       return;
     }
     // Preserve the button nodes between taps. Replacing them here could destroy
     // the target of a quick follow-up touch before its click event was delivered.
-    current.forEach((element, index) => { element.className = tileClass(S.tiles[index]); });
+    current.forEach((element, index) => {
+      const tile = S.tiles[index];
+      element.className = tileClass(tile);
+      element.style.setProperty('--cw-flash-delay', `${(S.flashing.get(tile.id) || 0) * 40}ms`);
+    });
   }
 
   function tileClass(t) {
     const cls = ['cw-tile'];
     if (S.tray.includes(t)) cls.push('selected');
     if (t.wordId) cls.push('consumed', `word-${((t.wordId - 1) % 6) + 1}`);
+    if (S.flashing.has(t.id)) cls.push('word-flash');
     if (S.returned.has(t.id)) cls.push('returned');
     return cls.join(' ');
   }
@@ -518,4 +541,3 @@
     S = null;
   };
 })();
-    clearTimeout(autoSubmitTimer); autoSubmitTimer = null;
