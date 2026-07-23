@@ -188,9 +188,10 @@
       lastTick: now,
       stage: 0,                 // 0 egg, 1 baby, 2 juvenile, 3 adult
       form: null,
-      colorChoice: null,        // set at hatch via the customize picker
-      shape: null,
-      sawIntro: false,          // one-time "how to play" explainer
+      colorChoice: 'coral',     // defaults render the egg before hatch customization
+      shape: 'round',
+      sawIntro: true,           // retired; retained only for save compatibility
+      tipsSeen: [],
       hunger: 100, happiness: 100, energy: 100, safety: 100, health: 100,
       stageProgress: 0,         // care-quality accumulated toward next stage
       stageActions: 0,          // beneficial actions this stage
@@ -231,11 +232,10 @@
       // Pets that already progressed past the egg before this feature existed
       // never got a chance to choose — default them silently instead of
       // retroactively prompting an already-hatched pet.
-      if (!pet.colorChoice) pet.colorChoice = pet.stage > 0 ? 'coral' : null;
-      if (!pet.shape) pet.shape = pet.stage > 0 ? 'round' : null;
-      // Pets already underway never saw the explainer either — don't
-      // retroactively interrupt them with it.
-      if (typeof pet.sawIntro !== 'boolean') pet.sawIntro = pet.stage > 0;
+      if (!pet.colorChoice) pet.colorChoice = 'coral';
+      if (!pet.shape) pet.shape = 'round';
+      pet.sawIntro = true;
+      pet.tipsSeen ||= [];
     } else {
       pet = newPet(tag);
       persist();
@@ -517,8 +517,6 @@
   function render() {
     const host = document.getElementById('pet-wrap');
     if (!host) return;
-    if (pet.stage === 0 && !pet.sawIntro) { renderIntro(); return; }
-    if (pet.stage === 0 && !pet.colorChoice) { renderPicker(); return; }
     const mood = currentMood();
     const stageLabel = pet.stage === 3 && pet.form ? FORMS[pet.form].name : STAGE_NAMES[pet.stage];
     host.innerHTML = `
@@ -536,6 +534,8 @@
           <div class="pet-tank-stars" id="pet-tank-stars">${starsSVG()}</div>
           <div class="pet-tank-floor"></div>
           <div class="pet-tank-mood-tag" id="pet-mood-tag">${MOOD_TAGS[mood]}</div>
+          ${growthProgress()}
+          ${pet.stage === 1 && pet.stageActions < 6 ? '<div class="pet-goal-copy">RAISE YOUR MOBLING TO ADULTHOOD — HOW YOU CARE FOR IT DECIDES WHAT IT BECOMES</div>' : ''}
           <div id="pet-avatar">${petSVG(pet.stage, pet.form, mood)}</div>
           <div class="pet-mini" id="pet-mini"></div>
           <div class="pet-dex" id="pet-dex"></div>
@@ -543,6 +543,7 @@
 
         ${pet.dormant ? dormantNote() : ''}
 
+        <div class="pet-tip-slot" id="pet-tip-slot"></div>
         <div class="pet-stats">
           ${statRow('hunger', iconImg(ICON.hunger, 17), 'f-hunger')}
           ${statRow('happiness', heartSVG(16), 'f-happy')}
@@ -577,28 +578,36 @@
     updateCooldowns();
   }
 
-  // ── One-time "how to play" explainer, shown before the customize picker ──
-  function renderIntro() {
-    const host = document.getElementById('pet-wrap');
-    if (!host) return;
-    host.innerHTML = `
-      <div class="pet-picker pet-intro">
-        <div class="pet-picker-title">WELCOME TO PET MOBE</div>
-        <div class="pet-intro-body">
-          <div class="pet-intro-row">${heartSVG(20)}<span>Hatch, raise, and evolve an original MOBLING — egg → baby → juvenile → adult.</span></div>
-          <div class="pet-intro-row">${iconImg(ICON.hunger, 20)}<span>Five stats to manage: Hunger, Happiness, Energy, Safety, and Health.</span></div>
-          <div class="pet-intro-row">${iconImg(ICON.play, 20)}<span>Each action opens a quick objective — clear it to restore that stat. No timers, just goals.</span></div>
-          <div class="pet-intro-row">${iconImg(ICON.safety, 20)}<span>How you raise it decides which of 4 adult forms it becomes — check the FORM DEX to track them.</span></div>
-        </div>
-        <button class="pet-foot-btn" id="pet-intro-confirm">GOT IT ▶</button>
-      </div>`;
-    const btn = document.getElementById('pet-intro-confirm');
-    if (btn) btn.onclick = () => {
-      pet.sawIntro = true;
+  function growthProgress() {
+    if (pet.stage >= 3) return '';
+    const pct = clamp((pet.stageProgress / STAGE_THRESHOLD[pet.stage]) * 100, 0, 100);
+    const next = STAGE_NAMES[pet.stage + 1];
+    return `<div class="pet-growth" id="pet-growth">
+      <div class="pet-growth-label">→ ${next}</div>
+      <div class="pet-growth-track"><div class="pet-growth-fill" id="pet-growth-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }
+
+  function hasSeenTip(id) { return pet.tipsSeen && pet.tipsSeen.includes(id); }
+  function showTip(id, text) {
+    if (hasSeenTip(id)) return;
+    const slot = document.getElementById('pet-tip-slot');
+    if (!slot || slot.firstChild) return;
+    const tip = document.createElement('button');
+    tip.type = 'button';
+    tip.className = 'pet-context-tip';
+    tip.textContent = text;
+    slot.appendChild(tip);
+    let timer = 0;
+    const dismiss = () => {
+      clearTimeout(timer);
+      if (!hasSeenTip(id)) pet.tipsSeen.push(id);
+      tip.classList.add('leaving');
+      setTimeout(() => tip.remove(), 180);
       persist();
-      SFX && SFX.menuSelect && SFX.menuSelect();
-      render();
     };
+    tip.onclick = dismiss;
+    timer = setTimeout(dismiss, 8000);
   }
 
   // ── Hatch-time customize screen (color + shape) ──
@@ -607,7 +616,8 @@
     if (!host) return;
     host.innerHTML = `
       <div class="pet-picker">
-        <div class="pet-picker-title">CUSTOMIZE YOUR MOBLING</div>
+        <div class="pet-picker-kicker">IT HATCHED!</div>
+        <div class="pet-picker-title">MAKE YOUR MOBLING YOURS</div>
         <div class="pet-picker-preview" id="pet-picker-preview">${petSVG(1, null, 'happy', pickerState.shape, pickerState.color).replace('class="pet-stage-svg mood-happy"', 'class="pet-picker-svg"')}</div>
         <div class="pet-picker-label">COLOR</div>
         <div class="pet-picker-swatches" id="pet-picker-swatches">
@@ -617,7 +627,7 @@
         <div class="pet-picker-shapes" id="pet-picker-shapes">
           ${SHAPE_CHOICES.map(s => `<button class="pet-shape-btn ${s.key === pickerState.shape ? 'sel' : ''}" data-s="${s.key}">${s.label}</button>`).join('')}
         </div>
-        <button class="pet-foot-btn" id="pet-picker-confirm">HATCH MOBLING ▶</button>
+        <button class="pet-foot-btn" id="pet-picker-confirm">MEET MY MOBLING ▶</button>
       </div>`;
     function refreshPreview() {
       const pv = document.getElementById('pet-picker-preview');
@@ -643,6 +653,7 @@
       SFX && SFX.menuSelect && SFX.menuSelect();
       lastMood = '';
       render();
+      showTip('care_intro', "KEEP YOUR MOBLING'S STATS UP — TAP AN ACTION WHEN A BAR RUNS LOW.");
     };
   }
 
@@ -686,6 +697,10 @@
     if (streak) streak.textContent = pet.streak.days;
     const tank = document.getElementById('pet-tank');
     if (tank) tank.classList.toggle('mood-bright', currentMood() === 'happy' || currentMood() === 'celebrate');
+    const low = [['hunger', 'feed', 'HUNGRY', 'FEED'], ['happiness', 'pet', 'LONELY', 'PET'], ['energy', 'rest', 'TIRED', 'REST'], ['safety', 'guard', 'UNSAFE', 'GUARD']]
+      .find(([stat]) => pet[stat] < 30);
+    document.querySelectorAll('.pet-act-btn').forEach(btn => btn.classList.toggle('needs-care', !!low && pet.stageActions < 5 && btn.dataset.act === low[1]));
+    if (low) showTip('low_stat', `YOUR MOBLING IS ${low[2]} — TRY ${low[3]}!`);
   }
 
   function refreshAvatarIfMoodChanged() {
@@ -729,6 +744,7 @@
   // Every mini is goal-based (accomplished, not timed) and ramps by stage.
   function startAction(key) {
     if (mini || onCooldown(key)) return;
+    document.querySelectorAll('.pet-act-btn').forEach(btn => btn.classList.remove('needs-care'));
     if (pet.stage === 0) { hatchTap(); return; }
     if (key === 'feed') miniCatch();        // SPACE — slide-bar catcher, dodge junk food
     else if (key === 'play') miniWhack();   // WHACK — bop the popping toys
@@ -1196,6 +1212,10 @@
     refreshAvatarIfMoodChanged();
     updateStats();
     updateCooldowns();
+    showTip('cooldowns', 'NICE! EACH ACTION HAS A COOLDOWN — TRY A DIFFERENT ONE WHILE IT RECHARGES.');
+    if (pet.stage < 3 && pet.stageProgress >= STAGE_THRESHOLD[pet.stage] * 0.5) {
+      showTip('growth_half', 'YOUR MOBLING IS GROWING — KEEP CARING FOR IT TO REACH THE NEXT STAGE.');
+    }
     schedulePersist();
   }
 
@@ -1224,9 +1244,21 @@
   }
 
   function evolve() {
+    if (pet._evolving) return;
+    pet._evolving = true;
+    const bar = document.getElementById('pet-growth-fill');
+    if (bar) {
+      bar.style.width = '100%';
+      bar.classList.add('complete');
+    }
+    setTimeout(finishEvolution, bar ? 220 : 0);
+  }
+
+  function finishEvolution() {
     pet.stage++;
     pet.stageProgress = 0;
     pet.stageActions = 0;
+    pet._evolving = false;
     if (pet.stage === 3) {
       pet.form = decideForm();
       if (!pet.collected.includes(pet.form)) pet.collected.push(pet.form);
@@ -1234,7 +1266,8 @@
     pet._celebrateUntil = Date.now() + 2600;
     playFanfare();
     lastMood = '';
-    render();
+    if (pet.stage === 1) renderPicker();
+    else render();
     // celebratory burst
     for (let i = 0; i < 6; i++) setTimeout(() => fx(starSVG(18, i % 2 ? '#ffe61a' : '#fff')), i * 90);
     persist();
