@@ -32,7 +32,7 @@
   const STAGE_NAMES = ['EGG', 'BABY', 'JUVENILE', 'ADULT'];
   const STAGE_THRESHOLD = [5, 10, 16];   // care-progress needed to leave egg / baby / juvenile
   const STAGE_MIN_ACTIONS = [4, 6, 8];   // soft gate so evolution never fires on one big tick
-  const COOLDOWN = { feed: 20000, play: 20000, rest: 24000, pet: 13000, guard: 22000 };
+  const COOLDOWN = { feed: 12000, play: 18000, rest: 28000, pet: 6000, guard: 20000 };
   const DORMANT_RECOVERY = 4;            // care actions to wake a wandered pet
   const MOOD_TAGS = {
     idle: 'CONTENT', happy: 'HAPPY!', hungry: 'HUNGRY', tired: 'SLEEPY',
@@ -573,6 +573,9 @@
       const av = document.getElementById('pet-avatar');
       if (av) av.style.cursor = 'pointer';
       if (av) av.onclick = () => { if (pet.stage === 0 && !mini) hatchTap(); };
+    } else {
+      const av = document.getElementById('pet-avatar');
+      if (av) av.onclick = () => { if (allOnCooldown() && !mini) idlePetTap(); };
     }
     updateStats();
     updateCooldowns();
@@ -739,6 +742,29 @@
   }
 
   function onCooldown(key) { return (pet.cd[key] || 0) > Date.now(); }
+  function allOnCooldown() {
+    const now = Date.now();
+    return ['feed', 'play', 'rest', 'pet', 'guard'].every(key => (pet.cd[key] || 0) > now);
+  }
+
+  function idlePetTap() {
+    const av = document.getElementById('pet-avatar');
+    const tank = document.getElementById('pet-tank');
+    if (!av || !tank) return;
+    const svg = av.querySelector('.pet-stage-svg');
+    if (svg) {
+      svg.classList.remove('idle-tapped');
+      void svg.getBoundingClientRect();
+      svg.classList.add('idle-tapped');
+      setTimeout(() => svg.classList.remove('idle-tapped'), 240);
+    }
+    pentaNote(Math.floor(Math.random() * PENTA.length), 0.045, 0.12);
+    const bubble = document.createElement('span');
+    bubble.className = 'pet-idle-reaction';
+    bubble.textContent = Math.random() < 0.5 ? '!' : '~';
+    tank.appendChild(bubble);
+    setTimeout(() => bubble.remove(), 520);
+  }
 
   // Each action is a compact mini modeled on one of the other arcade games.
   // Every mini is goal-based (accomplished, not timed) and ramps by stage.

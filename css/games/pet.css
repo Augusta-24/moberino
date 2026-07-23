@@ -170,6 +170,32 @@
 @keyframes pet-droop  { 0%,100%{transform:translate(-50%,-49%) rotate(0deg)} 50%{transform:translate(-50%,-47%) rotate(2.5deg)} }
 @keyframes pet-shiver { 0%,100%{transform:translate(-51%,-50%)} 50%{transform:translate(-49%,-50%)} }
 @keyframes pet-cheer  { 0%,100%{transform:translate(-50%,-52%) rotate(-4deg)} 50%{transform:translate(-50%,-58%) rotate(4deg)} }
+.pet-stage-svg.idle-tapped { animation: pet-idle-wiggle 0.22s ease-out !important; }
+@keyframes pet-idle-wiggle {
+  0%,100% { transform: translate(-50%,-50%) rotate(0); }
+  30% { transform: translate(-54%,-50%) rotate(-3deg); }
+  70% { transform: translate(-46%,-50%) rotate(3deg); }
+}
+.pet-idle-reaction {
+  position: absolute;
+  left: 64%; top: 35%;
+  z-index: 6;
+  min-width: 22px;
+  padding: 3px 6px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,110,199,0.55);
+  background: rgba(5,2,16,0.88);
+  color: var(--pet);
+  font-family: 'VCR', monospace;
+  font-size: 12px;
+  text-align: center;
+  animation: pet-idle-reaction 0.5s ease-out forwards;
+}
+@keyframes pet-idle-reaction {
+  from { opacity: 0; transform: translateY(6px) scale(0.7); }
+  35% { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(-12px) scale(0.9); }
+}
 
 .pet-egg-crack {
   position: absolute;
