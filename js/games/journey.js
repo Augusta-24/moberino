@@ -51,7 +51,7 @@
           <div class="journey-ship-mark" aria-hidden="true">
             ${shipIllustration('journey-menu-ship')}
           </div>
-          <p>Keep a patched-up ship moving toward the far edge of the map.</p>
+          <p>Keep the ship running. Choose a stop. Push farther out.</p>
           <div class="journey-menu-actions">
             <button class="journey-primary-btn" type="button" onclick="journeyContinue()" ${canContinue ? '' : 'disabled'}>
               ${canContinue ? 'CONTINUE JOURNEY' : 'NO JOURNEY SAVED'}
@@ -109,14 +109,6 @@
     const availableStop = JourneyData.getConnectedNodes(location.id).find(node =>
       state.route.unlockedNodes.includes(node.id) && node.implemented
     );
-    const guidance = {
-      label: 'NEXT STEP',
-      message: availableStop
-        ? `Open Route and travel directly to ${availableStop.name}.`
-        : 'Open Route to review the journey ahead.',
-      action: 'OPEN ROUTE',
-      handler: 'journeyRoute()'
-    };
     root.innerHTML = `
       <main class="journey-ship-screen" aria-labelledby="journey-ship-title">
         <header class="journey-topbar">
@@ -127,16 +119,18 @@
           </div>
           <span class="journey-save-status">SAVED</span>
         </header>
-        <section class="journey-return-panel ${notices.length ? '' : 'is-guidance'}">
-          <strong>${notices.length ? 'SHIP LOG' : guidance.label}</strong>
-          <span>${notices.length ? notices.join(' ') : guidance.message}</span>
-          ${notices.length ? '' : `<button type="button" onclick="${guidance.handler}">${guidance.action} →</button>`}
+        <section class="journey-next-strip">
+          <strong>NEXT</strong>
+          <span>${availableStop ? availableStop.name : 'Review the route'}</span>
+          <small>${availableStop ? `${availableStop.fuelCost} FUEL` : ''}</small>
+          <button type="button" onclick="journeyRoute()">ROUTE →</button>
         </section>
+        ${notices.length ? `<div class="journey-return-note">${notices.join(' ')}</div>` : ''}
         <section class="journey-ship-bay">
           <div class="journey-ship-visual" aria-label="Your patched-up ship">
             <div class="journey-orbit-line"></div>
             <div class="journey-large-ship">${shipIllustration('journey-home-ship')}</div>
-            <span>PATCHED · PRESSURIZED · READY</span>
+            <span>PATCHED · READY</span>
           </div>
           <div class="journey-status-panel">
             <div class="journey-section-label">SHIP STATUS</div>
@@ -144,18 +138,13 @@
             ${resourceCard('FUEL', r.fuel, r.maxFuel, 'is-fuel')}
             ${resourceCard('POWER', r.power, r.maxPower, 'is-power')}
             ${resourceCard('PILOT', r.pilot, 100, 'is-pilot')}
-            <div class="journey-next-stop">
-              <span>NEXT AVAILABLE STOP</span>
-              <strong>${availableStop ? availableStop.name.toUpperCase() : 'ROUTE AHEAD'}</strong>
-              <small>${availableStop ? `${availableStop.fuelCost} FUEL · CLICK ROUTE TO TRAVEL` : 'Open the route to inspect future destinations.'}</small>
-            </div>
           </div>
         </section>
         <nav class="journey-ship-actions" aria-label="Ship actions">
-          <button class="is-recommended" type="button" onclick="journeyRoute()">ROUTE <small>CHOOSE AND TRAVEL</small></button>
-          <button type="button" onclick="journeyRepair()" ${canRepair ? '' : 'disabled'}>REPAIR <small>${r.hull >= r.maxHull ? 'HULL FULL' : state.currency.salvage < 5 ? 'NEEDS 5 SALVAGE' : '5 SALVAGE'}</small></button>
-          <button type="button" onclick="journeyRefuel()" ${canRefuel ? '' : 'disabled'}>REFUEL <small>${r.fuel >= r.maxFuel ? 'TANK FULL' : location.id !== 'fuel-stop-1' ? 'FIND A FUEL STOP' : 'STATION SERVICE'}</small></button>
-          <button type="button" onclick="journeyRest()" ${canRest ? '' : 'disabled'}>REST <small>${canRest ? 'RESTORE 25' : 'PILOT READY'}</small></button>
+          <button class="is-recommended" type="button" onclick="journeyRoute()">ROUTE <small>TRAVEL</small></button>
+          <button type="button" onclick="journeyRepair()" ${canRepair ? '' : 'disabled'}>REPAIR <small>${r.hull >= r.maxHull ? 'FULL' : state.currency.salvage < 5 ? '5 SCRAP' : 'FIX 20'}</small></button>
+          <button type="button" onclick="journeyRefuel()" ${canRefuel ? '' : 'disabled'}>REFUEL <small>${r.fuel >= r.maxFuel ? 'FULL' : location.id !== 'fuel-stop-1' ? 'AT STATION' : 'FILL'}</small></button>
+          <button type="button" onclick="journeyRest()" ${canRest ? '' : 'disabled'}>REST <small>${canRest ? '+25' : 'READY'}</small></button>
         </nav>
       </main>`;
   }
@@ -234,10 +223,10 @@
         <section>
           <div class="journey-kicker">DESTINATION REACHED · 18 DISTANCE</div>
           <h1 id="journey-fuel-title">LANTERN<br>STATION</h1>
-          <p>The Wayfarer docks, connects to the station pump, and refuels automatically.</p>
+          <p>Docked. Fuel topped off automatically.</p>
           <blockquote>${firstVisit
-            ? '“Tank full. The Scrap Belt route is uploaded to your navigation board.”'
-            : '“Welcome back. We topped off the tank while you were docking.”'}</blockquote>
+            ? '“Tank full. Scrap Belt route unlocked.”'
+            : '“Welcome back. Tank topped off.”'}</blockquote>
           <div class="journey-arrival-stats">
             <span>FUEL ADDED <strong>+${Math.round(fuelGained)}</strong></span>
             <span>TANK STATUS <strong>${Math.round(state.resources.fuel)} / ${Math.round(state.resources.maxFuel)}</strong></span>
@@ -261,16 +250,14 @@
         <section class="journey-briefing-copy">
           <div class="journey-kicker">ROUTE ENCOUNTER · ASTEROID SALVAGE</div>
           <h1 id="journey-briefing-title">${node.name}</h1>
-          <p>Cross the drifting wreckage, break apart incoming asteroids, and collect what you can without losing the ship.</p>
+          <p>Survive 30 seconds. Break rocks. Grab salvage.</p>
           <div class="journey-objective-list">
-            <span><strong>30 SEC</strong> SURVIVE THE BELT</span>
-            <span><strong>5 SALVAGE</strong> OPTIONAL TARGET</span>
-            <span><strong>${Math.round(state.resources.hull)} HULL</strong> CURRENT CONDITION</span>
+            <span><strong>SURVIVE</strong> 30 SEC</span>
+            <span><strong>BONUS</strong> 5 SALVAGE</span>
+            <span><strong>HULL</strong> ${Math.round(state.resources.hull)}</span>
           </div>
           <div class="journey-briefing-controls">
-            <span>DESKTOP · A/D OR ARROWS</span>
-            <span>TOUCH · DRAG TO STEER</span>
-            <span>BLASTER · AUTO-FIRE</span>
+            <span>DRAG OR A/D · AUTO-FIRE</span>
           </div>
           <div class="journey-briefing-actions">
             <button class="journey-primary-btn" type="button" onclick="journeyStartEncounter()">ENTER SCRAP BELT</button>
@@ -343,8 +330,8 @@
           <div class="journey-kicker">${success ? 'ROUTE CLEARED' : 'EMERGENCY RETREAT'}</div>
           <h1 id="journey-results-title">${success ? 'BELT CROSSED' : 'SHIP RECOVERED'}</h1>
           <p>${success
-            ? 'The Wayfarer emerges from the wreckage with a new route blinking on the navigation board.'
-            : 'The ship made it back in one piece. Repair, refuel, and try the crossing again when ready.'}</p>
+            ? 'Route open. New stops added.'
+            : 'Ship recovered. Repair and try again.'}</p>
           <div class="journey-results-grid">
             <span>HULL REMAINING<strong>${Math.round(state.resources.hull)}</strong></span>
             <span>DAMAGE TAKEN<strong>${Math.round(result.damageTaken)}</strong></span>
@@ -369,7 +356,7 @@
         <section>
           <div class="journey-kicker">FLIGHT MANUAL · PAGE 1</div>
           <h1 id="journey-help-title">HOW TO PLAY</h1>
-          <p>Return to your ship over time, keep its systems ready, and choose the next stop on a long route through space.</p>
+          <p>Keep moving. Maintain the ship between encounters.</p>
           <ul>
             <li>Fuel lets the ship travel between route nodes.</li>
             <li>Hull damage remains until you repair it.</li>
