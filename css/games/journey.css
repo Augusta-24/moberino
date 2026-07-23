@@ -278,50 +278,99 @@ body.on-journey {
   letter-spacing: 2px;
 }
 
-.journey-next-strip {
+.journey-destination-section {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto minmax(145px, 190px);
   align-items: center;
   gap: 10px;
   width: min(100%, 980px);
   margin: 0 auto 10px;
   border: 1px solid rgba(105,215,255,.45);
-  border-radius: 7px;
-  padding: 9px 10px 9px 13px;
+  border-radius: 9px;
+  padding: 11px 12px 11px 15px;
   background: rgba(105,215,255,.08);
 }
 
-.journey-next-strip strong {
+.journey-destination-copy {
+  min-width: 0;
+}
+
+.journey-destination-copy > span {
+  display: block;
   color: var(--journey-cyan);
   font-size: 12px;
   letter-spacing: 2px;
 }
 
-.journey-next-strip span {
+.journey-destination-copy > strong {
+  display: block;
   overflow: hidden;
+  margin-top: 3px;
   color: #f5f3ec;
-  font-size: 16px;
-  line-height: 1.25;
+  font: 25px/1 'Bebas Neue', sans-serif;
+  letter-spacing: 1.5px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.journey-next-strip small {
+.journey-destination-copy > small {
+  display: block;
+  margin-top: 5px;
   color: var(--journey-gold);
   font-size: 12px;
+  letter-spacing: 1px;
   white-space: nowrap;
 }
 
-.journey-next-strip button {
+.journey-nav-button,
+.journey-depart-button {
   border: 1px solid var(--journey-cyan);
-  border-radius: 5px;
-  min-height: 38px;
-  padding: 8px 11px;
+  border-radius: 6px;
+  min-height: 54px;
   background: rgba(105,215,255,.16);
   color: var(--journey-cyan);
   font: 13px/1 'VCR', monospace;
   letter-spacing: 1px;
   cursor: pointer;
+}
+
+.journey-nav-button {
+  width: 54px;
+  padding: 6px;
+}
+
+.journey-nav-button > span {
+  display: block;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.journey-nav-button small,
+.journey-depart-button small {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  letter-spacing: .5px;
+}
+
+.journey-nav-button.is-required {
+  background: rgba(105,215,255,.25);
+  box-shadow: 0 0 24px rgba(105,215,255,.2);
+  animation: journey-next-action-pulse 2s ease-in-out infinite;
+}
+
+.journey-depart-button {
+  padding: 8px 13px;
+  border-color: var(--journey-gold);
+  background: rgba(255,241,166,.14);
+  color: var(--journey-gold);
+}
+
+.journey-depart-button:disabled {
+  border-color: rgba(245,243,236,.16);
+  background: rgba(245,243,236,.025);
+  color: rgba(245,243,236,.28);
+  cursor: default;
 }
 
 .journey-return-note {
@@ -426,7 +475,7 @@ body.on-journey {
 
 .journey-ship-actions {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   width: min(100%, 980px);
   margin: 10px auto 0;
@@ -1065,16 +1114,17 @@ body.on-journey {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .journey-next-strip {
-    grid-template-columns: auto minmax(0, 1fr) auto;
+  .journey-destination-section {
+    grid-template-columns: minmax(0, 1fr) 54px;
   }
 
-  .journey-next-strip small {
-    display: none;
+  .journey-destination-copy > strong {
+    font-size: 23px;
   }
 
-  .journey-next-strip span {
-    font-size: 15px;
+  .journey-depart-button {
+    grid-column: 1 / -1;
+    min-height: 48px;
   }
 
   .journey-route-header {
@@ -1126,6 +1176,7 @@ body.on-journey {
 
 @media (prefers-reduced-motion: reduce) {
   .journey-engine-plume,
+  .journey-nav-button.is-required,
   .journey-ship-actions button.is-recommended {
     animation: none;
   }

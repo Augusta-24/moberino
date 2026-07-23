@@ -54,16 +54,17 @@ test('Journey controller does not own storage or load the live Space Mobe runtim
   assert.equal(controller.includes('initSpace'), false);
 });
 
-test('route buttons travel immediately without a second departure confirmation', () => {
+test('route choice returns to the ship and departure happens from the destination section', () => {
   const controller = fs.readFileSync(
     path.join(__dirname, '..', 'js', 'games', 'journey.js'),
     'utf8'
   );
 
-  assert.match(controller, /onclick="journeyTravelTo\('/);
-  assert.match(controller, /window\.journeyTravelTo/);
-  assert.equal(controller.includes('window.journeyDepart'), false);
-  assert.equal(controller.includes('journeySelectDestination'), false);
+  assert.match(controller, /onclick="journeyChooseDestination\('/);
+  assert.match(controller, /window\.journeyChooseDestination/);
+  assert.match(controller, /window\.journeyDepart/);
+  assert.match(controller, /PILOT'S CALL/);
+  assert.equal(controller.includes('window.journeyTravelTo'), false);
 });
 
 test('Journey combat is isolated from storage and exposes lifecycle methods', () => {
