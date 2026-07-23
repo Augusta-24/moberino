@@ -43,7 +43,7 @@
 
   function crystalCluster(count) {
     const total = Math.max(1, count || 7);
-    return `<div class="journey-crystal-cluster">${Array.from({ length: total }, (_, index) =>
+    return `<div class="journey-crystal-cluster ${total === 1 ? 'is-single' : 'is-arc'}">${Array.from({ length: total }, (_, index) =>
       `<i style="--crystal-index:${total === 1 ? 3 : index}"></i>`
     ).join('')}</div>`;
   }

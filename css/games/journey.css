@@ -1786,6 +1786,8 @@ body.on-journey {
 }
 
 .journey-story-hero {
+  position: relative;
+  z-index: 2;
   width: 142px;
   height: 142px;
   overflow: hidden;
@@ -1798,22 +1800,40 @@ body.on-journey {
 
 .journey-crystal-cluster {
   position: absolute;
-  width: 230px;
-  height: 170px;
+  z-index: 1;
+  width: min(92vw, 360px);
+  height: 230px;
   pointer-events: none;
 }
 
 .journey-crystal-cluster i {
   position: absolute;
-  left: calc(50% + (var(--crystal-index) - 3) * 26px);
-  top: 50%;
   width: 28px;
   height: 58px;
   background: linear-gradient(135deg, #f7ffff, #69d7ff 44%, #765dff);
   clip-path: polygon(50% 0, 100% 32%, 72% 100%, 28% 100%, 0 32%);
   filter: drop-shadow(0 0 12px #69d7ff);
-  opacity: calc(.28 + var(--crystal-index) * .08);
-  transform: translate(-50%, -50%) rotate(calc((var(--crystal-index) - 3) * 8deg));
+  opacity: .76;
+  transform: translate(-50%, -50%);
+}
+
+.journey-crystal-cluster.is-arc i:nth-child(1) { top: 54%; left: 0; transform: translate(-50%, -50%) rotate(-24deg); }
+.journey-crystal-cluster.is-arc i:nth-child(2) { top: 25%; left: 10%; transform: translate(-50%, -50%) rotate(-17deg); }
+.journey-crystal-cluster.is-arc i:nth-child(3) { top: 9%; left: 28%; transform: translate(-50%, -50%) rotate(-9deg); }
+.journey-crystal-cluster.is-arc i:nth-child(4) { top: 2%; left: 50%; }
+.journey-crystal-cluster.is-arc i:nth-child(5) { top: 9%; left: 72%; transform: translate(-50%, -50%) rotate(9deg); }
+.journey-crystal-cluster.is-arc i:nth-child(6) { top: 25%; left: 90%; transform: translate(-50%, -50%) rotate(17deg); }
+.journey-crystal-cluster.is-arc i:nth-child(7) { top: 54%; left: 100%; transform: translate(-50%, -50%) rotate(24deg); }
+
+.journey-crystal-cluster.is-single {
+  width: 230px;
+  height: 170px;
+}
+
+.journey-crystal-cluster.is-single i {
+  top: 50%;
+  left: 50%;
+  opacity: 1;
 }
 
 .journey-story-signal {
