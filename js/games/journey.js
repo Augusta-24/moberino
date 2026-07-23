@@ -669,34 +669,65 @@
     renderLanternRefuel(startFuel, refuel.gained, firstVisit);
   }
 
-  function renderIntel(transmissionId) {
+  function renderIntelCinematic(transmission) {
     const root = host();
     const state = JourneyState.getState();
-    const transmission = JourneyData.getTransmission(transmissionId);
-    if (!root || !state || !transmission || !state.log.transmissions.includes(transmissionId) || !active) return;
-    JourneyState.markTransmissionRead(transmissionId);
+    if (!root || !state || !transmission || !active) return;
+    const hero = selectedHero();
     root.innerHTML = `
-      <main class="journey-intel-screen" aria-labelledby="journey-intel-title">
+      <main class="journey-intel-cinematic">
+        <div class="journey-starfield" aria-hidden="true"></div>
+        <div class="journey-intel-cinematic-heading">
+          <span>WAYFARER SIGNAL ARRAY</span>
+          <strong>TWO SIGNALS FOUND</strong>
+        </div>
+        <div class="journey-signal-reveal" aria-label="A distress beacon and cache signal branch beyond the Scrap Belt">
+          <div class="journey-signal-origin"><i></i><span>WAYFARER</span></div>
+          <div class="journey-signal-branch is-distress"><i></i><strong>DISTRESS</strong><small>LIVE BEACON</small></div>
+          <div class="journey-signal-branch is-cache"><i></i><strong>CACHE</strong><small>OLD ROUTE PING</small></div>
+        </div>
+        <section class="journey-arrival-dialogue">
+          <div class="journey-arrival-speaker" style="--hero-color:${hero.color}">${typeof charFace === 'function' ? charFace(hero, 'normal') : hero.emoji}</div>
+          <div><span>${hero.name}</span><p>“Two signals. One could be a survivor. The other may lead to the crystals.”</p></div>
+        </section>
+        <button type="button" onclick="journeyContinueIntel('${transmission.id}')">CONTINUE →</button>
+      </main>`;
+  }
+
+  function renderIntelChoice(transmission) {
+    const root = host();
+    const state = JourneyState.getState();
+    if (!root || !state || !transmission || !active) return;
+    root.innerHTML = `
+      <main class="journey-choice-screen" aria-labelledby="journey-choice-title">
         <section>
-          <div class="journey-kicker">INCOMING INTEL · ${transmission.source}</div>
-          <h1 id="journey-intel-title">${transmission.title}</h1>
-          <p>${transmission.body}</p>
-          <div class="journey-intel-call">${transmission.prompt}</div>
-          <div class="journey-intel-leads">
-            ${transmission.leads.map(lead => {
+          <div class="journey-kicker">TWO ROUTES OPEN</div>
+          <h1 id="journey-choice-title">PILOT'S CALL</h1>
+          <p>What matters first?</p>
+          <div class="journey-choice-grid">
+            ${transmission.leads.map((lead, index) => {
               const node = JourneyData.getNode(lead.nodeId);
               return `
-                <article>
-                  <span>${node ? `${node.fuelCost} FUEL · ${node.distance} DISTANCE` : 'NEW LEAD'}</span>
+                <button class="journey-choice-card ${index === 0 ? 'is-rescue' : 'is-cache'}" type="button" onclick="journeyChooseIntelDestination('${lead.nodeId}')">
+                  <span>${node ? `${node.fuelCost} FUEL` : 'NEW LEAD'}</span>
                   <strong>${lead.label}</strong>
-                  <p>${lead.detail}</p>
-                  <button type="button" onclick="journeyChooseIntelDestination('${lead.nodeId}')">CHOOSE →</button>
-                </article>`;
+                  <small>${index === 0 ? 'Someone is alive.' : 'Safer. Supplies and a clue.'}</small>
+                  <b>CHOOSE →</b>
+                </button>`;
             }).join('')}
           </div>
-          <button class="journey-text-btn" type="button" onclick="journeyShip()">DECIDE LATER</button>
+          <button class="journey-text-btn" type="button" onclick="journeyShip()">BACK TO COCKPIT</button>
         </section>
       </main>`;
+  }
+
+  function renderIntel(transmissionId) {
+    const state = JourneyState.getState();
+    const transmission = JourneyData.getTransmission(transmissionId);
+    if (!state || !transmission || !state.log.transmissions.includes(transmissionId) || !active) return;
+    const unread = !state.log.readTransmissions.includes(transmissionId);
+    if (unread) renderIntelCinematic(transmission);
+    else renderIntelChoice(transmission);
   }
 
   function renderLog() {
@@ -1035,6 +1066,14 @@
   window.journeyReadIntel = function (transmissionId) {
     playMenuSound();
     renderIntel(transmissionId);
+  };
+
+  window.journeyContinueIntel = function (transmissionId) {
+    const transmission = JourneyData.getTransmission(transmissionId);
+    if (!transmission) return;
+    playMenuSound();
+    JourneyState.markTransmissionRead(transmissionId);
+    renderIntelChoice(transmission);
   };
 
   window.journeyChooseIntelDestination = function (destinationId) {

@@ -53,6 +53,24 @@ test('the first Pilot’s Call has authored intel and two playable leads', () =>
   assert.equal(Object.isFrozen(intel), true);
 });
 
+test('new intel reveals through a cinematic before the compact Pilot’s Call', () => {
+  const controller = fs.readFileSync(
+    path.join(__dirname, '..', 'js', 'games', 'journey.js'),
+    'utf8'
+  );
+
+  assert.match(controller, /function renderIntelCinematic/);
+  assert.match(controller, /function renderIntelChoice/);
+  assert.match(controller, /TWO SIGNALS FOUND/);
+  assert.match(controller, /journeyContinueIntel/);
+  assert.match(controller, /JourneyState\.markTransmissionRead\(transmissionId\)/);
+  assert.match(controller, /journey-choice-card/);
+  assert.match(controller, /Someone is alive\./);
+  assert.match(controller, /Safer\. Supplies and a clue\./);
+  assert.match(controller, /if \(unread\) renderIntelCinematic\(transmission\)/);
+  assert.doesNotMatch(controller, /\$\{transmission\.body\}/);
+});
+
 test('Journey controller does not own storage or load the live Space Mobe runtime', () => {
   const controller = fs.readFileSync(
     path.join(__dirname, '..', 'js', 'games', 'journey.js'),
