@@ -6,6 +6,7 @@
   const hostId = 'journey-wrap';
   let active = false;
   let shipNotice = '';
+  let maintenanceNotice = '';
 
   function host() {
     return document.getElementById(hostId);
@@ -111,6 +112,42 @@
     };
   }
 
+  function missionBrief(state, location, route, unreadIntel) {
+    if (unreadIntel) {
+      return {
+        title: 'READ THE NEW INTEL',
+        why: 'The signal array found two leads beyond the Scrap Belt.',
+        action: 'Open the transmission, then choose which lead to follow.'
+      };
+    }
+    if (route.needsPilotCall) {
+      return {
+        title: "MAKE THE PILOT'S CALL",
+        why: 'Two viable leads are open. Your choice changes what happens next.',
+        action: 'Open NAV and choose one destination.'
+      };
+    }
+    if (route.selected) {
+      return {
+        title: `REACH ${route.selected.name.toUpperCase()}`,
+        why: route.selected.description,
+        action: `Depart when the ship is ready. Cost: ${route.selected.fuelCost} fuel.`
+      };
+    }
+    if (location.id === 'repair-moon') {
+      return {
+        title: 'PREPARE FOR OGRE GATE',
+        why: 'A route guardian blocks the road to the first settlement.',
+        action: 'Repair damage and install a ship upgrade.'
+      };
+    }
+    return {
+      title: 'HOLD AT THE FRONTIER',
+      why: 'No onward mission is open yet.',
+      action: 'Maintain the ship while new intel develops.'
+    };
+  }
+
   function renderCurrentLocation() {
     const state = JourneyState.getState();
     const node = state && currentNode(state);
@@ -126,7 +163,11 @@
       renderCache(node);
       return;
     }
-    if (node && node.id === 'repair-moon' && !state.route.completedNodes.includes(node.id)) {
+    if (
+      node &&
+      node.id === 'repair-moon' &&
+      (!state.route.completedNodes.includes(node.id) || state.upgrades.blasterLevel < 1)
+    ) {
       renderRepairMoon(node);
       return;
     }
@@ -159,6 +200,10 @@
     const canDepart = destination && r.fuel >= destination.fuelCost;
     const unreadIntelId = JourneyState.getUnreadTransmissionIds()[0] || null;
     const unreadIntel = unreadIntelId && JourneyData.getTransmission(unreadIntelId);
+    const mission = missionBrief(state, location, route, unreadIntel);
+    const chapterProgress = state.route.completedNodes.filter(id =>
+      ['fuel-stop-1', 'scrap-belt', 'distress-signal', 'abandoned-cache', 'repair-moon'].includes(id)
+    ).length;
     root.innerHTML = `
       <main class="journey-ship-screen" aria-labelledby="journey-ship-title">
         <header class="journey-topbar">
@@ -169,6 +214,19 @@
           </div>
           <span class="journey-save-status">SAVED</span>
         </header>
+        <section class="journey-mission-brief">
+          <div class="journey-mission-heading">
+            <span>MISSION · CHAPTER ONE · ${chapterProgress} CLEARED</span>
+            <strong>${mission.title}</strong>
+          </div>
+          <p>${mission.why}</p>
+          <small>${mission.action}</small>
+        </section>
+        <section class="journey-inventory-strip" aria-label="Current supplies">
+          <span>SCRAP<strong>${Math.round(state.currency.salvage)}</strong></span>
+          <span>FUEL<strong>${Math.round(r.fuel)} / ${Math.round(r.maxFuel)}</strong></span>
+          <span>HULL<strong>${Math.round(r.hull)} / ${Math.round(r.maxHull)}</strong></span>
+        </section>
         ${unreadIntel ? `
           <section class="journey-intel-alert">
             <div><span>INCOMING INTEL</span><strong>${unreadIntel.title}</strong></div>
@@ -353,13 +411,18 @@
       : 0;
     const hullFull = state.resources.hull >= state.resources.maxHull;
     const canStartRepair = !repairUnderway && !hullFull && state.currency.salvage >= 5;
-    const upgradeCost = 20;
+    const upgradeCost = state.upgrades.blasterLevel === 0 ? 0 : 15;
+    const readyForGate = state.upgrades.blasterLevel >= 1;
+    const notice = maintenanceNotice;
+    maintenanceNotice = '';
     root.innerHTML = `
       <main class="journey-intel-screen journey-repair-screen" aria-labelledby="journey-repair-title">
         <section>
           <div class="journey-kicker">SAFE HARBOR · ${node.name.toUpperCase()}</div>
           <h1 id="journey-repair-title">DRY DOCK</h1>
-          <p>Moon crews can work while you are away. Repairs finish in real time; nothing gets worse while you wait.</p>
+          <p><strong>MISSION:</strong> Prepare the Wayfarer for the guardian at Ogre Gate. Repair damage and install one permanent upgrade.</p>
+          <div class="journey-scrap-balance">AVAILABLE SCRAP <strong>${state.currency.salvage}</strong></div>
+          ${notice ? `<div class="journey-maintenance-notice">${notice}</div>` : ''}
           <div class="journey-maintenance-grid">
             <article>
               <span>HULL · ${Math.round(state.resources.hull)} / ${Math.round(state.resources.maxHull)}</span>
@@ -374,11 +437,18 @@
               <strong>BLASTER TUNING ${state.upgrades.blasterLevel}</strong>
               <p>Shorter delay between automatic shots. Permanent upgrade.</p>
               <button type="button" onclick="journeyBuyBlasterUpgrade()" ${state.currency.salvage >= upgradeCost ? '' : 'disabled'}>
-                UPGRADE · ${upgradeCost} SCRAP
+                ${readyForGate ? `UPGRADE AGAIN · ${upgradeCost} SCRAP` : 'INSTALL FIRST UPGRADE · FREE'}
               </button>
             </article>
           </div>
-          <button class="journey-primary-btn" type="button" onclick="journeyFinishRepairMoon()">CLEAR FOR DEPARTURE</button>
+          <div class="journey-next-mission">
+            <span>NEXT MISSION</span>
+            <strong>OGRE GATE</strong>
+            <p>A route guardian blocks the road to the first settlement. This encounter is the next build slice.</p>
+          </div>
+          <button class="journey-primary-btn" type="button" onclick="journeyFinishRepairMoon()" ${readyForGate ? '' : 'disabled'}>
+            ${readyForGate ? 'SHIP READY · SAVE PROGRESS' : 'INSTALL 1 UPGRADE FIRST'}
+          </button>
           <button class="journey-text-btn" type="button" onclick="journeyShip()">RETURN TO SHIP</button>
         </section>
       </main>`;
@@ -464,7 +534,7 @@
     if (!active) return;
     const rescue = node.type === 'rescue';
     const applied = JourneyState.applyEncounterResult(result, rescue ? {
-      successSalvage: 10,
+      successSalvage: 18,
       completeNodeId: node.id,
       unlockNodeIds: ['repair-moon'],
       passengerId: node.passengerId
@@ -649,15 +719,26 @@
 
   window.journeyBuyBlasterUpgrade = function () {
     playMenuSound();
-    JourneyState.purchaseUpgrade('blasterLevel', 20);
+    const stateBefore = JourneyState.getState();
+    const upgradeCost = stateBefore && stateBefore.upgrades.blasterLevel === 0 ? 0 : 15;
+    const result = JourneyState.purchaseUpgrade('blasterLevel', upgradeCost);
+    maintenanceNotice = result.ok
+      ? `BLASTER TUNED · LEVEL ${result.level} · ${upgradeCost ? `${upgradeCost} SCRAP SPENT` : 'FIRST TUNE COMPLIMENTARY'}`
+      : 'NOT ENOUGH SCRAP FOR THIS UPGRADE';
     const state = JourneyState.getState();
     renderRepairMoon(currentNode(state));
   };
 
   window.journeyFinishRepairMoon = function () {
     playMenuSound();
+    const state = JourneyState.getState();
+    if (!state || state.upgrades.blasterLevel < 1) {
+      maintenanceNotice = 'INSTALL ONE SHIP UPGRADE BEFORE DEPARTURE';
+      renderRepairMoon(currentNode(state));
+      return;
+    }
     JourneyState.completeNode('repair-moon', ['ogre-gate']);
-    shipNotice = 'REPAIR MOON CLEARED · OGRE GATE FOUND';
+    shipNotice = 'SHIP PREPARED · NEXT MISSION: OGRE GATE';
     renderShip();
   };
 
