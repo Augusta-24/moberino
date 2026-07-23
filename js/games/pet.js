@@ -113,6 +113,12 @@
   };
   const JUNK = ['projectiles/junk_duck.png', 'projectiles/junk_boot.png', 'projectiles/junk_basketball.png', 'projectiles/junk_trashcan.png'];
   const REST_ICONS = ['projectiles/piano.png', 'projectiles/guitar.png', 'projectiles/saxophone.png'];
+  const FEED_SNACKS = [
+    { key: 'slice', label: 'SLICE', src: 'projectiles/pizza.png', color: '#ff9933' },
+    { key: 'berry', label: 'BERRY', src: 'projectiles/green_orb.png', color: '#8aff4f' },
+    { key: 'frost', label: 'FROST', src: 'projectiles/snowflake.png', color: '#4fd8ff' },
+    { key: 'heart', label: 'HEART', src: 'projectiles/hp_icon.png', color: '#ff6ec7' },
+  ];
 
   // Per-stage mini-game objectives — accomplished, not timed. Ramp up as the
   // pet grows; baby is doable, not trivial.
@@ -126,20 +132,14 @@
   // Foil grid size scales with stage too, so a full (100%) clear stays a real
   // objective rather than a shrinking target.
   const FOIL_GRID = { 1: { cols: 8, rows: 9 }, 2: { cols: 9, rows: 10 }, 3: { cols: 10, rows: 10 } };
-  // FEED: real ship-scroller pacing — the basket eases toward the drag point
-  // (capped speed, not an instant teleport) and obstacles spawn in patterns
-  // (walls with a gap, sweeps, scatters) instead of one uniform random drop,
-  // so camping in the middle no longer wins passively.
-  const FEED_TUNE  = { 1: { vyMin: 24, vyMax: 34, junk: 0.25, gap: 950, shipSpeed: 230 }, 2: { vyMin: 30, vyMax: 42, junk: 0.32, gap: 820, shipSpeed: 230 }, 3: { vyMin: 36, vyMax: 50, junk: 0.40, gap: 700, shipSpeed: 230 } };
+  const FEED_TUNE  = { 1: { recipe: 3, tiles: 6 }, 2: { recipe: 4, tiles: 7 }, 3: { recipe: 5, tiles: 8 } };
   const PLAY_TUNE  = { 1: { popGap: 680 }, 2: { popGap: 560 }, 3: { popGap: 460 } };
-  // GUARD: the enemy actively patrols (drifts side to side) at all times —
-  // it stops to charge wherever it currently is, then fires straight down
-  // from there. The ship (dragged along a bottom track) has the charge+
-  // travel window to read the enemy's position and move off that line.
+  // GUARD mirrors Space Red: aim tracks the player, locks late in the charge,
+  // then fires an aimed projectile. Older stages add short attack bursts.
   const GUARD_TUNE = {
-    1: { driftSpeed: 26, telegraph: 750, strike: 380, gap: 700, tol: 8 },
-    2: { driftSpeed: 34, telegraph: 620, strike: 340, gap: 600, tol: 7 },
-    3: { driftSpeed: 42, telegraph: 520, strike: 300, gap: 500, tol: 6 },
+    1: { driftSpeed: 28, charge: 920, aimLock: 700, strike: 330, gap: 520, tol: 12, burst: 1 },
+    2: { driftSpeed: 38, charge: 780, aimLock: 560, strike: 280, gap: 360, tol: 11, burst: 2 },
+    3: { driftSpeed: 48, charge: 650, aimLock: 450, strike: 230, gap: 260, tol: 10, burst: 3 },
   };
   // REST: Signal's note-constellation — three bands (LOW/MID/HIGH), each a
   // row of connected hex nodes carrying its own note; tap a node to play it.
@@ -785,7 +785,7 @@
     pet.lowHintDismissed = true;
     document.querySelectorAll('.pet-act-btn').forEach(btn => btn.classList.remove('needs-care'));
     if (pet.stage === 0) { hatchTap(); return; }
-    if (key === 'feed') miniCatch();        // SPACE — slide-bar catcher, dodge junk food
+    if (key === 'feed') miniCatch();        // visible snack-order matching
     else if (key === 'play') miniWhack();   // WHACK — bop the popping toys
     else if (key === 'rest') miniPads();    // SIGNAL — pentatonic lullaby pads
     else if (key === 'pet') miniScratch();  // holographic scratch-off foil
@@ -886,116 +886,106 @@
     setTimeout(() => tank.classList.remove(kind === 'bad' ? 'flash-bad' : 'flash-good'), 220);
   }
 
-  // ── FEED · Space-flavored: slide-bar basket, catch food, dodge junk ──
+  // ── FEED · Serve the visible snack recipe in order ──
   function miniCatch() {
     const el = miniEl();
     if (!el) return;
-    const goal = GOALS.feed[stageIdx()];
+    const goal = 4;
     const tune = FEED_TUNE[stageIdx()];
     el.innerHTML = `
-      <div class="pet-mini-title">SNACK RUN</div>
-      <div class="pet-mini-hint">WEAVE THE TRAY THROUGH THE GAPS — DODGE THE JUNK</div>
-      <div class="pet-catch-field" id="pet-catch-field">
-        <div class="pet-feed-track" id="pet-feed-track"><div class="pet-feed-basket" id="pet-feed-basket"></div></div>
-      </div>
-      <div class="pet-mini-count"><span id="pet-catch-n">0</span>/${goal} FED</div>`;
+      <div class="pet-mini-title">SNACK ORDER</div>
+      <div class="pet-mini-hint" id="pet-feed-hint">SERVE THE RECIPE FROM LEFT TO RIGHT</div>
+      <div class="pet-feed-order" id="pet-feed-order"></div>
+      <div class="pet-feed-board" id="pet-feed-board"></div>
+      <div class="pet-mini-count"><span id="pet-feed-n">0</span>/${goal} ORDERS</div>`;
     showMini();
-    const field = document.getElementById('pet-catch-field');
-    const track = document.getElementById('pet-feed-track');
-    const basket = document.getElementById('pet-feed-basket');
-    const nEl = document.getElementById('pet-catch-n');
-    mini = { key: 'feed', good: 0, goal, items: [], raf: 0, prev: performance.now(), lastSpawn: 0, basketX: 50, targetX: 50 };
-    function setTargetX(clientX) {
-      const rect = track.getBoundingClientRect();
-      mini.targetX = clamp(((clientX - rect.left) / rect.width) * 100, 6, 94);
+    const board = document.getElementById('pet-feed-board');
+    const orderEl = document.getElementById('pet-feed-order');
+    const hintEl = document.getElementById('pet-feed-hint');
+    const nEl = document.getElementById('pet-feed-n');
+    mini = { key: 'feed', orders: 0, goal, recipe: [], step: 0, locked: false, timeouts: [] };
+
+    function snackByKey(key) { return FEED_SNACKS.find(s => s.key === key); }
+    function renderOrder() {
+      orderEl.innerHTML = mini.recipe.map((key, i) => {
+        const snack = snackByKey(key);
+        const state = i < mini.step ? 'done' : i === mini.step ? 'next' : '';
+        return `<span class="pet-feed-slot ${state}" style="--snack:${snack.color}">
+          <img src="${snack.src}" alt=""><b>${snack.label}</b>
+        </span>`;
+      }).join('');
     }
-    track.onpointerdown = (e) => { e.preventDefault(); setTargetX(e.clientX); };
-    track.onpointermove = (e) => setTargetX(e.clientX);
-    field.onpointerdown = (e) => setTargetX(e.clientX);
-    field.onpointermove = (e) => { if (mini) setTargetX(e.clientX); };
-    function spawnItem(x, vy, bad, delayOffset) {
-      const span = document.createElement('img');
-      span.src = bad ? JUNK[Math.floor(Math.random() * JUNK.length)] : ICON.hunger;
-      span.className = 'pet-catch-item' + (bad ? ' is-junk' : '');
-      span.draggable = false;
-      const y0 = -14 - (delayOffset || 0);
-      span.dataset.x = String(x);
-      span.dataset.y = String(y0);
-      span.dataset.vy = String(vy);
-      span.style.left = x + '%';
-      span.style.top = y0 + '%';
-      span._bad = bad;
-      field.appendChild(span);
-      mini.items.push(span);
+    function fillBoard() {
+      if (!mini || mini.key !== 'feed') return;
+      const next = mini.recipe[mini.step];
+      const picks = [next];
+      while (picks.length < tune.tiles) {
+        picks.push(Math.random() < 0.24 ? 'junk' : FEED_SNACKS[Math.floor(Math.random() * FEED_SNACKS.length)].key);
+      }
+      picks.sort(() => Math.random() - 0.5);
+      board.innerHTML = picks.map(key => {
+        if (key === 'junk') {
+          const src = JUNK[Math.floor(Math.random() * JUNK.length)];
+          return `<button class="pet-feed-tile junk" type="button" data-key="junk" aria-label="Junk"><img src="${src}" alt=""><span>JUNK</span></button>`;
+        }
+        const snack = snackByKey(key);
+        return `<button class="pet-feed-tile" type="button" data-key="${key}" style="--snack:${snack.color}" aria-label="${snack.label}">
+          <img src="${snack.src}" alt=""><span>${snack.label}</span></button>`;
+      }).join('');
+      board.querySelectorAll('.pet-feed-tile').forEach(btn => btn.onpointerdown = onSnack);
     }
-    // Real patterns instead of one uniform random drop each tick — a wall
-    // with a single gap to thread, a diagonal sweep to weave through, or a
-    // scatter of spaced-out picks. Standing still no longer wins.
-    function spawnWave() {
-      const vy = tune.vyMin + Math.random() * (tune.vyMax - tune.vyMin);
-      const pattern = Math.floor(Math.random() * 3);
-      if (pattern === 0) {
-        const gapX = 14 + Math.random() * 66;
-        for (let x = 9; x <= 91; x += 12.5) {
-          if (Math.abs(x - gapX) < 8) continue;
-          spawnItem(x, vy, true, 0);
+    function newRecipe() {
+      if (!mini || mini.key !== 'feed') return;
+      mini.recipe = Array.from({ length: tune.recipe }, () => FEED_SNACKS[Math.floor(Math.random() * FEED_SNACKS.length)].key);
+      mini.step = 0;
+      renderOrder();
+      fillBoard();
+    }
+    function onSnack(e) {
+      e.preventDefault();
+      if (!mini || mini.key !== 'feed' || mini.locked) return;
+      const btn = e.currentTarget;
+      const expected = mini.recipe[mini.step];
+      if (btn.dataset.key !== expected) {
+        mini.locked = true;
+        btn.classList.add('wrong');
+        hintEl.textContent = btn.dataset.key === 'junk' ? 'NO JUNK! START THIS ORDER AGAIN' : 'WRONG SNACK — FOLLOW THE RECIPE';
+        synthTone(145, 'sine', 0, 0.18, 0.05, 105);
+        miniToast(btn.dataset.key === 'junk' ? 'JUNK!' : 'WRONG ORDER', 'bad');
+        mini.step = 0;
+        renderOrder();
+        mini.timeouts.push(setTimeout(() => {
+          if (!mini || mini.key !== 'feed') return;
+          mini.locked = false;
+          hintEl.textContent = 'SERVE THE RECIPE FROM LEFT TO RIGHT';
+          fillBoard();
+        }, 460));
+        return;
+      }
+      btn.classList.add('served');
+      mini.step++;
+      pentaNote(mini.step + 2, 0.08, 0.12);
+      renderOrder();
+      if (mini.step >= mini.recipe.length) {
+        mini.orders++;
+        nEl.textContent = mini.orders;
+        miniToast('ORDER SERVED!', 'good');
+        playConfirm();
+        if (mini.orders >= mini.goal) {
+          completeMini('SNACK ORDER CLEAR!', applyFeed);
+          return;
         }
-        spawnItem(gapX, vy, false, 0);
-      } else if (pattern === 1) {
-        const n = 5;
-        for (let i = 0; i < n; i++) {
-          const x = 10 + (i / (n - 1)) * 80;
-          spawnItem(x, vy, i % 2 === 1 && Math.random() < 0.75, i * 80);
-        }
+        mini.locked = true;
+        mini.timeouts.push(setTimeout(() => {
+          if (!mini || mini.key !== 'feed') return;
+          mini.locked = false;
+          newRecipe();
+        }, 420));
       } else {
-        const n = 3 + Math.floor(Math.random() * 2);
-        const used = [];
-        for (let i = 0; i < n; i++) {
-          let x; do { x = 8 + Math.random() * 84; } while (used.some(u => Math.abs(u - x) < 12));
-          used.push(x);
-          spawnItem(x, vy, Math.random() < tune.junk, 0);
-        }
+        fillBoard();
       }
     }
-    function loop(now) {
-      if (!mini || mini.key !== 'feed') return;
-      const dt = Math.min(0.05, (now - mini.prev) / 1000 || 0.016);
-      mini.prev = now;
-      // Ship-like eased movement toward the drag point — capped speed, not
-      // an instant teleport, so the tray has real weight to it.
-      const dx = mini.targetX - mini.basketX;
-      const maxStep = tune.shipSpeed * dt;
-      mini.basketX += clamp(dx, -maxStep, maxStep);
-      basket.style.left = mini.basketX + '%';
-      if (now - mini.lastSpawn > tune.gap) { spawnWave(); mini.lastSpawn = now; }
-      mini.items.forEach(s => {
-        if (s._done || !s.isConnected) return;
-        const y = parseFloat(s.dataset.y) + parseFloat(s.dataset.vy) * dt;
-        s.dataset.y = String(y);
-        s.style.top = y + '%';
-        if (y >= 82 && y < 98 && Math.abs(parseFloat(s.dataset.x) - mini.basketX) < 10) {
-          s._done = true;
-          if (s._bad) {
-            mini.good = Math.max(0, mini.good - 0.5);
-            playSound('miss');
-            flashTank('bad');
-            miniToast('JUNK! −½', 'bad');
-          } else {
-            mini.good++;
-            pentaNote(mini.good + 2, 0.09);
-            miniToast('+1 FED', 'good');
-          }
-          if (nEl) nEl.textContent = Math.floor(mini.good);
-          s.classList.add('caught');
-          setTimeout(() => s.remove(), 160);
-          if (mini.good >= mini.goal) { completeMini('SNACK RUN CLEAR!', applyFeed); return; }
-        } else if (y > 104) {
-          s._done = true; s.remove();
-        }
-      });
-      mini.raf = requestAnimationFrame(loop);
-    }
-    mini.raf = requestAnimationFrame(loop);
+    newRecipe();
   }
 
   // ── PLAY · Whack-flavored: multi-pop toys with misses and combos ──
@@ -1217,11 +1207,7 @@
     el.onpointercancel = up;
   }
 
-  // ── GUARD · Space red-enemy flavored: an actual ship dodge ──
-  // The enemy actively patrols (never sits still) — it stops wherever it
-  // currently is to charge up, then fires straight down from there. The
-  // Mobling rides a bottom track (drag it, same feel as FEED's tray) and has
-  // the whole charge+travel window to read the enemy's position and move.
+  // ── GUARD · Space Red's tracking charge, lock reticle, and aimed shot ──
   function miniGuard() {
     const el = miniEl();
     if (!el) return;
@@ -1229,9 +1215,11 @@
     const tune = GUARD_TUNE[stageIdx()];
     el.innerHTML = `
       <div class="pet-mini-title">ON GUARD</div>
-      <div class="pet-mini-hint">WATCH IT PATROL — DODGE WHERE IT STOPS TO FIRE</div>
+      <div class="pet-mini-hint">WATCH IT TRACK YOU · MOVE AFTER IT LOCKS</div>
       <div class="pet-guard-field" id="pet-guard-field">
         <span class="pet-guard-enemy" id="pet-guard-enemy">${shardSVG(28, '#ff3344')}</span>
+        <span class="pet-guard-aim" id="pet-guard-aim"></span>
+        <span class="pet-guard-reticle" id="pet-guard-reticle"></span>
         <span class="pet-guard-shot" id="pet-guard-shot">${shardSVG(20, '#ff3344')}</span>
         <div class="pet-guard-track" id="pet-guard-track"><div class="pet-guard-ship" id="pet-guard-ship">${iconImg(ICON.safety, 26)}</div></div>
       </div>
@@ -1241,12 +1229,14 @@
     const track = document.getElementById('pet-guard-track');
     const ship = document.getElementById('pet-guard-ship');
     const enemyEl = document.getElementById('pet-guard-enemy');
+    const aimEl = document.getElementById('pet-guard-aim');
+    const reticleEl = document.getElementById('pet-guard-reticle');
     const shotEl = document.getElementById('pet-guard-shot');
     const nEl = document.getElementById('pet-guard-n');
     mini = {
       key: 'guard', dodged: 0, goal, shipX: 50, enemyX: 50, enemyDir: 1,
-      phase: 'drift', t0: 0, t1: 0, lockX: 50, raf: 0, prev: performance.now(),
-      nextLockAt: performance.now() + 500,
+      phase: 'drift', t0: 0, t1: 0, lockX: 50, shotStartX: 50, burstLeft: 0,
+      raf: 0, prev: performance.now(), nextLockAt: performance.now() + 420,
     };
     function setShipX(clientX) {
       const rect = track.getBoundingClientRect();
@@ -1259,6 +1249,22 @@
     field.onpointermove = (e) => { if (mini) setShipX(e.clientX); };
     enemyEl.style.left = '50%';
     shotEl.style.opacity = '0';
+    aimEl.style.opacity = '0';
+    reticleEl.style.opacity = '0';
+    function updateAimLine() {
+      const rect = field.getBoundingClientRect();
+      const x1 = rect.width * mini.enemyX / 100;
+      const y1 = rect.height * 0.13;
+      const x2 = rect.width * mini.lockX / 100;
+      const y2 = rect.height * 0.86;
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      aimEl.style.left = x1 + 'px';
+      aimEl.style.top = y1 + 'px';
+      aimEl.style.width = Math.hypot(dx, dy) + 'px';
+      aimEl.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
+      reticleEl.style.left = mini.lockX + '%';
+    }
     function resolve() {
       const hit = Math.abs(mini.lockX - mini.shipX) < tune.tol;
       shotEl.style.opacity = '0';
@@ -1273,8 +1279,10 @@
         miniToast('DODGED! +1', 'good');
       }
       if (nEl) nEl.textContent = Math.floor(mini.dodged);
+      mini.burstLeft--;
       mini.phase = 'drift';
-      mini.nextLockAt = performance.now() + tune.gap;
+      mini.nextLockAt = performance.now() + tune.gap * (mini.burstLeft > 0 ? 1 : 2.1);
+      reticleEl.style.opacity = '0';
       if (mini.dodged >= mini.goal) completeMini('ON GUARD CLEAR!', applyGuard);
     }
     function loop(now) {
@@ -1290,23 +1298,40 @@
           if (now >= mini.nextLockAt) {
             mini.phase = 'lock';
             mini.t0 = now;
-            mini.lockX = mini.enemyX;
+            mini.lockX = mini.shipX;
+            if (mini.burstLeft <= 0) mini.burstLeft = tune.burst;
             enemyEl.classList.add('locking');
+            aimEl.classList.remove('locked');
+            aimEl.style.opacity = '1';
+            reticleEl.classList.remove('locked');
+            reticleEl.style.opacity = '1';
+            playGuardChargeCue();
           }
         } else if (mini.phase === 'lock') {
-          const p = clamp((now - mini.t0) / tune.telegraph, 0, 1);
+          const elapsed = now - mini.t0;
+          const p = clamp(elapsed / tune.charge, 0, 1);
+          if (elapsed < tune.aimLock) {
+            mini.lockX = mini.shipX;
+          } else {
+            aimEl.classList.add('locked');
+            reticleEl.classList.add('locked');
+          }
+          updateAimLine();
           enemyEl.style.transform = `translateX(-50%) scale(${1 + p * 0.4})`;
           if (p >= 1) {
             mini.phase = 'shot';
             mini.t1 = now;
+            mini.shotStartX = mini.enemyX;
             enemyEl.classList.remove('locking');
             enemyEl.style.transform = 'translateX(-50%) scale(1)';
-            shotEl.style.left = mini.lockX + '%';
+            aimEl.style.opacity = '0';
+            shotEl.style.left = mini.shotStartX + '%';
             shotEl.style.top = '10%';
             shotEl.style.opacity = '1';
           }
         } else if (mini.phase === 'shot') {
           const p = clamp((now - mini.t1) / tune.strike, 0, 1);
+          shotEl.style.left = (mini.shotStartX + (mini.lockX - mini.shotStartX) * p) + '%';
           shotEl.style.top = (10 + p * 76) + '%';
           if (p >= 1) resolve();
         }
@@ -1575,6 +1600,11 @@
   function playShieldPing() {
     synthTone(1046.5, 'sine', 0, 0.1, 0.07, 1400);
     synthTone(1568, 'sine', 0.02, 0.08, 0.04, 1800);
+  }
+  function playGuardChargeCue() {
+    // Same two-step rising warning language as Space Mobe's Red attack.
+    synthTone(132, 'sawtooth', 0, 0.16, 0.026, 176);
+    synthTone(176, 'triangle', 0.23, 0.18, 0.03, 264);
   }
 
   // ══════════════════════════════════════
