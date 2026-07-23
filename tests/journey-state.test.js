@@ -122,3 +122,67 @@ test('save writes are centralized and include their reason', () => {
   assert.equal(events.at(-1).type, 'journey-state-saved');
   assert.equal(events.at(-1).detail.reason, 'test-checkpoint');
 });
+
+test('travel spends fuel and advances a selected route exactly once', () => {
+  const { api } = createHarness();
+  const state = api.createNew();
+  assert.equal(api.selectDestination('fuel-stop-1').ok, true);
+
+  const first = api.travel({
+    originId: 'home-orbit',
+    destinationId: 'fuel-stop-1',
+    fuelCost: 6,
+    distance: 18
+  });
+  const duplicate = api.travel({
+    originId: 'home-orbit',
+    destinationId: 'fuel-stop-1',
+    fuelCost: 6,
+    distance: 18
+  });
+
+  const finalState = api.getState();
+  assert.equal(first.ok, true);
+  assert.equal(duplicate.ok, false);
+  assert.equal(finalState.currentNodeId, 'fuel-stop-1');
+  assert.equal(finalState.resources.fuel, 34);
+  assert.equal(finalState.totalDistance, 18);
+  assert.equal(finalState.route.visitedNodes.filter(id => id === 'fuel-stop-1').length, 1);
+});
+
+test('locked destinations and insufficient fuel cannot advance the route', () => {
+  const { api } = createHarness();
+  const state = api.createNew();
+
+  assert.equal(api.selectDestination('scrap-belt').code, 'locked-destination');
+  state.resources.fuel = 2;
+  assert.equal(api.selectDestination('fuel-stop-1').ok, true);
+  const result = api.travel({
+    originId: 'home-orbit',
+    destinationId: 'fuel-stop-1',
+    fuelCost: 6,
+    distance: 18
+  });
+
+  assert.equal(result.code, 'insufficient-fuel');
+  assert.equal(state.currentNodeId, 'home-orbit');
+  assert.equal(state.resources.fuel, 2);
+});
+
+test('peaceful-node completion unlocks once and refueling is safe to repeat', () => {
+  const { api } = createHarness();
+  const state = api.createNew();
+  state.resources.fuel = 9;
+
+  const first = api.completeNode('fuel-stop-1', ['scrap-belt']);
+  const duplicate = api.completeNode('fuel-stop-1', ['scrap-belt']);
+  const refuel = api.refuelToMax('test-fuel-stop');
+
+  const finalState = api.getState();
+  assert.equal(first.ok, true);
+  assert.equal(duplicate.code, 'already-completed');
+  assert.equal(finalState.route.completedNodes.filter(id => id === 'fuel-stop-1').length, 1);
+  assert.equal(finalState.route.unlockedNodes.filter(id => id === 'scrap-belt').length, 1);
+  assert.equal(refuel.gained, 31);
+  assert.equal(finalState.resources.fuel, 40);
+});

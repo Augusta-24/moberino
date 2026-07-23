@@ -218,6 +218,105 @@
     return returnSummary.slice();
   }
 
+  function mutationResult(ok, code, detail) {
+    return Object.assign({ ok, code }, detail || {});
+  }
+
+  function addUnique(list, value) {
+    if (!list.includes(value)) list.push(value);
+  }
+
+  function selectDestination(destinationId) {
+    if (!state) return mutationResult(false, 'no-save');
+    if (typeof destinationId !== 'string' || !state.route.unlockedNodes.includes(destinationId)) {
+      return mutationResult(false, 'locked-destination');
+    }
+    state.selectedDestinationId = destinationId;
+    saveJourneyState('select-destination');
+    return mutationResult(true, 'selected', { destinationId });
+  }
+
+  function travel(options) {
+    if (!state) return mutationResult(false, 'no-save');
+    const originId = options && options.originId;
+    const destinationId = options && options.destinationId;
+    const fuelCost = Math.max(0, finiteNumber(options && options.fuelCost, 0));
+    const distance = Math.max(0, finiteNumber(options && options.distance, 0));
+
+    if (state.currentNodeId !== originId) return mutationResult(false, 'origin-changed');
+    if (state.selectedDestinationId !== destinationId) return mutationResult(false, 'destination-changed');
+    if (!state.route.unlockedNodes.includes(destinationId)) return mutationResult(false, 'locked-destination');
+    if (state.resources.fuel < fuelCost) {
+      return mutationResult(false, 'insufficient-fuel', {
+        needed: fuelCost,
+        available: state.resources.fuel
+      });
+    }
+
+    state.resources.fuel -= fuelCost;
+    state.totalDistance += distance;
+    state.currentNodeId = destinationId;
+    state.selectedDestinationId = null;
+    addUnique(state.route.visitedNodes, destinationId);
+    saveJourneyState('travel');
+    return mutationResult(true, 'arrived', {
+      destinationId,
+      fuelSpent: fuelCost,
+      distance
+    });
+  }
+
+  function completeNode(nodeId, unlockNodeIds) {
+    if (!state || typeof nodeId !== 'string') return mutationResult(false, 'no-save');
+    if (state.route.completedNodes.includes(nodeId)) {
+      return mutationResult(false, 'already-completed');
+    }
+    addUnique(state.route.completedNodes, nodeId);
+    (Array.isArray(unlockNodeIds) ? unlockNodeIds : []).forEach(nodeIdToUnlock => {
+      if (typeof nodeIdToUnlock === 'string') addUnique(state.route.unlockedNodes, nodeIdToUnlock);
+    });
+    saveJourneyState(`complete-${nodeId}`);
+    return mutationResult(true, 'completed', { nodeId });
+  }
+
+  function refuelToMax(reason) {
+    if (!state) return mutationResult(false, 'no-save');
+    const gained = Math.max(0, state.resources.maxFuel - state.resources.fuel);
+    state.resources.fuel = state.resources.maxFuel;
+    saveJourneyState(reason || 'refuel');
+    return mutationResult(true, 'refueled', { gained });
+  }
+
+  function restPilot(amount) {
+    if (!state) return mutationResult(false, 'no-save');
+    const before = state.resources.pilot;
+    state.resources.pilot = clamp(before + Math.max(0, finiteNumber(amount, 0)), 0, 100);
+    const gained = state.resources.pilot - before;
+    if (gained > 0) saveJourneyState('rest-pilot');
+    return mutationResult(gained > 0, gained > 0 ? 'rested' : 'already-ready', { gained });
+  }
+
+  function repairHull(amount, salvageCost) {
+    if (!state) return mutationResult(false, 'no-save');
+    const repairAmount = Math.max(0, finiteNumber(amount, 0));
+    const cost = Math.max(0, finiteNumber(salvageCost, 0));
+    if (state.resources.hull >= state.resources.maxHull) return mutationResult(false, 'hull-full');
+    if (state.currency.salvage < cost) {
+      return mutationResult(false, 'insufficient-salvage', {
+        needed: cost,
+        available: state.currency.salvage
+      });
+    }
+    const before = state.resources.hull;
+    state.currency.salvage -= cost;
+    state.resources.hull = clamp(before + repairAmount, 0, state.resources.maxHull);
+    saveJourneyState('repair-hull');
+    return mutationResult(true, 'repaired', {
+      repaired: state.resources.hull - before,
+      salvageSpent: cost
+    });
+  }
+
   function clearInMemory() {
     state = null;
     returnSummary = [];
@@ -233,6 +332,12 @@
     getState,
     getReturnSummary,
     saveJourneyState,
+    selectDestination,
+    travel,
+    completeNode,
+    refuelToMax,
+    restPilot,
+    repairHull,
     clearInMemory
   });
 })();

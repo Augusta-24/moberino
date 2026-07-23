@@ -1,0 +1,55 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const test = require('node:test');
+const vm = require('node:vm');
+
+const dataSource = fs.readFileSync(
+  path.join(__dirname, '..', 'js', 'games', 'journey-data.js'),
+  'utf8'
+);
+
+function loadJourneyData() {
+  const window = {};
+  vm.runInNewContext(dataSource, { window, Object });
+  return window.JourneyData;
+}
+
+test('Chapter One route IDs are unique and every connection resolves', () => {
+  const data = loadJourneyData();
+  const ids = data.routeNodes.map(node => node.id);
+
+  assert.equal(new Set(ids).size, ids.length);
+  data.routeNodes.forEach(node => {
+    node.connections.forEach(connectionId => {
+      assert.ok(data.getNode(connectionId), `${node.id} points to missing node ${connectionId}`);
+    });
+  });
+});
+
+test('Chapter One route connections are reversible and configuration is frozen', () => {
+  const data = loadJourneyData();
+
+  data.routeNodes.forEach(node => {
+    node.connections.forEach(connectionId => {
+      assert.ok(
+        data.getNode(connectionId).connections.includes(node.id),
+        `${node.id} -> ${connectionId} is not reversible`
+      );
+    });
+  });
+  assert.equal(Object.isFrozen(data), true);
+  assert.equal(Object.isFrozen(data.routeNodes), true);
+  assert.equal(Object.isFrozen(data.getNode('home-orbit')), true);
+});
+
+test('Journey controller does not own storage or load the live Space Mobe runtime', () => {
+  const controller = fs.readFileSync(
+    path.join(__dirname, '..', 'js', 'games', 'journey.js'),
+    'utf8'
+  );
+
+  assert.equal(controller.includes('localStorage'), false);
+  assert.equal(controller.includes('space.js'), false);
+  assert.equal(controller.includes('initSpace'), false);
+});
