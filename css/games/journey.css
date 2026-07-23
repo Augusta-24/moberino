@@ -95,7 +95,7 @@ body.on-journey {
   padding: 8px 11px;
   background: rgba(4, 9, 23, .8);
   color: var(--journey-cyan);
-  font: 11px/1 'VCR', monospace;
+  font: 13px/1 'VCR', monospace;
   letter-spacing: 1.5px;
   cursor: pointer;
 }
@@ -116,7 +116,7 @@ body.on-journey {
 .journey-kicker,
 .journey-section-label {
   color: var(--journey-gold);
-  font: 10px/1.5 'VCR', monospace;
+  font: 12px/1.5 'VCR', monospace;
   letter-spacing: 3px;
 }
 
@@ -133,7 +133,7 @@ body.on-journey {
 .journey-info-screen p,
 .journey-info-screen li {
   color: rgba(245, 243, 236, .68);
-  font: 12px/1.7 'VCR', monospace;
+  font: 14px/1.7 'VCR', monospace;
 }
 
 .journey-info-screen ul {
@@ -190,7 +190,7 @@ body.on-journey {
   min-height: 48px;
   border-radius: 7px;
   padding: 11px 18px;
-  font: 12px/1.3 'VCR', monospace;
+  font: 14px/1.3 'VCR', monospace;
   letter-spacing: 2px;
   cursor: pointer;
 }
@@ -226,7 +226,7 @@ body.on-journey {
 .journey-build-note {
   margin-top: 20px;
   color: rgba(183, 156, 255, .65);
-  font: 8px/1.4 'VCR', monospace;
+  font: 11px/1.4 'VCR', monospace;
   letter-spacing: 2px;
 }
 
@@ -260,7 +260,7 @@ body.on-journey {
 
 .journey-topbar div span {
   color: var(--journey-gold);
-  font-size: 8px;
+  font-size: 11px;
   letter-spacing: 3px;
 }
 
@@ -273,7 +273,7 @@ body.on-journey {
 
 .journey-save-status {
   color: rgba(245,243,236,.42);
-  font-size: 8px;
+  font-size: 10px;
   letter-spacing: 2px;
 }
 
@@ -287,7 +287,7 @@ body.on-journey {
   padding: 10px 13px;
   background: rgba(255,241,166,.06);
   color: rgba(245,243,236,.68);
-  font-size: 10px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
@@ -319,7 +319,7 @@ body.on-journey {
   padding: 8px 10px;
   background: rgba(105,215,255,.16);
   color: var(--journey-cyan);
-  font: 8px/1 'VCR', monospace;
+  font: 12px/1 'VCR', monospace;
   letter-spacing: 1px;
   cursor: pointer;
 }
@@ -372,7 +372,7 @@ body.on-journey {
   position: absolute;
   bottom: 18px;
   color: rgba(245,243,236,.4);
-  font-size: 8px;
+  font-size: 11px;
   letter-spacing: 2px;
 }
 
@@ -390,7 +390,7 @@ body.on-journey {
   gap: 10px;
   margin-bottom: 6px;
   color: rgba(245,243,236,.65);
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 1.5px;
 }
 
@@ -430,8 +430,8 @@ body.on-journey {
 }
 
 .journey-next-stop span {
-  color: rgba(245,243,236,.4);
-  font-size: 8px;
+  color: rgba(245,243,236,.62);
+  font-size: 11px;
   letter-spacing: 2px;
 }
 
@@ -444,8 +444,8 @@ body.on-journey {
 
 .journey-next-stop small {
   margin-top: 7px;
-  color: rgba(245,243,236,.42);
-  font-size: 8px;
+  color: rgba(245,243,236,.64);
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -464,7 +464,7 @@ body.on-journey {
   padding: 9px 6px;
   background: rgba(105,215,255,.13);
   color: var(--journey-cyan);
-  font: 10px/1.2 'VCR', monospace;
+  font: 13px/1.2 'VCR', monospace;
   letter-spacing: 1px;
   cursor: pointer;
   box-shadow: 0 0 16px rgba(105,215,255,.08);
@@ -499,7 +499,7 @@ body.on-journey {
   display: block;
   margin-top: 5px;
   color: rgba(245,243,236,.25);
-  font-size: 7px;
+  font-size: 10px;
   letter-spacing: .5px;
 }
 
@@ -537,7 +537,7 @@ body.on-journey {
 
 .journey-route-header span {
   color: var(--journey-gold);
-  font-size: 8px;
+  font-size: 11px;
   letter-spacing: 2px;
 }
 
@@ -551,7 +551,7 @@ body.on-journey {
 .journey-route-header > strong {
   justify-self: end;
   color: var(--journey-gold);
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 1px;
 }
 
@@ -617,7 +617,7 @@ body.on-journey {
   border-radius: 50%;
   background: #09142d;
   color: var(--journey-cyan);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .journey-route-node[data-status="LOCKED"] .journey-route-index {
@@ -626,8 +626,8 @@ body.on-journey {
 }
 
 .journey-route-node-copy span {
-  color: rgba(245,243,236,.38);
-  font-size: 7px;
+  color: rgba(245,243,236,.58);
+  font-size: 10px;
   letter-spacing: 1.5px;
 }
 
@@ -639,8 +639,8 @@ body.on-journey {
 }
 
 .journey-route-node-copy p {
-  color: rgba(245,243,236,.46);
-  font-size: 8px;
+  color: rgba(245,243,236,.64);
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -660,8 +660,8 @@ body.on-journey {
 
 .journey-route-cost span {
   margin-top: 3px;
-  color: rgba(245,243,236,.34);
-  font-size: 7px;
+  color: rgba(245,243,236,.58);
+  font-size: 10px;
 }
 
 .journey-route-node > button {
@@ -670,7 +670,7 @@ body.on-journey {
   border-radius: 5px;
   background: rgba(105,215,255,.12);
   color: var(--journey-cyan);
-  font: 9px/1 'VCR', monospace;
+  font: 12px/1 'VCR', monospace;
   letter-spacing: 1px;
   cursor: pointer;
 }
@@ -690,8 +690,8 @@ body.on-journey {
 }
 
 .journey-route-footer > span {
-  color: rgba(245,243,236,.35);
-  font-size: 8px;
+  color: rgba(245,243,236,.6);
+  font-size: 11px;
   line-height: 1.5;
 }
 
@@ -725,7 +725,7 @@ body.on-journey {
 .journey-destination-screen p,
 .journey-destination-screen blockquote {
   color: rgba(245,243,236,.62);
-  font: 11px/1.7 'VCR', monospace;
+  font: 14px/1.7 'VCR', monospace;
 }
 
 .journey-destination-screen blockquote {
@@ -746,15 +746,15 @@ body.on-journey {
   border: 1px solid rgba(245,243,236,.12);
   border-radius: 6px;
   padding: 10px;
-  color: rgba(245,243,236,.38);
-  font-size: 7px;
+  color: rgba(245,243,236,.62);
+  font-size: 10px;
   line-height: 1.5;
 }
 
 .journey-arrival-stats strong {
   display: block;
   color: #f5f3ec;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .journey-fuel-beacon {
@@ -879,7 +879,7 @@ body.on-journey {
 
 .journey-briefing-copy > p {
   color: rgba(245,243,236,.62);
-  font: 11px/1.7 'VCR', monospace;
+  font: 14px/1.7 'VCR', monospace;
 }
 
 .journey-objective-list {
@@ -895,8 +895,8 @@ body.on-journey {
   border: 1px solid rgba(245,243,236,.1);
   border-radius: 5px;
   padding: 9px 11px;
-  color: rgba(245,243,236,.44);
-  font-size: 8px;
+  color: rgba(245,243,236,.68);
+  font-size: 12px;
   letter-spacing: 1px;
 }
 
@@ -908,8 +908,8 @@ body.on-journey {
   display: flex;
   flex-wrap: wrap;
   gap: 7px 12px;
-  color: rgba(105,215,255,.55);
-  font-size: 7px;
+  color: rgba(105,215,255,.78);
+  font-size: 11px;
   line-height: 1.5;
 }
 
@@ -949,8 +949,8 @@ body.on-journey {
 }
 
 .journey-combat-hud > div span {
-  color: rgba(245,243,236,.38);
-  font-size: 7px;
+  color: rgba(245,243,236,.64);
+  font-size: 10px;
   letter-spacing: 1px;
 }
 
@@ -1003,15 +1003,15 @@ body.on-journey {
   padding: 7px 8px;
   background: rgba(7,10,22,.78);
   color: #ff7c8f;
-  font: 7px/1 'VCR', monospace;
+  font: 10px/1 'VCR', monospace;
   letter-spacing: 1px;
   cursor: pointer;
 }
 
 .journey-combat-hint {
   margin-top: 7px;
-  color: rgba(245,243,236,.34);
-  font-size: 7px;
+  color: rgba(245,243,236,.62);
+  font-size: 10px;
   letter-spacing: 1.5px;
 }
 
@@ -1050,7 +1050,7 @@ body.on-journey {
 
 .journey-results-screen p {
   color: rgba(245,243,236,.57);
-  font: 10px/1.65 'VCR', monospace;
+  font: 14px/1.65 'VCR', monospace;
 }
 
 .journey-results-grid {
@@ -1064,8 +1064,8 @@ body.on-journey {
   border: 1px solid rgba(245,243,236,.1);
   border-radius: 6px;
   padding: 10px 6px;
-  color: rgba(245,243,236,.35);
-  font-size: 7px;
+  color: rgba(245,243,236,.62);
+  font-size: 10px;
   line-height: 1.45;
 }
 
@@ -1073,7 +1073,7 @@ body.on-journey {
   display: block;
   margin-top: 4px;
   color: var(--journey-gold);
-  font: 21px/1 'Bebas Neue', sans-serif;
+  font: 24px/1 'Bebas Neue', sans-serif;
   letter-spacing: 1px;
 }
 

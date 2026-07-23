@@ -66,3 +66,19 @@ test('Journey combat is isolated from storage and exposes lifecycle methods', ()
   assert.match(combat, /\bstart\b/);
   assert.match(combat, /\bdestroy\b/);
 });
+
+test('Journey typography does not use unreadably small literal pixel sizes', () => {
+  const css = fs.readFileSync(
+    path.join(__dirname, '..', 'css', 'games', 'journey.css'),
+    'utf8'
+  );
+  const declaredSizes = [...css.matchAll(/(?:font-size|font):\s*(\d+)px/g)]
+    .map(match => Number(match[1]));
+
+  assert.ok(declaredSizes.length > 0);
+  assert.equal(
+    declaredSizes.filter(size => size < 10).length,
+    0,
+    `Found Journey font sizes below 10px: ${declaredSizes.filter(size => size < 10).join(', ')}`
+  );
+});
