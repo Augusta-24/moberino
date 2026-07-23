@@ -303,6 +303,20 @@
 /* ── Stat meters ───────────────────────────────────────────── */
 .pet-stats { display: flex; flex-direction: column; gap: 6px; }
 .pet-stat-row { display: flex; align-items: center; gap: 10px; }
+.pet-stat-row.pet-stat-health {
+  margin-top: 2px;
+  padding-top: 7px;
+  border-top: 1px solid rgba(255,255,255,0.14);
+}
+.pet-stat-row.pet-stat-health .pet-stat-track { height: 9px; opacity: 0.78; }
+.pet-stat-overall {
+  flex: 0 0 38px;
+  margin-left: -7px;
+  font-family: 'VCR', monospace;
+  font-size: 7px;
+  letter-spacing: 0.6px;
+  color: rgba(242,239,232,0.4);
+}
 .pet-stat-icon {
   flex: 0 0 auto;
   width: 20px; display: flex; align-items: center; justify-content: center;
@@ -353,8 +367,8 @@
   gap: 3px;
   padding: 9px 4px 7px;
   border-radius: 9px;
-  border: 1.5px solid rgba(255,110,199,0.55);
-  background: rgba(255,110,199,0.06);
+  border: 1.5px solid var(--act-color);
+  background: var(--act-tint);
   color: var(--white);
   font-family: 'VCR', monospace;
   font-size: 10px;
@@ -368,7 +382,7 @@
 .pet-act-btn:active { transform: scale(0.94); }
 .pet-act-btn.needs-care { animation: pet-action-nudge 0.8s ease-in-out infinite; }
 @keyframes pet-action-nudge {
-  50% { border-color: #fff; box-shadow: 0 0 15px var(--pet), inset 0 0 10px rgba(255,110,199,0.2); }
+  50% { border-color: #fff; box-shadow: 0 0 15px var(--act-color), inset 0 0 10px var(--act-tint); }
 }
 .pet-act-btn:disabled {
   opacity: 0.4;
@@ -379,8 +393,8 @@
 .pet-act-cd {
   position: absolute; left: 0; bottom: 0;
   height: 3px;
-  background: var(--pet);
-  box-shadow: 0 0 8px var(--pet);
+  background: var(--act-color);
+  box-shadow: 0 0 8px var(--act-color);
   width: 0%;
 }
 

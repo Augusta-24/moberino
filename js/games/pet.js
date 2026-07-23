@@ -33,6 +33,13 @@
   const STAGE_THRESHOLD = [5, 10, 16];   // care-progress needed to leave egg / baby / juvenile
   const STAGE_MIN_ACTIONS = [4, 6, 8];   // soft gate so evolution never fires on one big tick
   const COOLDOWN = { feed: 12000, play: 18000, rest: 28000, pet: 6000, guard: 20000 };
+  const ACTION_COLOR = {
+    feed: ['#ff9933', 'rgba(255,153,51,0.06)'],
+    play: ['#ff6ec7', 'rgba(255,110,199,0.06)'],
+    rest: ['#33ff99', 'rgba(51,255,153,0.06)'],
+    pet: ['#ff6ec7', 'rgba(255,110,199,0.06)'],
+    guard: ['#4fd8ff', 'rgba(79,216,255,0.06)'],
+  };
   const DORMANT_RECOVERY = 4;            // care actions to wake a wandered pet
   const MOOD_TAGS = {
     idle: 'CONTENT', happy: 'HAPPY!', hungry: 'HUNGRY', tired: 'SLEEPY',
@@ -192,6 +199,7 @@
       shape: 'round',
       sawIntro: true,           // retired; retained only for save compatibility
       tipsSeen: [],
+      lowHintDismissed: false,
       hunger: 100, happiness: 100, energy: 100, safety: 100, health: 100,
       stageProgress: 0,         // care-quality accumulated toward next stage
       stageActions: 0,          // beneficial actions this stage
@@ -236,6 +244,7 @@
       if (!pet.shape) pet.shape = 'round';
       pet.sawIntro = true;
       pet.tipsSeen ||= [];
+      if (typeof pet.lowHintDismissed !== 'boolean') pet.lowHintDismissed = false;
     } else {
       pet = newPet(tag);
       persist();
@@ -666,16 +675,18 @@
 
   function statRow(key, iconHtml, cls) {
     return `
-      <div class="pet-stat-row">
+      <div class="pet-stat-row ${key === 'health' ? 'pet-stat-health' : ''}">
         <div class="pet-stat-icon">${iconHtml}</div>
+        ${key === 'health' ? '<span class="pet-stat-overall">OVERALL</span>' : ''}
         <div class="pet-stat-track"><div class="pet-stat-fill ${cls}" id="pet-fill-${key}"></div></div>
         <div class="pet-stat-val" id="pet-val-${key}">0</div>
       </div>`;
   }
 
   function actBtn(key, iconHtml, label) {
+    const [color, tint] = ACTION_COLOR[key];
     return `
-      <button class="pet-act-btn" id="pet-act-${key}" data-act="${key}">
+      <button class="pet-act-btn" id="pet-act-${key}" data-act="${key}" style="--act-color:${color};--act-tint:${tint}">
         <span class="pet-act-icon">${iconHtml}</span>
         <span>${label}</span>
         <span class="pet-act-cd" id="pet-cd-${key}"></span>
@@ -702,8 +713,9 @@
     if (tank) tank.classList.toggle('mood-bright', currentMood() === 'happy' || currentMood() === 'celebrate');
     const low = [['hunger', 'feed', 'HUNGRY', 'FEED'], ['happiness', 'pet', 'LONELY', 'PET'], ['energy', 'rest', 'TIRED', 'REST'], ['safety', 'guard', 'UNSAFE', 'GUARD']]
       .find(([stat]) => pet[stat] < 30);
-    document.querySelectorAll('.pet-act-btn').forEach(btn => btn.classList.toggle('needs-care', !!low && pet.stageActions < 5 && btn.dataset.act === low[1]));
-    if (low) showTip('low_stat', `YOUR MOBLING IS ${low[2]} — TRY ${low[3]}!`);
+    const guideLow = !!low && pet.stageActions < 5 && !pet.lowHintDismissed;
+    document.querySelectorAll('.pet-act-btn').forEach(btn => btn.classList.toggle('needs-care', guideLow && btn.dataset.act === low[1]));
+    if (guideLow) showTip('low_stat', `YOUR MOBLING IS ${low[2]} — TRY ${low[3]}!`);
   }
 
   function refreshAvatarIfMoodChanged() {
@@ -770,6 +782,7 @@
   // Every mini is goal-based (accomplished, not timed) and ramps by stage.
   function startAction(key) {
     if (mini || onCooldown(key)) return;
+    pet.lowHintDismissed = true;
     document.querySelectorAll('.pet-act-btn').forEach(btn => btn.classList.remove('needs-care'));
     if (pet.stage === 0) { hatchTap(); return; }
     if (key === 'feed') miniCatch();        // SPACE — slide-bar catcher, dodge junk food
@@ -1570,7 +1583,9 @@
 
   function statMini(iconHtml, val, cls) {
     const v = clamp(Math.round(val), 0, 100);
-    return `<div class="pet-stat-row"><div class="pet-stat-icon">${iconHtml}</div>
+    const health = cls === 'f-health';
+    return `<div class="pet-stat-row ${health ? 'pet-stat-health' : ''}"><div class="pet-stat-icon">${iconHtml}</div>
+      ${health ? '<span class="pet-stat-overall">OVERALL</span>' : ''}
       <div class="pet-stat-track"><div class="pet-stat-fill ${cls}" style="width:${v}%"></div></div>
       <div class="pet-stat-val">${v}</div></div>`;
   }
