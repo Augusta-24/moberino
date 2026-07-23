@@ -5,6 +5,7 @@
 
   const hostId = 'journey-wrap';
   let active = false;
+  let shipNotice = '';
 
   function host() {
     return document.getElementById(hostId);
@@ -81,7 +82,9 @@
 
   function availableDestinations(state, location) {
     return JourneyData.getConnectedNodes(location.id).filter(node =>
-      state.route.unlockedNodes.includes(node.id) && node.implemented
+      state.route.unlockedNodes.includes(node.id) &&
+      node.implemented &&
+      !state.route.visitedNodes.includes(node.id)
     );
   }
 
@@ -127,6 +130,8 @@
     const r = state.resources;
     const location = currentNode(state);
     const notices = JourneyState.getReturnSummary();
+    if (shipNotice) notices.unshift(shipNotice);
+    shipNotice = '';
     const canRepair = r.hull < r.maxHull && state.currency.salvage >= 5;
     const canRefuel = location.id === 'fuel-stop-1' && r.fuel < r.maxFuel;
     const canRest = r.pilot < 100;
@@ -138,7 +143,7 @@
         <header class="journey-topbar">
           <button class="journey-arcade-back" type="button" onclick="journeyMenu()">◀ MENU</button>
           <div>
-            <span>${location.name.toUpperCase()}</span>
+            <span>CURRENT · ${location.name.toUpperCase()}</span>
             <strong id="journey-ship-title">THE WAYFARER</strong>
           </div>
           <span class="journey-save-status">SAVED</span>
@@ -183,8 +188,8 @@
   }
 
   function nodeStatus(state, node) {
-    if (state.currentNodeId === node.id) return 'CURRENT';
-    if (state.route.completedNodes.includes(node.id)) return 'COMPLETE';
+    if (state.currentNodeId === node.id) return 'YOU ARE HERE';
+    if (state.route.completedNodes.includes(node.id)) return 'CLEARED';
     if (state.route.visitedNodes.includes(node.id)) return 'VISITED';
     if (state.route.unlockedNodes.includes(node.id)) return node.implemented ? 'AVAILABLE' : 'COMING NEXT';
     return 'LOCKED';
@@ -196,14 +201,17 @@
     if (!root || !state || !active) return;
     const location = currentNode(state);
     const connectedIds = new Set(location.connections);
-    const selectedDestinationId = state.selectedDestinationId;
+    const destinations = availableDestinations(state, location);
+    const selectedDestinationId = destinations.some(node => node.id === state.selectedDestinationId)
+      ? state.selectedDestinationId
+      : null;
     root.innerHTML = `
       <main class="journey-route-screen" aria-labelledby="journey-route-title">
         <header class="journey-route-header">
           <button class="journey-arcade-back" type="button" onclick="journeyShip()">◀ SHIP</button>
           <div>
-            <span>CHAPTER ONE · GET OUT OF TOWN</span>
-            <h1 id="journey-route-title">ROUTE</h1>
+            <span>CURRENT LOCATION · ${location.name.toUpperCase()}</span>
+            <h1 id="journey-route-title">NAVIGATION</h1>
           </div>
           <strong>${Math.round(state.resources.fuel)} FUEL</strong>
         </header>
@@ -212,25 +220,30 @@
             const status = nodeStatus(state, node);
             const connected = connectedIds.has(node.id);
             const unlocked = state.route.unlockedNodes.includes(node.id);
-            const selectable = connected && unlocked && node.implemented && node.id !== state.currentNodeId;
+            const selectable = connected &&
+              unlocked &&
+              node.implemented &&
+              !state.route.visitedNodes.includes(node.id);
             return `
               <article class="journey-route-node is-${node.type} ${selectable ? 'is-selectable' : ''} ${selectedDestinationId === node.id ? 'is-selected' : ''}" data-status="${status}">
                 <div class="journey-route-index">${String(index + 1).padStart(2, '0')}</div>
                 <div class="journey-route-node-copy">
-                  <span>${node.type.toUpperCase()} · ${status}</span>
+                  <span>${status}</span>
                   <h2>${node.name}</h2>
                   <p>${node.description}</p>
                 </div>
                 <div class="journey-route-cost">
                   <strong>${node.id === 'home-orbit' ? '—' : node.fuelCost}</strong>
-                  <span>${node.id === 'home-orbit' ? 'ORIGIN' : 'FUEL'}</span>
+                  <span>${node.id === 'home-orbit' ? 'START' : 'FUEL'}</span>
                 </div>
                 ${selectable ? `<button type="button" onclick="journeyChooseDestination('${node.id}')">${selectedDestinationId === node.id ? 'SELECTED' : 'CHOOSE'} →</button>` : ''}
               </article>`;
           }).join('')}
         </section>
         <div class="journey-route-footer">
-          <span>Choose a stop. You will return to the ship to depart.</span>
+          <span>${destinations.length
+            ? 'Choose an available stop. You will return to the ship to depart.'
+            : 'No onward route is open yet.'}</span>
           <button class="journey-primary-btn" type="button" onclick="journeyShip()">RETURN TO SHIP</button>
         </div>
       </main>`;
@@ -242,33 +255,8 @@
     const firstVisit = !state.route.completedNodes.includes('fuel-stop-1');
     const refuel = JourneyState.refuelToMax('lantern-station-service');
     if (firstVisit) JourneyState.completeNode('fuel-stop-1', ['scrap-belt']);
-    renderFuelStop(refuel.gained, firstVisit);
-  }
-
-  function renderFuelStop(fuelGained, firstVisit) {
-    const root = host();
-    const state = JourneyState.getState();
-    if (!root || !state || !active) return;
-    root.innerHTML = `
-      <main class="journey-destination-screen" aria-labelledby="journey-fuel-title">
-        <div class="journey-fuel-beacon" aria-hidden="true">
-          <span></span><span></span><span></span>
-        </div>
-        <section>
-          <div class="journey-kicker">DESTINATION REACHED · 18 DISTANCE</div>
-          <h1 id="journey-fuel-title">LANTERN<br>STATION</h1>
-          <p>Docked. Fuel topped off automatically.</p>
-          <blockquote>${firstVisit
-            ? '“Tank full. Scrap Belt route unlocked.”'
-            : '“Welcome back. Tank topped off.”'}</blockquote>
-          <div class="journey-arrival-stats">
-            <span>FUEL ADDED <strong>+${Math.round(fuelGained)}</strong></span>
-            <span>TANK STATUS <strong>${Math.round(state.resources.fuel)} / ${Math.round(state.resources.maxFuel)}</strong></span>
-            <span>${firstVisit ? 'ROUTE UNLOCKED' : 'NEXT ROUTE'} <strong>SCRAP BELT</strong></span>
-          </div>
-          <button class="journey-primary-btn" type="button" onclick="journeyShip()">CONTINUE TO SHIP</button>
-        </section>
-      </main>`;
+    shipNotice = `DOCKED AT LANTERN STATION · +${Math.round(refuel.gained)} FUEL${firstVisit ? ' · SCRAP BELT UNLOCKED' : ''}`;
+    renderShip();
   }
 
   function renderEncounterBriefing(node) {
@@ -440,7 +428,7 @@
     const state = JourneyState.getState();
     const location = state && currentNode(state);
     const destination = JourneyData.getNode(destinationId);
-    if (!state || !location || !destination || !location.connections.includes(destinationId) || !destination.implemented) return;
+    if (!state || !location || !destination || !availableDestinations(state, location).some(node => node.id === destinationId)) return;
     playMenuSound();
     const selected = JourneyState.selectDestination(destinationId);
     if (!selected.ok) return;
@@ -451,7 +439,7 @@
     const state = JourneyState.getState();
     const location = state && currentNode(state);
     const destination = state && JourneyData.getNode(state.selectedDestinationId);
-    if (!state || !location || !destination || !location.connections.includes(destination.id) || !destination.implemented) return;
+    if (!state || !location || !destination || !availableDestinations(state, location).some(node => node.id === destination.id)) return;
     playMenuSound();
     const result = JourneyState.travel({
       originId: location.id,

@@ -67,6 +67,17 @@ test('route choice returns to the ship and departure happens from the destinatio
   assert.equal(controller.includes('window.journeyTravelTo'), false);
 });
 
+test('navigation offers only new stops and Lantern arrival stays on the ship screen', () => {
+  const controller = fs.readFileSync(
+    path.join(__dirname, '..', 'js', 'games', 'journey.js'),
+    'utf8'
+  );
+
+  assert.match(controller, /!state\.route\.visitedNodes\.includes\(node\.id\)/);
+  assert.match(controller, /DOCKED AT LANTERN STATION/);
+  assert.equal(controller.includes('function renderFuelStop'), false);
+});
+
 test('Journey combat is isolated from storage and exposes lifecycle methods', () => {
   const combat = fs.readFileSync(
     path.join(__dirname, '..', 'js', 'games', 'journey-combat.js'),

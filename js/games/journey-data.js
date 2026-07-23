@@ -24,7 +24,7 @@
       name: 'Home Orbit',
       shortName: 'HOME',
       type: 'safe',
-      description: 'Start here.',
+      description: 'Your starting point. No station services.',
       connections: ['fuel-stop-1'],
       fuelCost: 0,
       distance: 0,
