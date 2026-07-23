@@ -34,26 +34,26 @@ PLAY_WORDS = set(RUNTIME_WORDS) | COMMON_WORD_ADDITIONS
 # Solver-checked seeds.  These are data, not exact answers: the audit enumerates
 # every valid partition and retains boards only when the easiest one is hard.
 WORD_LEVELS = [
-    (["age", "listen", "shift"], "sox"),
-    (["set", "been", "bed"], "eow"),
-    (["main", "sell", "fine"], "xrt"),
-    (["list", "out", "death"], "xsr"),
-    (["none", "teen", "gift"], "xil"),
-    (["item", "play", "score"], "xin"),
-    (["west", "oil", "each", "full"], "xtr"),
-    (["focus", "grade", "with", "state"], "xrl"),
-    (["sea", "write", "under", "sent"], "xlo"),
-    (["born", "bay", "wide", "seen"], "fjx"),
-    (["get", "doing", "does", "field"], "xse"),
-    (["hit", "south", "say", "week"], "qrl"),
-    (["list", "tour", "car", "share", "wide"], "qel"),
-    (["part", "match", "rock", "late", "and"], "xos"),
-    (["sign", "paid", "turn", "forms", "heart"], "xts"),
-    (["song", "feet", "guest", "game", "trial"], "qoa"),
-    (["lack", "often", "terms", "trust"], "oime"),
-    (["cook", "desk", "prints"], "ajj"),
-    (["ask", "fan", "with", "rich", "the"], "aaic"),
-    (["auto", "film", "were", "wine"], "votn"),
+    (["after", "text", "west"], "eoo"),
+    (["your", "total", "plain"], "jyv"),
+    (["cake", "soccer", "vote"], "jeu"),
+    (["poll", "exit", "babe", "fame"], "oom"),
+    (["brown", "rule", "dim"], "swf"),
+    (["fine", "sold", "their", "color"], "lvz"),
+    (["advice", "air", "pool", "poker"], "zoou"),
+    (["their", "height", "gig", "dig"], "vyt"),
+    (["cool", "below", "built", "lunch"], "wqiv"),
+    (["browse", "teens", "long", "mirror"], "mxrv"),
+    (["more", "have", "equity", "able", "meet"], "euuq"),
+    (["aid", "easier", "cause", "evil", "survey"], "xvvq"),
+    (["vice", "unless", "nearby", "any", "mark"], "krzq"),
+    (["spend", "tested", "cup", "hotel"], "jsv"),
+    (["could", "brief", "fiscal", "spin"], "oizq"),
+    (["dog", "leaves", "every", "driver", "virus"], "vuuj"),
+    (["driver", "family", "visual", "acid", "jazz"], "xxvvi"),
+    (["leaves", "lie", "wine", "native", "device"], "vvjkz"),
+    (["exact", "mobile", "survey", "junior", "judge"], "qqqee"),
+    (["money", "carry", "energy", "unique", "severe"], "vvvzz"),
 ]
 
 NUMBER_LEVELS = [
@@ -94,28 +94,32 @@ def word_partitions(letters, cap=2000):
                  for j in range(len(letters_used))]
 
     @lru_cache(None)
-    def solve(rem, floor):
+    def solve(rem):
         if not any(rem):
             return ((),)
         viable = []
         for j, amount in enumerate(rem):
             if amount:
-                options = [i for i in by_letter[j] if i >= floor
-                           and all(v <= r for v, r in zip(vectors[i], rem))]
+                options = [i for i in by_letter[j]
+                           if all(v <= r for v, r in zip(vectors[i], rem))]
                 viable.append((len(options), options))
         if not viable:
             return ()
         options = min(viable, key=lambda item: item[0])[1]
-        result = []
+        result, seen = [], set()
         for i in options:
             rest = tuple(r - v for r, v in zip(rem, vectors[i]))
-            for tail in solve(rest, i):
-                result.append((candidates[i][0],) + tail)
+            for tail in solve(rest):
+                partition = tuple(sorted((candidates[i][0],) + tail))
+                if partition in seen:
+                    continue
+                seen.add(partition)
+                result.append(partition)
                 if len(result) >= cap:
                     return tuple(result)
         return tuple(result)
 
-    found = list(solve(tuple(counts[ch] for ch in letters_used), 0))
+    found = list(solve(tuple(counts[ch] for ch in letters_used)))
     return found, len(found) >= cap
 
 
@@ -262,6 +266,42 @@ def rummy_requirements(number):
     ][number - 1]
 
 
+def word_requirements(number):
+    """Solution-count and rearrangement floors for each five-level tier."""
+    return [
+        # min solutions, max solutions, groups broken, table tiles moved
+        (8, 500, 2, 6),
+        (5, 350, 2, 7),
+        (4, 250, 2, 8),
+        (3, 180, 2, 9),
+        (3, 140, 2, 9),
+        (3, 120, 2, 10),
+        (3, 100, 3, 11),
+        (3, 80, 3, 12),
+        (3, 70, 3, 12),
+        (3, 60, 3, 13),
+        (3, 50, 3, 14),
+        (3, 42, 3, 15),
+        (2, 36, 3, 15),
+        (2, 30, 3, 16),
+        (2, 30, 4, 17),
+        (2, 20, 4, 18),
+        (2, 16, 4, 19),
+        (2, 12, 4, 20),
+        (2, 12, 4, 21),
+        (2, 7, 5, 28),
+    ][number - 1]
+
+
+def word_difficulty(solution_count, minimum):
+    """Order by forced disruption first, then moved tiles and solution scarcity."""
+    if not minimum:
+        return -1
+    return (minimum["brokenGroups"] * 10000
+            + minimum["movedTiles"] * 100
+            - solution_count)
+
+
 def audit_level(mode, number, groups, rack):
     pool = [tile for group in groups for tile in group] + list(rack)
     solutions, capped = (word_partitions("".join(pool)) if mode == "words"
@@ -280,9 +320,9 @@ def audit_level(mode, number, groups, rack):
     else:
         scored = [(effort(groups, solution), solution) for solution in solutions]
         scored.sort(key=lambda item: (item[0]["effort"], item[0]["movedTiles"]))
-        required_broken = 2 if len(groups) <= 4 else 3
+        min_solutions, max_solutions, required_broken, required_moved = word_requirements(number)
         max_untouched = max((score["untouchedGroups"] for score, _ in scored), default=0)
-        low_effort = sum(score["brokenGroups"] < required_broken or score["movedTiles"] < 3
+        low_effort = sum(score["brokenGroups"] < required_broken or score["movedTiles"] < required_moved
                          for score, _ in scored)
     minimum = scored[0][0] if scored else None
     errors = []
@@ -297,16 +337,20 @@ def audit_level(mode, number, groups, rack):
     if mode == "numbers" and low_effort:
         errors.append(f"{low_effort} solution(s) miss the level's real table-move floor")
     if mode == "words":
+        if not (min_solutions <= len(solutions) <= max_solutions):
+            errors.append(f"solution count outside {min_solutions}-{max_solutions}")
         if minimum and minimum["brokenGroups"] < required_broken:
             errors.append(f"easy solution breaks fewer than {required_broken} groups")
-        if minimum and minimum["movedTiles"] < 3:
-            errors.append("easy solution moves fewer than three table tiles")
+        if minimum and minimum["movedTiles"] < required_moved:
+            errors.append(f"easy solution moves fewer than {required_moved} table tiles")
         if max_untouched > len(groups) - required_broken:
             errors.append("a solution leaves most groups untouched")
     if mode == "words" and low_effort:
         errors.append(f"{low_effort} low-effort partition(s)")
     return {"mode": mode, "level": number, "solutions": len(solutions),
             "solutionsCapped": capped, "minimumRearrangementEffort": minimum,
+            "difficultyScore": (word_difficulty(len(solutions), minimum)
+                                if mode == "words" else None),
             "valid": not errors, "errors": errors}
 
 
@@ -320,7 +364,20 @@ def make_payload_and_report():
             rack = list(rack)
             result = audit_level(mode, number, groups, rack)
             report.append(result)
-            payload[mode]["levels"].append({"n": number, "groups": groups, "rack": rack})
+            level = {"n": number, "groups": groups, "rack": rack}
+            if mode == "words":
+                level.update({
+                    "solutionCount": result["solutions"],
+                    "difficulty": result["difficultyScore"],
+                    "minMovedTiles": result["minimumRearrangementEffort"]["movedTiles"],
+                    "minBrokenGroups": result["minimumRearrangementEffort"]["brokenGroups"],
+                })
+            payload[mode]["levels"].append(level)
+    word_rows = [row for row in report if row["mode"] == "words"]
+    for previous, current in zip(word_rows, word_rows[1:]):
+        if current["difficultyScore"] < previous["difficultyScore"]:
+            current["errors"].append("difficulty decreases from previous level")
+            current["valid"] = False
     return payload, report
 
 
@@ -331,8 +388,20 @@ def refresh_dictionary():
     payload = json.loads(src[src.index(marker) + len(marker):].rstrip(";\n"))
     payload["wordDictionary"] = sorted(PLAY_WORDS)
     payload["words"]["levels"] = [
-        {"n": number, "groups": [list(group) for group in groups], "rack": list(rack)}
-        for number, (groups, rack) in enumerate(WORD_LEVELS, 1)
+        {
+            "n": number,
+            "groups": [list(group) for group in groups],
+            "rack": list(rack),
+            "solutionCount": result["solutions"],
+            "difficulty": result["difficultyScore"],
+            "minMovedTiles": result["minimumRearrangementEffort"]["movedTiles"],
+            "minBrokenGroups": result["minimumRearrangementEffort"]["brokenGroups"],
+        }
+        for number, ((groups, rack), result) in enumerate(zip(
+            WORD_LEVELS,
+            (audit_level("words", n, [list(word) for word in groups], list(rack))
+             for n, (groups, rack) in enumerate(WORD_LEVELS, 1)),
+        ), 1)
     ]
     OUT.write_text("// Generated by generate_consume_rack_boards.py\nconst CONSUME_RACK_DATA = "
                    + json.dumps(payload, separators=(",", ":")) + ";\n")
