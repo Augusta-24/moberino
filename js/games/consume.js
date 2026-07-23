@@ -9,10 +9,14 @@
   let wrap = null;
   let S = null;
   let timers = [];
+  let autoSubmitTimer = null;
   let nextWordId = 1;
 
   function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
-  function killTimers() { timers.forEach(clearTimeout); timers = []; }
+  function killTimers() {
+    timers.forEach(clearTimeout); timers = [];
+    clearTimeout(autoSubmitTimer); autoSubmitTimer = null;
+  }
   function loadStore() { try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch(e) { return {}; } }
   function saveStore(d) { try { localStorage.setItem(STORE_KEY, JSON.stringify(d)); } catch(e) {} }
   const TAG_WORDS = ['FROG','MINT','TACO','DUCK','MOON','STAR','WAVE','COMET','MANGO',
@@ -218,6 +222,7 @@
     if (!tile || tile.wordId) return;
     const existing = S.tray.indexOf(tile);
     if (existing >= 0) {
+      clearTimeout(autoSubmitTimer); autoSubmitTimer = null;
       S.tray.splice(existing, 1);
       CSFX.back();
       updateAll();
@@ -227,10 +232,18 @@
     S.bad = false;
     CSFX.tap();
     updateAll();
+    clearTimeout(autoSubmitTimer);
+    autoSubmitTimer = setTimeout(() => {
+      autoSubmitTimer = null;
+      if (!S || S.won) return;
+      const word = tileWord(S.tray);
+      if (word.length >= 3 && typeof CONSUME_DICT !== 'undefined' && CONSUME_DICT.has(word)) submitTray();
+    }, 280);
   }
 
   function tapTray(id) {
     if (!S || S.won) return;
+    clearTimeout(autoSubmitTimer); autoSubmitTimer = null;
     const idx = S.tray.findIndex(t => t.id === id);
     if (idx < 0) return;
     S.tray.splice(idx, 1);
@@ -241,6 +254,7 @@
 
   function submitTray() {
     if (!S || S.won || !S.tray.length) return;
+    clearTimeout(autoSubmitTimer); autoSubmitTimer = null;
     const word = tileWord(S.tray);
     const ok = word.length >= 3 && typeof CONSUME_DICT !== 'undefined' && CONSUME_DICT.has(word);
     if (!ok) {
@@ -321,6 +335,7 @@
       `<div class="cw-board" id="cw-board" style="--cw-cols:${S.boardCols}"></div>` +
       `<div class="cw-tray-shell">` +
       `<div class="cw-tray" id="cw-tray"></div>` +
+      `<button class="cw-clear" type="button" data-act="clear" aria-label="Clear selected tiles">CLEAR</button>` +
       `<button class="cw-spell" data-act="submit">SPELL IT</button>` +
       `</div>` +
       `<div class="cw-tableau-shell">` +
@@ -341,6 +356,11 @@
       if (tile) tapTray(+tile.getAttribute('data-tray-tile'));
     });
     wrap.querySelector('[data-act="submit"]').addEventListener('click', submitTray);
+    wrap.querySelector('[data-act="clear"]').addEventListener('click', () => {
+      if (!S || !S.tray.length) return;
+      clearTimeout(autoSubmitTimer); autoSubmitTimer = null;
+      S.tray = []; S.bad = false; CSFX.back(); updateAll();
+    });
     wrap.querySelector('#cw-tableau').addEventListener('click', e => {
       const chip = e.target.closest('[data-word-id]');
       if (chip) shatterWord(+chip.getAttribute('data-word-id'));
@@ -384,11 +404,15 @@
     const tray = wrap && wrap.querySelector('#cw-tray');
     if (!tray || !S) return;
     tray.classList.toggle('bad', !!S.bad);
+    const word = tileWord(S.tray);
+    tray.classList.toggle('valid', word.length >= 3 && typeof CONSUME_DICT !== 'undefined' && CONSUME_DICT.has(word));
     tray.innerHTML = S.tray.length
       ? S.tray.map(t => `<button class="cw-tile tray" type="button" data-tray-tile="${t.id}">${esc(t.ch.toUpperCase())}</button>`).join('')
       : '';
     const btn = wrap.querySelector('.cw-spell');
     if (btn) btn.disabled = S.tray.length < 3;
+    const clear = wrap.querySelector('.cw-clear');
+    if (clear) clear.disabled = !S.tray.length;
   }
 
   function updateTableau() {
@@ -463,3 +487,4 @@
     S = null;
   };
 })();
+    clearTimeout(autoSubmitTimer); autoSubmitTimer = null;

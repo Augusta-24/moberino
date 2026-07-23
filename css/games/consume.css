@@ -393,6 +393,9 @@ body.arcade-mode-select.on-consume .consume-wrap {
   align-items: center;
   gap: 7px;
 }
+.cw-tray-shell {
+  position: relative;
+}
 .cw-tray {
   width: 100%;
   min-height: 56px;
@@ -401,9 +404,29 @@ body.arcade-mode-select.on-consume .consume-wrap {
   align-items: center;
   justify-content: center;
   gap: 7px;
-  padding: 6px;
+  padding: 6px 58px;
   border-radius: 8px;
   border: 1px dashed rgba(242,239,232,0.22);
+}
+.cw-tray.valid {
+  border-color: var(--cw);
+  box-shadow: 0 0 18px #38d8ff44;
+  background: rgba(56, 216, 255, 0.06);
+}
+.cw-clear {
+  position: absolute;
+  top: 14px;
+  right: 8px;
+  padding: 6px;
+  border: 0;
+  background: transparent;
+  color: rgba(247,244,236,0.68);
+  font: 9px 'VCR', monospace;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+}
+.cw-clear:disabled {
+  opacity: 0.25;
 }
 .cw-tray.bad {
   animation: cwNudge 0.3s ease;
