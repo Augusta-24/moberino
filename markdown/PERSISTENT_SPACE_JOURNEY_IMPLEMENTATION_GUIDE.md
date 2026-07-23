@@ -1,5 +1,8 @@
 # Codex Implementation Plan: Persistent Space Journey Game
 
+> Visual, cinematic, copy, and interaction decisions are defined in
+> [JOURNEY_VISUAL_STORY_PLAYBOOK.md](JOURNEY_VISUAL_STORY_PLAYBOOK.md).
+
 ## Project goal
 
 Create a new, standalone arcade game built from copies of selected systems in the existing pet game and `space.js`.

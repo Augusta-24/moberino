@@ -859,7 +859,6 @@
           <i></i><i></i><i></i><i></i><i></i>
         </section>
         <section class="journey-briefing-copy">
-          <div class="journey-kicker">${rescue ? 'INCOMING INTEL · LIVE BEACON' : 'ROUTE ENCOUNTER · ASTEROID SALVAGE'}</div>
           <h1 id="journey-briefing-title">${node.name}</h1>
           <p>${rescue
             ? 'An escape pod is trapped in a dense debris field. Clear an approach and reach the beacon.'
