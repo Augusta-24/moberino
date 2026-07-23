@@ -699,6 +699,8 @@
   width: min(92%, 320px);
   align-self: center;
 }
+.pet-whack-grid.milestone { animation: pet-grid-gold 0.36s ease-out; }
+@keyframes pet-grid-gold { 50% { filter: drop-shadow(0 0 12px #ffe61a); } }
 .pet-whack-hole {
   aspect-ratio: 1 / 1;
   border-radius: 50%;
@@ -716,7 +718,21 @@
   transition: transform 0.12s cubic-bezier(0.3,1.6,0.5,1), opacity 0.1s ease;
 }
 .pet-whack-hole.up .pet-whack-toy { opacity: 1; transform: translateY(0) scale(1); }
-.pet-whack-hole.bonk { background: radial-gradient(circle, rgba(255,230,26,0.4), rgba(255,110,199,0.1)); }
+.pet-whack-hole.bonk {
+  animation: pet-bop-burst 0.18s ease-out;
+  background: radial-gradient(circle, rgba(255,230,26,0.55), rgba(255,110,199,0.1));
+}
+.pet-whack-hole.missed { animation: pet-hole-miss 0.24s ease-out; }
+.pet-whack-score-row { display: flex; align-items: center; gap: 12px; min-height: 28px; }
+.pet-whack-combo {
+  font-family: 'VCR', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #ffe61a;
+  text-shadow: 0 0 8px #ffe61a88;
+}
+@keyframes pet-bop-burst { 50% { transform: scale(1.15); box-shadow: 0 0 0 9px rgba(255,230,26,0.12); } }
+@keyframes pet-hole-miss { 50% { border-color: rgba(255,51,68,0.8); background: rgba(255,51,68,0.14); } }
 
 /* REST · Signal's note-constellation: three connected hex-node bands */
 .pet-rest-board {
@@ -746,6 +762,12 @@
 .pet-rest-node polygon { transition: fill 0.15s ease, transform 0.15s ease, filter 0.15s ease; transform-box: fill-box; transform-origin: center; }
 .pet-rest-node.hit polygon { transform: scale(1.18); fill: rgba(255,255,255,0.22); }
 .pet-rest-node.hit text { fill: #fff !important; }
+.pet-rest-board.playback .pet-rest-node { opacity: 0.4; }
+.pet-rest-board.playback .pet-rest-node.playing { opacity: 1; }
+.pet-rest-node.playing polygon { transform: scale(1.2); fill: rgba(255,255,255,0.38); filter: drop-shadow(0 0 10px #fff); }
+.pet-rest-node.wrong { animation: pet-node-wrong 0.42s ease-in-out; }
+.pet-rest-node.wrong polygon { fill: rgba(255,51,68,0.38); stroke: #ff3344 !important; }
+@keyframes pet-node-wrong { 25%,75% { transform: translateX(-4px); } 50% { transform: translateX(4px); } }
 
 /* PET · holographic scratch-off foil */
 .pet-scratch {
@@ -762,6 +784,33 @@
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
   background: radial-gradient(circle at 50% 45%, rgba(255,110,199,0.35), rgba(20,4,16,0.9));
+}
+.pet-scratch-bonuses {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  pointer-events: none;
+}
+.pet-scratch-bonuses i {
+  color: #ffe61a;
+  font-style: normal;
+  font-size: 11px;
+  text-shadow: 0 0 7px currentColor;
+}
+.pet-scratch-bonuses i:nth-child(3n) { color: #4fd8ff; }
+.pet-scratch-bonuses i:nth-child(4n) { color: #ff6ec7; }
+.pet-scratch-yay {
+  position: absolute;
+  left: 50%; top: 50%;
+  z-index: 4;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px;
+  letter-spacing: 2px;
+  color: #ffe61a;
+  text-shadow: 0 0 12px #ffe61a;
+  animation: pet-toast-pop 0.62s ease-out forwards;
 }
 .pet-foil {
   position: absolute; inset: 0;

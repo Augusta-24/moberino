@@ -773,6 +773,7 @@
       if (mini.raf) cancelAnimationFrame(mini.raf);
       if (mini.timer) clearTimeout(mini.timer);
       if (mini.iv) clearInterval(mini.iv);
+      if (mini.timeouts) mini.timeouts.forEach(clearTimeout);
     }
     if (el) { el.classList.remove('show'); el.innerHTML = ''; el.onpointerdown = el.onpointermove = el.onpointerup = el.onpointercancel = null; }
     mini = null;
@@ -803,6 +804,7 @@
       if (mini.raf) cancelAnimationFrame(mini.raf);
       if (mini.timer) clearTimeout(mini.timer);
       if (mini.iv) clearInterval(mini.iv);
+      if (mini.timeouts) mini.timeouts.forEach(clearTimeout);
       mini.raf = 0; mini.timer = 0; mini.iv = 0;
     }
     const el = miniEl();
@@ -911,19 +913,19 @@
         const y = parseFloat(s.dataset.y) + parseFloat(s.dataset.vy) * dt;
         s.dataset.y = String(y);
         s.style.top = y + '%';
-        if (y >= 82 && y < 98 && Math.abs(parseFloat(s.dataset.x) - mini.basketX) < 7.5) {
+        if (y >= 82 && y < 98 && Math.abs(parseFloat(s.dataset.x) - mini.basketX) < 10) {
           s._done = true;
           if (s._bad) {
-            mini.good = Math.max(0, mini.good - 1);
+            mini.good = Math.max(0, mini.good - 0.5);
             playSound('miss');
             flashTank('bad');
-            miniToast('JUNK! −1', 'bad');
+            miniToast('JUNK! −½', 'bad');
           } else {
             mini.good++;
             pentaNote(mini.good + 2, 0.09);
             miniToast('+1 FED', 'good');
           }
-          if (nEl) nEl.textContent = mini.good;
+          if (nEl) nEl.textContent = Math.floor(mini.good);
           s.classList.add('caught');
           setTimeout(() => s.remove(), 160);
           if (mini.good >= mini.goal) { completeMini('SNACK RUN CLEAR!', applyFeed); return; }
@@ -936,7 +938,7 @@
     mini.raf = requestAnimationFrame(loop);
   }
 
-  // ── PLAY · Whack-flavored: a toy pops up, bop it in its window ──
+  // ── PLAY · Whack-flavored: multi-pop toys with misses and combos ──
   function miniWhack() {
     const el = miniEl();
     if (!el) return;
@@ -948,43 +950,71 @@
       <div class="pet-mini-hint">BOP THE TOYS!</div>
       <div class="pet-whack-grid" id="pet-whack-grid">${Array.from({ length: SPOTS }, () =>
         `<button class="pet-whack-hole" type="button"><span class="pet-whack-toy">${iconImg(ICON.play, 30)}</span></button>`).join('')}</div>
-      <div class="pet-mini-count"><span id="pet-whack-n">0</span>/${goal} BOPS</div>`;
+      <div class="pet-whack-score-row"><div class="pet-mini-count"><span id="pet-whack-n">0</span>/${goal} BOPS</div><div class="pet-whack-combo" id="pet-whack-combo"></div></div>`;
     el.classList.add('show');
-    mini = { key: 'play', hits: 0, goal, iv: 0, timer: 0 };
+    const stage = stageIdx();
+    const popCount = stage === 1 ? 1 : stage === 2 ? 2 : 2 + (Math.random() < 0.5 ? 0 : 1);
+    const windowMs = stage === 1 ? 1200 : stage === 2 ? 900 : 700;
+    mini = { key: 'play', hits: 0, combo: 0, goal, iv: 0, timeouts: [], popToken: 0 };
     const holes = [...el.querySelectorAll('.pet-whack-hole')];
     const nEl = document.getElementById('pet-whack-n');
+    const comboEl = document.getElementById('pet-whack-combo');
+    const grid = document.getElementById('pet-whack-grid');
     holes.forEach(h => h.onpointerdown = (e) => {
       e.preventDefault();
       if (!mini || !h.classList.contains('up')) return;
       h.classList.remove('up');
+      h.dataset.hit = '1';
       h.classList.add('bonk');
       setTimeout(() => h.classList.remove('bonk'), 150);
       mini.hits++;
+      mini.combo++;
+      if (mini.combo % 5 === 0) {
+        mini.hits++;
+        grid.classList.add('milestone');
+        setTimeout(() => grid.classList.remove('milestone'), 360);
+        miniToast(`×${mini.combo} BONUS +1`, 'good');
+      } else {
+        miniToast('+1 BOP', 'good');
+      }
       if (nEl) nEl.textContent = mini.hits;
+      if (comboEl) comboEl.textContent = mini.combo > 1 ? `×${mini.combo} COMBO` : '';
       pentaNote(mini.hits + 3, 0.09);
-      miniToast('+1 BOP', 'good');
       if (mini.hits >= mini.goal) { completeMini('PLAYTIME CLEAR!', applyPlay); return; }
     });
     function pop() {
-      holes.forEach(h => h.classList.remove('up'));
-      const i = Math.floor(Math.random() * holes.length);
-      holes[i].classList.add('up');
+      if (!mini || mini.key !== 'play') return;
+      const available = holes.filter(h => !h.classList.contains('up')).sort(() => Math.random() - 0.5);
+      available.slice(0, popCount).forEach(h => {
+        const token = ++mini.popToken;
+        h.dataset.popToken = token;
+        h.dataset.hit = '0';
+        h.classList.remove('missed');
+        h.classList.add('up');
+        const timeout = setTimeout(() => {
+          if (!mini || mini.key !== 'play' || +h.dataset.popToken !== token || !h.classList.contains('up')) return;
+          h.classList.remove('up');
+          h.classList.add('missed');
+          setTimeout(() => h.classList.remove('missed'), 240);
+          mini.combo = 0;
+          if (comboEl) comboEl.textContent = '';
+          if (typeof CSFX !== 'undefined' && CSFX.back) CSFX.back();
+        }, windowMs);
+        mini.timeouts.push(timeout);
+      });
     }
     pop();
     mini.iv = setInterval(pop, tune.popGap);
   }
 
-  // ── REST · Signal's actual note-constellation ──
-  // Three bands (LOW/MID/HIGH), each a row of connected hex nodes carrying
-  // its own note — tap any node to play it. Nodes stay tappable repeatedly
-  // (this is the calm one; no falling, no pressure, just build the loop).
+  // ── REST · Simon-style pentatonic echo sequence ──
   function miniPads() {
     const el = miniEl();
     if (!el) return;
     const goal = GOALS.rest[stageIdx()];
     el.innerHTML = `
       <div class="pet-mini-title">SIGNAL LULLABY</div>
-      <div class="pet-mini-hint">TAP THE NODES · NO WRONG NOTES</div>
+      <div class="pet-mini-hint" id="pet-rest-hint">WATCH · LISTEN · REPEAT</div>
       <div class="pet-rest-board" id="pet-rest-board">
         ${REST_BANDS.map(b => `
           <div class="pet-rest-band-row">
@@ -992,24 +1022,84 @@
             <div class="pet-rest-band-svg">${bandSVG(b.degs.map(d => ({ deg: d, letter: NOTE_LETTERS[d] })), b.color)}</div>
           </div>`).join('')}
       </div>
-      <div class="pet-mini-count"><span id="pet-rest-n">0</span>/${goal} NOTES</div>`;
+      <div class="pet-mini-count"><span id="pet-rest-n">0</span>/${goal} LULLABY</div>`;
     el.classList.add('show');
-    mini = { key: 'rest', notes: 0, goal };
+    const stage = stageIdx();
+    const sequenceLength = stage + 2;
+    const award = stage === 1 ? 2 : stage === 2 ? 3 : 4;
+    mini = { key: 'rest', notes: 0, goal, sequence: [], input: 0, accepting: false, timeouts: [] };
     const nEl = document.getElementById('pet-rest-n');
-    el.querySelectorAll('.pet-rest-node').forEach(node => {
+    const board = document.getElementById('pet-rest-board');
+    const hint = document.getElementById('pet-rest-hint');
+    const nodes = [...el.querySelectorAll('.pet-rest-node')];
+    nodes.forEach((node, idx) => {
+      node.dataset.nodeIndex = idx;
+      node.dataset.letter = node.querySelector('text').textContent;
       node.addEventListener('pointerdown', (e) => {
         e.preventDefault();
-        if (!mini) return;
+        if (!mini || !mini.accepting) return;
         const deg = +node.dataset.note;
         pentaNote(deg, 0.11, 0.45);
+        const expected = mini.sequence[mini.input];
+        if (idx !== expected) {
+          mini.accepting = false;
+          node.classList.add('wrong');
+          synthTone(150, 'sine', 0, 0.18, 0.05, 110);
+          if (hint) hint.textContent = 'TRY THAT SAME MELODY AGAIN';
+          mini.timeouts.push(setTimeout(() => {
+            node.classList.remove('wrong');
+            playSequence();
+          }, 520));
+          return;
+        }
+        mini.input++;
         node.classList.add('hit');
-        setTimeout(() => node.classList.remove('hit'), 260);
-        mini.notes++;
-        if (nEl) nEl.textContent = mini.notes;
-        miniToast('+1 NOTE', 'good');
-        if (mini.notes >= mini.goal) { completeMini('LULLABY CLEAR!', applyRest); return; }
+        node.querySelector('text').textContent = mini.input;
+        mini.timeouts.push(setTimeout(() => node.classList.remove('hit'), 260));
+        if (mini.input === mini.sequence.length) {
+          mini.accepting = false;
+          mini.notes += award;
+          if (nEl) nEl.textContent = Math.min(mini.goal, mini.notes);
+          miniToast(`ECHO! +${award}`, 'good');
+          if (mini.notes >= mini.goal) { completeMini('LULLABY CLEAR!', applyRest); return; }
+          mini.timeouts.push(setTimeout(newSequence, 650));
+        }
       });
     });
+    function resetNodeLabels() {
+      nodes.forEach(node => {
+        node.classList.remove('hit', 'wrong', 'playing');
+        node.querySelector('text').textContent = node.dataset.letter;
+      });
+    }
+    function playSequence() {
+      if (!mini || mini.key !== 'rest') return;
+      mini.input = 0;
+      mini.accepting = false;
+      resetNodeLabels();
+      board.classList.add('playback');
+      if (hint) hint.textContent = 'WATCH · LISTEN';
+      mini.sequence.forEach((idx, i) => {
+        mini.timeouts.push(setTimeout(() => {
+          const node = nodes[idx];
+          node.classList.add('playing');
+          pentaNote(+node.dataset.note, 0.1, 0.3);
+          mini.timeouts.push(setTimeout(() => node.classList.remove('playing'), 300));
+        }, i * 500));
+      });
+      mini.timeouts.push(setTimeout(() => {
+        if (!mini || mini.key !== 'rest') return;
+        board.classList.remove('playback');
+        mini.accepting = true;
+        if (hint) hint.textContent = 'YOUR TURN · REPEAT';
+      }, mini.sequence.length * 500));
+    }
+    function newSequence() {
+      if (!mini || mini.key !== 'rest') return;
+      mini.sequence = Array.from({ length: sequenceLength }, () => Math.floor(Math.random() * nodes.length));
+      playSequence();
+    }
+    newSequence();
   }
 
   // ── PET · holographic scratch-off: rub the foil off to reveal the love ──
@@ -1019,18 +1109,24 @@
     const { cols: COLS, rows: ROWS } = FOIL_GRID[stageIdx()];
     const TOTAL = COLS * ROWS;
     const goal = GOALS.pet[stageIdx()];
+    const bonusCells = new Set();
+    const bonusCount = 3 + Math.floor(Math.random() * 3);
+    while (bonusCells.size < bonusCount) bonusCells.add(Math.floor(Math.random() * TOTAL));
     el.innerHTML = `
       <div class="pet-mini-title">SCRATCH & PET</div>
       <div class="pet-mini-hint">RUB OFF THE FOIL TO REVEAL THE LOVE</div>
       <div class="pet-scratch" id="pet-scratch">
-        <div class="pet-scratch-reveal">${heartSVG(64)}</div>
+        <div class="pet-scratch-reveal">${heartSVG(64)}
+          <div class="pet-scratch-bonuses" style="grid-template-columns:repeat(${COLS},1fr)">${
+            Array.from({ length: TOTAL }, (_, i) => `<i>${bonusCells.has(i) ? (i % 2 ? '★' : '♥') : ''}</i>`).join('')}</div>
+        </div>
         <div class="pet-foil" id="pet-foil" style="grid-template-columns:repeat(${COLS},1fr)">${
-          Array.from({ length: TOTAL }, () => `<i class="pet-foil-cell"></i>`).join('')}</div>
+          Array.from({ length: TOTAL }, (_, i) => `<i class="pet-foil-cell" data-index="${i}"></i>`).join('')}</div>
       </div>
       <div class="pet-mini-count"><span id="pet-scratch-n">0</span>% CLEARED</div>`;
     el.classList.add('show');
     const nEl = document.getElementById('pet-scratch-n');
-    mini = { key: 'pet', cleared: 0, total: TOTAL, goal, down: false, lastNote: 0 };
+    mini = { key: 'pet', cleared: 0, total: TOTAL, goal, down: false, lastNote: 0, bonusCells };
     function clearAt(x, y) {
       const cell = document.elementFromPoint(x, y);
       if (!cell || !cell.classList || !cell.classList.contains('pet-foil-cell') || cell._gone) return;
@@ -1039,7 +1135,19 @@
       mini.cleared++;
       if (nEl) nEl.textContent = Math.round(100 * mini.cleared / mini.total);
       const now = performance.now();
-      if (now - mini.lastNote > 65) { pentaNote(mini.cleared + 2, 0.06, 0.14); mini.lastNote = now; }
+      if (mini.bonusCells.has(+cell.dataset.index)) {
+        pentaNote(5, 0.08, 0.12);
+        pentaNote(8, 0.08, 0.16, 0.07);
+        miniToast('BONUS! ✦');
+        const yay = document.createElement('span');
+        yay.className = 'pet-scratch-yay';
+        yay.textContent = 'YAY!';
+        cell.parentElement.parentElement.appendChild(yay);
+        setTimeout(() => yay.remove(), 650);
+      } else if (now - mini.lastNote > 65) {
+        pentaNote(mini.cleared + 2, 0.06, 0.14);
+        mini.lastNote = now;
+      }
       if (mini.cleared / mini.total >= goal) { completeMini('ALL CLEARED!', applyPet); return; }
     }
     el.onpointerdown = (e) => { e.preventDefault(); if (mini) { mini.down = true; clearAt(e.clientX, e.clientY); } };
@@ -1095,16 +1203,16 @@
       const hit = Math.abs(mini.lockX - mini.shipX) < tune.tol;
       shotEl.style.opacity = '0';
       if (hit) {
-        mini.dodged = Math.max(0, mini.dodged - 1);
+        mini.dodged = Math.max(0, mini.dodged - 0.5);
         playSound('miss');
         flashTank('bad');
-        miniToast('HIT! −1', 'bad');
+        miniToast('HIT! −½', 'bad');
       } else {
         mini.dodged++;
         playShieldPing();
         miniToast('DODGED! +1', 'good');
       }
-      if (nEl) nEl.textContent = mini.dodged;
+      if (nEl) nEl.textContent = Math.floor(mini.dodged);
       mini.phase = 'drift';
       mini.nextLockAt = performance.now() + tune.gap;
       if (mini.dodged >= mini.goal) completeMini('ON GUARD CLEAR!', applyGuard);
