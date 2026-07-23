@@ -60,24 +60,28 @@
     const hero = selectedHero();
     const beats = [
       {
+        duration: 4500,
         eyebrow: 'A QUIET MORNING · HOME ORBIT',
         title: `${hero.name} FOUND AN EMPTY VAULT`,
         visual: `${heroPortrait('sad')}${crystalCluster(7)}`,
         line: 'The seven Star Crystals were gone.'
       },
       {
+        duration: 4500,
         eyebrow: 'THE THIEVES LEFT ONE TRAIL',
         title: 'A SIGNAL LEADING OUTWARD',
         visual: `<div class="journey-story-signal"><span></span><span></span><span></span></div>`,
         line: 'Bosses, raiders, and old ruins stand between us and the truth.'
       },
       {
+        duration: 5200,
         eyebrow: 'THE WAYFARER · READY TO LAUNCH',
         title: `${hero.name} TAKES THE HUNT`,
         visual: `<div class="journey-story-ship">${shipIllustration('journey-intro-ship')}</div>`,
         line: 'Follow the route. Recover the crystals. Bring our friends home.'
       },
       {
+        duration: 4500,
         eyebrow: 'FIRST LEAD · LANTERN STATION',
         title: 'FUEL UP. FOLLOW THE SIGNAL.',
         visual: `<div class="journey-story-route"><i></i><b></b><i></i></div>`,
@@ -109,7 +113,10 @@
         requestAnimationFrame(() => stage.classList.add('is-visible'));
       }, 180);
       storyTimers.push(swapTimer);
-      const nextTimer = setTimeout(showBeat, index === beats.length ? 3000 : 2600);
+      // Match Space Mobe's deliberately patient cinematic cadence. These are full
+      // story beats, not loading messages: standard cards hold for 4.5 seconds and
+      // the denser mission card gets Space's longer 5.2-second hold.
+      const nextTimer = setTimeout(showBeat, beat.duration);
       storyTimers.push(nextTimer);
     }
     showBeat();

@@ -105,6 +105,18 @@ test('the cockpit centers the route and moves detail into ship and log views', (
   assert.match(controller, /STAR CRYSTAL RECOVERED/);
 });
 
+test('the opening story uses the patient Space Mobe cinematic cadence', () => {
+  const controller = fs.readFileSync(
+    path.join(__dirname, '..', 'js', 'games', 'journey.js'),
+    'utf8'
+  );
+
+  assert.match(controller, /duration:\s*4500/);
+  assert.match(controller, /duration:\s*5200/);
+  assert.match(controller, /setTimeout\(showBeat,\s*beat\.duration\)/);
+  assert.doesNotMatch(controller, /setTimeout\(showBeat,\s*index === beats\.length \? 3000 : 2600\)/);
+});
+
 test('Journey combat is isolated from storage and exposes lifecycle methods', () => {
   const combat = fs.readFileSync(
     path.join(__dirname, '..', 'js', 'games', 'journey-combat.js'),
