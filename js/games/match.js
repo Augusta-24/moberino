@@ -61,6 +61,7 @@
     const wrap = document.getElementById('match-wrap');
     if (!wrap) return;
     setArcadeExitVisible(state !== 'over');
+    setArcadeModeSelect(state === 'idle' || state === 'free-setup');
     wrap.classList.toggle('mode-select-layout', state === 'idle' || state === 'free-setup');
     document.body.classList.toggle('arcade-selection-open', state === 'idle' || state === 'free-setup' || state === 'preview');
     if (state === 'idle' || state === 'free-setup' || state === 'preview') {

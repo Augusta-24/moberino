@@ -135,13 +135,50 @@
 </div>
 <div id="game-carousel">
 <div class="carousel-item" id="ci-facefactory">
-<div class="game-card" onclick="SFX.menuSelect();nav('facefactory')" style="border-color:#ff66dd55;cursor:pointer">
+<button class="game-card ff-launch-card" type="button" onclick="return faceFactoryLaunch(event)" onkeydown="if(event.key==='Enter'||event.key===' '){return faceFactoryLaunch(event)}" aria-label="Play Face Factory" style="border-color:#ff66dd55;cursor:pointer">
 <div class="game-card-art ff-card-art">
-  <div class="ff-card-slice ff-card-slice-1" style="background-image:url('characters/tony.png')"></div>
-  <div class="ff-card-slice ff-card-slice-2" style="background-image:url('characters/kevin.png')"></div>
-  <div class="ff-card-slice ff-card-slice-3" style="background-image:url('characters/grandma.png')"></div>
-  <div class="ff-card-lever"><span></span></div>
-  <div class="ff-card-stars">✦ &nbsp; ✦</div>
+  <svg class="ff-slot-art" viewBox="0 0 200 240" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="ff-machine" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#6d246d"/><stop offset="1" stop-color="#281143"/></linearGradient>
+      <linearGradient id="ff-reel-glass" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f8fbff" stop-opacity=".5"/><stop offset=".5" stop-color="#dcecff" stop-opacity=".28"/><stop offset="1" stop-color="#a9c5e7" stop-opacity=".4"/></linearGradient>
+      <filter id="ff-neon"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <rect width="200" height="240" fill="#090518"/>
+    <g opacity=".24" stroke="#ff66dd" stroke-width=".7"><path d="M0 32H200M0 64H200M0 96H200M0 128H200M25 0V170M75 0V170M125 0V170M175 0V170"/></g>
+    <g transform="translate(17 16) scale(.84)">
+    <rect x="13" y="19" width="166" height="157" rx="17" fill="url(#ff-machine)" fill-opacity=".55" stroke="#ff66dd" stroke-opacity=".65" stroke-width="2" filter="url(#ff-neon)"/>
+    <rect x="27" y="30" width="138" height="27" rx="8" fill="#130821" fill-opacity=".62" stroke="#ffe61a" stroke-opacity=".65" stroke-width="1.2"/>
+    <text x="96" y="49" text-anchor="middle" fill="#ffe61a" font-family="'Bebas Neue',sans-serif" font-size="16" letter-spacing="3">FACE REELS</text>
+    <g fill="#ffe61a" filter="url(#ff-neon)"><circle cx="21" cy="42" r="3"/><circle cx="171" cy="42" r="3"/></g>
+    <rect x="23" y="65" width="146" height="83" rx="10" fill="#11091d" fill-opacity=".48" stroke="#ff9bea" stroke-opacity=".58" stroke-width="1.5"/>
+    <!-- Three simple smiley silhouettes: familiar expressions, no platform emoji artwork. -->
+    <g transform="translate(29 71)">
+      <rect width="40" height="70" rx="6" fill="url(#ff-reel-glass)"/>
+      <circle cx="20" cy="32" r="15" fill="#ff9bea" fill-opacity=".36" stroke="#ff9bea" stroke-width="1.5"/>
+      <circle cx="14" cy="29" r="1.8" fill="#fff"/><circle cx="26" cy="29" r="1.8" fill="#fff"/>
+      <path d="M12 39Q20 45 28 39" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round"/>
+      <path d="M9 54Q20 46 31 54V60H9Z" fill="#ff9bea" fill-opacity=".34"/>
+    </g>
+    <g transform="translate(76 71)">
+      <rect width="40" height="70" rx="6" fill="url(#ff-reel-glass)"/>
+      <circle cx="20" cy="32" r="15" fill="#ffe61a" fill-opacity=".32" stroke="#ffe61a" stroke-width="1.5"/>
+      <path d="M10 29Q14 25 18 29M22 29Q26 25 30 29" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M12 38Q20 47 28 38" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M9 54Q20 46 31 54V60H9Z" fill="#ffe61a" fill-opacity=".3"/>
+    </g>
+    <g transform="translate(123 71)">
+      <rect width="40" height="70" rx="6" fill="url(#ff-reel-glass)"/>
+      <circle cx="20" cy="32" r="15" fill="#00e5ff" fill-opacity=".28" stroke="#00e5ff" stroke-width="1.5"/>
+      <circle cx="14" cy="29" r="1.8" fill="#fff"/><circle cx="26" cy="29" r="1.8" fill="#fff"/>
+      <ellipse cx="20" cy="40" rx="4" ry="5" fill="none" stroke="#fff" stroke-width="2"/>
+      <path d="M9 54Q20 46 31 54V60H9Z" fill="#00e5ff" fill-opacity=".28"/>
+    </g>
+    <g transform="translate(179 70)"><path d="M0 58L7 6" stroke="#d9dbea" stroke-width="7" stroke-linecap="round"/><circle cx="8" cy="4" r="11" fill="#ff2db8" stroke="#ff9bea" stroke-width="2" filter="url(#ff-neon)"/></g>
+    <rect x="42" y="154" width="108" height="15" rx="7.5" fill="#ff2db8" stroke="#ff9bea"/>
+    <text x="96" y="165" text-anchor="middle" fill="#fff" font-family="'VCR',monospace" font-size="7" letter-spacing="2">SPIN!</text>
+    <g fill="#00e5ff" opacity=".72"><path d="M13 194l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/><path d="M175 191l2 4 5 1-4 3 1 5-4-2-4 2 1-5-4-3 5-1z"/></g>
+    </g>
+  </svg>
 </div>
 <div class="game-card-info">
 <div class="game-card-badge" style="background:#ff66dd22;color:#ff66dd;border:1px solid #ff66dd66">FAMILY FUN</div>
@@ -149,7 +186,7 @@
 <div class="game-card-desc">SPIN · BUILD · MIX FAMILY FACES</div>
 <div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#ff66dd22;border:1.5px solid #ff66dd;border-radius:5px;padding:10px 24px;color:#ff66dd;width:100%;text-shadow:0 0 8px #ff66dd66;text-align:center">▶ PLAY</div>
 </div>
-</div>
+</button>
 </div>
 <div class="carousel-item" id="ci-whack">
 <div class="game-card" onclick="SFX.menuSelect();nav('whack')" style="border-color:#ff993344;cursor:pointer">
@@ -571,6 +608,7 @@
 
 <div id="arcade-float"></div>
 
+<button aria-label="Back to arcade" id="arcade-mode-back" type="button" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE</button>
 <button aria-label="Exit game" class="arcade-exit-btn" id="arcade-game-exit" onclick="confirmExitArcade()">✕</button>
 
 <div id="lb-overlay" style="display:none;position:fixed;inset:0;z-index:9800;align-items:flex-start;justify-content:center;overflow-y:auto;background:rgba(5,2,18,0.92);backdrop-filter:blur(10px);padding:20px 16px 40px">
@@ -593,6 +631,7 @@
   <button class="arcade-install-btn" id="arcade-music-btn" type="button">START MUSIC</button>
 </div>
 <script src="js/arcade.js"></script>
+<script src="js/games/face-factory-calibration.js"></script>
 <script src="js/games/face-factory.js"></script>
 <script src="js/games/whack.js"></script>
 <script src="js/games/match.js"></script>

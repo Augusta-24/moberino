@@ -215,6 +215,7 @@
     host.classList.remove('mode-select-layout');
     document.body.classList.remove('arcade-selection-open');
     setArcadeExitVisible(true);
+    setArcadeModeSelect(false);
     host.innerHTML = `
       <div class="snoob-shell">
         <div class="snoob-hud">
@@ -245,6 +246,7 @@
     host.classList.add('mode-select-layout');
     document.body.classList.add('arcade-selection-open');
     setArcadeExitVisible(false);
+    setArcadeModeSelect(false);
     host.innerHTML = buildArcadeResultCard({
       uid: 'snoob',
       boardKey: BOARD_KEY,
@@ -1682,6 +1684,7 @@
     const host = prepHost();
     if (!host) return;
     setArcadeExitVisible(true);
+    setArcadeModeSelect(true);
     host.innerHTML = `
       <div class="snoob-cabinet-frame snoob-mode-frame">
         <div class="snoob-menu-shell">
@@ -1706,6 +1709,7 @@
     const host = prepHost();
     if (!host) return;
     setArcadeExitVisible(true);
+    setArcadeModeSelect(true);
     const store = jProfile();
     const st = store.profiles[store.active].stars || {};
     const done = jHighest(st);
@@ -1792,6 +1796,7 @@
     host.classList.add('mode-select-layout');
     document.body.classList.add('arcade-selection-open');
     setArcadeExitVisible(false);
+    setArcadeModeSelect(false);
     const hasNext = win && journeyN < JLEVELS.length;
     const starRow = win
       ? `<div class="snoob-result-stars">${[1, 2, 3].map(i => `<span class="${i <= stars ? 'on' : ''}">★</span>`).join('')}</div>`

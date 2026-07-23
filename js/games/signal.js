@@ -4122,6 +4122,7 @@
   }
 
   function start() {
+    setArcadeModeSelect(false);
     fitCanvas();
     resetRun('arcade');
     state = 'playing';
@@ -4170,6 +4171,7 @@
     setupStep = 'palette';
     freeRecording = false;
     state = 'idle';
+    setArcadeModeSelect(true);
     replaying = false;
     loopEndArmed = false;
     updateLoopButton();
@@ -4254,6 +4256,7 @@
   }
 
   function renderBuildSetup() {
+    setArcadeModeSelect(true);
     overlay.classList.remove('hidden');
     overlay.classList.add('signal-menu-mode');
     overlay.classList.remove('signal-tempo-mode');
@@ -4383,6 +4386,7 @@
   }
 
   function startFreeMode(index) {
+    setArcadeModeSelect(false);
     freeLayerMenuKeepsLoop = false;
     fitCanvas();
     freeLayerIndex = clamp(Math.floor(index || 0), 0, LAYERS.length - 1);

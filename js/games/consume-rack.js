@@ -57,6 +57,7 @@
 
   function start(n) {
     const data = levels()[n - 1]; if (!data) return;
+    setArcadeModeSelect(false);
     nextTile = 1;
     const tile = value => ({ id: nextTile++, value });
     state = { n, moves: 0, drag: null, groups: data.groups.map((group, id) => ({ id, tiles: group.map(tile) })), rack: data.rack.map(tile), won: false };
@@ -251,6 +252,7 @@
   }
 
   function journey() {
+    setArcadeModeSelect(true);
     state = null;
     const data = profile(), stars = data.profiles[data.active].stars, unlocked = done(stars) + 1;
     wrap.style.setProperty('--kt', cfg().accent);
@@ -261,5 +263,5 @@
   }
   window.initConsumeRack = next => { mode = next; wrap = document.getElementById('consume-wrap'); journey(); };
   window.consumeRackBack = () => { state = null; mode = null; };
-  window.renderConsumeModes = () => { wrap = document.getElementById('consume-wrap'); if (!wrap) return; wrap.innerHTML = `<div class="consume-modes"><div class="cw-title">TILE SWAP</div><div class="cw-intro">Choose a way to untangle the tiles.</div><button data-mode="grid"><strong>GRID</strong><span>Build real words from a shared tile grid.</span></button><button data-mode="words"><strong>WORDS</strong><span>Rearrange every tile into valid words.</span></button><button data-mode="numbers"><strong>RUMMY</strong><span>Rearrange every tile into runs and sets.</span></button></div>`; wrap.querySelector('.consume-modes').addEventListener('click', event => { const button = event.target.closest('[data-mode]'); if (!button) return; if (button.dataset.mode === 'grid') window.initConsumeGrid(); else window.initConsumeRack(button.dataset.mode); }); };
+  window.renderConsumeModes = () => { wrap = document.getElementById('consume-wrap'); if (!wrap) return; setArcadeModeSelect(true); wrap.innerHTML = `<div class="consume-modes"><div class="cw-title">TILE SWAP</div><div class="cw-intro">Choose a way to untangle the tiles.</div><button data-mode="grid"><strong>GRID</strong><span>Build real words from a shared tile grid.</span></button><button data-mode="words"><strong>WORDS</strong><span>Rearrange every tile into valid words.</span></button><button data-mode="numbers"><strong>RUMMY</strong><span>Rearrange every tile into runs and sets.</span></button></div>`; wrap.querySelector('.consume-modes').addEventListener('click', event => { const button = event.target.closest('[data-mode]'); if (!button) return; if (button.dataset.mode === 'grid') window.initConsumeGrid(); else window.initConsumeRack(button.dataset.mode); }); };
 })();

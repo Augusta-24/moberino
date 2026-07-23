@@ -201,6 +201,32 @@ body.on-consume .cats-header {
   border-radius: 6px;
   box-shadow: 0 6px 18px rgba(0,0,0,0.35);
 }
+#arcade-mode-back {
+  display: none;
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top, 10px));
+  left: max(10px, env(safe-area-inset-left, 10px));
+  z-index: 10000;
+  min-height: 44px;
+  padding: 0 18px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 102, 221, 0.68);
+  border-radius: 10px;
+  background: rgba(31, 8, 43, 0.72);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.28);
+  color: #ff9bea;
+  font-family: 'VCR', monospace;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+body.arcade-mode-select #arcade-mode-back { display: inline-flex; }
+body.arcade-mode-select #arcade-game-exit,
+body.arcade-mode-select #signal-exit-btn { display: none !important; }
+body.arcade-mode-select.on-signal #pg-signal .cats-header { display: none !important; }
 body.on-facefactory #arcade-game-exit,
 body.on-whack #arcade-game-exit,
 body.on-match #arcade-game-exit,

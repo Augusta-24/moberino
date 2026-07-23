@@ -10823,6 +10823,7 @@ function nextWave() {
   function showSpaceOverlay(mode) {
     try { if (mode === 'select' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start(); } catch(e){}
     document.body.classList.toggle('arcade-selection-open', mode === 'select' || mode === 'boss-preview' || mode === 'how-to-play' || mode === 'debug' || mode === 'mode-complete');
+    setArcadeModeSelect(mode === 'select' || mode === 'boss-preview' || mode === 'how-to-play' || mode === 'debug');
     if (mode === 'select' || mode === 'boss-preview' || mode === 'how-to-play' || mode === 'debug' || mode === 'mode-complete') {
       if (typeof window.initArcadeFloat === 'function') window.initArcadeFloat(true);
     }
@@ -11508,6 +11509,7 @@ function nextWave() {
   function hideSpaceOverlayForRun() {
     const ov=document.getElementById('space-overlay');
     document.body.classList.remove('arcade-selection-open');
+    setArcadeModeSelect(false);
     if(ov) {
       ov.classList.add('hidden');
       ov.classList.remove('space-boss-preview');
@@ -11617,6 +11619,7 @@ function nextWave() {
     prepareSpaceMission();
     const ov=document.getElementById('space-overlay');
     document.body.classList.remove('arcade-selection-open');
+    setArcadeModeSelect(false);
     if(ov) {
       ov.classList.add('hidden');
       ov.classList.remove('space-boss-preview');
@@ -11681,6 +11684,7 @@ function nextWave() {
     prepareSpaceMission();
     const ov=document.getElementById('space-overlay');
     document.body.classList.remove('arcade-selection-open');
+    setArcadeModeSelect(false);
     if(ov) {
       ov.classList.add('hidden');
       ov.classList.remove('space-boss-preview');
@@ -11707,6 +11711,7 @@ function nextWave() {
     prepareSpaceMission();
     const ov=document.getElementById('space-overlay');
     document.body.classList.remove('arcade-selection-open');
+    setArcadeModeSelect(false);
     if(ov) {
       ov.classList.add('hidden');
       ov.classList.remove('space-boss-preview');
@@ -11731,6 +11736,7 @@ function nextWave() {
     prepareSpaceMission();
     const ov=document.getElementById('space-overlay');
     document.body.classList.remove('arcade-selection-open');
+    setArcadeModeSelect(false);
     if(ov) {
       ov.classList.add('hidden');
       ov.classList.remove('space-boss-preview');

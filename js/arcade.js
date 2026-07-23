@@ -183,6 +183,10 @@
   }
   window.setArcadeExitVisible = setArcadeExitVisible;
 
+  window.setArcadeModeSelect = function(show) {
+    document.body.classList.toggle('arcade-mode-select', !!show);
+  };
+
   window.confirmExitArcade = function() {
     if (!confirm('EXIT GAME?\nReturn to arcade menu?')) return;
     if (typeof SFX !== 'undefined' && typeof SFX.menuSelect === 'function') SFX.menuSelect();
@@ -197,6 +201,7 @@
     window.scrollTo(0, 0);
     if (window.lockViewportHeight) window.lockViewportHeight();
     document.getElementById(targetPageId)?.scrollTo(0, 0);
+    window.setArcadeModeSelect(false);
 
     const onLobby = p === 'lobby';
     const onCharSelect = p === 'charselect';
@@ -381,6 +386,17 @@ const SFX = (() => {
     neonOn()        { tone(220,'square',0,0.05,0.05,880); tone(880,'square',0.05,0.05,0.05,220); },
     slotTick()      { tone(700,'square',0,0.03,0.04); },
     slotLand()      { tone(440,'square',0,0.06,0.08); tone(880,'square',0.04,0.12,0.08); },
+    reelPair()      {
+      tone(523,'triangle',0,0.10,0.06);
+      tone(784,'triangle',0.07,0.12,0.065);
+      tone(1047,'sine',0.15,0.18,0.055);
+    },
+    reelJackpot()   {
+      [523,659,784,1047].forEach((f,i)=>tone(f,'triangle',i*0.07,0.16,0.065));
+      [784,988,1175,1568].forEach((f,i)=>tone(f,'triangle',0.31+i*0.07,0.19,0.068));
+      tone(2093,'sine',0.48,0.34,0.045);
+      tone(2637,'sine',0.57,0.28,0.035);
+    },
     missionSignal() {
       [523,659,784].forEach((f,i)=>tone(f,'triangle',i*0.08,0.22,0.04));
       tone(1047,'sine',0.26,0.28,0.03,1318);
@@ -1280,6 +1296,10 @@ function initCarousel() {
     return;
   }
   carousel.dataset.carouselReady = '1';
+  // Face Factory is the gentler bonus cabinet, so keep it at the end of the
+  // carousel regardless of where its large card markup lives in arcade.html.
+  const faceFactoryCard = carousel.querySelector('#ci-facefactory');
+  if (faceFactoryCard) carousel.appendChild(faceFactoryCard);
   const prefersNativeSnap = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
   const originals = [...carousel.querySelectorAll('.carousel-item')];
   const N = originals.length;

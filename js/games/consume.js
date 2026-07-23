@@ -150,6 +150,7 @@
   function startLevel(n) {
     const data = LEVELS[n - 1];
     if (!data) return;
+    setArcadeModeSelect(false);
     killTimers();
     nextWordId = 1;
     S = {
@@ -405,6 +406,7 @@
   }
 
   function renderJourney() {
+    setArcadeModeSelect(true);
     killTimers();
     S = null;
     const store = ensureProfile();

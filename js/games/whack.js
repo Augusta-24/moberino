@@ -211,6 +211,7 @@
     const wrap = document.getElementById('whack-wrap');
     if (!wrap) return;
     setArcadeExitVisible(state !== 'over');
+    setArcadeModeSelect(state === 'mode-select' || state === 'mole-select');
     wrap.classList.toggle('mode-select-layout', state === 'mode-select');
     document.body.classList.toggle('arcade-selection-open', state === 'mode-select' || state === 'mole-select');
     if (state === 'mode-select' || state === 'mole-select') {
