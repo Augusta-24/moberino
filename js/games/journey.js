@@ -560,13 +560,27 @@
     return `We made it to ${node.name}. The crystal trail continues from here.`;
   }
 
+  function arrivalDebrisField() {
+    const debris = [
+      [5, 12, 38, -18, 0], [17, 18, 24, 22, .4], [84, 11, 31, 14, .8], [94, 21, 20, -28, .2],
+      [8, 31, 18, 34, .9], [23, 28, 42, -9, .1], [76, 30, 36, 26, .6], [91, 38, 27, -16, 1.1],
+      [3, 49, 29, 18, .5], [16, 56, 21, -32, 1.3], [31, 43, 30, 11, .7], [69, 45, 22, -23, .3],
+      [82, 55, 39, 8, 1], [97, 51, 17, 31, .2], [39, 26, 15, -12, 1.4], [62, 24, 18, 20, .8],
+      [36, 58, 20, 29, .4], [64, 60, 26, -18, 1.2], [48, 36, 13, 17, .6], [54, 52, 16, -27, .9]
+    ];
+    return `<div class="journey-arrival-debris" aria-hidden="true">${debris.map(([x, y, size, rotation, delay]) =>
+      `<i style="--x:${x}%;--y:${y}%;--size:${size}px;--rotation:${rotation}deg;--delay:${delay}s"></i>`
+    ).join('')}</div>`;
+  }
+
   function renderArrivalScene(node) {
     const root = host();
     if (!root || !node || !active) return;
     const hero = selectedHero();
     root.innerHTML = `
-      <main class="journey-arrival-scene">
+      <main class="journey-arrival-scene ${node.id === 'scrap-belt' ? 'is-scrap-belt' : ''}">
         <div class="journey-starfield" aria-hidden="true"></div>
+        ${node.id === 'scrap-belt' ? arrivalDebrisField() : ''}
         <div class="journey-arrival-location"><span>ARRIVING</span><strong>${node.name}</strong></div>
         <div class="journey-arrival-flight">${shipIllustration('journey-arrival-ship-svg')}</div>
         <section class="journey-arrival-dialogue">

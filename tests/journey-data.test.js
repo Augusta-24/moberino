@@ -128,6 +128,9 @@ test('the cockpit centers the route and moves detail into ship and log views', (
   assert.match(controller, /renderJourneyIntro/);
   assert.match(controller, /selectedHero/);
   assert.match(controller, /total === 1 \? 'is-single' : 'is-arc'/);
+  assert.match(controller, /function arrivalDebrisField/);
+  assert.match(controller, /journey-arrival-debris/);
+  assert.match(controller, /node\.id === 'scrap-belt' \? arrivalDebrisField\(\) : ''/);
   assert.match(controller, /STAR CRYSTAL RECOVERED/);
   assert.ok(
     controller.indexOf('<section class="journey-map-panel">') <

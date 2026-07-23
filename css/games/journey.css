@@ -2496,12 +2496,73 @@ body.on-journey {
 }
 
 .journey-arrival-location {
+  position: relative;
   z-index: 2;
   text-align: center;
 }
 
+.journey-arrival-scene.is-scrap-belt .journey-arrival-location {
+  z-index: 3;
+}
+
+.journey-arrival-scene.is-scrap-belt .journey-arrival-location::before {
+  position: absolute;
+  z-index: -1;
+  inset: -16px -34px;
+  border-radius: 50%;
+  content: "";
+  background: radial-gradient(ellipse, rgba(5,12,29,.94) 0 50%, transparent 74%);
+  filter: blur(3px);
+}
+
 .journey-arrival-location strong {
   display: block;
+}
+
+.journey-arrival-debris {
+  position: absolute;
+  z-index: 1;
+  inset: 0 0 30%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.journey-arrival-debris i {
+  position: absolute;
+  top: var(--y);
+  left: var(--x);
+  width: var(--size);
+  height: calc(var(--size) * .78);
+  border: 2px solid #74829c;
+  background:
+    linear-gradient(145deg, rgba(159,174,202,.48) 0 18%, transparent 18%),
+    linear-gradient(315deg, #151c2d 0 28%, #303b54 28% 68%, #20283c 68%);
+  box-shadow: inset 5px -6px 0 rgba(0,0,0,.2), 0 0 11px rgba(105,215,255,.12);
+  clip-path: polygon(16% 5%, 72% 0, 100% 31%, 84% 79%, 48% 100%, 4% 74%, 0 28%);
+  opacity: .78;
+  transform: translate(-50%, -50%) rotate(var(--rotation));
+  animation: journey-arrival-debris-drift 7s var(--delay) linear infinite;
+}
+
+.journey-arrival-debris i:nth-child(3n) {
+  border-color: #8d719f;
+  background: linear-gradient(145deg, #332945, #171a2a 64%);
+}
+
+.journey-arrival-debris i:nth-child(4n) {
+  opacity: .92;
+  filter: drop-shadow(0 0 7px rgba(183,156,255,.24));
+}
+
+.journey-arrival-debris i:nth-child(5n) {
+  width: calc(var(--size) * .62);
+  height: calc(var(--size) * 1.05);
+  clip-path: polygon(42% 0, 100% 18%, 82% 72%, 47% 100%, 0 62%, 12% 14%);
+}
+
+@keyframes journey-arrival-debris-drift {
+  0% { transform: translate(-50%, -70%) rotate(var(--rotation)); }
+  100% { transform: translate(-50%, 35%) rotate(calc(var(--rotation) + 95deg)); }
 }
 
 .journey-arrival-flight {
@@ -3146,6 +3207,7 @@ body.on-journey {
   .journey-story-ship,
   .journey-status-alert > i,
   .journey-arrival-flight,
+  .journey-arrival-debris i,
   .journey-map-node.is-selectable circle,
   .journey-combat-frame.is-hit,
   .journey-signal-branch,
