@@ -6,6 +6,8 @@
   const GAME_ID = 'journey';
   const SAVE_KEY = 'moberinoJourneySave';
   const SAVE_VERSION = 3;
+  const MIN_DEPARTURE_HULL = 25;
+  const MIN_DEPARTURE_PILOT = 20;
   const OFFLINE_CAP_MS = 24 * 60 * 60 * 1000;
   const POWER_PER_HOUR = 12;
   const PILOT_PER_HOUR = 10;
@@ -281,6 +283,41 @@
     return mutationResult(true, 'selected', { destinationId });
   }
 
+  function getDepartureReadiness(fuelCost) {
+    if (!state) return mutationResult(false, 'no-save', { blockers: [] });
+    const requiredFuel = Math.max(0, finiteNumber(fuelCost, 0));
+    const blockers = [];
+
+    if (state.timers.repairCompleteAt) {
+      blockers.push({ code: 'repair-underway', message: 'REPAIRS IN PROGRESS' });
+    }
+    if (state.resources.hull < MIN_DEPARTURE_HULL) {
+      blockers.push({
+        code: 'critical-hull',
+        message: `HULL ${Math.round(state.resources.hull)} · REPAIR TO ${MIN_DEPARTURE_HULL}`
+      });
+    }
+    if (state.resources.pilot < MIN_DEPARTURE_PILOT) {
+      blockers.push({
+        code: 'pilot-exhausted',
+        message: `PILOT ${Math.round(state.resources.pilot)} · REST FIRST`
+      });
+    }
+    if (state.resources.fuel < requiredFuel) {
+      blockers.push({
+        code: 'insufficient-fuel',
+        message: `NEED ${Math.round(requiredFuel)} FUEL · HAVE ${Math.round(state.resources.fuel)}`
+      });
+    }
+
+    return mutationResult(blockers.length === 0, blockers.length ? blockers[0].code : 'ready', {
+      blockers,
+      requiredFuel,
+      minimumHull: MIN_DEPARTURE_HULL,
+      minimumPilot: MIN_DEPARTURE_PILOT
+    });
+  }
+
   function travel(options) {
     if (!state) return mutationResult(false, 'no-save');
     const originId = options && options.originId;
@@ -291,8 +328,10 @@
     if (state.currentNodeId !== originId) return mutationResult(false, 'origin-changed');
     if (state.selectedDestinationId !== destinationId) return mutationResult(false, 'destination-changed');
     if (!state.route.unlockedNodes.includes(destinationId)) return mutationResult(false, 'locked-destination');
-    if (state.resources.fuel < fuelCost) {
-      return mutationResult(false, 'insufficient-fuel', {
+    const readiness = getDepartureReadiness(fuelCost);
+    if (!readiness.ok) {
+      return mutationResult(false, readiness.code, {
+        blockers: readiness.blockers,
         needed: fuelCost,
         available: state.resources.fuel
       });
@@ -579,6 +618,7 @@
     getReturnSummary,
     saveJourneyState,
     selectDestination,
+    getDepartureReadiness,
     travel,
     completeNode,
     addTransmission,

@@ -98,11 +98,22 @@ test('the cockpit centers the route and moves detail into ship and log views', (
   assert.match(controller, /journey-cockpit-map/);
   assert.match(controller, /journey-message-bar/);
   assert.match(controller, /journey-target-panel/);
+  assert.match(controller, /JourneyState\.getDepartureReadiness/);
+  assert.match(controller, /is-ready/);
+  assert.match(controller, /is-blocked/);
   assert.match(controller, /journeyOpenEngineering/);
   assert.match(controller, /journeyOpenLog/);
   assert.match(controller, /renderJourneyIntro/);
   assert.match(controller, /selectedHero/);
   assert.match(controller, /STAR CRYSTAL RECOVERED/);
+  assert.ok(
+    controller.indexOf('<section class="journey-map-panel">') <
+      controller.indexOf('<section class="journey-cockpit-ship">')
+  );
+  assert.ok(
+    controller.indexOf('<section class="journey-cockpit-ship">') <
+      controller.indexOf('<section class="journey-target-panel')
+  );
 });
 
 test('the opening story uses the patient Space Mobe cinematic cadence', () => {
@@ -140,8 +151,11 @@ test('Journey typography does not use unreadably small literal pixel sizes', () 
 
   assert.ok(declaredSizes.length > 0);
   assert.equal(
-    declaredSizes.filter(size => size < 10).length,
+    declaredSizes.filter(size => size < 12).length,
     0,
-    `Found Journey font sizes below 10px: ${declaredSizes.filter(size => size < 10).join(', ')}`
+    `Found Journey font sizes below 12px: ${declaredSizes.filter(size => size < 12).join(', ')}`
   );
+  assert.doesNotMatch(css, /\.journey-target-panel p\s*\{[^}]*text-overflow:\s*ellipsis/s);
+  assert.match(css, /\.journey-target-panel\.is-ready/);
+  assert.match(css, /\.journey-target-panel\.is-blocked/);
 });

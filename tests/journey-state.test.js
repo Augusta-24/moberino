@@ -279,6 +279,27 @@ test('locked destinations and insufficient fuel cannot advance the route', () =>
   assert.equal(state.resources.fuel, 2);
 });
 
+test('critical hull, an exhausted pilot, and active repairs block departure with a reason', () => {
+  const { api } = createHarness();
+  const state = api.createNew();
+
+  state.resources.hull = 10;
+  state.resources.pilot = 10;
+  state.timers.repairCompleteAt = Date.now() + 45000;
+  const blocked = api.getDepartureReadiness(6);
+
+  assert.equal(blocked.ok, false);
+  assert.deepEqual(
+    Array.from(blocked.blockers, blocker => blocker.code),
+    ['repair-underway', 'critical-hull', 'pilot-exhausted']
+  );
+
+  state.resources.hull = 100;
+  state.resources.pilot = 100;
+  state.timers.repairCompleteAt = null;
+  assert.equal(api.getDepartureReadiness(6).code, 'ready');
+});
+
 test('peaceful-node completion unlocks once and refueling is safe to repeat', () => {
   const { api } = createHarness();
   const state = api.createNew();

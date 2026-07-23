@@ -320,10 +320,23 @@
         </g>`;
     }).join('');
     return `
-      <svg class="journey-cockpit-map" viewBox="0 0 760 220" role="img" aria-label="Journey route map">
+      <svg class="journey-cockpit-map" viewBox="0 30 760 160" role="img" aria-label="Journey route map">
         <g class="journey-map-paths">${paths.join('')}</g>
         ${nodes}
       </svg>`;
+  }
+
+  function targetSummary(destination) {
+    if (!destination) return '';
+    const summaries = {
+      'fuel-stop-1': 'Fuel stop. Opens the route to Scrap Belt.',
+      'scrap-belt': 'Clear the debris and follow the crystal signal.',
+      'distress-signal': 'Answer the beacon. Someone may be trapped.',
+      'abandoned-cache': 'Search the thieves’ cache for supplies and clues.',
+      'repair-moon': 'Repair and upgrade before Ogre Gate.',
+      'ogre-gate': 'Break through the guardian’s blockade.'
+    };
+    return summaries[destination.id] || destination.description;
   }
 
   function renderShip() {
@@ -338,7 +351,8 @@
     const location = currentNode(state);
     const route = destinationState(state, location);
     const destination = route.selected;
-    const canDepart = destination && r.fuel >= destination.fuelCost;
+    const departure = destination ? JourneyState.getDepartureReadiness(destination.fuelCost) : null;
+    const canDepart = !!(departure && departure.ok);
     const unreadIntelId = JourneyState.getUnreadTransmissionIds()[0] || null;
     const unreadIntel = unreadIntelId && JourneyData.getTransmission(unreadIntelId);
     const hero = selectedHero();
@@ -350,7 +364,7 @@
     shipNotice = '';
     const shipCondition = state.timers.repairCompleteAt
       ? 'REPAIRING'
-      : r.hull < 45 ? 'DAMAGED' : r.hull < r.maxHull ? 'WORN' : 'READY';
+      : r.hull < 25 ? 'CRITICAL' : r.hull < 45 ? 'DAMAGED' : r.hull < r.maxHull ? 'WORN' : 'READY';
     root.innerHTML = `
       <main class="journey-cockpit" aria-labelledby="journey-cockpit-title">
         <header class="journey-cockpit-header">
@@ -370,22 +384,6 @@
           <div class="journey-map-title"><span>CHAPTER ONE · CRYSTAL TRAIL</span><strong>${state.currency.crystals} / 7 CRYSTALS</strong></div>
           ${cockpitMap(state, location, route)}
         </section>
-        <section class="journey-target-panel">
-          <div>
-            <span>${unreadIntel ? 'NEW LEAD' : route.needsPilotCall ? "PILOT'S CALL" : destination ? 'NEXT TARGET' : 'CURRENT FRONTIER'}</span>
-            <strong>${unreadIntel ? 'READ THE TRANSMISSION' : route.needsPilotCall ? 'CHOOSE A SIGNAL ON THE MAP' : destination ? destination.name : 'AWAITING A NEW LEAD'}</strong>
-            <p>${unreadIntel
-              ? 'The signal array found something beyond the Belt.'
-              : route.needsPilotCall ? 'Two routes are open. Select the lead you want to follow.'
-              : destination ? destination.description
-              : 'The known trail ends here for now.'}</p>
-          </div>
-          ${unreadIntel
-            ? `<button type="button" onclick="journeyReadIntel('${unreadIntel.id}')">OPEN INTEL</button>`
-            : destination
-              ? `<button type="button" onclick="journeyDepart()" ${canDepart ? '' : 'disabled'}>DEPART <small>${destination.fuelCost} FUEL</small></button>`
-              : ''}
-        </section>
         <section class="journey-cockpit-ship">
           <div class="journey-cockpit-ship-visual">${shipIllustration('journey-cockpit-ship-svg')}</div>
           <div class="journey-cockpit-condition"><span>WAYFARER</span><strong>${shipCondition}</strong>${state.passengers.active.includes('pip') ? '<small>PIP ABOARD</small>' : ''}</div>
@@ -398,6 +396,22 @@
             <button type="button" onclick="journeyOpenEngineering()">OPEN SHIP</button>
             <button type="button" onclick="journeyOpenLog()">LOG</button>
           </div>
+        </section>
+        <section class="journey-target-panel ${destination ? (canDepart ? 'is-ready' : 'is-blocked') : ''}">
+          <div>
+            <span>${unreadIntel ? 'NEW LEAD' : route.needsPilotCall ? "PILOT'S CALL" : destination ? 'NEXT DESTINATION' : 'CURRENT FRONTIER'}</span>
+            <strong>${unreadIntel ? 'READ THE TRANSMISSION' : route.needsPilotCall ? 'CHOOSE A SIGNAL ON THE MAP' : destination ? destination.name : 'AWAITING A NEW LEAD'}</strong>
+            <p>${unreadIntel
+              ? 'The signal array found something beyond the Belt.'
+              : route.needsPilotCall ? 'Two routes are open. Choose your next destination on the map.'
+              : destination ? targetSummary(destination)
+              : 'The known trail ends here for now.'}</p>
+          </div>
+          ${unreadIntel
+            ? `<button class="is-intel" type="button" onclick="journeyReadIntel('${unreadIntel.id}')">OPEN INTEL <small>CHOOSE THE NEXT LEAD</small></button>`
+            : destination
+              ? `<button type="button" onclick="journeyDepart()" ${canDepart ? '' : 'disabled'}>DEPART <small>${canDepart ? `${destination.fuelCost} FUEL · READY` : departure.blockers.map(blocker => blocker.message).join(' · ')}</small></button>`
+              : ''}
         </section>
       </main>`;
   }
