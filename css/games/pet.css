@@ -714,55 +714,122 @@
 /* ══════════════════════════════════════
    Mini-games (compact takes on the other arcade cabinets)
    ══════════════════════════════════════ */
-/* FEED · visible recipe matching */
+/* FEED · recipe pinball with two touch flippers */
+.pet-mini.pet-feed-mode {
+  justify-content: flex-start;
+  gap: 5px;
+  padding: 10px 10px 56px;
+}
+.pet-feed-mode .pet-mini-title,
+.pet-feed-mode .pet-mini-hint,
+.pet-feed-mode .pet-feed-order,
+.pet-feed-mode .pet-feed-score { flex: 0 0 auto; }
+.pet-feed-mode .pet-mini-hint {
+  min-height: 14px;
+  padding-inline: 36px;
+  font-size: clamp(7px, 1.6vh, 9px);
+  line-height: 1.35;
+}
 .pet-feed-order {
   width: min(96%, 360px);
+  min-height: 48px;
   display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
 }
 .pet-feed-slot {
   position: relative;
   min-width: 0;
   flex: 1;
   max-width: 62px;
-  padding: 6px 3px 5px;
+  height: 44px;
+  padding: 4px 2px 3px;
   border: 1px solid rgba(255,255,255,0.14);
-  border-radius: 8px;
+  border-radius: 7px;
   background: rgba(255,255,255,0.04);
   text-align: center;
   opacity: 0.46;
 }
-.pet-feed-slot img { width: 25px; height: 25px; object-fit: contain; display: block; margin: 0 auto 3px; }
-.pet-feed-slot b { font-family: 'VCR', monospace; font-size: 6.5px; letter-spacing: 0.5px; color: var(--snack); }
-.pet-feed-slot.next { opacity: 1; border-color: var(--snack); box-shadow: 0 0 12px var(--snack); transform: translateY(-2px); }
+.pet-feed-slot img {
+  width: 23px;
+  height: 23px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 2px;
+  filter: drop-shadow(0 0 5px var(--snack));
+}
+.pet-feed-slot b { display: block; font-family: 'VCR', monospace; font-size: 6px; letter-spacing: 0.4px; color: var(--snack); }
+.pet-feed-slot.next {
+  opacity: 1;
+  border-color: var(--snack);
+  box-shadow: 0 0 10px var(--snack);
+  animation: pet-feed-next 1s ease-in-out infinite;
+}
 .pet-feed-slot.done { opacity: 0.8; background: rgba(51,255,153,0.12); }
 .pet-feed-slot.done::after { content: '✓'; position: absolute; right: 3px; top: 1px; color: #33ff99; font-size: 9px; }
-.pet-feed-board {
-  width: min(94%, 350px);
-  flex: 1 1 auto;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  align-content: center;
-  gap: 8px;
+@keyframes pet-feed-next {
+  50% { transform: translateY(-1px) scale(1.035); filter: brightness(1.2); }
 }
-.pet-feed-tile {
-  min-height: 68px;
-  padding: 7px 4px;
-  border: 1.5px solid var(--snack);
+
+.pet-feed-pinball {
+  position: relative;
+  flex: 1 1 160px;
+  min-height: 126px;
+  width: min(96%, 370px);
+  overflow: hidden;
+  border: 1.5px solid rgba(255,110,199,.48);
   border-radius: 11px;
-  background: radial-gradient(circle at 50% 35%, rgba(255,255,255,0.1), rgba(5,2,16,0.8));
-  color: var(--snack);
+  background:
+    radial-gradient(circle at 50% 32%, rgba(79,216,255,.08), transparent 45%),
+    linear-gradient(180deg, rgba(255,110,199,.1), transparent 30%),
+    repeating-linear-gradient(90deg, transparent 0 28px, rgba(255,255,255,.022) 28px 29px),
+    rgba(5,2,16,.78);
+  box-shadow: inset 0 0 24px rgba(255,110,199,.1);
+  outline: none;
+  touch-action: none;
   cursor: pointer;
-  touch-action: manipulation;
 }
-.pet-feed-tile img { width: 34px; height: 34px; object-fit: contain; display: block; margin: 0 auto 3px; filter: drop-shadow(0 0 7px var(--snack)); }
-.pet-feed-tile span { font-family: 'VCR', monospace; font-size: 8px; letter-spacing: 1px; }
-.pet-feed-tile.junk { --snack:#ff3344; opacity: 0.76; }
-.pet-feed-tile.served { animation: pet-feed-served 0.2s ease-out; }
-.pet-feed-tile.wrong { animation: pet-node-wrong 0.42s ease-in-out; background: rgba(255,51,68,0.24); }
-@keyframes pet-feed-served { 50% { transform: scale(1.14); filter: brightness(1.7); } }
+.pet-feed-pinball::before {
+  content: '';
+  position: absolute;
+  inset: 0 50% 0 0;
+  border-right: 1px dashed rgba(255,255,255,.08);
+  pointer-events: none;
+}
+.pet-feed-pinball:focus-visible { border-color: #ffe61a; box-shadow: 0 0 12px rgba(255,230,26,.22), inset 0 0 24px rgba(255,110,199,.1); }
+.pet-feed-pinball canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.pet-feed-flipper-labels {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 4px;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.pet-feed-flipper-labels span {
+  font-family: 'VCR', monospace;
+  font-size: 5px;
+  letter-spacing: .7px;
+  color: rgba(242,239,232,.32);
+}
+.pet-feed-score { min-height: 25px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+.pet-feed-combo {
+  min-width: 0;
+  font-family: 'VCR', monospace;
+  font-size: 7px;
+  letter-spacing: .8px;
+  color: #33ff99;
+  text-shadow: 0 0 8px rgba(51,255,153,.55);
+}
 
 /* PLAY · Whack-flavored: toys pop from burrows */
 .pet-whack-grid {

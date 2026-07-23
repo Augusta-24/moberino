@@ -159,7 +159,11 @@
   // Foil grid size scales with stage too, so a full (100%) clear stays a real
   // objective rather than a shrinking target.
   const FOIL_GRID = { 1: { cols: 8, rows: 9 }, 2: { cols: 9, rows: 10 }, 3: { cols: 10, rows: 10 } };
-  const FEED_TUNE  = { 1: { recipe: 3, tiles: 6 }, 2: { recipe: 4, tiles: 7 }, 3: { recipe: 5, tiles: 8 } };
+  const FEED_TUNE = {
+    1: { recipe: 3, ballSpeed: 225, gravity: 82, bumperKick: 245, junk: 0 },
+    2: { recipe: 4, ballSpeed: 250, gravity: 96, bumperKick: 270, junk: 1 },
+    3: { recipe: 5, ballSpeed: 275, gravity: 110, bumperKick: 295, junk: 2 },
+  };
   const PLAY_TUNE  = { 1: { popGap: 680 }, 2: { popGap: 560 }, 3: { popGap: 460 } };
   // GUARD mirrors Space Red: aim tracks the player, locks late in the charge,
   // then fires an aimed projectile. Older stages add short attack bursts.
@@ -656,7 +660,7 @@
         </div>
 
         <div class="pet-actions">
-          ${actBtn('feed', iconImg(ICON.hunger, 22), 'FEED', 'SNACK ORDER')}
+          ${actBtn('feed', iconImg(ICON.hunger, 22), 'FEED', 'SNACK PINBALL')}
           ${actBtn('play', iconImg(ICON.play, 22), 'PLAY', 'BOP RUN')}
           ${actBtn('rest', iconImg(ICON.energy, 22), 'REST', 'LULLABY')}
           ${actBtn('pet', heartSVG(20), 'CUDDLE', 'ANYTIME')}
@@ -925,7 +929,7 @@
     pet.lowHintDismissed = true;
     document.querySelectorAll('.pet-act-btn').forEach(btn => btn.classList.remove('needs-care'));
     if (pet.stage === 0) { hatchTap(); return; }
-    if (key === 'feed') miniCatch();        // visible snack-order matching
+    if (key === 'feed') miniCatch();        // recipe-driven two-flipper pinball
     else if (key === 'play') miniWhack();   // WHACK — bop the popping toys
     else if (key === 'rest') miniPads();    // SIGNAL — pentatonic lullaby pads
     else if (key === 'guard') miniGuard();  // SPACE red-enemy — dodge telegraphed threats
@@ -1070,7 +1074,11 @@
       if (mini.iv) clearInterval(mini.iv);
       if (mini.timeouts) mini.timeouts.forEach(clearTimeout);
     }
-    if (el) { el.classList.remove('show'); el.innerHTML = ''; el.onpointerdown = el.onpointermove = el.onpointerup = el.onpointercancel = null; }
+    if (el) {
+      el.classList.remove('show', 'pet-feed-mode');
+      el.innerHTML = '';
+      el.onpointerdown = el.onpointermove = el.onpointerup = el.onpointercancel = null;
+    }
     mini = null;
     updateCooldowns();
   }
@@ -1105,28 +1113,52 @@
     setTimeout(() => tank.classList.remove(kind === 'bad' ? 'flash-bad' : 'flash-good'), 220);
   }
 
-  // ── FEED · Serve the visible snack recipe in order ──
+  // ── FEED · Recipe-driven pinball with two touch flippers ──
   function miniCatch() {
     const el = miniEl();
     if (!el) return;
     const goal = GOALS.feed[stageIdx()];
     const tune = FEED_TUNE[stageIdx()];
+    el.classList.add('pet-feed-mode');
     el.innerHTML = `
-      <div class="pet-mini-title">SNACK ORDER</div>
-      <div class="pet-mini-hint" id="pet-feed-hint">ONE ORDER EARNS CARE · KEEP GOING FOR GOLD</div>
+      <div class="pet-mini-title">SNACK PINBALL</div>
+      <div class="pet-mini-hint" id="pet-feed-hint" aria-live="polite">TAP LEFT/RIGHT TO FLIP · HIT THE GLOWING BUMPER</div>
       <div class="pet-feed-order" id="pet-feed-order"></div>
-      <div class="pet-feed-board" id="pet-feed-board"></div>
-      <div class="pet-mini-count"><span id="pet-feed-n">0</span>/${goal} ORDERS</div>`;
+      <div class="pet-feed-pinball" id="pet-feed-pinball" role="application" tabindex="0"
+        aria-label="Snack pinball. Tap the left and right sides to use the flippers.">
+        <canvas id="pet-feed-canvas" aria-hidden="true"></canvas>
+        <div class="pet-feed-flipper-labels" aria-hidden="true"><span>◀ LEFT</span><span>RIGHT ▶</span></div>
+      </div>
+      <div class="pet-feed-score">
+        <div class="pet-mini-count"><span id="pet-feed-n">0</span>/${goal} ORDERS</div>
+        <div class="pet-feed-combo" id="pet-feed-combo"></div>
+      </div>`;
     showMini();
-    const board = document.getElementById('pet-feed-board');
+    const field = document.getElementById('pet-feed-pinball');
+    const canvas = document.getElementById('pet-feed-canvas');
+    const ctx = canvas.getContext('2d');
     const orderEl = document.getElementById('pet-feed-order');
     const hintEl = document.getElementById('pet-feed-hint');
     const nEl = document.getElementById('pet-feed-n');
-    mini = { key: 'feed', orders: 0, goal, bankAt: 1, recipe: [], step: 0, locked: false, mistakes: 0, timeouts: [] };
+    const comboEl = document.getElementById('pet-feed-combo');
+    mini = {
+      key: 'feed', orders: 0, goal, bankAt: 1, recipe: [], step: 0,
+      locked: false, finished: false, mistakes: 0, combo: 0,
+      leftActive: false, rightActive: false, leftAngle: 0.34, rightAngle: Math.PI - 0.34,
+      pointers: new Map(), bumpers: [], pegs: [], ball: null, images: new Map(),
+      width: 0, height: 0, dpr: 1, prev: performance.now(), raf: 0, timeouts: [],
+    };
     updateMiniReward();
     updateCooldowns();
 
     function snackByKey(key) { return FEED_SNACKS.find(s => s.key === key); }
+
+    [...FEED_SNACKS.map(snack => snack.src), ...JUNK].forEach(src => {
+      const image = new Image();
+      image.src = src;
+      mini.images.set(src, image);
+    });
+
     function renderOrder() {
       orderEl.innerHTML = mini.recipe.map((key, i) => {
         const snack = snackByKey(key);
@@ -1135,80 +1167,431 @@
           <img src="${snack.src}" alt=""><b>${snack.label}</b>
         </span>`;
       }).join('');
-    }
-    function fillBoard() {
-      if (!mini || mini.key !== 'feed') return;
-      const next = mini.recipe[mini.step];
-      const picks = [next];
-      while (picks.length < tune.tiles) {
-        picks.push(Math.random() < 0.24 ? 'junk' : FEED_SNACKS[Math.floor(Math.random() * FEED_SNACKS.length)].key);
+      const next = snackByKey(mini.recipe[mini.step]);
+      if (next) {
+        field.setAttribute('aria-label', `Snack pinball. Next target ${next.label}. Tap left and right sides for flippers.`);
       }
-      picks.sort(() => Math.random() - 0.5);
-      board.innerHTML = picks.map(key => {
-        if (key === 'junk') {
-          const src = JUNK[Math.floor(Math.random() * JUNK.length)];
-          return `<button class="pet-feed-tile junk" type="button" data-key="junk" aria-label="Junk"><img src="${src}" alt=""><span>JUNK</span></button>`;
-        }
-        const snack = snackByKey(key);
-        return `<button class="pet-feed-tile" type="button" data-key="${key}" style="--snack:${snack.color}" aria-label="${snack.label}">
-          <img src="${snack.src}" alt=""><span>${snack.label}</span></button>`;
-      }).join('');
-      board.querySelectorAll('.pet-feed-tile').forEach(btn => btn.onpointerdown = onSnack);
     }
+
+    function updateCombo() {
+      if (comboEl) comboEl.textContent = mini.combo > 1 ? `×${mini.combo} BANK SHOT` : '';
+    }
+
+    function setPointerSide(e) {
+      const rect = field.getBoundingClientRect();
+      mini.pointers.set(e.pointerId, e.clientX < rect.left + rect.width / 2 ? 'left' : 'right');
+      mini.leftActive = [...mini.pointers.values()].includes('left');
+      mini.rightActive = [...mini.pointers.values()].includes('right');
+    }
+
+    field.onpointerdown = (e) => {
+      e.preventDefault();
+      if (field.setPointerCapture) {
+        try { field.setPointerCapture(e.pointerId); } catch (err) {}
+      }
+      setPointerSide(e);
+      pentaNote(e.clientX < field.getBoundingClientRect().left + field.getBoundingClientRect().width / 2 ? 1 : 3, 0.025, 0.06);
+    };
+    field.onpointermove = (e) => {
+      if (!mini || !mini.pointers.has(e.pointerId)) return;
+      setPointerSide(e);
+    };
+    const releasePointer = (e) => {
+      if (!mini) return;
+      mini.pointers.delete(e.pointerId);
+      mini.leftActive = [...mini.pointers.values()].includes('left');
+      mini.rightActive = [...mini.pointers.values()].includes('right');
+    };
+    field.onpointerup = field.onpointercancel = releasePointer;
+    field.onkeydown = (e) => {
+      if (!mini || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+      e.preventDefault();
+      if (e.key === 'ArrowLeft') mini.leftActive = true;
+      else mini.rightActive = true;
+    };
+    field.onkeyup = (e) => {
+      if (!mini) return;
+      if (e.key === 'ArrowLeft') mini.leftActive = false;
+      if (e.key === 'ArrowRight') mini.rightActive = false;
+    };
+    field.onblur = () => {
+      if (!mini) return;
+      mini.leftActive = mini.rightActive = false;
+      mini.pointers.clear();
+    };
+
+    function shuffle(items) {
+      const copy = [...items];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function layoutBoard() {
+      const snacks = shuffle(FEED_SNACKS);
+      const spots = [
+        [0.22, 0.25], [0.78, 0.25],
+        [0.30, 0.52], [0.70, 0.52],
+      ];
+      mini.bumpers = spots.map((spot, i) => ({
+        key: snacks[i].key, src: snacks[i].src, label: snacks[i].label, color: snacks[i].color,
+        nx: spot[0], ny: spot[1], radius: 21, cooldown: 0, glowUntil: 0,
+      }));
+      const junkSpots = tune.junk === 2 ? [[0.50, 0.38], [0.50, 0.65]] : [[0.50, 0.39]];
+      junkSpots.slice(0, tune.junk).forEach((spot, i) => {
+        mini.bumpers.push({
+          key: 'junk', src: JUNK[(pet.memories + i) % JUNK.length], label: 'JUNK', color: '#ff3344',
+          nx: spot[0], ny: spot[1], radius: 15, cooldown: 0, glowUntil: 0,
+        });
+      });
+      mini.pegs = [
+        [0.50, 0.14], [0.14, 0.42], [0.86, 0.42],
+        [0.42, 0.69], [0.58, 0.69],
+      ].map(([nx, ny]) => ({ nx, ny, radius: 5, cooldown: 0 }));
+    }
+
+    function resetBall(delay) {
+      if (!mini || mini.key !== 'feed') return;
+      if (delay) {
+        mini.ball = null;
+        mini.timeouts.push(setTimeout(() => resetBall(0), delay));
+        return;
+      }
+      const angle = (-Math.PI / 2) + (Math.random() - 0.5) * 0.55;
+      mini.ball = {
+        x: mini.width * 0.5,
+        y: mini.height * 0.74,
+        vx: Math.cos(angle) * tune.ballSpeed,
+        vy: Math.sin(angle) * tune.ballSpeed,
+        radius: 7,
+        flipperCooldown: 0,
+      };
+    }
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const width = Math.max(1, rect.width);
+      const height = Math.max(1, rect.height);
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      if (width === mini.width && height === mini.height && dpr === mini.dpr) return;
+      const oldWidth = mini.width;
+      const oldHeight = mini.height;
+      mini.width = width;
+      mini.height = height;
+      mini.dpr = dpr;
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (mini.ball && oldWidth && oldHeight) {
+        mini.ball.x *= width / oldWidth;
+        mini.ball.y *= height / oldHeight;
+      } else if (!mini.ball) {
+        resetBall(0);
+      }
+    }
+
+    function bumperHit(bumper, now) {
+      bumper.glowUntil = now + 260;
+      if (bumper.key === 'junk') {
+        mini.mistakes++;
+        mini.combo = 0;
+        updateCombo();
+        hintEl.textContent = 'JUNK RICOCHET — KEEP THE BALL ALIVE';
+        miniToast('JUNK RICOCHET!', 'bad');
+        synthTone(145, 'sine', 0, 0.13, 0.04, 105);
+        updateMiniReward();
+        return;
+      }
+
+      const expected = mini.recipe[mini.step];
+      if (bumper.key !== expected) {
+        mini.combo = 0;
+        updateCombo();
+        hintEl.textContent = `${snackByKey(expected).label} IS STILL LIT · SET UP A BANK SHOT`;
+        pentaNote(1, 0.035, 0.07);
+        return;
+      }
+
+      mini.step++;
+      mini.combo++;
+      pentaNote(mini.step + mini.combo + 2, 0.085, 0.12);
+      miniToast(mini.combo > 1 ? `BANK SHOT ×${mini.combo}!` : 'RECIPE HIT!', 'good');
+      updateCombo();
+      renderOrder();
+      if (mini.step < mini.recipe.length) {
+        hintEl.textContent = `${snackByKey(mini.recipe[mini.step]).label} IS LIT · KEEP THE BALL UP`;
+        return;
+      }
+
+      mini.orders++;
+      nEl.textContent = mini.orders;
+      updateMiniReward();
+      playConfirm();
+      if (mini.orders >= mini.goal) {
+        mini.finished = true;
+        mini.locked = true;
+        mini.ball = null;
+        completeMini('SNACK PINBALL JACKPOT!');
+        return;
+      }
+
+      mini.locked = true;
+      mini.ball = null;
+      hintEl.textContent = 'ORDER SERVED! CARE BANKED · NEW TABLE LOADING';
+      miniToast('ORDER SERVED!', 'good');
+      mini.timeouts.push(setTimeout(newRecipe, 760));
+    }
+
+    function drainBall() {
+      if (!mini || !mini.ball) return;
+      mini.mistakes += 0.5;
+      mini.combo = 0;
+      updateCombo();
+      hintEl.textContent = 'BALL SAVED — SAME RECIPE, FRESH LAUNCH';
+      miniToast('BALL SAVE!', 'bad');
+      synthTone(125, 'sine', 0, 0.16, 0.04, 90);
+      updateMiniReward();
+      resetBall(430);
+    }
+
+    function collideCircle(target, radius, now, onHit) {
+      const ball = mini.ball;
+      if (!ball) return;
+      const dx = ball.x - target.x;
+      const dy = ball.y - target.y;
+      const distance = Math.hypot(dx, dy) || 0.001;
+      const minDistance = ball.radius + radius;
+      if (distance >= minDistance || now < target.cooldown) return;
+      const nx = dx / distance;
+      const ny = dy / distance;
+      ball.x = target.x + nx * minDistance;
+      ball.y = target.y + ny * minDistance;
+      const toward = ball.vx * nx + ball.vy * ny;
+      if (toward < 0) {
+        ball.vx -= 2 * toward * nx;
+        ball.vy -= 2 * toward * ny;
+      }
+      ball.vx += nx * tune.bumperKick;
+      ball.vy += ny * tune.bumperKick;
+      target.cooldown = now + 150;
+      if (onHit) onHit();
+    }
+
+    function flipperGeometry(side) {
+      const left = side === 'left';
+      const pivot = {
+        x: mini.width * (left ? 0.30 : 0.70),
+        y: mini.height * 0.83,
+      };
+      const angle = left ? mini.leftAngle : mini.rightAngle;
+      const length = mini.width * 0.205;
+      return {
+        pivot,
+        end: { x: pivot.x + Math.cos(angle) * length, y: pivot.y + Math.sin(angle) * length },
+        active: left ? mini.leftActive : mini.rightActive,
+      };
+    }
+
+    function collideFlipper(flipper, now) {
+      const ball = mini.ball;
+      if (!ball || now < ball.flipperCooldown) return;
+      const ax = flipper.pivot.x;
+      const ay = flipper.pivot.y;
+      const bx = flipper.end.x;
+      const by = flipper.end.y;
+      const abx = bx - ax;
+      const aby = by - ay;
+      const t = clamp(((ball.x - ax) * abx + (ball.y - ay) * aby) / (abx * abx + aby * aby), 0, 1);
+      const cx = ax + abx * t;
+      const cy = ay + aby * t;
+      const dx = ball.x - cx;
+      const dy = ball.y - cy;
+      const distance = Math.hypot(dx, dy);
+      if (distance > ball.radius + 6 || ball.vy < -60) return;
+      ball.x += (dx || 0) * 0.08;
+      ball.y = cy - ball.radius - 6;
+      ball.vx += (ball.x - ax) * 2.1;
+      ball.vy = -Math.max(185, Math.abs(ball.vy) * 0.78 + (flipper.active ? 175 : 55));
+      ball.flipperCooldown = now + 80;
+      pentaNote(flipper.active ? 4 : 2, 0.035, 0.06);
+    }
+
+    function updatePhysics(now, dt) {
+      const ball = mini.ball;
+      if (!ball || mini.locked) return;
+      ball.vy += tune.gravity * dt;
+      ball.x += ball.vx * dt;
+      ball.y += ball.vy * dt;
+      if (ball.x < ball.radius) {
+        ball.x = ball.radius;
+        ball.vx = Math.abs(ball.vx) * 0.94;
+      } else if (ball.x > mini.width - ball.radius) {
+        ball.x = mini.width - ball.radius;
+        ball.vx = -Math.abs(ball.vx) * 0.94;
+      }
+      if (ball.y < ball.radius) {
+        ball.y = ball.radius;
+        ball.vy = Math.abs(ball.vy) * 0.94;
+      }
+
+      mini.bumpers.forEach(bumper => {
+        const target = { x: bumper.nx * mini.width, y: bumper.ny * mini.height, cooldown: bumper.cooldown };
+        collideCircle(target, bumper.radius, now, () => bumperHit(bumper, now));
+        bumper.cooldown = target.cooldown;
+      });
+      mini.pegs.forEach(peg => {
+        const target = { x: peg.nx * mini.width, y: peg.ny * mini.height, cooldown: peg.cooldown };
+        collideCircle(target, peg.radius, now);
+        peg.cooldown = target.cooldown;
+      });
+
+      collideFlipper(flipperGeometry('left'), now);
+      collideFlipper(flipperGeometry('right'), now);
+      const speed = Math.hypot(ball.vx, ball.vy);
+      if (speed > 520) {
+        ball.vx *= 520 / speed;
+        ball.vy *= 520 / speed;
+      }
+      if (ball.y > mini.height + 18) drainBall();
+    }
+
+    function drawImage(src, x, y, size) {
+      const image = mini.images.get(src);
+      if (image && image.complete && image.naturalWidth) {
+        ctx.drawImage(image, x - size / 2, y - size / 2, size, size);
+        return true;
+      }
+      return false;
+    }
+
+    function draw(now) {
+      const w = mini.width;
+      const h = mini.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,110,199,.2)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.06, h * 0.08);
+      ctx.quadraticCurveTo(w * 0.5, -h * 0.06, w * 0.94, h * 0.08);
+      ctx.lineTo(w * 0.94, h * 0.74);
+      ctx.moveTo(w * 0.06, h * 0.08);
+      ctx.lineTo(w * 0.06, h * 0.74);
+      ctx.stroke();
+
+      mini.pegs.forEach(peg => {
+        const x = peg.nx * w;
+        const y = peg.ny * h;
+        ctx.fillStyle = 'rgba(79,216,255,.65)';
+        ctx.shadowColor = '#4fd8ff';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(x, y, peg.radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      const expected = mini.recipe[mini.step];
+      mini.bumpers.forEach(bumper => {
+        const x = bumper.nx * w;
+        const y = bumper.ny * h;
+        const active = bumper.key === expected;
+        const hit = now < bumper.glowUntil;
+        const pulse = 1 + (active ? Math.sin(now / 120) * 0.05 : 0);
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(pulse, pulse);
+        ctx.shadowColor = bumper.color;
+        ctx.shadowBlur = active ? 18 : hit ? 14 : 7;
+        ctx.fillStyle = active ? 'rgba(255,255,255,.16)' : 'rgba(5,2,16,.78)';
+        ctx.strokeStyle = bumper.color;
+        ctx.lineWidth = active ? 3 : 1.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, bumper.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        if (!drawImage(bumper.src, 0, 0, bumper.radius * 1.18)) {
+          ctx.fillStyle = bumper.color;
+          ctx.font = 'bold 10px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(bumper.label[0], 0, 4);
+        }
+        ctx.restore();
+        ctx.fillStyle = active ? '#fff' : bumper.color;
+        ctx.font = `${active ? 'bold ' : ''}6px VCR, monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText(active ? `NEXT · ${bumper.label}` : bumper.label, x, y + bumper.radius + 11);
+      });
+
+      ['left', 'right'].forEach(side => {
+        const flipper = flipperGeometry(side);
+        const active = flipper.active;
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 11;
+        ctx.strokeStyle = active ? '#ffe61a' : '#ff6ec7';
+        ctx.shadowColor = active ? '#ffe61a' : '#ff6ec7';
+        ctx.shadowBlur = active ? 15 : 8;
+        ctx.beginPath();
+        ctx.moveTo(flipper.pivot.x, flipper.pivot.y);
+        ctx.lineTo(flipper.end.x, flipper.end.y);
+        ctx.stroke();
+        ctx.fillStyle = '#f2efe8';
+        ctx.beginPath();
+        ctx.arc(flipper.pivot.x, flipper.pivot.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      if (mini.ball) {
+        const ball = mini.ball;
+        const gradient = ctx.createRadialGradient(ball.x - 2, ball.y - 3, 1, ball.x, ball.y, ball.radius);
+        gradient.addColorStop(0, '#fff');
+        gradient.addColorStop(.35, '#ffe61a');
+        gradient.addColorStop(1, '#ff9933');
+        ctx.fillStyle = gradient;
+        ctx.shadowColor = '#ffe61a';
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
     function newRecipe() {
       if (!mini || mini.key !== 'feed') return;
       mini.recipe = Array.from({ length: tune.recipe }, () => FEED_SNACKS[Math.floor(Math.random() * FEED_SNACKS.length)].key);
       mini.step = 0;
+      mini.combo = 0;
+      mini.locked = false;
+      layoutBoard();
+      updateCombo();
       renderOrder();
-      fillBoard();
+      hintEl.textContent = mini.orders
+        ? 'CARE BANKED · LIGHT UP ANOTHER ORDER FOR A BIGGER PRIZE'
+        : 'TAP LEFT/RIGHT TO FLIP · HIT THE GLOWING BUMPER';
+      resetBall(0);
     }
-    function onSnack(e) {
-      e.preventDefault();
-      if (!mini || mini.key !== 'feed' || mini.locked) return;
-      const btn = e.currentTarget;
-      const expected = mini.recipe[mini.step];
-      if (btn.dataset.key !== expected) {
-        mini.locked = true;
-        mini.mistakes++;
-        btn.classList.add('wrong');
-        hintEl.textContent = btn.dataset.key === 'junk' ? 'JUNK IS FUN, BUT NOT THIS RECIPE' : 'NOT THAT ONE — TRY THE SAME STEP';
-        synthTone(145, 'sine', 0, 0.18, 0.05, 105);
-        miniToast(btn.dataset.key === 'junk' ? 'JUNK!' : 'WRONG ORDER', 'bad');
-        renderOrder();
-        updateMiniReward();
-        mini.timeouts.push(setTimeout(() => {
-          if (!mini || mini.key !== 'feed') return;
-          mini.locked = false;
-          hintEl.textContent = mini.orders ? 'CARE BANKED · KEEP GOING FOR A BIGGER PRIZE' : 'ONE ORDER EARNS CARE · KEEP GOING FOR GOLD';
-          fillBoard();
-        }, 460));
-        return;
-      }
-      btn.classList.add('served');
-      mini.step++;
-      pentaNote(mini.step + 2, 0.08, 0.12);
-      renderOrder();
-      if (mini.step >= mini.recipe.length) {
-        mini.orders++;
-        nEl.textContent = mini.orders;
-        miniToast('ORDER SERVED!', 'good');
-        playConfirm();
-        updateMiniReward();
-        if (mini.orders >= mini.goal) {
-          completeMini('SNACK JACKPOT!');
-          return;
-        }
-        mini.locked = true;
-        mini.timeouts.push(setTimeout(() => {
-          if (!mini || mini.key !== 'feed') return;
-          mini.locked = false;
-          newRecipe();
-        }, 420));
-      } else {
-        fillBoard();
+
+    function loop(now) {
+      if (!mini || mini.key !== 'feed' || mini.finished) return;
+      resizeCanvas();
+      const dt = Math.min(0.035, (now - mini.prev) / 1000 || 0.016);
+      mini.prev = now;
+      const leftTarget = mini.leftActive ? -0.52 : 0.34;
+      const rightTarget = mini.rightActive ? Math.PI + 0.52 : Math.PI - 0.34;
+      mini.leftAngle += (leftTarget - mini.leftAngle) * Math.min(1, dt * 24);
+      mini.rightAngle += (rightTarget - mini.rightAngle) * Math.min(1, dt * 24);
+      updatePhysics(now, dt);
+      draw(now);
+      if (mini && mini.key === 'feed' && !mini.finished) {
+        mini.raf = requestAnimationFrame(loop);
       }
     }
+
+    resizeCanvas();
     newRecipe();
+    mini.raf = requestAnimationFrame(loop);
   }
 
   // ── PLAY · Whack-flavored: multi-pop toys with misses and combos ──
