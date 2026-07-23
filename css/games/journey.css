@@ -1327,6 +1327,29 @@ body.on-journey {
   letter-spacing: 1px;
 }
 
+.journey-combat-hull-readout > div {
+  width: 100%;
+  height: 6px;
+  margin-top: 5px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgba(255,255,255,.12);
+}
+
+.journey-combat-hull-readout > div i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #48f08b;
+  box-shadow: 0 0 8px rgba(72,240,139,.55);
+  transition: width .2s ease, background .2s ease;
+}
+
+.journey-combat-hull-readout > div i.is-critical {
+  background: #ff4f68;
+  box-shadow: 0 0 10px rgba(255,79,104,.72);
+}
+
 .journey-combat-hud .journey-combat-title {
   text-align: center;
 }
@@ -1353,11 +1376,50 @@ body.on-journey {
   background: #030713;
 }
 
+.journey-combat-frame.is-hit {
+  animation: journey-combat-hit-shake .42s ease-out;
+}
+
 #journey-combat-canvas {
   display: block;
   width: 100%;
   height: 100%;
   touch-action: none;
+}
+
+.journey-combat-damage-alert {
+  position: absolute;
+  top: 16%;
+  right: 0;
+  left: 0;
+  z-index: 3;
+  color: #fff;
+  font: 34px/1 'Bebas Neue', sans-serif;
+  letter-spacing: 3px;
+  opacity: 0;
+  pointer-events: none;
+  text-align: center;
+  text-shadow: 0 0 8px #ff2d4c, 0 0 22px #ff2d4c;
+  transform: scale(.82);
+}
+
+.journey-combat-damage-alert.is-visible {
+  animation: journey-combat-damage-callout .75s ease-out;
+}
+
+@keyframes journey-combat-hit-shake {
+  0%, 100% { transform: translateX(0); }
+  18% { transform: translateX(-9px); }
+  38% { transform: translateX(8px); }
+  58% { transform: translateX(-5px); }
+  78% { transform: translateX(3px); }
+}
+
+@keyframes journey-combat-damage-callout {
+  0% { opacity: 0; transform: scale(.72); }
+  18% { opacity: 1; transform: scale(1.12); }
+  72% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(.96) translateY(-18px); }
 }
 
 .journey-combat-retreat {
@@ -1702,18 +1764,25 @@ body.on-journey {
   font: 17px/1.5 'VCR', monospace;
 }
 
-.journey-story-skip {
+.journey-story-continue {
   position: absolute;
   bottom: max(16px, env(safe-area-inset-bottom));
   z-index: 4;
-  border: 1px solid rgba(105,215,255,.55);
-  border-radius: 6px;
-  padding: 10px 14px;
-  background: rgba(4,9,23,.72);
-  color: #f5f3ec;
-  font: 12px/1 'VCR', monospace;
+  min-width: min(82vw, 340px);
+  min-height: 52px;
+  border: 1px solid var(--journey-cyan);
+  border-radius: 8px;
+  padding: 11px 18px;
+  background: rgba(105,215,255,.14);
+  color: var(--journey-cyan);
+  font: 14px/1 'VCR', monospace;
   letter-spacing: 1.5px;
   cursor: pointer;
+}
+
+.journey-story-continue:disabled {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .journey-story-hero {
@@ -2780,6 +2849,7 @@ body.on-journey {
   .journey-status-alert > i,
   .journey-arrival-flight,
   .journey-map-node.is-selectable circle,
+  .journey-combat-frame.is-hit,
   .journey-refuel-ship,
   .journey-fuel-hose,
   .journey-fuel-hose i,

@@ -8,6 +8,7 @@
   let shipNotice = '';
   let maintenanceNotice = '';
   let storyTimers = [];
+  let introAdvance = null;
 
   const MAP_POINTS = {
     'home-orbit': [58, 138],
@@ -75,6 +76,7 @@
   function clearStoryTimers() {
     storyTimers.forEach(clearTimeout);
     storyTimers = [];
+    introAdvance = null;
   }
 
   function renderJourneyIntro() {
@@ -85,28 +87,24 @@
     const hero = selectedHero();
     const beats = [
       {
-        duration: 6000,
         eyebrow: 'A QUIET MORNING · HOME ORBIT',
         title: `${hero.name} FOUND AN EMPTY VAULT`,
         visual: `${heroPortrait('sad')}${crystalCluster(7)}`,
         line: 'The seven Star Crystals were gone.'
       },
       {
-        duration: 6000,
         eyebrow: 'THE THIEVES LEFT ONE TRAIL',
         title: 'A SIGNAL LEADING OUTWARD',
         visual: `<div class="journey-story-signal"><span></span><span></span><span></span></div>`,
         line: 'Bosses, raiders, and old ruins stand between us and the truth.'
       },
       {
-        duration: 6800,
         eyebrow: 'THE WAYFARER · READY TO LAUNCH',
         title: `${hero.name} TAKES THE HUNT`,
         visual: `<div class="journey-story-ship">${shipIllustration('journey-intro-ship')}</div>`,
         line: 'Follow the route. Recover the crystals. Bring our friends home.'
       },
       {
-        duration: 6000,
         eyebrow: 'FIRST LEAD',
         title: 'FIRST STOP: LANTERN STATION',
         visual: shipStatusAlert('warning', 'LOW FUEL', '12 / 40 · REFUEL REQUIRED'),
@@ -117,16 +115,20 @@
       <main class="journey-story-screen">
         <div class="journey-starfield" aria-hidden="true"></div>
         <div id="journey-story-stage" class="journey-story-stage" aria-live="polite"></div>
-        <button class="journey-story-skip" type="button" onclick="journeyFinishIntro()">SKIP STORY</button>
+        <button id="journey-story-continue" class="journey-story-continue" type="button" onclick="journeyContinueIntro()" disabled>CONTINUE →</button>
       </main>`;
     const stage = document.getElementById('journey-story-stage');
+    const continueButton = document.getElementById('journey-story-continue');
     let index = 0;
     function showBeat() {
       if (!stage || !document.body.contains(stage) || index >= beats.length) {
         window.journeyFinishIntro();
         return;
       }
-      const beat = beats[index++];
+      const beat = beats[index];
+      const lastBeat = index === beats.length - 1;
+      introAdvance = null;
+      if (continueButton) continueButton.disabled = true;
       stage.classList.remove('is-visible');
       const swapTimer = setTimeout(() => {
         if (!document.body.contains(stage)) return;
@@ -135,13 +137,20 @@
           <div class="journey-story-title">${beat.title}</div>
           <div class="journey-story-visual">${beat.visual}</div>
           <div class="journey-story-line">${beat.line}</div>`;
-        requestAnimationFrame(() => stage.classList.add('is-visible'));
+        requestAnimationFrame(() => {
+          stage.classList.add('is-visible');
+          if (continueButton) {
+            continueButton.disabled = false;
+            continueButton.textContent = lastBeat ? 'ENTER COCKPIT →' : 'CONTINUE →';
+          }
+          introAdvance = () => {
+            index += 1;
+            if (index >= beats.length) window.journeyFinishIntro();
+            else showBeat();
+          };
+        });
       }, 180);
       storyTimers.push(swapTimer);
-      // Journey story cards deliberately hold longer than the already-patient Space
-      // tutorial: six seconds normally and extra time for the mission statement.
-      const nextTimer = setTimeout(showBeat, beat.duration);
-      storyTimers.push(nextTimer);
     }
     showBeat();
   }
@@ -581,7 +590,7 @@
           <div class="journey-story-title">STAR CRYSTAL RECOVERED</div>
           <div class="journey-story-visual">${crystalCluster(1)}</div>
           <div class="journey-story-line">${hero.name}: “One down. Six still out there.”</div>
-          <button class="journey-primary-btn" type="button" onclick="journeyFinishCrystalBeat()">RETURN TO COCKPIT · ${state.currency.crystals} / 7</button>
+          <button class="journey-primary-btn" type="button" onclick="journeyFinishCrystalBeat()">CONTINUE → · ${state.currency.crystals} / 7 CRYSTALS</button>
         </div>
       </main>`;
   }
@@ -808,11 +817,11 @@
           <div class="journey-kicker">${rescue ? 'INCOMING INTEL · LIVE BEACON' : 'ROUTE ENCOUNTER · ASTEROID SALVAGE'}</div>
           <h1 id="journey-briefing-title">${node.name}</h1>
           <p>${rescue
-            ? 'An escape pod is trapped in the debris. Clear an approach and reach the beacon.'
-            : 'Survive 30 seconds. Break rocks. Grab salvage.'}</p>
+            ? 'An escape pod is trapped in a dense debris field. Clear an approach and reach the beacon.'
+            : 'Dense debris ahead. Survive 30 seconds and collect salvage. Every impact damages the Wayfarer.'}</p>
           <div class="journey-objective-list">
             <span><strong>${rescue ? 'REACH' : 'SURVIVE'}</strong> ${rescue ? '24' : '30'} SEC</span>
-            <span><strong>${rescue ? 'RESCUE' : 'BONUS'}</strong> ${rescue ? '1 PASSENGER' : '5 SALVAGE'}</span>
+            <span><strong>${rescue ? 'RESCUE' : 'BONUS'}</strong> ${rescue ? '1 PASSENGER' : '8 SALVAGE'}</span>
             <span><strong>HULL</strong> ${Math.round(state.resources.hull)}</span>
           </div>
           <div class="journey-briefing-controls">
@@ -835,13 +844,17 @@
     root.innerHTML = `
       <main class="journey-combat-screen">
         <header class="journey-combat-hud">
-          <div><span>HULL</span><strong id="journey-combat-hull">${Math.round(state.resources.hull)}</strong></div>
+          <div class="journey-combat-hull-readout">
+            <span>HULL</span><strong id="journey-combat-hull">${Math.round(state.resources.hull)}</strong>
+            <div><i id="journey-combat-hull-fill" style="width:100%"></i></div>
+          </div>
           <div class="journey-combat-title"><span>${node.name.toUpperCase()}</span><strong>${rescue ? 'RESCUE RUN' : 'ASTEROID SALVAGE'}</strong></div>
           <div><span>TIME</span><strong id="journey-combat-time">${seconds}</strong></div>
-          <div><span>${rescue ? 'CLEARANCE' : 'SALVAGE'}</span><strong id="journey-combat-salvage">0 / ${rescue ? '3' : '5'}</strong></div>
+          <div><span>${rescue ? 'CLEARANCE' : 'SALVAGE'}</span><strong id="journey-combat-salvage">0 / ${rescue ? '4' : '8'}</strong></div>
         </header>
         <div class="journey-combat-frame">
           <canvas id="journey-combat-canvas" aria-label="Scrap Belt asteroid encounter"></canvas>
+          <div id="journey-combat-damage-alert" class="journey-combat-damage-alert" aria-live="assertive"></div>
           <button class="journey-combat-retreat" type="button" onclick="journeyRetreatEncounter()">RETREAT</button>
         </div>
         <div class="journey-combat-hint">DRAG OR USE A/D · BLASTER AUTO-FIRES</div>
@@ -851,7 +864,7 @@
       attemptId,
       encounterId: node.encounterId,
       encounterType: rescue ? 'rescue' : 'asteroids',
-      difficulty: rescue ? 1.2 : 1,
+      difficulty: rescue ? 1.5 : 1.65,
       startingHull: state.resources.hull,
       rescuedPassengerId: rescue ? node.passengerId : null,
       shipStats: {
@@ -861,7 +874,7 @@
       },
       objectives: {
         surviveSeconds: seconds,
-        salvageTarget: rescue ? 3 : 5
+        salvageTarget: rescue ? 4 : 8
       },
       onComplete(result) {
         handleEncounterComplete(node, result);
@@ -964,6 +977,14 @@
     clearStoryTimers();
     JourneyState.completeIntro();
     renderShip();
+  };
+
+  window.journeyContinueIntro = function () {
+    if (!introAdvance) return;
+    playMenuSound();
+    const advance = introAdvance;
+    introAdvance = null;
+    advance();
   };
 
   window.journeyHowToPlay = function () {

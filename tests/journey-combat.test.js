@@ -131,3 +131,12 @@ test('starting combat repeatedly does not duplicate runtime listeners', () => {
   assert.equal(document.count('keyup'), 1);
   api.destroy();
 });
+
+test('combat includes weapon audio, hull-hit feedback, and denser hazard pacing', () => {
+  assert.match(source, /playCombatSfx\('blaster'\)/);
+  assert.match(source, /playCombatSfx\('miss', 'over'\)/);
+  assert.match(source, /journey-combat-damage-alert/);
+  assert.match(source, /damageFlashUntil/);
+  assert.match(source, /config\.difficulty \* \.14/);
+  assert.match(source, /radius > 25 \? 3/);
+});

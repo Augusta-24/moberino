@@ -29,6 +29,18 @@
   let salvageCollected = 0;
   let fuelCollected = 0;
   let lastHudSecond = -1;
+  let damageFlashUntil = 0;
+  let lastDamageTaken = 0;
+
+  function playCombatSfx(name, fallbackName) {
+    try {
+      if (typeof SFX === 'undefined') return;
+      const sound = SFX[name] || (fallbackName && SFX[fallbackName]);
+      if (typeof sound === 'function') sound();
+    } catch (error) {
+      // Audio feedback must never interrupt combat.
+    }
+  }
 
   function randomBetween(min, max) {
     return min + Math.random() * (max - min);
@@ -133,17 +145,20 @@
   function fire() {
     bullets.push({ x: player.x, y: player.y - 22, r: 3, vy: -540 });
     shotsFired += 1;
+    playCombatSfx('blaster');
   }
 
   function spawnAsteroid() {
     const radius = randomBetween(15, 29);
+    const difficulty = Math.max(1, config.difficulty || 1);
+    const speedScale = .9 + difficulty * .14;
     asteroids.push({
       x: randomBetween(radius, WORLD_WIDTH - radius),
       y: -radius - 5,
       r: radius,
-      vy: randomBetween(105, 180),
-      vx: randomBetween(-24, 24),
-      hp: radius > 23 ? 2 : 1,
+      vy: randomBetween(120, 205) * speedScale,
+      vx: randomBetween(-(28 + difficulty * 12), 28 + difficulty * 12),
+      hp: radius > 25 ? 3 : radius > 20 ? 2 : 1,
       rotation: Math.random() * Math.PI * 2,
       spin: randomBetween(-1.2, 1.2),
       points: Array.from({ length: 9 }, () => randomBetween(.76, 1.16))
@@ -163,9 +178,15 @@
 
   function updateHud(elapsedMs) {
     const hull = document.getElementById('journey-combat-hull');
+    const hullFill = document.getElementById('journey-combat-hull-fill');
     const timer = document.getElementById('journey-combat-time');
     const salvage = document.getElementById('journey-combat-salvage');
     if (hull) hull.textContent = `${Math.max(0, Math.ceil(player.hull))}`;
+    if (hullFill && hullFill.style && hullFill.classList) {
+      const hullPercent = Math.max(0, Math.min(100, (player.hull / config.startingHull) * 100));
+      hullFill.style.width = `${hullPercent}%`;
+      hullFill.classList.toggle('is-critical', hullPercent <= 35);
+    }
     if (salvage) salvage.textContent = `${salvageCollected} / ${config.objectives.salvageTarget}`;
     const second = Math.max(0, Math.ceil((config.objectives.surviveSeconds * 1000 - elapsedMs) / 1000));
     if (timer && second !== lastHudSecond) {
@@ -187,8 +208,8 @@
     }
 
     spawnClock += deltaSeconds;
-    const rescuePacing = config.encounterType === 'rescue' ? .18 : 0;
-    const spawnDelay = Math.max(.38, .78 + rescuePacing - config.difficulty * .05);
+    const rescuePacing = config.encounterType === 'rescue' ? .15 : 0;
+    const spawnDelay = Math.max(.34, .8 + rescuePacing - config.difficulty * .14);
     while (spawnClock >= spawnDelay) {
       spawnClock -= spawnDelay;
       spawnAsteroid();
@@ -220,6 +241,7 @@
         if (!circlesTouch(bullet, asteroid)) continue;
         bullets.splice(bulletIndex, 1);
         asteroid.hp -= 1;
+        playCombatSfx('hit');
         if (asteroid.hp <= 0) {
           asteroids.splice(asteroidIndex, 1);
           asteroidsDestroyed += 1;
@@ -237,8 +259,25 @@
       }
       if (now >= player.invulnerableUntil && circlesTouch(player, asteroid)) {
         asteroids.splice(asteroidIndex, 1);
-        player.hull -= Math.round(8 + asteroid.r * .28);
-        player.invulnerableUntil = now + 700;
+        const damage = Math.round(10 + asteroid.r * .34 + Math.max(1, config.difficulty || 1) * 1.5);
+        player.hull -= damage;
+        player.invulnerableUntil = now + 650;
+        damageFlashUntil = now + 650;
+        lastDamageTaken = damage;
+        const damageAlert = document.getElementById('journey-combat-damage-alert');
+        const combatFrame = document.querySelector && document.querySelector('.journey-combat-frame');
+        if (damageAlert && damageAlert.classList) {
+          damageAlert.textContent = `HULL −${damage}`;
+          damageAlert.classList.remove('is-visible');
+          void damageAlert.offsetWidth;
+          damageAlert.classList.add('is-visible');
+        }
+        if (combatFrame && combatFrame.classList) {
+          combatFrame.classList.remove('is-hit');
+          void combatFrame.offsetWidth;
+          combatFrame.classList.add('is-hit');
+        }
+        playCombatSfx('miss', 'over');
         if (player.hull <= 0) {
           finish('failure');
           return;
@@ -256,6 +295,7 @@
         if (pickup.type === 'fuel') fuelCollected += 1;
         else salvageCollected += 1;
         pickups.splice(pickupIndex, 1);
+        playCombatSfx(pickup.type === 'fuel' ? 'powerupCollect' : 'score', 'score');
       }
     }
 
@@ -380,6 +420,20 @@
     asteroids.forEach(drawAsteroid);
     pickups.forEach(drawPickup);
     drawPlayer();
+    const now = performance.now();
+    if (now < damageFlashUntil) {
+      const strength = Math.max(0, (damageFlashUntil - now) / 650);
+      context.fillStyle = `rgba(255,45,76,${.18 * strength})`;
+      context.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+      context.save();
+      context.fillStyle = '#fff';
+      context.shadowColor = '#ff2d4c';
+      context.shadowBlur = 18;
+      context.font = 'bold 28px monospace';
+      context.textAlign = 'center';
+      context.fillText(`HULL −${lastDamageTaken}`, player.x, player.y - 48);
+      context.restore();
+    }
   }
 
   function loop(now) {
@@ -442,6 +496,8 @@
     spawnClock = 0;
     fireClock = 0;
     lastHudSecond = -1;
+    damageFlashUntil = 0;
+    lastDamageTaken = 0;
     active = true;
     startedAt = performance.now();
     lastFrameAt = startedAt;
@@ -465,6 +521,8 @@
     pickups = [];
     keys = { left: false, right: false, fire: false };
     pointerActive = false;
+    damageFlashUntil = 0;
+    lastDamageTaken = 0;
   }
 
   window.JourneyCombat = Object.freeze({

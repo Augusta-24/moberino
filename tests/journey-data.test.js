@@ -120,18 +120,19 @@ test('the cockpit centers the route and moves detail into ship and log views', (
   );
 });
 
-test('the opening story uses a slower journey cinematic cadence and reusable status warning', () => {
+test('the opening story waits for Continue on every beat and has no skip control', () => {
   const controller = fs.readFileSync(
     path.join(__dirname, '..', 'js', 'games', 'journey.js'),
     'utf8'
   );
 
-  assert.match(controller, /duration:\s*6000/);
-  assert.match(controller, /duration:\s*6800/);
-  assert.match(controller, /setTimeout\(showBeat,\s*beat\.duration\)/);
+  assert.match(controller, /journeyContinueIntro/);
+  assert.match(controller, /journey-story-continue/);
+  assert.match(controller, /ENTER COCKPIT →/);
   assert.match(controller, /shipStatusAlert\('warning', 'LOW FUEL'/);
   assert.match(controller, /currentShipWarning/);
-  assert.doesNotMatch(controller, /duration:\s*(2600|3000|4500|5200)/);
+  assert.doesNotMatch(controller, /SKIP STORY/);
+  assert.doesNotMatch(controller, /setTimeout\(showBeat/);
 });
 
 test('Journey combat is isolated from storage and exposes lifecycle methods', () => {
