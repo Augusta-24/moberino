@@ -18,7 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent
 OUT = ROOT / "js" / "games" / "consume-boards.js"
-N_LEVELS = 16
+N_LEVELS = 30
 ALPH = "abcdefghijklmnopqrstuvwxyz"
 COMMON_RANK_LIMIT = 4000
 
@@ -221,21 +221,35 @@ def shuffled_pool(counts, rng):
 def level_spec(n):
     specs = [
         dict(size=9, cols=3, phase="3x3", patterns=[[3, 3, 3]], min_clear_words=3, solutions=(2, 9), traps=(0, 18), long_trap=0),
-        dict(size=9, cols=3, phase="3x3", patterns=[[3, 3, 3], [4, 5]], min_clear_words=2, solutions=(2, 8), traps=(1, 22), long_trap=4),
-        dict(size=9, cols=3, phase="3x3", patterns=[[4, 5], [3, 6]], min_clear_words=2, solutions=(2, 7), traps=(2, 26), long_trap=4),
         dict(size=9, cols=3, phase="3x3", patterns=[[3, 3, 3], [4, 5], [3, 6]], min_clear_words=2, solutions=(2, 6), traps=(3, 30), long_trap=5),
-        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 4, 4, 5]], solutions=(2, 9), traps=(4, 42), long_trap=5),
-        dict(size=16, cols=4, phase="4x4", patterns=[[3, 3, 4, 6], [3, 4, 4, 5]], solutions=(2, 8), traps=(5, 48), long_trap=5),
-        dict(size=16, cols=4, phase="4x4", patterns=[[5, 5, 6], [4, 6, 6]], solutions=(2, 7), traps=(6, 54), long_trap=5),
-        dict(size=16, cols=4, phase="4x4", patterns=[[3, 3, 4, 6], [4, 4, 4, 4], [5, 5, 6]], solutions=(2, 7), traps=(7, 60), long_trap=6),
-        dict(size=16, cols=4, phase="4x4", patterns=[[3, 4, 4, 5], [4, 6, 6]], solutions=(2, 6), traps=(8, 66), long_trap=6),
-        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 3, 4, 6], [4, 6, 6]], solutions=(2, 6), traps=(9, 72), long_trap=6),
-        dict(size=16, cols=4, phase="4x4", patterns=[[5, 5, 6], [4, 6, 6]], solutions=(2, 5), traps=(10, 78), long_trap=6),
-        dict(size=16, cols=4, phase="4x4", patterns=[[3, 4, 4, 5], [3, 3, 4, 6]], solutions=(2, 5), traps=(11, 84), long_trap=6),
-        dict(size=25, cols=5, phase="5x5", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6]], sharp_source=True, rare_score=4, max_candidates=160, solutions=(2, 28), traps=(3, 160), long_trap=6),
-        dict(size=25, cols=5, phase="5x5", patterns=[[3, 4, 6, 6, 6], [4, 4, 5, 6, 6]], sharp_source=True, rare_score=4, max_candidates=150, solutions=(2, 26), traps=(4, 180), long_trap=6),
-        dict(size=25, cols=5, phase="5x5", patterns=[[3, 3, 4, 5, 5, 5], [5, 5, 5, 5, 5]], sharp_source=True, rare_score=5, max_candidates=140, solutions=(2, 24), traps=(5, 200), long_trap=6),
-        dict(size=25, cols=5, phase="5x5", patterns=[[3, 4, 6, 6, 6], [4, 4, 5, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=5, max_candidates=130, solutions=(2, 22), traps=(6, 220), long_trap=6),
+        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 4, 4, 5]], solutions=(5, 18), traps=(2, 48), long_trap=4),
+        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 3, 4, 6]], solutions=(4, 16), traps=(3, 52), long_trap=4),
+        dict(size=16, cols=4, phase="4x4", patterns=[[3, 4, 4, 5], [5, 5, 6]], solutions=(4, 14), traps=(4, 56), long_trap=5),
+        dict(size=16, cols=4, phase="4x4", patterns=[[3, 4, 4, 5], [4, 4, 4, 4]], solutions=(3, 12), traps=(5, 60), long_trap=5),
+        dict(size=16, cols=4, phase="4x4", patterns=[[3, 3, 4, 6], [3, 4, 4, 5]], solutions=(3, 11), traps=(6, 64), long_trap=5),
+        dict(size=16, cols=4, phase="4x4", patterns=[[3, 3, 4, 6], [5, 5, 6]], solutions=(2, 10), traps=(7, 68), long_trap=5),
+        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [4, 6, 6]], solutions=(2, 9), traps=(8, 72), long_trap=5),
+        dict(size=16, cols=4, phase="4x4", patterns=[[3, 4, 4, 5], [4, 6, 6]], solutions=(2, 8), traps=(9, 76), long_trap=6),
+        dict(size=16, cols=4, phase="4x4", patterns=[[3, 3, 4, 6], [5, 5, 6]], solutions=(2, 7), traps=(10, 80), long_trap=6),
+        dict(size=16, cols=4, phase="4x4", patterns=[[5, 5, 6], [4, 6, 6]], solutions=(2, 6), traps=(11, 84), long_trap=6),
+        dict(size=20, cols=5, phase="4x5", patterns=[[4, 4, 4, 4, 4], [3, 4, 4, 4, 5]], solutions=(4, 18), traps=(5, 100), long_trap=5),
+        dict(size=20, cols=5, phase="4x5", patterns=[[3, 4, 4, 4, 5], [4, 4, 6, 6]], solutions=(3, 15), traps=(7, 115), long_trap=5),
+        dict(size=20, cols=5, phase="4x5", patterns=[[4, 4, 6, 6], [3, 5, 6, 6]], solutions=(2, 12), traps=(9, 130), long_trap=6),
+        dict(size=20, cols=5, phase="4x5", patterns=[[3, 5, 6, 6], [4, 4, 4, 4, 4]], solutions=(2, 9), traps=(11, 145), long_trap=6),
+        dict(size=25, cols=5, phase="5x5", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6]], max_candidates=220, solutions=(5, 45), traps=(4, 180), long_trap=5),
+        dict(size=25, cols=5, phase="5x5", patterns=[[5, 5, 5, 5, 5], [3, 4, 6, 6, 6]], max_candidates=210, solutions=(4, 40), traps=(5, 190), long_trap=5),
+        dict(size=25, cols=5, phase="5x5", patterns=[[4, 4, 5, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=3, max_candidates=200, solutions=(3, 36), traps=(6, 200), long_trap=6),
+        dict(size=25, cols=5, phase="5x5", patterns=[[3, 4, 6, 6, 6], [5, 5, 5, 5, 5]], sharp_source=True, rare_score=3, max_candidates=190, solutions=(3, 32), traps=(7, 210), long_trap=6),
+        dict(size=25, cols=5, phase="5x5", patterns=[[4, 4, 5, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=3, max_candidates=180, solutions=(3, 28), traps=(8, 220), long_trap=6),
+        dict(size=25, cols=5, phase="5x5", patterns=[[3, 4, 6, 6, 6], [4, 4, 5, 6, 6]], sharp_source=True, rare_score=4, max_candidates=175, solutions=(2, 25), traps=(9, 230), long_trap=6),
+        dict(size=25, cols=5, phase="5x5", patterns=[[3, 3, 4, 5, 5, 5], [5, 5, 5, 5, 5]], sharp_source=True, rare_score=4, max_candidates=170, solutions=(2, 22), traps=(10, 240), long_trap=6),
+        dict(size=25, cols=5, phase="5x5", patterns=[[3, 4, 6, 6, 6], [4, 4, 5, 6, 6]], sharp_source=True, rare_score=4, max_candidates=165, solutions=(2, 20), traps=(11, 250), long_trap=6),
+        dict(size=25, cols=5, phase="5x5-expert", patterns=[[3, 4, 6, 6, 6], [4, 4, 5, 6, 6]], sharp_source=True, rare_score=5, max_candidates=160, solutions=(2, 18), traps=(12, 260), long_trap=6),
+        dict(size=25, cols=5, phase="5x5-expert", patterns=[[3, 3, 4, 5, 5, 5], [4, 4, 5, 6, 6]], sharp_source=True, rare_score=5, max_candidates=155, solutions=(2, 16), traps=(13, 270), long_trap=6),
+        dict(size=25, cols=5, phase="5x5-expert", patterns=[[3, 4, 6, 6, 6], [5, 5, 5, 5, 5]], sharp_source=True, rare_score=5, max_candidates=150, solutions=(2, 14), traps=(14, 280), long_trap=6),
+        dict(size=25, cols=5, phase="5x5-expert", patterns=[[3, 3, 4, 5, 5, 5], [4, 4, 5, 6, 6]], sharp_source=True, rare_score=6, max_candidates=145, solutions=(2, 12), traps=(15, 290), long_trap=6),
+        dict(size=25, cols=5, phase="5x5-expert", patterns=[[3, 4, 6, 6, 6], [4, 4, 5, 6, 6]], sharp_source=True, rare_score=6, max_candidates=140, solutions=(2, 10), traps=(16, 300), long_trap=6),
+        dict(size=25, cols=5, phase="5x5-expert", patterns=[[3, 3, 4, 5, 5, 5], [3, 4, 6, 6, 6]], sharp_source=True, rare_score=6, max_candidates=135, solutions=(2, 8), traps=(18, 320), long_trap=6),
     ]
     return specs[min(n - 1, len(specs) - 1)]
 
@@ -420,6 +434,26 @@ def make_level(n, rng, attempts=12000):
     }
 
 
+def difficulty_score(level):
+    return (-level["solutionCount"] * 10
+            + level["trapCount"]
+            + max(level["sourcePattern"]) * 2)
+
+
+def order_by_phase_difficulty(levels):
+    """Keep phase boundaries fixed while making each phase ramp easy to hard."""
+    ordered = []
+    for phase in dict.fromkeys(level["phase"] for level in levels):
+        ordered.extend(sorted(
+            (level for level in levels if level["phase"] == phase),
+            key=lambda level: (difficulty_score(level), level["solutionCount"], level["pool"]),
+        ))
+    for number, level in enumerate(ordered, 1):
+        level["n"] = number
+        level["difficulty"] = difficulty_score(level)
+    return ordered
+
+
 def emit(levels):
     payload = {
         "version": 1,
@@ -490,7 +524,7 @@ def main():
         refresh_dictionary()
         return
     rng = random.Random(args.seed)
-    levels = [make_level(n, rng) for n in range(1, args.levels + 1)]
+    levels = order_by_phase_difficulty([make_level(n, rng) for n in range(1, args.levels + 1)])
     emit(levels)
 
 
