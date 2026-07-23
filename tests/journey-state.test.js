@@ -78,7 +78,7 @@ test('malformed saves recover safely and clamp persistent meters', () => {
   const { api } = createHarness({ moberinoJourneySave: malformed });
   const state = api.load();
 
-  assert.equal(state.version, 1);
+  assert.equal(state.version, 2);
   assert.equal(state.currentNodeId, 'home-orbit');
   assert.equal(state.resources.hull, 120);
   assert.equal(state.resources.fuel, 0);
@@ -112,6 +112,64 @@ test('offline progress restores only power and pilot readiness', () => {
   assert.ok(state.resources.power >= 43 && state.resources.power <= 45);
   assert.ok(state.resources.pilot >= 49 && state.resources.pilot <= 51);
   assert.equal(api.getReturnSummary().length, 2);
+});
+
+test('version 1 saves stranded at Home after clearing the Belt return to the frontier', () => {
+  const stranded = JSON.stringify({
+    version: 1,
+    currentNodeId: 'home-orbit',
+    selectedDestinationId: 'fuel-stop-1',
+    route: {
+      visitedNodes: ['home-orbit', 'fuel-stop-1', 'scrap-belt'],
+      completedNodes: ['fuel-stop-1', 'scrap-belt'],
+      unlockedNodes: ['home-orbit', 'fuel-stop-1', 'scrap-belt', 'distress-signal', 'abandoned-cache']
+    }
+  });
+  const { api } = createHarness({ moberinoJourneySave: stranded });
+  const state = api.load();
+
+  assert.equal(state.currentNodeId, 'scrap-belt');
+  assert.equal(state.selectedDestinationId, null);
+  assert.equal(state.log.transmissions.includes('scrap-belt-signals'), true);
+  assert.deepEqual(Array.from(api.getUnreadTransmissionIds()), ['scrap-belt-signals']);
+});
+
+test('transmissions persist and become read exactly once', () => {
+  const { api } = createHarness();
+  api.createNew();
+
+  assert.equal(api.addTransmission('scrap-belt-signals').ok, true);
+  assert.equal(api.addTransmission('scrap-belt-signals').code, 'already-received');
+  assert.deepEqual(Array.from(api.getUnreadTransmissionIds()), ['scrap-belt-signals']);
+  assert.equal(api.markTransmissionRead('scrap-belt-signals').ok, true);
+  assert.equal(api.markTransmissionRead('scrap-belt-signals').code, 'already-read');
+  assert.deepEqual(Array.from(api.getUnreadTransmissionIds()), []);
+});
+
+test('peaceful discoveries reward once and unlock the next stop', () => {
+  const { api } = createHarness();
+  const state = api.createNew();
+  state.currentNodeId = 'abandoned-cache';
+  state.route.unlockedNodes.push('abandoned-cache');
+
+  const first = api.resolvePeacefulNode({
+    nodeId: 'abandoned-cache',
+    salvage: 18,
+    power: 6,
+    unlockNodeIds: ['repair-moon'],
+    discoveryId: 'cache-log-1'
+  });
+  const duplicate = api.resolvePeacefulNode({
+    nodeId: 'abandoned-cache',
+    salvage: 18,
+    unlockNodeIds: ['repair-moon']
+  });
+
+  assert.equal(first.ok, true);
+  assert.equal(duplicate.code, 'already-completed');
+  assert.equal(state.currency.salvage, 18);
+  assert.equal(state.route.unlockedNodes.includes('repair-moon'), true);
+  assert.equal(state.log.discoveries.includes('cache-log-1'), true);
 });
 
 test('save writes are centralized and include their reason', () => {
@@ -223,6 +281,35 @@ test('encounter results apply persistent damage and rewards exactly once', () =>
   assert.equal(finalState.route.completedNodes.filter(id => id === 'scrap-belt').length, 1);
   assert.equal(finalState.route.unlockedNodes.filter(id => id === 'distress-signal').length, 1);
   assert.equal(finalState.encounters.activeAttempt, null);
+});
+
+test('successful rescue adds one persistent passenger', () => {
+  const { api } = createHarness();
+  const state = api.createNew();
+  state.currentNodeId = 'distress-signal';
+  state.route.unlockedNodes.push('distress-signal');
+  const attempt = api.beginEncounter('rescue-beacon-1');
+
+  const applied = api.applyEncounterResult({
+    attemptId: attempt.attemptId,
+    encounterId: 'rescue-beacon-1',
+    outcome: 'success',
+    hullRemaining: 88,
+    salvageCollected: 2,
+    fuelCollected: 0,
+    rescuedPassengerId: 'pip'
+  }, {
+    completeNodeId: 'distress-signal',
+    unlockNodeIds: ['repair-moon'],
+    passengerId: 'pip'
+  });
+  const finalState = api.getState();
+
+  assert.equal(applied.ok, true);
+  assert.equal(applied.passengerId, 'pip');
+  assert.deepEqual(Array.from(finalState.passengers.active), ['pip']);
+  assert.deepEqual(Array.from(finalState.passengers.rescued), ['pip']);
+  assert.equal(finalState.route.unlockedNodes.includes('repair-moon'), true);
 });
 
 test('failed encounters preserve a safe hull floor and do not unlock the route', () => {

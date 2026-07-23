@@ -43,6 +43,7 @@ body.on-journey {
 .journey-ship-screen,
 .journey-route-screen,
 .journey-destination-screen,
+.journey-intel-screen,
 .journey-briefing-screen,
 .journey-combat-screen,
 .journey-results-screen {
@@ -381,6 +382,165 @@ body.on-journey {
   color: #f5f3ec;
   font-size: 13px;
   line-height: 1.45;
+}
+
+.journey-intel-alert,
+.journey-passenger-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: min(100%, 980px);
+  margin: 0 auto 10px;
+  border: 1px solid var(--journey-gold);
+  border-radius: 9px;
+  padding: 12px 14px;
+  background: rgba(255,241,166,.1);
+}
+
+.journey-intel-alert div span,
+.journey-intel-alert div strong,
+.journey-passenger-note strong,
+.journey-passenger-note span {
+  display: block;
+}
+
+.journey-intel-alert div span,
+.journey-passenger-note strong {
+  color: var(--journey-gold);
+  font-size: 13px;
+  letter-spacing: 1.5px;
+}
+
+.journey-intel-alert div strong,
+.journey-passenger-note span {
+  margin-top: 4px;
+  color: #f5f3ec;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.journey-intel-alert button {
+  flex: 0 0 auto;
+  min-height: 42px;
+  border: 1px solid var(--journey-gold);
+  border-radius: 6px;
+  padding: 9px 13px;
+  background: rgba(255,241,166,.14);
+  color: var(--journey-gold);
+  font: 13px/1 'VCR', monospace;
+  cursor: pointer;
+}
+
+.journey-passenger-note {
+  display: block;
+  border-color: var(--journey-violet);
+  background: rgba(183,156,255,.1);
+}
+
+.journey-intel-screen {
+  display: grid;
+  place-items: center;
+  padding: max(20px, env(safe-area-inset-top)) 18px max(24px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+
+.journey-intel-screen > section {
+  width: min(100%, 720px);
+  border: 1px solid rgba(105,215,255,.5);
+  border-radius: 14px;
+  padding: clamp(22px, 5vw, 42px);
+  background: linear-gradient(145deg, rgba(13,26,55,.98), rgba(8,8,26,.97));
+}
+
+.journey-intel-screen h1 {
+  margin: 10px 0 14px;
+  color: var(--journey-cyan);
+  font: clamp(42px, 10vw, 68px)/.95 'Bebas Neue', sans-serif;
+  letter-spacing: 4px;
+}
+
+.journey-intel-screen > section > p {
+  color: #f5f3ec;
+  font: 17px/1.55 'VCR', monospace;
+}
+
+.journey-intel-call {
+  margin: 22px 0 12px;
+  color: var(--journey-gold);
+  font: 18px/1 'VCR', monospace;
+  letter-spacing: 3px;
+}
+
+.journey-intel-leads {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.journey-intel-leads article {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(105,215,255,.45);
+  border-radius: 9px;
+  padding: 15px;
+  background: rgba(105,215,255,.07);
+}
+
+.journey-intel-leads span {
+  color: var(--journey-gold);
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.journey-intel-leads strong {
+  margin-top: 8px;
+  color: #f5f3ec;
+  font: 25px/1 'Bebas Neue', sans-serif;
+  letter-spacing: 1.5px;
+}
+
+.journey-intel-leads p {
+  flex: 1;
+  margin: 8px 0 14px;
+  color: #f5f3ec;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.journey-intel-leads button {
+  min-height: 44px;
+  border: 1px solid var(--journey-cyan);
+  border-radius: 6px;
+  background: rgba(105,215,255,.14);
+  color: var(--journey-cyan);
+  font: 13px/1 'VCR', monospace;
+  cursor: pointer;
+}
+
+.journey-cache-reward {
+  margin: 20px 0;
+  border: 1px solid var(--journey-gold);
+  border-radius: 8px;
+  padding: 14px;
+  color: var(--journey-gold);
+}
+
+.journey-cache-reward span,
+.journey-cache-reward strong {
+  display: block;
+}
+
+.journey-cache-reward span {
+  font-size: 12px;
+  letter-spacing: 2px;
+}
+
+.journey-cache-reward strong {
+  margin-top: 6px;
+  font: 25px/1 'Bebas Neue', sans-serif;
+  letter-spacing: 2px;
 }
 
 .journey-ship-bay {
@@ -1196,6 +1356,15 @@ body.on-journey {
   .journey-route-footer {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .journey-intel-alert {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .journey-intel-leads {
+    grid-template-columns: 1fr;
   }
 
   .journey-destination-screen {

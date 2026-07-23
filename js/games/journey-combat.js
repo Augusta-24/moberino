@@ -187,7 +187,8 @@
     }
 
     spawnClock += deltaSeconds;
-    const spawnDelay = Math.max(.38, .78 - config.difficulty * .05);
+    const rescuePacing = config.encounterType === 'rescue' ? .18 : 0;
+    const spawnDelay = Math.max(.38, .78 + rescuePacing - config.difficulty * .05);
     while (spawnClock >= spawnDelay) {
       spawnClock -= spawnDelay;
       spawnAsteroid();
@@ -354,6 +355,21 @@
 
   function draw() {
     drawBackground();
+    if (config.encounterType === 'rescue') {
+      const pulse = 14 + Math.sin(performance.now() / 240) * 3;
+      context.strokeStyle = '#fff1a6';
+      context.lineWidth = 3;
+      context.shadowColor = '#fff1a6';
+      context.shadowBlur = 16;
+      context.beginPath();
+      context.arc(WORLD_WIDTH / 2, 72, pulse, 0, Math.PI * 2);
+      context.stroke();
+      context.shadowBlur = 0;
+      context.fillStyle = '#f5f3ec';
+      context.font = '12px monospace';
+      context.textAlign = 'center';
+      context.fillText('RESCUE BEACON', WORLD_WIDTH / 2, 105);
+    }
     bullets.forEach(bullet => {
       context.fillStyle = '#fff1a6';
       context.shadowColor = '#fff1a6';
@@ -388,7 +404,7 @@
       fuelCollected,
       salvageCollected,
       objectiveComplete: salvageCollected >= completedConfig.objectives.salvageTarget,
-      rescuedPassengerId: null,
+      rescuedPassengerId: outcome === 'success' ? (completedConfig.rescuedPassengerId || null) : null,
       bossDefeated: null,
       stats: {
         shotsFired,

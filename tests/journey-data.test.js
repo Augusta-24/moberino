@@ -43,6 +43,16 @@ test('Chapter One route connections are reversible and configuration is frozen',
   assert.equal(Object.isFrozen(data.getNode('home-orbit')), true);
 });
 
+test('the first Pilot’s Call has authored intel and two playable leads', () => {
+  const data = loadJourneyData();
+  const intel = data.getTransmission('scrap-belt-signals');
+
+  assert.ok(intel);
+  assert.deepEqual(Array.from(intel.leads, lead => lead.nodeId), ['distress-signal', 'abandoned-cache']);
+  intel.leads.forEach(lead => assert.equal(data.getNode(lead.nodeId).implemented, true));
+  assert.equal(Object.isFrozen(intel), true);
+});
+
 test('Journey controller does not own storage or load the live Space Mobe runtime', () => {
   const controller = fs.readFileSync(
     path.join(__dirname, '..', 'js', 'games', 'journey.js'),

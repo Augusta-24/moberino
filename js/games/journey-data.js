@@ -17,6 +17,20 @@
     }
   ];
 
+  const TRANSMISSIONS = [
+    {
+      id: 'scrap-belt-signals',
+      source: 'WAYFARER SIGNAL ARRAY',
+      title: 'TWO SIGNALS BEYOND THE BELT',
+      body: 'One is a live distress beacon. The other is an old supply-cache ping. We have fuel for either course.',
+      prompt: "PILOT'S CALL",
+      leads: [
+        { nodeId: 'distress-signal', label: 'ANSWER THE BEACON', detail: 'Someone may still be alive.' },
+        { nodeId: 'abandoned-cache', label: 'CHECK THE CACHE', detail: 'Safer. Useful supplies.' }
+      ]
+    }
+  ];
+
   const ROUTE_NODES = [
     {
       id: 'home-orbit',
@@ -65,7 +79,9 @@
       connections: ['scrap-belt', 'repair-moon'],
       fuelCost: 7,
       distance: 29,
-      implemented: false
+      implemented: true,
+      encounterId: 'rescue-beacon-1',
+      passengerId: 'pip'
     },
     {
       id: 'abandoned-cache',
@@ -77,7 +93,7 @@
       connections: ['scrap-belt', 'repair-moon'],
       fuelCost: 5,
       distance: 22,
-      implemented: false
+      implemented: true
     },
     {
       id: 'repair-moon',
@@ -121,6 +137,10 @@
     map[node.id] = node;
     return map;
   }, {});
+  const TRANSMISSION_BY_ID = TRANSMISSIONS.reduce((map, transmission) => {
+    map[transmission.id] = transmission;
+    return map;
+  }, {});
 
   function getNode(id) {
     return NODE_BY_ID[id] || null;
@@ -135,11 +155,17 @@
     return node ? node.connections.map(getNode).filter(Boolean) : [];
   }
 
+  function getTransmission(id) {
+    return TRANSMISSION_BY_ID[id] || null;
+  }
+
   window.JourneyData = deepFreeze({
     regions: REGIONS,
     routeNodes: ROUTE_NODES,
+    transmissions: TRANSMISSIONS,
     getNode,
     getRegion,
-    getConnectedNodes
+    getConnectedNodes,
+    getTransmission
   });
 })();

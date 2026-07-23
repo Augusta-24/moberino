@@ -5,7 +5,7 @@
 
   const GAME_ID = 'journey';
   const SAVE_KEY = 'moberinoJourneySave';
-  const SAVE_VERSION = 1;
+  const SAVE_VERSION = 2;
   const OFFLINE_CAP_MS = 24 * 60 * 60 * 1000;
   const POWER_PER_HOUR = 12;
   const PILOT_PER_HOUR = 10;
@@ -57,7 +57,7 @@
       activeAttempt: null,
       appliedResults: []
     },
-    log: { transmissions: [], discoveries: [] },
+    log: { transmissions: [], readTransmissions: [], discoveries: [] },
     timers: {
       repairCompleteAt: null,
       powerUpdatedAt: null,
@@ -103,6 +103,7 @@
   }
 
   function sanitize(candidate) {
+    const sourceVersion = candidate && Number.isFinite(candidate.version) ? candidate.version : 0;
     const next = mergeKnown(DEFAULT_SAVE, candidate);
     next.version = SAVE_VERSION;
     next.createdAt = typeof next.createdAt === 'number' ? next.createdAt : Date.now();
@@ -154,8 +155,26 @@
         }
       : null;
     next.log.transmissions = uniqueStrings(next.log.transmissions, []);
+    next.log.readTransmissions = uniqueStrings(next.log.readTransmissions, []);
     next.log.discoveries = uniqueStrings(next.log.discoveries, []);
     next.settings.tutorialComplete = !!next.settings.tutorialComplete;
+
+    // Version 1 briefly allowed a completed journey to backtrack to Home and
+    // strand itself there. Restore those saves to their cleared frontier.
+    if (
+      sourceVersion < 2 &&
+      next.currentNodeId === 'home-orbit' &&
+      next.route.completedNodes.includes('scrap-belt')
+    ) {
+      next.currentNodeId = 'scrap-belt';
+      next.selectedDestinationId = null;
+    }
+    if (
+      next.route.completedNodes.includes('scrap-belt') &&
+      !next.log.transmissions.includes('scrap-belt-signals')
+    ) {
+      next.log.transmissions.push('scrap-belt-signals');
+    }
     return next;
   }
 
@@ -304,6 +323,56 @@
     return mutationResult(true, 'completed', { nodeId });
   }
 
+  function addTransmission(transmissionId) {
+    if (!state || typeof transmissionId !== 'string') return mutationResult(false, 'no-save');
+    if (state.log.transmissions.includes(transmissionId)) {
+      return mutationResult(false, 'already-received', { transmissionId });
+    }
+    addUnique(state.log.transmissions, transmissionId);
+    saveJourneyState(`transmission-${transmissionId}`);
+    return mutationResult(true, 'received', { transmissionId });
+  }
+
+  function markTransmissionRead(transmissionId) {
+    if (!state || !state.log.transmissions.includes(transmissionId)) {
+      return mutationResult(false, 'missing-transmission');
+    }
+    if (state.log.readTransmissions.includes(transmissionId)) {
+      return mutationResult(false, 'already-read', { transmissionId });
+    }
+    addUnique(state.log.readTransmissions, transmissionId);
+    saveJourneyState(`read-${transmissionId}`);
+    return mutationResult(true, 'read', { transmissionId });
+  }
+
+  function getUnreadTransmissionIds() {
+    if (!state) return [];
+    return state.log.transmissions.filter(id => !state.log.readTransmissions.includes(id));
+  }
+
+  function resolvePeacefulNode(options) {
+    if (!state || !options || typeof options.nodeId !== 'string') {
+      return mutationResult(false, 'invalid-resolution');
+    }
+    if (state.currentNodeId !== options.nodeId) return mutationResult(false, 'wrong-location');
+    if (state.route.completedNodes.includes(options.nodeId)) {
+      return mutationResult(false, 'already-completed');
+    }
+    const salvage = Math.max(0, Math.floor(finiteNumber(options.salvage, 0)));
+    const fuel = Math.max(0, Math.floor(finiteNumber(options.fuel, 0)));
+    const power = Math.max(0, Math.floor(finiteNumber(options.power, 0)));
+    state.currency.salvage += salvage;
+    state.resources.fuel = clamp(state.resources.fuel + fuel, 0, state.resources.maxFuel);
+    state.resources.power = clamp(state.resources.power + power, 0, state.resources.maxPower);
+    addUnique(state.route.completedNodes, options.nodeId);
+    (Array.isArray(options.unlockNodeIds) ? options.unlockNodeIds : []).forEach(nodeId => {
+      if (typeof nodeId === 'string') addUnique(state.route.unlockedNodes, nodeId);
+    });
+    if (typeof options.discoveryId === 'string') addUnique(state.log.discoveries, options.discoveryId);
+    saveJourneyState(`resolve-${options.nodeId}`);
+    return mutationResult(true, 'resolved', { salvage, fuel, power });
+  }
+
   function refuelToMax(reason) {
     if (!state) return mutationResult(false, 'no-save');
     const gained = Math.max(0, state.resources.maxFuel - state.resources.fuel);
@@ -394,6 +463,13 @@
       (Array.isArray(options && options.unlockNodeIds) ? options.unlockNodeIds : []).forEach(nodeId => {
         if (typeof nodeId === 'string') addUnique(state.route.unlockedNodes, nodeId);
       });
+      const passengerId = result.rescuedPassengerId || (options && options.passengerId);
+      if (typeof passengerId === 'string') {
+        addUnique(state.passengers.rescued, passengerId);
+        addUnique(state.passengers.active, passengerId);
+      }
+      const transmissionId = options && options.transmissionId;
+      if (typeof transmissionId === 'string') addUnique(state.log.transmissions, transmissionId);
     }
     addUnique(state.encounters.appliedResults, result.attemptId);
     state.encounters.activeAttempt = null;
@@ -401,7 +477,10 @@
     return mutationResult(true, 'result-applied', {
       outcome,
       salvageAwarded: collectedSalvage + successSalvage,
-      fuelAwarded: collectedFuel
+      fuelAwarded: collectedFuel,
+      passengerId: outcome === 'success'
+        ? (result.rescuedPassengerId || (options && options.passengerId) || null)
+        : null
     });
   }
 
@@ -423,6 +502,10 @@
     selectDestination,
     travel,
     completeNode,
+    addTransmission,
+    markTransmissionRead,
+    getUnreadTransmissionIds,
+    resolvePeacefulNode,
     refuelToMax,
     restPilot,
     repairHull,

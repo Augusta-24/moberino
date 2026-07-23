@@ -118,8 +118,12 @@
       serviceFuelStop();
       return;
     }
-    if (node && node.type === 'encounter' && !state.route.completedNodes.includes(node.id)) {
+    if (node && (node.type === 'encounter' || node.type === 'rescue') && !state.route.completedNodes.includes(node.id)) {
       renderEncounterBriefing(node);
+      return;
+    }
+    if (node && node.id === 'abandoned-cache' && !state.route.completedNodes.includes(node.id)) {
+      renderCache(node);
       return;
     }
     renderShip();
@@ -143,6 +147,8 @@
     const route = destinationState(state, location);
     const destination = route.selected;
     const canDepart = destination && r.fuel >= destination.fuelCost;
+    const unreadIntelId = JourneyState.getUnreadTransmissionIds()[0] || null;
+    const unreadIntel = unreadIntelId && JourneyData.getTransmission(unreadIntelId);
     root.innerHTML = `
       <main class="journey-ship-screen" aria-labelledby="journey-ship-title">
         <header class="journey-topbar">
@@ -153,6 +159,11 @@
           </div>
           <span class="journey-save-status">SAVED</span>
         </header>
+        ${unreadIntel ? `
+          <section class="journey-intel-alert">
+            <div><span>INCOMING INTEL</span><strong>${unreadIntel.title}</strong></div>
+            <button type="button" onclick="journeyReadIntel('${unreadIntel.id}')">READ →</button>
+          </section>` : ''}
         <section class="journey-destination-section">
           <div class="journey-destination-copy">
             <span>NEXT DESTINATION</span>
@@ -170,6 +181,8 @@
           </button>
         </section>
         ${notices.length ? `<div class="journey-return-note">${notices.join(' ')}</div>` : ''}
+        ${state.passengers.active.includes('pip') ? `
+          <div class="journey-passenger-note"><strong>PASSENGER ABOARD · PIP</strong><span>“I thought nobody heard the beacon.”</span></div>` : ''}
         <section class="journey-ship-bay">
           <div class="journey-ship-visual" aria-label="Your patched-up ship">
             <div class="journey-orbit-line"></div>
@@ -221,7 +234,12 @@
           <strong>${Math.round(state.resources.fuel)} FUEL</strong>
         </header>
         <section class="journey-route-map" aria-label="Chapter One route">
-          ${JourneyData.routeNodes.map((node, index) => {
+          ${JourneyData.routeNodes.filter(node =>
+            node.id === state.currentNodeId ||
+            state.route.visitedNodes.includes(node.id) ||
+            state.route.unlockedNodes.includes(node.id)
+          ).map(node => {
+            const index = JourneyData.routeNodes.findIndex(routeNode => routeNode.id === node.id);
             const status = nodeStatus(state, node);
             const connected = connectedIds.has(node.id);
             const unlocked = state.route.unlockedNodes.includes(node.id);
@@ -264,10 +282,61 @@
     renderShip();
   }
 
+  function renderIntel(transmissionId) {
+    const root = host();
+    const state = JourneyState.getState();
+    const transmission = JourneyData.getTransmission(transmissionId);
+    if (!root || !state || !transmission || !state.log.transmissions.includes(transmissionId) || !active) return;
+    JourneyState.markTransmissionRead(transmissionId);
+    root.innerHTML = `
+      <main class="journey-intel-screen" aria-labelledby="journey-intel-title">
+        <section>
+          <div class="journey-kicker">INCOMING INTEL · ${transmission.source}</div>
+          <h1 id="journey-intel-title">${transmission.title}</h1>
+          <p>${transmission.body}</p>
+          <div class="journey-intel-call">${transmission.prompt}</div>
+          <div class="journey-intel-leads">
+            ${transmission.leads.map(lead => {
+              const node = JourneyData.getNode(lead.nodeId);
+              return `
+                <article>
+                  <span>${node ? `${node.fuelCost} FUEL · ${node.distance} DISTANCE` : 'NEW LEAD'}</span>
+                  <strong>${lead.label}</strong>
+                  <p>${lead.detail}</p>
+                  <button type="button" onclick="journeyChooseIntelDestination('${lead.nodeId}')">CHOOSE →</button>
+                </article>`;
+            }).join('')}
+          </div>
+          <button class="journey-text-btn" type="button" onclick="journeyShip()">DECIDE LATER</button>
+        </section>
+      </main>`;
+  }
+
+  function renderCache(node) {
+    const root = host();
+    const state = JourneyState.getState();
+    if (!root || !state || !node || !active) return;
+    root.innerHTML = `
+      <main class="journey-intel-screen journey-cache-screen" aria-labelledby="journey-cache-title">
+        <section>
+          <div class="journey-kicker">DISCOVERY · ${node.name.toUpperCase()}</div>
+          <h1 id="journey-cache-title">COLD STORAGE</h1>
+          <p>The cache is old but intact. Its beacon was meant for a ship that never returned.</p>
+          <div class="journey-cache-reward">
+            <span>RECOVERABLE</span>
+            <strong>18 SALVAGE · 6 POWER</strong>
+          </div>
+          <button class="journey-primary-btn" type="button" onclick="journeyCollectCache()">RECOVER SUPPLIES</button>
+          <button class="journey-text-btn" type="button" onclick="journeyShip()">RETURN TO SHIP</button>
+        </section>
+      </main>`;
+  }
+
   function renderEncounterBriefing(node) {
     const root = host();
     const state = JourneyState.getState();
     if (!root || !state || !node || !active) return;
+    const rescue = node.type === 'rescue';
     root.innerHTML = `
       <main class="journey-briefing-screen" aria-labelledby="journey-briefing-title">
         <section class="journey-briefing-art" aria-hidden="true">
@@ -275,19 +344,21 @@
           <i></i><i></i><i></i><i></i><i></i>
         </section>
         <section class="journey-briefing-copy">
-          <div class="journey-kicker">ROUTE ENCOUNTER · ASTEROID SALVAGE</div>
+          <div class="journey-kicker">${rescue ? 'INCOMING INTEL · LIVE BEACON' : 'ROUTE ENCOUNTER · ASTEROID SALVAGE'}</div>
           <h1 id="journey-briefing-title">${node.name}</h1>
-          <p>Survive 30 seconds. Break rocks. Grab salvage.</p>
+          <p>${rescue
+            ? 'An escape pod is trapped in the debris. Clear an approach and reach the beacon.'
+            : 'Survive 30 seconds. Break rocks. Grab salvage.'}</p>
           <div class="journey-objective-list">
-            <span><strong>SURVIVE</strong> 30 SEC</span>
-            <span><strong>BONUS</strong> 5 SALVAGE</span>
+            <span><strong>${rescue ? 'REACH' : 'SURVIVE'}</strong> ${rescue ? '24' : '30'} SEC</span>
+            <span><strong>${rescue ? 'RESCUE' : 'BONUS'}</strong> ${rescue ? '1 PASSENGER' : '5 SALVAGE'}</span>
             <span><strong>HULL</strong> ${Math.round(state.resources.hull)}</span>
           </div>
           <div class="journey-briefing-controls">
             <span>DRAG OR A/D · AUTO-FIRE</span>
           </div>
           <div class="journey-briefing-actions">
-            <button class="journey-primary-btn" type="button" onclick="journeyStartEncounter()">ENTER SCRAP BELT</button>
+            <button class="journey-primary-btn" type="button" onclick="journeyStartEncounter()">${rescue ? 'ANSWER THE BEACON' : 'ENTER SCRAP BELT'}</button>
             <button class="journey-text-btn" type="button" onclick="journeyShip()">RETURN TO SHIP</button>
           </div>
         </section>
@@ -298,13 +369,15 @@
     const root = host();
     const state = JourneyState.getState();
     if (!root || !state || !active) return;
+    const rescue = node.type === 'rescue';
+    const seconds = rescue ? 24 : 30;
     root.innerHTML = `
       <main class="journey-combat-screen">
         <header class="journey-combat-hud">
           <div><span>HULL</span><strong id="journey-combat-hull">${Math.round(state.resources.hull)}</strong></div>
-          <div class="journey-combat-title"><span>SCRAP BELT</span><strong>ASTEROID SALVAGE</strong></div>
-          <div><span>TIME</span><strong id="journey-combat-time">30</strong></div>
-          <div><span>SALVAGE</span><strong id="journey-combat-salvage">0 / 5</strong></div>
+          <div class="journey-combat-title"><span>${node.name.toUpperCase()}</span><strong>${rescue ? 'RESCUE RUN' : 'ASTEROID SALVAGE'}</strong></div>
+          <div><span>TIME</span><strong id="journey-combat-time">${seconds}</strong></div>
+          <div><span>${rescue ? 'CLEARANCE' : 'SALVAGE'}</span><strong id="journey-combat-salvage">0 / ${rescue ? '3' : '5'}</strong></div>
         </header>
         <div class="journey-combat-frame">
           <canvas id="journey-combat-canvas" aria-label="Scrap Belt asteroid encounter"></canvas>
@@ -316,48 +389,59 @@
       canvasId: 'journey-combat-canvas',
       attemptId,
       encounterId: node.encounterId,
-      encounterType: 'asteroids',
-      difficulty: 1,
+      encounterType: rescue ? 'rescue' : 'asteroids',
+      difficulty: rescue ? 1.2 : 1,
       startingHull: state.resources.hull,
+      rescuedPassengerId: rescue ? node.passengerId : null,
       shipStats: {
         blasterLevel: state.upgrades.blasterLevel,
         hullLevel: state.upgrades.hullLevel,
         salvageMagnetLevel: state.upgrades.salvageMagnetLevel
       },
       objectives: {
-        surviveSeconds: 30,
-        salvageTarget: 5
+        surviveSeconds: seconds,
+        salvageTarget: rescue ? 3 : 5
       },
-      onComplete: handleEncounterComplete
+      onComplete(result) {
+        handleEncounterComplete(node, result);
+      }
     });
   }
 
-  function handleEncounterComplete(result) {
+  function handleEncounterComplete(node, result) {
     if (!active) return;
-    const applied = JourneyState.applyEncounterResult(result, {
+    const rescue = node.type === 'rescue';
+    const applied = JourneyState.applyEncounterResult(result, rescue ? {
+      successSalvage: 10,
+      completeNodeId: node.id,
+      unlockNodeIds: ['repair-moon'],
+      passengerId: node.passengerId
+    } : {
       successSalvage: 20,
       completeNodeId: 'scrap-belt',
-      unlockNodeIds: ['distress-signal', 'abandoned-cache']
+      unlockNodeIds: ['distress-signal', 'abandoned-cache'],
+      transmissionId: 'scrap-belt-signals'
     });
     if (!applied.ok) {
       renderShip();
       return;
     }
-    renderEncounterResults(result, applied);
+    renderEncounterResults(node, result, applied);
   }
 
-  function renderEncounterResults(result, applied) {
+  function renderEncounterResults(node, result, applied) {
     const root = host();
     const state = JourneyState.getState();
     if (!root || !state || !active) return;
     const success = result.outcome === 'success';
+    const rescue = node.type === 'rescue';
     root.innerHTML = `
       <main class="journey-results-screen ${success ? 'is-success' : 'is-failure'}" aria-labelledby="journey-results-title">
         <section>
           <div class="journey-kicker">${success ? 'ROUTE CLEARED' : 'EMERGENCY RETREAT'}</div>
-          <h1 id="journey-results-title">${success ? 'BELT CROSSED' : 'SHIP RECOVERED'}</h1>
+          <h1 id="journey-results-title">${success ? (rescue ? 'PIP IS ABOARD' : 'BELT CROSSED') : 'SHIP RECOVERED'}</h1>
           <p>${success
-            ? 'Route open. New stops added.'
+            ? (rescue ? 'The escape pod is secure. Pip is recovering aboard the Wayfarer.' : 'The signal array found two possible routes beyond the debris.')
             : 'Ship recovered. Repair and try again.'}</p>
           <div class="journey-results-grid">
             <span>HULL REMAINING<strong>${Math.round(state.resources.hull)}</strong></span>
@@ -365,11 +449,11 @@
             <span>SALVAGE AWARDED<strong>+${Math.round(applied.salvageAwarded)}</strong></span>
             <span>FUEL RECOVERED<strong>+${Math.round(applied.fuelAwarded)}</strong></span>
             <span>ASTEROIDS BROKEN<strong>${Math.round(result.stats.asteroidsDestroyed)}</strong></span>
-            <span>OPTIONAL TARGET<strong>${result.objectiveComplete ? 'COMPLETE' : 'MISSED'}</strong></span>
+            <span>${rescue ? 'PASSENGER' : 'OPTIONAL TARGET'}<strong>${rescue && success ? 'PIP' : result.objectiveComplete ? 'COMPLETE' : 'MISSED'}</strong></span>
           </div>
           <div class="journey-results-actions">
             <button class="journey-primary-btn" type="button" onclick="journeyReturnFromEncounter()">RETURN TO SHIP</button>
-            ${success ? '<button class="journey-secondary-btn" type="button" onclick="journeyRoute()">VIEW NEW ROUTE</button>' : ''}
+            ${success && !rescue ? '<button class="journey-secondary-btn" type="button" onclick="journeyReadIntel(\'scrap-belt-signals\')">READ INCOMING INTEL</button>' : ''}
           </div>
         </section>
       </main>`;
@@ -429,6 +513,20 @@
     renderRoute();
   };
 
+  window.journeyReadIntel = function (transmissionId) {
+    playMenuSound();
+    renderIntel(transmissionId);
+  };
+
+  window.journeyChooseIntelDestination = function (destinationId) {
+    const state = JourneyState.getState();
+    const location = state && currentNode(state);
+    if (!state || !location || !availableDestinations(state, location).some(node => node.id === destinationId)) return;
+    playMenuSound();
+    const selected = JourneyState.selectDestination(destinationId);
+    if (selected.ok) renderShip();
+  };
+
   window.journeyChooseDestination = function (destinationId) {
     const state = JourneyState.getState();
     const location = state && currentNode(state);
@@ -463,11 +561,26 @@
   window.journeyStartEncounter = function () {
     const state = JourneyState.getState();
     const node = state && currentNode(state);
-    if (!state || !node || node.type !== 'encounter' || !node.encounterId) return;
+    if (!state || !node || !['encounter', 'rescue'].includes(node.type) || !node.encounterId) return;
     playMenuSound();
     const attempt = JourneyState.beginEncounter(node.encounterId);
     if (!attempt.ok) return;
     renderCombat(node, attempt.attemptId);
+  };
+
+  window.journeyCollectCache = function () {
+    playMenuSound();
+    const result = JourneyState.resolvePeacefulNode({
+      nodeId: 'abandoned-cache',
+      salvage: 18,
+      power: 6,
+      unlockNodeIds: ['repair-moon'],
+      discoveryId: 'cache-log-1'
+    });
+    if (result.ok) {
+      shipNotice = 'CACHE RECOVERED · +18 SALVAGE · +6 POWER · REPAIR MOON FOUND';
+    }
+    renderShip();
   };
 
   window.journeyRetreatEncounter = function () {
