@@ -81,11 +81,16 @@
   }
 
   function availableDestinations(state, location) {
-    return JourneyData.getConnectedNodes(location.id).filter(node =>
+    const connected = JourneyData.getConnectedNodes(location.id).filter(node =>
       state.route.unlockedNodes.includes(node.id) &&
-      node.implemented &&
-      !state.route.visitedNodes.includes(node.id)
+      node.implemented
     );
+    const onward = connected.filter(node => !state.route.visitedNodes.includes(node.id));
+
+    // Existing saves may be parked at the starting orbit after backtracking.
+    // Lantern is the only path from Home toward the frontier, so keep it usable
+    // even after it has been visited. Completed frontier stops do not auto-loop.
+    return onward.length || location.id !== 'home-orbit' ? onward : connected;
   }
 
   function destinationState(state, location) {
@@ -151,10 +156,10 @@
         <section class="journey-destination-section">
           <div class="journey-destination-copy">
             <span>NEXT DESTINATION</span>
-            <strong>${destination ? destination.name : route.needsPilotCall ? "PILOT'S CALL" : 'NO ROUTE'}</strong>
+            <strong>${destination ? destination.name : route.needsPilotCall ? "PILOT'S CALL" : 'ROUTE CLOSED'}</strong>
             <small>${destination
               ? `${destination.fuelCost} FUEL · ${destination.distance} DISTANCE`
-              : route.needsPilotCall ? 'CHOOSE YOUR COURSE' : 'NO CONNECTED STOPS'}</small>
+              : route.needsPilotCall ? 'CHOOSE YOUR COURSE' : 'NO ONWARD STOP IS OPEN'}</small>
           </div>
           ${route.available.length > 1 ? `
             <button class="journey-nav-button ${route.needsPilotCall ? 'is-required' : ''}" type="button" onclick="journeyRoute()" aria-label="Choose destination">

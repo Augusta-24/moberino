@@ -74,6 +74,7 @@ test('navigation offers only new stops and Lantern arrival stays on the ship scr
   );
 
   assert.match(controller, /!state\.route\.visitedNodes\.includes\(node\.id\)/);
+  assert.match(controller, /location\.id !== 'home-orbit' \? onward : connected/);
   assert.match(controller, /DOCKED AT LANTERN STATION/);
   assert.equal(controller.includes('function renderFuelStop'), false);
 });

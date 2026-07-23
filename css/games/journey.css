@@ -1100,6 +1100,41 @@ body.on-journey {
     height: 100%;
   }
 
+  .journey-topbar {
+    grid-template-columns: 1fr auto;
+    row-gap: 8px;
+    text-align: left;
+  }
+
+  .journey-topbar .journey-arcade-back {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .journey-topbar > div {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .journey-topbar .journey-save-status {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .journey-topbar div span {
+    overflow: hidden;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .journey-topbar div strong {
+    margin-top: 5px;
+    font-size: 30px;
+  }
+
   .journey-ship-bay {
     grid-template-columns: 1fr;
   }
