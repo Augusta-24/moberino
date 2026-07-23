@@ -104,7 +104,8 @@
       const hi = highestDone();
       if (!hi) return;
       const st = myStars();
-      RemoteLB.submit('consume', ensureProfile().active, hi, 0, 'L' + hi)
+      const stars = totalStars(st);
+      RemoteLB.submit('consume', ensureProfile().active, (hi * 100) + stars, 0, `${stars}★ · L${hi}`)
         .catch(() => {});
     } catch(e) {}
   }
@@ -167,6 +168,9 @@
       bad: false,
       won: false,
       returned: new Set(),
+      startTime: Date.now(),
+      shatters: 0,
+      wordsFormed: 0,
     };
     renderPlay();
   }
@@ -271,6 +275,7 @@
     const wordId = nextWordId++;
     S.tray.forEach(t => { t.wordId = wordId; });
     S.tableau.push({ id: wordId, word, tileIds: S.tray.map(t => t.id) });
+    S.wordsFormed++;
     S.tray = [];
     S.bad = false;
     CSFX.word(S.tableau.length);
@@ -283,6 +288,7 @@
     const idx = S.tableau.findIndex(w => w.id === id);
     if (idx < 0) return;
     const [entry] = S.tableau.splice(idx, 1);
+    S.shatters++;
     entry.tileIds.forEach(id => {
       const tile = S.tiles.find(t => t.id === id);
       if (!tile) return;
@@ -301,14 +307,24 @@
   function win() {
     if (!S || S.won) return;
     S.won = true;
-    recordStars(S.n, 1);
+    const elapsedSeconds = Math.max(1, Math.round((Date.now() - S.startTime) / 1000));
+    const par = S.data.size === 9 ? 45 : S.data.size === 16 ? 90 : S.data.size === 20 ? 120 : 180;
+    const withinPar = elapsedSeconds <= par;
+    const stars = S.shatters === 0 && withinPar ? 3 : (S.shatters === 0 || withinPar ? 2 : 1);
+    const starDisplay = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+    const message = stars === 3 ? 'PERFECT' : stars === 2 ? 'WELL DONE' : 'SOLVED';
+    const minutes = Math.floor(elapsedSeconds / 60);
+    const seconds = String(elapsedSeconds % 60).padStart(2, '0');
+    recordStars(S.n, stars);
     syncJourney();
     CSFX.win();
     const hasNext = S.n < LEVELS.length;
     const ov = document.createElement('div');
     ov.className = 'cw-win';
     ov.innerHTML =
-      `<div class="cw-win-title">PUZZLE SOLVED!</div>` +
+      `<div class="cw-win-title">${message}</div>` +
+      `<div class="cw-win-stars" aria-label="${stars} stars">${starDisplay}</div>` +
+      `<div class="cw-win-sub">${minutes}:${seconds} · ${S.shatters} SHATTER${S.shatters === 1 ? '' : 'S'}</div>` +
       `<div class="cw-win-btns">` +
       (hasNext ? `<button class="cw-btn primary" data-act="next">NEXT LEVEL ▶</button>` : '') +
       `<button class="cw-btn" data-act="replay">REPLAY</button>` +
@@ -448,7 +464,7 @@
         const complete = st[lvl.n] || 0;
         const cls = complete ? 'done' : (lvl.n === next ? 'next' : 'lock');
         return `<button class="cw-node ${cls}" type="button" data-level="${lvl.n}">` +
-          `<span>${lvl.n}</span></button>`;
+          `<span>${lvl.n}</span><em>${'★'.repeat(complete)}</em></button>`;
       }).join('') +
       `</div>` +
       `<div class="cw-code-card player-login-switch" role="button" tabindex="0" onclick="openPlayerSignIn()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPlayerSignIn()}" aria-label="Change arcade login">` +
