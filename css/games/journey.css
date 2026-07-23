@@ -2270,6 +2270,16 @@ body.on-journey {
   color: #fff;
 }
 
+.journey-target-panel > button.is-pilot-call {
+  border-color: var(--journey-gold);
+  background: rgba(255,241,166,.14);
+  color: var(--journey-gold);
+}
+
+.journey-target-panel > button.is-pilot-call small {
+  color: #fff;
+}
+
 .journey-cockpit-ship {
   display: grid;
   grid-template-columns: 62px minmax(100px, .65fr) minmax(190px, 1fr) auto;

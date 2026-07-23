@@ -388,6 +388,13 @@
     const canDepart = !!(departure && departure.ok);
     const unreadIntelId = JourneyState.getUnreadTransmissionIds()[0] || null;
     const unreadIntel = unreadIntelId && JourneyData.getTransmission(unreadIntelId);
+    const pilotCallIntel = route.needsPilotCall
+      ? state.log.transmissions
+        .map(id => JourneyData.getTransmission(id))
+        .find(transmission => transmission && transmission.leads.some(lead =>
+          route.available.some(node => node.id === lead.nodeId)
+        )) || null
+      : null;
     const systemWarning = currentShipWarning(state);
     const hero = selectedHero();
     const notice = repairCheck.ok
@@ -434,15 +441,17 @@
         <section class="journey-target-panel ${destination ? (canDepart ? 'is-ready' : 'is-blocked') : ''}">
           <div>
             <span>${unreadIntel ? 'NEW LEAD' : route.needsPilotCall ? "PILOT'S CALL" : destination ? 'NEXT DESTINATION' : 'CURRENT FRONTIER'}</span>
-            <strong>${unreadIntel ? 'READ THE TRANSMISSION' : route.needsPilotCall ? 'CHOOSE A SIGNAL ON THE MAP' : destination ? destination.name : 'AWAITING A NEW LEAD'}</strong>
+            <strong>${unreadIntel ? 'READ THE TRANSMISSION' : route.needsPilotCall ? 'DESTINATION NOT SET' : destination ? destination.name : 'AWAITING A NEW LEAD'}</strong>
             <p>${unreadIntel
               ? 'The signal array found something beyond the Belt.'
-              : route.needsPilotCall ? 'Two routes are open. Choose your next destination on the map.'
+              : route.needsPilotCall ? "Choose which signal to follow in the Pilot's Call."
               : destination ? targetSummary(destination)
               : 'The known trail ends here for now.'}</p>
           </div>
           ${unreadIntel
             ? `<button class="is-intel" type="button" onclick="journeyReadIntel('${unreadIntel.id}')">OPEN INTEL <small>CHOOSE THE NEXT LEAD</small></button>`
+            : route.needsPilotCall && pilotCallIntel
+              ? `<button class="is-pilot-call" type="button" onclick="journeyReadIntel('${pilotCallIntel.id}')">LAUNCH <small>CHOOSE A ROUTE FIRST</small></button>`
             : destination
               ? `<button type="button" onclick="journeyDepart()" ${canDepart ? '' : 'disabled'}>DEPART <small>${canDepart ? `${destination.fuelCost} FUEL · READY` : departure.blockers.map(blocker => blocker.message).join(' · ')}</small></button>`
               : ''}

@@ -121,6 +121,9 @@ test('the cockpit centers the route and moves detail into ship and log views', (
   assert.match(controller, /journey-message-bar/);
   assert.match(controller, /journey-target-panel/);
   assert.match(controller, /JourneyState\.getDepartureReadiness/);
+  assert.match(controller, /class="is-pilot-call"/);
+  assert.match(controller, /CHOOSE A ROUTE FIRST/);
+  assert.match(controller, /pilotCallIntel\.id/);
   assert.match(controller, /is-ready/);
   assert.match(controller, /is-blocked/);
   assert.match(controller, /journeyOpenEngineering/);
