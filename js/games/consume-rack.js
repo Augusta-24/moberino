@@ -60,7 +60,7 @@
     setArcadeModeSelect(false);
     nextTile = 1;
     const tile = value => ({ id: nextTile++, value });
-    state = { n, moves: 0, drag: null, groups: data.groups.map((group, id) => ({ id, tiles: group.map(tile) })), rack: data.rack.map(tile), won: false };
+    state = { n, moves: 0, drag: null, pointer: null, pickedId: null, groups: data.groups.map((group, id) => ({ id, tiles: group.map(tile) })), rack: data.rack.map(tile), won: false };
     sortRummyGroups();
     renderPlay();
   }
@@ -80,10 +80,19 @@
   function tileMarkup(tile, movedId) {
     const suit = mode === 'numbers' ? tile.value[0] : '';
     const mark = { R: '◆', B: '●', G: '▲', Y: '■' }[suit] || '';
-    return `<button class="kt-tile ${suit ? `suit-${suit}` : ''}${tile.id === movedId ? ' kt-just-moved' : ''}" data-tile="${tile.id}"><span>${esc(suit ? tile.value.slice(1) : tile.value.toUpperCase())}</span>${mark ? `<i class="kt-suit-mark" aria-hidden="true">${mark}</i>` : ''}</button>`;
+    return `<button class="kt-tile ${suit ? `suit-${suit}` : ''}${tile.id === movedId ? ' kt-just-moved' : ''}${tile.id === state?.pickedId ? ' kt-picked' : ''}" data-tile="${tile.id}"><span>${esc(suit ? tile.value.slice(1) : tile.value.toUpperCase())}</span>${mark ? `<i class="kt-suit-mark" aria-hidden="true">${mark}</i>` : ''}</button>`;
+  }
+  function slotMarkup(type, index, groupId) {
+    return `<button class="kt-insert-marker kt-tap-slot" type="button" data-slot-type="${type}" data-slot-index="${index}"${groupId == null ? '' : ` data-slot-group="${groupId}"`} aria-label="Place tile here"></button>`;
+  }
+  function tilesWithSlots(tiles, type, groupId, movedId) {
+    if (!state?.pickedId) return tiles.map(tile => tileMarkup(tile, movedId)).join('');
+    return slotMarkup(type, 0, groupId) + tiles.map((tile, index) =>
+      tileMarkup(tile, movedId) + slotMarkup(type, index + 1, groupId)
+    ).join('');
   }
   function groupMarkup(group, movedId) {
-    return `<div class="kt-group ${validGroup(group.tiles) ? 'valid' : 'invalid'}" data-group="${group.id}">${group.tiles.map(tile => tileMarkup(tile, movedId)).join('')}</div>`;
+    return `<div class="kt-group ${validGroup(group.tiles) ? 'valid' : 'invalid'}" data-group="${group.id}">${tilesWithSlots(group.tiles, 'group', group.id, movedId)}</div>`;
   }
 
   function clearDropCue() {
@@ -161,8 +170,7 @@
     if (target.index < remaining.length) container.insertBefore(marker, remaining[target.index]); else container.appendChild(marker);
   }
 
-  function beginDrag(event) {
-    const element = event.target.closest('[data-tile]');
+  function beginDrag(event, element, pointer) {
     if (!element || !state || state.won || event.button > 0) return;
     const source = tileLocation(Number(element.dataset.tile)); if (!source) return;
     event.preventDefault();
@@ -174,7 +182,7 @@
     element.classList.add('kt-drag-origin');
     state.drag = { id: source.tile.id, tile: source.tile, sourceType: source.type, sourceGroupId: source.group?.id,
       sourceIndex: source.index, element, proxy, pointerId: event.pointerId,
-      offsetX: event.clientX - rect.left, offsetY: event.clientY - rect.top, target: null };
+      offsetX: pointer.x - rect.left, offsetY: pointer.y - rect.top, target: null };
     element.setPointerCapture?.(event.pointerId);
     moveProxy(event.clientX, event.clientY);
     showDropCue(event.clientX, event.clientY);
@@ -185,12 +193,25 @@
     drag.proxy.style.transform = `translate3d(${x - drag.offsetX}px,${y - drag.offsetY}px,0)`;
   }
   function dragMove(event) {
-    if (!state?.drag || event.pointerId !== state.drag.pointerId) return;
+    if (!state) return;
+    if (!state.drag && state.pointer?.pointerId === event.pointerId) {
+      if (Math.hypot(event.clientX - state.pointer.x, event.clientY - state.pointer.y) < 8) return;
+      beginDrag(event, state.pointer.element, state.pointer);
+      state.pointer = null;
+    }
+    if (!state.drag || event.pointerId !== state.drag.pointerId) return;
     event.preventDefault(); moveProxy(event.clientX, event.clientY); showDropCue(event.clientX, event.clientY);
   }
 
   function finishDrag(event, cancelled = false) {
-    const drag = state?.drag; if (!drag || event.pointerId !== drag.pointerId) return;
+    if (!state) return;
+    if (!state.drag && state.pointer?.pointerId === event.pointerId) {
+      const id = Number(state.pointer.element.dataset.tile);
+      state.pointer = null;
+      if (!cancelled) pickTile(id);
+      return;
+    }
+    const drag = state.drag; if (!drag || event.pointerId !== drag.pointerId) return;
     event.preventDefault();
     const target = cancelled ? null : drag.target;
     clearDropCue(); drag.proxy.classList.add('dropping'); drag.proxy.style.opacity = '0';
@@ -220,6 +241,40 @@
     update(drag.id);
   }
 
+  function pointerDown(event) {
+    const element = event.target.closest('[data-tile]');
+    if (!element || !state || state.won || event.button > 0) return;
+    state.pointer = { pointerId: event.pointerId, element, x: event.clientX, y: event.clientY };
+    element.setPointerCapture?.(event.pointerId);
+  }
+
+  function pickTile(id) {
+    if (!state || state.won) return;
+    state.pickedId = state.pickedId === id ? null : id;
+    update();
+  }
+
+  function placePicked(target) {
+    if (!state?.pickedId) return;
+    const source = tileLocation(state.pickedId);
+    if (!source) return;
+    const sourceList = source.type === 'rack' ? state.rack : source.group.tiles;
+    const [tile] = sourceList.splice(source.index, 1);
+    if (target.type === 'new-group') {
+      state.groups.push({ id: Math.max(-1, ...state.groups.map(group => group.id)) + 1, tiles: [tile] });
+    } else {
+      const targetList = target.type === 'rack' ? state.rack : state.groups.find(group => group.id === target.groupId)?.tiles;
+      if (!targetList) { sourceList.splice(source.index, 0, tile); return; }
+      let index = target.index;
+      if (sourceList === targetList && source.index < index) index--;
+      targetList.splice(Math.max(0, Math.min(index, targetList.length)), 0, tile);
+    }
+    state.groups = state.groups.filter(group => group.tiles.length);
+    state.moves++;
+    state.pickedId = null;
+    update(tile.id);
+  }
+
   function checkWin() { return !state.rack.length && state.groups.length && state.groups.every(group => validGroup(group.tiles)); }
   function win() { if (state.won) return; state.won = true; record(state.n, 1); sync(); if (typeof SFX !== 'undefined') SFX.win(); const next = state.n < levels().length; const overlay = document.createElement('div'); overlay.className = 'kt-win'; overlay.innerHTML = `<strong>PUZZLE SOLVED!</strong><div>${next ? '<button data-next>NEXT</button>' : ''}<button data-replay>REPLAY</button><button data-journey>JOURNEY</button></div>`; wrap.appendChild(overlay); overlay.addEventListener('click', event => { if (event.target.hasAttribute('data-next')) start(state.n + 1); if (event.target.hasAttribute('data-replay')) start(state.n); if (event.target.hasAttribute('data-journey')) journey(); }); }
 
@@ -227,17 +282,27 @@
     wrap.style.setProperty('--kt', cfg().accent);
     wrap.innerHTML = `<div class="kt-hud"><button data-journey>JOURNEY</button><strong>${cfg().title} · LEVEL ${state.n}</strong><button data-reset>RESET</button></div><div class="kt-table" id="kt-table"></div><button class="kt-check" id="kt-check">CHECK</button><div class="kt-rack" id="kt-rack" data-rack-drop></div>`;
     wrap.querySelector('.kt-hud').addEventListener('click', event => { if (event.target.hasAttribute('data-journey')) journey(); if (event.target.hasAttribute('data-reset')) start(state.n); });
-    wrap.onpointerdown = beginDrag;
+    wrap.onpointerdown = pointerDown;
     wrap.onpointermove = dragMove;
     wrap.onpointerup = finishDrag;
     wrap.onpointercancel = event => finishDrag(event, true);
+    wrap.addEventListener('click', event => {
+      const slot = event.target.closest('[data-slot-type]');
+      if (slot) placePicked({
+        type: slot.dataset.slotType,
+        groupId: Number(slot.dataset.slotGroup),
+        index: Number(slot.dataset.slotIndex),
+      });
+      else if (event.target.closest('[data-new-group]')) placePicked({ type: 'new-group' });
+    });
     wrap.querySelector('#kt-check').addEventListener('click', () => { const table = wrap.querySelector('#kt-table'); if (checkWin()) win(); else { table.classList.remove('bad'); void wrap.offsetWidth; table.classList.add('bad'); if (typeof SFX !== 'undefined') SFX.mismatch(); } });
     update();
   }
   function update(movedId) {
     if (!state || !wrap) return;
-    wrap.querySelector('#kt-table').innerHTML = state.groups.map(group => groupMarkup(group, movedId)).join('');
-    wrap.querySelector('#kt-rack').innerHTML = `<span>RACK</span>${state.rack.map(tile => tileMarkup(tile, movedId)).join('')}`;
+    wrap.querySelector('#kt-table').innerHTML = state.groups.map(group => groupMarkup(group, movedId)).join('') +
+      (state.pickedId ? `<button class="kt-new-group-cue kt-tap-new-group" type="button" data-new-group>NEW GROUP</button>` : '');
+    wrap.querySelector('#kt-rack').innerHTML = `<span>RACK</span>${tilesWithSlots(state.rack, 'rack', null, movedId)}`;
   }
 
   function showHowToPlay() {
@@ -245,8 +310,8 @@
     const overlay = document.createElement('div');
     overlay.className = 'kt-help';
     overlay.innerHTML = words
-      ? `<section role="dialog" aria-modal="true" aria-label="How to play WORDS"><button class="kt-help-close" data-close aria-label="Close">×</button><h2>HOW TO PLAY</h2><p>Drag tiles between groups, or onto empty tabletop space to make a new group.</p><p>Use every tile. Each group must spell a real word with at least <strong>3 LETTERS</strong>.</p><p>Tap <strong>CHECK</strong> when the rack is empty.</p></section>`
-      : `<section role="dialog" aria-modal="true" aria-label="How to play RUMMY"><button class="kt-help-close" data-close aria-label="Close">×</button><h2>HOW TO PLAY</h2><p>Drag tiles between groups, or onto empty tabletop space to make a new group.</p><dl><div><dt>RUN / STRAIGHT</dt><dd>3 or more consecutive numbers in the <strong>same color</strong>.</dd></div><div><dt>SET</dt><dd>3 or more matching numbers, with <strong>one tile of each color</strong>.</dd></div></dl><p>Use every tile, then tap <strong>CHECK</strong>.</p></section>`;
+      ? `<section role="dialog" aria-modal="true" aria-label="How to play WORDS"><button class="kt-help-close" data-close aria-label="Close">×</button><h2>HOW TO PLAY</h2><p>Tap a tile, then tap a glowing slot to place it. You can also drag tiles.</p><p>Use every tile. Each group must spell a real word with at least <strong>3 LETTERS</strong>.</p><p>Tap <strong>CHECK</strong> when the rack is empty.</p></section>`
+      : `<section role="dialog" aria-modal="true" aria-label="How to play RUMMY"><button class="kt-help-close" data-close aria-label="Close">×</button><h2>HOW TO PLAY</h2><p>Tap a tile, then tap a glowing slot to place it. You can also drag tiles.</p><dl><div><dt>RUN / STRAIGHT</dt><dd>3 or more consecutive numbers in the <strong>same color</strong>.</dd></div><div><dt>SET</dt><dd>3 or more matching numbers, with <strong>one tile of each color</strong>.</dd></div></dl><p>Use every tile, then tap <strong>CHECK</strong>.</p></section>`;
     overlay.addEventListener('click', event => { if (event.target === overlay || event.target.hasAttribute('data-close')) overlay.remove(); });
     wrap.appendChild(overlay);
   }
