@@ -806,6 +806,27 @@
 
   function miniEl() { return document.getElementById('pet-mini'); }
 
+  function showMini() {
+    const el = miniEl();
+    if (!el) return;
+    el.classList.add('show');
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'pet-mini-close';
+    close.setAttribute('aria-label', 'Leave mini-game');
+    close.textContent = '✕';
+    close.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (mini && mini.key) {
+        pet.cd[mini.key] = Date.now() + COOLDOWN[mini.key];
+        schedulePersist();
+      }
+      endMini();
+    };
+    el.appendChild(close);
+  }
+
   function endMini() {
     const el = miniEl();
     if (mini) {
@@ -878,7 +899,7 @@
         <div class="pet-feed-track" id="pet-feed-track"><div class="pet-feed-basket" id="pet-feed-basket"></div></div>
       </div>
       <div class="pet-mini-count"><span id="pet-catch-n">0</span>/${goal} FED</div>`;
-    el.classList.add('show');
+    showMini();
     const field = document.getElementById('pet-catch-field');
     const track = document.getElementById('pet-feed-track');
     const basket = document.getElementById('pet-feed-basket');
@@ -990,7 +1011,7 @@
       <div class="pet-whack-grid" id="pet-whack-grid">${Array.from({ length: SPOTS }, () =>
         `<button class="pet-whack-hole" type="button"><span class="pet-whack-toy">${iconImg(ICON.play, 30)}</span></button>`).join('')}</div>
       <div class="pet-whack-score-row"><div class="pet-mini-count"><span id="pet-whack-n">0</span>/${goal} BOPS</div><div class="pet-whack-combo" id="pet-whack-combo"></div></div>`;
-    el.classList.add('show');
+    showMini();
     const stage = stageIdx();
     const popCount = stage === 1 ? 1 : stage === 2 ? 2 : 2 + (Math.random() < 0.5 ? 0 : 1);
     const windowMs = stage === 1 ? 1200 : stage === 2 ? 900 : 700;
@@ -1062,7 +1083,7 @@
           </div>`).join('')}
       </div>
       <div class="pet-mini-count"><span id="pet-rest-n">0</span>/${goal} LULLABY</div>`;
-    el.classList.add('show');
+    showMini();
     const stage = stageIdx();
     const sequenceLength = stage + 2;
     const award = stage === 1 ? 2 : stage === 2 ? 3 : 4;
@@ -1163,7 +1184,7 @@
           Array.from({ length: TOTAL }, (_, i) => `<i class="pet-foil-cell" data-index="${i}"></i>`).join('')}</div>
       </div>
       <div class="pet-mini-count"><span id="pet-scratch-n">0</span>% CLEARED</div>`;
-    el.classList.add('show');
+    showMini();
     const nEl = document.getElementById('pet-scratch-n');
     mini = { key: 'pet', cleared: 0, total: TOTAL, goal, down: false, lastNote: 0, bonusCells };
     function clearAt(x, y) {
@@ -1215,7 +1236,7 @@
         <div class="pet-guard-track" id="pet-guard-track"><div class="pet-guard-ship" id="pet-guard-ship">${iconImg(ICON.safety, 26)}</div></div>
       </div>
       <div class="pet-mini-count"><span id="pet-guard-n">0</span>/${goal} DODGED</div>`;
-    el.classList.add('show');
+    showMini();
     const field = document.getElementById('pet-guard-field');
     const track = document.getElementById('pet-guard-track');
     const ship = document.getElementById('pet-guard-ship');

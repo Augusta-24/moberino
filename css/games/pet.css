@@ -355,11 +355,14 @@
 /* ── Action buttons (5: FEED/PLAY/REST/PET/GUARD, 3+2 wrap) ─── */
 .pet-actions {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 7px;
 }
-.pet-actions .pet-act-btn:nth-child(4) { grid-column: 1 / span 1.5; }
-.pet-actions .pet-act-btn:nth-child(5) { grid-column: 2.5 / span 1.5; }
+.pet-actions .pet-act-btn:nth-child(1) { grid-column: 1 / span 2; }
+.pet-actions .pet-act-btn:nth-child(2) { grid-column: 3 / span 2; }
+.pet-actions .pet-act-btn:nth-child(3) { grid-column: 5 / span 2; }
+.pet-actions .pet-act-btn:nth-child(4) { grid-column: 1 / span 3; }
+.pet-actions .pet-act-btn:nth-child(5) { grid-column: 4 / span 3; }
 .pet-act-btn {
   display: flex;
   flex-direction: column;
@@ -518,6 +521,23 @@
   -webkit-user-select: none;
 }
 .pet-mini.show { display: flex; }
+.pet-mini-close {
+  position: absolute;
+  right: 10px; top: 10px;
+  z-index: 70;
+  width: 31px; height: 31px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(242,239,232,0.35);
+  background: rgba(5,2,16,0.62);
+  color: rgba(242,239,232,0.72);
+  font-family: 'VCR', monospace;
+  font-size: 13px;
+  cursor: pointer;
+}
+.pet-mini-close:active { transform: scale(0.92); }
 .pet-mini .pet-mini-count {
   font-family: 'VCR', monospace;
   font-size: 12px;
