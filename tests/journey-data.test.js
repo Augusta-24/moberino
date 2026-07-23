@@ -89,18 +89,20 @@ test('navigation offers only new stops and Lantern arrival stays on the ship scr
   assert.equal(controller.includes('function renderFuelStop'), false);
 });
 
-test('the ship keeps mission purpose and scrap inventory visible', () => {
+test('the cockpit centers the route and moves detail into ship and log views', () => {
   const controller = fs.readFileSync(
     path.join(__dirname, '..', 'js', 'games', 'journey.js'),
     'utf8'
   );
 
-  assert.match(controller, /journey-mission-brief/);
-  assert.match(controller, /journey-inventory-strip/);
-  assert.match(controller, /state\.currency\.salvage/);
-  assert.match(controller, /NEXT MISSION/);
-  assert.match(controller, /INSTALL 1 UPGRADE FIRST/);
-  assert.match(controller, /INSTALL FIRST UPGRADE · FREE/);
+  assert.match(controller, /journey-cockpit-map/);
+  assert.match(controller, /journey-message-bar/);
+  assert.match(controller, /journey-target-panel/);
+  assert.match(controller, /journeyOpenEngineering/);
+  assert.match(controller, /journeyOpenLog/);
+  assert.match(controller, /renderJourneyIntro/);
+  assert.match(controller, /selectedHero/);
+  assert.match(controller, /STAR CRYSTAL RECOVERED/);
 });
 
 test('Journey combat is isolated from storage and exposes lifecycle methods', () => {

@@ -5,7 +5,7 @@
 
   const GAME_ID = 'journey';
   const SAVE_KEY = 'moberinoJourneySave';
-  const SAVE_VERSION = 2;
+  const SAVE_VERSION = 3;
   const OFFLINE_CAP_MS = 24 * 60 * 60 * 1000;
   const POWER_PER_HOUR = 12;
   const PILOT_PER_HOUR = 10;
@@ -27,7 +27,7 @@
       maxPower: 100,
       pilot: 100
     },
-    currency: { salvage: 0 },
+    currency: { salvage: 0, crystals: 0 },
     upgrades: {
       fuelTankLevel: 0,
       hullLevel: 0,
@@ -122,6 +122,7 @@
     resources.power = clamp(finiteNumber(resources.power, resources.maxPower), 0, resources.maxPower);
     resources.pilot = clamp(finiteNumber(resources.pilot, 100), 0, 100);
     next.currency.salvage = Math.max(0, finiteNumber(next.currency.salvage, 0));
+    next.currency.crystals = Math.max(0, Math.floor(finiteNumber(next.currency.crystals, 0)));
 
     Object.keys(DEFAULT_SAVE.upgrades).forEach(key => {
       next.upgrades[key] = Math.max(0, Math.floor(finiteNumber(next.upgrades[key], 0)));
@@ -350,6 +351,29 @@
     return state.log.transmissions.filter(id => !state.log.readTransmissions.includes(id));
   }
 
+  function completeIntro() {
+    if (!state) return mutationResult(false, 'no-save');
+    if (state.settings.tutorialComplete) return mutationResult(false, 'already-complete');
+    state.settings.tutorialComplete = true;
+    saveJourneyState('complete-intro');
+    return mutationResult(true, 'intro-complete');
+  }
+
+  function awardCrystal(crystalId) {
+    if (!state || typeof crystalId !== 'string') return mutationResult(false, 'invalid-crystal');
+    const discoveryId = `crystal:${crystalId}`;
+    if (state.log.discoveries.includes(discoveryId)) {
+      return mutationResult(false, 'already-recovered', { crystalId });
+    }
+    addUnique(state.log.discoveries, discoveryId);
+    state.currency.crystals += 1;
+    saveJourneyState(`crystal-${crystalId}`);
+    return mutationResult(true, 'crystal-recovered', {
+      crystalId,
+      crystals: state.currency.crystals
+    });
+  }
+
   function resolvePeacefulNode(options) {
     if (!state || !options || typeof options.nodeId !== 'string') {
       return mutationResult(false, 'invalid-resolution');
@@ -560,6 +584,8 @@
     addTransmission,
     markTransmissionRead,
     getUnreadTransmissionIds,
+    completeIntro,
+    awardCrystal,
     resolvePeacefulNode,
     refuelToMax,
     restPilot,

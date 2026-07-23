@@ -7,9 +7,112 @@
   let active = false;
   let shipNotice = '';
   let maintenanceNotice = '';
+  let storyTimers = [];
+
+  const MAP_POINTS = {
+    'home-orbit': [58, 138],
+    'fuel-stop-1': [170, 116],
+    'scrap-belt': [282, 104],
+    'distress-signal': [400, 55],
+    'abandoned-cache': [400, 165],
+    'repair-moon': [510, 108],
+    'ogre-gate': [606, 108],
+    'first-settlement': [706, 108]
+  };
 
   function host() {
     return document.getElementById(hostId);
+  }
+
+  function selectedHero() {
+    if (typeof GAME_CHARS === 'undefined' || !GAME_CHARS.length) {
+      return { name: 'PILOT', color: '#69d7ff', emoji: '✦' };
+    }
+    const index = typeof getGlobalChar === 'function' ? getGlobalChar() : 0;
+    return GAME_CHARS[index] || GAME_CHARS[0];
+  }
+
+  function heroPortrait(expression) {
+    const hero = selectedHero();
+    const face = typeof charFace === 'function'
+      ? charFace(hero, expression || 'normal')
+      : `<span>${hero.emoji || '✦'}</span>`;
+    return `<div class="journey-story-hero" style="--hero-color:${hero.color}">${face}</div>`;
+  }
+
+  function crystalCluster(count) {
+    const total = Math.max(1, count || 7);
+    return `<div class="journey-crystal-cluster">${Array.from({ length: total }, (_, index) =>
+      `<i style="--crystal-index:${total === 1 ? 3 : index}"></i>`
+    ).join('')}</div>`;
+  }
+
+  function clearStoryTimers() {
+    storyTimers.forEach(clearTimeout);
+    storyTimers = [];
+  }
+
+  function renderJourneyIntro() {
+    const root = host();
+    const state = JourneyState.getState();
+    if (!root || !state || !active) return;
+    clearStoryTimers();
+    const hero = selectedHero();
+    const beats = [
+      {
+        eyebrow: 'A QUIET MORNING · HOME ORBIT',
+        title: `${hero.name} FOUND AN EMPTY VAULT`,
+        visual: `${heroPortrait('sad')}${crystalCluster(7)}`,
+        line: 'The seven Star Crystals were gone.'
+      },
+      {
+        eyebrow: 'THE THIEVES LEFT ONE TRAIL',
+        title: 'A SIGNAL LEADING OUTWARD',
+        visual: `<div class="journey-story-signal"><span></span><span></span><span></span></div>`,
+        line: 'Bosses, raiders, and old ruins stand between us and the truth.'
+      },
+      {
+        eyebrow: 'THE WAYFARER · READY TO LAUNCH',
+        title: `${hero.name} TAKES THE HUNT`,
+        visual: `<div class="journey-story-ship">${shipIllustration('journey-intro-ship')}</div>`,
+        line: 'Follow the route. Recover the crystals. Bring our friends home.'
+      },
+      {
+        eyebrow: 'FIRST LEAD · LANTERN STATION',
+        title: 'FUEL UP. FOLLOW THE SIGNAL.',
+        visual: `<div class="journey-story-route"><i></i><b></b><i></i></div>`,
+        line: 'Everything begins with the next stop.'
+      }
+    ];
+    root.innerHTML = `
+      <main class="journey-story-screen">
+        <div class="journey-starfield" aria-hidden="true"></div>
+        <div id="journey-story-stage" class="journey-story-stage" aria-live="polite"></div>
+        <button class="journey-story-skip" type="button" onclick="journeyFinishIntro()">SKIP STORY</button>
+      </main>`;
+    const stage = document.getElementById('journey-story-stage');
+    let index = 0;
+    function showBeat() {
+      if (!stage || !document.body.contains(stage) || index >= beats.length) {
+        window.journeyFinishIntro();
+        return;
+      }
+      const beat = beats[index++];
+      stage.classList.remove('is-visible');
+      const swapTimer = setTimeout(() => {
+        if (!document.body.contains(stage)) return;
+        stage.innerHTML = `
+          <div class="journey-story-eyebrow">${beat.eyebrow}</div>
+          <div class="journey-story-title">${beat.title}</div>
+          <div class="journey-story-visual">${beat.visual}</div>
+          <div class="journey-story-line">${beat.line}</div>`;
+        requestAnimationFrame(() => stage.classList.add('is-visible'));
+      }, 180);
+      storyTimers.push(swapTimer);
+      const nextTimer = setTimeout(showBeat, index === beats.length ? 3000 : 2600);
+      storyTimers.push(nextTimer);
+    }
+    showBeat();
   }
 
   function playMenuSound() {
@@ -53,7 +156,7 @@
           <div class="journey-ship-mark" aria-hidden="true">
             ${shipIllustration('journey-menu-ship')}
           </div>
-          <p>Keep the ship running. Choose a stop. Push farther out.</p>
+          <p>Hunt the stolen Star Crystals. Follow the route. Bring your friends home.</p>
           <div class="journey-menu-actions">
             <button class="journey-primary-btn" type="button" onclick="journeyContinue()" ${canContinue ? '' : 'disabled'}>
               ${canContinue ? 'CONTINUE JOURNEY' : 'NO JOURNEY SAVED'}
@@ -174,6 +277,48 @@
     renderShip();
   }
 
+  function cockpitMap(state, location, route) {
+    const revealedIds = new Set(JourneyData.routeNodes.filter(node =>
+      node.id === state.currentNodeId ||
+      state.route.visitedNodes.includes(node.id) ||
+      state.route.unlockedNodes.includes(node.id)
+    ).map(node => node.id));
+    const paths = [];
+    JourneyData.routeNodes.forEach(node => {
+      node.connections.forEach(connectionId => {
+        if (node.id > connectionId) return;
+        const from = MAP_POINTS[node.id];
+        const to = MAP_POINTS[connectionId];
+        const known = revealedIds.has(node.id) && revealedIds.has(connectionId);
+        if (from && to) paths.push(`<path class="${known ? 'is-known' : 'is-unknown'}" d="M${from[0]} ${from[1]} L${to[0]} ${to[1]}"></path>`);
+      });
+    });
+    const nodes = JourneyData.routeNodes.map(node => {
+      const point = MAP_POINTS[node.id];
+      if (!point) return '';
+      const revealed = revealedIds.has(node.id);
+      const selectable = route.available.some(candidate => candidate.id === node.id);
+      const classes = [
+        !revealed ? 'is-unknown' : '',
+        node.id === location.id ? 'is-current' : '',
+        state.route.completedNodes.includes(node.id) ? 'is-cleared' : '',
+        route.selected && route.selected.id === node.id ? 'is-selected' : '',
+        selectable ? 'is-selectable' : ''
+      ].filter(Boolean).join(' ');
+      return `
+        <g class="journey-map-node ${classes}" transform="translate(${point[0]} ${point[1]})"
+          ${selectable ? `onclick="journeyChooseDestination('${node.id}')" role="button" tabindex="0"` : ''}>
+          <circle r="${node.id === location.id ? 13 : 10}"></circle>
+          <text y="${point[1] < 80 ? 30 : -18}">${revealed ? node.shortName : '?'}</text>
+        </g>`;
+    }).join('');
+    return `
+      <svg class="journey-cockpit-map" viewBox="0 0 760 220" role="img" aria-label="Journey route map">
+        <g class="journey-map-paths">${paths.join('')}</g>
+        ${nodes}
+      </svg>`;
+  }
+
   function renderShip() {
     const root = host();
     const repairCheck = JourneyState.completeReadyRepair();
@@ -184,10 +329,79 @@
     }
     const r = state.resources;
     const location = currentNode(state);
-    const notices = JourneyState.getReturnSummary();
-    if (repairCheck.ok) notices.unshift('Hull repairs are complete.');
-    if (shipNotice) notices.unshift(shipNotice);
+    const route = destinationState(state, location);
+    const destination = route.selected;
+    const canDepart = destination && r.fuel >= destination.fuelCost;
+    const unreadIntelId = JourneyState.getUnreadTransmissionIds()[0] || null;
+    const unreadIntel = unreadIntelId && JourneyData.getTransmission(unreadIntelId);
+    const hero = selectedHero();
+    const notice = repairCheck.ok
+      ? 'HULL REPAIRS COMPLETE'
+      : shipNotice || (state.passengers.active.includes('pip')
+        ? 'PIP IS ABOARD · THE CRYSTAL TRAIL CONTINUES'
+        : `CRYSTAL TRAIL · CURRENT POSITION: ${location.name.toUpperCase()}`);
     shipNotice = '';
+    const shipCondition = state.timers.repairCompleteAt
+      ? 'REPAIRING'
+      : r.hull < 45 ? 'DAMAGED' : r.hull < r.maxHull ? 'WORN' : 'READY';
+    root.innerHTML = `
+      <main class="journey-cockpit" aria-labelledby="journey-cockpit-title">
+        <header class="journey-cockpit-header">
+          <button type="button" onclick="journeyMenu()">◀ MENU</button>
+          <div><span>CURRENT · ${location.name.toUpperCase()}</span><strong id="journey-cockpit-title">THE WAYFARER</strong></div>
+          <div class="journey-pilot-chip" style="--hero-color:${hero.color}">
+            <span>${typeof charFace === 'function' ? charFace(hero, 'normal') : hero.emoji}</span>
+            <small>${hero.name}</small>
+          </div>
+        </header>
+        <button class="journey-message-bar" type="button" onclick="${unreadIntel ? `journeyReadIntel('${unreadIntel.id}')` : 'journeyOpenLog()'}">
+          <span>${unreadIntel ? 'INCOMING INTEL' : 'SHIP MESSAGE'}</span>
+          <strong>${unreadIntel ? unreadIntel.title : notice}</strong>
+          <i>${unreadIntel ? 'OPEN →' : 'LOG →'}</i>
+        </button>
+        <section class="journey-map-panel">
+          <div class="journey-map-title"><span>CHAPTER ONE · CRYSTAL TRAIL</span><strong>${state.currency.crystals} / 7 CRYSTALS</strong></div>
+          ${cockpitMap(state, location, route)}
+        </section>
+        <section class="journey-target-panel">
+          <div>
+            <span>${unreadIntel ? 'NEW LEAD' : route.needsPilotCall ? "PILOT'S CALL" : destination ? 'NEXT TARGET' : 'CURRENT FRONTIER'}</span>
+            <strong>${unreadIntel ? 'READ THE TRANSMISSION' : route.needsPilotCall ? 'CHOOSE A SIGNAL ON THE MAP' : destination ? destination.name : 'AWAITING A NEW LEAD'}</strong>
+            <p>${unreadIntel
+              ? 'The signal array found something beyond the Belt.'
+              : route.needsPilotCall ? 'Two routes are open. Select the lead you want to follow.'
+              : destination ? destination.description
+              : 'The known trail ends here for now.'}</p>
+          </div>
+          ${unreadIntel
+            ? `<button type="button" onclick="journeyReadIntel('${unreadIntel.id}')">OPEN INTEL</button>`
+            : destination
+              ? `<button type="button" onclick="journeyDepart()" ${canDepart ? '' : 'disabled'}>DEPART <small>${destination.fuelCost} FUEL</small></button>`
+              : ''}
+        </section>
+        <section class="journey-cockpit-ship">
+          <div class="journey-cockpit-ship-visual">${shipIllustration('journey-cockpit-ship-svg')}</div>
+          <div class="journey-cockpit-condition"><span>WAYFARER</span><strong>${shipCondition}</strong>${state.passengers.active.includes('pip') ? '<small>PIP ABOARD</small>' : ''}</div>
+          <div class="journey-quick-status">
+            <span>HULL<strong>${Math.round(r.hull)}</strong></span>
+            <span>FUEL<strong>${Math.round(r.fuel)}</strong></span>
+            <span>SCRAP<strong>${Math.round(state.currency.salvage)}</strong></span>
+          </div>
+          <div class="journey-cockpit-actions">
+            <button type="button" onclick="journeyOpenEngineering()">OPEN SHIP</button>
+            <button type="button" onclick="journeyOpenLog()">LOG</button>
+          </div>
+        </section>
+      </main>`;
+  }
+
+  function renderEngineering() {
+    const root = host();
+    JourneyState.completeReadyRepair();
+    const state = JourneyState.getState();
+    if (!root || !state || !active) return;
+    const r = state.resources;
+    const location = currentNode(state);
     const repairUnderway = !!state.timers.repairCompleteAt;
     const repairSeconds = repairUnderway
       ? Math.max(1, Math.ceil((state.timers.repairCompleteAt - Date.now()) / 1000))
@@ -195,70 +409,12 @@
     const canRepair = repairUnderway || (r.hull < r.maxHull && state.currency.salvage >= 5);
     const canRefuel = location.id === 'fuel-stop-1' && r.fuel < r.maxFuel;
     const canRest = r.pilot < 100;
-    const route = destinationState(state, location);
-    const destination = route.selected;
-    const canDepart = destination && r.fuel >= destination.fuelCost;
-    const unreadIntelId = JourneyState.getUnreadTransmissionIds()[0] || null;
-    const unreadIntel = unreadIntelId && JourneyData.getTransmission(unreadIntelId);
-    const mission = missionBrief(state, location, route, unreadIntel);
-    const chapterProgress = state.route.completedNodes.filter(id =>
-      ['fuel-stop-1', 'scrap-belt', 'distress-signal', 'abandoned-cache', 'repair-moon'].includes(id)
-    ).length;
     root.innerHTML = `
-      <main class="journey-ship-screen" aria-labelledby="journey-ship-title">
-        <header class="journey-topbar">
-          <button class="journey-arcade-back" type="button" onclick="journeyMenu()">◀ MENU</button>
-          <div>
-            <span>CURRENT · ${location.name.toUpperCase()}</span>
-            <strong id="journey-ship-title">THE WAYFARER</strong>
-          </div>
-          <span class="journey-save-status">SAVED</span>
-        </header>
-        <section class="journey-mission-brief">
-          <div class="journey-mission-heading">
-            <span>MISSION · CHAPTER ONE · ${chapterProgress} CLEARED</span>
-            <strong>${mission.title}</strong>
-          </div>
-          <p>${mission.why}</p>
-          <small>${mission.action}</small>
-        </section>
-        <section class="journey-inventory-strip" aria-label="Current supplies">
-          <span>SCRAP<strong>${Math.round(state.currency.salvage)}</strong></span>
-          <span>FUEL<strong>${Math.round(r.fuel)} / ${Math.round(r.maxFuel)}</strong></span>
-          <span>HULL<strong>${Math.round(r.hull)} / ${Math.round(r.maxHull)}</strong></span>
-        </section>
-        ${unreadIntel ? `
-          <section class="journey-intel-alert">
-            <div><span>INCOMING INTEL</span><strong>${unreadIntel.title}</strong></div>
-            <button type="button" onclick="journeyReadIntel('${unreadIntel.id}')">READ →</button>
-          </section>` : ''}
-        <section class="journey-destination-section">
-          <div class="journey-destination-copy">
-            <span>NEXT DESTINATION</span>
-            <strong>${destination ? destination.name : route.needsPilotCall ? "PILOT'S CALL" : 'ROUTE CLOSED'}</strong>
-            <small>${destination
-              ? `${destination.fuelCost} FUEL · ${destination.distance} DISTANCE`
-              : route.needsPilotCall ? 'CHOOSE YOUR COURSE' : 'NO ONWARD STOP IS OPEN'}</small>
-          </div>
-          ${route.available.length > 1 ? `
-            <button class="journey-nav-button ${route.needsPilotCall ? 'is-required' : ''}" type="button" onclick="journeyRoute()" aria-label="Choose destination">
-              <span aria-hidden="true">⌖</span><small>NAV</small>
-            </button>` : ''}
-          <button class="journey-depart-button" type="button" onclick="journeyDepart()" ${canDepart ? '' : 'disabled'}>
-            DEPART <small>${destination ? destination.shortName : route.needsPilotCall ? 'CHOOSE ROUTE' : 'UNAVAILABLE'}</small>
-          </button>
-        </section>
-        ${notices.length ? `<div class="journey-return-note">${notices.join(' ')}</div>` : ''}
-        ${state.passengers.active.includes('pip') ? `
-          <div class="journey-passenger-note"><strong>PASSENGER ABOARD · PIP</strong><span>“I thought nobody heard the beacon.”</span></div>` : ''}
-        <section class="journey-ship-bay">
-          <div class="journey-ship-visual" aria-label="Your patched-up ship">
-            <div class="journey-orbit-line"></div>
-            <div class="journey-large-ship">${shipIllustration('journey-home-ship')}</div>
-            <span>PATCHED · READY</span>
-          </div>
-          <div class="journey-status-panel">
-            <div class="journey-section-label">SHIP STATUS</div>
+      <main class="journey-engineering">
+        <header><button type="button" onclick="journeyShip()">◀ COCKPIT</button><div><span>THE WAYFARER</span><strong>SHIP</strong></div><b>${state.currency.salvage} SCRAP</b></header>
+        <section class="journey-engineering-body">
+          <div class="journey-engineering-ship">${shipIllustration('journey-engineering-ship-svg')}</div>
+          <div class="journey-engineering-status">
             ${resourceCard('HULL', r.hull, r.maxHull, 'is-hull')}
             ${resourceCard('FUEL', r.fuel, r.maxFuel, 'is-fuel')}
             ${resourceCard('POWER', r.power, r.maxPower, 'is-power')}
@@ -266,9 +422,9 @@
           </div>
         </section>
         <nav class="journey-ship-actions" aria-label="Ship actions">
-          <button type="button" onclick="journeyRepair()" ${canRepair ? '' : 'disabled'}>REPAIR <small>${repairUnderway ? `${repairSeconds} SEC · CHECK` : r.hull >= r.maxHull ? 'FULL' : state.currency.salvage < 5 ? 'NEEDS 5 SCRAP' : '5 SCRAP · 45 SEC'}</small></button>
-          <button type="button" onclick="journeyRefuel()" ${canRefuel ? '' : 'disabled'}>REFUEL <small>${r.fuel >= r.maxFuel ? 'FULL' : location.id !== 'fuel-stop-1' ? 'AT STATION' : 'FILL'}</small></button>
-          <button type="button" onclick="journeyRest()" ${canRest ? '' : 'disabled'}>REST <small>${canRest ? '+25' : 'READY'}</small></button>
+          <button type="button" onclick="journeyEngineeringRepair()" ${canRepair ? '' : 'disabled'}>REPAIR <small>${repairUnderway ? `${repairSeconds} SEC · CHECK` : r.hull >= r.maxHull ? 'HULL FULL' : '5 SCRAP · 45 SEC'}</small></button>
+          <button type="button" onclick="journeyEngineeringRefuel()" ${canRefuel ? '' : 'disabled'}>REFUEL <small>${canRefuel ? 'STATION SERVICE' : 'NOT AVAILABLE'}</small></button>
+          <button type="button" onclick="journeyEngineeringRest()" ${canRest ? '' : 'disabled'}>REST <small>${canRest ? '+25 PILOT' : 'PILOT READY'}</small></button>
         </nav>
       </main>`;
   }
@@ -340,6 +496,50 @@
       </main>`;
   }
 
+  function arrivalLine(node) {
+    if (node.id === 'fuel-stop-1') return 'Tanks are full. The crystal signal continues through the Scrap Belt.';
+    if (node.id === 'scrap-belt') return 'The trail enters that debris field. Clear a path and keep the signal in sight.';
+    if (node.id === 'distress-signal') return 'That beacon is alive. Someone is trapped ahead.';
+    if (node.id === 'abandoned-cache') return 'The cache ping matches the thieves’ route. Let’s see what they left behind.';
+    if (node.id === 'repair-moon') return 'Ogre Gate is ahead. The Wayfarer needs to be ready.';
+    return `We made it to ${node.name}. The crystal trail continues from here.`;
+  }
+
+  function renderArrivalScene(node) {
+    const root = host();
+    if (!root || !node || !active) return;
+    const hero = selectedHero();
+    root.innerHTML = `
+      <main class="journey-arrival-scene">
+        <div class="journey-starfield" aria-hidden="true"></div>
+        <div class="journey-arrival-location"><span>ARRIVING</span><strong>${node.name}</strong></div>
+        <div class="journey-arrival-flight">${shipIllustration('journey-arrival-ship-svg')}</div>
+        <section class="journey-arrival-dialogue">
+          <div class="journey-arrival-speaker" style="--hero-color:${hero.color}">${typeof charFace === 'function' ? charFace(hero, 'normal') : hero.emoji}</div>
+          <div><span>${hero.name}</span><p>“${arrivalLine(node)}”</p></div>
+        </section>
+        <button type="button" onclick="journeyContinueArrival()">CONTINUE →</button>
+      </main>`;
+  }
+
+  function renderCrystalRecovery() {
+    const root = host();
+    const hero = selectedHero();
+    const state = JourneyState.getState();
+    if (!root || !state || !active) return;
+    root.innerHTML = `
+      <main class="journey-story-screen">
+        <div class="journey-starfield" aria-hidden="true"></div>
+        <div class="journey-story-stage is-visible">
+          <div class="journey-story-eyebrow">ABANDONED CACHE · HIDDEN COMPARTMENT</div>
+          <div class="journey-story-title">STAR CRYSTAL RECOVERED</div>
+          <div class="journey-story-visual">${crystalCluster(1)}</div>
+          <div class="journey-story-line">${hero.name}: “One down. Six still out there.”</div>
+          <button class="journey-primary-btn" type="button" onclick="journeyFinishCrystalBeat()">RETURN TO COCKPIT · ${state.currency.crystals} / 7</button>
+        </div>
+      </main>`;
+  }
+
   function serviceFuelStop() {
     const state = JourneyState.getState();
     if (!state) return;
@@ -347,7 +547,7 @@
     const refuel = JourneyState.refuelToMax('lantern-station-service');
     if (firstVisit) JourneyState.completeNode('fuel-stop-1', ['scrap-belt']);
     shipNotice = `DOCKED AT LANTERN STATION · +${Math.round(refuel.gained)} FUEL${firstVisit ? ' · SCRAP BELT UNLOCKED' : ''}`;
-    renderShip();
+    renderArrivalScene(JourneyData.getNode('fuel-stop-1'));
   }
 
   function renderIntel(transmissionId) {
@@ -380,6 +580,35 @@
       </main>`;
   }
 
+  function renderLog() {
+    const root = host();
+    const state = JourneyState.getState();
+    if (!root || !state || !active) return;
+    const transmissions = state.log.transmissions.map(id => JourneyData.getTransmission(id)).filter(Boolean);
+    root.innerHTML = `
+      <main class="journey-log-screen">
+        <header><button type="button" onclick="journeyShip()">◀ COCKPIT</button><div><span>WAYFARER ARCHIVE</span><strong>JOURNEY LOG</strong></div><b>${state.currency.crystals} / 7 ✦</b></header>
+        <section>
+          <div class="journey-log-summary">
+            <span>DISTANCE<strong>${Math.round(state.totalDistance)}</strong></span>
+            <span>CRYSTALS<strong>${state.currency.crystals} / 7</strong></span>
+            <span>FRIENDS<strong>${state.passengers.rescued.length}</strong></span>
+          </div>
+          <h2>MESSAGES</h2>
+          <div class="journey-log-list">
+            ${transmissions.length ? transmissions.map(transmission => `
+              <button type="button" onclick="journeyReadIntel('${transmission.id}')">
+                <span>${transmission.source}</span><strong>${transmission.title}</strong><i>OPEN →</i>
+              </button>`).join('') : '<p>No messages yet.</p>'}
+          </div>
+          <h2>DISCOVERIES</h2>
+          <p>${state.log.discoveries.length
+            ? state.log.discoveries.map(id => id.replace(/^crystal:/, 'CRYSTAL · ').replaceAll('-', ' ').toUpperCase()).join(' · ')
+            : 'The hunt has only just begun.'}</p>
+        </section>
+      </main>`;
+  }
+
   function renderCache(node) {
     const root = host();
     const state = JourneyState.getState();
@@ -392,7 +621,7 @@
           <p>The cache is old but intact. Its beacon was meant for a ship that never returned.</p>
           <div class="journey-cache-reward">
             <span>RECOVERABLE</span>
-            <strong>18 SALVAGE · 6 POWER</strong>
+            <strong>1 STAR CRYSTAL · 18 SALVAGE</strong>
           </div>
           <button class="journey-primary-btn" type="button" onclick="journeyCollectCache()">RECOVER SUPPLIES</button>
           <button class="journey-text-btn" type="button" onclick="journeyShip()">RETURN TO SHIP</button>
@@ -609,15 +838,22 @@
 
   window.journeyContinue = function () {
     playMenuSound();
-    JourneyState.load();
-    renderCurrentLocation();
+    const state = JourneyState.load();
+    if (state && !state.settings.tutorialComplete) renderJourneyIntro();
+    else renderCurrentLocation();
   };
 
   window.journeyNew = function () {
     playMenuSound();
     if (JourneyState.hasSave() && !window.confirm('START A NEW JOURNEY?\\nYour current Journey save will be replaced.')) return;
     JourneyState.createNew();
-    renderCurrentLocation();
+    renderJourneyIntro();
+  };
+
+  window.journeyFinishIntro = function () {
+    clearStoryTimers();
+    JourneyState.completeIntro();
+    renderShip();
   };
 
   window.journeyHowToPlay = function () {
@@ -628,6 +864,36 @@
   window.journeyShip = function () {
     playMenuSound();
     renderShip();
+  };
+
+  window.journeyOpenEngineering = function () {
+    playMenuSound();
+    renderEngineering();
+  };
+
+  window.journeyOpenLog = function () {
+    playMenuSound();
+    renderLog();
+  };
+
+  window.journeyEngineeringRepair = function () {
+    playMenuSound();
+    const check = JourneyState.completeReadyRepair();
+    if (!check.ok && check.code !== 'repair-underway') JourneyState.startRepair(45000, 5);
+    renderEngineering();
+  };
+
+  window.journeyEngineeringRefuel = function () {
+    playMenuSound();
+    const state = JourneyState.getState();
+    if (state && state.currentNodeId === 'fuel-stop-1') JourneyState.refuelToMax('fuel-stop-service');
+    renderEngineering();
+  };
+
+  window.journeyEngineeringRest = function () {
+    playMenuSound();
+    JourneyState.restPilot(25);
+    renderEngineering();
   };
 
   window.journeyRoute = function () {
@@ -677,7 +943,12 @@
       return;
     }
     if (destination.id === 'fuel-stop-1') serviceFuelStop();
-    else renderCurrentLocation();
+    else renderArrivalScene(destination);
+  };
+
+  window.journeyContinueArrival = function () {
+    playMenuSound();
+    renderCurrentLocation();
   };
 
   window.journeyStartEncounter = function () {
@@ -700,8 +971,16 @@
       discoveryId: 'cache-log-1'
     });
     if (result.ok) {
-      shipNotice = 'CACHE RECOVERED · +18 SALVAGE · +6 POWER · REPAIR MOON FOUND';
+      JourneyState.awardCrystal('azure-cache');
+      shipNotice = 'CACHE RECOVERED · STAR CRYSTAL 1 / 7 · REPAIR MOON FOUND';
+      renderCrystalRecovery();
+      return;
     }
+    renderShip();
+  };
+
+  window.journeyFinishCrystalBeat = function () {
+    playMenuSound();
     renderShip();
   };
 
@@ -783,6 +1062,7 @@
   window.journeyBack = function () {
     if (!active) return;
     active = false;
+    clearStoryTimers();
     JourneyCombat.destroy();
     JourneyState.saveJourneyState('exit');
     JourneyState.clearInMemory();

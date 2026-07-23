@@ -55,6 +55,7 @@ test('new Journey saves use an independent key and expected defaults', () => {
   assert.equal(state.currentNodeId, 'home-orbit');
   assert.equal(state.resources.hull, 100);
   assert.equal(state.resources.fuel, 40);
+  assert.equal(state.currency.crystals, 0);
   assert.equal(storage.has('moberinoJourneySave'), true);
   assert.equal(storage.has('space-best-campaign'), false);
 });
@@ -78,7 +79,7 @@ test('malformed saves recover safely and clamp persistent meters', () => {
   const { api } = createHarness({ moberinoJourneySave: malformed });
   const state = api.load();
 
-  assert.equal(state.version, 2);
+  assert.equal(state.version, 3);
   assert.equal(state.currentNodeId, 'home-orbit');
   assert.equal(state.resources.hull, 120);
   assert.equal(state.resources.fuel, 0);
@@ -160,6 +161,20 @@ test('transmissions persist and become read exactly once', () => {
   assert.equal(api.markTransmissionRead('scrap-belt-signals').ok, true);
   assert.equal(api.markTransmissionRead('scrap-belt-signals').code, 'already-read');
   assert.deepEqual(Array.from(api.getUnreadTransmissionIds()), []);
+});
+
+test('intro completion and crystal recovery persist exactly once', () => {
+  const { api } = createHarness();
+  api.createNew();
+
+  assert.equal(api.getState().settings.tutorialComplete, false);
+  assert.equal(api.completeIntro().ok, true);
+  assert.equal(api.completeIntro().code, 'already-complete');
+  assert.equal(api.awardCrystal('azure-cache').ok, true);
+  assert.equal(api.awardCrystal('azure-cache').code, 'already-recovered');
+  assert.equal(api.getState().settings.tutorialComplete, true);
+  assert.equal(api.getState().currency.crystals, 1);
+  assert.equal(api.getState().log.discoveries.includes('crystal:azure-cache'), true);
 });
 
 test('peaceful discoveries reward once and unlock the next stop', () => {
