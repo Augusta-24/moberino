@@ -138,7 +138,6 @@
     safety: 'projectiles/shield.png',
     play: 'projectiles/tennisball.png',
   };
-  const JUNK = ['projectiles/junk_duck.png', 'projectiles/junk_boot.png', 'projectiles/junk_basketball.png', 'projectiles/junk_trashcan.png'];
   const REST_ICONS = ['projectiles/piano.png', 'projectiles/guitar.png', 'projectiles/saxophone.png'];
   const FEED_SNACKS = [
     { key: 'slice', label: 'SLICE', src: 'projectiles/pizza.png', color: '#ff9933' },
@@ -159,11 +158,30 @@
   // Foil grid size scales with stage too, so a full (100%) clear stays a real
   // objective rather than a shrinking target.
   const FOIL_GRID = { 1: { cols: 8, rows: 9 }, 2: { cols: 9, rows: 10 }, 3: { cols: 10, rows: 10 } };
-  const FEED_TUNE = {
-    1: { recipe: 3, ballSpeed: 225, gravity: 82, bumperKick: 245, junk: 0 },
-    2: { recipe: 4, ballSpeed: 250, gravity: 96, bumperKick: 270, junk: 1 },
-    3: { recipe: 5, ballSpeed: 275, gravity: 110, bumperKick: 295, junk: 2 },
+  const KITCHEN_TUNE = {
+    1: { rushMs: 30000, graceMs: 12000 },
+    2: { rushMs: 34000, graceMs: 10000 },
+    3: { rushMs: 38000, graceMs: 9000 },
   };
+  const KITCHEN_STATIONS = {
+    prep:  { label: 'PREP',  action: 'CHOP + MIX', duration: 1800, color: '#8aff4f' },
+    heat:  { label: 'HEAT',  action: 'TOAST',      duration: 3200, color: '#ff9933' },
+    chill: { label: 'CHILL', action: 'FLASH-FROST', duration: 2500, color: '#4fd8ff' },
+  };
+  const KITCHEN_ROUTE = {
+    slice: 'heat',
+    berry: 'prep',
+    frost: 'chill',
+    heart: 'prep',
+  };
+  const KITCHEN_RECIPES = [
+    { name: 'COMET SLICE', components: ['slice', 'berry'], minStage: 1 },
+    { name: 'HEARTY SLICE', components: ['slice', 'heart'], minStage: 1 },
+    { name: 'POLAR POP', components: ['frost', 'berry'], minStage: 1 },
+    { name: 'NEON PARFAIT', components: ['berry', 'frost', 'heart'], minStage: 2 },
+    { name: 'STAR SUPPER', components: ['slice', 'berry', 'frost'], minStage: 2 },
+    { name: 'MOBLING SPECIAL', components: ['slice', 'berry', 'frost', 'heart'], minStage: 3 },
+  ];
   const PLAY_TUNE  = { 1: { popGap: 680 }, 2: { popGap: 560 }, 3: { popGap: 460 } };
   // GUARD mirrors Space Red: aim tracks the player, locks late in the charge,
   // then fires an aimed projectile. Older stages add short attack bursts.
@@ -660,7 +678,7 @@
         </div>
 
         <div class="pet-actions">
-          ${actBtn('feed', iconImg(ICON.hunger, 22), 'FEED', 'SNACK PINBALL')}
+          ${actBtn('feed', iconImg(ICON.hunger, 22), 'FEED', 'MOBE KITCHEN')}
           ${actBtn('play', iconImg(ICON.play, 22), 'PLAY', 'BOP RUN')}
           ${actBtn('rest', iconImg(ICON.energy, 22), 'REST', 'LULLABY')}
           ${actBtn('pet', heartSVG(20), 'CUDDLE', 'ANYTIME')}
@@ -929,7 +947,7 @@
     pet.lowHintDismissed = true;
     document.querySelectorAll('.pet-act-btn').forEach(btn => btn.classList.remove('needs-care'));
     if (pet.stage === 0) { hatchTap(); return; }
-    if (key === 'feed') miniCatch();        // recipe-driven two-flipper pinball
+    if (key === 'feed') miniCatch();        // solo kitchen workflow with parallel stations
     else if (key === 'play') miniWhack();   // WHACK — bop the popping toys
     else if (key === 'rest') miniPads();    // SIGNAL — pentatonic lullaby pads
     else if (key === 'guard') miniGuard();  // SPACE red-enemy — dodge telegraphed threats
@@ -997,7 +1015,12 @@
     const bankAt = state.bankAt || 1;
     if (amount < bankAt) return 0;
     const mastered = clamp((amount - bankAt) / Math.max(1, state.goal - bankAt), 0, 1);
-    return clamp(0.60 + mastered * 0.40 - Math.min(0.18, (state.mistakes || 0) * 0.025), 0.35, 1);
+    return clamp(
+      0.60 + mastered * 0.40 + Math.min(0.12, state.skillBonus || 0)
+      - Math.min(0.18, (state.mistakes || 0) * 0.025),
+      0.35,
+      1
+    );
   }
 
   function miniGrade(quality) {
@@ -1068,17 +1091,24 @@
 
   function endMini() {
     const el = miniEl();
+    const wasKitchen = !!(el && el.classList.contains('pet-kitchen-mode'));
     if (mini) {
       if (mini.raf) cancelAnimationFrame(mini.raf);
       if (mini.timer) clearTimeout(mini.timer);
       if (mini.iv) clearInterval(mini.iv);
       if (mini.timeouts) mini.timeouts.forEach(clearTimeout);
+      if (mini.dragCleanup) mini.dragCleanup();
     }
     if (el) {
-      el.classList.remove('show', 'pet-feed-mode');
+      el.classList.remove('show', 'pet-kitchen-mode');
       el.innerHTML = '';
       el.onpointerdown = el.onpointermove = el.onpointerup = el.onpointercancel = null;
+      if (wasKitchen) {
+        const tank = document.getElementById('pet-tank');
+        if (tank && el.parentElement !== tank) tank.appendChild(el);
+      }
     }
+    if (wasKitchen && window.setArcadeExitVisible) window.setArcadeExitVisible(true);
     mini = null;
     updateCooldowns();
   }
@@ -1113,485 +1143,581 @@
     setTimeout(() => tank.classList.remove(kind === 'bad' ? 'flash-bad' : 'flash-good'), 220);
   }
 
-  // ── FEED · Recipe-driven pinball with two touch flippers ──
+  // ── FEED · Mobe Kitchen: prepare, process, plate, and serve ──
   function miniCatch() {
     const el = miniEl();
     if (!el) return;
-    const goal = GOALS.feed[stageIdx()];
-    const tune = FEED_TUNE[stageIdx()];
-    el.classList.add('pet-feed-mode');
+    const stage = stageIdx();
+    const goal = GOALS.feed[stage];
+    const tune = KITCHEN_TUNE[stage];
+    const page = document.getElementById('pg-pet');
+    if (page && el.parentElement !== page) page.appendChild(el);
+    if (window.setArcadeExitVisible) window.setArcadeExitVisible(false);
+
+    el.classList.add('pet-kitchen-mode');
     el.innerHTML = `
-      <div class="pet-mini-title">SNACK PINBALL</div>
-      <div class="pet-mini-hint" id="pet-feed-hint" aria-live="polite">TAP LEFT/RIGHT TO FLIP · HIT THE GLOWING BUMPER</div>
-      <div class="pet-feed-order" id="pet-feed-order"></div>
-      <div class="pet-feed-pinball" id="pet-feed-pinball" role="application" tabindex="0"
-        aria-label="Snack pinball. Tap the left and right sides to use the flippers.">
-        <canvas id="pet-feed-canvas" aria-hidden="true"></canvas>
-        <div class="pet-feed-flipper-labels" aria-hidden="true"><span>◀ LEFT</span><span>RIGHT ▶</span></div>
-      </div>
-      <div class="pet-feed-score">
-        <div class="pet-mini-count"><span id="pet-feed-n">0</span>/${goal} ORDERS</div>
-        <div class="pet-feed-combo" id="pet-feed-combo"></div>
+      <div class="pet-kitchen-shell">
+        <header class="pet-kitchen-header">
+          <div>
+            <div class="pet-kitchen-kicker">SOLO SHIFT · NO ORDER EXPIRY</div>
+            <h2>MOBE KITCHEN</h2>
+          </div>
+          <div class="pet-kitchen-score">
+            <b><span id="pet-kitchen-n">0</span>/${goal}</b>
+            <small>ORDERS</small>
+          </div>
+        </header>
+
+        <section class="pet-kitchen-order" aria-label="Current order">
+          <div class="pet-kitchen-order-copy">
+            <span>ORDER UP</span>
+            <b id="pet-kitchen-recipe">COMET SLICE</b>
+            <small>PREP THE PARTS · PLATE WHEN READY</small>
+          </div>
+          <div class="pet-kitchen-components" id="pet-kitchen-components"></div>
+          <div class="pet-kitchen-rush">
+            <div><i id="pet-kitchen-rush-fill"></i></div>
+            <span id="pet-kitchen-rush-copy">RUSH BONUS</span>
+          </div>
+        </section>
+
+        <section class="pet-kitchen-chef">
+          <div class="pet-kitchen-chef-art" aria-hidden="true">
+            ${petSVG(pet.stage, pet.form, 'happy').replace('pet-stage-svg', 'pet-stage-svg pet-kitchen-chef-svg')}
+          </div>
+          <div class="pet-kitchen-speech" id="pet-kitchen-speech" aria-live="polite">
+            START TWO STATIONS AND LET THEM WORK TOGETHER!
+          </div>
+          <div class="pet-kitchen-held" id="pet-kitchen-held">
+            <small>YOUR HAND</small><b>EMPTY</b>
+          </div>
+        </section>
+
+        <main class="pet-kitchen-workspace">
+          <section class="pet-kitchen-zone pet-kitchen-pantry">
+            <div class="pet-kitchen-zone-head">
+              <span>1 · PANTRY</span><small>DRAG OR TAP AN INGREDIENT</small>
+            </div>
+            <div class="pet-kitchen-pantry-grid">
+              ${FEED_SNACKS.map(snack => `
+                <button class="pet-kitchen-ingredient" type="button" data-ingredient="${snack.key}"
+                  style="--ingredient:${snack.color}" aria-label="Pick up ${snack.label}">
+                  <img src="${snack.src}" alt="">
+                  <b>${snack.label}</b>
+                  <small>${KITCHEN_STATIONS[KITCHEN_ROUTE[snack.key]].label}</small>
+                </button>`).join('')}
+            </div>
+          </section>
+
+          <section class="pet-kitchen-zone pet-kitchen-line">
+            <div class="pet-kitchen-zone-head">
+              <span>2 · KITCHEN LINE</span><small>STATIONS RUN AT THE SAME TIME</small>
+            </div>
+            <div class="pet-kitchen-stations">
+              ${Object.entries(KITCHEN_STATIONS).map(([key, station]) => `
+                <button class="pet-kitchen-station" id="pet-kitchen-${key}" type="button"
+                  data-dropzone="${key}" style="--station:${station.color}"
+                  aria-label="${station.label} station"></button>`).join('')}
+              <button class="pet-kitchen-station pet-kitchen-plate" id="pet-kitchen-plate"
+                type="button" data-dropzone="plate" aria-label="Plate station"></button>
+            </div>
+          </section>
+        </main>
+
+        <footer class="pet-kitchen-actions">
+          <div class="pet-kitchen-tip" id="pet-kitchen-tip">
+            ONE DISH BANKS CARE · KEEP COOKING FOR GOLD
+          </div>
+          <button class="pet-kitchen-serve" id="pet-kitchen-serve" type="button" disabled>
+            <span>SERVE TO MOBLING</span><small>FINISH THE PLATE FIRST</small>
+          </button>
+        </footer>
       </div>`;
+
     showMini();
-    const field = document.getElementById('pet-feed-pinball');
-    const canvas = document.getElementById('pet-feed-canvas');
-    const ctx = canvas.getContext('2d');
-    const orderEl = document.getElementById('pet-feed-order');
-    const hintEl = document.getElementById('pet-feed-hint');
-    const nEl = document.getElementById('pet-feed-n');
-    const comboEl = document.getElementById('pet-feed-combo');
     mini = {
-      key: 'feed', orders: 0, goal, bankAt: 1, recipe: [], step: 0,
-      locked: false, finished: false, mistakes: 0, combo: 0,
-      leftActive: false, rightActive: false, leftAngle: 0.34, rightAngle: Math.PI - 0.34,
-      pointers: new Map(), bumpers: [], pegs: [], ball: null, images: new Map(),
-      width: 0, height: 0, dpr: 1, prev: performance.now(), raf: 0, timeouts: [],
+      key: 'feed',
+      orders: 0,
+      goal,
+      bankAt: 1,
+      mistakes: 0,
+      skillBonus: 0,
+      stations: { prep: null, heat: null, chill: null },
+      plated: [],
+      held: null,
+      recipe: null,
+      previousRecipe: '',
+      flowPeak: 0,
+      orderMistakesStart: 0,
+      rushStartedAt: 0,
+      rushEndsAt: 0,
+      locked: false,
+      finished: false,
+      iv: 0,
+      timeouts: [],
+      dragCleanup: null,
+      suppressClickUntil: 0,
     };
-    updateMiniReward();
-    updateCooldowns();
 
-    function snackByKey(key) { return FEED_SNACKS.find(s => s.key === key); }
+    const recipeEl = document.getElementById('pet-kitchen-recipe');
+    const componentsEl = document.getElementById('pet-kitchen-components');
+    const speechEl = document.getElementById('pet-kitchen-speech');
+    const heldEl = document.getElementById('pet-kitchen-held');
+    const rushFillEl = document.getElementById('pet-kitchen-rush-fill');
+    const rushCopyEl = document.getElementById('pet-kitchen-rush-copy');
+    const countEl = document.getElementById('pet-kitchen-n');
+    const tipEl = document.getElementById('pet-kitchen-tip');
+    const serveEl = document.getElementById('pet-kitchen-serve');
+    const plateEl = document.getElementById('pet-kitchen-plate');
+    const chefEl = el.querySelector('.pet-kitchen-chef-art');
+    const pantryButtons = [...el.querySelectorAll('.pet-kitchen-ingredient')];
+    const stationButtons = Object.fromEntries(
+      Object.keys(KITCHEN_STATIONS).map(key => [key, document.getElementById(`pet-kitchen-${key}`)])
+    );
 
-    [...FEED_SNACKS.map(snack => snack.src), ...JUNK].forEach(src => {
-      const image = new Image();
-      image.src = src;
-      mini.images.set(src, image);
-    });
+    function snackByKey(key) {
+      return FEED_SNACKS.find(snack => snack.key === key);
+    }
+
+    function ingredientImage(key, extraClass) {
+      const snack = snackByKey(key);
+      return `<img class="${extraClass || ''}" src="${snack.src}" alt=""><b>${snack.label}</b>`;
+    }
+
+    function say(message, kind) {
+      if (!speechEl) return;
+      speechEl.textContent = message;
+      speechEl.classList.toggle('good', kind === 'good');
+      speechEl.classList.toggle('nudge', kind === 'nudge');
+    }
+
+    function flashStation(target, kind) {
+      if (!target) return;
+      target.classList.remove('kitchen-bump', 'kitchen-ready-pop');
+      void target.offsetWidth;
+      target.classList.add(kind === 'good' ? 'kitchen-ready-pop' : 'kitchen-bump');
+      mini.timeouts.push(setTimeout(() => {
+        if (target) target.classList.remove('kitchen-bump', 'kitchen-ready-pop');
+      }, 420));
+    }
+
+    function stationContaining(key) {
+      return Object.entries(mini.stations).find(([, job]) => job && job.key === key);
+    }
+
+    function componentState(key) {
+      if (mini.plated.includes(key)) return { label: 'PLATED', cls: 'plated', progress: 1 };
+      if (mini.held && mini.held.key === key) {
+        return { label: mini.held.processed ? 'READY IN HAND' : 'IN HAND', cls: 'held', progress: 0 };
+      }
+      const entry = stationContaining(key);
+      if (entry) {
+        const [stationKey, job] = entry;
+        const progress = clamp((Date.now() - job.startedAt) / (job.endsAt - job.startedAt), 0, 1);
+        if (job.ready) return { label: job.over ? 'STILL GOOD' : 'READY', cls: 'ready', progress: 1 };
+        return { label: KITCHEN_STATIONS[stationKey].action, cls: 'working', progress };
+      }
+      const station = KITCHEN_STATIONS[KITCHEN_ROUTE[key]];
+      return { label: `NEEDS ${station.label}`, cls: '', progress: 0 };
+    }
+
+    function ingredientIsAvailable(key) {
+      if (!mini.recipe || !mini.recipe.components.includes(key)) return false;
+      if (mini.plated.includes(key)) return false;
+      if (mini.held && mini.held.key === key) return false;
+      return !stationContaining(key);
+    }
+
+    function renderPantry() {
+      pantryButtons.forEach(button => {
+        const key = button.dataset.ingredient;
+        const needed = mini.recipe && mini.recipe.components.includes(key);
+        const available = ingredientIsAvailable(key);
+        button.classList.toggle('needed', !!needed);
+        button.classList.toggle('used', !!needed && !available);
+        button.disabled = !needed || !available || mini.locked;
+        button.setAttribute('aria-label', needed
+          ? `${available ? 'Pick up' : 'Already cooking or plated'} ${snackByKey(key).label}`
+          : `${snackByKey(key).label} is not in this order`);
+      });
+    }
+
+    function renderHeld() {
+      if (!mini.held) {
+        heldEl.classList.remove('loaded');
+        heldEl.innerHTML = '<small>YOUR HAND</small><b>EMPTY</b>';
+        return;
+      }
+      const snack = snackByKey(mini.held.key);
+      heldEl.classList.add('loaded');
+      heldEl.style.setProperty('--held', snack.color);
+      heldEl.innerHTML = `
+        <small>${mini.held.processed ? 'READY TO PLATE' : `TAKE TO ${KITCHEN_STATIONS[mini.held.station].label}`}</small>
+        <span><img src="${snack.src}" alt=""><b>${snack.label}</b></span>`;
+    }
 
     function renderOrder() {
-      orderEl.innerHTML = mini.recipe.map((key, i) => {
+      if (!mini.recipe) return;
+      recipeEl.textContent = mini.recipe.name;
+      componentsEl.innerHTML = mini.recipe.components.map(key => {
         const snack = snackByKey(key);
-        const state = i < mini.step ? 'done' : i === mini.step ? 'next' : '';
-        return `<span class="pet-feed-slot ${state}" style="--snack:${snack.color}">
-          <img src="${snack.src}" alt=""><b>${snack.label}</b>
-        </span>`;
+        const state = componentState(key);
+        return `<div class="pet-kitchen-component ${state.cls}" style="--ingredient:${snack.color}">
+          <div>${ingredientImage(key)}</div>
+          <span>${state.label}</span>
+          <i><em style="width:${Math.round(state.progress * 100)}%"></em></i>
+        </div>`;
       }).join('');
-      const next = snackByKey(mini.recipe[mini.step]);
-      if (next) {
-        field.setAttribute('aria-label', `Snack pinball. Next target ${next.label}. Tap left and right sides for flippers.`);
-      }
     }
 
-    function updateCombo() {
-      if (comboEl) comboEl.textContent = mini.combo > 1 ? `×${mini.combo} BANK SHOT` : '';
-    }
-
-    function setPointerSide(e) {
-      const rect = field.getBoundingClientRect();
-      mini.pointers.set(e.pointerId, e.clientX < rect.left + rect.width / 2 ? 'left' : 'right');
-      mini.leftActive = [...mini.pointers.values()].includes('left');
-      mini.rightActive = [...mini.pointers.values()].includes('right');
-    }
-
-    field.onpointerdown = (e) => {
-      e.preventDefault();
-      if (field.setPointerCapture) {
-        try { field.setPointerCapture(e.pointerId); } catch (err) {}
-      }
-      setPointerSide(e);
-      pentaNote(e.clientX < field.getBoundingClientRect().left + field.getBoundingClientRect().width / 2 ? 1 : 3, 0.025, 0.06);
-    };
-    field.onpointermove = (e) => {
-      if (!mini || !mini.pointers.has(e.pointerId)) return;
-      setPointerSide(e);
-    };
-    const releasePointer = (e) => {
-      if (!mini) return;
-      mini.pointers.delete(e.pointerId);
-      mini.leftActive = [...mini.pointers.values()].includes('left');
-      mini.rightActive = [...mini.pointers.values()].includes('right');
-    };
-    field.onpointerup = field.onpointercancel = releasePointer;
-    field.onkeydown = (e) => {
-      if (!mini || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
-      e.preventDefault();
-      if (e.key === 'ArrowLeft') mini.leftActive = true;
-      else mini.rightActive = true;
-    };
-    field.onkeyup = (e) => {
-      if (!mini) return;
-      if (e.key === 'ArrowLeft') mini.leftActive = false;
-      if (e.key === 'ArrowRight') mini.rightActive = false;
-    };
-    field.onblur = () => {
-      if (!mini) return;
-      mini.leftActive = mini.rightActive = false;
-      mini.pointers.clear();
-    };
-
-    function shuffle(items) {
-      const copy = [...items];
-      for (let i = copy.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [copy[i], copy[j]] = [copy[j], copy[i]];
-      }
-      return copy;
-    }
-
-    function layoutBoard() {
-      const snacks = shuffle(FEED_SNACKS);
-      const spots = [
-        [0.22, 0.25], [0.78, 0.25],
-        [0.30, 0.52], [0.70, 0.52],
-      ];
-      mini.bumpers = spots.map((spot, i) => ({
-        key: snacks[i].key, src: snacks[i].src, label: snacks[i].label, color: snacks[i].color,
-        nx: spot[0], ny: spot[1], radius: 21, cooldown: 0, glowUntil: 0,
-      }));
-      const junkSpots = tune.junk === 2 ? [[0.50, 0.38], [0.50, 0.65]] : [[0.50, 0.39]];
-      junkSpots.slice(0, tune.junk).forEach((spot, i) => {
-        mini.bumpers.push({
-          key: 'junk', src: JUNK[(pet.memories + i) % JUNK.length], label: 'JUNK', color: '#ff3344',
-          nx: spot[0], ny: spot[1], radius: 15, cooldown: 0, glowUntil: 0,
-        });
+    function renderStations() {
+      Object.entries(KITCHEN_STATIONS).forEach(([key, station]) => {
+        const button = stationButtons[key];
+        const job = mini.stations[key];
+        if (!job) {
+          button.className = 'pet-kitchen-station';
+          button.innerHTML = `
+            <span class="pet-kitchen-station-name">${station.label}</span>
+            <b>${station.action}</b>
+            <small>${mini.held && !mini.held.processed && mini.held.station === key ? 'TAP TO START' : 'DROP INGREDIENT HERE'}</small>
+            <i class="pet-kitchen-station-progress"><em></em></i>`;
+          button.disabled = mini.locked;
+          return;
+        }
+        const snack = snackByKey(job.key);
+        const progress = clamp((Date.now() - job.startedAt) / (job.endsAt - job.startedAt), 0, 1);
+        button.className = `pet-kitchen-station ${job.ready ? 'ready' : 'working'} ${job.over ? 'cozy' : ''}`;
+        button.innerHTML = `
+          <span class="pet-kitchen-station-name">${station.label}</span>
+          <div class="pet-kitchen-station-item">${ingredientImage(job.key)}</div>
+          <small>${job.ready ? (job.over ? 'STILL DELICIOUS · PICK UP' : 'READY · TAP TO PICK UP') : `${station.action} · ${Math.round(progress * 100)}%`}</small>
+          <i class="pet-kitchen-station-progress"><em style="width:${Math.round(progress * 100)}%"></em></i>`;
+        button.style.setProperty('--ingredient', snack.color);
+        button.disabled = mini.locked;
       });
-      mini.pegs = [
-        [0.50, 0.14], [0.14, 0.42], [0.86, 0.42],
-        [0.42, 0.69], [0.58, 0.69],
-      ].map(([nx, ny]) => ({ nx, ny, radius: 5, cooldown: 0 }));
+
+      const complete = mini.recipe && mini.recipe.components.every(key => mini.plated.includes(key));
+      const plateItems = mini.plated.map(key => `<span style="--ingredient:${snackByKey(key).color}">${ingredientImage(key)}</span>`).join('');
+      plateEl.className = `pet-kitchen-station pet-kitchen-plate ${mini.plated.length ? 'loaded' : ''} ${complete ? 'complete' : ''}`;
+      plateEl.innerHTML = `
+        <span class="pet-kitchen-station-name">PLATE</span>
+        <div class="pet-kitchen-plate-items">${plateItems || '<i>+</i>'}</div>
+        <small>${complete ? 'ORDER COMPLETE!' : mini.held && mini.held.processed ? 'TAP TO ADD' : 'BRING READY FOOD HERE'}</small>`;
+      plateEl.disabled = mini.locked;
+      serveEl.disabled = !complete || mini.locked;
+      serveEl.classList.toggle('ready', !!complete && !mini.locked);
+      serveEl.querySelector('small').textContent = complete ? 'CARE IS READY TO BANK' : 'FINISH THE PLATE FIRST';
     }
 
-    function resetBall(delay) {
+    function renderKitchen() {
       if (!mini || mini.key !== 'feed') return;
-      if (delay) {
-        mini.ball = null;
-        mini.timeouts.push(setTimeout(() => resetBall(0), delay));
-        return;
-      }
-      const angle = (-Math.PI / 2) + (Math.random() - 0.5) * 0.55;
-      mini.ball = {
-        x: mini.width * 0.5,
-        y: mini.height * 0.74,
-        vx: Math.cos(angle) * tune.ballSpeed,
-        vy: Math.sin(angle) * tune.ballSpeed,
-        radius: 7,
-        flipperCooldown: 0,
-      };
-    }
-
-    function resizeCanvas() {
-      const rect = canvas.getBoundingClientRect();
-      const width = Math.max(1, rect.width);
-      const height = Math.max(1, rect.height);
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      if (width === mini.width && height === mini.height && dpr === mini.dpr) return;
-      const oldWidth = mini.width;
-      const oldHeight = mini.height;
-      mini.width = width;
-      mini.height = height;
-      mini.dpr = dpr;
-      canvas.width = Math.round(width * dpr);
-      canvas.height = Math.round(height * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      if (mini.ball && oldWidth && oldHeight) {
-        mini.ball.x *= width / oldWidth;
-        mini.ball.y *= height / oldHeight;
-      } else if (!mini.ball) {
-        resetBall(0);
-      }
-    }
-
-    function bumperHit(bumper, now) {
-      bumper.glowUntil = now + 260;
-      if (bumper.key === 'junk') {
-        mini.mistakes++;
-        mini.combo = 0;
-        updateCombo();
-        hintEl.textContent = 'JUNK RICOCHET — KEEP THE BALL ALIVE';
-        miniToast('JUNK RICOCHET!', 'bad');
-        synthTone(145, 'sine', 0, 0.13, 0.04, 105);
-        updateMiniReward();
-        return;
-      }
-
-      const expected = mini.recipe[mini.step];
-      if (bumper.key !== expected) {
-        mini.combo = 0;
-        updateCombo();
-        hintEl.textContent = `${snackByKey(expected).label} IS STILL LIT · SET UP A BANK SHOT`;
-        pentaNote(1, 0.035, 0.07);
-        return;
-      }
-
-      mini.step++;
-      mini.combo++;
-      pentaNote(mini.step + mini.combo + 2, 0.085, 0.12);
-      miniToast(mini.combo > 1 ? `BANK SHOT ×${mini.combo}!` : 'RECIPE HIT!', 'good');
-      updateCombo();
+      renderPantry();
+      renderHeld();
       renderOrder();
-      if (mini.step < mini.recipe.length) {
-        hintEl.textContent = `${snackByKey(mini.recipe[mini.step]).label} IS LIT · KEEP THE BALL UP`;
-        return;
-      }
-
-      mini.orders++;
-      nEl.textContent = mini.orders;
-      updateMiniReward();
-      playConfirm();
-      if (mini.orders >= mini.goal) {
-        mini.finished = true;
-        mini.locked = true;
-        mini.ball = null;
-        completeMini('SNACK PINBALL JACKPOT!');
-        return;
-      }
-
-      mini.locked = true;
-      mini.ball = null;
-      hintEl.textContent = 'ORDER SERVED! CARE BANKED · NEW TABLE LOADING';
-      miniToast('ORDER SERVED!', 'good');
-      mini.timeouts.push(setTimeout(newRecipe, 760));
+      renderStations();
+      countEl.textContent = mini.orders;
     }
 
-    function drainBall() {
-      if (!mini || !mini.ball) return;
-      mini.mistakes += 0.5;
-      mini.combo = 0;
-      updateCombo();
-      hintEl.textContent = 'BALL SAVED — SAME RECIPE, FRESH LAUNCH';
-      miniToast('BALL SAVE!', 'bad');
-      synthTone(125, 'sine', 0, 0.16, 0.04, 90);
-      updateMiniReward();
-      resetBall(430);
-    }
-
-    function collideCircle(target, radius, now, onHit) {
-      const ball = mini.ball;
-      if (!ball) return;
-      const dx = ball.x - target.x;
-      const dy = ball.y - target.y;
-      const distance = Math.hypot(dx, dy) || 0.001;
-      const minDistance = ball.radius + radius;
-      if (distance >= minDistance || now < target.cooldown) return;
-      const nx = dx / distance;
-      const ny = dy / distance;
-      ball.x = target.x + nx * minDistance;
-      ball.y = target.y + ny * minDistance;
-      const toward = ball.vx * nx + ball.vy * ny;
-      if (toward < 0) {
-        ball.vx -= 2 * toward * nx;
-        ball.vy -= 2 * toward * ny;
+    function selectRaw(key) {
+      if (!mini || mini.locked) return false;
+      if (mini.held) {
+        say(mini.held.processed ? 'PLATE THE READY ITEM FIRST.' : 'PLACE WHAT YOU ARE HOLDING FIRST.', 'nudge');
+        return false;
       }
-      ball.vx += nx * tune.bumperKick;
-      ball.vy += ny * tune.bumperKick;
-      target.cooldown = now + 150;
-      if (onHit) onHit();
+      if (!ingredientIsAvailable(key)) return false;
+      mini.held = { key, station: KITCHEN_ROUTE[key], processed: false };
+      pentaNote(FEED_SNACKS.findIndex(item => item.key === key) + 1, 0.035, 0.07);
+      say(`GOT ${snackByKey(key).label}. TAKE IT TO ${KITCHEN_STATIONS[KITCHEN_ROUTE[key]].label}.`);
+      renderKitchen();
+      return true;
     }
 
-    function flipperGeometry(side) {
-      const left = side === 'left';
-      const pivot = {
-        x: mini.width * (left ? 0.30 : 0.70),
-        y: mini.height * 0.83,
-      };
-      const angle = left ? mini.leftAngle : mini.rightAngle;
-      const length = mini.width * 0.205;
-      return {
-        pivot,
-        end: { x: pivot.x + Math.cos(angle) * length, y: pivot.y + Math.sin(angle) * length },
-        active: left ? mini.leftActive : mini.rightActive,
-      };
-    }
-
-    function collideFlipper(flipper, now) {
-      const ball = mini.ball;
-      if (!ball || now < ball.flipperCooldown) return;
-      const ax = flipper.pivot.x;
-      const ay = flipper.pivot.y;
-      const bx = flipper.end.x;
-      const by = flipper.end.y;
-      const abx = bx - ax;
-      const aby = by - ay;
-      const t = clamp(((ball.x - ax) * abx + (ball.y - ay) * aby) / (abx * abx + aby * aby), 0, 1);
-      const cx = ax + abx * t;
-      const cy = ay + aby * t;
-      const dx = ball.x - cx;
-      const dy = ball.y - cy;
-      const distance = Math.hypot(dx, dy);
-      if (distance > ball.radius + 6 || ball.vy < -60) return;
-      ball.x += (dx || 0) * 0.08;
-      ball.y = cy - ball.radius - 6;
-      ball.vx += (ball.x - ax) * 2.1;
-      ball.vy = -Math.max(185, Math.abs(ball.vy) * 0.78 + (flipper.active ? 175 : 55));
-      ball.flipperCooldown = now + 80;
-      pentaNote(flipper.active ? 4 : 2, 0.035, 0.06);
-    }
-
-    function updatePhysics(now, dt) {
-      const ball = mini.ball;
-      if (!ball || mini.locked) return;
-      ball.vy += tune.gravity * dt;
-      ball.x += ball.vx * dt;
-      ball.y += ball.vy * dt;
-      if (ball.x < ball.radius) {
-        ball.x = ball.radius;
-        ball.vx = Math.abs(ball.vx) * 0.94;
-      } else if (ball.x > mini.width - ball.radius) {
-        ball.x = mini.width - ball.radius;
-        ball.vx = -Math.abs(ball.vx) * 0.94;
-      }
-      if (ball.y < ball.radius) {
-        ball.y = ball.radius;
-        ball.vy = Math.abs(ball.vy) * 0.94;
-      }
-
-      mini.bumpers.forEach(bumper => {
-        const target = { x: bumper.nx * mini.width, y: bumper.ny * mini.height, cooldown: bumper.cooldown };
-        collideCircle(target, bumper.radius, now, () => bumperHit(bumper, now));
-        bumper.cooldown = target.cooldown;
-      });
-      mini.pegs.forEach(peg => {
-        const target = { x: peg.nx * mini.width, y: peg.ny * mini.height, cooldown: peg.cooldown };
-        collideCircle(target, peg.radius, now);
-        peg.cooldown = target.cooldown;
-      });
-
-      collideFlipper(flipperGeometry('left'), now);
-      collideFlipper(flipperGeometry('right'), now);
-      const speed = Math.hypot(ball.vx, ball.vy);
-      if (speed > 520) {
-        ball.vx *= 520 / speed;
-        ball.vy *= 520 / speed;
-      }
-      if (ball.y > mini.height + 18) drainBall();
-    }
-
-    function drawImage(src, x, y, size) {
-      const image = mini.images.get(src);
-      if (image && image.complete && image.naturalWidth) {
-        ctx.drawImage(image, x - size / 2, y - size / 2, size, size);
+    function placeHeld(destination) {
+      if (!mini || !mini.held || mini.locked) return false;
+      const item = mini.held;
+      if (destination === 'plate') {
+        if (!item.processed) {
+          mini.mistakes += 0.15;
+          say(`${snackByKey(item.key).label} NEEDS ${KITCHEN_STATIONS[item.station].label} FIRST.`, 'nudge');
+          flashStation(plateEl);
+          updateMiniReward();
+          return false;
+        }
+        if (mini.plated.includes(item.key)) return false;
+        mini.plated.push(item.key);
+        mini.held = null;
+        playConfirm();
+        miniToast('PLATED!', 'good');
+        say('NICE PLATE! KEEP THE KITCHEN MOVING.', 'good');
+        flashStation(plateEl, 'good');
+        renderKitchen();
         return true;
       }
-      return false;
+
+      const station = KITCHEN_STATIONS[destination];
+      if (!station) return false;
+      if (item.processed) {
+        say('THAT PART IS READY—TAKE IT TO THE PLATE.', 'nudge');
+        flashStation(stationButtons[destination]);
+        return false;
+      }
+      if (item.station !== destination) {
+        mini.mistakes += 0.15;
+        say(`${snackByKey(item.key).label} GOES TO ${KITCHEN_STATIONS[item.station].label}.`, 'nudge');
+        flashStation(stationButtons[destination]);
+        updateMiniReward();
+        return false;
+      }
+      if (mini.stations[destination]) {
+        say(`${station.label} IS BUSY—START ANOTHER STATION WHILE IT WORKS.`, 'nudge');
+        flashStation(stationButtons[destination]);
+        return false;
+      }
+
+      const now = Date.now();
+      mini.stations[destination] = {
+        key: item.key,
+        startedAt: now,
+        endsAt: now + station.duration,
+        overAt: now + station.duration + tune.graceMs,
+        ready: false,
+        over: false,
+      };
+      mini.held = null;
+      const concurrent = Object.values(mini.stations).filter(Boolean).length;
+      mini.flowPeak = Math.max(mini.flowPeak, concurrent);
+      pentaNote(Object.keys(KITCHEN_STATIONS).indexOf(destination) + 2, 0.06, 0.09);
+      if (concurrent > 1) {
+        miniToast(`KITCHEN FLOW ×${concurrent}!`, 'good');
+        say(`${concurrent} STATIONS MOVING TOGETHER—THAT'S KITCHEN FLOW!`, 'good');
+      } else {
+        say(`${station.action} STARTED! LOAD ANOTHER STATION WHILE IT RUNS.`, 'good');
+      }
+      renderKitchen();
+      return true;
     }
 
-    function draw(now) {
-      const w = mini.width;
-      const h = mini.height;
-      ctx.clearRect(0, 0, w, h);
-      ctx.save();
-      ctx.strokeStyle = 'rgba(255,110,199,.2)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(w * 0.06, h * 0.08);
-      ctx.quadraticCurveTo(w * 0.5, -h * 0.06, w * 0.94, h * 0.08);
-      ctx.lineTo(w * 0.94, h * 0.74);
-      ctx.moveTo(w * 0.06, h * 0.08);
-      ctx.lineTo(w * 0.06, h * 0.74);
-      ctx.stroke();
-
-      mini.pegs.forEach(peg => {
-        const x = peg.nx * w;
-        const y = peg.ny * h;
-        ctx.fillStyle = 'rgba(79,216,255,.65)';
-        ctx.shadowColor = '#4fd8ff';
-        ctx.shadowBlur = 8;
-        ctx.beginPath();
-        ctx.arc(x, y, peg.radius, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      const expected = mini.recipe[mini.step];
-      mini.bumpers.forEach(bumper => {
-        const x = bumper.nx * w;
-        const y = bumper.ny * h;
-        const active = bumper.key === expected;
-        const hit = now < bumper.glowUntil;
-        const pulse = 1 + (active ? Math.sin(now / 120) * 0.05 : 0);
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.scale(pulse, pulse);
-        ctx.shadowColor = bumper.color;
-        ctx.shadowBlur = active ? 18 : hit ? 14 : 7;
-        ctx.fillStyle = active ? 'rgba(255,255,255,.16)' : 'rgba(5,2,16,.78)';
-        ctx.strokeStyle = bumper.color;
-        ctx.lineWidth = active ? 3 : 1.5;
-        ctx.beginPath();
-        ctx.arc(0, 0, bumper.radius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        if (!drawImage(bumper.src, 0, 0, bumper.radius * 1.18)) {
-          ctx.fillStyle = bumper.color;
-          ctx.font = 'bold 10px monospace';
-          ctx.textAlign = 'center';
-          ctx.fillText(bumper.label[0], 0, 4);
+    function interactStation(key) {
+      if (!mini || mini.locked) return;
+      const job = mini.stations[key];
+      if (job && job.ready) {
+        if (mini.held) {
+          say('YOUR HAND IS FULL—PLATE OR PLACE IT FIRST.', 'nudge');
+          return;
         }
-        ctx.restore();
-        ctx.fillStyle = active ? '#fff' : bumper.color;
-        ctx.font = `${active ? 'bold ' : ''}6px VCR, monospace`;
-        ctx.textAlign = 'center';
-        ctx.fillText(active ? `NEXT · ${bumper.label}` : bumper.label, x, y + bumper.radius + 11);
-      });
-
-      ['left', 'right'].forEach(side => {
-        const flipper = flipperGeometry(side);
-        const active = flipper.active;
-        ctx.lineCap = 'round';
-        ctx.lineWidth = 11;
-        ctx.strokeStyle = active ? '#ffe61a' : '#ff6ec7';
-        ctx.shadowColor = active ? '#ffe61a' : '#ff6ec7';
-        ctx.shadowBlur = active ? 15 : 8;
-        ctx.beginPath();
-        ctx.moveTo(flipper.pivot.x, flipper.pivot.y);
-        ctx.lineTo(flipper.end.x, flipper.end.y);
-        ctx.stroke();
-        ctx.fillStyle = '#f2efe8';
-        ctx.beginPath();
-        ctx.arc(flipper.pivot.x, flipper.pivot.y, 5, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      if (mini.ball) {
-        const ball = mini.ball;
-        const gradient = ctx.createRadialGradient(ball.x - 2, ball.y - 3, 1, ball.x, ball.y, ball.radius);
-        gradient.addColorStop(0, '#fff');
-        gradient.addColorStop(.35, '#ffe61a');
-        gradient.addColorStop(1, '#ff9933');
-        ctx.fillStyle = gradient;
-        ctx.shadowColor = '#ffe61a';
-        ctx.shadowBlur = 12;
-        ctx.beginPath();
-        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-        ctx.fill();
+        mini.held = { key: job.key, station: key, processed: true };
+        mini.stations[key] = null;
+        pentaNote(5, 0.07, 0.11);
+        miniToast('READY!', 'good');
+        say('PERFECT! TAKE IT TO THE PLATE.', 'good');
+        renderKitchen();
+        return;
       }
-      ctx.restore();
+      if (job) {
+        say(`${KITCHEN_STATIONS[key].action} IS UNDERWAY—WORK ANOTHER STATION!`);
+        return;
+      }
+      if (mini.held) {
+        placeHeld(key);
+        return;
+      }
+      say(`PICK AN INGREDIENT MARKED ${KITCHEN_STATIONS[key].label} FROM THE PANTRY.`);
+    }
+
+    function interactPlate() {
+      if (!mini || mini.locked) return;
+      if (mini.held) {
+        placeHeld('plate');
+        return;
+      }
+      say(mini.plated.length ? 'THE PLATE IS WAITING FOR THE REST OF THE ORDER.' : 'PROCESS AN INGREDIENT, THEN BRING IT HERE.');
+    }
+
+    function beginHeldDrag(event, key) {
+      event.preventDefault();
+      const snack = snackByKey(key);
+      const ghost = document.createElement('div');
+      ghost.className = 'pet-kitchen-drag-ghost';
+      ghost.style.setProperty('--ingredient', snack.color);
+      ghost.innerHTML = ingredientImage(key);
+      el.appendChild(ghost);
+      const startX = event.clientX;
+      const startY = event.clientY;
+      let moved = false;
+
+      const moveGhost = (x, y) => {
+        ghost.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`;
+      };
+      moveGhost(startX, startY);
+
+      const cleanup = () => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onEnd);
+        window.removeEventListener('pointercancel', onEnd);
+        if (ghost.isConnected) ghost.remove();
+        if (mini) mini.dragCleanup = null;
+      };
+      const onMove = (moveEvent) => {
+        moveEvent.preventDefault();
+        if (Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY) > 8) moved = true;
+        moveGhost(moveEvent.clientX, moveEvent.clientY);
+      };
+      const onEnd = (endEvent) => {
+        if (mini) mini.suppressClickUntil = performance.now() + 280;
+        if (moved) {
+          const target = document.elementFromPoint(endEvent.clientX, endEvent.clientY);
+          const dropzone = target && target.closest('[data-dropzone]');
+          if (dropzone) placeHeld(dropzone.dataset.dropzone);
+          else say('STILL IN YOUR HAND—TAP A GLOWING STATION TO PLACE IT.');
+        }
+        cleanup();
+      };
+      window.addEventListener('pointermove', onMove, { passive: false });
+      window.addEventListener('pointerup', onEnd);
+      window.addEventListener('pointercancel', onEnd);
+      mini.dragCleanup = cleanup;
+    }
+
+    function beginPantryDrag(event, key) {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      if (!selectRaw(key)) return;
+      beginHeldDrag(event, key);
+    }
+
+    function beginStationDrag(event, stationKey) {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      if (!mini || mini.locked || mini.held) return;
+      const job = mini.stations[stationKey];
+      if (!job || !job.ready) return;
+      mini.held = { key: job.key, station: stationKey, processed: true };
+      mini.stations[stationKey] = null;
+      pentaNote(5, 0.07, 0.11);
+      say('READY! DRAG IT STRAIGHT TO THE PLATE.', 'good');
+      renderKitchen();
+      beginHeldDrag(event, job.key);
+    }
+
+    function chooseRecipe() {
+      let options = KITCHEN_RECIPES.filter(recipe => recipe.minStage <= stage);
+      if (stage === 1) options = options.filter(recipe => recipe.components.length === 2);
+      if (stage === 2) options = options.filter(recipe => recipe.components.length === 3);
+      if (stage === 3) options = options.filter(recipe => recipe.components.length >= 3);
+      const fresh = options.filter(recipe => recipe.name !== mini.previousRecipe);
+      if (fresh.length) options = fresh;
+      const seed = pet.memories + mini.orders + Math.floor(Math.random() * options.length);
+      return options[seed % options.length];
     }
 
     function newRecipe() {
       if (!mini || mini.key !== 'feed') return;
-      mini.recipe = Array.from({ length: tune.recipe }, () => FEED_SNACKS[Math.floor(Math.random() * FEED_SNACKS.length)].key);
-      mini.step = 0;
-      mini.combo = 0;
+      const recipe = chooseRecipe();
+      mini.previousRecipe = recipe.name;
+      mini.recipe = recipe;
+      mini.plated = [];
+      mini.held = null;
+      mini.stations = { prep: null, heat: null, chill: null };
+      mini.flowPeak = 0;
+      mini.orderMistakesStart = mini.mistakes;
       mini.locked = false;
-      layoutBoard();
-      updateCombo();
-      renderOrder();
-      hintEl.textContent = mini.orders
-        ? 'CARE BANKED · LIGHT UP ANOTHER ORDER FOR A BIGGER PRIZE'
-        : 'TAP LEFT/RIGHT TO FLIP · HIT THE GLOWING BUMPER';
-      resetBall(0);
+      mini.rushStartedAt = Date.now();
+      mini.rushEndsAt = mini.rushStartedAt + tune.rushMs;
+      tipEl.textContent = mini.orders
+        ? 'CARE BANKED · ANOTHER DISH BUILDS YOUR TICKET BONUS'
+        : 'ONE DISH BANKS CARE · KEEP COOKING FOR GOLD';
+      say(mini.orders
+        ? `${recipe.name}! FIND WHAT CAN RUN AT THE SAME TIME.`
+        : 'START TWO STATIONS AND LET THEM WORK TOGETHER!');
+      renderKitchen();
     }
 
-    function loop(now) {
-      if (!mini || mini.key !== 'feed' || mini.finished) return;
-      resizeCanvas();
-      const dt = Math.min(0.035, (now - mini.prev) / 1000 || 0.016);
-      mini.prev = now;
-      const leftTarget = mini.leftActive ? -0.52 : 0.34;
-      const rightTarget = mini.rightActive ? Math.PI + 0.52 : Math.PI - 0.34;
-      mini.leftAngle += (leftTarget - mini.leftAngle) * Math.min(1, dt * 24);
-      mini.rightAngle += (rightTarget - mini.rightAngle) * Math.min(1, dt * 24);
-      updatePhysics(now, dt);
-      draw(now);
-      if (mini && mini.key === 'feed' && !mini.finished) {
-        mini.raf = requestAnimationFrame(loop);
+    function serveOrder() {
+      if (!mini || mini.locked || !mini.recipe) return;
+      const complete = mini.recipe.components.every(key => mini.plated.includes(key));
+      if (!complete) return;
+      mini.locked = true;
+      const rush = Date.now() <= mini.rushEndsAt;
+      const clean = mini.mistakes === mini.orderMistakesStart;
+      mini.skillBonus = Math.min(
+        0.12,
+        mini.skillBonus + (rush ? 0.03 : 0) + (mini.flowPeak > 1 ? 0.02 : 0) + (clean ? 0.01 : 0)
+      );
+      mini.orders++;
+      countEl.textContent = mini.orders;
+      updateMiniReward();
+      playConfirm();
+      miniToast(rush && clean ? 'PERFECT SERVE!' : rush ? 'RUSH SERVE!' : 'ORDER SERVED!', 'good');
+      say(rush && mini.flowPeak > 1
+        ? 'WOW—KITCHEN FLOW! RUSH BONUS EARNED.'
+        : clean ? 'CLEAN PLATE! CARE BANKED.' : 'DELICIOUS! CARE BANKED.', 'good');
+      chefEl.classList.remove('celebrate');
+      void chefEl.offsetWidth;
+      chefEl.classList.add('celebrate');
+      if (mini.orders >= mini.goal) {
+        mini.finished = true;
+        mini.timeouts.push(setTimeout(() => completeMini('KITCHEN JACKPOT!'), 520));
+        return;
       }
+      mini.timeouts.push(setTimeout(newRecipe, 820));
     }
 
-    resizeCanvas();
+    function updateKitchen() {
+      if (!mini || mini.key !== 'feed' || mini.finished) return;
+      const now = Date.now();
+      let stateChanged = false;
+      Object.entries(mini.stations).forEach(([key, job]) => {
+        if (!job) return;
+        if (!job.ready && now >= job.endsAt) {
+          job.ready = true;
+          stateChanged = true;
+          pentaNote(Object.keys(KITCHEN_STATIONS).indexOf(key) + 5, 0.06, 0.1);
+          say(`${snackByKey(job.key).label} IS READY AT ${KITCHEN_STATIONS[key].label}!`, 'good');
+          flashStation(stationButtons[key], 'good');
+        }
+        if (job.ready && !job.over && now >= job.overAt) {
+          job.over = true;
+          mini.mistakes += 0.5;
+          stateChanged = true;
+          say(`${snackByKey(job.key).label} GOT A LITTLE EXTRA—STILL DELICIOUS, STILL USABLE.`);
+          updateMiniReward();
+        }
+      });
+
+      const rushLeft = clamp((mini.rushEndsAt - now) / Math.max(1, mini.rushEndsAt - mini.rushStartedAt), 0, 1);
+      rushFillEl.style.width = `${rushLeft * 100}%`;
+      if (rushLeft > 0) {
+        rushCopyEl.textContent = 'RUSH BONUS';
+        rushCopyEl.classList.remove('ended');
+      } else {
+        rushCopyEl.textContent = 'TAKE YOUR TIME · ORDER STAYS';
+        rushCopyEl.classList.add('ended');
+      }
+      renderOrder();
+      renderStations();
+      if (stateChanged) renderPantry();
+    }
+
+    pantryButtons.forEach(button => {
+      const key = button.dataset.ingredient;
+      button.addEventListener('pointerdown', event => beginPantryDrag(event, key));
+      button.addEventListener('click', () => {
+        if (!mini || performance.now() < mini.suppressClickUntil) return;
+        selectRaw(key);
+      });
+    });
+    Object.entries(stationButtons).forEach(([key, button]) => {
+      button.addEventListener('pointerdown', event => beginStationDrag(event, key));
+      button.addEventListener('click', () => {
+        if (!mini || performance.now() < mini.suppressClickUntil) return;
+        interactStation(key);
+      });
+    });
+    plateEl.addEventListener('click', interactPlate);
+    serveEl.addEventListener('click', serveOrder);
+
+    updateMiniReward();
+    updateCooldowns();
     newRecipe();
-    mini.raf = requestAnimationFrame(loop);
+    mini.iv = setInterval(updateKitchen, 100);
   }
 
   // ── PLAY · Whack-flavored: multi-pop toys with misses and combos ──
