@@ -994,6 +994,26 @@
   gap: 6px;
   margin: 6px 0;
 }
+.pet-status-tendency {
+  width: 100%;
+  max-width: 300px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 8px;
+  background: rgba(5,2,16,0.62);
+  font-family: 'VCR', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: rgba(242,239,232,0.6);
+  text-align: center;
+}
+.pet-status-tendency b { text-shadow: 0 0 8px currentColor; }
+.pet-status-tendency span {
+  display: block;
+  margin-top: 4px;
+  font-size: 7px;
+  color: rgba(242,239,232,0.36);
+}
 .pet-status-saved {
   font-family: 'VCR', monospace;
   font-size: 10px;
@@ -1017,6 +1037,70 @@
   max-width: 300px;
   margin-top: 10px;
 }
+
+/* Adult evolution reveal */
+.pet-evolution-screen {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: 2px solid var(--form-tint);
+  border-radius: 16px;
+  background: #050210;
+  color: var(--white);
+  overflow: hidden;
+  cursor: pointer;
+  animation: pet-evolution-in 0.3s ease-out;
+}
+.pet-evolution-glow {
+  position: absolute;
+  left: 50%; top: 43%;
+  width: min(76vw, 340px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, var(--form-tint), transparent 68%);
+  opacity: 0.48;
+  filter: blur(4px);
+  animation: pet-evolution-pulse 1.2s ease-in-out infinite;
+}
+.pet-evolution-art {
+  position: absolute;
+  left: 50%; top: 42%;
+  width: min(68%, 300px);
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 0 22px var(--form-tint));
+}
+.pet-evolution-svg { width: 100%; overflow: visible; animation: pet-evolution-float 1s ease-in-out infinite; }
+.pet-evolution-title {
+  position: absolute;
+  left: 7%; right: 7%; bottom: 19%;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(24px, 7vw, 34px);
+  line-height: 1.05;
+  letter-spacing: 2px;
+  color: var(--form-tint);
+  text-shadow: 0 0 18px var(--form-tint);
+}
+.pet-evolution-how {
+  position: absolute;
+  left: 6%; right: 6%; bottom: 12%;
+  font-family: 'VCR', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: rgba(242,239,232,0.62);
+}
+.pet-evolution-skip {
+  position: absolute;
+  left: 0; right: 0; bottom: 4%;
+  font-family: 'VCR', monospace;
+  font-size: 7px;
+  letter-spacing: 2px;
+  color: rgba(242,239,232,0.3);
+}
+@keyframes pet-evolution-in { from { opacity: 0; filter: brightness(0); } }
+@keyframes pet-evolution-pulse { 50% { transform: translate(-50%, -50%) scale(1.08); opacity: 0.72; } }
+@keyframes pet-evolution-float { 50% { transform: translateY(-4px) scale(1.03); } }
 
 @media (max-width: 380px) {
   .pet-act-btn { font-size: 9px; letter-spacing: 1px; }

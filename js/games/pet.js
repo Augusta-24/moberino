@@ -1414,10 +1414,37 @@
     playFanfare();
     lastMood = '';
     if (pet.stage === 1) renderPicker();
+    else if (pet.stage === 3) renderEvolutionAnnouncement();
     else render();
     // celebratory burst
     for (let i = 0; i < 6; i++) setTimeout(() => fx(starSVG(18, i % 2 ? '#ffe61a' : '#fff')), i * 90);
     persist();
+  }
+
+  function renderEvolutionAnnouncement() {
+    const host = document.getElementById('pet-wrap');
+    if (!host || !pet.form) { render(); return; }
+    const form = FORMS[pet.form];
+    const tint = FORM_TINT[pet.form];
+    const art = petSVG(3, pet.form, 'happy')
+      .replace(/class="pet-stage-svg mood-happy"/, 'class="pet-evolution-svg"');
+    host.innerHTML = `
+      <button class="pet-evolution-screen" id="pet-evolution-screen" type="button" style="--form-tint:${tint.main};--form-glow:${tint.glow}">
+        <div class="pet-evolution-glow"></div>
+        <div class="pet-evolution-art">${art}</div>
+        <div class="pet-evolution-title">YOUR MOBLING EVOLVED INTO ${form.name}!</div>
+        <div class="pet-evolution-how">[${form.how}]</div>
+        <div class="pet-evolution-skip">TAP TO CONTINUE</div>
+      </button>`;
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      render();
+      for (let i = 0; i < 6; i++) setTimeout(() => fx(starSVG(18, i % 2 ? '#ffe61a' : tint.glow)), i * 90);
+    };
+    document.getElementById('pet-evolution-screen').onclick = finish;
+    setTimeout(finish, 2500);
   }
 
   function decideForm() {
@@ -1614,6 +1641,9 @@
     const extra = `${formName} · ${streakDays}D`;
     const happyAvg = clamp(Math.round(lifetimeHappyAvg()), 0, 99);
     const safetyAvg = clamp(Math.round(lifetimeSafetyAvg()), 0, 99);
+    const tendingForm = pet.stage >= 1 && pet.stage <= 2 ? decideForm() : null;
+    const tendency = tendingForm ? FORMS[tendingForm] : null;
+    const tendencyTint = tendingForm ? FORM_TINT[tendingForm].main : '';
     const bg = petSVG(pet.stage, pet.form, 'happy').replace(/class="pet-stage-svg mood-happy"/, 'class="pet-status-svg"');
     document.body.classList.add('arcade-selection-open');
     setArcadeExitVisible && setArcadeExitVisible(false);
@@ -1632,6 +1662,7 @@
             ${statMini(iconImg(ICON.safety, 16), pet.safety, 'f-safety')}
             ${statMini(iconImg(ICON.health, 16), pet.health, 'f-health')}
           </div>
+          ${tendency ? `<div class="pet-status-tendency">TRENDING TOWARD: <b style="color:${tendencyTint}">${tendency.name}</b><span>${tendency.how}</span></div>` : ''}
           <div class="pet-status-meta">HAPPINESS AVG ${happyAvg} · SAFETY AVG ${safetyAvg} · FORMS ${pet.collected.length}/4</div>
           <div class="pet-status-saved" id="pet-status-saved">SAVING…</div>
           <div class="pet-status-btns">
