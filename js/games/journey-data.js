@@ -33,10 +33,10 @@
     {
       id: 'fuel-stop-1',
       regionId: 'region-1',
-      name: 'Lantern Fuel Stop',
-      shortName: 'FUEL STOP',
+      name: 'Lantern Station',
+      shortName: 'LANTERN',
       type: 'peaceful',
-      description: 'A roadside beacon with enough fuel to leave home behind.',
+      description: 'A roadside fuel station with enough propellant to leave home behind.',
       connections: ['home-orbit', 'scrap-belt'],
       fuelCost: 6,
       distance: 18,

@@ -16,6 +16,27 @@
     }
   }
 
+  function shipIllustration(className) {
+    return `
+      <svg class="${className} journey-ship-svg" viewBox="0 0 240 220" aria-hidden="true">
+        <g class="journey-engine-plume">
+          <path d="M91 157 L106 207 L119 165 Z" fill="#69d7ff" opacity=".28"/>
+          <path d="M121 165 L136 207 L149 157 Z" fill="#69d7ff" opacity=".28"/>
+          <path d="M105 158 L120 214 L135 158 Z" fill="#fff1a6" opacity=".8"/>
+        </g>
+        <path d="M93 77 L27 154 L92 137 L106 105 Z" fill="#3d5872" stroke="#69d7ff" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M147 77 L213 154 L148 137 L134 105 Z" fill="#3d5872" stroke="#69d7ff" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M120 14 C146 40 157 91 150 145 L136 174 L120 165 L104 174 L90 145 C83 91 94 40 120 14 Z" fill="#dcecf1" stroke="#69d7ff" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M120 25 L120 160 L104 169 L91 142 C87 99 96 52 120 25 Z" fill="#a9c6d2" opacity=".72"/>
+        <path d="M120 42 C134 54 139 72 137 91 C132 98 108 98 103 91 C101 72 106 54 120 42 Z" fill="#102c4b" stroke="#fff1a6" stroke-width="3"/>
+        <path d="M107 113 L132 104 L137 123 L112 132 Z" fill="#fff1a6" opacity=".72" stroke="#5f6d79" stroke-width="2"/>
+        <path d="M106 115 L132 107 M110 124 L136 115" stroke="#5f6d79" stroke-width="2" opacity=".8"/>
+        <rect x="55" y="132" width="23" height="9" rx="3" fill="#ff7c8f" transform="rotate(-14 55 132)"/>
+        <rect x="161" y="132" width="23" height="9" rx="3" fill="#b79cff" transform="rotate(14 161 132)"/>
+        <circle cx="120" cy="148" r="6" fill="#69d7ff" stroke="#0b213b" stroke-width="2"/>
+      </svg>`;
+  }
+
   function renderMenu() {
     const root = host();
     if (!root || !active) return;
@@ -28,8 +49,7 @@
           <div class="journey-kicker">A PERSISTENT SPACE EXPEDITION</div>
           <h1 id="journey-title">JOURNEY</h1>
           <div class="journey-ship-mark" aria-hidden="true">
-            <span class="journey-ship-body">▲</span>
-            <span class="journey-ship-trail"></span>
+            ${shipIllustration('journey-menu-ship')}
           </div>
           <p>Keep a patched-up ship moving toward the far edge of the map.</p>
           <div class="journey-menu-actions">
@@ -63,7 +83,7 @@
     const state = JourneyState.getState();
     const node = state && currentNode(state);
     if (node && node.id === 'fuel-stop-1' && !state.route.completedNodes.includes(node.id)) {
-      renderFuelStop();
+      serviceFuelStop();
       return;
     }
     if (node && node.type === 'encounter' && !state.route.completedNodes.includes(node.id)) {
@@ -82,25 +102,21 @@
     }
     const r = state.resources;
     const location = currentNode(state);
-    const destination = JourneyData.getNode(state.selectedDestinationId);
     const notices = JourneyState.getReturnSummary();
     const canRepair = r.hull < r.maxHull && state.currency.salvage >= 5;
     const canRefuel = location.id === 'fuel-stop-1' && r.fuel < r.maxFuel;
     const canRest = r.pilot < 100;
-    const canDepart = !!destination && destination.implemented && r.fuel >= destination.fuelCost;
-    const guidance = destination
-      ? {
-          label: 'ROUTE READY',
-          message: `${destination.name} selected. The ship has enough fuel to depart.`,
-          action: 'DEPART NOW',
-          handler: 'journeyDepart()'
-        }
-      : {
-          label: 'NEXT STEP',
-          message: 'Open Route and select Lantern Fuel Stop to begin the journey.',
-          action: 'OPEN ROUTE',
-          handler: 'journeyRoute()'
-        };
+    const availableStop = JourneyData.getConnectedNodes(location.id).find(node =>
+      state.route.unlockedNodes.includes(node.id) && node.implemented
+    );
+    const guidance = {
+      label: 'NEXT STEP',
+      message: availableStop
+        ? `Open Route and travel directly to ${availableStop.name}.`
+        : 'Open Route to review the journey ahead.',
+      action: 'OPEN ROUTE',
+      handler: 'journeyRoute()'
+    };
     root.innerHTML = `
       <main class="journey-ship-screen" aria-labelledby="journey-ship-title">
         <header class="journey-topbar">
@@ -119,7 +135,7 @@
         <section class="journey-ship-bay">
           <div class="journey-ship-visual" aria-label="Your patched-up ship">
             <div class="journey-orbit-line"></div>
-            <div class="journey-large-ship">▲</div>
+            <div class="journey-large-ship">${shipIllustration('journey-home-ship')}</div>
             <span>PATCHED · PRESSURIZED · READY</span>
           </div>
           <div class="journey-status-panel">
@@ -129,18 +145,17 @@
             ${resourceCard('POWER', r.power, r.maxPower, 'is-power')}
             ${resourceCard('PILOT', r.pilot, 100, 'is-pilot')}
             <div class="journey-next-stop">
-              <span>NEXT DESTINATION</span>
-              <strong>${destination ? destination.name.toUpperCase() : 'NOT SELECTED'}</strong>
-              <small>${destination ? `${destination.fuelCost} FUEL · ${destination.distance} DISTANCE` : 'Open the route and choose a connected stop.'}</small>
+              <span>NEXT AVAILABLE STOP</span>
+              <strong>${availableStop ? availableStop.name.toUpperCase() : 'ROUTE AHEAD'}</strong>
+              <small>${availableStop ? `${availableStop.fuelCost} FUEL · CLICK ROUTE TO TRAVEL` : 'Open the route to inspect future destinations.'}</small>
             </div>
           </div>
         </section>
         <nav class="journey-ship-actions" aria-label="Ship actions">
-          <button class="${destination ? '' : 'is-recommended'}" type="button" onclick="journeyRoute()">ROUTE <small>${destination ? 'CHANGE DESTINATION' : 'START HERE · CHOOSE A STOP'}</small></button>
+          <button class="is-recommended" type="button" onclick="journeyRoute()">ROUTE <small>CHOOSE AND TRAVEL</small></button>
           <button type="button" onclick="journeyRepair()" ${canRepair ? '' : 'disabled'}>REPAIR <small>${r.hull >= r.maxHull ? 'HULL FULL' : state.currency.salvage < 5 ? 'NEEDS 5 SALVAGE' : '5 SALVAGE'}</small></button>
           <button type="button" onclick="journeyRefuel()" ${canRefuel ? '' : 'disabled'}>REFUEL <small>${r.fuel >= r.maxFuel ? 'TANK FULL' : location.id !== 'fuel-stop-1' ? 'FIND A FUEL STOP' : 'STATION SERVICE'}</small></button>
           <button type="button" onclick="journeyRest()" ${canRest ? '' : 'disabled'}>REST <small>${canRest ? 'RESTORE 25' : 'PILOT READY'}</small></button>
-          <button class="journey-depart-btn" type="button" onclick="journeyDepart()" ${canDepart ? '' : 'disabled'}>DEPART <small>${!destination ? 'SELECT ROUTE' : !destination.implemented ? 'ROUTE NOT READY' : r.fuel < destination.fuelCost ? `NEEDS ${destination.fuelCost} FUEL` : destination.shortName}</small></button>
         </nav>
       </main>`;
   }
@@ -175,9 +190,8 @@
             const connected = connectedIds.has(node.id);
             const unlocked = state.route.unlockedNodes.includes(node.id);
             const selectable = connected && unlocked && node.implemented && node.id !== state.currentNodeId;
-            const selected = state.selectedDestinationId === node.id;
             return `
-              <article class="journey-route-node is-${node.type} ${selected ? 'is-selected' : ''} ${selectable ? 'is-selectable' : ''}" data-status="${status}">
+              <article class="journey-route-node is-${node.type} ${selectable ? 'is-selectable' : ''}" data-status="${status}">
                 <div class="journey-route-index">${String(index + 1).padStart(2, '0')}</div>
                 <div class="journey-route-node-copy">
                   <span>${node.type.toUpperCase()} · ${status}</span>
@@ -188,18 +202,27 @@
                   <strong>${node.id === 'home-orbit' ? '—' : node.fuelCost}</strong>
                   <span>${node.id === 'home-orbit' ? 'ORIGIN' : 'FUEL'}</span>
                 </div>
-                ${selectable ? `<button type="button" onclick="journeySelectDestination('${node.id}')">${selected ? 'SELECTED' : 'SELECT'}</button>` : ''}
+                ${selectable ? `<button type="button" onclick="journeyTravelTo('${node.id}')">TRAVEL →</button>` : ''}
               </article>`;
           }).join('')}
         </section>
         <div class="journey-route-footer">
-          <span>Only connected, prepared stops can be selected.</span>
+          <span>Click Travel on any connected stop to launch immediately.</span>
           <button class="journey-primary-btn" type="button" onclick="journeyShip()">RETURN TO SHIP</button>
         </div>
       </main>`;
   }
 
-  function renderFuelStop() {
+  function serviceFuelStop() {
+    const state = JourneyState.getState();
+    if (!state) return;
+    const firstVisit = !state.route.completedNodes.includes('fuel-stop-1');
+    const refuel = JourneyState.refuelToMax('lantern-station-service');
+    if (firstVisit) JourneyState.completeNode('fuel-stop-1', ['scrap-belt']);
+    renderFuelStop(refuel.gained, firstVisit);
+  }
+
+  function renderFuelStop(fuelGained, firstVisit) {
     const root = host();
     const state = JourneyState.getState();
     if (!root || !state || !active) return;
@@ -210,14 +233,17 @@
         </div>
         <section>
           <div class="journey-kicker">DESTINATION REACHED · 18 DISTANCE</div>
-          <h1 id="journey-fuel-title">LANTERN<br>FUEL STOP</h1>
-          <p>The beacon keeper waves your patched-up ship toward an open pump.</p>
-          <blockquote>“First tank is on the house. The Scrap Belt starts just past our lights.”</blockquote>
+          <h1 id="journey-fuel-title">LANTERN<br>STATION</h1>
+          <p>The Wayfarer docks, connects to the station pump, and refuels automatically.</p>
+          <blockquote>${firstVisit
+            ? '“Tank full. The Scrap Belt route is uploaded to your navigation board.”'
+            : '“Welcome back. We topped off the tank while you were docking.”'}</blockquote>
           <div class="journey-arrival-stats">
-            <span>CURRENT FUEL <strong>${Math.round(state.resources.fuel)} / ${Math.round(state.resources.maxFuel)}</strong></span>
-            <span>NEXT ROUTE <strong>SCRAP BELT</strong></span>
+            <span>FUEL ADDED <strong>+${Math.round(fuelGained)}</strong></span>
+            <span>TANK STATUS <strong>${Math.round(state.resources.fuel)} / ${Math.round(state.resources.maxFuel)}</strong></span>
+            <span>${firstVisit ? 'ROUTE UNLOCKED' : 'NEXT ROUTE'} <strong>SCRAP BELT</strong></span>
           </div>
-          <button class="journey-primary-btn" type="button" onclick="journeyCompleteFuelStop()">REFUEL AND CONTINUE</button>
+          <button class="journey-primary-btn" type="button" onclick="journeyShip()">CONTINUE TO SHIP</button>
         </section>
       </main>`;
   }
@@ -229,7 +255,7 @@
     root.innerHTML = `
       <main class="journey-briefing-screen" aria-labelledby="journey-briefing-title">
         <section class="journey-briefing-art" aria-hidden="true">
-          <div class="journey-briefing-ship">▲</div>
+          <div class="journey-briefing-ship">${shipIllustration('journey-encounter-ship')}</div>
           <i></i><i></i><i></i><i></i><i></i>
         </section>
         <section class="journey-briefing-copy">
@@ -389,37 +415,26 @@
     renderRoute();
   };
 
-  window.journeySelectDestination = function (destinationId) {
+  window.journeyTravelTo = function (destinationId) {
     const state = JourneyState.getState();
     const location = state && currentNode(state);
     const destination = JourneyData.getNode(destinationId);
     if (!state || !location || !destination || !location.connections.includes(destinationId) || !destination.implemented) return;
     playMenuSound();
-    JourneyState.selectDestination(destinationId);
-    renderRoute();
-  };
-
-  window.journeyDepart = function () {
-    const state = JourneyState.getState();
-    const origin = state && currentNode(state);
-    const destination = state && JourneyData.getNode(state.selectedDestinationId);
-    if (!state || !origin || !destination || !origin.connections.includes(destination.id) || !destination.implemented) return;
-    playMenuSound();
+    const selected = JourneyState.selectDestination(destinationId);
+    if (!selected.ok) return;
     const result = JourneyState.travel({
-      originId: origin.id,
+      originId: location.id,
       destinationId: destination.id,
       fuelCost: destination.fuelCost,
       distance: destination.distance
     });
-    if (result.ok) renderCurrentLocation();
-    else renderShip();
-  };
-
-  window.journeyCompleteFuelStop = function () {
-    playMenuSound();
-    JourneyState.refuelToMax('fuel-stop-service');
-    JourneyState.completeNode('fuel-stop-1', ['scrap-belt']);
-    renderShip();
+    if (!result.ok) {
+      renderRoute();
+      return;
+    }
+    if (destination.id === 'fuel-stop-1') serviceFuelStop();
+    else renderCurrentLocation();
   };
 
   window.journeyStartEncounter = function () {
