@@ -164,7 +164,7 @@ body.on-facefactory button { touch-action: manipulation; }
 .ff-reel::after { bottom:0;background:linear-gradient(transparent,#39294d88); }
 .ff-reel-strip { position:absolute;inset:0;display:flex;flex-direction:column;will-change:transform;background:linear-gradient(#fff,#d7eaff); }
 .ff-reel-cell { flex:0 0 100%;width:100%;height:100%;display:grid;place-items:center;background:transparent;position:relative; }
-.ff-reel-name { position:absolute;left:50%;top:8px;z-index:3;max-width:calc(100% - 14px);transform:translateX(-50%);overflow:hidden;text-overflow:ellipsis;padding:4px 8px 3px;border:1px solid rgba(30,17,45,.34);border-radius:999px;background:rgba(255,255,255,.72);color:#281536;font:clamp(7px,1.5vw,10px)/1 'VCR',monospace;letter-spacing:1px;text-shadow:0 1px 0 #fff;white-space:nowrap;box-shadow:0 2px 7px #28153624; }
+.ff-reel-name { position:absolute;left:50%;top:8px;z-index:3;max-width:calc(100% - 14px);transform:translateX(-50%);overflow:hidden;text-overflow:ellipsis;padding:5px 9px 4px;border:1px solid rgba(30,17,45,.34);border-radius:999px;background:rgba(255,255,255,.72);color:#281536;font:clamp(9px,1.8vw,13px)/1 'VCR',monospace;letter-spacing:1px;text-shadow:0 1px 0 #fff;white-space:nowrap;box-shadow:0 2px 7px #28153624; }
 .ff-reel-cell img { width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 5px 5px #0003); }
 .ff-reel.rolling .ff-reel-strip { filter:blur(2px) saturate(.82); }
 .ff-reel.rolling.slowing .ff-reel-strip { filter:blur(.7px) saturate(.98); }
@@ -224,6 +224,7 @@ body.on-facefactory button { touch-action: manipulation; }
 .ff-face-band { min-height:0;position:relative;overflow:hidden;border-bottom:1px solid #00e5ff70; }
 .ff-face-band:last-child { border-bottom:0; }
 .ff-face-band svg { width:100%;height:100%;display:block; }
+.ff-band-name { position:absolute;right:36px;bottom:4px;z-index:4;max-width:calc(100% - 76px);overflow:hidden;text-overflow:ellipsis;padding:4px 7px 3px;border:1px solid rgba(255,255,255,.38);border-radius:999px;background:rgba(5,6,20,.72);color:#fff;font:8px/1 'VCR',monospace;letter-spacing:.8px;white-space:nowrap;box-shadow:0 2px 8px #0008;pointer-events:none; }
 .ff-face-band.ff-guess-target { z-index:2; }
 .ff-crazy-face.ff-guessing-face { border-color:rgba(242,239,232,.42);box-shadow:0 0 24px rgba(0,0,0,.48); }
 .ff-guessing-face .ff-face-band { border-bottom-color:rgba(12,18,42,.2); }
@@ -243,10 +244,12 @@ body.on-facefactory button { touch-action: manipulation; }
 .ff-face-band.ff-tune-selected { box-shadow:inset 0 0 0 4px #ffe61a; }
 .ff-tune-select { position:absolute;left:50%;top:6px;z-index:4;transform:translateX(-50%);min-height:25px;border:1px solid #ffe61a;border-radius:999px;padding:4px 8px;background:rgba(6,7,25,.78);color:#ffe61a;font:7px 'VCR',monospace;letter-spacing:.7px;cursor:pointer;box-shadow:0 0 10px #ffe61a55; }
 .ff-funny-actions { display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:12px; }
-.ff-camera-button,.ff-random-button,.ff-portrait-retake { display:flex;align-items:center;justify-content:center;gap:9px;min-width:150px;min-height:54px;border:2px solid #ff66dd;border-radius:999px;background:linear-gradient(180deg,#ff66dd32,#ff66dd12);color:#ff9bea;font:12px 'VCR',monospace;letter-spacing:2px;cursor:pointer;box-shadow:0 0 22px #ff66dd44,inset 0 1px 0 #fff6; }
+.ff-camera-button,.ff-random-button,.ff-name-toggle,.ff-portrait-retake { display:flex;align-items:center;justify-content:center;gap:9px;min-width:150px;min-height:54px;border:2px solid #ff66dd;border-radius:999px;background:linear-gradient(180deg,#ff66dd32,#ff66dd12);color:#ff9bea;font:12px 'VCR',monospace;letter-spacing:2px;cursor:pointer;box-shadow:0 0 22px #ff66dd44,inset 0 1px 0 #fff6; }
 .ff-random-button { border-color:#00e5ff;background:linear-gradient(180deg,#00e5ff2d,#00e5ff0d);color:#7cf8ff;box-shadow:0 0 20px #00e5ff3d,inset 0 1px 0 #fff6; }
+.ff-name-toggle { min-width:128px;border-color:rgba(255,255,255,.35);background:linear-gradient(180deg,#ffffff18,#ffffff08);color:rgba(255,255,255,.68);font-size:9px; }
+.ff-name-toggle.active { border-color:#ffe61a;background:linear-gradient(180deg,#ffe61a2d,#ffe61a0d);color:#fff09a;box-shadow:0 0 18px #ffe61a38,inset 0 1px 0 #fff6; }
 .ff-camera-button svg,.ff-random-button svg,.ff-portrait-retake svg { width:34px;height:28px;fill:none;stroke:currentColor;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 5px currentColor); }
-.ff-camera-button:active,.ff-random-button:active,.ff-portrait-retake:active { transform:translateY(2px) scale(.98); }
+.ff-camera-button:active,.ff-random-button:active,.ff-name-toggle:active,.ff-portrait-retake:active { transform:translateY(2px) scale(.98); }
 .ff-camera-flash { position:fixed;inset:0;z-index:10020;background:white;pointer-events:none;animation:ff-camera-flash .62s ease-out forwards; }
 @keyframes ff-camera-flash { 0%{opacity:0} 7%{opacity:1} 18%{opacity:.82} 42%{opacity:.28} 70%{opacity:.1} 100%{opacity:0} }
 .ff-portrait-overlay { position:fixed;inset:0;z-index:9800;display:grid;place-items:center;overflow:auto;padding:26px 16px;background:rgba(2,3,15,.9);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px); }

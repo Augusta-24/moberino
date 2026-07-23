@@ -23,6 +23,7 @@
   let reelBusy = false;
   let reelRoundComplete = false;
   let portraitStyleIndex = 0;
+  let showFunnyNames = false;
 
   const FACE_TUNING_KEY = 'face-factory-landmarks';
   const FACE_TUNING_LEGACY_KEYS = ['face-factory-landmarks-v5', 'face-factory-landmarks-v4'];
@@ -241,7 +242,7 @@
           ${crazyModePreview()}<strong>CRAZY FACE</strong><span>MIX THE EYES<br>NOSE AND SMILE</span>
         </button>
         <button class="ff-mode-card" style="--mode-color:#ff66dd" type="button" onclick="faceFactoryOpen('reels')">
-          ${reelsModePreview()}<strong>FACE REELS</strong><span>SPIN · HOLD<br>AND MATCH</span>
+          ${reelsModePreview()}<strong>FACE SLOTS</strong><span>SPIN · HOLD<br>AND MATCH</span>
         </button>
       </div>`, "SFX.menuSelect();nav('lobby')");
   }
@@ -846,10 +847,11 @@
     const oriented = transform.tuning.flip ? `<g transform="translate(512 0) scale(-1 1)">${image}</g>` : image;
     return `<g transform="matrix(${matrix})">${oriented}</g>`;
   }
-  function bandMarkup(part, ci, controls, expr, tuning = false, highlighted = false) {
+  function bandMarkup(part, ci, controls, expr, tuning = false, highlighted = false, showName = false) {
     const slice = { y:FACE_BAND_EDGES[part], h:FACE_BAND_EDGES[part + 1] - FACE_BAND_EDGES[part] };
     return `<div class="ff-face-band ${tuning && tunePart === part ? 'ff-tune-selected' : ''} ${highlighted ? 'ff-guess-target' : ''}" id="ff-band-${part}" data-part="${part}" data-ci="${ci}">
       <svg viewBox="44 ${slice.y.toFixed(3)} 424 ${slice.h.toFixed(3)}" preserveAspectRatio="none" aria-hidden="true">${scrambleFaceImage(ci, expr, part)}</svg>
+      ${showName ? `<span class="ff-band-name">${GAME_CHARS[ci].name}</span>` : ''}
       ${highlighted ? '<span class="ff-guess-chevron ff-guess-chevron-left" aria-hidden="true"></span><span class="ff-guess-chevron ff-guess-chevron-right" aria-hidden="true"></span>' : ''}
       ${controls ? `<button class="ff-band-arrow ff-band-arrow-left" type="button" aria-label="Previous ${bandLabels[part]}" onclick="event.stopPropagation();faceFactoryCycleBand(${part},-1)">◀</button><button class="ff-band-arrow ff-band-arrow-right" type="button" aria-label="Next ${bandLabels[part]}" onclick="event.stopPropagation();faceFactoryCycleBand(${part},1)">▶</button>` : ''}
       ${tuning ? `<button class="ff-tune-select" type="button" aria-label="Adjust ${GAME_CHARS[ci].name} ${bandLabels[part]}" onclick="event.stopPropagation();faceFactorySelectTuneBand(${part})">${tunePart === part ? 'ADJUSTING' : 'ADJUST'}</button>` : ''}
@@ -917,10 +919,10 @@
     mixWon = false;
     wrap().innerHTML = shell('CRAZY FACE', `<section class="ff-panel">
       ${crazyHeading(tuning ? 'tune' : 'mix')}
-      <div class="ff-crazy-face ${tuning ? 'ff-tuning-face' : ''}" id="ff-crazy-face">${mixChars.map((ci, part) => bandMarkup(part, ci, true, undefined, tuning)).join('')}</div>
+      <div class="ff-crazy-face ${tuning ? 'ff-tuning-face' : ''}" id="ff-crazy-face">${mixChars.map((ci, part) => bandMarkup(part, ci, true, undefined, tuning, false, !tuning && showFunnyNames)).join('')}</div>
       <div class="ff-message" id="ff-crazy-message">${tuning ? 'TAP ADJUST ON ANY FACE PART' : 'MAKE A FUNNY FACE'}</div>
       ${tuning ? fineTunePanel() : ''}
-      ${tuning ? '<div id="ff-crazy-win-action"></div>' : `<div class="ff-funny-actions"><button class="ff-random-button" type="button" aria-label="Make a random funny face" onclick="faceFactoryRandomizeFunny()">${randomIcon()}<span>RANDOM</span></button><button class="ff-camera-button" type="button" aria-label="Take a funny face portrait" onclick="faceFactoryTakePortrait()">${cameraIcon()}<span>PORTRAIT</span></button></div>`}
+      ${tuning ? '<div id="ff-crazy-win-action"></div>' : `<div class="ff-funny-actions"><button class="ff-name-toggle ${showFunnyNames ? 'active' : ''}" type="button" aria-pressed="${showFunnyNames}" onclick="faceFactoryToggleFunnyNames()"><span>NAMES ${showFunnyNames ? 'ON' : 'OFF'}</span></button><button class="ff-random-button" type="button" aria-label="Make a random funny face" onclick="faceFactoryRandomizeFunny()">${randomIcon()}<span>RANDOM</span></button><button class="ff-camera-button" type="button" aria-label="Take a funny face portrait" onclick="faceFactoryTakePortrait()">${cameraIcon()}<span>PORTRAIT</span></button></div>`}
     </section>`);
   }
   window.faceFactoryCrazyMode = function(mode) {
@@ -943,7 +945,7 @@
     }
     const old = document.getElementById(`ff-band-${part}`);
     if (!old) return;
-    old.outerHTML = bandMarkup(part, mixChars[part], true);
+    old.outerHTML = bandMarkup(part, mixChars[part], true, undefined, false, false, showFunnyNames);
     sound('charPick', mixChars[part] % 8);
   };
   window.faceFactoryRandomizeFunny = function() {
@@ -960,6 +962,12 @@
     }
     mixChars = next;
     sound('boxOpen');
+    renderCrazyMixer(false, false);
+  };
+  window.faceFactoryToggleFunnyNames = function() {
+    if (tuneMode) return;
+    showFunnyNames = !showFunnyNames;
+    sound('menuSelect');
     renderCrazyMixer(false, false);
   };
   window.faceFactoryRandomizeTune = function() {
@@ -999,7 +1007,7 @@
       overlay.innerHTML = `<div class="ff-portrait-card ff-portrait-${style}">
         <button class="ff-portrait-close" type="button" aria-label="Close portrait" onclick="faceFactoryClosePortrait()">×</button>
         <div class="ff-portrait-kicker">FACE FACTORY ORIGINAL</div>
-        <div class="ff-crazy-face ff-portrait-face">${mixChars.map((ci, part) => bandMarkup(part, ci, false)).join('')}</div>
+        <div class="ff-crazy-face ff-portrait-face">${mixChars.map((ci, part) => bandMarkup(part, ci, false, undefined, false, false, showFunnyNames)).join('')}</div>
         <div class="ff-portrait-caption">FAMILY FUN · ${style.toUpperCase()} EDITION</div>
         <button class="ff-portrait-retake" type="button" onclick="faceFactoryTakePortrait()">${cameraIcon()}<span>NEW STYLE</span></button>
       </div>`;
