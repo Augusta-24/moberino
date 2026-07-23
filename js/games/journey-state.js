@@ -206,22 +206,22 @@
     returnSummary = [];
     if (!state) return returnSummary;
     const elapsed = clamp(now - finiteNumber(state.lastPlayedAt, now), 0, OFFLINE_CAP_MS);
-    if (elapsed < 60 * 1000) return returnSummary;
-
-    const hours = elapsed / (60 * 60 * 1000);
-    const oldPower = state.resources.power;
-    const oldPilot = state.resources.pilot;
-    state.resources.power = clamp(oldPower + hours * POWER_PER_HOUR, 0, state.resources.maxPower);
-    state.resources.pilot = clamp(oldPilot + hours * PILOT_PER_HOUR, 0, 100);
-
-    const powerGained = Math.floor(state.resources.power - oldPower);
-    const pilotGained = Math.floor(state.resources.pilot - oldPilot);
-    if (powerGained > 0) returnSummary.push(`Power restored by ${powerGained}.`);
-    if (pilotGained > 0) returnSummary.push(`Pilot readiness restored by ${pilotGained}.`);
     if (state.timers.repairCompleteAt && state.timers.repairCompleteAt <= now) {
       state.resources.hull = state.resources.maxHull;
       state.timers.repairCompleteAt = null;
       returnSummary.push('Hull repairs are complete.');
+    }
+    if (elapsed >= 60 * 1000) {
+      const hours = elapsed / (60 * 60 * 1000);
+      const oldPower = state.resources.power;
+      const oldPilot = state.resources.pilot;
+      state.resources.power = clamp(oldPower + hours * POWER_PER_HOUR, 0, state.resources.maxPower);
+      state.resources.pilot = clamp(oldPilot + hours * PILOT_PER_HOUR, 0, 100);
+
+      const powerGained = Math.floor(state.resources.power - oldPower);
+      const pilotGained = Math.floor(state.resources.pilot - oldPilot);
+      if (powerGained > 0) returnSummary.push(`Power restored by ${powerGained}.`);
+      if (pilotGained > 0) returnSummary.push(`Pilot readiness restored by ${pilotGained}.`);
     }
     return returnSummary;
   }
@@ -411,6 +411,61 @@
     });
   }
 
+  function startRepair(durationMs, salvageCost) {
+    if (!state) return mutationResult(false, 'no-save');
+    if (state.timers.repairCompleteAt) {
+      return mutationResult(false, 'repair-underway', { completeAt: state.timers.repairCompleteAt });
+    }
+    if (state.resources.hull >= state.resources.maxHull) return mutationResult(false, 'hull-full');
+    const cost = Math.max(0, finiteNumber(salvageCost, 0));
+    if (state.currency.salvage < cost) {
+      return mutationResult(false, 'insufficient-salvage', {
+        needed: cost,
+        available: state.currency.salvage
+      });
+    }
+    state.currency.salvage -= cost;
+    state.timers.repairCompleteAt = Date.now() + Math.max(1000, finiteNumber(durationMs, 1000));
+    saveJourneyState('start-repair');
+    return mutationResult(true, 'repair-started', {
+      completeAt: state.timers.repairCompleteAt,
+      salvageSpent: cost
+    });
+  }
+
+  function completeReadyRepair(now) {
+    if (!state || !state.timers.repairCompleteAt) return mutationResult(false, 'no-repair');
+    const checkedAt = finiteNumber(now, Date.now());
+    if (state.timers.repairCompleteAt > checkedAt) {
+      return mutationResult(false, 'repair-underway', { completeAt: state.timers.repairCompleteAt });
+    }
+    state.resources.hull = state.resources.maxHull;
+    state.timers.repairCompleteAt = null;
+    saveJourneyState('complete-repair');
+    return mutationResult(true, 'repair-complete');
+  }
+
+  function purchaseUpgrade(upgradeId, salvageCost) {
+    if (!state || !Object.prototype.hasOwnProperty.call(state.upgrades, upgradeId)) {
+      return mutationResult(false, 'unknown-upgrade');
+    }
+    const cost = Math.max(0, finiteNumber(salvageCost, 0));
+    if (state.currency.salvage < cost) {
+      return mutationResult(false, 'insufficient-salvage', {
+        needed: cost,
+        available: state.currency.salvage
+      });
+    }
+    state.currency.salvage -= cost;
+    state.upgrades[upgradeId] += 1;
+    saveJourneyState(`upgrade-${upgradeId}`);
+    return mutationResult(true, 'upgraded', {
+      upgradeId,
+      level: state.upgrades[upgradeId],
+      salvageSpent: cost
+    });
+  }
+
   function beginEncounter(encounterId) {
     if (!state || typeof encounterId !== 'string') return mutationResult(false, 'no-save');
     if (state.encounters.activeAttempt && state.encounters.activeAttempt.encounterId === encounterId) {
@@ -509,6 +564,9 @@
     refuelToMax,
     restPilot,
     repairHull,
+    startRepair,
+    completeReadyRepair,
+    purchaseUpgrade,
     beginEncounter,
     applyEncounterResult,
     clearInMemory

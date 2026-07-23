@@ -105,7 +105,7 @@
       connections: ['distress-signal', 'abandoned-cache', 'ogre-gate'],
       fuelCost: 7,
       distance: 31,
-      implemented: false
+      implemented: true
     },
     {
       id: 'ogre-gate',

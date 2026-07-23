@@ -532,6 +532,60 @@ body.on-journey {
   display: block;
 }
 
+.journey-maintenance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 22px 0;
+}
+
+.journey-maintenance-grid article {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(105,215,255,.45);
+  border-radius: 9px;
+  padding: 16px;
+  background: rgba(105,215,255,.07);
+}
+
+.journey-maintenance-grid span {
+  color: var(--journey-gold);
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+.journey-maintenance-grid strong {
+  margin-top: 8px;
+  color: #f5f3ec;
+  font: 25px/1 'Bebas Neue', sans-serif;
+  letter-spacing: 1.5px;
+}
+
+.journey-maintenance-grid p {
+  flex: 1;
+  margin: 9px 0 14px;
+  color: #f5f3ec;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.journey-maintenance-grid button {
+  min-height: 44px;
+  border: 1px solid var(--journey-cyan);
+  border-radius: 6px;
+  background: rgba(105,215,255,.14);
+  color: var(--journey-cyan);
+  font: 13px/1.2 'VCR', monospace;
+  cursor: pointer;
+}
+
+.journey-maintenance-grid button:disabled {
+  border-color: rgba(255,241,166,.35);
+  color: var(--journey-gold);
+  opacity: .55;
+  cursor: default;
+}
+
 .journey-cache-reward span {
   font-size: 12px;
   letter-spacing: 2px;
@@ -1364,6 +1418,10 @@ body.on-journey {
   }
 
   .journey-intel-leads {
+    grid-template-columns: 1fr;
+  }
+
+  .journey-maintenance-grid {
     grid-template-columns: 1fr;
   }
 

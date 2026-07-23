@@ -114,6 +114,22 @@ test('offline progress restores only power and pilot readiness', () => {
   assert.equal(api.getReturnSummary().length, 2);
 });
 
+test('a short repair completes on return even when less than a minute elapsed', () => {
+  const now = Date.now();
+  const save = JSON.stringify({
+    version: 2,
+    lastPlayedAt: now - 5000,
+    resources: { hull: 35, maxHull: 100 },
+    timers: { repairCompleteAt: now - 1000 }
+  });
+  const { api } = createHarness({ moberinoJourneySave: save });
+  const state = api.load();
+
+  assert.equal(state.resources.hull, 100);
+  assert.equal(state.timers.repairCompleteAt, null);
+  assert.equal(api.getReturnSummary().includes('Hull repairs are complete.'), true);
+});
+
 test('version 1 saves stranded at Home after clearing the Belt return to the frontier', () => {
   const stranded = JSON.stringify({
     version: 1,
@@ -170,6 +186,27 @@ test('peaceful discoveries reward once and unlock the next stop', () => {
   assert.equal(state.currency.salvage, 18);
   assert.equal(state.route.unlockedNodes.includes('repair-moon'), true);
   assert.equal(state.log.discoveries.includes('cache-log-1'), true);
+});
+
+test('timed repairs finish safely and upgrades persist', () => {
+  const { api } = createHarness();
+  const state = api.createNew();
+  state.resources.hull = 42;
+  state.currency.salvage = 30;
+
+  const started = api.startRepair(5000, 5);
+  assert.equal(started.ok, true);
+  assert.equal(api.getState().currency.salvage, 25);
+  assert.equal(api.completeReadyRepair(started.completeAt - 1).code, 'repair-underway');
+  assert.equal(api.completeReadyRepair(started.completeAt).ok, true);
+  assert.equal(api.getState().resources.hull, 100);
+  assert.equal(api.getState().timers.repairCompleteAt, null);
+
+  const upgraded = api.purchaseUpgrade('blasterLevel', 20);
+  assert.equal(upgraded.ok, true);
+  assert.equal(upgraded.level, 1);
+  assert.equal(api.getState().currency.salvage, 5);
+  assert.equal(api.getState().upgrades.blasterLevel, 1);
 });
 
 test('save writes are centralized and include their reason', () => {
