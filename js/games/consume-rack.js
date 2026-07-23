@@ -7,6 +7,23 @@
   const TAGS = ['FROG', 'MINT', 'TACO', 'DUCK', 'MOON', 'STAR', 'WAVE', 'COMET', 'BAGEL', 'SPARK', 'TURBO', 'COSMO'];
   let mode = null, wrap = null, state = null, nextTile = 1;
   const rackWordSet = new Set(typeof CONSUME_RACK_DATA === 'undefined' ? [] : CONSUME_RACK_DATA.wordDictionary);
+  function ktTone(freq, delay = 0, duration = 0.08, volume = 0.035, end = freq) {
+    try {
+      const context = getAudioCtx(), oscillator = context.createOscillator(), gain = context.createGain();
+      const start = context.currentTime + Math.max(0.02, delay);
+      oscillator.connect(gain); gain.connect(context.destination);
+      oscillator.type = 'triangle'; oscillator.frequency.setValueAtTime(freq, start);
+      oscillator.frequency.exponentialRampToValueAtTime(end, start + duration);
+      gain.gain.setValueAtTime(volume, start); gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+      oscillator.start(start); oscillator.stop(start + duration + 0.02);
+    } catch (e) {}
+  }
+  const KTSFX = {
+    pick() { ktTone(520); },
+    place() { ktTone(700, 0, 0.07, 0.035); },
+    valid() { [523, 659, 784].forEach((frequency, index) => ktTone(frequency, index * 0.055, 0.13, 0.045)); },
+    invalid() { ktTone(210, 0, 0.11, 0.025, 170); },
+  };
 
   const cfg = () => modes[mode];
   const levels = () => (typeof CONSUME_RACK_DATA === 'undefined' ? [] : CONSUME_RACK_DATA[mode].levels);
@@ -116,11 +133,25 @@
 
   function insertionIndex(container, x, y, draggedId) {
     const tiles = [...container.querySelectorAll('[data-tile]')].filter(element => Number(element.dataset.tile) !== draggedId);
-    for (let index = 0; index < tiles.length; index++) {
-      const rect = tiles[index].getBoundingClientRect();
-      if (y < rect.top + rect.height / 2 || (y <= rect.bottom && x < rect.left + rect.width / 2)) return index;
+    if (!tiles.length) return 0;
+    const rows = [];
+    tiles.forEach((element, index) => {
+      const rect = element.getBoundingClientRect();
+      let row = rows.find(candidate => Math.abs(candidate.top - rect.top) <= 4);
+      if (!row) { row = { top: rect.top, bottom: rect.bottom, items: [] }; rows.push(row); }
+      row.top = Math.min(row.top, rect.top); row.bottom = Math.max(row.bottom, rect.bottom);
+      row.items.push({ index, rect });
+    });
+    rows.sort((a, b) => a.top - b.top);
+    const containing = rows.find(row => y >= row.top && y <= row.bottom);
+    const row = containing || rows.reduce((nearest, candidate) =>
+      Math.abs(y - (candidate.top + candidate.bottom) / 2) < Math.abs(y - (nearest.top + nearest.bottom) / 2) ? candidate : nearest
+    );
+    if (!containing) return row.items[row.items.length - 1].index + 1;
+    for (const item of row.items) {
+      if (x < item.rect.left + item.rect.width / 2) return item.index;
     }
-    return tiles.length;
+    return row.items[row.items.length - 1].index + 1;
   }
 
   function dropContainerAt(x, y) {
@@ -184,6 +215,7 @@
       sourceIndex: source.index, element, proxy, pointerId: event.pointerId,
       offsetX: pointer.x - rect.left, offsetY: pointer.y - rect.top, target: null };
     element.setPointerCapture?.(event.pointerId);
+    KTSFX.pick();
     moveProxy(event.clientX, event.clientY);
     showDropCue(event.clientX, event.clientY);
   }
@@ -214,6 +246,7 @@
     const drag = state.drag; if (!drag || event.pointerId !== drag.pointerId) return;
     event.preventDefault();
     const target = cancelled ? null : drag.target;
+    const before = groupValidity();
     clearDropCue(); drag.proxy.classList.add('dropping'); drag.proxy.style.opacity = '0';
     drag.element.classList.remove('kt-drag-origin');
     if (target) {
@@ -239,6 +272,7 @@
     state.drag = null;
     setTimeout(() => drag.proxy.remove(), 110);
     update(drag.id);
+    if (target) moveFeedback(before);
   }
 
   function pointerDown(event) {
@@ -251,13 +285,27 @@
   function pickTile(id) {
     if (!state || state.won) return;
     state.pickedId = state.pickedId === id ? null : id;
+    if (state.pickedId) KTSFX.pick();
     update();
+  }
+
+  function groupValidity() {
+    return new Map(state.groups.map(group => [group.id, validGroup(group.tiles)]));
+  }
+
+  function moveFeedback(before) {
+    KTSFX.place();
+    const becameValid = state.groups.some(group => !before.get(group.id) && validGroup(group.tiles));
+    const becameInvalid = state.groups.some(group => before.get(group.id) && !validGroup(group.tiles));
+    if (becameValid) KTSFX.valid();
+    else if (becameInvalid) KTSFX.invalid();
   }
 
   function placePicked(target) {
     if (!state?.pickedId) return;
     const source = tileLocation(state.pickedId);
     if (!source) return;
+    const before = groupValidity();
     const sourceList = source.type === 'rack' ? state.rack : source.group.tiles;
     const [tile] = sourceList.splice(source.index, 1);
     if (target.type === 'new-group') {
@@ -273,6 +321,7 @@
     state.moves++;
     state.pickedId = null;
     update(tile.id);
+    moveFeedback(before);
   }
 
   function checkWin() { return !state.rack.length && state.groups.length && state.groups.every(group => validGroup(group.tiles)); }
