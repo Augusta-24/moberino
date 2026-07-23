@@ -333,6 +333,7 @@ body.on-facefactory button { touch-action: manipulation; }
 @keyframes ff-corner-spark { 0%{opacity:0;transform:translate(-50%,-50%) scale(.3)} 20%{opacity:1} 100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1.25)} }
 
 @media (max-width: 620px) {
+  body.arcade-mode-select.on-facefactory .ff-topbar { min-height:60px;padding-bottom:16px; }
   .ff-screen { padding-left:10px;padding-right:10px; }
   .ff-mode-grid { grid-template-columns:1fr;gap:10px;margin:8px 0; }
   .ff-mode-card { min-height:128px;display:grid;grid-template-columns:132px minmax(0,1fr);column-gap:12px;row-gap:5px;padding:10px 14px;text-align:left;overflow:hidden; }
