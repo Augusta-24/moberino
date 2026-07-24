@@ -89,8 +89,10 @@ All new missions and route decisions must follow
   before results. Success requires crossing the route with the signal locked
   rather than surviving a countdown.
 - **Stage 6:** Distress Signal now uses a dedicated fixed-position rescue operation.
-  The player stabilizes Pip's tumbling pod with two moving magnetic tether targets,
-  connects the docking collar, and sees Pip brought aboard. Passenger persistence
+  The player times two grappling-gun shots against a spinning pod that drifts
+  laterally and in depth, rapidly pumps a retracting docking collar to full
+  extension, and sees Pip brought aboard.
+  Passenger persistence
   is applied only after the physical rescue. The cache recovery remains scaffolding
   and is not yet a completed mission.
 - **Stage 7:** Repair Moon has a dedicated maintenance flow, instant paid hull repair, and
@@ -112,9 +114,10 @@ Prove the gameplay identity before building Ogre Gate:
 
 1. Make the Pilot's Call consequential: play one branch, transform the unchosen
    story thread, and show the reconnection at Repair Moon.
-2. Rebuild Distress Signal as a fixed-position rescue operation: stabilize Pip's
-   visibly tumbling pod with two magnetic tethers, connect the docking collar, and
-   bring Pip physically aboard rather than launching another flight corridor.
+2. Rebuild Distress Signal as a fixed-position rescue operation: time two
+   grappling-gun shots against Pip's visibly tumbling and drifting pod, rapidly
+   extend the spring-loaded docking collar against its retraction, and bring Pip
+   physically aboard rather than launching another flight corridor.
 3. Rebuild Abandoned Cache as a signal, power-routing, and vault-unlock interaction
    with physical crystal acquisition.
 4. Rebuild Repair Moon as visible hands-on repair and upgrade installation rather
@@ -1475,10 +1478,13 @@ Requirements:
 
 - distress-signal node launches the rescue,
 - the Wayfarer holds position while Pip's pod visibly tumbles,
-- the player drags two magnetic tethers to moving, color-matched ports,
-- each connection visibly slows the pod,
+- the pod spins while moving laterally and nearer/farther from the Wayfarer,
+- the player times two fixed grappling-gun shots as moving, color-matched ports
+  cross their sightlines,
+- misses retract for immediate retry and each hit visibly slows the pod,
 - the docking collar is unavailable until both tethers stabilize the pod,
-- a completed collar connection visibly reels the pod toward the Wayfarer,
+- each tap extends the collar while it continuously retracts between taps,
+- reaching full collar extension visibly reels the pod toward the Wayfarer,
 - rescued passenger ID is returned in results,
 - passenger is added once,
 - passenger appears or is acknowledged on the ship screen,

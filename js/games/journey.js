@@ -916,16 +916,16 @@
         <section class="journey-briefing-copy">
           <h1 id="journey-briefing-title">${node.name}</h1>
           <p>${rescue
-            ? 'Pip’s escape pod is tumbling out of control. Hold position, attach two magnetic tethers, and connect the docking collar.'
+            ? 'Pip’s escape pod is tumbling and drifting out of control. Time two grappling shots, stabilize it, then connect the docking collar.'
             : 'Weave through the debris, tap the playfield to scan, and stay inside the signal ring. Tractor floating salvage if you can.'}</p>
           <div class="journey-objective-list">
-            <span><strong>${rescue ? 'STABILIZE' : 'ROUTE'}</strong> ${rescue ? '2 TETHERS' : 'CROSS THE BELT'}</span>
+            <span><strong>${rescue ? 'STABILIZE' : 'ROUTE'}</strong> ${rescue ? '2 GRAPPLE HITS' : 'CROSS THE BELT'}</span>
             <span><strong>${rescue ? 'DOCK' : 'SCAN'}</strong> ${rescue ? 'PIP’S POD' : 'LOCK THE CRYSTAL TRAIL'}</span>
             ${scrapTraversal ? '<span><strong>OPTIONAL</strong> TRACTOR SALVAGE</span>' : ''}
             <span><strong>HULL</strong> ${Math.round(state.resources.hull)}</span>
           </div>
           <div class="journey-briefing-controls">
-            <span>${rescue ? 'DRAG TETHERS TO MATCHING PORTS' : 'DRAG OR WASD · TAP THE PLAYFIELD TO SCAN · TRACTOR'}</span>
+            <span>${rescue ? 'TAP EACH GUN WHEN ITS PORT CROSSES THE SIGHTLINE' : 'DRAG OR WASD · TAP THE PLAYFIELD TO SCAN · TRACTOR'}</span>
           </div>
           <div class="journey-briefing-actions">
             <button class="journey-primary-btn" type="button" onclick="journeyStartEncounter()">${rescue ? 'ANSWER THE BEACON' : 'ENTER SCRAP BELT'}</button>
@@ -990,9 +990,9 @@
           </svg>
           <div class="journey-rescue-ship" aria-label="The Wayfarer holding position">
             ${shipIllustration('journey-rescue-ship-svg')}
-            <button id="journey-rescue-tether-blue" class="journey-rescue-source is-blue" type="button" aria-label="Drag blue tether to blue pod port"></button>
-            <button id="journey-rescue-tether-gold" class="journey-rescue-source is-gold" type="button" aria-label="Drag gold tether to gold pod port"></button>
-            <button id="journey-rescue-dock-source" class="journey-rescue-dock-source" type="button" aria-label="Drag docking collar to pod hatch"></button>
+            <button id="journey-rescue-tether-blue" class="journey-rescue-source is-blue" type="button" aria-label="Fire blue grappling tether"></button>
+            <button id="journey-rescue-tether-gold" class="journey-rescue-source is-gold" type="button" aria-label="Fire gold grappling tether"></button>
+            <button id="journey-rescue-dock-source" class="journey-rescue-dock-source" type="button" aria-label="Tap rapidly to extend the docking collar"></button>
           </div>
           <div id="journey-rescue-pod" class="journey-rescue-pod" aria-label="Pip's tumbling escape pod">
             <div class="journey-rescue-pod-body">
@@ -1004,12 +1004,16 @@
               <span>SOS</span>
             </div>
           </div>
-          <div class="journey-rescue-callout is-tethers">DRAG EACH TETHER TO ITS MATCHING PORT</div>
-          <div class="journey-rescue-callout is-dock">POD STABLE · CONNECT THE DOCKING COLLAR</div>
+          <div class="journey-rescue-callout is-tethers">TAP EACH GRAPPLE GUN AS ITS PORT CROSSES THE SIGHTLINE</div>
+          <div class="journey-rescue-callout is-dock">TAP RAPIDLY · KEEP THE COLLAR FROM RETRACTING</div>
+          <div class="journey-rescue-dock-meter" aria-label="Docking collar extension">
+            <span>COLLAR EXTENSION</span>
+            <div><i id="journey-rescue-dock-fill"></i></div>
+          </div>
           <button id="journey-rescue-start" class="journey-rescue-start" type="button" onclick="journeyBeginDistressRescue()">
             <span>PIP'S POD IS TUMBLING</span>
-            <strong>ATTACH BOTH TETHERS</strong>
-            <small>Each connection will slow the pod.</small>
+            <strong>TIME TWO GRAPPLE SHOTS</strong>
+            <small>Hit each matching port as it crosses the gun’s sightline. The pod is drifting nearer and farther.</small>
             <b>START RESCUE →</b>
           </button>
         </section>

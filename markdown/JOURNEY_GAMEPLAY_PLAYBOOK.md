@@ -373,9 +373,14 @@ The player chooses one mission, not two identical errands.
 - The arrival cinematic follows the already-acquired beacon to Pip's visibly
   tumbling pod. The Wayfarer holds position rather than entering another flight
   corridor.
-- The player drags two magnetic tethers to moving, color-matched pod ports. Each
-  connection visibly slows the spin.
-- Once stabilized, the player connects the docking collar and reels the pod aboard.
+- The pod spins, drifts laterally, and moves nearer and farther from the Wayfarer.
+- Two fixed grappling guns project readable sightlines. The player times each shot
+  as its moving, color-matched pod port crosses the correct line. Misses visibly
+  retract and can be fired again.
+- Each successful grappling hit visibly slows the spin.
+- Once stabilized, the player rapidly taps to extend a spring-loaded docking collar
+  that constantly retracts between taps. Reaching full extension makes the magnetic
+  connection and reels the pod aboard.
 - Pip joins now.
 - The cache is intercepted; its crystal moves to Ogre Gate.
 
@@ -388,6 +393,16 @@ The player chooses one mission, not two identical errands.
 
 Both choices reconnect at Repair Moon. The unchosen story thread transforms instead
 of remaining as a second optional copy of the same mission.
+
+### Future mechanic note — Signal Lullaby
+
+Reuse the Pet game's Signal Lullaby interaction as a Journey communications and
+decoding verb: present a short sequence of colored tonal nodes, then ask the player
+to repeat it. It can support alien language, radio authentication, ancient locks,
+crew communication, or creature bonding. Preserve its visual lanes, clear
+`YOUR TURN · REPEAT` handoff, escalating sequence length, and audiovisual
+confirmation; reskin the fiction rather than rebuilding the interaction from
+scratch.
 
 ### Repair Moon — hands-on systems work
 

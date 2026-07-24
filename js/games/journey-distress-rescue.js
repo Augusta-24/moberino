@@ -9,7 +9,10 @@
   let stage = null;
   let pod = null;
   let frameId = null;
-  let drag = null;
+  let shots = new Map();
+  let shotsFired = 0;
+  let dockProgress = 0;
+  let lastFrameAt = 0;
   let attached = new Set();
   let listeners = [];
 
@@ -77,13 +80,69 @@
     line.setAttribute('y2', endPoint.y);
   }
 
-  function updateAttachedLines() {
+  function resolveGrapple(name, point) {
+    const shot = shots.get(name);
+    const source = element(TETHERS[name].sourceId);
+    const line = element(TETHERS[name].lineId);
+    const target = element(TETHERS[name].targetId);
+    shots.delete(name);
+    if (source) source.classList.remove('is-firing');
+    const targetPoint = target && centerInStage(target);
+    const distance = targetPoint
+      ? Math.hypot(point.x - targetPoint.x, point.y - targetPoint.y)
+      : Infinity;
+    if (shot && distance <= 38) {
+      attach(name);
+      return;
+    }
+    if (line) line.classList.remove('is-dragging', 'is-attached');
+    if (source) {
+      source.classList.add('is-missed');
+      window.setTimeout(() => source.classList.remove('is-missed'), 350);
+    }
+    setObjective('MISSED · TIME THE NEXT SHOT');
+    window.setTimeout(() => {
+      if (active && attached.size < 2) setObjective(attached.size ? 'HIT THE SECOND PORT' : 'TIME BOTH GRAPPLE SHOTS');
+    }, 700);
+    playTone(180, 110, .15, .025);
+  }
+
+  function updateScene(now) {
     if (!active || !stage) return;
+    const deltaSeconds = lastFrameAt ? Math.max(0, Math.min(.1, (now - lastFrameAt) / 1000)) : 0;
+    lastFrameAt = now;
     attached.forEach(name => {
       const target = element(TETHERS[name].targetId);
       if (target) placeLine(name, centerInStage(target));
     });
-    frameId = requestAnimationFrame(updateAttachedLines);
+    shots.forEach((shot, name) => {
+      const progress = Math.max(0, Math.min(1, (now - shot.startedAt) / shot.duration));
+      const eased = 1 - Math.pow(1 - progress, 2);
+      const point = {
+        x: shot.start.x,
+        y: shot.start.y + (shot.endY - shot.start.y) * eased
+      };
+      placeLine(name, point);
+      if (progress >= 1) resolveGrapple(name, point);
+    });
+    if (attached.has('blue') && attached.has('gold') && !attached.has('dock')) {
+      dockProgress = Math.max(0, dockProgress - deltaSeconds * .45);
+      const source = element(TETHERS.dock.sourceId);
+      const target = element(TETHERS.dock.targetId);
+      const line = element(TETHERS.dock.lineId);
+      const fill = element('journey-rescue-dock-fill');
+      if (source && target && line) {
+        const start = centerInStage(source);
+        const end = centerInStage(target);
+        placeLine('dock', {
+          x: start.x + (end.x - start.x) * dockProgress,
+          y: start.y + (end.y - start.y) * dockProgress
+        });
+        line.classList.toggle('is-dragging', dockProgress > 0);
+      }
+      if (fill) fill.style.width = `${Math.round(dockProgress * 100)}%`;
+    }
+    frameId = requestAnimationFrame(updateScene);
   }
 
   function setObjective(text) {
@@ -94,15 +153,6 @@
   function addListener(node, type, handler, options) {
     node.addEventListener(type, handler, options);
     listeners.push({ node, type, handler });
-  }
-
-  function clearDrag() {
-    if (!drag) return;
-    const line = element(TETHERS[drag.name].lineId);
-    const source = element(TETHERS[drag.name].sourceId);
-    if (line) line.classList.remove('is-dragging');
-    if (source) source.classList.remove('is-dragging');
-    drag = null;
   }
 
   function finishDocking() {
@@ -128,7 +178,7 @@
           rescuedPassengerId: completedConfig.passengerId,
           bossDefeated: null,
           stats: {
-            shotsFired: 0,
+            shotsFired,
             asteroidsDestroyed: 0,
             distanceTraveled: 0,
             podStabilized: true
@@ -143,7 +193,10 @@
     const source = element(TETHERS[name].sourceId);
     const line = element(TETHERS[name].lineId);
     if (source) source.classList.add('is-attached');
-    if (line) line.classList.add('is-attached');
+    if (line) {
+      line.classList.remove('is-dragging');
+      line.classList.add('is-attached');
+    }
     playTone(name === 'blue' ? 260 : 330, name === 'blue' ? 440 : 523.25, .18, .045);
 
     if (name === 'dock') {
@@ -152,7 +205,7 @@
     }
     if (attached.size === 1) {
       pod.classList.add('is-slowed');
-      setObjective('ATTACH THE SECOND TETHER');
+      setObjective('HIT THE SECOND PORT');
     }
     if (attached.has('blue') && attached.has('gold')) {
       pod.classList.remove('is-slowed');
@@ -163,52 +216,42 @@
     }
   }
 
-  function pointerPoint(event) {
-    const rect = stage.getBoundingClientRect();
-    return {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top
-    };
-  }
-
-  function onPointerMove(event) {
-    if (!drag || !active || paused) return;
-    placeLine(drag.name, pointerPoint(event));
+  function fireGrapple(name, event) {
+    if (!active || paused || attached.has(name) || shots.has(name)) return;
+    const source = element(TETHERS[name].sourceId);
+    const target = element(TETHERS[name].targetId);
+    const line = element(TETHERS[name].lineId);
+    if (!source || !target || !line) return;
+    const start = centerInStage(source);
+    const targetPoint = centerInStage(target);
+    shots.set(name, {
+      start,
+      endY: targetPoint.y,
+      startedAt: performance.now(),
+      duration: 460
+    });
+    shotsFired += 1;
+    source.classList.add('is-firing');
+    line.classList.add('is-dragging');
+    placeLine(name, start);
+    setObjective(`GRAPPLE ${name.toUpperCase()} FIRED`);
+    playTone(name === 'blue' ? 220 : 277.18, name === 'blue' ? 330 : 415.3, .12, .035);
     event.preventDefault();
   }
 
-  function onPointerUp(event) {
-    if (!drag || !active || paused) return;
-    if (event.type === 'pointercancel') {
-      clearDrag();
-      return;
+  function pumpDockingCollar(event) {
+    if (!active || paused || attached.has('dock') ||
+        !(attached.has('blue') && attached.has('gold'))) return;
+    const source = element(TETHERS.dock.sourceId);
+    dockProgress = Math.min(1, dockProgress + .14);
+    if (source) {
+      source.classList.remove('is-pumping');
+      void source.offsetWidth;
+      source.classList.add('is-pumping');
     }
-    const name = drag.name;
-    const target = element(TETHERS[name].targetId);
-    const targetPoint = target && centerInStage(target);
-    const point = pointerPoint(event);
-    const distance = targetPoint
-      ? Math.hypot(point.x - targetPoint.x, point.y - targetPoint.y)
-      : Infinity;
-    clearDrag();
-    if (distance <= 44) {
-      attach(name);
-    } else {
-      const line = element(TETHERS[name].lineId);
-      if (line) line.classList.remove('is-attached');
-      playTone(180, 110, .15, .025);
-    }
-  }
-
-  function beginDrag(name, event) {
-    if (!active || paused || attached.has(name)) return;
-    if (name === 'dock' && !(attached.has('blue') && attached.has('gold'))) return;
-    drag = { name };
-    const line = element(TETHERS[name].lineId);
-    const source = element(TETHERS[name].sourceId);
-    if (line) line.classList.add('is-dragging');
-    if (source) source.classList.add('is-dragging');
-    placeLine(name, pointerPoint(event));
+    setObjective(`TAP FAST · COLLAR ${Math.round(dockProgress * 100)}%`);
+    playTone(260 + dockProgress * 170, 300 + dockProgress * 250, .08, .028);
+    if (dockProgress >= 1) attach('dock');
     event.preventDefault();
   }
 
@@ -221,15 +264,18 @@
     active = true;
     paused = !!nextConfig.initiallyPaused;
     attached = new Set();
+    shots = new Map();
+    shotsFired = 0;
+    dockProgress = 0;
+    lastFrameAt = performance.now();
     stage.classList.toggle('is-paused', paused);
-    Object.keys(TETHERS).forEach(name => {
+    ['blue', 'gold'].forEach(name => {
       const source = element(TETHERS[name].sourceId);
-      if (source) addListener(source, 'pointerdown', event => beginDrag(name, event), { passive: false });
+      if (source) addListener(source, 'pointerdown', event => fireGrapple(name, event), { passive: false });
     });
-    addListener(window, 'pointermove', onPointerMove, { passive: false });
-    addListener(window, 'pointerup', onPointerUp, { passive: true });
-    addListener(window, 'pointercancel', onPointerUp, { passive: true });
-    frameId = requestAnimationFrame(updateAttachedLines);
+    const dockSource = element(TETHERS.dock.sourceId);
+    if (dockSource) addListener(dockSource, 'pointerdown', pumpDockingCollar, { passive: false });
+    frameId = requestAnimationFrame(updateScene);
     return true;
   }
 
@@ -237,7 +283,7 @@
     if (!active) return false;
     paused = false;
     stage.classList.remove('is-paused');
-    setObjective('ATTACH BOTH TETHERS');
+    setObjective('TIME BOTH GRAPPLE SHOTS');
     playTone(220, 330, .16, .035);
     return true;
   }
@@ -252,7 +298,10 @@
     config = null;
     stage = null;
     pod = null;
-    drag = null;
+    shots = new Map();
+    shotsFired = 0;
+    dockProgress = 0;
+    lastFrameAt = 0;
     attached = new Set();
   }
 

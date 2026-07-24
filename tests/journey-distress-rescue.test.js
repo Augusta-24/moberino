@@ -23,6 +23,8 @@ function eventTarget(rect = { left: 0, top: 0, width: 20, height: 20 }) {
   return {
     textContent: '',
     attributes: {},
+    style: {},
+    offsetWidth: rect.width,
     classList: {
       add(...names) {
         names.forEach(name => classes.add(name));
@@ -64,6 +66,8 @@ function eventTarget(rect = { left: 0, top: 0, width: 20, height: 20 }) {
 }
 
 function createHarness() {
+  let now = 0;
+  let nextFrame = null;
   const nodes = new Map();
   const register = (id, rect) => {
     const node = eventTarget(rect);
@@ -82,6 +86,7 @@ function createHarness() {
   register('journey-rescue-line-blue');
   register('journey-rescue-line-gold');
   register('journey-rescue-line-dock');
+  register('journey-rescue-dock-fill');
 
   const window = eventTarget();
   window.setTimeout = callback => {
@@ -96,7 +101,13 @@ function createHarness() {
   vm.runInNewContext(source, {
     window,
     document,
-    requestAnimationFrame() {
+    performance: {
+      now() {
+        return now;
+      }
+    },
+    requestAnimationFrame(callback) {
+      nextFrame = callback;
       return 1;
     },
     cancelAnimationFrame() {},
@@ -104,15 +115,27 @@ function createHarness() {
     Object,
     Set
   });
-  return { api: window.JourneyDistressRescue, window, nodes, stage, pod };
+  return {
+    api: window.JourneyDistressRescue,
+    window,
+    nodes,
+    stage,
+    pod,
+    advance(milliseconds) {
+      now += milliseconds;
+      const callback = nextFrame;
+      nextFrame = null;
+      if (callback) callback(now);
+    }
+  };
 }
 
-function drag(harness, sourceId, x, y) {
-  harness.nodes.get(sourceId).emit('pointerdown', { clientX: x, clientY: y });
-  harness.window.emit('pointerup', { clientX: x, clientY: y });
+function fire(harness, sourceId) {
+  harness.nodes.get(sourceId).emit('pointerdown');
+  harness.advance(500);
 }
 
-test('Distress rescue is isolated from flight, scanning, shooting, and persistence', () => {
+test('Distress rescue is isolated from flight combat, scanning, and persistence', () => {
   assert.doesNotMatch(source, /JourneyCombat/);
   assert.doesNotMatch(source, /JourneyMissionRuntime/);
   assert.doesNotMatch(source, /JourneyState/);
@@ -121,7 +144,7 @@ test('Distress rescue is isolated from flight, scanning, shooting, and persisten
   assert.doesNotMatch(source, /localStorage/);
 });
 
-test('matching two tethers stabilizes the pod before the docking collar completes rescue', () => {
+test('two timed grappling hits unlock a rapidly pumped, retracting docking collar', () => {
   const harness = createHarness();
   const results = [];
   assert.equal(harness.api.start({
@@ -137,20 +160,28 @@ test('matching two tethers stabilizes the pod before the docking collar complete
   }), true);
   assert.equal(harness.api.begin(), true);
 
-  drag(harness, 'journey-rescue-tether-blue', 150, 200);
+  fire(harness, 'journey-rescue-tether-blue');
   assert.equal(harness.pod.classList.contains('is-slowed'), true);
   assert.equal(results.length, 0);
 
-  drag(harness, 'journey-rescue-tether-gold', 270, 200);
+  fire(harness, 'journey-rescue-tether-gold');
   assert.equal(harness.pod.classList.contains('is-stable'), true);
   assert.equal(harness.stage.classList.contains('is-stable'), true);
   assert.equal(results.length, 0);
 
-  drag(harness, 'journey-rescue-dock-source', 210, 200);
+  harness.nodes.get('journey-rescue-dock-source').emit('pointerdown');
+  harness.advance(100);
+  assert.equal(harness.nodes.get('journey-rescue-dock-fill').style.width, '10%');
+  assert.equal(results.length, 0);
+
+  for (let tap = 0; tap < 7; tap += 1) {
+    harness.nodes.get('journey-rescue-dock-source').emit('pointerdown');
+  }
   assert.equal(results.length, 1);
   assert.equal(results[0].outcome, 'success');
   assert.equal(results[0].rescuedPassengerId, 'pip');
   assert.equal(results[0].stats.podStabilized, true);
+  assert.equal(results[0].stats.shotsFired, 2);
 });
 
 test('Journey routes Distress Signal into the dedicated rescue and confirms Pip aboard', () => {
@@ -159,8 +190,9 @@ test('Journey routes Distress Signal into the dedicated rescue and confirms Pip 
   assert.match(controller, /node\.id === 'distress-signal'/);
   assert.match(controller, /JourneyDistressRescue\.start/);
   assert.match(controller, /JourneyDistressRescue\.begin/);
-  assert.match(controller, /ATTACH BOTH TETHERS/);
-  assert.match(controller, /CONNECT THE DOCKING COLLAR/);
+  assert.match(controller, /TIME TWO GRAPPLE SHOTS/);
+  assert.match(controller, /PORT CROSSES THE SIGHTLINE/);
+  assert.match(controller, /TAP RAPIDLY · KEEP THE COLLAR FROM RETRACTING/);
   assert.match(controller, /PIP IS SAFE/);
   assert.match(controller, /journeyConfirmDistressRescue/);
 });

@@ -1894,14 +1894,14 @@ body.on-journey {
 .journey-rescue-dock-source {
   position: absolute;
   z-index: 7;
-  width: 34px;
-  height: 34px;
+  width: 42px;
+  height: 30px;
   border: 3px solid currentColor;
-  border-radius: 50%;
+  border-radius: 9px;
   background: #061329;
   color: #fff;
   box-shadow: 0 0 15px currentColor;
-  cursor: grab;
+  cursor: pointer;
   touch-action: none;
 }
 
@@ -1912,6 +1912,29 @@ body.on-journey {
   border-radius: inherit;
   background: currentColor;
   content: "";
+}
+
+.journey-rescue-source::before {
+  position: absolute;
+  bottom: calc(100% + 3px);
+  left: 50%;
+  width: 0;
+  height: 430px;
+  border-left: 2px dashed currentColor;
+  opacity: .28;
+  content: "";
+  pointer-events: none;
+}
+
+.journey-rescue-source::after {
+  top: -13px;
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  width: 9px;
+  height: 19px;
+  border-radius: 5px 5px 2px 2px;
+  transform: translateX(-50%);
 }
 
 .journey-rescue-source.is-blue {
@@ -1926,7 +1949,6 @@ body.on-journey {
   color: #fff1a6;
 }
 
-.journey-rescue-source.is-dragging,
 .journey-rescue-dock-source.is-dragging {
   cursor: grabbing;
   transform: scale(1.15);
@@ -1937,6 +1959,19 @@ body.on-journey {
   box-shadow: 0 0 24px currentColor;
 }
 
+.journey-rescue-source.is-attached::before {
+  opacity: .08;
+}
+
+.journey-rescue-source.is-firing {
+  transform: translateY(-3px) scale(1.08);
+  box-shadow: 0 0 28px currentColor;
+}
+
+.journey-rescue-source.is-missed {
+  animation: journey-rescue-gun-miss .32s ease-out;
+}
+
 .journey-rescue-dock-source {
   top: 8%;
   left: 50%;
@@ -1945,6 +1980,10 @@ body.on-journey {
   height: 46px;
   color: #48f08b;
   transform: translateX(-50%);
+}
+
+.journey-rescue-dock-source.is-pumping {
+  animation: journey-rescue-collar-pump .16s ease-out;
 }
 
 .journey-rescue-stage.is-stable .journey-rescue-dock-source {
@@ -1958,13 +1997,13 @@ body.on-journey {
   z-index: 5;
   width: 128px;
   height: 128px;
-  animation: journey-rescue-pod-tumble 2.2s linear infinite;
+  animation: journey-rescue-pod-tumble 3.1s ease-in-out infinite;
   transform: translate(-50%, -50%);
   transition: top .85s ease-in, transform .85s ease-in, filter .3s ease;
 }
 
 .journey-rescue-pod.is-slowed {
-  animation-duration: 5.4s;
+  animation-duration: 6.4s;
 }
 
 .journey-rescue-pod.is-stable {
@@ -2140,6 +2179,44 @@ body.on-journey {
   display: block;
 }
 
+.journey-rescue-dock-meter {
+  position: absolute;
+  right: 16%;
+  bottom: 27%;
+  left: 16%;
+  z-index: 6;
+  display: none;
+  color: #9affbe;
+  font: 12px/1 'VCR', monospace;
+  letter-spacing: 1px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.journey-rescue-stage.is-stable .journey-rescue-dock-meter {
+  display: block;
+}
+
+.journey-rescue-dock-meter > div {
+  height: 13px;
+  margin-top: 7px;
+  overflow: hidden;
+  border: 2px solid #48f08b;
+  border-radius: 8px;
+  background: rgba(3,7,19,.9);
+  box-shadow: 0 0 14px rgba(72,240,139,.2);
+}
+
+.journey-rescue-dock-meter i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: #48f08b;
+  box-shadow: 0 0 14px rgba(72,240,139,.65);
+  transition: width .06s linear;
+}
+
 .journey-rescue-start {
   position: absolute;
   inset: 0;
@@ -2252,12 +2329,25 @@ body.on-journey {
 }
 
 @keyframes journey-rescue-pod-tumble {
-  from { transform: translate(-50%, -50%) rotate(0); }
-  to { transform: translate(-50%, -50%) rotate(360deg); }
+  0% { transform: translate(-50%, -50%) translate(-20px, 26px) rotate(0) scale(.84); }
+  22% { transform: translate(-50%, -50%) translate(25px, -7px) rotate(82deg) scale(1.03); }
+  48% { transform: translate(-50%, -50%) translate(-8px, -38px) rotate(174deg) scale(1.17); }
+  74% { transform: translate(-50%, -50%) translate(30px, 9px) rotate(274deg) scale(.96); }
+  100% { transform: translate(-50%, -50%) translate(-20px, 26px) rotate(360deg) scale(.84); }
 }
 
 @keyframes journey-rescue-tether-flow {
   to { stroke-dashoffset: -19; }
+}
+
+@keyframes journey-rescue-gun-miss {
+  25% { transform: translateX(-5px); }
+  55% { transform: translateX(5px); }
+  80% { transform: translateX(-2px); }
+}
+
+@keyframes journey-rescue-collar-pump {
+  50% { transform: translateX(-50%) translateY(-8px) scale(1.12); }
 }
 
 .journey-belt-exit {
