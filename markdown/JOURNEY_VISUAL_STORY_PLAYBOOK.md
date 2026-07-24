@@ -72,6 +72,11 @@ Keep this order:
 The cockpit must fit in one viewport without scrolling.
 
 The route map is the main object. The player should always feel that they are somewhere on a journey.
+Orient the route in the direction of travel. The Wayfarer route reads bottom-to-top,
+with optional branches visibly reconnecting to the main journey.
+
+Rescued companions must occupy a persistent, visible crew position in the cockpit.
+Show their face or silhouette and name; a message or “aboard” label alone is not enough.
 
 Ship repair, upgrades, and detailed logs belong on separate screens. Do not stack every system onto the cockpit.
 

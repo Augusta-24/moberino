@@ -3314,9 +3314,11 @@ body.on-journey {
 }
 
 .journey-cockpit-map {
+  align-self: center;
   width: 100%;
   height: 100%;
   min-height: 125px;
+  max-width: 360px;
 }
 
 .journey-map-paths path {
@@ -3346,7 +3348,15 @@ body.on-journey {
   fill: currentColor;
   font: 12px 'VCR', monospace;
   letter-spacing: 1px;
-  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.journey-map-node text.is-right {
+  text-anchor: start;
+}
+
+.journey-map-node text.is-left {
+  text-anchor: end;
 }
 
 .journey-map-node.is-cleared circle {
@@ -3500,6 +3510,10 @@ body.on-journey {
   background: rgba(5,12,29,.92);
 }
 
+.journey-cockpit-ship.has-pip {
+  grid-template-columns: 62px minmax(88px, .55fr) 64px minmax(170px, 1fr) auto;
+}
+
 .journey-cockpit-ship-visual {
   width: 56px;
   height: 56px;
@@ -3510,6 +3524,60 @@ body.on-journey {
 .journey-cockpit-condition strong,
 .journey-cockpit-condition small {
   display: block;
+}
+
+.journey-cockpit-companion {
+  display: grid;
+  justify-items: center;
+  min-width: 58px;
+  border: 1px solid rgba(183,156,255,.72);
+  border-radius: 8px;
+  padding: 4px 3px;
+  background: rgba(183,156,255,.1);
+  box-shadow: inset 0 0 15px rgba(183,156,255,.08);
+}
+
+.journey-cockpit-companion .journey-pip-face {
+  width: 34px;
+  height: 32px;
+  transform: scale(.82);
+}
+
+.journey-cockpit-companion .journey-pip-face::before,
+.journey-cockpit-companion .journey-pip-face::after {
+  width: 14px;
+  height: 17px;
+}
+
+.journey-cockpit-companion .journey-pip-face i {
+  top: 11px;
+  width: 6px;
+  height: 7px;
+}
+
+.journey-cockpit-companion .journey-pip-face i:first-child {
+  left: 8px;
+}
+
+.journey-cockpit-companion .journey-pip-face i:nth-child(2) {
+  right: 8px;
+}
+
+.journey-cockpit-companion .journey-pip-face b {
+  bottom: 5px;
+  width: 10px;
+}
+
+.journey-cockpit-companion > span {
+  margin-top: 2px;
+  color: #d2c3ff;
+  font: 12px/1 'VCR', monospace;
+}
+
+.journey-cockpit-companion > small {
+  margin-top: 2px;
+  color: #fff;
+  font: 12px/1 'VCR', monospace;
 }
 
 .journey-cockpit-condition span {
@@ -4435,6 +4503,11 @@ body.on-journey {
     min-height: 72px;
   }
 
+  .journey-cockpit-ship.has-pip {
+    grid-template-columns: 48px minmax(72px, .5fr) 58px minmax(105px, 1fr) auto;
+    gap: 6px;
+  }
+
   .journey-cockpit-ship-visual {
     width: 48px;
     height: 48px;
@@ -4510,6 +4583,10 @@ body.on-journey {
 
   .journey-cockpit-ship {
     grid-template-columns: 48px 82px minmax(0, 1fr);
+  }
+
+  .journey-cockpit-ship.has-pip {
+    grid-template-columns: 48px minmax(72px, 1fr) 58px minmax(100px, 1fr);
   }
 
   .journey-cockpit-actions {

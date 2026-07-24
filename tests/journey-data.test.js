@@ -118,6 +118,10 @@ test('the cockpit centers the route and moves detail into ship and log views', (
   );
 
   assert.match(controller, /journey-cockpit-map/);
+  assert.match(controller, /'home-orbit': \[150, 650\]/);
+  assert.match(controller, /'first-settlement': \[150, 55\]/);
+  assert.match(controller, /viewBox="0 0 300 705"/);
+  assert.match(controller, /Vertical Journey route map/);
   assert.match(controller, /journey-message-bar/);
   assert.match(controller, /journey-target-panel/);
   assert.match(controller, /JourneyState\.getDepartureReadiness/);
@@ -139,12 +143,15 @@ test('the cockpit centers the route and moves detail into ship and log views', (
   assert.match(controller, /node\.id === 'distress-signal' \? arrivalDistressBeacon\(\) : ''/);
   assert.match(controller, /A distress beacon pulses in the distance/);
   assert.match(controller, /STAR CRYSTAL RECOVERED/);
+  assert.match(controller, /journey-cockpit-companion/);
+  assert.match(controller, /Pip is aboard the Wayfarer/);
+  assert.match(controller, /journey-pip-face/);
   assert.ok(
     controller.indexOf('<section class="journey-map-panel">') <
-      controller.indexOf('<section class="journey-cockpit-ship">')
+      controller.indexOf('<section class="journey-cockpit-ship ')
   );
   assert.ok(
-    controller.indexOf('<section class="journey-cockpit-ship">') <
+    controller.indexOf('<section class="journey-cockpit-ship ') <
       controller.indexOf('<section class="journey-target-panel')
   );
 });

@@ -18,14 +18,19 @@
   let scrapBeltTutorialStep = 0;
 
   const MAP_POINTS = {
-    'home-orbit': [58, 138],
-    'fuel-stop-1': [170, 116],
-    'scrap-belt': [282, 104],
-    'distress-signal': [400, 55],
-    'abandoned-cache': [400, 165],
-    'repair-moon': [510, 108],
-    'ogre-gate': [606, 108],
-    'first-settlement': [706, 108]
+    'home-orbit': [150, 650],
+    'fuel-stop-1': [150, 565],
+    'scrap-belt': [150, 480],
+    'distress-signal': [72, 370],
+    'abandoned-cache': [228, 370],
+    'repair-moon': [150, 260],
+    'ogre-gate': [150, 150],
+    'first-settlement': [150, 55]
+  };
+
+  const MAP_LABELS = {
+    'distress-signal': [-18, 5, 'is-left'],
+    'abandoned-cache': [18, 5, 'is-right']
   };
 
   function host() {
@@ -352,15 +357,16 @@
         route.selected && route.selected.id === node.id ? 'is-selected' : '',
         selectable ? 'is-selectable' : ''
       ].filter(Boolean).join(' ');
+      const label = MAP_LABELS[node.id] || [20, 5, 'is-right'];
       return `
         <g class="journey-map-node ${classes}" transform="translate(${point[0]} ${point[1]})"
           ${selectable ? `onclick="journeyChooseDestination('${node.id}')" role="button" tabindex="0"` : ''}>
           <circle r="${node.id === location.id ? 13 : 10}"></circle>
-          <text y="${point[1] < 80 ? 30 : -18}">${revealed ? node.shortName : '?'}</text>
+          <text class="${label[2]}" x="${label[0]}" y="${label[1]}">${revealed ? node.shortName : '?'}</text>
         </g>`;
     }).join('');
     return `
-      <svg class="journey-cockpit-map" viewBox="0 30 760 160" role="img" aria-label="Journey route map">
+      <svg class="journey-cockpit-map" viewBox="0 0 300 705" role="img" aria-label="Vertical Journey route map from Home Orbit toward the first settlement">
         <g class="journey-map-paths">${paths.join('')}</g>
         ${nodes}
       </svg>`;
@@ -430,9 +436,15 @@
           <div class="journey-map-title"><span>CHAPTER ONE · CRYSTAL TRAIL</span><strong>${state.currency.crystals} / 7 CRYSTALS</strong></div>
           ${cockpitMap(state, location, route)}
         </section>
-        <section class="journey-cockpit-ship">
+        <section class="journey-cockpit-ship ${state.passengers.active.includes('pip') ? 'has-pip' : ''}">
           <div class="journey-cockpit-ship-visual">${shipIllustration('journey-cockpit-ship-svg')}</div>
-          <div class="journey-cockpit-condition"><span>WAYFARER</span><strong>${shipCondition}</strong>${state.passengers.active.includes('pip') ? '<small>PIP ABOARD</small>' : ''}</div>
+          <div class="journey-cockpit-condition"><span>WAYFARER</span><strong>${shipCondition}</strong></div>
+          ${state.passengers.active.includes('pip') ? `
+            <div class="journey-cockpit-companion" aria-label="Pip is aboard the Wayfarer">
+              <div class="journey-pip-face" aria-hidden="true"><i></i><i></i><b></b></div>
+              <span>PIP</span>
+              <small>CREW</small>
+            </div>` : ''}
           <div class="journey-quick-status">
             <span>HULL<strong>${Math.round(r.hull)}</strong></span>
             <span>FUEL<strong>${Math.round(r.fuel)}</strong></span>
