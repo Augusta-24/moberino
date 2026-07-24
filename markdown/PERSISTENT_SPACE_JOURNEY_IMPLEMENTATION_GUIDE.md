@@ -87,6 +87,10 @@ All new missions and route decisions must follow
   is not sufficiently interactive. These are scaffolding, not completed missions.
 - **Stage 7:** Repair Moon has a dedicated maintenance flow, instant paid hull repair, and
   a persistent blaster upgrade.
+- **Gameplay foundation:** the isolated Journey mission runtime now provides full
+  horizontal and vertical movement, forward world scrolling, proximity scanning and
+  signal locks, tractor attachment and towing, contextual interactions, keyboard
+  and touch input, cue callbacks, and clean lifecycle behavior.
 - **Visual story foundation:** the selected hero leads the opening crystal-theft
   cinematic; Lantern Station visibly refuels the Wayfarer; route choices are
   introduced through incoming intel; cinematics wait indefinitely for Continue.
@@ -98,19 +102,17 @@ Settlement exist in the route data but are intentionally marked unavailable.
 
 Prove the gameplay identity before building Ogre Gate:
 
-1. Build the reusable forward-navigation, free vertical movement, scanning, tractor,
-   and interaction foundations needed by Chapter One.
-2. Rebuild Scrap Belt as forward navigation and selective salvage rather than timed
+1. Rebuild Scrap Belt on the new mission runtime as forward navigation and selective salvage rather than timed
    survival.
-3. Make the Pilot's Call consequential: play one branch, transform the unchosen
+2. Make the Pilot's Call consequential: play one branch, transform the unchosen
    story thread, and show the reconnection at Repair Moon.
-4. Rebuild Distress Signal as signal triangulation, visible pod recovery, towing,
+3. Rebuild Distress Signal as signal triangulation, visible pod recovery, towing,
    and physical passenger boarding.
-5. Rebuild Abandoned Cache as a signal, power-routing, and vault-unlock interaction
+4. Rebuild Abandoned Cache as a signal, power-routing, and vault-unlock interaction
    with physical crystal acquisition.
-6. Rebuild Repair Moon as visible hands-on repair and upgrade installation rather
+5. Rebuild Repair Moon as visible hands-on repair and upgrade installation rather
    than a form-like service screen.
-7. Only then create the adaptive Ogre Gate boss, First Settlement, and the Chapter
+6. Only then create the adaptive Ogre Gate boss, First Settlement, and the Chapter
    One validation run.
 
 Do not expand the galaxy or build another asteroid-reskin encounter before this
@@ -169,6 +171,7 @@ js/games/journey.js
 js/games/journey-state.js
 js/games/journey-data.js
 js/games/journey-combat.js
+js/games/journey-mission-runtime.js
 js/games/journey-travel.js
 css/games/journey.css
 ```
@@ -248,6 +251,21 @@ Owns:
 - encounter completion.
 
 It must not contain the new persistent route or ship-management systems.
+
+### `journey-mission-runtime.js`
+
+Owns reusable mission verbs shared across authored encounters:
+
+- full horizontal and vertical movement,
+- forward world scrolling,
+- proximity scanning and signal locks,
+- tractor attachment and towing,
+- contextual interaction targets,
+- keyboard and touch input,
+- audiovisual cue callbacks,
+- and clean start/destroy lifecycle behavior.
+
+It contains no route sequencing, reward application, or save writes.
 
 ### `journey-travel.js`
 

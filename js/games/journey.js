@@ -1264,6 +1264,7 @@
     active = false;
     clearStoryTimers();
     JourneyCombat.destroy();
+    if (typeof JourneyMissionRuntime !== 'undefined') JourneyMissionRuntime.destroy();
     JourneyState.saveJourneyState('exit');
     JourneyState.clearInMemory();
     const root = host();

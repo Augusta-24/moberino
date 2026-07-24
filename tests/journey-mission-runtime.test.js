@@ -1,0 +1,239 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const test = require('node:test');
+const vm = require('node:vm');
+
+const source = fs.readFileSync(
+  path.join(__dirname, '..', 'js', 'games', 'journey-mission-runtime.js'),
+  'utf8'
+);
+
+function eventTarget() {
+  const listeners = new Map();
+  return {
+    addEventListener(type, handler) {
+      if (!listeners.has(type)) listeners.set(type, new Set());
+      listeners.get(type).add(handler);
+    },
+    removeEventListener(type, handler) {
+      if (listeners.has(type)) listeners.get(type).delete(handler);
+    },
+    count(type) {
+      return listeners.has(type) ? listeners.get(type).size : 0;
+    }
+  };
+}
+
+function createHarness() {
+  const canvasEvents = eventTarget();
+  const documentEvents = eventTarget();
+  const cancelledFrames = [];
+  let nextFrameId = 0;
+  const context = {
+    setTransform() {},
+    setLineDash() {},
+    fillRect() {},
+    beginPath() {},
+    arc() {},
+    ellipse() {},
+    fill() {},
+    stroke() {},
+    save() {},
+    restore() {},
+    translate() {},
+    moveTo() {},
+    lineTo() {},
+    closePath() {},
+    globalAlpha: 1,
+    fillStyle: '',
+    strokeStyle: '',
+    lineWidth: 1,
+    shadowColor: '',
+    shadowBlur: 0
+  };
+  const canvas = Object.assign(canvasEvents, {
+    width: 0,
+    height: 0,
+    getContext() {
+      return context;
+    },
+    getBoundingClientRect() {
+      return { left: 0, top: 0, width: 420, height: 700 };
+    }
+  });
+  const document = Object.assign(documentEvents, {
+    body: { classList: { contains: () => true } },
+    getElementById(id) {
+      return id === 'journey-mission-canvas' ? canvas : null;
+    }
+  });
+  const window = { devicePixelRatio: 1 };
+  vm.runInNewContext(source, {
+    window,
+    document,
+    performance: { now: () => 1000 },
+    requestAnimationFrame() {
+      nextFrameId += 1;
+      return nextFrameId;
+    },
+    cancelAnimationFrame(id) {
+      cancelledFrames.push(id);
+    },
+    Math,
+    Number,
+    Object,
+    Array,
+    String,
+    Error
+  });
+  return {
+    api: window.JourneyMissionRuntime,
+    canvas,
+    document,
+    cancelledFrames
+  };
+}
+
+function runtimeConfig(overrides = {}) {
+  return Object.assign({
+    canvasId: 'journey-mission-canvas',
+    startX: 210,
+    startY: 600,
+    playerSpeed: 250,
+    scanRange: 300,
+    tractorRange: 130,
+    interactionRange: 92,
+    targets: []
+  }, overrides);
+}
+
+test('mission runtime owns no persistence and exposes reusable verbs', () => {
+  assert.doesNotMatch(source, /localStorage/);
+  assert.doesNotMatch(source, /JourneyState/);
+  assert.match(source, /JourneyMissionRuntime/);
+  assert.match(source, /setControl/);
+  assert.match(source, /activateTractor/);
+  assert.match(source, /interact/);
+  assert.match(source, /onScanLock/);
+});
+
+test('runtime supports two-axis movement and forward world scrolling', () => {
+  const { api } = createHarness();
+  api.start(runtimeConfig({
+    forwardScroll: true,
+    worldSpeed: 100,
+    targets: [{ id: 'marker', x: 210, y: 100, scannable: false }]
+  }));
+
+  api.setControl('right', true);
+  api.setControl('up', true);
+  api.step(.1);
+  const snapshot = api.getSnapshot();
+
+  assert.ok(snapshot.player.x > 210);
+  assert.ok(snapshot.player.y < 600);
+  assert.ok(snapshot.targets[0].y > 100);
+  assert.equal(snapshot.scrollDistance, 10);
+  api.destroy();
+});
+
+test('scanner reports strength and locks a nearby hidden signal', () => {
+  const { api } = createHarness();
+  const locks = [];
+  const cues = [];
+  api.start(runtimeConfig({
+    targets: [{
+      id: 'pip-signal',
+      type: 'signal',
+      x: 210,
+      y: 520,
+      scanSeconds: .1,
+      hiddenUntilScanned: true
+    }],
+    onScanLock(target) {
+      locks.push(target.id);
+    },
+    onCue(name) {
+      cues.push(name);
+    }
+  }));
+
+  api.setControl('scan', true);
+  api.step(.1);
+  const snapshot = api.getSnapshot();
+
+  assert.equal(snapshot.scanTargetId, 'pip-signal');
+  assert.ok(snapshot.scanStrength > 0);
+  assert.equal(snapshot.targets[0].scanned, true);
+  assert.deepEqual(locks, ['pip-signal']);
+  assert.ok(cues.includes('scan-lock'));
+  api.destroy();
+});
+
+test('tractor attaches, tows, and releases a nearby target', () => {
+  const { api } = createHarness();
+  api.start(runtimeConfig({
+    targets: [{
+      id: 'escape-pod',
+      type: 'pod',
+      x: 210,
+      y: 650,
+      tractorable: true,
+      scannable: false
+    }]
+  }));
+
+  assert.equal(api.activateTractor().code, 'attached');
+  api.setControl('right', true);
+  api.step(.1);
+  const towing = api.getSnapshot();
+
+  assert.equal(towing.attachedTargetId, 'escape-pod');
+  assert.equal(towing.targets[0].attached, true);
+  assert.ok(towing.targets[0].x > 210);
+  assert.equal(api.activateTractor().code, 'released');
+  assert.equal(api.getSnapshot().attachedTargetId, null);
+  api.destroy();
+});
+
+test('interaction targets complete once within proximity', () => {
+  const { api } = createHarness();
+  const interactions = [];
+  api.start(runtimeConfig({
+    targets: [{
+      id: 'power-coupler',
+      x: 210,
+      y: 545,
+      scannable: false,
+      interactable: true
+    }],
+    onInteract(target) {
+      interactions.push(target.id);
+    }
+  }));
+
+  assert.equal(api.interact().code, 'interacted');
+  assert.equal(api.interact().code, 'no-interaction-target');
+  assert.deepEqual(interactions, ['power-coupler']);
+  api.destroy();
+});
+
+test('runtime lifecycle removes controls and animation frames cleanly', () => {
+  const { api, canvas, document, cancelledFrames } = createHarness();
+  api.start(runtimeConfig());
+
+  assert.equal(canvas.count('pointerdown'), 1);
+  assert.equal(canvas.count('pointermove'), 1);
+  assert.equal(document.count('keydown'), 1);
+  assert.equal(document.count('keyup'), 1);
+
+  api.destroy();
+
+  assert.equal(api.isActive(), false);
+  assert.equal(canvas.count('pointerdown'), 0);
+  assert.equal(canvas.count('pointermove'), 0);
+  assert.equal(document.count('keydown'), 0);
+  assert.equal(document.count('keyup'), 0);
+  assert.equal(cancelledFrames.length, 1);
+});
