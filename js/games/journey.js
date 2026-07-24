@@ -13,6 +13,8 @@
   let pendingScrapBeltLaunch = null;
   let pendingScrapBeltSuccess = null;
   let pendingScrapBeltRetry = null;
+  let pendingDistressLaunch = null;
+  let pendingDistressSuccess = null;
   let scrapBeltTutorialStep = 0;
 
   const MAP_POINTS = {
@@ -914,16 +916,16 @@
         <section class="journey-briefing-copy">
           <h1 id="journey-briefing-title">${node.name}</h1>
           <p>${rescue
-            ? 'An escape pod is trapped in a dense debris field. Clear an approach and reach the beacon.'
+            ? 'Pip’s escape pod is tumbling out of control. Hold position, attach two magnetic tethers, and connect the docking collar.'
             : 'Weave through the debris, tap the playfield to scan, and stay inside the signal ring. Tractor floating salvage if you can.'}</p>
           <div class="journey-objective-list">
-            <span><strong>${rescue ? 'REACH' : 'ROUTE'}</strong> ${rescue ? '24 SEC' : 'CROSS THE BELT'}</span>
-            <span><strong>${rescue ? 'RESCUE' : 'SCAN'}</strong> ${rescue ? '1 PASSENGER' : 'LOCK THE CRYSTAL TRAIL'}</span>
+            <span><strong>${rescue ? 'STABILIZE' : 'ROUTE'}</strong> ${rescue ? '2 TETHERS' : 'CROSS THE BELT'}</span>
+            <span><strong>${rescue ? 'DOCK' : 'SCAN'}</strong> ${rescue ? 'PIP’S POD' : 'LOCK THE CRYSTAL TRAIL'}</span>
             ${scrapTraversal ? '<span><strong>OPTIONAL</strong> TRACTOR SALVAGE</span>' : ''}
             <span><strong>HULL</strong> ${Math.round(state.resources.hull)}</span>
           </div>
           <div class="journey-briefing-controls">
-            <span>${rescue ? 'DRAG OR A/D · AUTO-FIRE' : 'DRAG OR WASD · TAP THE PLAYFIELD TO SCAN · TRACTOR'}</span>
+            <span>${rescue ? 'DRAG TETHERS TO MATCHING PORTS' : 'DRAG OR WASD · TAP THE PLAYFIELD TO SCAN · TRACTOR'}</span>
           </div>
           <div class="journey-briefing-actions">
             <button class="journey-primary-btn" type="button" onclick="journeyStartEncounter()">${rescue ? 'ANSWER THE BEACON' : 'ENTER SCRAP BELT'}</button>
@@ -965,6 +967,83 @@
       </main>`;
     startScrapBeltRuntime(node, null, true);
     renderScrapBeltTutorialStep();
+  }
+
+  function renderDistressRescue(node, attemptId) {
+    const root = host();
+    const state = JourneyState.getState();
+    if (!root || !state || !node || !attemptId || !active) return;
+    pendingDistressLaunch = { node, attemptId };
+    pendingDistressSuccess = null;
+    root.innerHTML = `
+      <main class="journey-rescue-screen">
+        <header>
+          <span>RESCUE OPERATION</span>
+          <strong id="journey-rescue-objective">STABILIZE THE POD</strong>
+        </header>
+        <section id="journey-rescue-stage" class="journey-rescue-stage is-paused" aria-label="Stabilize Pip's tumbling escape pod">
+          <div class="journey-rescue-stars" aria-hidden="true"></div>
+          <svg class="journey-rescue-lines" aria-hidden="true">
+            <line id="journey-rescue-line-blue"></line>
+            <line id="journey-rescue-line-gold"></line>
+            <line id="journey-rescue-line-dock"></line>
+          </svg>
+          <div class="journey-rescue-ship" aria-label="The Wayfarer holding position">
+            ${shipIllustration('journey-rescue-ship-svg')}
+            <button id="journey-rescue-tether-blue" class="journey-rescue-source is-blue" type="button" aria-label="Drag blue tether to blue pod port"></button>
+            <button id="journey-rescue-tether-gold" class="journey-rescue-source is-gold" type="button" aria-label="Drag gold tether to gold pod port"></button>
+            <button id="journey-rescue-dock-source" class="journey-rescue-dock-source" type="button" aria-label="Drag docking collar to pod hatch"></button>
+          </div>
+          <div id="journey-rescue-pod" class="journey-rescue-pod" aria-label="Pip's tumbling escape pod">
+            <div class="journey-rescue-pod-body">
+              <div id="journey-rescue-hatch" class="journey-rescue-hatch">
+                <div class="journey-pip-face" aria-label="Pip is visible through the pod window"><i></i><i></i><b></b></div>
+              </div>
+              <i id="journey-rescue-port-blue" class="journey-rescue-port is-blue"></i>
+              <i id="journey-rescue-port-gold" class="journey-rescue-port is-gold"></i>
+              <span>SOS</span>
+            </div>
+          </div>
+          <div class="journey-rescue-callout is-tethers">DRAG EACH TETHER TO ITS MATCHING PORT</div>
+          <div class="journey-rescue-callout is-dock">POD STABLE · CONNECT THE DOCKING COLLAR</div>
+          <button id="journey-rescue-start" class="journey-rescue-start" type="button" onclick="journeyBeginDistressRescue()">
+            <span>PIP'S POD IS TUMBLING</span>
+            <strong>ATTACH BOTH TETHERS</strong>
+            <small>Each connection will slow the pod.</small>
+            <b>START RESCUE →</b>
+          </button>
+        </section>
+      </main>`;
+    JourneyDistressRescue.start({
+      stageId: 'journey-rescue-stage',
+      attemptId,
+      encounterId: node.encounterId,
+      passengerId: node.passengerId,
+      startingHull: state.resources.hull,
+      initiallyPaused: true,
+      onSuccessReady(result) {
+        pendingDistressLaunch = null;
+        pendingDistressSuccess = { node, result };
+        renderDistressRescueSuccess(result);
+      }
+    });
+  }
+
+  function renderDistressRescueSuccess(result) {
+    const stage = document.getElementById('journey-rescue-stage');
+    if (!stage || !result || !active) return;
+    const overlay = document.createElement('section');
+    overlay.className = 'journey-rescue-success';
+    overlay.setAttribute('aria-labelledby', 'journey-rescue-success-title');
+    overlay.innerHTML = `
+      <div class="journey-pip-portrait" aria-hidden="true">
+        <div class="journey-pip-face"><i></i><i></i><b></b></div>
+      </div>
+      <span>RESCUE COMPLETE</span>
+      <h1 id="journey-rescue-success-title">PIP IS SAFE</h1>
+      <p>“I thought nobody heard the beacon.”</p>
+      <button type="button" onclick="journeyConfirmDistressRescue()">BRING PIP ABOARD →</button>`;
+    stage.appendChild(overlay);
   }
 
   function startScrapBeltRuntime(node, attemptId, initiallyPaused) {
@@ -1140,6 +1219,13 @@
       renderShip();
       return;
     }
+    if (node.id === 'distress-signal' && result.outcome === 'success') {
+      pendingDistressSuccess = null;
+      if (typeof JourneyDistressRescue !== 'undefined') JourneyDistressRescue.destroy();
+      shipNotice = 'PIP IS ABOARD · RESCUE COMPLETE';
+      renderShip();
+      return;
+    }
     if (node.id === 'scrap-belt' && result.outcome === 'success') {
       pendingEncounterPresentation = { node, result, applied };
       renderScrapBeltExit();
@@ -1265,7 +1351,10 @@
     pendingScrapBeltLaunch = null;
     pendingScrapBeltSuccess = null;
     pendingScrapBeltRetry = null;
+    pendingDistressLaunch = null;
+    pendingDistressSuccess = null;
     scrapBeltTutorialStep = 0;
+    if (typeof JourneyDistressRescue !== 'undefined') JourneyDistressRescue.destroy();
     renderShip();
   };
 
@@ -1283,9 +1372,12 @@
     pendingScrapBeltLaunch = null;
     pendingScrapBeltSuccess = null;
     pendingScrapBeltRetry = null;
+    pendingDistressLaunch = null;
+    pendingDistressSuccess = null;
     scrapBeltTutorialStep = 0;
     JourneyCombat.destroy();
     if (typeof JourneyScrapBelt !== 'undefined') JourneyScrapBelt.destroy();
+    if (typeof JourneyDistressRescue !== 'undefined') JourneyDistressRescue.destroy();
     if (typeof JourneyMissionRuntime !== 'undefined') JourneyMissionRuntime.destroy();
     shipNotice = `DEV CHECKPOINT · ${checkpointId.replace(/-/g, ' ').toUpperCase()}`;
     if (checkpointId === 'opening') renderJourneyIntro();
@@ -1411,6 +1503,12 @@
       renderScrapBelt(node);
       return;
     }
+    if (node.id === 'distress-signal') {
+      const attempt = JourneyState.beginEncounter(node.encounterId);
+      if (!attempt.ok) return;
+      renderDistressRescue(node, attempt.attemptId);
+      return;
+    }
     const attempt = JourneyState.beginEncounter(node.encounterId);
     if (!attempt.ok) return;
     renderCombat(node, attempt.attemptId);
@@ -1448,6 +1546,22 @@
     const overlay = document.querySelector && document.querySelector('.journey-mission-failure-overlay');
     if (overlay) overlay.remove();
     startScrapBeltRuntime(retry.node, retry.result.attemptId, false);
+  };
+
+  window.journeyBeginDistressRescue = function () {
+    if (!pendingDistressLaunch) return;
+    playMenuSound();
+    const overlay = document.getElementById('journey-rescue-start');
+    if (overlay) overlay.remove();
+    JourneyDistressRescue.begin();
+  };
+
+  window.journeyConfirmDistressRescue = function () {
+    if (!pendingDistressSuccess) return;
+    playMenuSound();
+    const completion = pendingDistressSuccess;
+    pendingDistressSuccess = null;
+    handleEncounterComplete(completion.node, completion.result);
   };
 
   window.journeyConfirmScrapBeltSuccess = function () {
@@ -1578,9 +1692,12 @@
     pendingScrapBeltLaunch = null;
     pendingScrapBeltSuccess = null;
     pendingScrapBeltRetry = null;
+    pendingDistressLaunch = null;
+    pendingDistressSuccess = null;
     scrapBeltTutorialStep = 0;
     JourneyCombat.destroy();
     if (typeof JourneyScrapBelt !== 'undefined') JourneyScrapBelt.destroy();
+    if (typeof JourneyDistressRescue !== 'undefined') JourneyDistressRescue.destroy();
     if (typeof JourneyMissionRuntime !== 'undefined') JourneyMissionRuntime.destroy();
     JourneyState.saveJourneyState('exit');
     JourneyState.clearInMemory();

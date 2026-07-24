@@ -75,7 +75,7 @@
       name: 'Distress Signal',
       shortName: 'DISTRESS',
       type: 'rescue',
-      description: 'A weak signal beyond the debris.',
+      description: 'Stabilize a tumbling pod and bring Pip aboard.',
       connections: ['scrap-belt', 'repair-moon'],
       fuelCost: 7,
       distance: 29,

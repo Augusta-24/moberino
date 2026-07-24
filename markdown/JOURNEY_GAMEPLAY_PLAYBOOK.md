@@ -358,8 +358,8 @@ Audio feedback must correspond to visible cause and effect.
 
 - **Primary verb:** navigate.
 - Fly upward through a moving debris corridor with horizontal and vertical control.
-- Scan for the crystal trail, choose openings, break only necessary debris, and
-  tractor selected salvage.
+- Scan for the crystal trail, choose openings, and tractor selected floating
+  salvage. This mission has no firing.
 - Use the asteroid piano sound language.
 - Success is reaching the far side with the signal acquired, not waiting out a timer.
 
@@ -369,9 +369,13 @@ The player chooses one mission, not two identical errands.
 
 #### Answer the beacon
 
-- **Primary verb:** search and rescue.
-- The player triangulates Pip's signal, finds the visible pod, frees it, attaches a
-  tractor beam, and brings it aboard.
+- **Primary verb:** stabilize and rescue.
+- The arrival cinematic follows the already-acquired beacon to Pip's visibly
+  tumbling pod. The Wayfarer holds position rather than entering another flight
+  corridor.
+- The player drags two magnetic tethers to moving, color-matched pod ports. Each
+  connection visibly slows the spin.
+- Once stabilized, the player connects the docking collar and reels the pod aboard.
 - Pip joins now.
 - The cache is intercepted; its crystal moves to Ogre Gate.
 

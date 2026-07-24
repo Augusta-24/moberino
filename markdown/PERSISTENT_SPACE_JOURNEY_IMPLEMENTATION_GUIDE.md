@@ -81,16 +81,18 @@ All new missions and route decisions must follow
   branching persist.
 - **Stage 5:** Scrap Belt now uses the reusable mission runtime for forward travel,
   full two-axis steering, a navigable debris corridor, crystal-trail scanning,
-  selective debris clearing, tractor salvage, persistent damage and rewards, and
+  floating tractor salvage, persistent damage and rewards, and
   Space Mobe's piano language for rock interactions. Single-focus, tap-through
   callouts on the paused playfield teach the live controls, the smaller signal
   evades through traffic after a local scan reveals it, and an in-mission
   achievement beat confirms the lock
   before results. Success requires crossing the route with the signal locked
   rather than surviving a countdown.
-- **Stage 6 prototype:** passenger persistence and both branch results work, but the
-  Distress Signal incorrectly reuses the asteroid encounter and the cache recovery
-  is not sufficiently interactive. These are scaffolding, not completed missions.
+- **Stage 6:** Distress Signal now uses a dedicated fixed-position rescue operation.
+  The player stabilizes Pip's tumbling pod with two moving magnetic tether targets,
+  connects the docking collar, and sees Pip brought aboard. Passenger persistence
+  is applied only after the physical rescue. The cache recovery remains scaffolding
+  and is not yet a completed mission.
 - **Stage 7:** Repair Moon has a dedicated maintenance flow, instant paid hull repair, and
   a persistent blaster upgrade.
 - **Gameplay foundation:** the isolated Journey mission runtime now provides full
@@ -110,8 +112,9 @@ Prove the gameplay identity before building Ogre Gate:
 
 1. Make the Pilot's Call consequential: play one branch, transform the unchosen
    story thread, and show the reconnection at Repair Moon.
-2. Rebuild Distress Signal as signal triangulation, visible pod recovery, towing,
-   and physical passenger boarding.
+2. Rebuild Distress Signal as a fixed-position rescue operation: stabilize Pip's
+   visibly tumbling pod with two magnetic tethers, connect the docking collar, and
+   bring Pip physically aboard rather than launching another flight corridor.
 3. Rebuild Abandoned Cache as a signal, power-routing, and vault-unlock interaction
    with physical crystal acquisition.
 4. Rebuild Repair Moon as visible hands-on repair and upgrade installation rather
@@ -1465,12 +1468,17 @@ Acceptance check:
 
 ## Stage 6: Add the rescue encounter
 
-Copy/adapt the captive and rescue logic.
+Build a dedicated fixed-position rescue interaction rather than adapting the flight
+or asteroid encounter.
 
 Requirements:
 
 - distress-signal node launches the rescue,
-- player must successfully rescue the character,
+- the Wayfarer holds position while Pip's pod visibly tumbles,
+- the player drags two magnetic tethers to moving, color-matched ports,
+- each connection visibly slows the pod,
+- the docking collar is unavailable until both tethers stabilize the pod,
+- a completed collar connection visibly reels the pod toward the Wayfarer,
 - rescued passenger ID is returned in results,
 - passenger is added once,
 - passenger appears or is acknowledged on the ship screen,
@@ -1478,6 +1486,9 @@ Requirements:
 
 Acceptance check:
 
+- no scanning, shooting, free flight, or survival timer appears,
+- a missed tether retracts and can be tried again immediately,
+- both tethers are required before docking,
 - successful rescue adds the passenger,
 - repeating the encounter cannot add a duplicate passenger,
 - failure does not mark the rescue complete,
