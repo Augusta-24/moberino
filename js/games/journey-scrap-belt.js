@@ -203,30 +203,20 @@
   }
 
   function updateHud(snapshot) {
-    const routePercent = Math.min(100, Math.round(snapshot.scrollDistance / ROUTE_DISTANCE * 100));
     const signal = snapshot.targets.find(target => target.id === 'crystal-trail-signal');
     const revealed = !!(signal && signal.revealed);
-    const capturePercent = signal
-      ? Math.round(signal.scanProgress / signal.scanSeconds * 100)
-      : 0;
     const dx = signal ? snapshot.player.x - signal.x : 0;
     const dy = signal ? snapshot.player.y - signal.y : 0;
     const insideRadio = !!(signal && revealed && Math.sqrt(dx * dx + dy * dy) <= signal.captureRadius);
-    setText('journey-scrap-distance', `${routePercent}%`);
-    setText('journey-scrap-salvage', `${salvageCollected}`);
-    setText(
-      'journey-scrap-signal',
-      signalLocked ? 'LOCKED' : revealed ? `${capturePercent}%` : 'HIDDEN'
-    );
     setText(
       'journey-scrap-status',
       signalLocked
-        ? 'TRAIL LOCKED · REACH THE FAR SIDE'
+        ? 'SIGNAL LOCKED · EXIT THE BELT'
         : revealed
           ? insideRadio
-            ? 'CAPTURING SIGNAL · STAY INSIDE THE RING'
-            : 'CHASE THE SIGNAL · ENTER ITS RADIO RING'
-          : 'TAP THE PLAYFIELD TO SCAN THE AREA'
+            ? 'STAY INSIDE THE RING'
+            : 'CATCH THE SIGNAL RING'
+          : 'TAP TO SCAN THE AREA'
     );
     updateHull(snapshot.hull);
   }
@@ -308,7 +298,6 @@
       storedSalvageId = null;
       tractorAttachedAt = 0;
       playSalvageStored();
-      setText('journey-scrap-status', 'SALVAGE STOWED');
     }
     if (snapshot.hull <= 0) {
       finish('failure');

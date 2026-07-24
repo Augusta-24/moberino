@@ -64,6 +64,12 @@ Do not draw a button for an action performed directly on the playfield. A statio
 tap may activate a contextual verb such as Scan while a drag steers; instructions
 must make that distinction clear.
 
+Live mission HUDs show only information that changes the player's next action.
+Mission titles, elapsed route percentages, duplicated target state, and optional
+collection totals do not belong in the header unless the player must actively use
+them. Prefer health plus one plain-language objective; put target-specific progress
+on the target itself.
+
 Hazards do not move and the player cannot take damage while instructions are open.
 An earlier briefing may explain why the mission matters; this overlay explains how
 to act once the playfield is visible.

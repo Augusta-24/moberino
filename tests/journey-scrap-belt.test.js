@@ -99,3 +99,12 @@ test('Journey routes Scrap Belt into its traversal screen and tactile controls',
   assert.match(controller, /ROUTE ACQUIRED/);
   assert.match(controller, /journeyContinueScrapBeltExit/);
 });
+
+test('Scrap Belt HUD shows only health and the current action', () => {
+  assert.match(controller, /journey-combat-hull-readout/);
+  assert.match(controller, /journey-scrap-objective/);
+  assert.match(controller, /id="journey-scrap-status"/);
+  assert.doesNotMatch(controller, /id="journey-scrap-distance"/);
+  assert.doesNotMatch(controller, /id="journey-scrap-signal"/);
+  assert.doesNotMatch(controller, /id="journey-scrap-salvage"/);
+});

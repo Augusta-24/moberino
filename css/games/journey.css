@@ -1395,23 +1395,24 @@ body.on-journey {
 }
 
 .journey-scrap-hud {
-  grid-template-columns: 70px minmax(105px, 1fr) 52px 62px 52px;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 18px;
 }
 
-.journey-scrap-status {
-  position: absolute;
-  top: 9px;
-  right: 64px;
-  left: 9px;
-  z-index: 2;
-  border: 1px solid rgba(255,241,166,.42);
-  border-radius: 4px;
-  padding: 7px 8px;
-  background: rgba(4,10,24,.82);
+.journey-scrap-objective {
+  min-width: 0;
+  text-align: left;
+}
+
+.journey-scrap-objective > span {
+  color: var(--journey-cyan);
+}
+
+.journey-scrap-objective > strong {
   color: #fff1a6;
-  font: 12px/1.25 'VCR', monospace;
-  letter-spacing: .7px;
-  pointer-events: none;
+  font: 18px/1.05 'Bebas Neue', sans-serif;
+  letter-spacing: 1.5px;
+  white-space: normal;
 }
 
 .journey-mission-controls {
@@ -1565,7 +1566,6 @@ body.on-journey {
   animation: journey-tutorial-start-pulse 1.4s ease-in-out infinite;
 }
 
-.journey-scrap-screen.is-tutorial .journey-scrap-status,
 .journey-scrap-screen.is-tutorial .journey-combat-retreat {
   visibility: hidden;
 }

@@ -948,15 +948,14 @@
             <span>HULL</span><strong id="journey-scrap-hull">${Math.round(state.resources.hull)}</strong>
             <div><i id="journey-scrap-hull-fill" style="width:100%"></i></div>
           </div>
-          <div class="journey-combat-title"><span>SCRAP BELT</span><strong>FOLLOW THE TRAIL</strong></div>
-          <div><span>ROUTE</span><strong id="journey-scrap-distance">0%</strong></div>
-          <div><span>SIGNAL</span><strong id="journey-scrap-signal">SEARCH</strong></div>
-          <div><span>SALVAGE</span><strong id="journey-scrap-salvage">0</strong></div>
+          <div class="journey-scrap-objective">
+            <span>OBJECTIVE</span>
+            <strong id="journey-scrap-status">TAP TO SCAN THE AREA</strong>
+          </div>
         </header>
         <div class="journey-combat-frame journey-scrap-frame">
           <canvas id="journey-scrap-canvas" aria-label="Navigate the Scrap Belt and scan for the crystal trail"></canvas>
           <div id="journey-scrap-damage-alert" class="journey-combat-damage-alert" aria-live="assertive"></div>
-          <div id="journey-scrap-status" class="journey-scrap-status">TAP THE PLAYFIELD TO SCAN THE AREA</div>
           <button class="journey-combat-retreat" type="button" onclick="journeyRetreatEncounter()">RETREAT</button>
           <div class="journey-mission-controls" aria-label="Mission controls">
             <button type="button" onclick="journeyMissionTractor()">TRACTOR</button>
