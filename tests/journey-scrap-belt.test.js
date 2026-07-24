@@ -21,9 +21,11 @@ test('Scrap Belt is authored on the reusable mission runtime', () => {
   assert.match(source, /scanRange:/);
   assert.match(source, /onScanLock/);
   assert.match(source, /onScanReveal/);
-  assert.match(source, /scanRevealSeconds:/);
+  assert.match(source, /scanMode:\s*'pulse'/);
+  assert.match(source, /scanPulseRadius:/);
   assert.match(source, /captureRadius:/);
   assert.match(source, /scanDecayRate:/);
+  assert.match(source, /onScanLost/);
   assert.match(source, /playScanPulse/);
   assert.match(source, /Math\.sin\(snapshot\.missionTime/);
   assert.match(source, /onTractorAttach/);
@@ -55,7 +57,7 @@ test('Journey routes Scrap Belt into its traversal screen and tactile controls',
   assert.match(controller, /if \(node\.id === 'scrap-belt'\) renderScrapBelt/);
   assert.match(controller, /CROSS THE BELT/);
   assert.match(controller, /LOCK THE CRYSTAL TRAIL/);
-  assert.match(controller, /journeyMissionControl\('scan', true\)/);
+  assert.match(controller, /journeyMissionScan/);
   assert.match(controller, /journeyMissionControl\('fire', true\)/);
   assert.match(controller, /journeyMissionTractor/);
   assert.match(controller, /function renderScrapBeltExit/);

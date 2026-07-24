@@ -85,10 +85,10 @@
   function playScanPulse(detail) {
     const now = Date.now();
     const progress = Math.max(0, Math.min(1, Number(detail.progress) || 0));
-    const interval = detail.phase === 'capture' ? 470 - progress * 300 : 560;
+    const interval = 470 - progress * 300;
     if (now - lastScanToneAt < interval) return;
     lastScanToneAt = now;
-    const base = detail.phase === 'capture' ? 300 : 180;
+    const base = 300;
     const frequency = base + (Number(detail.strength) || 0) * 360 + progress * 260;
     playTone(frequency, 'sine', .07, .018, frequency * 1.035);
   }
@@ -130,12 +130,13 @@
       y: 105,
       r: 20,
       worldLocked: false,
+      revealed: false,
       hiddenUntilScanned: true,
       scannable: true,
       scanSeconds: 1.8,
-      scanRevealSeconds: .75,
       captureRadius: 118,
       scanDecayRate: .7,
+      scanLostSeconds: 1.15,
       color: '#fff1a6'
     });
     return targets;
@@ -190,7 +191,7 @@
     setText('journey-scrap-salvage', `${salvageCollected}`);
     setText(
       'journey-scrap-signal',
-      signalLocked ? 'LOCKED' : revealed ? `${capturePercent}%` : snapshot.scanTargetId ? 'FOUND?' : 'SEARCH'
+      signalLocked ? 'LOCKED' : revealed ? `${capturePercent}%` : 'HIDDEN'
     );
     setText(
       'journey-scrap-status',
@@ -200,7 +201,7 @@
           ? insideRadio
             ? 'CAPTURING SIGNAL · STAY INSIDE THE RING'
             : 'CHASE THE SIGNAL · ENTER ITS RADIO RING'
-          : 'HOLD SCAN TO REVEAL THE SOURCE'
+          : 'MOVE THROUGH THE FIELD · TAP SCAN TO SWEEP'
     );
     updateHull(snapshot.hull);
   }
@@ -285,6 +286,9 @@
         return 26 + Math.max(0, Math.min(1, forwardPosition)) * 132;
       },
       scanRange: 520,
+      scanMode: 'pulse',
+      scanPulseRadius: 128,
+      scanPulseCooldown: .8,
       tractorRange: 145,
       fireDelay: Math.max(.13, .25 - (nextConfig.blasterLevel || 0) * .03),
       targets: debrisField(),
@@ -297,8 +301,17 @@
       onScanReveal(target) {
         if (target.id === 'crystal-trail-signal') playSignalReveal();
       },
+      onScanLost(target) {
+        if (target.id !== 'crystal-trail-signal') return;
+        playTone(260, 'sine', .16, .025, 130);
+        setText('journey-scrap-status', 'SIGNAL LOST · MOVE AND SCAN AGAIN');
+      },
       onCue(name, detail) {
-        if (name === 'scan-pulse') playScanPulse(detail);
+        if (name === 'scan-sweep') {
+          playTone(180, 'sine', .11, .018, 420);
+        } else if (name === 'scan-capture') {
+          playScanPulse(detail);
+        }
       },
       onTargetHit() {
         playRockImpact();

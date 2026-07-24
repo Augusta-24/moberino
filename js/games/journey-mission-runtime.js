@@ -25,6 +25,9 @@
   let attachedTargetId = null;
   let scanTargetId = null;
   let scanStrength = 0;
+  let scanPulseStartedAt = -1;
+  let scanPulseOrigin = null;
+  let nextScanPulseAt = 0;
   let scrollDistance = 0;
   let missionTime = 0;
   let fireClock = 0;
@@ -83,9 +86,11 @@
       scanProgress: 0,
       scanRevealSeconds: revealSeconds,
       scanRevealProgress: 0,
-      revealed: !!target.revealed || revealSeconds === 0,
+      revealed: typeof target.revealed === 'boolean' ? target.revealed : revealSeconds === 0,
       captureRadius: Math.max(0, Number(target.captureRadius) || 0),
       scanDecayRate: Math.max(0, Number(target.scanDecayRate) || 0),
+      scanLostSeconds: Math.max(.2, Number(target.scanLostSeconds) || 1.2),
+      scanOutsideSeconds: 0,
       scanned: !!target.scanned,
       hiddenUntilScanned: !!target.hiddenUntilScanned,
       tractorable: !!target.tractorable,
@@ -168,6 +173,11 @@
 
   function onKeyDown(event) {
     if (!active || !journeyPageIsActive()) return;
+    if (String(event.key || '').toLowerCase() === 'q' && config.scanMode === 'pulse') {
+      pulseScan();
+      event.preventDefault();
+      return;
+    }
     const control = keyControl(event);
     if (control) {
       controls[control] = true;
@@ -350,6 +360,72 @@
 
   function updateScanner(deltaSeconds) {
     const scanRange = Math.max(40, Number(config.scanRange) || DEFAULT_SCAN_RANGE);
+    if (config.scanMode === 'pulse') {
+      const revealed = nearestTarget(target =>
+        target.scannable && target.revealed && !target.scanned, scanRange);
+      scanTargetId = revealed ? revealed.target.id : null;
+      scanStrength = revealed ? clamp(1 - revealed.distance / scanRange, 0, 1) : 0;
+      if (!revealed) {
+        targets.forEach(target => {
+          if (!target.scannable || !target.revealed || target.scanned) return;
+          target.scanOutsideSeconds += deltaSeconds;
+          target.scanProgress = clamp(
+            target.scanProgress - deltaSeconds * target.scanDecayRate,
+            0,
+            target.scanSeconds
+          );
+          if (target.scanOutsideSeconds < target.scanLostSeconds) return;
+          target.revealed = false;
+          target.scanProgress = 0;
+          target.scanOutsideSeconds = 0;
+          emitCue('scan-lost', { targetId: target.id });
+          if (typeof config.onScanLost === 'function') {
+            config.onScanLost(targetSnapshot(target));
+          }
+        });
+        return;
+      }
+      const target = revealed.target;
+      const insideCapture = !target.captureRadius || revealed.distance <= target.captureRadius;
+      if (insideCapture) {
+        target.scanOutsideSeconds = 0;
+        target.scanProgress = clamp(
+          target.scanProgress + deltaSeconds,
+          0,
+          target.scanSeconds
+        );
+        emitCue('scan-capture', {
+          targetId: target.id,
+          progress: target.scanProgress / target.scanSeconds
+        });
+      } else {
+        target.scanOutsideSeconds += deltaSeconds;
+        target.scanProgress = clamp(
+          target.scanProgress - deltaSeconds * target.scanDecayRate,
+          0,
+          target.scanSeconds
+        );
+        if (target.scanOutsideSeconds >= target.scanLostSeconds) {
+          target.revealed = false;
+          target.scanProgress = 0;
+          target.scanOutsideSeconds = 0;
+          scanTargetId = null;
+          scanStrength = 0;
+          emitCue('scan-lost', { targetId: target.id });
+          if (typeof config.onScanLost === 'function') {
+            config.onScanLost(targetSnapshot(target));
+          }
+          return;
+        }
+      }
+      if (target.scanProgress >= target.scanSeconds && !target.scanned) {
+        target.scanned = true;
+        emitCue('scan-lock', { targetId: target.id });
+        if (typeof config.onScanLock === 'function') config.onScanLock(targetSnapshot(target));
+      }
+      return;
+    }
+
     const candidate = nearestTarget(target => target.scannable && !target.scanned, scanRange);
     scanTargetId = candidate ? candidate.target.id : null;
     scanStrength = candidate ? clamp(1 - candidate.distance / scanRange, 0, 1) : 0;
@@ -453,6 +529,30 @@
     return true;
   }
 
+  function pulseScan() {
+    if (!active || !player) return { ok: false, code: 'inactive' };
+    if (missionTime < nextScanPulseAt) {
+      return { ok: false, code: 'recharging', readyAt: nextScanPulseAt };
+    }
+    const radius = Math.max(45, Number(config.scanPulseRadius) || 125);
+    const cooldown = Math.max(.25, Number(config.scanPulseCooldown) || .85);
+    nextScanPulseAt = missionTime + cooldown;
+    scanPulseStartedAt = missionTime;
+    scanPulseOrigin = { x: player.x, y: player.y, radius };
+    emitCue('scan-sweep', { x: player.x, y: player.y, radius });
+    const candidate = nearestTarget(target =>
+      target.scannable && !target.scanned && !target.revealed, radius);
+    if (!candidate) return { ok: true, code: 'clear' };
+    candidate.target.revealed = true;
+    candidate.target.scanOutsideSeconds = 0;
+    scanTargetId = candidate.target.id;
+    emitCue('scan-reveal', { targetId: candidate.target.id });
+    if (typeof config.onScanReveal === 'function') {
+      config.onScanReveal(targetSnapshot(candidate.target));
+    }
+    return { ok: true, code: 'revealed', targetId: candidate.target.id };
+  }
+
   function addTarget(source) {
     if (!active) return null;
     const target = normalizeTarget(source, targets.length);
@@ -534,6 +634,8 @@
       scanProgress: target.scanProgress,
       scanSeconds: target.scanSeconds,
       captureRadius: target.captureRadius,
+      scanLostSeconds: target.scanLostSeconds,
+      scanOutsideSeconds: target.scanOutsideSeconds,
       hp: target.hp,
       collisionDamage: target.collisionDamage,
       data: target.data
@@ -651,6 +753,26 @@
   }
 
   function drawScanner() {
+    if (config.scanMode === 'pulse') {
+      if (!scanPulseOrigin || scanPulseStartedAt < 0) return;
+      const duration = .55;
+      const progress = clamp((missionTime - scanPulseStartedAt) / duration, 0, 1);
+      context.save();
+      context.strokeStyle = `rgba(105,215,255,${.85 * (1 - progress)})`;
+      context.lineWidth = 3;
+      context.beginPath();
+      context.arc(
+        scanPulseOrigin.x,
+        scanPulseOrigin.y,
+        scanPulseOrigin.radius * (.12 + progress * .88),
+        0,
+        Math.PI * 2
+      );
+      context.stroke();
+      context.restore();
+      if (progress >= 1) scanPulseOrigin = null;
+      return;
+    }
     if (!controls.scan) return;
     const scanRange = Math.max(40, Number(config.scanRange) || DEFAULT_SCAN_RANGE);
     context.save();
@@ -761,6 +883,9 @@
     attachedTargetId = null;
     scanTargetId = null;
     scanStrength = 0;
+    scanPulseStartedAt = -1;
+    scanPulseOrigin = null;
+    nextScanPulseAt = 0;
     scrollDistance = 0;
     missionTime = 0;
     fireClock = 0;
@@ -792,6 +917,9 @@
     attachedTargetId = null;
     scanTargetId = null;
     scanStrength = 0;
+    scanPulseStartedAt = -1;
+    scanPulseOrigin = null;
+    nextScanPulseAt = 0;
     scrollDistance = 0;
     missionTime = 0;
     fireClock = 0;
@@ -804,6 +932,7 @@
     destroy,
     step,
     setControl,
+    pulseScan,
     fireProjectile,
     addTarget,
     removeTarget,

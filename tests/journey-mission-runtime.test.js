@@ -171,20 +171,25 @@ test('scanner reports strength and locks a nearby hidden signal', () => {
   api.destroy();
 });
 
-test('important signals reveal, require proximity capture, and lose partial lock outside the ring', () => {
+test('pulse scanning reveals a local signal and proximity captures it without holding a button', () => {
   const { api } = createHarness();
   const reveals = [];
+  const losses = [];
   const locks = [];
   api.start(runtimeConfig({
+    scanMode: 'pulse',
+    scanPulseRadius: 100,
+    scanPulseCooldown: .1,
     targets: [{
       id: 'moving-source',
       type: 'signal',
       x: 210,
       y: 520,
-      scanRevealSeconds: .1,
       scanSeconds: .3,
       captureRadius: 100,
       scanDecayRate: 1,
+      scanLostSeconds: .2,
+      revealed: false,
       hiddenUntilScanned: true
     }],
     onScanReveal(target) {
@@ -192,11 +197,14 @@ test('important signals reveal, require proximity capture, and lose partial lock
     },
     onScanLock(target) {
       locks.push(target.id);
+    },
+    onScanLost(target) {
+      losses.push(target.id);
     }
   }));
 
-  api.setControl('scan', true);
-  api.step(.1);
+  assert.equal(api.getSnapshot().targets[0].revealed, false);
+  assert.equal(api.pulseScan().code, 'revealed');
   assert.equal(api.getSnapshot().targets[0].revealed, true);
   assert.deepEqual(reveals, ['moving-source']);
 
@@ -205,12 +213,13 @@ test('important signals reveal, require proximity capture, and lose partial lock
   assert.ok(partial > 0);
 
   api.updateTarget('moving-source', { y: 200 });
-  api.setControl('scan', false);
   api.step(.1);
-  assert.ok(api.getSnapshot().targets[0].scanProgress < partial);
+  api.step(.1);
+  assert.equal(api.getSnapshot().targets[0].revealed, false);
+  assert.deepEqual(losses, ['moving-source']);
 
   api.updateTarget('moving-source', { y: 520 });
-  api.setControl('scan', true);
+  assert.equal(api.pulseScan().code, 'revealed');
   api.step(.1);
   api.step(.1);
   api.step(.1);

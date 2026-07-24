@@ -878,7 +878,7 @@
             <span><strong>HULL</strong> ${Math.round(state.resources.hull)}</span>
           </div>
           <div class="journey-briefing-controls">
-            <span>${rescue ? 'DRAG OR A/D · AUTO-FIRE' : 'DRAG OR WASD · HOLD SCAN · FIRE · TRACTOR'}</span>
+            <span>${rescue ? 'DRAG OR A/D · AUTO-FIRE' : 'DRAG OR WASD · TAP SCAN · FIRE · TRACTOR'}</span>
           </div>
           <div class="journey-briefing-actions">
             <button class="journey-primary-btn" type="button" onclick="journeyStartEncounter()">${rescue ? 'ANSWER THE BEACON' : 'ENTER SCRAP BELT'}</button>
@@ -911,9 +911,7 @@
           <button class="journey-combat-retreat" type="button" onclick="journeyRetreatEncounter()">RETREAT</button>
           <div class="journey-mission-controls" aria-label="Mission controls">
             <button type="button"
-              onpointerdown="journeyMissionControl('scan', true)"
-              onpointerup="journeyMissionControl('scan', false)"
-              onpointercancel="journeyMissionControl('scan', false)">SCAN</button>
+              onclick="journeyMissionScan()">SCAN</button>
             <button type="button"
               onpointerdown="journeyMissionControl('fire', true)"
               onpointerup="journeyMissionControl('fire', false)"
@@ -921,7 +919,7 @@
             <button type="button" onclick="journeyMissionTractor()">TRACTOR</button>
           </div>
         </div>
-        <div class="journey-combat-hint">DRAG OR WASD · Q SCAN · Z/F FIRE · SPACE TRACTOR</div>
+        <div class="journey-combat-hint">DRAG OR WASD · Q SCAN PULSE · Z/F FIRE · SPACE TRACTOR</div>
       </main>`;
     JourneyScrapBelt.start({
       canvasId: 'journey-scrap-canvas',
@@ -1246,6 +1244,10 @@
 
   window.journeyMissionTractor = function () {
     if (typeof JourneyMissionRuntime !== 'undefined') JourneyMissionRuntime.activateTractor();
+  };
+
+  window.journeyMissionScan = function () {
+    if (typeof JourneyMissionRuntime !== 'undefined') JourneyMissionRuntime.pulseScan();
   };
 
   window.journeyContinueScrapBeltExit = function () {

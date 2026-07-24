@@ -67,15 +67,20 @@ player watches.
 
 Use a three-beat scanning language when acquiring an important signal:
 
-1. **Reveal:** scanning exposes the source and its radio envelope.
-2. **Track:** the source may move, drift, flicker, or become obstructed; the player
-   must position themselves inside its signal area.
-3. **Capture:** holding the scan while maintaining contact fills a visible lock
-   ring. Leaving the signal area drains partial progress.
+1. **Search:** the player moves through the space and taps Scan to pulse a small
+   local area. Scanning the entire screen or holding a trivial button is not a
+   meaningful search.
+2. **Track:** a successful pulse reveals the source and its radio envelope. The
+   source may move, drift, flicker, or become obstructed, so the player must stay
+   with it.
+3. **Capture:** remaining inside the signal area automatically fills a visible lock
+   ring. Leaving drains partial progress; losing contact hides the source and
+   requires another local scan.
 
-Every phase needs audiovisual feedback. Pulses should become faster, brighter, or
-higher in pitch as the player approaches lock. Full capture needs a distinct lock
-animation and sound, followed by a visible change to the objective or route.
+Every phase needs audiovisual feedback. The local sweep must be visible and audible.
+Capture pulses should become faster, brighter, or higher in pitch as lock approaches.
+Full capture needs a distinct lock animation and sound, followed by a visible change
+to the objective or route.
 
 ### Interact
 
