@@ -3574,12 +3574,6 @@ body.on-journey {
   font: 12px/1 'VCR', monospace;
 }
 
-.journey-cockpit-companion > small {
-  margin-top: 2px;
-  color: #fff;
-  font: 12px/1 'VCR', monospace;
-}
-
 .journey-cockpit-condition span {
   color: #f5f3ec;
   font-size: 12px;

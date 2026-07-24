@@ -443,7 +443,6 @@
             <div class="journey-cockpit-companion" aria-label="Pip is aboard the Wayfarer">
               <div class="journey-pip-face" aria-hidden="true"><i></i><i></i><b></b></div>
               <span>PIP</span>
-              <small>CREW</small>
             </div>` : ''}
           <div class="journey-quick-status">
             <span>HULL<strong>${Math.round(r.hull)}</strong></span>
