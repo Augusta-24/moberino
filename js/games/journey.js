@@ -12,6 +12,7 @@
   let pendingEncounterPresentation = null;
   let pendingScrapBeltLaunch = null;
   let pendingScrapBeltSuccess = null;
+  let scrapBeltTutorialStep = 0;
 
   const MAP_POINTS = {
     'home-orbit': [58, 138],
@@ -937,8 +938,9 @@
     if (!root || !state || !active) return;
     pendingScrapBeltLaunch = { node };
     pendingScrapBeltSuccess = null;
+    scrapBeltTutorialStep = 0;
     root.innerHTML = `
-      <main class="journey-combat-screen journey-scrap-screen">
+      <main class="journey-combat-screen journey-scrap-screen is-tutorial tutorial-move">
         <header class="journey-combat-hud journey-scrap-hud">
           <div class="journey-combat-hull-readout">
             <span>HULL</span><strong id="journey-scrap-hull">${Math.round(state.resources.hull)}</strong>
@@ -963,15 +965,8 @@
               onpointercancel="journeyMissionControl('fire', false)">FIRE</button>
             <button type="button" onclick="journeyMissionTractor()">TRACTOR</button>
           </div>
-          <button id="journey-scrap-start-overlay" class="journey-mission-start-overlay" type="button" onclick="journeyBeginScrapBelt()" aria-labelledby="journey-scrap-start-title">
-            <span class="journey-tutorial-title"><small>OBJECTIVE</small><strong id="journey-scrap-start-title">FIND THE SIGNAL</strong></span>
-            <span class="journey-tutorial-callout is-move"><i></i><strong>DRAG TO WEAVE</strong></span>
-            <span class="journey-tutorial-callout is-scan"><i></i><strong>TAP SCAN</strong></span>
-            <span class="journey-tutorial-callout is-lock"><i></i><strong>STAY IN THE RING</strong></span>
-            <span class="journey-tutorial-start">TAP TO START →</span>
-          </button>
+          <button id="journey-scrap-start-overlay" class="journey-mission-start-overlay is-move" type="button" onclick="journeyAdvanceScrapBeltTutorial()" aria-labelledby="journey-scrap-start-title"></button>
         </div>
-        <div class="journey-combat-hint">DRAG OR WASD · Q SCAN PULSE · Z/F FIRE · SPACE TRACTOR</div>
       </main>`;
     JourneyScrapBelt.start({
       canvasId: 'journey-scrap-canvas',
@@ -987,6 +982,48 @@
         handleEncounterComplete(node, result);
       }
     });
+    renderScrapBeltTutorialStep();
+  }
+
+  function renderScrapBeltTutorialStep() {
+    const overlay = document.getElementById('journey-scrap-start-overlay');
+    const screen = document.querySelector && document.querySelector('.journey-scrap-screen');
+    if (!overlay || !screen) return;
+    const beats = [
+      {
+        className: 'move',
+        eyebrow: 'FLIGHT CONTROL',
+        title: 'DRAG TO MOVE',
+        detail: 'WEAVE THROUGH DEBRIS',
+        action: 'TAP FOR NEXT →'
+      },
+      {
+        className: 'scan',
+        eyebrow: 'SCANNER',
+        title: 'TAP SCAN',
+        detail: 'REVEAL THE HIDDEN SIGNAL',
+        action: 'TAP FOR NEXT →'
+      },
+      {
+        className: 'lock',
+        eyebrow: 'SIGNAL LOCK',
+        title: 'STAY IN THE RING',
+        detail: 'FOLLOW IT UNTIL LOCKED',
+        action: 'START MISSION →'
+      }
+    ];
+    const beat = beats[scrapBeltTutorialStep] || beats[beats.length - 1];
+    screen.classList.remove('tutorial-move', 'tutorial-scan', 'tutorial-lock');
+    screen.classList.add(`tutorial-${beat.className}`);
+    overlay.className = `journey-mission-start-overlay is-${beat.className}`;
+    overlay.innerHTML = `
+      <span class="journey-tutorial-title">
+        <small>${beat.eyebrow}</small>
+        <strong id="journey-scrap-start-title">${beat.title}</strong>
+        <em>${beat.detail}</em>
+      </span>
+      <span class="journey-tutorial-focus" aria-hidden="true"><i></i></span>
+      <span class="journey-tutorial-advance">${beat.action}</span>`;
   }
 
   function beginScrapBeltMission() {
@@ -999,6 +1036,8 @@
     if (!attempt.ok) return;
     pendingScrapBeltLaunch = null;
     if (overlay) overlay.remove();
+    const screen = document.querySelector && document.querySelector('.journey-scrap-screen');
+    if (screen) screen.classList.remove('is-tutorial', 'tutorial-move', 'tutorial-scan', 'tutorial-lock');
     JourneyScrapBelt.begin(attempt.attemptId);
   }
 
@@ -1210,6 +1249,7 @@
     playMenuSound();
     pendingScrapBeltLaunch = null;
     pendingScrapBeltSuccess = null;
+    scrapBeltTutorialStep = 0;
     renderShip();
   };
 
@@ -1226,6 +1266,7 @@
     pendingEncounterPresentation = null;
     pendingScrapBeltLaunch = null;
     pendingScrapBeltSuccess = null;
+    scrapBeltTutorialStep = 0;
     JourneyCombat.destroy();
     if (typeof JourneyScrapBelt !== 'undefined') JourneyScrapBelt.destroy();
     if (typeof JourneyMissionRuntime !== 'undefined') JourneyMissionRuntime.destroy();
@@ -1372,8 +1413,13 @@
     if (typeof JourneyMissionRuntime !== 'undefined') JourneyMissionRuntime.pulseScan();
   };
 
-  window.journeyBeginScrapBelt = function () {
+  window.journeyAdvanceScrapBeltTutorial = function () {
     playMenuSound();
+    if (scrapBeltTutorialStep < 2) {
+      scrapBeltTutorialStep += 1;
+      renderScrapBeltTutorialStep();
+      return;
+    }
     beginScrapBeltMission();
   };
 
@@ -1504,6 +1550,7 @@
     pendingEncounterPresentation = null;
     pendingScrapBeltLaunch = null;
     pendingScrapBeltSuccess = null;
+    scrapBeltTutorialStep = 0;
     JourneyCombat.destroy();
     if (typeof JourneyScrapBelt !== 'undefined') JourneyScrapBelt.destroy();
     if (typeof JourneyMissionRuntime !== 'undefined') JourneyMissionRuntime.destroy();

@@ -1470,13 +1470,18 @@ body.on-journey {
 }
 
 .journey-tutorial-title {
-  top: 22px;
-  right: 12px;
-  left: 12px;
+  top: 11%;
+  right: 8%;
+  left: 8%;
+  padding: 12px;
+  border-radius: 7px;
+  background: rgba(3,9,23,.82);
+  box-shadow: 0 0 26px rgba(3,7,19,.72);
 }
 
 .journey-tutorial-title small,
-.journey-tutorial-title strong {
+.journey-tutorial-title strong,
+.journey-tutorial-title em {
   display: block;
 }
 
@@ -1489,86 +1494,70 @@ body.on-journey {
 .journey-tutorial-title strong {
   margin-top: 7px;
   color: var(--journey-cyan);
-  font: 34px/1 'Bebas Neue', sans-serif;
+  font: 38px/1 'Bebas Neue', sans-serif;
   letter-spacing: 3px;
   text-shadow: 0 0 20px rgba(105,215,255,.44);
 }
 
-.journey-tutorial-callout {
-  z-index: 2;
-  border: 1px solid currentColor;
-  border-radius: 5px;
-  padding: 8px 10px;
-  background: rgba(3,9,23,.88);
-  font: 16px/1 'VCR', monospace;
-  letter-spacing: 1px;
-  box-shadow: 0 0 15px rgba(3,7,19,.75);
-}
-
-.journey-tutorial-callout.is-move {
-  bottom: 126px;
-  left: 50%;
+.journey-tutorial-title em {
+  margin-top: 7px;
   color: #fff;
-  transform: translateX(-50%);
+  font: normal 13px/1.2 'VCR', monospace;
+  letter-spacing: 1px;
 }
 
-.journey-tutorial-callout.is-move i {
-  position: absolute;
-  top: calc(100% + 7px);
-  left: 50%;
-  width: 58px;
-  height: 58px;
-  border: 1px dashed rgba(255,255,255,.74);
+.journey-tutorial-focus {
+  z-index: 2;
   border-radius: 50%;
+  pointer-events: none;
+}
+
+.journey-mission-start-overlay.is-move .journey-tutorial-focus {
+  bottom: 70px;
+  left: 50%;
+  width: 76px;
+  height: 76px;
+  border: 2px dashed #fff;
+  box-shadow: 0 0 24px rgba(255,255,255,.22);
   transform: translateX(-50%);
   animation: journey-tutorial-ship-guide 1.6s ease-in-out infinite;
 }
 
-.journey-tutorial-callout.is-scan {
-  bottom: 12px;
-  left: 5%;
-  width: 29%;
-  color: var(--journey-gold);
-  box-shadow: 0 0 22px rgba(255,241,166,.42);
-  animation: journey-tutorial-scan-pulse 1.25s ease-in-out infinite;
+.journey-mission-start-overlay.is-scan .journey-tutorial-focus {
+  right: 67%;
+  bottom: 7px;
+  left: 4%;
+  height: 48px;
+  border: 2px solid var(--journey-gold);
+  border-radius: 6px;
+  box-shadow: 0 0 26px rgba(255,241,166,.56);
+  animation: journey-tutorial-control-pulse 1.3s ease-in-out infinite;
 }
 
-.journey-tutorial-callout.is-scan i {
-  display: none;
-}
-
-.journey-tutorial-callout.is-lock {
-  top: 30%;
-  right: 7%;
-  color: var(--journey-cyan);
-}
-
-.journey-tutorial-callout.is-lock i {
-  position: absolute;
-  top: calc(100% + 14px);
+.journey-mission-start-overlay.is-lock .journey-tutorial-focus {
+  top: 43%;
   left: 50%;
-  width: 54px;
-  height: 54px;
+  width: 76px;
+  height: 76px;
   border: 2px dashed var(--journey-cyan);
-  border-radius: 50%;
-  box-shadow: 0 0 15px rgba(105,215,255,.45);
-  transform: translateX(-50%);
-  animation: journey-mission-lock-spin 5s linear infinite;
+  box-shadow: 0 0 24px rgba(105,215,255,.45);
+  transform: translate(-50%, -50%);
+  animation: journey-tutorial-lock-pulse 1.4s ease-in-out infinite;
 }
 
-.journey-tutorial-callout.is-lock i::after {
+.journey-mission-start-overlay.is-lock .journey-tutorial-focus::after {
   position: absolute;
-  inset: 19px;
+  inset: 27px;
   border-radius: 50%;
   background: var(--journey-gold);
-  box-shadow: 0 0 12px var(--journey-gold);
+  box-shadow: 0 0 14px var(--journey-gold);
   content: "";
 }
 
-.journey-tutorial-start {
-  top: 54%;
-  right: 30%;
-  left: 30%;
+.journey-tutorial-advance {
+  top: 62%;
+  right: 28%;
+  left: 28%;
   border: 1px solid var(--journey-cyan);
   border-radius: 6px;
   padding: 11px 8px;
@@ -1580,6 +1569,19 @@ body.on-journey {
   animation: journey-tutorial-start-pulse 1.4s ease-in-out infinite;
 }
 
+.journey-scrap-screen.is-tutorial .journey-scrap-status,
+.journey-scrap-screen.is-tutorial .journey-combat-retreat {
+  visibility: hidden;
+}
+
+.journey-scrap-screen.is-tutorial .journey-mission-controls button {
+  opacity: .14;
+}
+
+.journey-scrap-screen.is-tutorial.tutorial-scan .journey-mission-controls button:first-child {
+  opacity: 1;
+}
+
 @keyframes journey-tutorial-ship-guide {
   0%, 100% { transform: translateX(-50%) translateY(0) scale(.9); opacity: .5; }
   50% { transform: translateX(-50%) translateY(-9px) scale(1.08); opacity: 1; }
@@ -1589,8 +1591,12 @@ body.on-journey {
   50% { box-shadow: 0 0 28px rgba(105,215,255,.5); }
 }
 
-@keyframes journey-tutorial-scan-pulse {
-  50% { background: rgba(255,241,166,.2); }
+@keyframes journey-tutorial-control-pulse {
+  50% { background: rgba(255,241,166,.14); }
+}
+
+@keyframes journey-tutorial-lock-pulse {
+  50% { transform: translate(-50%, -50%) scale(1.12); box-shadow: 0 0 34px rgba(105,215,255,.72); }
 }
 
 .journey-mission-victory-overlay {
@@ -3846,16 +3852,7 @@ body.on-journey {
     font-size: 33px;
   }
 
-  .journey-tutorial-callout {
-    padding: 7px 8px;
-    font-size: 13px;
-  }
-
-  .journey-tutorial-callout.is-lock {
-    right: 4%;
-  }
-
-  .journey-tutorial-start {
+  .journey-tutorial-advance {
     right: 27%;
     left: 27%;
     font-size: 12px;
@@ -3923,10 +3920,8 @@ body.on-journey {
   .journey-fuel-hose b,
   .journey-mission-victory-overlay,
   .journey-mission-victory-lock i,
-  .journey-tutorial-callout.is-move i,
-  .journey-tutorial-callout.is-lock i,
-  .journey-tutorial-callout.is-scan,
-  .journey-tutorial-start {
+  .journey-tutorial-focus,
+  .journey-tutorial-advance {
     animation: none;
   }
 

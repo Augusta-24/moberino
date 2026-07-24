@@ -54,6 +54,11 @@ control they explain. Do not turn the overlay into another menu of numbered card
 paragraphs, or general instructions when the mechanic can be demonstrated directly
 on the playfield.
 
+If multiple callouts compete with the HUD or each other, teach them as separate
+tap-through beats. Show one instruction and highlight one subject at a time. Hide
+unrelated status text and controls during that beat, then restore the normal HUD
+when play begins.
+
 Hazards do not move and the player cannot take damage while instructions are open.
 An earlier briefing may explain why the mission matters; this overlay explains how
 to act once the playfield is visible.
