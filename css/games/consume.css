@@ -35,8 +35,11 @@ body.arcade-mode-select.on-consume .consume-wrap {
   align-items: center;
 }
 .cw-mode-return {
-  align-self: flex-start;
-  margin-bottom: 12px;
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top, 10px));
+  right: max(10px, env(safe-area-inset-right, 10px));
+  z-index: 9998;
+  margin: 0;
 }
 .cw-title {
   max-width: 100%;
@@ -583,6 +586,15 @@ body.arcade-mode-select.on-consume .consume-wrap {
 
 @media (max-width: 430px) {
   .consume-wrap { gap: 8px; }
+  .cw-level-grid {
+    width: min(100%, 350px);
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 5px;
+  }
+  .cw-node { border-radius: 6px; gap: 1px; }
+  .cw-node span { font-size: 20px; letter-spacing: 2px; }
+  .cw-node em { min-height: 9px; font-size: 9px; letter-spacing: 1px; }
+  .cw-section-label { margin-top: 12px; }
   .cw-board { --cw-tile: 46px; gap: 7px; }
   .cw-tile { font-size: 18px; }
   .cw-hud { gap: 5px; }

@@ -9,13 +9,11 @@
   let wrap = null;
   let S = null;
   let timers = [];
-  let autoSubmitTimer = null;
   let nextWordId = 1;
 
   function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
   function killTimers() {
     timers.forEach(clearTimeout); timers = [];
-    clearTimeout(autoSubmitTimer); autoSubmitTimer = null;
   }
   function loadStore() { try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch(e) { return {}; } }
   function saveStore(d) { try { localStorage.setItem(STORE_KEY, JSON.stringify(d)); } catch(e) {} }
@@ -236,7 +234,6 @@
     if (!tile || tile.wordId) return;
     const existing = S.tray.indexOf(tile);
     if (existing >= 0) {
-      clearTimeout(autoSubmitTimer); autoSubmitTimer = null;
       S.tray.splice(existing, 1);
       CSFX.back();
       updateAll();
@@ -246,18 +243,10 @@
     S.bad = false;
     CSFX.tap();
     updateAll();
-    clearTimeout(autoSubmitTimer);
-    autoSubmitTimer = setTimeout(() => {
-      autoSubmitTimer = null;
-      if (!S || S.won) return;
-      const word = tileWord(S.tray);
-      if (word.length >= 3 && typeof CONSUME_DICT !== 'undefined' && CONSUME_DICT.has(word)) submitTray();
-    }, 280);
   }
 
   function tapTray(id) {
     if (!S || S.won) return;
-    clearTimeout(autoSubmitTimer); autoSubmitTimer = null;
     const idx = S.tray.findIndex(t => t.id === id);
     if (idx < 0) return;
     S.tray.splice(idx, 1);
@@ -268,7 +257,6 @@
 
   function submitTray() {
     if (!S || S.won || !S.tray.length) return;
-    clearTimeout(autoSubmitTimer); autoSubmitTimer = null;
     const word = tileWord(S.tray);
     const ok = word.length >= 3 && typeof CONSUME_DICT !== 'undefined' && CONSUME_DICT.has(word);
     if (!ok) {
@@ -401,7 +389,6 @@
     wrap.querySelector('[data-act="submit"]').addEventListener('click', submitTray);
     wrap.querySelector('[data-act="clear"]').addEventListener('click', () => {
       if (!S || !S.tray.length) return;
-      clearTimeout(autoSubmitTimer); autoSubmitTimer = null;
       S.tray = []; S.bad = false; CSFX.back(); updateAll();
     });
     wrap.querySelector('#cw-tableau').addEventListener('click', e => {
