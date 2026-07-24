@@ -46,7 +46,8 @@ way, pause the playfield behind a short pre-mission overlay. The overlay should:
 - state the physical objective,
 - teach no more than three actions in play order,
 - use the same verbs as the live HUD and controls,
-- show the primary touch action explicitly (`TAP SCAN`, not simply `SCAN`),
+- name the real touch gesture and its surface explicitly (`TAP THE PLAYFIELD TO
+  SCAN`, not `TAP SCAN` when no Scan button exists),
 - and wait for the player to start.
 
 Keep the frozen game visible. Attach short callouts to the ship, target, hazard, or
@@ -58,6 +59,10 @@ If multiple callouts compete with the HUD or each other, teach them as separate
 tap-through beats. Show one instruction and highlight one subject at a time. Hide
 unrelated status text and controls during that beat, then restore the normal HUD
 when play begins.
+
+Do not draw a button for an action performed directly on the playfield. A stationary
+tap may activate a contextual verb such as Scan while a drag steers; instructions
+must make that distinction clear.
 
 Hazards do not move and the player cannot take damage while instructions are open.
 An earlier briefing may explain why the mission matters; this overlay explains how
@@ -75,6 +80,9 @@ the playfield:
 
 Do not end a mission on the same frame that a progress threshold is crossed. Players
 need time to recognize that their action caused the win.
+
+Failure cannot award, display, or persist objective completion. Keep the same
+objective active and offer one clear retry action until the player earns success.
 
 ## Shared player verbs
 
@@ -120,6 +128,9 @@ Capture pulses should become faster, brighter, or higher in pitch as lock approa
 Full capture needs a distinct lock animation and sound, followed by a visible change
 to the objective or route.
 
+The primary signal-strength meter belongs on or immediately beside the signal ring.
+The compact HUD may repeat the state, but it cannot be the only readable feedback.
+
 ### Interact
 
 - attach a tractor beam,
@@ -151,6 +162,11 @@ activities with visible before-and-after states.
 - exploit scanned weak points.
 
 Shooting is one tool, not the universal answer.
+
+Wayfarer weapons auto-fire in missions that use ordinary blaster shooting. Do not
+add a Fire button unless a later encounter introduces a genuinely different aimed,
+charged, or timed shooting verb. Hide all firing controls in missions where combat
+is not part of the objective.
 
 ## Encounter families
 

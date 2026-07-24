@@ -19,6 +19,18 @@ function eventTarget() {
     removeEventListener(type, handler) {
       if (listeners.has(type)) listeners.get(type).delete(handler);
     },
+    emit(type, event = {}) {
+      const payload = Object.assign({
+        type,
+        clientX: 210,
+        clientY: 600,
+        pointerId: 1,
+        preventDefault() {}
+      }, event);
+      if (listeners.has(type)) {
+        listeners.get(type).forEach(handler => handler(payload));
+      }
+    },
     count(type) {
       return listeners.has(type) ? listeners.get(type).size : 0;
     }
@@ -45,6 +57,8 @@ function createHarness() {
     moveTo() {},
     lineTo() {},
     closePath() {},
+    rotate() {},
+    fillText() {},
     globalAlpha: 1,
     fillStyle: '',
     strokeStyle: '',
@@ -250,6 +264,62 @@ test('pulse scanning reveals a local signal and proximity captures it without ho
   api.step(.1);
   assert.equal(api.getSnapshot().targets[0].scanned, true);
   assert.deepEqual(locks, ['moving-source']);
+  api.destroy();
+});
+
+test('a stationary playfield tap scans while a drag steers without scanning', () => {
+  const tapHarness = createHarness();
+  tapHarness.api.start(runtimeConfig({
+    tapToScan: true,
+    scanMode: 'pulse',
+    scanPulseRadius: 100,
+    targets: [{
+      id: 'tap-signal',
+      type: 'signal',
+      x: 210,
+      y: 520,
+      hiddenUntilScanned: true,
+      revealed: false
+    }]
+  }));
+
+  tapHarness.canvas.emit('pointerdown');
+  tapHarness.canvas.emit('pointerup');
+  assert.equal(tapHarness.api.getSnapshot().targets[0].revealed, true);
+  tapHarness.api.destroy();
+
+  const dragHarness = createHarness();
+  dragHarness.api.start(runtimeConfig({
+    tapToScan: true,
+    scanMode: 'pulse',
+    scanPulseRadius: 100,
+    targets: [{
+      id: 'drag-signal',
+      type: 'signal',
+      x: 210,
+      y: 520,
+      hiddenUntilScanned: true,
+      revealed: false
+    }]
+  }));
+
+  dragHarness.canvas.emit('pointerdown', { clientX: 210, clientY: 600 });
+  dragHarness.canvas.emit('pointermove', { clientX: 300, clientY: 500 });
+  dragHarness.canvas.emit('pointerup', { clientX: 300, clientY: 500 });
+  const dragged = dragHarness.api.getSnapshot();
+  assert.equal(dragged.targets[0].revealed, false);
+  assert.equal(dragged.player.x, 300);
+  assert.equal(dragged.player.y, 500);
+  dragHarness.api.destroy();
+});
+
+test('missions can explicitly disable all firing input', () => {
+  const { api } = createHarness();
+  api.start(runtimeConfig({ allowFire: false }));
+
+  assert.equal(api.setControl('fire', true), false);
+  assert.equal(api.fireProjectile().code, 'disabled');
+  assert.equal(api.getSnapshot().shotsFired, 0);
   api.destroy();
 });
 

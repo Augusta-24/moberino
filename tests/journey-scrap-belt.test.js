@@ -22,6 +22,8 @@ test('Scrap Belt is authored on the reusable mission runtime', () => {
   assert.match(source, /onScanLock/);
   assert.match(source, /onScanReveal/);
   assert.match(source, /scanMode:\s*'pulse'/);
+  assert.match(source, /tapToScan:\s*true/);
+  assert.match(source, /allowFire:\s*false/);
   assert.match(source, /scanPulseRadius:/);
   assert.match(source, /captureRadius:/);
   assert.match(source, /scanDecayRate:/);
@@ -33,7 +35,7 @@ test('Scrap Belt is authored on the reusable mission runtime', () => {
   assert.match(source, /r:\s*11/);
   assert.match(source, /captureRadius:\s*76/);
   assert.match(source, /onTractorAttach/);
-  assert.match(source, /onTargetDestroyed/);
+  assert.match(source, /type:\s*'salvage'/);
   assert.match(source, /onPlayerDamage/);
   assert.doesNotMatch(source, /localStorage/);
   assert.doesNotMatch(source, /JourneyState/);
@@ -42,7 +44,7 @@ test('Scrap Belt is authored on the reusable mission runtime', () => {
 test('Scrap Belt succeeds through route progress and signal acquisition, not a timer', () => {
   assert.match(source, /ROUTE_DISTANCE/);
   assert.match(source, /snapshot\.scrollDistance >= ROUTE_DISTANCE && signalLocked/);
-  assert.match(source, /objectiveComplete:\s*signalLocked/);
+  assert.match(source, /objectiveComplete:\s*outcome === 'success' && signalLocked/);
   assert.doesNotMatch(source, /surviveSeconds/);
   assert.doesNotMatch(source, /setTimeout/);
   assert.doesNotMatch(source, /30 SEC/);
@@ -50,18 +52,18 @@ test('Scrap Belt succeeds through route progress and signal acquisition, not a t
 
 test('Scrap Belt teaches controls before hazards and celebrates success before results', () => {
   assert.match(controller, /journey-mission-start-overlay/);
-  assert.match(controller, /TAP SCAN/);
-  assert.match(controller, /DRAG TO MOVE/);
-  assert.match(controller, /STAY IN THE RING/);
+  assert.match(controller, /TAP TO SCAN THE AREA/);
+  assert.match(controller, /FIND THE RING/);
+  assert.match(controller, /STAY INSIDE/);
+  assert.match(controller, /CAPTURE THE SIGNAL/);
   assert.doesNotMatch(controller, /journey-mission-start-steps/);
   assert.doesNotMatch(controller, /DRAG OR WASD · Q SCAN PULSE/);
   assert.match(controller, /window\.journeyAdvanceScrapBeltTutorial/);
   assert.match(controller, /function renderScrapBeltTutorialStep/);
-  assert.match(controller, /tutorial-move/);
   assert.match(controller, /tutorial-scan/);
   assert.match(controller, /tutorial-lock/);
   assert.match(controller, /function beginScrapBeltMission/);
-  assert.match(controller, /initiallyPaused:\s*true/);
+  assert.match(controller, /startScrapBeltRuntime\(node, null, true\)/);
   assert.match(controller, /JourneyScrapBelt\.begin\(attempt\.attemptId\)/);
   assert.match(source, /JourneyMissionRuntime\.setPaused\(false\)/);
   assert.match(controller, /onSuccessReady/);
@@ -71,6 +73,10 @@ test('Scrap Belt teaches controls before hazards and celebrates success before r
   assert.match(controller, /window\.journeyConfirmScrapBeltSuccess/);
   assert.match(source, /playMissionComplete/);
   assert.match(source, /completedConfig\.onSuccessReady\(result\)/);
+  assert.match(source, /completedConfig\.onFailureReady\(result\)/);
+  assert.match(controller, /function renderScrapBeltFailure/);
+  assert.match(controller, /window\.journeyRetryScrapBelt/);
+  assert.match(controller, /RETRY MISSION/);
 });
 
 test('rock interactions use the Space Mobe piano language', () => {
@@ -86,8 +92,8 @@ test('Journey routes Scrap Belt into its traversal screen and tactile controls',
   assert.match(controller, /if \(node\.id === 'scrap-belt'\) \{\s*renderScrapBelt\(node\)/);
   assert.match(controller, /CROSS THE BELT/);
   assert.match(controller, /LOCK THE CRYSTAL TRAIL/);
-  assert.match(controller, /journeyMissionScan/);
-  assert.match(controller, /journeyMissionControl\('fire', true\)/);
+  assert.match(controller, /TAP THE PLAYFIELD TO SCAN/);
+  assert.doesNotMatch(controller, /journeyMissionControl\('fire', true\)/);
   assert.match(controller, /journeyMissionTractor/);
   assert.match(controller, /function renderScrapBeltExit/);
   assert.match(controller, /ROUTE ACQUIRED/);

@@ -1426,6 +1426,13 @@ body.on-journey {
   pointer-events: none;
 }
 
+.journey-scrap-screen .journey-mission-controls {
+  right: 8px;
+  left: auto;
+  width: min(42%, 170px);
+  grid-template-columns: 1fr;
+}
+
 .journey-mission-controls button {
   min-height: 45px;
   border: 1px solid rgba(105,215,255,.72);
@@ -1512,25 +1519,14 @@ body.on-journey {
   pointer-events: none;
 }
 
-.journey-mission-start-overlay.is-move .journey-tutorial-focus {
-  bottom: 70px;
-  left: 50%;
-  width: 76px;
-  height: 76px;
-  border: 2px dashed #fff;
-  box-shadow: 0 0 24px rgba(255,255,255,.22);
-  transform: translateX(-50%);
-  animation: journey-tutorial-ship-guide 1.6s ease-in-out infinite;
-}
-
 .journey-mission-start-overlay.is-scan .journey-tutorial-focus {
-  right: 67%;
-  bottom: 7px;
-  left: 4%;
-  height: 48px;
-  border: 2px solid var(--journey-gold);
-  border-radius: 6px;
-  box-shadow: 0 0 26px rgba(255,241,166,.56);
+  bottom: 0;
+  left: 50%;
+  width: 190px;
+  height: 190px;
+  border: 2px solid var(--journey-cyan);
+  box-shadow: 0 0 30px rgba(105,215,255,.48), inset 0 0 28px rgba(105,215,255,.12);
+  transform: translateX(-50%);
   animation: journey-tutorial-control-pulse 1.3s ease-in-out infinite;
 }
 
@@ -1575,16 +1571,7 @@ body.on-journey {
 }
 
 .journey-scrap-screen.is-tutorial .journey-mission-controls button {
-  opacity: .14;
-}
-
-.journey-scrap-screen.is-tutorial.tutorial-scan .journey-mission-controls button:first-child {
-  opacity: 1;
-}
-
-@keyframes journey-tutorial-ship-guide {
-  0%, 100% { transform: translateX(-50%) translateY(0) scale(.9); opacity: .5; }
-  50% { transform: translateX(-50%) translateY(-9px) scale(1.08); opacity: 1; }
+  visibility: hidden;
 }
 
 @keyframes journey-tutorial-start-pulse {
@@ -1592,7 +1579,7 @@ body.on-journey {
 }
 
 @keyframes journey-tutorial-control-pulse {
-  50% { background: rgba(255,241,166,.14); }
+  50% { transform: translateX(-50%) scale(1.12); opacity: .7; }
 }
 
 @keyframes journey-tutorial-lock-pulse {
@@ -1606,6 +1593,71 @@ body.on-journey {
   display: flex;
   justify-content: center;
   text-align: center;
+}
+
+.journey-mission-failure-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  padding: 24px;
+  background:
+    linear-gradient(180deg, rgba(3,7,19,.97), rgba(18,5,18,.98)),
+    radial-gradient(circle at 50% 32%, rgba(255,92,122,.18), transparent 44%);
+  color: #fff;
+  text-align: center;
+  animation: journey-mission-victory-in .35s ease-out both;
+}
+
+.journey-mission-failure-mark {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  margin-bottom: 18px;
+  border: 2px solid #ff5c7a;
+  border-radius: 50%;
+  color: #ff5c7a;
+  font: 58px/.8 'Bebas Neue', sans-serif;
+  box-shadow: 0 0 28px rgba(255,92,122,.42), inset 0 0 22px rgba(255,92,122,.12);
+}
+
+.journey-mission-failure-overlay > span {
+  color: var(--journey-gold);
+  font: 13px/1.2 'VCR', monospace;
+  letter-spacing: 2px;
+}
+
+.journey-mission-failure-overlay h2 {
+  margin: 10px 0;
+  color: #ff7c94;
+  font: 42px/.95 'Bebas Neue', sans-serif;
+  letter-spacing: 3px;
+  text-shadow: 0 0 22px rgba(255,92,122,.5);
+}
+
+.journey-mission-failure-overlay p {
+  max-width: 330px;
+  margin: 0;
+  color: #fff;
+  font: 15px/1.45 'VCR', monospace;
+}
+
+.journey-mission-failure-overlay button {
+  width: min(100%, 330px);
+  min-height: 56px;
+  margin-top: 22px;
+  border: 2px solid #ff7c94;
+  border-radius: 7px;
+  background: rgba(255,92,122,.13);
+  color: #fff;
+  font: 16px/1 'VCR', monospace;
+  letter-spacing: 1px;
+  box-shadow: 0 0 20px rgba(255,92,122,.18);
+  cursor: pointer;
 }
 
 .journey-mission-victory-overlay {

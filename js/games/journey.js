@@ -12,6 +12,7 @@
   let pendingEncounterPresentation = null;
   let pendingScrapBeltLaunch = null;
   let pendingScrapBeltSuccess = null;
+  let pendingScrapBeltRetry = null;
   let scrapBeltTutorialStep = 0;
 
   const MAP_POINTS = {
@@ -914,7 +915,7 @@
           <h1 id="journey-briefing-title">${node.name}</h1>
           <p>${rescue
             ? 'An escape pod is trapped in a dense debris field. Clear an approach and reach the beacon.'
-            : 'Fly the corridor, scan for the crystal trail, and tractor useful salvage. Clear only the rocks blocking your path.'}</p>
+            : 'Weave through the debris, tap the playfield to scan, and stay inside the signal ring. Tractor floating salvage if you can.'}</p>
           <div class="journey-objective-list">
             <span><strong>${rescue ? 'REACH' : 'ROUTE'}</strong> ${rescue ? '24 SEC' : 'CROSS THE BELT'}</span>
             <span><strong>${rescue ? 'RESCUE' : 'SCAN'}</strong> ${rescue ? '1 PASSENGER' : 'LOCK THE CRYSTAL TRAIL'}</span>
@@ -922,7 +923,7 @@
             <span><strong>HULL</strong> ${Math.round(state.resources.hull)}</span>
           </div>
           <div class="journey-briefing-controls">
-            <span>${rescue ? 'DRAG OR A/D · AUTO-FIRE' : 'DRAG OR WASD · TAP SCAN · FIRE · TRACTOR'}</span>
+            <span>${rescue ? 'DRAG OR A/D · AUTO-FIRE' : 'DRAG OR WASD · TAP THE PLAYFIELD TO SCAN · TRACTOR'}</span>
           </div>
           <div class="journey-briefing-actions">
             <button class="journey-primary-btn" type="button" onclick="journeyStartEncounter()">${rescue ? 'ANSWER THE BEACON' : 'ENTER SCRAP BELT'}</button>
@@ -938,9 +939,10 @@
     if (!root || !state || !active) return;
     pendingScrapBeltLaunch = { node };
     pendingScrapBeltSuccess = null;
+    pendingScrapBeltRetry = null;
     scrapBeltTutorialStep = 0;
     root.innerHTML = `
-      <main class="journey-combat-screen journey-scrap-screen is-tutorial tutorial-move">
+      <main class="journey-combat-screen journey-scrap-screen is-tutorial tutorial-scan">
         <header class="journey-combat-hud journey-scrap-hud">
           <div class="journey-combat-hull-readout">
             <span>HULL</span><strong id="journey-scrap-hull">${Math.round(state.resources.hull)}</strong>
@@ -954,35 +956,41 @@
         <div class="journey-combat-frame journey-scrap-frame">
           <canvas id="journey-scrap-canvas" aria-label="Navigate the Scrap Belt and scan for the crystal trail"></canvas>
           <div id="journey-scrap-damage-alert" class="journey-combat-damage-alert" aria-live="assertive"></div>
-          <div id="journey-scrap-status" class="journey-scrap-status">TAP SCAN TO REVEAL THE HIDDEN SIGNAL</div>
+          <div id="journey-scrap-status" class="journey-scrap-status">TAP THE PLAYFIELD TO SCAN THE AREA</div>
           <button class="journey-combat-retreat" type="button" onclick="journeyRetreatEncounter()">RETREAT</button>
           <div class="journey-mission-controls" aria-label="Mission controls">
-            <button type="button"
-              onclick="journeyMissionScan()">SCAN</button>
-            <button type="button"
-              onpointerdown="journeyMissionControl('fire', true)"
-              onpointerup="journeyMissionControl('fire', false)"
-              onpointercancel="journeyMissionControl('fire', false)">FIRE</button>
             <button type="button" onclick="journeyMissionTractor()">TRACTOR</button>
           </div>
-          <button id="journey-scrap-start-overlay" class="journey-mission-start-overlay is-move" type="button" onclick="journeyAdvanceScrapBeltTutorial()" aria-labelledby="journey-scrap-start-title"></button>
+          <button id="journey-scrap-start-overlay" class="journey-mission-start-overlay is-scan" type="button" onclick="journeyAdvanceScrapBeltTutorial()" aria-labelledby="journey-scrap-start-title"></button>
         </div>
       </main>`;
+    startScrapBeltRuntime(node, null, true);
+    renderScrapBeltTutorialStep();
+  }
+
+  function startScrapBeltRuntime(node, attemptId, initiallyPaused) {
+    const state = JourneyState.getState();
+    if (!state || !node || !active) return;
     JourneyScrapBelt.start({
       canvasId: 'journey-scrap-canvas',
+      attemptId,
       encounterId: node.encounterId,
       startingHull: state.resources.hull,
       blasterLevel: state.upgrades.blasterLevel,
-      initiallyPaused: true,
+      initiallyPaused: !!initiallyPaused,
       onSuccessReady(result) {
+        pendingScrapBeltRetry = null;
         pendingScrapBeltSuccess = { node, result };
         renderScrapBeltVictory(result);
+      },
+      onFailureReady(result) {
+        pendingScrapBeltRetry = { node, result };
+        renderScrapBeltFailure(result);
       },
       onComplete(result) {
         handleEncounterComplete(node, result);
       }
     });
-    renderScrapBeltTutorialStep();
   }
 
   function renderScrapBeltTutorialStep() {
@@ -991,36 +999,29 @@
     if (!overlay || !screen) return;
     const beats = [
       {
-        className: 'move',
-        eyebrow: 'FLIGHT CONTROL',
-        title: 'DRAG TO MOVE',
-        detail: 'WEAVE THROUGH DEBRIS',
-        action: 'TAP FOR NEXT →'
-      },
-      {
         className: 'scan',
         eyebrow: 'SCANNER',
-        title: 'TAP SCAN',
-        detail: 'REVEAL THE HIDDEN SIGNAL',
+        title: 'TAP TO SCAN THE AREA',
+        detail: '',
         action: 'TAP FOR NEXT →'
       },
       {
         className: 'lock',
-        eyebrow: 'SIGNAL LOCK',
-        title: 'STAY IN THE RING',
-        detail: 'FOLLOW IT UNTIL LOCKED',
+        eyebrow: 'FIND THE RING',
+        title: 'STAY INSIDE',
+        detail: 'CAPTURE THE SIGNAL',
         action: 'START MISSION →'
       }
     ];
     const beat = beats[scrapBeltTutorialStep] || beats[beats.length - 1];
-    screen.classList.remove('tutorial-move', 'tutorial-scan', 'tutorial-lock');
+    screen.classList.remove('tutorial-scan', 'tutorial-lock');
     screen.classList.add(`tutorial-${beat.className}`);
     overlay.className = `journey-mission-start-overlay is-${beat.className}`;
     overlay.innerHTML = `
       <span class="journey-tutorial-title">
         <small>${beat.eyebrow}</small>
         <strong id="journey-scrap-start-title">${beat.title}</strong>
-        <em>${beat.detail}</em>
+        ${beat.detail ? `<em>${beat.detail}</em>` : ''}
       </span>
       <span class="journey-tutorial-focus" aria-hidden="true"><i></i></span>
       <span class="journey-tutorial-advance">${beat.action}</span>`;
@@ -1037,8 +1038,23 @@
     pendingScrapBeltLaunch = null;
     if (overlay) overlay.remove();
     const screen = document.querySelector && document.querySelector('.journey-scrap-screen');
-    if (screen) screen.classList.remove('is-tutorial', 'tutorial-move', 'tutorial-scan', 'tutorial-lock');
+    if (screen) screen.classList.remove('is-tutorial', 'tutorial-scan', 'tutorial-lock');
     JourneyScrapBelt.begin(attempt.attemptId);
+  }
+
+  function renderScrapBeltFailure(result) {
+    const frame = document.querySelector && document.querySelector('.journey-scrap-frame');
+    if (!frame || !result || !active) return;
+    const overlay = document.createElement('section');
+    overlay.className = 'journey-mission-failure-overlay';
+    overlay.setAttribute('aria-labelledby', 'journey-scrap-failure-title');
+    overlay.innerHTML = `
+      <div class="journey-mission-failure-mark" aria-hidden="true">×</div>
+      <span>TRY AGAIN</span>
+      <h2 id="journey-scrap-failure-title">SIGNAL LOST</h2>
+      <p>Scan again. Find the ring. Stay inside until it locks.</p>
+      <button type="button" onclick="journeyRetryScrapBelt()">RETRY MISSION →</button>`;
+    frame.appendChild(overlay);
   }
 
   function renderScrapBeltVictory(result) {
@@ -1176,7 +1192,7 @@
             <span>SALVAGE AWARDED<strong>+${Math.round(applied.salvageAwarded)}</strong></span>
             <span>FUEL RECOVERED<strong>+${Math.round(applied.fuelAwarded)}</strong></span>
             <span>${scrapTraversal ? 'DEBRIS CLEARED' : 'ASTEROIDS BROKEN'}<strong>${Math.round(result.stats.asteroidsDestroyed)}</strong></span>
-            <span>${rescue ? 'PASSENGER' : scrapTraversal ? 'CRYSTAL TRAIL' : 'OPTIONAL TARGET'}<strong>${rescue && success ? 'PIP' : result.objectiveComplete ? 'LOCKED' : 'MISSED'}</strong></span>
+            <span>${rescue ? 'PASSENGER' : scrapTraversal ? 'CRYSTAL TRAIL' : 'OPTIONAL TARGET'}<strong>${rescue && success ? 'PIP' : success && result.objectiveComplete ? 'LOCKED' : 'MISSED'}</strong></span>
           </div>
           <div class="journey-results-actions">
             <button class="journey-primary-btn" type="button" onclick="journeyReturnFromEncounter()">RETURN TO SHIP</button>
@@ -1249,6 +1265,7 @@
     playMenuSound();
     pendingScrapBeltLaunch = null;
     pendingScrapBeltSuccess = null;
+    pendingScrapBeltRetry = null;
     scrapBeltTutorialStep = 0;
     renderShip();
   };
@@ -1266,6 +1283,7 @@
     pendingEncounterPresentation = null;
     pendingScrapBeltLaunch = null;
     pendingScrapBeltSuccess = null;
+    pendingScrapBeltRetry = null;
     scrapBeltTutorialStep = 0;
     JourneyCombat.destroy();
     if (typeof JourneyScrapBelt !== 'undefined') JourneyScrapBelt.destroy();
@@ -1415,12 +1433,22 @@
 
   window.journeyAdvanceScrapBeltTutorial = function () {
     playMenuSound();
-    if (scrapBeltTutorialStep < 2) {
+    if (scrapBeltTutorialStep < 1) {
       scrapBeltTutorialStep += 1;
       renderScrapBeltTutorialStep();
       return;
     }
     beginScrapBeltMission();
+  };
+
+  window.journeyRetryScrapBelt = function () {
+    if (!pendingScrapBeltRetry) return;
+    playMenuSound();
+    const retry = pendingScrapBeltRetry;
+    pendingScrapBeltRetry = null;
+    const overlay = document.querySelector && document.querySelector('.journey-mission-failure-overlay');
+    if (overlay) overlay.remove();
+    startScrapBeltRuntime(retry.node, retry.result.attemptId, false);
   };
 
   window.journeyConfirmScrapBeltSuccess = function () {
@@ -1550,6 +1578,7 @@
     pendingEncounterPresentation = null;
     pendingScrapBeltLaunch = null;
     pendingScrapBeltSuccess = null;
+    pendingScrapBeltRetry = null;
     scrapBeltTutorialStep = 0;
     JourneyCombat.destroy();
     if (typeof JourneyScrapBelt !== 'undefined') JourneyScrapBelt.destroy();

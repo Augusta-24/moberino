@@ -22,6 +22,7 @@
   let controls = emptyControls();
   let pointerActive = false;
   let pointerTarget = null;
+  let pointerStart = null;
   let attachedTargetId = null;
   let scanTargetId = null;
   let scanStrength = 0;
@@ -137,23 +138,43 @@
   function onPointerDown(event) {
     if (!active || paused) return;
     pointerActive = true;
+    pointerStart = {
+      x: Number(event.clientX) || 0,
+      y: Number(event.clientY) || 0,
+      moved: false
+    };
     if (canvas.setPointerCapture) canvas.setPointerCapture(event.pointerId);
-    movePointer(event);
+    if (!config.tapToScan) movePointer(event);
     event.preventDefault();
   }
 
   function onPointerMove(event) {
     if (!pointerActive) return;
+    if (config.tapToScan && pointerStart && !pointerStart.moved) {
+      const dx = (Number(event.clientX) || 0) - pointerStart.x;
+      const dy = (Number(event.clientY) || 0) - pointerStart.y;
+      if (Math.sqrt(dx * dx + dy * dy) < 8) return;
+      pointerStart.moved = true;
+    }
     movePointer(event);
     event.preventDefault();
   }
 
   function onPointerUp(event) {
+    const shouldScan = !!(
+      config &&
+      config.tapToScan &&
+      pointerStart &&
+      !pointerStart.moved &&
+      event.type !== 'pointercancel'
+    );
     pointerActive = false;
     pointerTarget = null;
+    pointerStart = null;
     if (canvas && canvas.releasePointerCapture && canvas.hasPointerCapture && canvas.hasPointerCapture(event.pointerId)) {
       canvas.releasePointerCapture(event.pointerId);
     }
+    if (shouldScan) pulseScan();
   }
 
   function journeyPageIsActive() {
@@ -181,6 +202,10 @@
     }
     const control = keyControl(event);
     if (control) {
+      if (control === 'fire' && config.allowFire === false) {
+        event.preventDefault();
+        return;
+      }
       controls[control] = true;
       event.preventDefault();
       return;
@@ -295,6 +320,7 @@
   function fireProjectile() {
     if (!active || !player) return { ok: false, code: 'inactive' };
     if (paused) return { ok: false, code: 'paused' };
+    if (config.allowFire === false) return { ok: false, code: 'disabled' };
     projectiles.push({
       x: player.x,
       y: player.y - player.r,
@@ -528,6 +554,7 @@
   function setControl(name, pressed) {
     if (!Object.prototype.hasOwnProperty.call(controls, name)) return false;
     if (paused && pressed) return false;
+    if (name === 'fire' && config.allowFire === false) return false;
     controls[name] = !!pressed;
     return true;
   }
@@ -538,6 +565,7 @@
     controls = emptyControls();
     pointerActive = false;
     pointerTarget = null;
+    pointerStart = null;
     lastFrameAt = performance.now();
     return true;
   }
@@ -710,37 +738,67 @@
       context.arc(0, -target.r * .25, 4, 0, Math.PI * 2);
       context.fill();
     } else if (target.type === 'signal') {
-      const pulse = target.r + Math.sin(performance.now() / 220) * 5;
+      const captureProgress = clamp(target.scanProgress / target.scanSeconds, 0, 1);
+      const pulse = target.r + Math.sin(performance.now() / 220) * 4;
       if (target.revealed && target.captureRadius) {
         context.save();
-        context.globalAlpha = .4;
-        context.setLineDash([9, 8]);
+        context.globalAlpha = .58;
+        context.strokeStyle = '#69d7ff';
+        context.setLineDash([10, 7]);
+        context.lineWidth = 2;
         context.beginPath();
         context.arc(0, 0, target.captureRadius, 0, Math.PI * 2);
         context.stroke();
         context.setLineDash([]);
         context.globalAlpha = 1;
-        if (target.scanProgress > 0) {
+        if (captureProgress > 0) {
           context.strokeStyle = '#fff1a6';
-          context.lineWidth = 5;
+          context.lineWidth = 7;
+          context.shadowColor = '#fff1a6';
+          context.shadowBlur = 16;
           context.beginPath();
           context.arc(
             0,
             0,
             target.captureRadius,
             -Math.PI / 2,
-            -Math.PI / 2 + Math.PI * 2 * (target.scanProgress / target.scanSeconds)
+            -Math.PI / 2 + Math.PI * 2 * captureProgress
           );
           context.stroke();
         }
+        const meterWidth = 142;
+        const meterY = target.captureRadius + 18;
+        context.shadowBlur = 0;
+        context.fillStyle = 'rgba(3,7,19,.92)';
+        context.fillRect(-meterWidth / 2 - 5, meterY - 5, meterWidth + 10, 38);
+        context.fillStyle = 'rgba(255,255,255,.18)';
+        context.fillRect(-meterWidth / 2, meterY, meterWidth, 12);
+        context.fillStyle = captureProgress >= 1 ? '#48f08b' : '#fff1a6';
+        context.fillRect(-meterWidth / 2, meterY, meterWidth * captureProgress, 12);
+        context.fillStyle = '#fff';
+        context.font = "14px 'VCR', monospace";
+        context.textAlign = 'center';
+        context.fillText(
+          captureProgress >= 1 ? 'SIGNAL LOCKED' : `SIGNAL STRENGTH ${Math.round(captureProgress * 100)}%`,
+          0,
+          meterY + 29
+        );
         context.restore();
       }
+      context.globalAlpha = .34;
+      context.strokeStyle = '#69d7ff';
+      context.beginPath();
+      context.arc(0, 0, pulse + 15, 0, Math.PI * 2);
+      context.stroke();
+      context.globalAlpha = 1;
+      context.rotate(Math.PI / 4);
+      context.fillStyle = '#fff1a6';
+      context.fillRect(-6, -6, 12, 12);
+      context.rotate(-Math.PI / 4);
       context.beginPath();
       context.arc(0, 0, pulse, 0, Math.PI * 2);
+      context.strokeStyle = '#fff1a6';
       context.stroke();
-      context.beginPath();
-      context.arc(0, 0, 5, 0, Math.PI * 2);
-      context.fill();
     } else if (target.type === 'debris') {
       const points = target.points || [.82, 1.08, .9, 1.13, .78, 1.02, .88, 1.1];
       context.beginPath();
@@ -897,6 +955,7 @@
     controls = emptyControls();
     pointerActive = false;
     pointerTarget = null;
+    pointerStart = null;
     attachedTargetId = null;
     scanTargetId = null;
     scanStrength = 0;
@@ -932,6 +991,7 @@
     controls = emptyControls();
     pointerActive = false;
     pointerTarget = null;
+    pointerStart = null;
     attachedTargetId = null;
     scanTargetId = null;
     scanStrength = 0;

@@ -123,8 +123,6 @@
           y: 430 - band * 145 + ((lane % 3) - 1) * 18,
           r: radius,
           scannable: false,
-          destructible: true,
-          hp: radius > 28 ? 3 : radius > 22 ? 2 : 1,
           collisionDamage: Math.round(7 + radius * .32),
           vx: ((band + lane) % 3 - 1) * 11,
           points: Array.from({ length: 9 }, (_, point) =>
@@ -132,6 +130,24 @@
         });
       });
     }
+    [
+      { x: 76, y: 235 },
+      { x: 348, y: -260 },
+      { x: 104, y: -780 },
+      { x: 326, y: -1360 },
+      { x: 92, y: -2050 }
+    ].forEach((position, index) => {
+      targets.push({
+        id: `belt-salvage-${index}`,
+        type: 'salvage',
+        x: position.x,
+        y: position.y,
+        r: 11,
+        scannable: false,
+        tractorable: true,
+        color: '#b79cff'
+      });
+    });
     targets.push({
       id: 'crystal-trail-signal',
       type: 'signal',
@@ -210,7 +226,7 @@
           ? insideRadio
             ? 'CAPTURING SIGNAL · STAY INSIDE THE RING'
             : 'CHASE THE SIGNAL · ENTER ITS RADIO RING'
-          : 'MOVE THROUGH THE FIELD · TAP SCAN TO SWEEP'
+          : 'TAP THE PLAYFIELD TO SCAN THE AREA'
     );
     updateHull(snapshot.hull);
   }
@@ -230,7 +246,7 @@
       damageTaken: Math.max(0, Math.round(completedConfig.startingHull - snapshot.hull)),
       fuelCollected: 0,
       salvageCollected,
-      objectiveComplete: signalLocked,
+      objectiveComplete: outcome === 'success' && signalLocked,
       rescuedPassengerId: null,
       bossDefeated: null,
       stats: {
@@ -243,6 +259,8 @@
     if (outcome === 'success') playMissionComplete();
     if (outcome === 'success' && typeof completedConfig.onSuccessReady === 'function') {
       completedConfig.onSuccessReady(result);
+    } else if (outcome === 'failure' && typeof completedConfig.onFailureReady === 'function') {
+      completedConfig.onFailureReady(result);
     } else if (typeof completedConfig.onComplete === 'function') {
       completedConfig.onComplete(result);
     }
@@ -270,7 +288,7 @@
         : 0;
       const captureRatio = Math.max(0, Math.min(1, signal.scanProgress / signal.scanSeconds));
       const movementScale = 1 - captureRatio * .5;
-      const desiredX = Math.max(48, Math.min(WORLD_WIDTH - 48, waypoint.x + evasionPush));
+      const desiredX = Math.max(90, Math.min(WORLD_WIDTH - 90, waypoint.x + evasionPush));
       const desiredY = waypoint.y + Math.sin(snapshot.missionTime * 2.1) * 24;
       JourneyMissionRuntime.updateTarget(signal.id, {
         x: signal.x + (desiredX - signal.x) * delta * 1.25 * movementScale,
@@ -326,10 +344,11 @@
       },
       scanRange: 520,
       scanMode: 'pulse',
+      tapToScan: true,
+      allowFire: false,
       scanPulseRadius: 112,
       scanPulseCooldown: .8,
       tractorRange: 145,
-      fireDelay: Math.max(.13, .25 - (nextConfig.blasterLevel || 0) * .03),
       targets: debrisField(),
       onUpdate,
       onScanLock(target) {
@@ -351,24 +370,6 @@
         } else if (name === 'scan-capture') {
           playScanPulse(detail);
         }
-      },
-      onTargetHit() {
-        playRockImpact();
-      },
-      onTargetDestroyed(target) {
-        playRockBreak();
-        const rockNumber = target.id.split('-').reduce((total, part) => total + (Number(part) || 0), 0);
-        if (rockNumber % 2 !== 0) return;
-        JourneyMissionRuntime.addTarget({
-          id: `salvage-${target.id}`,
-          type: 'salvage',
-          x: target.x,
-          y: target.y,
-          r: 10,
-          scannable: false,
-          tractorable: true,
-          color: '#b79cff'
-        });
       },
       onTractorAttach(target) {
         if (target.type !== 'salvage') return;
