@@ -33,6 +33,79 @@ The existing Space Mobe must remain unchanged as its own standalone arcade game.
 
 ---
 
+# Living implementation status
+
+Last reconciled: July 23, 2026.
+
+This section is the current source of truth for progress. The detailed stages later
+in this guide remain the acceptance checklist, but some early screen descriptions
+reflect the first prototype rather than the visual adventure now being built.
+
+## Current product direction
+
+The player is their selected arcade character, piloting the Wayfarer in pursuit of
+seven stolen Star Crystals. The route unfolds as a visual adventure involving
+arrivals, hazards, rescued friends and unusual companions, upgrades, and bosses.
+
+The cockpit—not a stacked ship-management page—is the home screen. It presents:
+
+1. one current message or ship warning,
+2. a visual navigation map,
+3. compact ship condition and resources,
+4. and the selected next destination with a clear launch state.
+
+Story information arrives through short visual cinematics with a manual Continue
+button. When the route genuinely branches, the cinematic is followed by a separate,
+simple Pilot's Call decision screen. Selecting a route returns to the cockpit with
+that destination ready to launch.
+
+All new screens and story beats must follow
+[JOURNEY_VISUAL_STORY_PLAYBOOK.md](JOURNEY_VISUAL_STORY_PLAYBOOK.md).
+
+## Implemented checkpoint
+
+- **Stages 0–2:** the existing games are preserved; Journey is a separate arcade
+  game with isolated files, save data, persistent resources, route state, and safe
+  encounter-result application.
+- **Stage 3:** the original ship page has evolved into the compact cockpit, with a
+  visual map, status warnings, launch readiness, a separate ship/repair view, and
+  an expandable log.
+- **Stage 4:** Chapter One is data-driven through Ogre Gate and First Settlement.
+  Fuel costs, locks, visits, completion, destination selection, and Pilot's Call
+  branching persist.
+- **Stage 5:** Scrap Belt combat is isolated from Space Mobe and returns persistent
+  hull damage and salvage. It includes stronger difficulty, sound hooks, impact
+  feedback, and a visual arrival beat.
+- **Stage 6:** the distress route, rescue result, and Pip passenger persistence are
+  implemented. The abandoned-cache branch is also playable.
+- **Stage 7:** Repair Moon has a dedicated maintenance flow, timed hull repair, and
+  a persistent blaster upgrade.
+- **Visual story foundation:** the selected hero leads the opening crystal-theft
+  cinematic; Lantern Station visibly refuels the Wayfarer; route choices are
+  introduced through incoming intel; cinematics wait indefinitely for Continue.
+
+The implemented route currently ends before **Ogre Gate**. Ogre Gate and First
+Settlement exist in the route data but are intentionally marked unavailable.
+
+## Next milestone
+
+Finish Chapter One as one complete vertical slice:
+
+1. Create an Ogre Gate arrival cinematic that makes the obstruction and stakes
+   visually obvious.
+2. Implement the Journey-specific Ogre boss encounter without changing Space Mobe.
+3. Return persistent damage and a single, non-duplicating boss reward.
+4. Recover the first visible Star Crystal and unlock First Settlement.
+5. Build the First Settlement arrival and chapter-completion beat.
+6. Run the mandatory validation gate across the entire first journey, including
+   returning sessions and both Pilot's Call branches.
+
+Do not expand the galaxy before this milestone is tested as a coherent adventure.
+The creature-companion introduction belongs in the next authored stretch after the
+Chapter One vertical slice proves the core rhythm.
+
+---
+
 # Critical architecture rule
 
 ## Do not convert or replace Space Mobe
