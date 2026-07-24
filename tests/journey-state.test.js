@@ -115,13 +115,13 @@ test('offline progress restores only power and pilot readiness', () => {
   assert.equal(api.getReturnSummary().length, 2);
 });
 
-test('a short repair completes on return even when less than a minute elapsed', () => {
+test('legacy timed repairs settle immediately on return', () => {
   const now = Date.now();
   const save = JSON.stringify({
     version: 2,
     lastPlayedAt: now - 5000,
     resources: { hull: 35, maxHull: 100 },
-    timers: { repairCompleteAt: now - 1000 }
+    timers: { repairCompleteAt: now + 45000 }
   });
   const { api } = createHarness({ moberinoJourneySave: save });
   const state = api.load();

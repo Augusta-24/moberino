@@ -374,7 +374,6 @@
 
   function renderShip() {
     const root = host();
-    const repairCheck = JourneyState.completeReadyRepair();
     const state = JourneyState.getState();
     if (!root || !state || !active) {
       renderMenu();
@@ -397,9 +396,7 @@
       : null;
     const systemWarning = currentShipWarning(state);
     const hero = selectedHero();
-    const notice = repairCheck.ok
-      ? 'HULL REPAIRS COMPLETE'
-      : shipNotice || (state.passengers.active.includes('pip')
+    const notice = shipNotice || (state.passengers.active.includes('pip')
         ? 'PIP IS ABOARD · THE CRYSTAL TRAIL CONTINUES'
         : `CRYSTAL TRAIL · CURRENT POSITION: ${location.name.toUpperCase()}`);
     shipNotice = '';
@@ -461,16 +458,11 @@
 
   function renderEngineering() {
     const root = host();
-    JourneyState.completeReadyRepair();
     const state = JourneyState.getState();
     if (!root || !state || !active) return;
     const r = state.resources;
     const location = currentNode(state);
-    const repairUnderway = !!state.timers.repairCompleteAt;
-    const repairSeconds = repairUnderway
-      ? Math.max(1, Math.ceil((state.timers.repairCompleteAt - Date.now()) / 1000))
-      : 0;
-    const canRepair = repairUnderway || (r.hull < r.maxHull && state.currency.salvage >= 5);
+    const canRepair = r.hull < r.maxHull && state.currency.salvage >= 5;
     const canRefuel = location.id === 'fuel-stop-1' && r.fuel < r.maxFuel;
     const canRest = r.pilot < 100;
     root.innerHTML = `
@@ -486,7 +478,7 @@
           </div>
         </section>
         <nav class="journey-ship-actions" aria-label="Ship actions">
-          <button type="button" onclick="journeyEngineeringRepair()" ${canRepair ? '' : 'disabled'}>REPAIR <small>${repairUnderway ? `${repairSeconds} SEC · CHECK` : r.hull >= r.maxHull ? 'HULL FULL' : '5 SCRAP · 45 SEC'}</small></button>
+          <button type="button" onclick="journeyEngineeringRepair()" ${canRepair ? '' : 'disabled'}>REPAIR <small>${r.hull >= r.maxHull ? 'HULL FULL' : state.currency.salvage < 5 ? 'NEEDS 5 SCRAP' : '5 SCRAP · INSTANT'}</small></button>
           <button type="button" onclick="journeyEngineeringRefuel()" ${canRefuel ? '' : 'disabled'}>REFUEL <small>${canRefuel ? 'STATION SERVICE' : 'NOT AVAILABLE'}</small></button>
           <button type="button" onclick="journeyEngineeringRest()" ${canRest ? '' : 'disabled'}>REST <small>${canRest ? '+25 PILOT' : 'PILOT READY'}</small></button>
         </nav>
@@ -804,15 +796,10 @@
 
   function renderRepairMoon(node) {
     const root = host();
-    JourneyState.completeReadyRepair();
     const state = JourneyState.getState();
     if (!root || !state || !node || !active) return;
-    const repairUnderway = !!state.timers.repairCompleteAt;
-    const repairSeconds = repairUnderway
-      ? Math.max(1, Math.ceil((state.timers.repairCompleteAt - Date.now()) / 1000))
-      : 0;
     const hullFull = state.resources.hull >= state.resources.maxHull;
-    const canStartRepair = !repairUnderway && !hullFull && state.currency.salvage >= 5;
+    const canRepair = !hullFull && state.currency.salvage >= 5;
     const upgradeCost = state.upgrades.blasterLevel === 0 ? 0 : 15;
     const readyForGate = state.upgrades.blasterLevel >= 1;
     const notice = maintenanceNotice;
@@ -828,10 +815,10 @@
           <div class="journey-maintenance-grid">
             <article>
               <span>HULL · ${Math.round(state.resources.hull)} / ${Math.round(state.resources.maxHull)}</span>
-              <strong>${repairUnderway ? 'REPAIR UNDERWAY' : hullFull ? 'HULL READY' : 'FULL REPAIR'}</strong>
-              <p>${repairUnderway ? `${repairSeconds} seconds remaining. You may leave and return later.` : hullFull ? 'No repair needed.' : 'Restore the hull to full condition.'}</p>
-              <button type="button" onclick="journeyStartTimedRepair()" ${canStartRepair || repairUnderway ? '' : 'disabled'}>
-                ${repairUnderway ? 'CHECK REPAIRS' : hullFull ? 'HULL FULL' : state.currency.salvage < 5 ? 'NEEDS 5 SCRAP' : 'START · 5 SCRAP'}
+              <strong>${hullFull ? 'HULL READY' : 'FULL REPAIR'}</strong>
+              <p>${hullFull ? 'No repair needed.' : 'Restore the hull now and return to the route.'}</p>
+              <button type="button" onclick="journeyRepairAtDock()" ${canRepair ? '' : 'disabled'}>
+                ${hullFull ? 'HULL FULL' : state.currency.salvage < 5 ? 'NEEDS 5 SCRAP' : 'REPAIR NOW · 5 SCRAP'}
               </button>
             </article>
             <article>
@@ -1062,8 +1049,11 @@
 
   window.journeyEngineeringRepair = function () {
     playMenuSound();
-    const check = JourneyState.completeReadyRepair();
-    if (!check.ok && check.code !== 'repair-underway') JourneyState.startRepair(45000, 5);
+    const state = JourneyState.getState();
+    const result = state
+      ? JourneyState.repairHull(state.resources.maxHull, 5)
+      : { ok: false };
+    if (result.ok) shipNotice = 'HULL REPAIRED · 5 SCRAP SPENT';
     renderEngineering();
   };
 
@@ -1182,13 +1172,15 @@
     renderShip();
   };
 
-  window.journeyStartTimedRepair = function () {
+  window.journeyRepairAtDock = function () {
     playMenuSound();
-    const check = JourneyState.completeReadyRepair();
-    if (!check.ok && check.code !== 'repair-underway') {
-      JourneyState.startRepair(45000, 5);
-    }
     const state = JourneyState.getState();
+    const result = state
+      ? JourneyState.repairHull(state.resources.maxHull, 5)
+      : { ok: false };
+    maintenanceNotice = result.ok
+      ? 'HULL RESTORED · 5 SCRAP SPENT'
+      : 'REPAIR UNAVAILABLE';
     const node = state && currentNode(state);
     if (node && node.id === 'repair-moon' && !state.route.completedNodes.includes(node.id)) renderRepairMoon(node);
     else renderShip();
@@ -1245,8 +1237,8 @@
 
   window.journeyRepair = function () {
     playMenuSound();
-    const check = JourneyState.completeReadyRepair();
-    if (!check.ok && check.code !== 'repair-underway') JourneyState.startRepair(45000, 5);
+    const state = JourneyState.getState();
+    if (state) JourneyState.repairHull(state.resources.maxHull, 5);
     renderShip();
   };
 

@@ -209,7 +209,9 @@
     returnSummary = [];
     if (!state) return returnSummary;
     const elapsed = clamp(now - finiteNumber(state.lastPlayedAt, now), 0, OFFLINE_CAP_MS);
-    if (state.timers.repairCompleteAt && state.timers.repairCompleteAt <= now) {
+    // Version 3 briefly used a 45-second dock timer. Settle any saved repair
+    // immediately; dock repairs are now an instant paid service.
+    if (state.timers.repairCompleteAt) {
       state.resources.hull = state.resources.maxHull;
       state.timers.repairCompleteAt = null;
       returnSummary.push('Hull repairs are complete.');

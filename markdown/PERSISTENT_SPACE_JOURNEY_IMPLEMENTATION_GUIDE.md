@@ -78,7 +78,7 @@ All new screens and story beats must follow
   feedback, and a visual arrival beat.
 - **Stage 6:** the distress route, rescue result, and Pip passenger persistence are
   implemented. The abandoned-cache branch is also playable.
-- **Stage 7:** Repair Moon has a dedicated maintenance flow, timed hull repair, and
+- **Stage 7:** Repair Moon has a dedicated maintenance flow, instant paid hull repair, and
   a persistent blaster upgrade.
 - **Visual story foundation:** the selected hero leads the opening crystal-theft
   cinematic; Lantern Station visibly refuels the Wayfarer; route choices are

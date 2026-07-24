@@ -145,6 +145,20 @@ test('the cockpit centers the route and moves detail into ship and log views', (
   );
 });
 
+test('dock repairs are immediate instead of using a short countdown', () => {
+  const controller = fs.readFileSync(
+    path.join(__dirname, '..', 'js', 'games', 'journey.js'),
+    'utf8'
+  );
+
+  assert.match(controller, /REPAIR NOW · 5 SCRAP/);
+  assert.match(controller, /5 SCRAP · INSTANT/);
+  assert.match(controller, /JourneyState\.repairHull\(state\.resources\.maxHull, 5\)/);
+  assert.doesNotMatch(controller, /45000/);
+  assert.doesNotMatch(controller, /45 SEC/);
+  assert.doesNotMatch(controller, /journeyStartTimedRepair/);
+});
+
 test('the opening story waits for Continue on every beat and has no skip control', () => {
   const controller = fs.readFileSync(
     path.join(__dirname, '..', 'js', 'games', 'journey.js'),
