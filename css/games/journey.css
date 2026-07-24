@@ -3860,8 +3860,10 @@ body.on-journey {
   z-index: 1;
   top: 25%;
   left: 69%;
-  width: 76px;
-  height: 76px;
+  display: grid;
+  place-items: center;
+  width: 108px;
+  height: 108px;
   border: 1px solid rgba(255,124,143,.72);
   border-radius: 50%;
   box-shadow: 0 0 22px rgba(255,124,143,.2);
@@ -3873,7 +3875,7 @@ body.on-journey {
 .journey-distant-distress::before,
 .journey-distant-distress::after {
   position: absolute;
-  inset: 12px;
+  inset: 11px;
   border: 1px solid rgba(105,215,255,.66);
   border-radius: 50%;
   content: "";
@@ -3886,28 +3888,64 @@ body.on-journey {
   animation: journey-distress-scan 7s linear infinite;
 }
 
-.journey-distant-distress span {
-  position: absolute;
-  top: 31px;
-  left: 29px;
-  width: 18px;
-  height: 28px;
-  border: 2px solid #69d7ff;
-  border-radius: 50% 50% 42% 42%;
-  background: #152843;
-  box-shadow: 0 0 12px rgba(105,215,255,.7);
-  transform: rotate(18deg);
+.journey-distant-distress svg {
+  position: relative;
+  z-index: 2;
+  width: 76px;
+  height: 58px;
+  overflow: visible;
+  filter: drop-shadow(0 0 8px rgba(105,215,255,.55));
 }
 
-.journey-distant-distress i {
-  position: absolute;
-  top: 34px;
-  left: 35px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #ff7c8f;
-  box-shadow: 0 0 6px #ff7c8f, 0 0 16px #ff7c8f;
+.journey-distress-ship {
+  transform-origin: 60px 46px;
+  animation: journey-distress-ship-drift 2.7s ease-in-out infinite;
+}
+
+.journey-distress-hull {
+  fill: #263653;
+  stroke: #8cb8d8;
+  stroke-width: 4;
+}
+
+.journey-distress-wing {
+  fill: #19263f;
+  stroke: #69d7ff;
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+
+.journey-distress-wing.is-right {
+  stroke: #ff7c8f;
+  stroke-dasharray: 20 8;
+  transform: rotate(7deg);
+  transform-origin: 72px 54px;
+}
+
+.journey-distress-cockpit {
+  fill: #030713;
+  stroke: #fff1a6;
+  stroke-width: 3;
+}
+
+.journey-distress-crack {
+  fill: none;
+  stroke: #ff7c8f;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.journey-distress-antenna {
+  fill: none;
+  stroke: #fff1a6;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.journey-distress-beacon {
+  fill: #ff7c8f;
+  filter: drop-shadow(0 0 5px #ff7c8f);
   animation: journey-distress-core 1s steps(2, end) infinite;
 }
 
@@ -3932,6 +3970,11 @@ body.on-journey {
 
 @keyframes journey-distress-core {
   50% { opacity: .25; }
+}
+
+@keyframes journey-distress-ship-drift {
+  0%, 100% { transform: translateY(-2px) rotate(-5deg); }
+  50% { transform: translateY(3px) rotate(4deg); }
 }
 
 .journey-arrival-flight {
@@ -4623,7 +4666,8 @@ body.on-journey {
   .journey-arrival-debris i,
   .journey-distant-distress,
   .journey-distant-distress::after,
-  .journey-distant-distress i,
+  .journey-distress-ship,
+  .journey-distress-beacon,
   .journey-belt-exit-signal::after,
   .journey-map-node.is-selectable circle,
   .journey-combat-frame.is-hit,

@@ -94,6 +94,10 @@ Every cinematic should contain:
 - one short line of dialogue or explanation,
 - and one clear `CONTINUE` action.
 
+The dominant visual must depict the actual subject of the beat. A damaged ship,
+creature, crystal, station, or hazard should be recognizable without its text label;
+do not substitute an abstract glyph or generic ring for the subject.
+
 Cinematics never advance automatically. The player decides when they are finished looking and reading.
 
 Do not add a Skip button. Do not make players race a timer.

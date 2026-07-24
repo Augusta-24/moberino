@@ -636,8 +636,17 @@
   function arrivalDistressBeacon() {
     return `
       <div class="journey-distant-distress" aria-label="A distress beacon pulses in the distance">
-        <span></span>
-        <i></i>
+        <svg viewBox="0 0 120 90" aria-hidden="true">
+          <g class="journey-distress-ship">
+            <path class="journey-distress-wing is-left" d="M46 51 13 66 38 72 53 61Z"></path>
+            <path class="journey-distress-wing is-right" d="M76 49 108 57 91 68 70 61Z"></path>
+            <path class="journey-distress-hull" d="M59 12C48 25 42 44 44 67L60 81 76 65C77 43 70 24 59 12Z"></path>
+            <path class="journey-distress-cockpit" d="M59 24C53 31 51 39 52 47H67C67 38 64 30 59 24Z"></path>
+            <path class="journey-distress-crack" d="M48 54 57 50 54 59 63 62 58 70"></path>
+            <path class="journey-distress-antenna" d="M72 31 87 18"></path>
+            <circle class="journey-distress-beacon" cx="89" cy="16" r="5"></circle>
+          </g>
+        </svg>
         <b>SOS</b>
       </div>`;
   }
