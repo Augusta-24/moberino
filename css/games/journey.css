@@ -967,6 +967,20 @@ body.on-journey {
   box-shadow: 0 0 22px rgba(255,241,166,.1);
 }
 
+.journey-route-node.is-closed {
+  border-color: rgba(255,102,122,.58);
+  background: rgba(65,12,27,.28);
+}
+
+.journey-route-node.is-closed .journey-route-index {
+  border-color: #ff667a;
+  color: #ff8797;
+}
+
+.journey-route-node.is-closed .journey-route-node-copy span {
+  color: #ff8797;
+}
+
 .journey-route-index {
   position: relative;
   z-index: 1;
@@ -3343,6 +3357,11 @@ body.on-journey {
   stroke: rgba(255,241,166,.16);
 }
 
+.journey-map-paths path.is-closed {
+  stroke: rgba(255,102,122,.55);
+  stroke-dasharray: 3 8;
+}
+
 .journey-map-node {
   color: #f5f3ec;
 }
@@ -3381,6 +3400,28 @@ body.on-journey {
 .journey-map-node.is-selected circle {
   stroke: var(--journey-gold);
   stroke-width: 5;
+}
+
+.journey-map-node.is-closed {
+  color: #ff8797;
+}
+
+.journey-map-node.is-closed circle {
+  fill: rgba(79,14,31,.9);
+  stroke: #ff667a;
+}
+
+.journey-map-node .journey-map-node-note {
+  fill: var(--journey-gold);
+  font-size: 12px;
+  letter-spacing: .5px;
+  text-anchor: middle;
+}
+
+.journey-map-node .journey-map-node-x {
+  fill: #fff;
+  font: 16px/1 'VCR', monospace;
+  text-anchor: middle;
 }
 
 .journey-map-node.is-selectable {
@@ -3730,6 +3771,51 @@ body.on-journey {
   margin-top: 5px;
   color: var(--journey-gold);
   font-size: 18px;
+}
+
+.journey-log-branch,
+.journey-repair-branch,
+.journey-choice-consequence {
+  margin-top: 14px;
+  border: 1px solid rgba(255,200,87,.66);
+  border-radius: 8px;
+  padding: 13px;
+  background: rgba(255,200,87,.08);
+}
+
+.journey-log-branch span,
+.journey-log-branch strong,
+.journey-repair-branch span,
+.journey-repair-branch strong,
+.journey-choice-consequence span,
+.journey-choice-consequence strong {
+  display: block;
+}
+
+.journey-log-branch span,
+.journey-repair-branch span,
+.journey-choice-consequence span {
+  color: #ff8797;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+}
+
+.journey-log-branch strong,
+.journey-repair-branch strong,
+.journey-choice-consequence strong {
+  margin-top: 6px;
+  color: var(--journey-gold);
+  font: 22px/1 'Bebas Neue', sans-serif;
+  letter-spacing: 1.5px;
+}
+
+.journey-log-branch p,
+.journey-repair-branch p,
+.journey-choice-consequence p {
+  margin-top: 7px;
+  color: #fff;
+  font-size: 15px;
+  line-height: 1.4;
 }
 
 .journey-log-screen h2 {

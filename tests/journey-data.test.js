@@ -95,6 +95,25 @@ test('route choice returns to the ship and departure happens from the destinatio
   assert.equal(controller.includes('window.journeyTravelTo'), false);
 });
 
+test('Pilot’s Call commitment closes one route and carries its consequence forward', () => {
+  const controller = fs.readFileSync(
+    path.join(__dirname, '..', 'js', 'games', 'journey.js'),
+    'utf8'
+  );
+
+  assert.match(controller, /function pilotCallStatus/);
+  assert.match(controller, /!JourneyState\.isNodeClosed\(node\.id\)/);
+  assert.match(controller, /journey-map-node-note/);
+  assert.match(controller, /CRYSTAL AT GATE/);
+  assert.match(controller, /PIP AT GATE/);
+  assert.match(controller, /PILOT'S CALL · COMMITTED/);
+  assert.match(controller, /journey-log-branch/);
+  assert.match(controller, /journey-repair-branch/);
+  assert.match(controller, /repair-moon-cache/);
+  assert.match(controller, /CACHE CRYSTAL MOVED TO OGRE GATE/);
+  assert.match(controller, /PIP INTERCEPTED AT OGRE GATE/);
+});
+
 test('navigation offers only new stops and Lantern arrival stays on the ship screen', () => {
   const controller = fs.readFileSync(
     path.join(__dirname, '..', 'js', 'games', 'journey.js'),

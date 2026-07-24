@@ -39,7 +39,7 @@ The existing Space Mobe must remain unchanged as its own standalone arcade game.
 
 # Living implementation status
 
-Last reconciled: July 23, 2026.
+Last reconciled: July 24, 2026.
 
 This section is the current source of truth for progress. The detailed stages later
 in this guide remain the acceptance checklist, but some early screen descriptions
@@ -78,7 +78,9 @@ All new missions and route decisions must follow
   an expandable log.
 - **Stage 4:** Chapter One is data-driven through Ogre Gate and First Settlement.
   Fuel costs, locks, visits, completion, destination selection, and Pilot's Call
-  branching persist.
+  branching persist. Pilot's Call remains changeable while the destination is only
+  selected, then commits permanently when the Wayfarer departs Scrap Belt. The
+  unchosen node closes as a destination and becomes an Ogre Gate consequence.
 - **Stage 5:** Scrap Belt now uses the reusable mission runtime for forward travel,
   full two-axis steering, a navigable debris corridor, crystal-trail scanning,
   floating tractor salvage, persistent damage and rewards, and
@@ -108,7 +110,7 @@ All new missions and route decisions must follow
   arrival shows an identifiable damaged ship rather than an abstract beacon glyph.
 - **Development support:** the cockpit gear opens reproducible state-backed
   checkpoints for retesting the opening, Scrap Belt, Pilot's Call, both branch
-  arrivals, and Repair Moon.
+  arrivals, and both Repair Moon branch states.
 
 The implemented route currently ends before **Ogre Gate**. Ogre Gate and First
 Settlement exist in the route data but are intentionally marked unavailable.
@@ -119,20 +121,23 @@ Abandoned Cache exists as route and story scaffolding but is not yet a real miss
 The next goal is a complete, replayable Chapter One vertical slice. Build in this
 order:
 
-### 1. Make Pilot's Call a real commitment
+### 1. Pilot's Call commitment — completed July 24, 2026
 
-- Add persistent branch-choice and branch-outcome state.
-- Once the player departs for Distress Signal or Abandoned Cache, the other node
-  stops behaving like a second optional errand.
-- The unchosen thread transforms:
+- Save version 4 adds persistent branch choice, closed node, and consequence state.
+- Selection can change freely until departure. Departing Scrap Belt commits the
+  decision and blocks the other node from selection or travel.
+- The unchosen thread now transforms:
   - rescue Pip now, and the thieves move the cache crystal to Ogre Gate;
   - recover the cache crystal now, and Pip's pod is intercepted at Ogre Gate.
-- Show the chosen branch and the transformed consequence in the log, vertical map,
-  Repair Moon arrival, and Ogre Gate setup.
-- Both routes reconnect forward at Repair Moon; neither route visually sends the
-  player backward to complete the other branch.
+- The cockpit map, Navigation screen, archived Pilot's Call, Journey Log, Repair
+  Moon arrival, and Repair Moon screen all show the committed consequence.
+- Both routes reconnect forward at Repair Moon. The closed thread remains visible
+  as moved to Ogre Gate rather than becoming another errand or disappearing.
+- Older saves migrate from existing Pip, crystal, visited-node, and completed-node
+  state into one coherent branch.
+- Debug checkpoints now cover Repair Moon after either path.
 
-### 2. Build Abandoned Cache as the second complete mission family
+### 2. Next: Build Abandoned Cache as the second complete mission family
 
 - Arrival shows the actual silent cache structure, sealed vault, and weak power.
 - Use a short Signal Lullaby-style tonal sequence to authenticate or tune the

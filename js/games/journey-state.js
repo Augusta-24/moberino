@@ -5,7 +5,8 @@
 
   const GAME_ID = 'journey';
   const SAVE_KEY = 'moberinoJourneySave';
-  const SAVE_VERSION = 3;
+  const SAVE_VERSION = 4;
+  const PILOT_CALL_NODE_IDS = ['distress-signal', 'abandoned-cache'];
   const MIN_DEPARTURE_HULL = 25;
   const MIN_DEPARTURE_PILOT = 20;
   const OFFLINE_CAP_MS = 24 * 60 * 60 * 1000;
@@ -47,10 +48,18 @@
       }
     },
     passengers: { active: [], rescued: [] },
+    story: {
+      pilotCall: {
+        chosenNodeId: null,
+        closedNodeId: null,
+        consequenceId: null
+      }
+    },
     route: {
       visitedNodes: ['home-orbit'],
       completedNodes: [],
       unlockedNodes: ['home-orbit', 'fuel-stop-1'],
+      closedNodes: [],
       defeatedBosses: []
     },
     encounters: {
@@ -136,6 +145,8 @@
     next.route.visitedNodes = uniqueStrings(next.route.visitedNodes, DEFAULT_SAVE.route.visitedNodes);
     next.route.completedNodes = uniqueStrings(next.route.completedNodes, []);
     next.route.unlockedNodes = uniqueStrings(next.route.unlockedNodes, DEFAULT_SAVE.route.unlockedNodes);
+    next.route.closedNodes = uniqueStrings(next.route.closedNodes, [])
+      .filter(nodeId => PILOT_CALL_NODE_IDS.includes(nodeId));
     next.route.defeatedBosses = uniqueStrings(next.route.defeatedBosses, []);
     const savedEncounters = candidate && candidate.encounters && typeof candidate.encounters === 'object'
       ? candidate.encounters
@@ -161,6 +172,46 @@
     next.log.readTransmissions = uniqueStrings(next.log.readTransmissions, []);
     next.log.discoveries = uniqueStrings(next.log.discoveries, []);
     next.settings.tutorialComplete = !!next.settings.tutorialComplete;
+
+    const pilotCall = next.story.pilotCall;
+    let chosenNodeId = PILOT_CALL_NODE_IDS.includes(pilotCall.chosenNodeId)
+      ? pilotCall.chosenNodeId
+      : null;
+    if (!chosenNodeId) {
+      if (PILOT_CALL_NODE_IDS.includes(next.currentNodeId)) {
+        chosenNodeId = next.currentNodeId;
+      } else if (
+        next.passengers.active.includes('pip') ||
+        next.passengers.rescued.includes('pip') ||
+        next.route.completedNodes.includes('distress-signal') ||
+        next.route.visitedNodes.includes('distress-signal')
+      ) {
+        chosenNodeId = 'distress-signal';
+      } else if (
+        next.log.discoveries.includes('crystal:azure-cache') ||
+        next.route.completedNodes.includes('abandoned-cache') ||
+        next.route.visitedNodes.includes('abandoned-cache')
+      ) {
+        chosenNodeId = 'abandoned-cache';
+      }
+    }
+    if (chosenNodeId) {
+      const closedNodeId = chosenNodeId === 'distress-signal'
+        ? 'abandoned-cache'
+        : 'distress-signal';
+      pilotCall.chosenNodeId = chosenNodeId;
+      pilotCall.closedNodeId = closedNodeId;
+      pilotCall.consequenceId = chosenNodeId === 'distress-signal'
+        ? 'cache-at-ogre-gate'
+        : 'pip-at-ogre-gate';
+      next.route.closedNodes = [closedNodeId];
+      if (next.selectedDestinationId === closedNodeId) next.selectedDestinationId = null;
+    } else {
+      pilotCall.chosenNodeId = null;
+      pilotCall.closedNodeId = null;
+      pilotCall.consequenceId = null;
+      next.route.closedNodes = [];
+    }
 
     // Version 1 briefly allowed a completed journey to backtrack to Home and
     // strand itself there. Restore those saves to their cleared frontier.
@@ -267,7 +318,8 @@
       'pilot-call',
       'distress-signal',
       'abandoned-cache',
-      'repair-moon'
+      'repair-moon',
+      'repair-moon-cache'
     ];
     if (!validCheckpoints.includes(checkpointId)) {
       return mutationResult(false, 'unknown-debug-checkpoint', { checkpointId });
@@ -282,7 +334,7 @@
     if (checkpointId !== 'opening') checkpoint.settings.tutorialComplete = true;
     if (checkpointId === 'lantern-station') checkpoint.selectedDestinationId = 'fuel-stop-1';
 
-    if (['scrap-belt', 'pilot-call', 'distress-signal', 'abandoned-cache', 'repair-moon'].includes(checkpointId)) {
+    if (['scrap-belt', 'pilot-call', 'distress-signal', 'abandoned-cache', 'repair-moon', 'repair-moon-cache'].includes(checkpointId)) {
       checkpoint.currentNodeId = 'fuel-stop-1';
       checkpoint.resources.fuel = checkpoint.resources.maxFuel;
       checkpoint.currency.salvage = 8;
@@ -293,7 +345,7 @@
       checkpoint.totalDistance = 18;
     }
 
-    if (['pilot-call', 'distress-signal', 'abandoned-cache', 'repair-moon'].includes(checkpointId)) {
+    if (['pilot-call', 'distress-signal', 'abandoned-cache', 'repair-moon', 'repair-moon-cache'].includes(checkpointId)) {
       checkpoint.currentNodeId = 'scrap-belt';
       checkpoint.selectedDestinationId = null;
       checkpoint.resources.fuel = 34;
@@ -306,7 +358,7 @@
       checkpoint.totalDistance = 52;
     }
 
-    if (['distress-signal', 'abandoned-cache', 'repair-moon'].includes(checkpointId)) {
+    if (['distress-signal', 'abandoned-cache', 'repair-moon', 'repair-moon-cache'].includes(checkpointId)) {
       checkpoint.log.readTransmissions = ['scrap-belt-signals'];
     }
 
@@ -324,7 +376,33 @@
       checkpoint.route.visitedNodes.push('distress-signal');
       checkpoint.route.completedNodes.push('distress-signal');
       checkpoint.route.unlockedNodes.push('repair-moon');
+      checkpoint.route.closedNodes = ['abandoned-cache'];
+      checkpoint.story.pilotCall = {
+        chosenNodeId: 'distress-signal',
+        closedNodeId: 'abandoned-cache',
+        consequenceId: 'cache-at-ogre-gate'
+      };
       checkpoint.totalDistance = 81;
+    }
+
+    if (checkpointId === 'repair-moon-cache') {
+      checkpoint.currentNodeId = 'abandoned-cache';
+      checkpoint.selectedDestinationId = 'repair-moon';
+      checkpoint.resources.fuel = 29;
+      checkpoint.resources.hull = 76;
+      checkpoint.currency.salvage = 49;
+      checkpoint.currency.crystals = 1;
+      checkpoint.route.visitedNodes.push('abandoned-cache');
+      checkpoint.route.completedNodes.push('abandoned-cache');
+      checkpoint.route.unlockedNodes.push('repair-moon');
+      checkpoint.route.closedNodes = ['distress-signal'];
+      checkpoint.story.pilotCall = {
+        chosenNodeId: 'abandoned-cache',
+        closedNodeId: 'distress-signal',
+        consequenceId: 'pip-at-ogre-gate'
+      };
+      checkpoint.log.discoveries.push('cache-log-1', 'crystal:azure-cache');
+      checkpoint.totalDistance = 74;
     }
 
     state = sanitize(checkpoint);
@@ -360,10 +438,49 @@
     if (!list.includes(value)) list.push(value);
   }
 
+  function isNodeClosed(nodeId) {
+    return !!(state && state.route.closedNodes.includes(nodeId));
+  }
+
+  function commitPilotCallInPlace(destinationId) {
+    if (!PILOT_CALL_NODE_IDS.includes(destinationId)) {
+      return mutationResult(false, 'not-pilot-call-node');
+    }
+    const pilotCall = state.story.pilotCall;
+    if (pilotCall.chosenNodeId && pilotCall.chosenNodeId !== destinationId) {
+      return mutationResult(false, 'pilot-call-committed', {
+        chosenNodeId: pilotCall.chosenNodeId,
+        closedNodeId: pilotCall.closedNodeId,
+        consequenceId: pilotCall.consequenceId
+      });
+    }
+    const closedNodeId = destinationId === 'distress-signal'
+      ? 'abandoned-cache'
+      : 'distress-signal';
+    const consequenceId = destinationId === 'distress-signal'
+      ? 'cache-at-ogre-gate'
+      : 'pip-at-ogre-gate';
+    pilotCall.chosenNodeId = destinationId;
+    pilotCall.closedNodeId = closedNodeId;
+    pilotCall.consequenceId = consequenceId;
+    state.route.closedNodes = [closedNodeId];
+    return mutationResult(true, 'pilot-call-committed', {
+      chosenNodeId: destinationId,
+      closedNodeId,
+      consequenceId
+    });
+  }
+
   function selectDestination(destinationId) {
     if (!state) return mutationResult(false, 'no-save');
     if (typeof destinationId !== 'string' || !state.route.unlockedNodes.includes(destinationId)) {
       return mutationResult(false, 'locked-destination');
+    }
+    if (isNodeClosed(destinationId)) {
+      return mutationResult(false, 'branch-closed', {
+        chosenNodeId: state.story.pilotCall.chosenNodeId,
+        closedNodeId: destinationId
+      });
     }
     state.selectedDestinationId = destinationId;
     saveJourneyState('select-destination');
@@ -415,6 +532,7 @@
     if (state.currentNodeId !== originId) return mutationResult(false, 'origin-changed');
     if (state.selectedDestinationId !== destinationId) return mutationResult(false, 'destination-changed');
     if (!state.route.unlockedNodes.includes(destinationId)) return mutationResult(false, 'locked-destination');
+    if (isNodeClosed(destinationId)) return mutationResult(false, 'branch-closed');
     const readiness = getDepartureReadiness(fuelCost);
     if (!readiness.ok) {
       return mutationResult(false, readiness.code, {
@@ -422,6 +540,12 @@
         needed: fuelCost,
         available: state.resources.fuel
       });
+    }
+
+    let pilotCall = null;
+    if (originId === 'scrap-belt' && PILOT_CALL_NODE_IDS.includes(destinationId)) {
+      pilotCall = commitPilotCallInPlace(destinationId);
+      if (!pilotCall.ok) return pilotCall;
     }
 
     state.resources.fuel -= fuelCost;
@@ -433,7 +557,8 @@
     return mutationResult(true, 'arrived', {
       destinationId,
       fuelSpent: fuelCost,
-      distance
+      distance,
+      pilotCall
     });
   }
 
@@ -706,6 +831,7 @@
     getState,
     getReturnSummary,
     saveJourneyState,
+    isNodeClosed,
     selectDestination,
     getDepartureReadiness,
     travel,

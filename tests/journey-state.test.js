@@ -56,6 +56,8 @@ test('new Journey saves use an independent key and expected defaults', () => {
   assert.equal(state.resources.hull, 100);
   assert.equal(state.resources.fuel, 12);
   assert.equal(state.currency.crystals, 0);
+  assert.equal(state.story.pilotCall.chosenNodeId, null);
+  assert.deepEqual(Array.from(state.route.closedNodes), []);
   assert.equal(storage.has('moberinoJourneySave'), true);
   assert.equal(storage.has('space-best-campaign'), false);
 });
@@ -89,7 +91,19 @@ test('debug checkpoints rebuild coherent saves immediately before each beat', ()
   assert.equal(state.selectedDestinationId, 'repair-moon');
   assert.equal(state.route.completedNodes.includes('distress-signal'), true);
   assert.equal(state.route.unlockedNodes.includes('repair-moon'), true);
+  assert.equal(state.story.pilotCall.chosenNodeId, 'distress-signal');
+  assert.equal(state.story.pilotCall.consequenceId, 'cache-at-ogre-gate');
+  assert.deepEqual(Array.from(state.route.closedNodes), ['abandoned-cache']);
   assert.deepEqual(Array.from(state.passengers.active), ['pip']);
+
+  assert.equal(api.prepareDebugCheckpoint('repair-moon-cache').ok, true);
+  state = api.getState();
+  assert.equal(state.currentNodeId, 'abandoned-cache');
+  assert.equal(state.story.pilotCall.chosenNodeId, 'abandoned-cache');
+  assert.equal(state.story.pilotCall.consequenceId, 'pip-at-ogre-gate');
+  assert.deepEqual(Array.from(state.route.closedNodes), ['distress-signal']);
+  assert.equal(state.currency.crystals, 1);
+  assert.deepEqual(Array.from(state.passengers.active), []);
 });
 
 test('debug ship restore preserves progression and rejects unknown checkpoints', () => {
@@ -130,7 +144,7 @@ test('malformed saves recover safely and clamp persistent meters', () => {
   const { api } = createHarness({ moberinoJourneySave: malformed });
   const state = api.load();
 
-  assert.equal(state.version, 3);
+  assert.equal(state.version, 4);
   assert.equal(state.currentNodeId, 'home-orbit');
   assert.equal(state.resources.hull, 120);
   assert.equal(state.resources.fuel, 0);
@@ -309,6 +323,72 @@ test('travel spends fuel and advances a selected route exactly once', () => {
   assert.equal(finalState.resources.fuel, 6);
   assert.equal(finalState.totalDistance, 18);
   assert.equal(finalState.route.visitedNodes.filter(id => id === 'fuel-stop-1').length, 1);
+});
+
+test('Pilot’s Call stays changeable until departure, then closes and transforms the other thread', () => {
+  const { api } = createHarness();
+  const state = api.createNew();
+  state.currentNodeId = 'scrap-belt';
+  state.resources.fuel = 40;
+  state.route.visitedNodes.push('scrap-belt');
+  state.route.unlockedNodes.push('distress-signal', 'abandoned-cache');
+
+  assert.equal(api.selectDestination('distress-signal').ok, true);
+  assert.equal(api.selectDestination('abandoned-cache').ok, true);
+  assert.equal(state.story.pilotCall.chosenNodeId, null);
+  assert.deepEqual(Array.from(state.route.closedNodes), []);
+
+  const travel = api.travel({
+    originId: 'scrap-belt',
+    destinationId: 'abandoned-cache',
+    fuelCost: 5,
+    distance: 22
+  });
+  const finalState = api.getState();
+
+  assert.equal(travel.ok, true);
+  assert.equal(travel.pilotCall.chosenNodeId, 'abandoned-cache');
+  assert.equal(finalState.story.pilotCall.chosenNodeId, 'abandoned-cache');
+  assert.equal(finalState.story.pilotCall.closedNodeId, 'distress-signal');
+  assert.equal(finalState.story.pilotCall.consequenceId, 'pip-at-ogre-gate');
+  assert.deepEqual(Array.from(finalState.route.closedNodes), ['distress-signal']);
+  assert.equal(api.isNodeClosed('distress-signal'), true);
+  assert.equal(api.selectDestination('distress-signal').code, 'branch-closed');
+});
+
+test('legacy branch progress migrates into one coherent Pilot’s Call consequence', () => {
+  const pipSave = JSON.stringify({
+    version: 3,
+    currentNodeId: 'repair-moon',
+    passengers: { active: ['pip'], rescued: ['pip'] },
+    route: {
+      visitedNodes: ['home-orbit', 'scrap-belt', 'distress-signal', 'repair-moon'],
+      completedNodes: ['scrap-belt', 'distress-signal'],
+      unlockedNodes: ['home-orbit', 'scrap-belt', 'distress-signal', 'abandoned-cache', 'repair-moon']
+    }
+  });
+  const pipHarness = createHarness({ moberinoJourneySave: pipSave });
+  const pipState = pipHarness.api.load();
+  assert.equal(pipState.story.pilotCall.chosenNodeId, 'distress-signal');
+  assert.equal(pipState.story.pilotCall.consequenceId, 'cache-at-ogre-gate');
+  assert.deepEqual(Array.from(pipState.route.closedNodes), ['abandoned-cache']);
+
+  const cacheSave = JSON.stringify({
+    version: 3,
+    currentNodeId: 'repair-moon',
+    currency: { crystals: 1 },
+    log: { discoveries: ['crystal:azure-cache'] },
+    route: {
+      visitedNodes: ['home-orbit', 'scrap-belt', 'abandoned-cache', 'repair-moon'],
+      completedNodes: ['scrap-belt', 'abandoned-cache'],
+      unlockedNodes: ['home-orbit', 'scrap-belt', 'distress-signal', 'abandoned-cache', 'repair-moon']
+    }
+  });
+  const cacheHarness = createHarness({ moberinoJourneySave: cacheSave });
+  const cacheState = cacheHarness.api.load();
+  assert.equal(cacheState.story.pilotCall.chosenNodeId, 'abandoned-cache');
+  assert.equal(cacheState.story.pilotCall.consequenceId, 'pip-at-ogre-gate');
+  assert.deepEqual(Array.from(cacheState.route.closedNodes), ['distress-signal']);
 });
 
 test('locked destinations and insufficient fuel cannot advance the route', () => {

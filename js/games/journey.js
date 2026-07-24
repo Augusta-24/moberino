@@ -236,9 +236,39 @@
     return JourneyData.getNode(state.currentNodeId) || JourneyData.getNode('home-orbit');
   }
 
+  function pilotCallStatus(state) {
+    const pilotCall = state && state.story && state.story.pilotCall;
+    if (!pilotCall || !pilotCall.chosenNodeId) return null;
+    if (pilotCall.chosenNodeId === 'distress-signal') {
+      return {
+        chosenNodeId: 'distress-signal',
+        chosenTitle: 'BEACON ANSWERED',
+        chosenDetail: 'Pip comes aboard at the Distress Signal.',
+        closedNodeId: 'abandoned-cache',
+        closedStatus: 'MOVED TO OGRE GATE',
+        mapNote: 'CRYSTAL AT GATE',
+        consequenceTitle: 'CACHE INTERCEPTED',
+        consequenceDetail: 'The thieves moved the cache crystal behind Ogre Gate.',
+        repairLine: 'Pip is aboard. The stolen crystal is now behind Ogre Gate.'
+      };
+    }
+    return {
+      chosenNodeId: 'abandoned-cache',
+      chosenTitle: 'CACHE CHOSEN',
+      chosenDetail: 'The Wayfarer secures the first Star Crystal.',
+      closedNodeId: 'distress-signal',
+      closedStatus: 'INTERCEPTED AT GATE',
+      mapNote: 'PIP AT GATE',
+      consequenceTitle: 'PIP INTERCEPTED',
+      consequenceDetail: 'The distress pod was taken to Ogre Gate. The rescue continues there.',
+      repairLine: 'We have the crystal. Pip’s pod was intercepted at Ogre Gate.'
+    };
+  }
+
   function availableDestinations(state, location) {
     const connected = JourneyData.getConnectedNodes(location.id).filter(node =>
       state.route.unlockedNodes.includes(node.id) &&
+      !JourneyState.isNodeClosed(node.id) &&
       node.implemented
     );
     const onward = connected.filter(node => !state.route.visitedNodes.includes(node.id));
@@ -330,6 +360,7 @@
   }
 
   function cockpitMap(state, location, route) {
+    const branch = pilotCallStatus(state);
     const revealedIds = new Set(JourneyData.routeNodes.filter(node =>
       node.id === state.currentNodeId ||
       state.route.visitedNodes.includes(node.id) ||
@@ -342,7 +373,9 @@
         const from = MAP_POINTS[node.id];
         const to = MAP_POINTS[connectionId];
         const known = revealedIds.has(node.id) && revealedIds.has(connectionId);
-        if (from && to) paths.push(`<path class="${known ? 'is-known' : 'is-unknown'}" d="M${from[0]} ${from[1]} L${to[0]} ${to[1]}"></path>`);
+        const closed = state.route.closedNodes.includes(node.id) ||
+          state.route.closedNodes.includes(connectionId);
+        if (from && to) paths.push(`<path class="${closed ? 'is-closed' : known ? 'is-known' : 'is-unknown'}" d="M${from[0]} ${from[1]} L${to[0]} ${to[1]}"></path>`);
       });
     });
     const nodes = JourneyData.routeNodes.map(node => {
@@ -350,8 +383,10 @@
       if (!point) return '';
       const revealed = revealedIds.has(node.id);
       const selectable = route.available.some(candidate => candidate.id === node.id);
+      const closed = state.route.closedNodes.includes(node.id);
       const classes = [
         !revealed ? 'is-unknown' : '',
+        closed ? 'is-closed' : '',
         node.id === location.id ? 'is-current' : '',
         state.route.completedNodes.includes(node.id) ? 'is-cleared' : '',
         route.selected && route.selected.id === node.id ? 'is-selected' : '',
@@ -363,10 +398,13 @@
           ${selectable ? `onclick="journeyChooseDestination('${node.id}')" role="button" tabindex="0"` : ''}>
           <circle r="${node.id === location.id ? 13 : 10}"></circle>
           <text class="${label[2]}" x="${label[0]}" y="${label[1]}">${revealed ? node.shortName : '?'}</text>
+          ${closed && branch ? `
+            <text class="journey-map-node-note" x="0" y="26">${branch.mapNote}</text>
+            <text class="journey-map-node-x" x="0" y="1">×</text>` : ''}
         </g>`;
     }).join('');
     return `
-      <svg class="journey-cockpit-map" viewBox="0 0 300 705" role="img" aria-label="Vertical Journey route map from Home Orbit toward the first settlement">
+      <svg class="journey-cockpit-map" viewBox="0 0 300 705" role="img" aria-label="Vertical Journey route map from Home Orbit toward the first settlement${branch ? `. ${branch.consequenceDetail}` : ''}">
         <g class="journey-map-paths">${paths.join('')}</g>
         ${nodes}
       </svg>`;
@@ -487,7 +525,8 @@
       ['pilot-call', "PILOT'S CALL", 'Open the unread two-signal transmission.'],
       ['distress-signal', 'DISTRESS SIGNAL', 'Depart for the rescue and signal-search mission.'],
       ['abandoned-cache', 'ABANDONED CACHE', 'Depart for the supply cache and first crystal.'],
-      ['repair-moon', 'REPAIR MOON', 'Arrive with Pip, damage, and salvage to spend.']
+      ['repair-moon', 'REPAIR MOON · PIP PATH', 'Arrive with Pip aboard and the crystal moved to Ogre Gate.'],
+      ['repair-moon-cache', 'REPAIR MOON · CACHE PATH', 'Arrive with the crystal and Pip intercepted at Ogre Gate.']
     ];
     root.innerHTML = `
       <main class="journey-debug-screen" aria-labelledby="journey-debug-title">
@@ -545,7 +584,9 @@
   }
 
   function nodeStatus(state, node) {
+    const branch = pilotCallStatus(state);
     if (state.currentNodeId === node.id) return 'YOU ARE HERE';
+    if (branch && branch.closedNodeId === node.id) return branch.closedStatus;
     if (state.route.completedNodes.includes(node.id)) return 'CLEARED';
     if (state.route.visitedNodes.includes(node.id)) return 'VISITED';
     if (state.route.unlockedNodes.includes(node.id)) return node.implemented ? 'AVAILABLE' : 'COMING NEXT';
@@ -557,6 +598,7 @@
     const state = JourneyState.getState();
     if (!root || !state || !active) return;
     const location = currentNode(state);
+    const branch = pilotCallStatus(state);
     const connectedIds = new Set(location.connections);
     const destinations = availableDestinations(state, location);
     const selectedDestinationId = destinations.some(node => node.id === state.selectedDestinationId)
@@ -582,21 +624,23 @@
             const status = nodeStatus(state, node);
             const connected = connectedIds.has(node.id);
             const unlocked = state.route.unlockedNodes.includes(node.id);
+            const closed = JourneyState.isNodeClosed(node.id);
             const selectable = connected &&
               unlocked &&
+              !closed &&
               node.implemented &&
               !state.route.visitedNodes.includes(node.id);
             return `
-              <article class="journey-route-node is-${node.type} ${selectable ? 'is-selectable' : ''} ${selectedDestinationId === node.id ? 'is-selected' : ''}" data-status="${status}">
+              <article class="journey-route-node is-${node.type} ${closed ? 'is-closed' : ''} ${selectable ? 'is-selectable' : ''} ${selectedDestinationId === node.id ? 'is-selected' : ''}" data-status="${status}">
                 <div class="journey-route-index">${String(index + 1).padStart(2, '0')}</div>
                 <div class="journey-route-node-copy">
                   <span>${status}</span>
                   <h2>${node.name}</h2>
-                  <p>${node.description}</p>
+                  <p>${closed && branch ? branch.consequenceDetail : node.description}</p>
                 </div>
                 <div class="journey-route-cost">
-                  <strong>${node.id === 'home-orbit' ? '—' : node.fuelCost}</strong>
-                  <span>${node.id === 'home-orbit' ? 'START' : 'FUEL'}</span>
+                  <strong>${closed || node.id === 'home-orbit' ? '—' : node.fuelCost}</strong>
+                  <span>${closed ? 'CLOSED' : node.id === 'home-orbit' ? 'START' : 'FUEL'}</span>
                 </div>
                 ${selectable ? `<button type="button" onclick="journeyChooseDestination('${node.id}')">${selectedDestinationId === node.id ? 'SELECTED' : 'CHOOSE'} →</button>` : ''}
               </article>`;
@@ -612,10 +656,13 @@
   }
 
   function arrivalLine(node) {
+    const state = JourneyState.getState();
+    const branch = pilotCallStatus(state);
     if (node.id === 'fuel-stop-1') return 'Tanks are full. The crystal signal continues through the Scrap Belt.';
     if (node.id === 'scrap-belt') return 'The trail enters that debris field. Clear a path and keep the signal in sight.';
     if (node.id === 'distress-signal') return 'That beacon is alive. Someone is trapped ahead.';
     if (node.id === 'abandoned-cache') return 'The cache ping matches the thieves’ route. Let’s see what they left behind.';
+    if (node.id === 'repair-moon' && branch) return branch.repairLine;
     if (node.id === 'repair-moon') return 'Ogre Gate is ahead. The Wayfarer needs to be ready.';
     return `We made it to ${node.name}. The crystal trail continues from here.`;
   }
@@ -791,6 +838,24 @@
     const root = host();
     const state = JourneyState.getState();
     if (!root || !state || !transmission || !active) return;
+    const branch = pilotCallStatus(state);
+    if (branch) {
+      root.innerHTML = `
+        <main class="journey-choice-screen" aria-labelledby="journey-choice-title">
+          <section>
+            <div class="journey-kicker">PILOT'S CALL · COMMITTED</div>
+            <h1 id="journey-choice-title">${branch.chosenTitle}</h1>
+            <p>${branch.chosenDetail}</p>
+            <div class="journey-choice-consequence">
+              <span>${branch.consequenceTitle}</span>
+              <strong>THE OTHER THREAD MOVED FORWARD</strong>
+              <p>${branch.consequenceDetail}</p>
+            </div>
+            <button class="journey-primary-btn" type="button" onclick="journeyShip()">RETURN TO COCKPIT →</button>
+          </section>
+        </main>`;
+      return;
+    }
     root.innerHTML = `
       <main class="journey-choice-screen" aria-labelledby="journey-choice-title">
         <section>
@@ -828,6 +893,7 @@
     const state = JourneyState.getState();
     if (!root || !state || !active) return;
     const transmissions = state.log.transmissions.map(id => JourneyData.getTransmission(id)).filter(Boolean);
+    const branch = pilotCallStatus(state);
     root.innerHTML = `
       <main class="journey-log-screen">
         <header><button type="button" onclick="journeyShip()">◀ COCKPIT</button><div><span>WAYFARER ARCHIVE</span><strong>JOURNEY LOG</strong></div><b>${state.currency.crystals} / 7 ✦</b></header>
@@ -837,6 +903,12 @@
             <span>CRYSTALS<strong>${state.currency.crystals} / 7</strong></span>
             <span>FRIENDS<strong>${state.passengers.rescued.length}</strong></span>
           </div>
+          ${branch ? `
+            <div class="journey-log-branch">
+              <span>PILOT'S CALL · COMMITTED</span>
+              <strong>${branch.chosenTitle}</strong>
+              <p>${branch.consequenceDetail}</p>
+            </div>` : ''}
           <h2>MESSAGES</h2>
           <div class="journey-log-list">
             ${transmissions.length ? transmissions.map(transmission => `
@@ -880,6 +952,7 @@
     const canRepair = !hullFull && state.currency.salvage >= 5;
     const upgradeCost = state.upgrades.blasterLevel === 0 ? 0 : 15;
     const readyForGate = state.upgrades.blasterLevel >= 1;
+    const branch = pilotCallStatus(state);
     const notice = maintenanceNotice;
     maintenanceNotice = '';
     root.innerHTML = `
@@ -888,6 +961,12 @@
           <div class="journey-kicker">SAFE HARBOR · ${node.name.toUpperCase()}</div>
           <h1 id="journey-repair-title">DRY DOCK</h1>
           <p><strong>MISSION:</strong> Prepare the Wayfarer for the guardian at Ogre Gate. Repair damage and install one permanent upgrade.</p>
+          ${branch ? `
+            <div class="journey-repair-branch">
+              <span>${branch.consequenceTitle}</span>
+              <strong>OGRE GATE OBJECTIVE UPDATED</strong>
+              <p>${branch.consequenceDetail}</p>
+            </div>` : ''}
           <div class="journey-scrap-balance">AVAILABLE SCRAP <strong>${state.currency.salvage}</strong></div>
           ${notice ? `<div class="journey-maintenance-notice">${notice}</div>` : ''}
           <div class="journey-maintenance-grid">
@@ -1246,7 +1325,7 @@
     if (node.id === 'distress-signal' && result.outcome === 'success') {
       pendingDistressSuccess = null;
       if (typeof JourneyDistressRescue !== 'undefined') JourneyDistressRescue.destroy();
-      shipNotice = 'PIP IS ABOARD · RESCUE COMPLETE';
+      shipNotice = 'PIP IS ABOARD · CACHE CRYSTAL MOVED TO OGRE GATE';
       renderShip();
       return;
     }
@@ -1615,7 +1694,7 @@
     });
     if (result.ok) {
       JourneyState.awardCrystal('azure-cache');
-      shipNotice = 'CACHE RECOVERED · STAR CRYSTAL 1 / 7 · REPAIR MOON FOUND';
+      shipNotice = 'STAR CRYSTAL ABOARD · PIP INTERCEPTED AT OGRE GATE';
       renderCrystalRecovery();
       return;
     }
