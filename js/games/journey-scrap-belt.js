@@ -14,6 +14,9 @@
   let storedSalvageId = null;
   let tractorAttachedAt = 0;
   let lastScanToneAt = 0;
+  let signalWaypointIndex = 0;
+  let signalNextTurnAt = 0;
+  let signalLastUpdateAt = 0;
 
   function playTone(frequency, type, duration, volume, endFrequency) {
     try {
@@ -77,6 +80,12 @@
     });
   }
 
+  function playMissionComplete() {
+    [261.63, 392, 523.25, 783.99].forEach((frequency, index) => {
+      playTone(frequency, index < 2 ? 'triangle' : 'sine', .22, .05 - index * .006, frequency * 1.015);
+    });
+  }
+
   function playSignalReveal() {
     playTone(220, 'sine', .11, .03, 293.66);
     playTone(440, 'triangle', .15, .028, 523.25);
@@ -128,15 +137,15 @@
       type: 'signal',
       x: 318,
       y: 105,
-      r: 20,
+      r: 11,
       worldLocked: false,
       revealed: false,
       hiddenUntilScanned: true,
       scannable: true,
-      scanSeconds: 1.8,
-      captureRadius: 118,
-      scanDecayRate: .7,
-      scanLostSeconds: 1.15,
+      scanSeconds: 2.25,
+      captureRadius: 76,
+      scanDecayRate: .9,
+      scanLostSeconds: .9,
       color: '#fff1a6'
     });
     return targets;
@@ -213,35 +222,61 @@
     active = false;
     JourneyMissionRuntime.destroy();
     config = null;
-    if (typeof completedConfig.onComplete === 'function') {
-      completedConfig.onComplete({
-        attemptId: completedConfig.attemptId,
-        encounterId: completedConfig.encounterId,
-        outcome,
-        hullRemaining: Math.max(0, Math.round(snapshot.hull)),
-        damageTaken: Math.max(0, Math.round(completedConfig.startingHull - snapshot.hull)),
-        fuelCollected: 0,
-        salvageCollected,
-        objectiveComplete: signalLocked,
-        rescuedPassengerId: null,
-        bossDefeated: null,
-        stats: {
-          shotsFired: snapshot.shotsFired,
-          asteroidsDestroyed: snapshot.targetsDestroyed,
-          distanceTraveled: Math.round(snapshot.scrollDistance),
-          signalLocked
-        }
-      });
+    const result = {
+      attemptId: completedConfig.attemptId,
+      encounterId: completedConfig.encounterId,
+      outcome,
+      hullRemaining: Math.max(0, Math.round(snapshot.hull)),
+      damageTaken: Math.max(0, Math.round(completedConfig.startingHull - snapshot.hull)),
+      fuelCollected: 0,
+      salvageCollected,
+      objectiveComplete: signalLocked,
+      rescuedPassengerId: null,
+      bossDefeated: null,
+      stats: {
+        shotsFired: snapshot.shotsFired,
+        asteroidsDestroyed: snapshot.targetsDestroyed,
+        distanceTraveled: Math.round(snapshot.scrollDistance),
+        signalLocked
+      }
+    };
+    if (outcome === 'success') playMissionComplete();
+    if (outcome === 'success' && typeof completedConfig.onSuccessReady === 'function') {
+      completedConfig.onSuccessReady(result);
+    } else if (typeof completedConfig.onComplete === 'function') {
+      completedConfig.onComplete(result);
     }
   }
 
   function onUpdate(snapshot) {
     const signal = snapshot.targets.find(target => target.id === 'crystal-trail-signal');
     if (signal && signal.revealed && !signal.scanned) {
+      const waypoints = [
+        { x: 88, y: 180 },
+        { x: 332, y: 245 },
+        { x: 132, y: 310 },
+        { x: 292, y: 145 },
+        { x: 210, y: 270 }
+      ];
+      if (snapshot.missionTime >= signalNextTurnAt) {
+        signalWaypointIndex = (signalWaypointIndex + 1) % waypoints.length;
+        signalNextTurnAt = snapshot.missionTime + 1.25;
+      }
+      const delta = Math.max(0, Math.min(.1, snapshot.missionTime - signalLastUpdateAt));
+      const waypoint = waypoints[signalWaypointIndex];
+      const playerDistanceX = signal.x - snapshot.player.x;
+      const evasionPush = Math.abs(playerDistanceX) < 115
+        ? (playerDistanceX >= 0 ? 48 : -48)
+        : 0;
+      const captureRatio = Math.max(0, Math.min(1, signal.scanProgress / signal.scanSeconds));
+      const movementScale = 1 - captureRatio * .5;
+      const desiredX = Math.max(48, Math.min(WORLD_WIDTH - 48, waypoint.x + evasionPush));
+      const desiredY = waypoint.y + Math.sin(snapshot.missionTime * 2.1) * 24;
       JourneyMissionRuntime.updateTarget(signal.id, {
-        x: 210 + Math.sin(snapshot.missionTime * .72) * 105,
-        y: 145 + Math.sin(snapshot.missionTime * 1.13) * 38
+        x: signal.x + (desiredX - signal.x) * delta * 1.25 * movementScale,
+        y: signal.y + (desiredY - signal.y) * delta * 1.05 * movementScale
       });
+      signalLastUpdateAt = snapshot.missionTime;
     }
     updateHud(snapshot);
     snapshot.targets
@@ -273,6 +308,9 @@
     storedSalvageId = null;
     tractorAttachedAt = 0;
     lastScanToneAt = 0;
+    signalWaypointIndex = 0;
+    signalNextTurnAt = 1;
+    signalLastUpdateAt = 0;
     JourneyMissionRuntime.start({
       canvasId: nextConfig.canvasId,
       startX: WORLD_WIDTH / 2,
@@ -287,7 +325,7 @@
       },
       scanRange: 520,
       scanMode: 'pulse',
-      scanPulseRadius: 128,
+      scanPulseRadius: 112,
       scanPulseCooldown: .8,
       tractorRange: 145,
       fireDelay: Math.max(.13, .25 - (nextConfig.blasterLevel || 0) * .03),
@@ -350,6 +388,9 @@
     storedSalvageId = null;
     tractorAttachedAt = 0;
     lastScanToneAt = 0;
+    signalWaypointIndex = 0;
+    signalNextTurnAt = 0;
+    signalLastUpdateAt = 0;
     if (typeof JourneyMissionRuntime !== 'undefined') JourneyMissionRuntime.destroy();
   }
 

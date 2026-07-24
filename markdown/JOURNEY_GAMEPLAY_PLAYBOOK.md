@@ -38,6 +38,34 @@ The cockpit connects the adventure. The missions are the adventure.
 
 No mission is complete if only its result table changes.
 
+## Mission onboarding and completion
+
+When a mission introduces an unfamiliar verb or combines familiar verbs in a new
+way, pause the playfield behind a short pre-mission overlay. The overlay should:
+
+- state the physical objective,
+- teach no more than three actions in play order,
+- use the same verbs as the live HUD and controls,
+- show the primary touch action explicitly (`TAP SCAN`, not simply `SCAN`),
+- and wait for the player to start.
+
+Hazards do not move and the player cannot take damage while instructions are open.
+An earlier briefing may explain why the mission matters; this overlay explains how
+to act once the playfield is visible.
+
+Mission success must be unmistakable inside the play experience. Before replacing
+the playfield:
+
+1. stop or suppress immediate danger,
+2. show the objective changing physically into its completed state,
+3. play a distinct success sound,
+4. state the achievement with a large, concrete result,
+5. show one or two earned outcomes,
+6. and wait for a player confirmation before continuing to story or rewards.
+
+Do not end a mission on the same frame that a progress threshold is crossed. Players
+need time to recognize that their action caused the win.
+
 ## Shared player verbs
 
 Journey should reuse a small, learnable toolkit while changing the objective and

@@ -27,7 +27,11 @@ test('Scrap Belt is authored on the reusable mission runtime', () => {
   assert.match(source, /scanDecayRate:/);
   assert.match(source, /onScanLost/);
   assert.match(source, /playScanPulse/);
-  assert.match(source, /Math\.sin\(snapshot\.missionTime/);
+  assert.match(source, /signalWaypointIndex/);
+  assert.match(source, /evasionPush/);
+  assert.match(source, /captureRatio/);
+  assert.match(source, /r:\s*11/);
+  assert.match(source, /captureRadius:\s*76/);
   assert.match(source, /onTractorAttach/);
   assert.match(source, /onTargetDestroyed/);
   assert.match(source, /onPlayerDamage/);
@@ -44,6 +48,20 @@ test('Scrap Belt succeeds through route progress and signal acquisition, not a t
   assert.doesNotMatch(source, /30 SEC/);
 });
 
+test('Scrap Belt teaches controls before hazards and celebrates success before results', () => {
+  assert.match(controller, /journey-mission-start-overlay/);
+  assert.match(controller, /TAP SCAN/);
+  assert.match(controller, /window\.journeyBeginScrapBelt/);
+  assert.match(controller, /function beginScrapBeltMission/);
+  assert.match(controller, /onSuccessReady/);
+  assert.match(controller, /function renderScrapBeltVictory/);
+  assert.match(controller, /MISSION COMPLETE/);
+  assert.match(controller, /SIGNAL ACQUIRED/);
+  assert.match(controller, /window\.journeyConfirmScrapBeltSuccess/);
+  assert.match(source, /playMissionComplete/);
+  assert.match(source, /completedConfig\.onSuccessReady\(result\)/);
+});
+
 test('rock interactions use the Space Mobe piano language', () => {
   assert.match(source, /function playRockImpact/);
   assert.match(source, /function playRockBreak/);
@@ -54,7 +72,7 @@ test('rock interactions use the Space Mobe piano language', () => {
 
 test('Journey routes Scrap Belt into its traversal screen and tactile controls', () => {
   assert.match(controller, /function renderScrapBelt/);
-  assert.match(controller, /if \(node\.id === 'scrap-belt'\) renderScrapBelt/);
+  assert.match(controller, /if \(node\.id === 'scrap-belt'\) \{\s*renderScrapBelt\(node\)/);
   assert.match(controller, /CROSS THE BELT/);
   assert.match(controller, /LOCK THE CRYSTAL TRAIL/);
   assert.match(controller, /journeyMissionScan/);

@@ -10,6 +10,8 @@
   let storyTimers = [];
   let introAdvance = null;
   let pendingEncounterPresentation = null;
+  let pendingScrapBeltLaunch = null;
+  let pendingScrapBeltSuccess = null;
 
   const MAP_POINTS = {
     'home-orbit': [58, 138],
@@ -929,10 +931,12 @@
       </main>`;
   }
 
-  function renderScrapBelt(node, attemptId) {
+  function renderScrapBelt(node) {
     const root = host();
     const state = JourneyState.getState();
     if (!root || !state || !active) return;
+    pendingScrapBeltLaunch = { node };
+    pendingScrapBeltSuccess = null;
     root.innerHTML = `
       <main class="journey-combat-screen journey-scrap-screen">
         <header class="journey-combat-hud journey-scrap-hud">
@@ -948,7 +952,7 @@
         <div class="journey-combat-frame journey-scrap-frame">
           <canvas id="journey-scrap-canvas" aria-label="Navigate the Scrap Belt and scan for the crystal trail"></canvas>
           <div id="journey-scrap-damage-alert" class="journey-combat-damage-alert" aria-live="assertive"></div>
-          <div id="journey-scrap-status" class="journey-scrap-status">HOLD SCAN AND MOVE TOWARD THE PULSE</div>
+          <div id="journey-scrap-status" class="journey-scrap-status">TAP SCAN TO REVEAL THE HIDDEN SIGNAL</div>
           <button class="journey-combat-retreat" type="button" onclick="journeyRetreatEncounter()">RETREAT</button>
           <div class="journey-mission-controls" aria-label="Mission controls">
             <button type="button"
@@ -959,19 +963,66 @@
               onpointercancel="journeyMissionControl('fire', false)">FIRE</button>
             <button type="button" onclick="journeyMissionTractor()">TRACTOR</button>
           </div>
+          <section id="journey-scrap-start-overlay" class="journey-mission-start-overlay" aria-labelledby="journey-scrap-start-title">
+            <div class="journey-mission-start-copy">
+              <span>MISSION CONTROLS</span>
+              <h2 id="journey-scrap-start-title">FIND THE CRYSTAL TRAIL</h2>
+              <div class="journey-mission-start-steps">
+                <p><b>1</b><strong>WEAVE</strong><small>Drag or use WASD to fly through traffic.</small></p>
+                <p><b>2</b><strong>TAP SCAN</strong><small>Each pulse searches a small area around the ship.</small></p>
+                <p><b>3</b><strong>CHASE</strong><small>Stay inside the signal ring until it locks.</small></p>
+              </div>
+              <button type="button" onclick="journeyBeginScrapBelt()">START MISSION →</button>
+            </div>
+          </section>
         </div>
         <div class="journey-combat-hint">DRAG OR WASD · Q SCAN PULSE · Z/F FIRE · SPACE TRACTOR</div>
       </main>`;
+  }
+
+  function beginScrapBeltMission() {
+    if (!pendingScrapBeltLaunch) return;
+    const launch = pendingScrapBeltLaunch;
+    const state = JourneyState.getState();
+    const overlay = document.getElementById('journey-scrap-start-overlay');
+    if (!state || !launch.node || !active) return;
+    const attempt = JourneyState.beginEncounter(launch.node.encounterId);
+    if (!attempt.ok) return;
+    pendingScrapBeltLaunch = null;
+    if (overlay) overlay.remove();
     JourneyScrapBelt.start({
       canvasId: 'journey-scrap-canvas',
-      attemptId,
-      encounterId: node.encounterId,
+      attemptId: attempt.attemptId,
+      encounterId: launch.node.encounterId,
       startingHull: state.resources.hull,
       blasterLevel: state.upgrades.blasterLevel,
+      onSuccessReady(result) {
+        pendingScrapBeltSuccess = { node: launch.node, result };
+        renderScrapBeltVictory(result);
+      },
       onComplete(result) {
-        handleEncounterComplete(node, result);
+        handleEncounterComplete(launch.node, result);
       }
     });
+  }
+
+  function renderScrapBeltVictory(result) {
+    const frame = document.querySelector && document.querySelector('.journey-scrap-frame');
+    if (!frame || !result || !active) return;
+    const overlay = document.createElement('section');
+    overlay.className = 'journey-mission-victory-overlay';
+    overlay.setAttribute('aria-labelledby', 'journey-scrap-victory-title');
+    overlay.innerHTML = `
+      <div class="journey-mission-victory-lock" aria-hidden="true"><i></i><i></i><b>✓</b></div>
+      <span>MISSION COMPLETE</span>
+      <h2 id="journey-scrap-victory-title">SIGNAL ACQUIRED</h2>
+      <p>The crystal trail is locked beyond the Belt.</p>
+      <div class="journey-mission-victory-stats">
+        <strong>${Math.round(result.hullRemaining)} HULL</strong>
+        <strong>+${Math.round(result.salvageCollected + 20)} SCRAP</strong>
+      </div>
+      <button type="button" onclick="journeyConfirmScrapBeltSuccess()">CONTINUE →</button>`;
+    frame.appendChild(overlay);
   }
 
   function renderCombat(node, attemptId) {
@@ -1161,6 +1212,8 @@
 
   window.journeyShip = function () {
     playMenuSound();
+    pendingScrapBeltLaunch = null;
+    pendingScrapBeltSuccess = null;
     renderShip();
   };
 
@@ -1175,6 +1228,8 @@
     if (!result.ok) return;
     clearStoryTimers();
     pendingEncounterPresentation = null;
+    pendingScrapBeltLaunch = null;
+    pendingScrapBeltSuccess = null;
     JourneyCombat.destroy();
     if (typeof JourneyScrapBelt !== 'undefined') JourneyScrapBelt.destroy();
     if (typeof JourneyMissionRuntime !== 'undefined') JourneyMissionRuntime.destroy();
@@ -1298,10 +1353,13 @@
     const node = state && currentNode(state);
     if (!state || !node || !['encounter', 'rescue'].includes(node.type) || !node.encounterId) return;
     playMenuSound();
+    if (node.id === 'scrap-belt') {
+      renderScrapBelt(node);
+      return;
+    }
     const attempt = JourneyState.beginEncounter(node.encounterId);
     if (!attempt.ok) return;
-    if (node.id === 'scrap-belt') renderScrapBelt(node, attempt.attemptId);
-    else renderCombat(node, attempt.attemptId);
+    renderCombat(node, attempt.attemptId);
   };
 
   window.journeyMissionControl = function (control, pressed) {
@@ -1316,6 +1374,19 @@
 
   window.journeyMissionScan = function () {
     if (typeof JourneyMissionRuntime !== 'undefined') JourneyMissionRuntime.pulseScan();
+  };
+
+  window.journeyBeginScrapBelt = function () {
+    playMenuSound();
+    beginScrapBeltMission();
+  };
+
+  window.journeyConfirmScrapBeltSuccess = function () {
+    if (!pendingScrapBeltSuccess) return;
+    playMenuSound();
+    const completion = pendingScrapBeltSuccess;
+    pendingScrapBeltSuccess = null;
+    handleEncounterComplete(completion.node, completion.result);
   };
 
   window.journeyContinueScrapBeltExit = function () {
@@ -1435,6 +1506,8 @@
     active = false;
     clearStoryTimers();
     pendingEncounterPresentation = null;
+    pendingScrapBeltLaunch = null;
+    pendingScrapBeltSuccess = null;
     JourneyCombat.destroy();
     if (typeof JourneyScrapBelt !== 'undefined') JourneyScrapBelt.destroy();
     if (typeof JourneyMissionRuntime !== 'undefined') JourneyMissionRuntime.destroy();
