@@ -91,44 +91,102 @@ All new missions and route decisions must follow
 - **Stage 6:** Distress Signal now uses a dedicated fixed-position rescue operation.
   The player times two grappling-gun shots against a spinning pod that drifts
   laterally and in depth, rapidly pumps a retracting docking collar to full
-  extension, and sees Pip brought aboard.
-  Passenger persistence
-  is applied only after the physical rescue. The cache recovery remains scaffolding
-  and is not yet a completed mission.
-- **Stage 7:** Repair Moon has a dedicated maintenance flow, instant paid hull repair, and
-  a persistent blaster upgrade.
+  extension, and sees Pip brought aboard. Passenger persistence is applied only
+  after the physical rescue. Pip then remains visibly centered in rescue results
+  and occupies a persistent crew position in the cockpit.
+- **Stage 7 is only scaffolded:** Repair Moon currently supports instant paid hull
+  repair and a persistent blaster upgrade, but it is still a form-like service
+  screen. It does not yet meet the hands-on maintenance contract.
 - **Gameplay foundation:** the isolated Journey mission runtime now provides full
   horizontal and vertical movement, forward world scrolling, proximity scanning and
   signal locks, tractor attachment and towing, contextual interactions, keyboard
   and touch input, cue callbacks, and clean lifecycle behavior.
 - **Visual story foundation:** the selected hero leads the opening crystal-theft
   cinematic; Lantern Station visibly refuels the Wayfarer; route choices are
-  introduced through incoming intel; cinematics wait indefinitely for Continue.
+  introduced through incoming intel; cinematics wait indefinitely for Continue;
+  the cockpit map reads vertically in the direction of travel; and the Distress
+  arrival shows an identifiable damaged ship rather than an abstract beacon glyph.
+- **Development support:** the cockpit gear opens reproducible state-backed
+  checkpoints for retesting the opening, Scrap Belt, Pilot's Call, both branch
+  arrivals, and Repair Moon.
 
 The implemented route currently ends before **Ogre Gate**. Ogre Gate and First
 Settlement exist in the route data but are intentionally marked unavailable.
+Abandoned Cache exists as route and story scaffolding but is not yet a real mission.
 
-## Next milestone
+## Roadmap from the current checkpoint
 
-Prove the gameplay identity before building Ogre Gate:
+The next goal is a complete, replayable Chapter One vertical slice. Build in this
+order:
 
-1. Make the Pilot's Call consequential: play one branch, transform the unchosen
-   story thread, and show the reconnection at Repair Moon.
-2. Rebuild Distress Signal as a fixed-position rescue operation: time two
-   grappling-gun shots against Pip's visibly tumbling and drifting pod, rapidly
-   extend the spring-loaded docking collar against its retraction, and bring Pip
-   physically aboard rather than launching another flight corridor.
-3. Rebuild Abandoned Cache as a signal, power-routing, and vault-unlock interaction
-   with physical crystal acquisition.
-4. Rebuild Repair Moon as visible hands-on repair and upgrade installation rather
-   than a form-like service screen.
-5. Only then create the adaptive Ogre Gate boss, First Settlement, and the Chapter
-   One validation run.
+### 1. Make Pilot's Call a real commitment
+
+- Add persistent branch-choice and branch-outcome state.
+- Once the player departs for Distress Signal or Abandoned Cache, the other node
+  stops behaving like a second optional errand.
+- The unchosen thread transforms:
+  - rescue Pip now, and the thieves move the cache crystal to Ogre Gate;
+  - recover the cache crystal now, and Pip's pod is intercepted at Ogre Gate.
+- Show the chosen branch and the transformed consequence in the log, vertical map,
+  Repair Moon arrival, and Ogre Gate setup.
+- Both routes reconnect forward at Repair Moon; neither route visually sends the
+  player backward to complete the other branch.
+
+### 2. Build Abandoned Cache as the second complete mission family
+
+- Arrival shows the actual silent cache structure, sealed vault, and weak power.
+- Use a short Signal Lullaby-style tonal sequence to authenticate or tune the
+  cache frequency.
+- Route limited power through a readable physical circuit or panel.
+- Open the vault and make the player visibly extract the first Star Crystal.
+- Give clear audiovisual confirmation for each stage and a full crystal-recovery
+  achievement beat.
+- Failure retries the interaction without awarding the crystal, salvage, or route
+  completion.
+
+### 3. Rebuild Repair Moon as hands-on maintenance
+
+- Show the Wayfarer docked with its real current damage.
+- Let the player patch, align, reconnect, or replace visible ship components.
+- Keep repair immediate and tactile; do not reintroduce a short countdown.
+- Install one permanent upgrade physically and show the changed component on the
+  ship.
+- Let Pip speak or assist when Pip is aboard. If the cache path was chosen, use the
+  intercepted distress update to establish what Ogre Gate now requires.
+
+### 4. Build Ogre Gate as the Chapter One synthesis
+
+- Make it a blockade set piece, not another asteroid field.
+- Approach and read the structure, scan shield anchors, disable components, then
+  attack exposed weak points.
+- Adapt the mission to the Pilot's Call:
+  - Pip helps expose the crystal lock after the rescue path;
+  - the cache crystal helps breach the gate while the player rescues Pip after the
+    cache path.
+- Include readable damage, distinct audio cues, phase confirmations, retry on
+  failure, and one non-duplicating persistent victory result.
+
+### 5. Complete First Settlement
+
+- Show a real arrival, landing, and character welcome.
+- Resolve Pip and the crystal outcome from either branch.
+- Mark Chapter One complete, award one cosmetic, show the traveled route, and tease
+  the next region without opening Chapter Two.
+
+### 6. Run the Chapter One validation gate
+
+- Play both Pilot's Call paths from a clean save.
+- Confirm every mission uses a different primary verb and has a visible subject.
+- Confirm choices change later scenes rather than merely changing order.
+- Confirm resources, crew, crystals, upgrades, damage, map state, and log state
+  persist after closing and reopening.
+- Tune difficulty, instructions, audio, text size, one-screen cockpit fit, and
+  celebration beats from observed play—not from placeholder timings.
 
 Do not expand the galaxy or build another asteroid-reskin encounter before this
 milestone is tested as a coherent adventure.
-The creature-companion introduction belongs in the next authored stretch after the
-Chapter One vertical slice proves the core rhythm.
+The creature-companion introduction belongs in the first authored stretch after
+this Chapter One vertical slice proves the core rhythm.
 
 ---
 
@@ -1125,8 +1183,10 @@ No action gameplay. Present a choice, discovery, merchant, transmission, or pass
 
 The first playable version should only include:
 
-- asteroid encounter,
+- Scrap Belt navigation and signal search,
 - rescue encounter,
+- Abandoned Cache decoding and vault interaction,
+- hands-on repair,
 - Ogre boss,
 - peaceful fuel stop.
 
@@ -1134,11 +1194,12 @@ The first playable version should only include:
 
 # Travel gameplay
 
-Do not rewrite all combat encounters to support free vertical movement.
+Do not force every encounter into one movement model.
 
-Keep classic combat encounters close to the existing Space Mobe arena.
-
-Build a separate travel gameplay system later.
+The reusable Journey mission runtime already supports forward scrolling and
+two-axis movement for travel, scanning, salvage, and environmental missions.
+Fixed-position rescue and repair interactions remain separate. Boss combat may
+reuse isolated Space Mobe ideas, but only when they serve the authored set piece.
 
 Travel encounter controls:
 
@@ -1207,9 +1268,10 @@ Node purposes:
 
 ### Home Orbit
 
-- opening ship screen,
+- opening cockpit,
 - tutorial introduction,
-- choose departure.
+- establish the stolen-crystal hunt,
+- launch toward the preselected first stop.
 
 ### Fuel Stop
 
@@ -1219,37 +1281,48 @@ Node purposes:
 
 ### Scrap Belt
 
-- asteroid encounter,
-- teaches shooting and hull damage,
-- awards salvage.
+- forward navigation and local signal search,
+- teaches two-axis steering, tap scanning, signal pursuit, collisions, and optional
+  tractor salvage,
+- uses no firing,
+- awards salvage and reveals the Pilot's Call.
 
 ### Distress Signal
 
-- rescue encounter,
-- teaches passengers,
-- adds first rescued character.
+- fixed-position grappling and docking rescue,
+- teaches timed tether shots and rapid collar extension,
+- adds Pip as a persistent visible companion,
+- moves the cache crystal to Ogre Gate when this route is chosen.
 
 ### Abandoned Cache
 
-- optional peaceful or short collection event,
-- awards extra salvage,
-- no passenger.
+- alternate Pilot's Call mission rather than a second optional errand,
+- uses tonal decoding, power routing, vault unlocking, and physical crystal
+  extraction,
+- recovers the first Star Crystal,
+- moves Pip's rescue to Ogre Gate when this route is chosen.
 
 ### Repair Moon
 
-- teaches persistent repair,
-- restores hull,
-- introduces upgrade preview.
+- reconnects both branch outcomes,
+- teaches physical persistent repair,
+- restores visible hull damage,
+- installs and visibly confirms the first permanent upgrade,
+- sets up the branch-adaptive boss.
 
 ### Ogre Gate
 
-- first boss,
-- requires completing the rescue route or another simple requirement,
+- first multi-phase blockade boss,
+- changes according to whether Pip or the first crystal is already aboard,
+- combines scanning, component disabling, weak-point combat, and the unresolved
+  branch rescue or recovery,
 - unlocks the final node.
 
 ### First Settlement
 
-- chapter completion,
+- physical arrival and character welcome,
+- chapter consequence for Pip and the crystal,
+- Chapter One completion,
 - awards a cosmetic,
 - shows future route teaser,
 - ends the first playable test build.
@@ -1275,12 +1348,13 @@ At the route:
 - “Choose a connected destination.”
 - “Travel costs fuel.”
 
-In the asteroid encounter:
+In Scrap Belt:
 
-- show movement,
-- show shooting,
-- show hull damage,
-- require a simple success.
+- teach drag or WASD steering on the paused playfield,
+- teach tap-the-playfield scanning separately from steering,
+- show hull damage clearly,
+- require both crossing the route and capturing the signal,
+- do not introduce firing.
 
 At the rescue:
 
@@ -1375,36 +1449,29 @@ Acceptance check:
 
 ## Stage 3: Build the ship screen
 
-Create the central home screen.
+Create the cockpit as the central home screen.
 
-First version must show:
+The cockpit must show, in this order:
 
-- current location,
-- next available destination,
-- hull,
-- fuel,
-- power,
-- pilot readiness,
-- ship visual,
-- pilot visual or placeholder,
-- route button,
-- repair button,
-- refuel button,
-- rest button,
-- depart button.
+- one message, transmission, or ship-status warning,
+- a vertical visual map with current position and forward route,
+- compact Wayfarer condition, resources, selected hero, and visible companions,
+- and the selected next destination with a green ready or red blocked launch state.
 
-Implement simple actions:
+Detailed systems belong one level deeper:
 
-- Refuel spends salvage or uses a free first-story refuel.
-- Repair restores hull or begins a short timer.
-- Rest restores pilot readiness.
-- Power regenerates over elapsed time.
+- Open Ship contains repair, maintenance, upgrade, power, and readiness details.
+- Log expands messages, discoveries, crew, and route consequences.
+- The map handles genuine route decisions.
+- The next-destination panel launches or explains exactly why launch is blocked.
 
 Acceptance check:
 
-- every button clearly changes state,
-- no resource exceeds its maximum,
-- insufficient-resource messages are clear,
+- the full cockpit fits in one viewport without scrolling,
+- map, ship status, and next destination are visually distinct,
+- active companions are visibly present rather than only named in text,
+- launch readiness is legible without opening another screen,
+- blocked launch states give one clear reason,
 - state persists after closing and reopening,
 - layout works on desktop and mobile,
 - no ship-screen action affects Space Mobe.
@@ -1423,7 +1490,8 @@ Requirements:
 - record visited and completed nodes,
 - allow returning to safe nodes when intended.
 
-Do not build a complex map. Use a simple readable route UI.
+Use a simple readable vertical map. Travel reads bottom-to-top, optional branches
+separate laterally, and their forward reconnection is visible.
 
 Acceptance check:
 
@@ -1432,15 +1500,17 @@ Acceptance check:
 - fuel is consumed exactly once,
 - current node updates exactly once,
 - locked nodes cannot be opened,
+- a Pilot's Call choice returns to the cockpit with the destination selected,
+- committing to a branch transforms the unchosen story thread,
 - reopening the game preserves the route position.
 
-## Stage 5: Copy and isolate basic combat
+## Stage 5: Build the first isolated Journey mission
 
-Create `journey-combat.js` from selected parts of `space.js`.
+Create isolated Journey action runtimes from selected ideas in `space.js`.
 
 First encounter:
 
-- Scrap Belt asteroid encounter.
+- Scrap Belt navigation and signal-search encounter.
 
 Do not modify the original `space.js`.
 
@@ -1448,20 +1518,26 @@ Implement encounter launch configuration and completion callback.
 
 The first encounter needs:
 
-- movement,
-- shooting,
-- asteroids,
-- collisions,
-- hull,
-- success condition,
-- failure condition,
-- results screen,
-- return to ship.
+- full two-axis movement through a forward-scrolling field,
+- readable debris traffic and collisions,
+- tap-the-playfield local scanning,
+- a small moving signal that must be reacquired if lost,
+- proximity capture by staying inside its ring,
+- optional tractor salvage,
+- no firing,
+- persistent hull damage and salvage,
+- retry on failure,
+- and an in-mission achievement confirmation before results.
 
 Acceptance check:
 
-- Journey can launch the asteroid encounter,
+- Journey can launch the Scrap Belt mission,
 - Space Mobe still launches independently,
+- tapping scans while dragging steers,
+- scanning reveals only a local area,
+- the signal moves enough to require pursuit through traffic,
+- success requires route completion and captured signal,
+- hull failure cannot award success,
 - damage taken updates persistent hull,
 - rewards update persistent salvage and/or fuel,
 - results apply once,
@@ -1471,8 +1547,8 @@ Acceptance check:
 
 ## Stage 6: Add the rescue encounter
 
-Build a dedicated fixed-position rescue interaction rather than adapting the flight
-or asteroid encounter.
+Build a dedicated fixed-position rescue interaction rather than adapting the
+forward-flight mission.
 
 Requirements:
 
@@ -1503,15 +1579,18 @@ Acceptance check:
 
 ## Stage 7: Add Repair Moon
 
-Create a peaceful destination that teaches persistent maintenance.
+Create a peaceful hands-on destination that teaches persistent maintenance.
 
 Requirements:
 
-- show accumulated hull damage,
-- allow repair,
-- introduce one functional upgrade,
-- preview cosmetics,
-- prepare the player for the boss.
+- show the Wayfarer docked with accumulated damage visible on the ship,
+- let the player repair through a physical patch, alignment, cable, or component
+  interaction,
+- make the repair effect immediate and visible,
+- introduce one functional upgrade through physical installation,
+- reflect the installed component on the ship,
+- let the active companion participate in the beat,
+- prepare the player for the branch-adaptive Ogre Gate mission.
 
 Initial upgrade recommendation:
 
@@ -1521,14 +1600,18 @@ Initial upgrade recommendation:
 Acceptance check:
 
 - repair cost is clear,
+- no arbitrary short repair countdown appears,
+- repair requires one readable physical action,
 - repair cannot exceed maximum hull,
 - upgrade cost is charged once,
 - upgrade persists,
+- the installed upgrade is visibly confirmed,
 - the upgrade has a measurable effect in combat.
 
-## Stage 8: Add Ogre boss
+## Stage 8: Add the adaptive Ogre Gate boss
 
-Copy the Ogre boss into Journey’s combat file.
+Use isolated Space Mobe boss ideas as ingredients, but author Ogre Gate around the
+Journey route and the unresolved Pilot's Call consequence.
 
 Do not alter the Space Mobe Ogre.
 
@@ -1536,6 +1619,11 @@ Requirements:
 
 - launch through the Ogre Gate route node,
 - use journey hull and upgrades,
+- begin with a readable physical blockade,
+- scan shield anchors and disable components before weak-point combat,
+- change the objective and dialogue based on whether Pip or the cache crystal is
+  already aboard,
+- resolve the transformed branch thread during the mission,
 - return a boss-specific result,
 - unlock First Settlement after victory,
 - retreat safely after failure.
@@ -1543,8 +1631,11 @@ Requirements:
 Acceptance check:
 
 - boss is winnable,
+- both Pilot's Call paths produce meaningfully different setups,
+- the boss is not an asteroid-field reskin,
 - boss failure does not reset Chapter One,
 - damage persists,
+- Pip and crystal outcomes apply once,
 - boss victory records exactly once,
 - boss rewards cannot be duplicated,
 - Ogre remains unchanged in Space Mobe.
@@ -1553,9 +1644,11 @@ Acceptance check:
 
 First Settlement should:
 
+- show the Wayfarer arrive and land,
+- introduce a visible settlement character,
 - mark Chapter One complete,
 - award one cosmetic,
-- show the rescued passenger’s outcome or dialogue,
+- resolve Pip and crystal status from either route,
 - show total distance traveled,
 - tease the next region,
 - return the player to a stable ship screen.
@@ -1573,17 +1666,18 @@ At this point, the game must include:
 - a separate arcade card,
 - independent launch,
 - independent save,
-- ship screen,
+- one-screen cockpit and separate ship detail,
 - four resources,
 - simple offline recovery,
-- Chapter One route,
+- vertical Chapter One route with a consequential Pilot's Call,
 - peaceful fuel stop,
-- asteroid encounter,
+- Scrap Belt navigation and signal mission,
 - rescue encounter,
+- Abandoned Cache decoding and crystal recovery,
 - one passenger,
-- repair destination,
+- hands-on repair destination,
 - one functional upgrade,
-- Ogre boss,
+- branch-adaptive Ogre boss,
 - one cosmetic reward,
 - chapter completion.
 
@@ -2302,24 +2396,22 @@ Use plain language.
 
 ---
 
-# Suggested commit sequence
+# Remaining checkpoint sequence
 
 ```text
-1. Add standalone Journey arcade registration and placeholder screen
-2. Add Journey save state and new/continue flow
-3. Add ship screen and persistent resources
-4. Add Chapter One route model and route screen
-5. Add peaceful Fuel Stop node
-6. Isolate Journey combat engine and add asteroid encounter
-7. Add encounter results and persistent hull/rewards
-8. Add rescue encounter and first passenger
-9. Add Repair Moon and first upgrade
-10. Add Journey-specific Ogre boss encounter
-11. Add First Settlement and chapter completion
-12. Polish and stabilize Chapter One validation build
+Completed: standalone game, persistence, visual cockpit, Lantern refuel,
+           Scrap Belt mission runtime, Pilot's Call presentation, Pip rescue,
+           vertical route, debug checkpoints, and visual/gameplay playbooks
+
+Next 1. Persist the committed Pilot's Call branch and transform the unchosen thread
+Next 2. Build Abandoned Cache decoding, power routing, and crystal extraction
+Next 3. Rebuild Repair Moon as hands-on repair and upgrade installation
+Next 4. Build the branch-adaptive Ogre Gate set piece
+Next 5. Build First Settlement and Chapter One completion
+Next 6. Playtest both paths and stabilize the Chapter One validation build
 ```
 
-Do not combine all stages into one large commit.
+Keep these as separate testable checkpoints.
 
 ---
 
@@ -2329,19 +2421,24 @@ The first playable build succeeds when a new player can:
 
 1. Launch Journey from its own arcade card.
 2. Start a new persistent journey.
-3. See and understand the ship’s four conditions.
+3. Understand the current message, vertical route, ship state, crew, and next launch
+   from one cockpit screen.
 4. Refuel and prepare the ship.
-5. Select a destination on the route.
-6. Play an asteroid encounter.
-7. Return with persistent hull damage and rewards.
-8. Rescue a character in a later encounter.
-9. See that character aboard the ship.
-10. Repair and purchase one upgrade.
-11. Fight the Ogre.
-12. Reach the first settlement.
-13. Unlock one cosmetic.
-14. Close the game and resume accurately later.
-15. Launch Space Mobe and confirm it remains completely unchanged.
+5. Navigate Scrap Belt, scan for the trail, and return with persistent damage and
+   rewards.
+6. Make a clear Pilot's Call and understand that it changes the other thread.
+7. Either rescue Pip through grappling and docking or recover the first crystal
+   through decoding and vault interaction.
+8. See the chosen outcome persist in the cockpit, log, map, Repair Moon, and Ogre
+   Gate setup.
+9. Repair the Wayfarer through a physical interaction and install one upgrade.
+10. Resolve the transformed story thread during the adaptive Ogre Gate mission.
+11. Reach First Settlement, see the branch consequence resolve, and unlock one
+    cosmetic.
+12. Close the game and resume accurately later.
+13. Replay the other branch from a clean save and receive a meaningfully different
+    Ogre Gate setup.
+14. Launch Space Mobe and confirm it remains completely unchanged.
 
 At that point, stop and evaluate the core game before expanding.
 
