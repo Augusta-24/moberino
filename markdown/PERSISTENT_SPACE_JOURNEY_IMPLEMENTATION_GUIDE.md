@@ -82,8 +82,8 @@ All new missions and route decisions must follow
 - **Stage 5:** Scrap Belt now uses the reusable mission runtime for forward travel,
   full two-axis steering, a navigable debris corridor, crystal-trail scanning,
   selective debris clearing, tractor salvage, persistent damage and rewards, and
-  Space Mobe's piano language for rock interactions. A paused playfield overlay
-  teaches the live controls, the smaller signal evades through traffic after a
+  Space Mobe's piano language for rock interactions. In-world callouts on the
+  paused playfield teach the live controls, the smaller signal evades through traffic after a
   local scan reveals it, and an in-mission achievement beat confirms the lock
   before results. Success requires crossing the route with the signal locked
   rather than surviving a countdown.

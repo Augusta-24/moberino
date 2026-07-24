@@ -51,8 +51,14 @@ test('Scrap Belt succeeds through route progress and signal acquisition, not a t
 test('Scrap Belt teaches controls before hazards and celebrates success before results', () => {
   assert.match(controller, /journey-mission-start-overlay/);
   assert.match(controller, /TAP SCAN/);
+  assert.match(controller, /DRAG TO WEAVE/);
+  assert.match(controller, /STAY IN THE RING/);
+  assert.doesNotMatch(controller, /journey-mission-start-steps/);
   assert.match(controller, /window\.journeyBeginScrapBelt/);
   assert.match(controller, /function beginScrapBeltMission/);
+  assert.match(controller, /initiallyPaused:\s*true/);
+  assert.match(controller, /JourneyScrapBelt\.begin\(attempt\.attemptId\)/);
+  assert.match(source, /JourneyMissionRuntime\.setPaused\(false\)/);
   assert.match(controller, /onSuccessReady/);
   assert.match(controller, /function renderScrapBeltVictory/);
   assert.match(controller, /MISSION COMPLETE/);

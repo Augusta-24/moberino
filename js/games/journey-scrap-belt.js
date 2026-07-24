@@ -316,6 +316,7 @@
       startX: WORLD_WIDTH / 2,
       startY: WORLD_HEIGHT - 105,
       startingHull: nextConfig.startingHull,
+      initiallyPaused: !!nextConfig.initiallyPaused,
       playerSpeed: 265,
       forwardScroll: true,
       worldSpeed: 92,
@@ -381,6 +382,14 @@
     });
   }
 
+  function begin(attemptId) {
+    if (!active || !config || typeof attemptId !== 'string') return false;
+    config.attemptId = attemptId;
+    JourneyMissionRuntime.setPaused(false);
+    playTone(220, 'triangle', .09, .025, 330);
+    return true;
+  }
+
   function destroy() {
     active = false;
     config = null;
@@ -400,6 +409,7 @@
 
   window.JourneyScrapBelt = Object.freeze({
     start,
+    begin,
     destroy,
     retreat,
     isActive() {

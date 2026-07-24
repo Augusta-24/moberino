@@ -30,6 +30,7 @@
   let nextScanPulseAt = 0;
   let scrollDistance = 0;
   let missionTime = 0;
+  let paused = false;
   let fireClock = 0;
   let shotsFired = 0;
   let targetsDestroyed = 0;
@@ -127,14 +128,14 @@
   }
 
   function movePointer(event) {
-    if (!active || !player) return;
+    if (!active || !player || paused) return;
     pointerTarget = canvasPoint(event);
     player.x = clamp(pointerTarget.x, player.r, WORLD_WIDTH - player.r);
     player.y = clamp(pointerTarget.y, player.r, WORLD_HEIGHT - player.r);
   }
 
   function onPointerDown(event) {
-    if (!active) return;
+    if (!active || paused) return;
     pointerActive = true;
     if (canvas.setPointerCapture) canvas.setPointerCapture(event.pointerId);
     movePointer(event);
@@ -293,6 +294,7 @@
 
   function fireProjectile() {
     if (!active || !player) return { ok: false, code: 'inactive' };
+    if (paused) return { ok: false, code: 'paused' };
     projectiles.push({
       x: player.x,
       y: player.y - player.r,
@@ -510,7 +512,7 @@
   }
 
   function step(deltaSeconds) {
-    if (!active || !player) return;
+    if (!active || !player || paused) return;
     const delta = clamp(Number(deltaSeconds) || 0, 0, .1);
     missionTime += delta;
     updateMovement(delta);
@@ -525,12 +527,24 @@
 
   function setControl(name, pressed) {
     if (!Object.prototype.hasOwnProperty.call(controls, name)) return false;
+    if (paused && pressed) return false;
     controls[name] = !!pressed;
+    return true;
+  }
+
+  function setPaused(nextPaused) {
+    if (!active) return false;
+    paused = !!nextPaused;
+    controls = emptyControls();
+    pointerActive = false;
+    pointerTarget = null;
+    lastFrameAt = performance.now();
     return true;
   }
 
   function pulseScan() {
     if (!active || !player) return { ok: false, code: 'inactive' };
+    if (paused) return { ok: false, code: 'paused' };
     if (missionTime < nextScanPulseAt) {
       return { ok: false, code: 'recharging', readyAt: nextScanPulseAt };
     }
@@ -581,6 +595,7 @@
 
   function activateTractor() {
     if (!active || !player) return { ok: false, code: 'inactive' };
+    if (paused) return { ok: false, code: 'paused' };
     if (attachedTargetId) {
       const released = targets.find(target => target.id === attachedTargetId);
       if (released) released.attached = false;
@@ -604,6 +619,7 @@
 
   function interact() {
     if (!active || !player) return { ok: false, code: 'inactive' };
+    if (paused) return { ok: false, code: 'paused' };
     const range = Math.max(30, Number(config.interactionRange) || DEFAULT_INTERACTION_RANGE);
     const candidate = nearestTarget(target =>
       target.interactable &&
@@ -645,6 +661,7 @@
   function getSnapshot() {
     return {
       active,
+      paused,
       player: player ? { x: player.x, y: player.y, r: player.r } : null,
       targets: targets.map(targetSnapshot),
       attachedTargetId,
@@ -888,6 +905,7 @@
     nextScanPulseAt = 0;
     scrollDistance = 0;
     missionTime = 0;
+    paused = !!config.initiallyPaused;
     fireClock = 0;
     shotsFired = 0;
     targetsDestroyed = 0;
@@ -922,6 +940,7 @@
     nextScanPulseAt = 0;
     scrollDistance = 0;
     missionTime = 0;
+    paused = false;
     fireClock = 0;
     shotsFired = 0;
     targetsDestroyed = 0;
@@ -932,6 +951,7 @@
     destroy,
     step,
     setControl,
+    setPaused,
     pulseScan,
     fireProjectile,
     addTarget,

@@ -138,6 +138,31 @@ test('runtime supports two-axis movement and forward world scrolling', () => {
   api.destroy();
 });
 
+test('paused mission previews render safely without accepting input or advancing hazards', () => {
+  const { api } = createHarness();
+  api.start(runtimeConfig({
+    initiallyPaused: true,
+    forwardScroll: true,
+    worldSpeed: 100,
+    targets: [{ id: 'preview-rock', x: 210, y: 100, scannable: false }]
+  }));
+
+  assert.equal(api.getSnapshot().paused, true);
+  assert.equal(api.setControl('right', true), false);
+  assert.equal(api.pulseScan().code, 'paused');
+  api.step(.1);
+  assert.equal(api.getSnapshot().scrollDistance, 0);
+  assert.equal(api.getSnapshot().targets[0].y, 100);
+
+  assert.equal(api.setPaused(false), true);
+  api.setControl('right', true);
+  api.step(.1);
+  assert.equal(api.getSnapshot().paused, false);
+  assert.ok(api.getSnapshot().player.x > 210);
+  assert.equal(api.getSnapshot().scrollDistance, 10);
+  api.destroy();
+});
+
 test('scanner reports strength and locks a nearby hidden signal', () => {
   const { api } = createHarness();
   const locks = [];

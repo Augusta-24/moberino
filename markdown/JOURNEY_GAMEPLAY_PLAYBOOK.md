@@ -49,6 +49,11 @@ way, pause the playfield behind a short pre-mission overlay. The overlay should:
 - show the primary touch action explicitly (`TAP SCAN`, not simply `SCAN`),
 - and wait for the player to start.
 
+Keep the frozen game visible. Attach short callouts to the ship, target, hazard, or
+control they explain. Do not turn the overlay into another menu of numbered cards,
+paragraphs, or general instructions when the mechanic can be demonstrated directly
+on the playfield.
+
 Hazards do not move and the player cannot take damage while instructions are open.
 An earlier briefing may explain why the mission matters; this overlay explains how
 to act once the playfield is visible.

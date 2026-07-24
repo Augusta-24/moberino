@@ -963,21 +963,30 @@
               onpointercancel="journeyMissionControl('fire', false)">FIRE</button>
             <button type="button" onclick="journeyMissionTractor()">TRACTOR</button>
           </div>
-          <section id="journey-scrap-start-overlay" class="journey-mission-start-overlay" aria-labelledby="journey-scrap-start-title">
-            <div class="journey-mission-start-copy">
-              <span>MISSION CONTROLS</span>
-              <h2 id="journey-scrap-start-title">FIND THE CRYSTAL TRAIL</h2>
-              <div class="journey-mission-start-steps">
-                <p><b>1</b><strong>WEAVE</strong><small>Drag or use WASD to fly through traffic.</small></p>
-                <p><b>2</b><strong>TAP SCAN</strong><small>Each pulse searches a small area around the ship.</small></p>
-                <p><b>3</b><strong>CHASE</strong><small>Stay inside the signal ring until it locks.</small></p>
-              </div>
-              <button type="button" onclick="journeyBeginScrapBelt()">START MISSION →</button>
-            </div>
-          </section>
+          <button id="journey-scrap-start-overlay" class="journey-mission-start-overlay" type="button" onclick="journeyBeginScrapBelt()" aria-labelledby="journey-scrap-start-title">
+            <span class="journey-tutorial-title"><small>OBJECTIVE</small><strong id="journey-scrap-start-title">FIND THE SIGNAL</strong></span>
+            <span class="journey-tutorial-callout is-move"><i></i><strong>DRAG TO WEAVE</strong></span>
+            <span class="journey-tutorial-callout is-scan"><i></i><strong>TAP SCAN</strong></span>
+            <span class="journey-tutorial-callout is-lock"><i></i><strong>STAY IN THE RING</strong></span>
+            <span class="journey-tutorial-start">TAP TO START →</span>
+          </button>
         </div>
         <div class="journey-combat-hint">DRAG OR WASD · Q SCAN PULSE · Z/F FIRE · SPACE TRACTOR</div>
       </main>`;
+    JourneyScrapBelt.start({
+      canvasId: 'journey-scrap-canvas',
+      encounterId: node.encounterId,
+      startingHull: state.resources.hull,
+      blasterLevel: state.upgrades.blasterLevel,
+      initiallyPaused: true,
+      onSuccessReady(result) {
+        pendingScrapBeltSuccess = { node, result };
+        renderScrapBeltVictory(result);
+      },
+      onComplete(result) {
+        handleEncounterComplete(node, result);
+      }
+    });
   }
 
   function beginScrapBeltMission() {
@@ -990,20 +999,7 @@
     if (!attempt.ok) return;
     pendingScrapBeltLaunch = null;
     if (overlay) overlay.remove();
-    JourneyScrapBelt.start({
-      canvasId: 'journey-scrap-canvas',
-      attemptId: attempt.attemptId,
-      encounterId: launch.node.encounterId,
-      startingHull: state.resources.hull,
-      blasterLevel: state.upgrades.blasterLevel,
-      onSuccessReady(result) {
-        pendingScrapBeltSuccess = { node: launch.node, result };
-        renderScrapBeltVictory(result);
-      },
-      onComplete(result) {
-        handleEncounterComplete(launch.node, result);
-      }
-    });
+    JourneyScrapBelt.begin(attempt.attemptId);
   }
 
   function renderScrapBeltVictory(result) {
