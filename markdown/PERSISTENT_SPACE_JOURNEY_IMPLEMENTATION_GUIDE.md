@@ -79,9 +79,11 @@ All new missions and route decisions must follow
 - **Stage 4:** Chapter One is data-driven through Ogre Gate and First Settlement.
   Fuel costs, locks, visits, completion, destination selection, and Pilot's Call
   branching persist.
-- **Stage 5 prototype:** Scrap Belt combat is isolated from Space Mobe and returns
-  persistent hull damage and salvage, but its timer-based asteroid survival design
-  is not the accepted final mission.
+- **Stage 5:** Scrap Belt now uses the reusable mission runtime for forward travel,
+  full two-axis steering, a navigable debris corridor, crystal-trail scanning,
+  selective debris clearing, tractor salvage, persistent damage and rewards, and
+  Space Mobe's piano language for rock interactions. Success requires crossing the
+  route with the signal locked rather than surviving a countdown.
 - **Stage 6 prototype:** passenger persistence and both branch results work, but the
   Distress Signal incorrectly reuses the asteroid encounter and the cache recovery
   is not sufficiently interactive. These are scaffolding, not completed missions.
@@ -102,17 +104,15 @@ Settlement exist in the route data but are intentionally marked unavailable.
 
 Prove the gameplay identity before building Ogre Gate:
 
-1. Rebuild Scrap Belt on the new mission runtime as forward navigation and selective salvage rather than timed
-   survival.
-2. Make the Pilot's Call consequential: play one branch, transform the unchosen
+1. Make the Pilot's Call consequential: play one branch, transform the unchosen
    story thread, and show the reconnection at Repair Moon.
-3. Rebuild Distress Signal as signal triangulation, visible pod recovery, towing,
+2. Rebuild Distress Signal as signal triangulation, visible pod recovery, towing,
    and physical passenger boarding.
-4. Rebuild Abandoned Cache as a signal, power-routing, and vault-unlock interaction
+3. Rebuild Abandoned Cache as a signal, power-routing, and vault-unlock interaction
    with physical crystal acquisition.
-5. Rebuild Repair Moon as visible hands-on repair and upgrade installation rather
+4. Rebuild Repair Moon as visible hands-on repair and upgrade installation rather
    than a form-like service screen.
-6. Only then create the adaptive Ogre Gate boss, First Settlement, and the Chapter
+5. Only then create the adaptive Ogre Gate boss, First Settlement, and the Chapter
    One validation run.
 
 Do not expand the galaxy or build another asteroid-reskin encounter before this

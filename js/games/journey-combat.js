@@ -42,6 +42,47 @@
     }
   }
 
+  function playJourneyRockTone(frequency, type, duration, volume, endFrequency) {
+    try {
+      if (typeof getAudioCtx !== 'function') return;
+      const audio = getAudioCtx();
+      const oscillator = audio.createOscillator();
+      const gain = audio.createGain();
+      const start = audio.currentTime + .01;
+      oscillator.type = type || 'triangle';
+      oscillator.frequency.setValueAtTime(frequency, start);
+      if (endFrequency) {
+        oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, endFrequency), start + duration);
+      }
+      gain.gain.setValueAtTime(volume, start);
+      gain.gain.exponentialRampToValueAtTime(.001, start + duration);
+      oscillator.connect(gain);
+      gain.connect(audio.destination);
+      oscillator.start(start);
+      oscillator.stop(start + duration + .02);
+    } catch (error) {
+      // Audio feedback must never interrupt combat.
+    }
+  }
+
+  function playJourneyRockImpact() {
+    const notes = [110, 130.81, 146.83, 164.81, 196, 220];
+    const frequency = notes[Math.floor(Math.random() * notes.length)];
+    playJourneyRockTone(frequency, 'triangle', .052, .022, frequency * .99);
+  }
+
+  function playJourneyRockBreak() {
+    const notes = [110, 130.81, 146.83, 164.81, 196, 220, 261.63, 293.66, 329.63, 392, 440];
+    const frequency = notes[Math.floor(Math.random() * notes.length)];
+    playJourneyRockTone(frequency, 'triangle', .145, .07, frequency * .992);
+    playJourneyRockTone(frequency * 2.01, 'sine', .062, .02, frequency * 1.98);
+  }
+
+  function playJourneyRockPlayerHit() {
+    playJourneyRockTone(73.42, 'sine', .088, .036, 55);
+    playJourneyRockTone(146.83, 'triangle', .05, .016, 138.59);
+  }
+
   function randomBetween(min, max) {
     return min + Math.random() * (max - min);
   }
@@ -241,10 +282,11 @@
         if (!circlesTouch(bullet, asteroid)) continue;
         bullets.splice(bulletIndex, 1);
         asteroid.hp -= 1;
-        playCombatSfx('hit');
+        playJourneyRockImpact();
         if (asteroid.hp <= 0) {
           asteroids.splice(asteroidIndex, 1);
           asteroidsDestroyed += 1;
+          playJourneyRockBreak();
           spawnPickup(asteroid);
         }
         break;
@@ -277,7 +319,7 @@
           void combatFrame.offsetWidth;
           combatFrame.classList.add('is-hit');
         }
-        playCombatSfx('miss', 'over');
+        playJourneyRockPlayerHit();
         if (player.hull <= 0) {
           finish('failure');
           return;

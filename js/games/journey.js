@@ -9,6 +9,7 @@
   let maintenanceNotice = '';
   let storyTimers = [];
   let introAdvance = null;
+  let pendingEncounterPresentation = null;
 
   const MAP_POINTS = {
     'home-orbit': [58, 138],
@@ -858,6 +859,7 @@
     const state = JourneyState.getState();
     if (!root || !state || !node || !active) return;
     const rescue = node.type === 'rescue';
+    const scrapTraversal = node.id === 'scrap-belt';
     root.innerHTML = `
       <main class="journey-briefing-screen" aria-labelledby="journey-briefing-title">
         <section class="journey-briefing-art" aria-hidden="true">
@@ -868,14 +870,15 @@
           <h1 id="journey-briefing-title">${node.name}</h1>
           <p>${rescue
             ? 'An escape pod is trapped in a dense debris field. Clear an approach and reach the beacon.'
-            : 'Dense debris ahead. Survive 30 seconds and collect salvage. Every impact damages the Wayfarer.'}</p>
+            : 'Fly the corridor, scan for the crystal trail, and tractor useful salvage. Clear only the rocks blocking your path.'}</p>
           <div class="journey-objective-list">
-            <span><strong>${rescue ? 'REACH' : 'SURVIVE'}</strong> ${rescue ? '24' : '30'} SEC</span>
-            <span><strong>${rescue ? 'RESCUE' : 'BONUS'}</strong> ${rescue ? '1 PASSENGER' : '8 SALVAGE'}</span>
+            <span><strong>${rescue ? 'REACH' : 'ROUTE'}</strong> ${rescue ? '24 SEC' : 'CROSS THE BELT'}</span>
+            <span><strong>${rescue ? 'RESCUE' : 'SCAN'}</strong> ${rescue ? '1 PASSENGER' : 'LOCK THE CRYSTAL TRAIL'}</span>
+            ${scrapTraversal ? '<span><strong>OPTIONAL</strong> TRACTOR SALVAGE</span>' : ''}
             <span><strong>HULL</strong> ${Math.round(state.resources.hull)}</span>
           </div>
           <div class="journey-briefing-controls">
-            <span>DRAG OR A/D · AUTO-FIRE</span>
+            <span>${rescue ? 'DRAG OR A/D · AUTO-FIRE' : 'DRAG OR WASD · HOLD SCAN · FIRE · TRACTOR'}</span>
           </div>
           <div class="journey-briefing-actions">
             <button class="journey-primary-btn" type="button" onclick="journeyStartEncounter()">${rescue ? 'ANSWER THE BEACON' : 'ENTER SCRAP BELT'}</button>
@@ -883,6 +886,53 @@
           </div>
         </section>
       </main>`;
+  }
+
+  function renderScrapBelt(node, attemptId) {
+    const root = host();
+    const state = JourneyState.getState();
+    if (!root || !state || !active) return;
+    root.innerHTML = `
+      <main class="journey-combat-screen journey-scrap-screen">
+        <header class="journey-combat-hud journey-scrap-hud">
+          <div class="journey-combat-hull-readout">
+            <span>HULL</span><strong id="journey-scrap-hull">${Math.round(state.resources.hull)}</strong>
+            <div><i id="journey-scrap-hull-fill" style="width:100%"></i></div>
+          </div>
+          <div class="journey-combat-title"><span>SCRAP BELT</span><strong>FOLLOW THE TRAIL</strong></div>
+          <div><span>ROUTE</span><strong id="journey-scrap-distance">0%</strong></div>
+          <div><span>SIGNAL</span><strong id="journey-scrap-signal">SEARCH</strong></div>
+          <div><span>SALVAGE</span><strong id="journey-scrap-salvage">0</strong></div>
+        </header>
+        <div class="journey-combat-frame journey-scrap-frame">
+          <canvas id="journey-scrap-canvas" aria-label="Navigate the Scrap Belt and scan for the crystal trail"></canvas>
+          <div id="journey-scrap-damage-alert" class="journey-combat-damage-alert" aria-live="assertive"></div>
+          <div id="journey-scrap-status" class="journey-scrap-status">HOLD SCAN AND MOVE TOWARD THE PULSE</div>
+          <button class="journey-combat-retreat" type="button" onclick="journeyRetreatEncounter()">RETREAT</button>
+          <div class="journey-mission-controls" aria-label="Mission controls">
+            <button type="button"
+              onpointerdown="journeyMissionControl('scan', true)"
+              onpointerup="journeyMissionControl('scan', false)"
+              onpointercancel="journeyMissionControl('scan', false)">SCAN</button>
+            <button type="button"
+              onpointerdown="journeyMissionControl('fire', true)"
+              onpointerup="journeyMissionControl('fire', false)"
+              onpointercancel="journeyMissionControl('fire', false)">FIRE</button>
+            <button type="button" onclick="journeyMissionTractor()">TRACTOR</button>
+          </div>
+        </div>
+        <div class="journey-combat-hint">DRAG OR WASD · Q SCAN · Z/F FIRE · SPACE TRACTOR</div>
+      </main>`;
+    JourneyScrapBelt.start({
+      canvasId: 'journey-scrap-canvas',
+      attemptId,
+      encounterId: node.encounterId,
+      startingHull: state.resources.hull,
+      blasterLevel: state.upgrades.blasterLevel,
+      onComplete(result) {
+        handleEncounterComplete(node, result);
+      }
+    });
   }
 
   function renderCombat(node, attemptId) {
@@ -950,7 +1000,34 @@
       renderShip();
       return;
     }
+    if (node.id === 'scrap-belt' && result.outcome === 'success') {
+      pendingEncounterPresentation = { node, result, applied };
+      renderScrapBeltExit();
+      return;
+    }
     renderEncounterResults(node, result, applied);
+  }
+
+  function renderScrapBeltExit() {
+    const root = host();
+    const hero = selectedHero();
+    if (!root || !pendingEncounterPresentation || !active) return;
+    root.innerHTML = `
+      <main class="journey-arrival-scene journey-belt-exit">
+        <div class="journey-starfield" aria-hidden="true"></div>
+        <div class="journey-arrival-location"><span>ROUTE ACQUIRED</span><strong>CRYSTAL TRAIL</strong></div>
+        <div class="journey-belt-exit-visual" aria-label="The Wayfarer emerges from the Scrap Belt with a locked crystal signal">
+          <div class="journey-belt-exit-rocks is-left"><i></i><i></i><i></i></div>
+          <div class="journey-belt-exit-signal"><i></i><i></i><span>LOCKED</span></div>
+          <div class="journey-arrival-flight">${shipIllustration('journey-arrival-ship-svg')}</div>
+          <div class="journey-belt-exit-rocks is-right"><i></i><i></i><i></i></div>
+        </div>
+        <section class="journey-arrival-dialogue">
+          <div class="journey-arrival-speaker" style="--hero-color:${hero.color}">${typeof charFace === 'function' ? charFace(hero, 'normal') : hero.emoji}</div>
+          <div><span>${hero.name}</span><p>“We have the trail. Two signals are waiting beyond the Belt.”</p></div>
+        </section>
+        <button type="button" onclick="journeyContinueScrapBeltExit()">CONTINUE →</button>
+      </main>`;
   }
 
   function renderEncounterResults(node, result, applied) {
@@ -959,6 +1036,7 @@
     if (!root || !state || !active) return;
     const success = result.outcome === 'success';
     const rescue = node.type === 'rescue';
+    const scrapTraversal = node.id === 'scrap-belt';
     root.innerHTML = `
       <main class="journey-results-screen ${success ? 'is-success' : 'is-failure'}" aria-labelledby="journey-results-title">
         <section>
@@ -972,8 +1050,8 @@
             <span>DAMAGE TAKEN<strong>${Math.round(result.damageTaken)}</strong></span>
             <span>SALVAGE AWARDED<strong>+${Math.round(applied.salvageAwarded)}</strong></span>
             <span>FUEL RECOVERED<strong>+${Math.round(applied.fuelAwarded)}</strong></span>
-            <span>ASTEROIDS BROKEN<strong>${Math.round(result.stats.asteroidsDestroyed)}</strong></span>
-            <span>${rescue ? 'PASSENGER' : 'OPTIONAL TARGET'}<strong>${rescue && success ? 'PIP' : result.objectiveComplete ? 'COMPLETE' : 'MISSED'}</strong></span>
+            <span>${scrapTraversal ? 'DEBRIS CLEARED' : 'ASTEROIDS BROKEN'}<strong>${Math.round(result.stats.asteroidsDestroyed)}</strong></span>
+            <span>${rescue ? 'PASSENGER' : scrapTraversal ? 'CRYSTAL TRAIL' : 'OPTIONAL TARGET'}<strong>${rescue && success ? 'PIP' : result.objectiveComplete ? 'LOCKED' : 'MISSED'}</strong></span>
           </div>
           <div class="journey-results-actions">
             <button class="journey-primary-btn" type="button" onclick="journeyReturnFromEncounter()">RETURN TO SHIP</button>
@@ -1156,7 +1234,26 @@
     playMenuSound();
     const attempt = JourneyState.beginEncounter(node.encounterId);
     if (!attempt.ok) return;
-    renderCombat(node, attempt.attemptId);
+    if (node.id === 'scrap-belt') renderScrapBelt(node, attempt.attemptId);
+    else renderCombat(node, attempt.attemptId);
+  };
+
+  window.journeyMissionControl = function (control, pressed) {
+    if (typeof JourneyMissionRuntime !== 'undefined') {
+      JourneyMissionRuntime.setControl(control, pressed);
+    }
+  };
+
+  window.journeyMissionTractor = function () {
+    if (typeof JourneyMissionRuntime !== 'undefined') JourneyMissionRuntime.activateTractor();
+  };
+
+  window.journeyContinueScrapBeltExit = function () {
+    if (!pendingEncounterPresentation) return;
+    playMenuSound();
+    const presentation = pendingEncounterPresentation;
+    pendingEncounterPresentation = null;
+    renderEncounterResults(presentation.node, presentation.result, presentation.applied);
   };
 
   window.journeyCollectCache = function () {
@@ -1223,6 +1320,10 @@
 
   window.journeyRetreatEncounter = function () {
     playMenuSound();
+    if (typeof JourneyScrapBelt !== 'undefined' && JourneyScrapBelt.isActive()) {
+      JourneyScrapBelt.retreat();
+      return;
+    }
     JourneyCombat.destroy();
     renderShip();
   };
@@ -1263,7 +1364,9 @@
     if (!active) return;
     active = false;
     clearStoryTimers();
+    pendingEncounterPresentation = null;
     JourneyCombat.destroy();
+    if (typeof JourneyScrapBelt !== 'undefined') JourneyScrapBelt.destroy();
     if (typeof JourneyMissionRuntime !== 'undefined') JourneyMissionRuntime.destroy();
     JourneyState.saveJourneyState('exit');
     JourneyState.clearInMemory();

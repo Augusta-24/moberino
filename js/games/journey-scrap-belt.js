@@ -1,0 +1,306 @@
+/* Authored Scrap Belt traversal built on JourneyMissionRuntime.
+   Owns no route sequencing or persistence. */
+(function () {
+  'use strict';
+
+  const ROUTE_DISTANCE = 2600;
+  const WORLD_WIDTH = 420;
+  const WORLD_HEIGHT = 700;
+
+  let active = false;
+  let config = null;
+  let signalLocked = false;
+  let salvageCollected = 0;
+  let storedSalvageId = null;
+  let tractorAttachedAt = 0;
+
+  function playTone(frequency, type, duration, volume, endFrequency) {
+    try {
+      if (typeof getAudioCtx !== 'function') return;
+      const audio = getAudioCtx();
+      const oscillator = audio.createOscillator();
+      const gain = audio.createGain();
+      const start = audio.currentTime + .01;
+      oscillator.type = type || 'triangle';
+      oscillator.frequency.setValueAtTime(frequency, start);
+      if (endFrequency) {
+        oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, endFrequency), start + duration);
+      }
+      gain.gain.setValueAtTime(volume, start);
+      gain.gain.exponentialRampToValueAtTime(.001, start + duration);
+      oscillator.connect(gain);
+      gain.connect(audio.destination);
+      oscillator.start(start);
+      oscillator.stop(start + duration + .02);
+    } catch (error) {
+      // Mission audio must never interrupt input.
+    }
+  }
+
+  function playRockImpact() {
+    const notes = [110, 130.81, 146.83, 164.81, 196, 220];
+    const frequency = notes[Math.floor(Math.random() * notes.length)];
+    playTone(frequency, 'triangle', .052, .022, frequency * .99);
+  }
+
+  function playRockBreak() {
+    const notes = [110, 130.81, 146.83, 164.81, 196, 220, 261.63, 293.66, 329.63, 392, 440];
+    const frequency = notes[Math.floor(Math.random() * notes.length)];
+    playTone(frequency, 'triangle', .145, .07, frequency * .992);
+    playTone(frequency * 2.01, 'sine', .062, .02, frequency * 1.98);
+  }
+
+  function playRockPlayerHit() {
+    playTone(73.42, 'sine', .088, .036, 55);
+    playTone(146.83, 'triangle', .05, .016, 138.59);
+  }
+
+  function playScanLock() {
+    [392, 523.25, 659.25].forEach((frequency, index) => {
+      try {
+        const audio = getAudioCtx();
+        const oscillator = audio.createOscillator();
+        const gain = audio.createGain();
+        const start = audio.currentTime + .01 + index * .07;
+        oscillator.type = 'triangle';
+        oscillator.frequency.setValueAtTime(frequency, start);
+        gain.gain.setValueAtTime(.035 - index * .005, start);
+        gain.gain.exponentialRampToValueAtTime(.001, start + .11);
+        oscillator.connect(gain);
+        gain.connect(audio.destination);
+        oscillator.start(start);
+        oscillator.stop(start + .13);
+      } catch (error) {
+        return;
+      }
+    });
+  }
+
+  function playSalvageStored() {
+    playTone(440, 'triangle', .09, .035, 523.25);
+    playTone(659.25, 'sine', .12, .02, 783.99);
+  }
+
+  function debrisField() {
+    const targets = [];
+    const lanes = [30, 90, 150, 210, 270, 330, 390];
+    for (let band = 0; band < 20; band += 1) {
+      const gap = [95, 210, 325, 210][band % 4];
+      lanes.forEach((x, lane) => {
+        if (Math.abs(x - gap) < 62) return;
+        if ((band + lane) % 5 === 0) return;
+        const radius = 17 + ((band * 7 + lane * 5) % 17);
+        targets.push({
+          id: `belt-rock-${band}-${lane}`,
+          type: 'debris',
+          x,
+          y: 430 - band * 145 + ((lane % 3) - 1) * 18,
+          r: radius,
+          scannable: false,
+          destructible: true,
+          hp: radius > 28 ? 3 : radius > 22 ? 2 : 1,
+          collisionDamage: Math.round(7 + radius * .32),
+          vx: ((band + lane) % 3 - 1) * 11,
+          points: Array.from({ length: 9 }, (_, point) =>
+            .78 + ((band * 11 + lane * 7 + point * 13) % 37) / 100)
+        });
+      });
+    }
+    targets.push({
+      id: 'crystal-trail-signal',
+      type: 'signal',
+      x: 318,
+      y: 105,
+      r: 20,
+      worldLocked: false,
+      hiddenUntilScanned: true,
+      scannable: true,
+      scanSeconds: 1.8,
+      color: '#fff1a6'
+    });
+    return targets;
+  }
+
+  function hud(id) {
+    return document.getElementById(id);
+  }
+
+  function setText(id, value) {
+    const element = hud(id);
+    if (element) element.textContent = value;
+  }
+
+  function updateHull(hull) {
+    setText('journey-scrap-hull', Math.max(0, Math.ceil(hull)));
+    const fill = hud('journey-scrap-hull-fill');
+    if (fill) {
+      const percent = Math.max(0, Math.min(100, hull / config.startingHull * 100));
+      fill.style.width = `${percent}%`;
+      fill.classList.toggle('is-critical', percent <= 35);
+    }
+  }
+
+  function showDamage(damage) {
+    const alert = hud('journey-scrap-damage-alert');
+    const frame = document.querySelector && document.querySelector('.journey-scrap-frame');
+    if (alert) {
+      alert.textContent = `HULL −${damage}`;
+      alert.classList.remove('is-visible');
+      void alert.offsetWidth;
+      alert.classList.add('is-visible');
+    }
+    if (frame) {
+      frame.classList.remove('is-hit');
+      void frame.offsetWidth;
+      frame.classList.add('is-hit');
+    }
+  }
+
+  function updateHud(snapshot) {
+    const routePercent = Math.min(100, Math.round(snapshot.scrollDistance / ROUTE_DISTANCE * 100));
+    setText('journey-scrap-distance', `${routePercent}%`);
+    setText('journey-scrap-salvage', `${salvageCollected}`);
+    setText(
+      'journey-scrap-signal',
+      signalLocked ? 'LOCKED' : snapshot.scanTargetId ? `${Math.round(snapshot.scanStrength * 100)}%` : 'SEARCH'
+    );
+    setText(
+      'journey-scrap-status',
+      signalLocked ? 'TRAIL LOCKED · REACH THE FAR SIDE' : 'HOLD SCAN AND MOVE TOWARD THE PULSE'
+    );
+    updateHull(snapshot.hull);
+  }
+
+  function finish(outcome) {
+    if (!active) return;
+    const snapshot = JourneyMissionRuntime.getSnapshot();
+    const completedConfig = config;
+    active = false;
+    JourneyMissionRuntime.destroy();
+    config = null;
+    if (typeof completedConfig.onComplete === 'function') {
+      completedConfig.onComplete({
+        attemptId: completedConfig.attemptId,
+        encounterId: completedConfig.encounterId,
+        outcome,
+        hullRemaining: Math.max(0, Math.round(snapshot.hull)),
+        damageTaken: Math.max(0, Math.round(completedConfig.startingHull - snapshot.hull)),
+        fuelCollected: 0,
+        salvageCollected,
+        objectiveComplete: signalLocked,
+        rescuedPassengerId: null,
+        bossDefeated: null,
+        stats: {
+          shotsFired: snapshot.shotsFired,
+          asteroidsDestroyed: snapshot.targetsDestroyed,
+          distanceTraveled: Math.round(snapshot.scrollDistance),
+          signalLocked
+        }
+      });
+    }
+  }
+
+  function onUpdate(snapshot) {
+    updateHud(snapshot);
+    snapshot.targets
+      .filter(target => target.y > WORLD_HEIGHT + 80 && target.id !== 'crystal-trail-signal')
+      .forEach(target => JourneyMissionRuntime.removeTarget(target.id));
+
+    if (storedSalvageId && snapshot.attachedTargetId === storedSalvageId &&
+        snapshot.missionTime - tractorAttachedAt >= .65) {
+      JourneyMissionRuntime.removeTarget(storedSalvageId);
+      salvageCollected += 1;
+      storedSalvageId = null;
+      tractorAttachedAt = 0;
+      playSalvageStored();
+      setText('journey-scrap-status', 'SALVAGE STOWED');
+    }
+    if (snapshot.hull <= 0) {
+      finish('failure');
+      return;
+    }
+    if (snapshot.scrollDistance >= ROUTE_DISTANCE && signalLocked) finish('success');
+  }
+
+  function start(nextConfig) {
+    destroy();
+    config = nextConfig;
+    active = true;
+    signalLocked = false;
+    salvageCollected = 0;
+    storedSalvageId = null;
+    tractorAttachedAt = 0;
+    JourneyMissionRuntime.start({
+      canvasId: nextConfig.canvasId,
+      startX: WORLD_WIDTH / 2,
+      startY: WORLD_HEIGHT - 105,
+      startingHull: nextConfig.startingHull,
+      playerSpeed: 265,
+      forwardScroll: true,
+      worldSpeed: 92,
+      getWorldSpeed(runtime) {
+        const forwardPosition = 1 - runtime.player.y / WORLD_HEIGHT;
+        return 26 + Math.max(0, Math.min(1, forwardPosition)) * 132;
+      },
+      scanRange: 520,
+      tractorRange: 145,
+      fireDelay: Math.max(.13, .25 - (nextConfig.blasterLevel || 0) * .03),
+      targets: debrisField(),
+      onUpdate,
+      onScanLock(target) {
+        if (target.id !== 'crystal-trail-signal') return;
+        signalLocked = true;
+        playScanLock();
+      },
+      onTargetHit() {
+        playRockImpact();
+      },
+      onTargetDestroyed(target) {
+        playRockBreak();
+        const rockNumber = target.id.split('-').reduce((total, part) => total + (Number(part) || 0), 0);
+        if (rockNumber % 2 !== 0) return;
+        JourneyMissionRuntime.addTarget({
+          id: `salvage-${target.id}`,
+          type: 'salvage',
+          x: target.x,
+          y: target.y,
+          r: 10,
+          scannable: false,
+          tractorable: true,
+          color: '#b79cff'
+        });
+      },
+      onTractorAttach(target) {
+        if (target.type !== 'salvage') return;
+        storedSalvageId = target.id;
+        tractorAttachedAt = JourneyMissionRuntime.getSnapshot().missionTime;
+      },
+      onPlayerDamage(event) {
+        playRockPlayerHit();
+        showDamage(event.damage);
+      }
+    });
+  }
+
+  function destroy() {
+    active = false;
+    config = null;
+    signalLocked = false;
+    storedSalvageId = null;
+    tractorAttachedAt = 0;
+    if (typeof JourneyMissionRuntime !== 'undefined') JourneyMissionRuntime.destroy();
+  }
+
+  function retreat() {
+    finish('failure');
+  }
+
+  window.JourneyScrapBelt = Object.freeze({
+    start,
+    destroy,
+    retreat,
+    isActive() {
+      return active;
+    }
+  });
+})();

@@ -17,6 +17,7 @@
   let config = null;
   let player = null;
   let targets = [];
+  let projectiles = [];
   let stars = [];
   let controls = emptyControls();
   let pointerActive = false;
@@ -25,6 +26,10 @@
   let scanTargetId = null;
   let scanStrength = 0;
   let scrollDistance = 0;
+  let missionTime = 0;
+  let fireClock = 0;
+  let shotsFired = 0;
+  let targetsDestroyed = 0;
   let lastFrameAt = 0;
 
   function emptyControls() {
@@ -33,7 +38,8 @@
       right: false,
       up: false,
       down: false,
-      scan: false
+      scan: false,
+      fire: false
     };
   }
 
@@ -69,7 +75,7 @@
       id: typeof target.id === 'string' ? target.id : `target-${index}`,
       type: target.type || 'object',
       x: clamp(Number(target.x) || WORLD_WIDTH / 2, 0, WORLD_WIDTH),
-      y: clamp(Number(target.y) || WORLD_HEIGHT / 2, -WORLD_HEIGHT, WORLD_HEIGHT * 2),
+      y: clamp(Number(target.y) || WORLD_HEIGHT / 2, -WORLD_HEIGHT * 6, WORLD_HEIGHT * 2),
       r: Math.max(8, Number(target.r) || 18),
       scannable: target.scannable !== false,
       scanSeconds: Math.max(.1, Number(target.scanSeconds) || 1.2),
@@ -78,11 +84,17 @@
       hiddenUntilScanned: !!target.hiddenUntilScanned,
       tractorable: !!target.tractorable,
       interactable: !!target.interactable,
+      destructible: !!target.destructible,
+      hp: Math.max(1, Number(target.hp) || 1),
+      collisionDamage: Math.max(0, Number(target.collisionDamage) || 0),
+      vx: Number(target.vx) || 0,
+      vy: Number(target.vy) || 0,
       worldLocked: target.worldLocked !== false,
       attached: false,
       interacted: false,
       label: target.label || '',
       color: target.color || '#69d7ff',
+      points: Array.isArray(target.points) ? target.points.slice() : null,
       data: target.data || null
     };
   }
@@ -144,6 +156,7 @@
     if (event.key === 'ArrowUp' || key === 'w') return 'up';
     if (event.key === 'ArrowDown' || key === 's') return 'down';
     if (key === 'q') return 'scan';
+    if (key === 'f' || key === 'z') return 'fire';
     return null;
   }
 
@@ -220,7 +233,14 @@
   }
 
   function updateForwardScroll(deltaSeconds) {
-    const speed = config.forwardScroll ? Math.max(0, Number(config.worldSpeed) || 70) : 0;
+    const requestedSpeed = typeof config.getWorldSpeed === 'function'
+      ? config.getWorldSpeed({
+          player: { x: player.x, y: player.y, r: player.r },
+          controls: Object.assign({}, controls),
+          scrollDistance
+        })
+      : config.worldSpeed;
+    const speed = config.forwardScroll ? Math.max(0, Number(requestedSpeed) || 70) : 0;
     if (!speed) return;
     const movement = speed * deltaSeconds;
     scrollDistance += movement;
@@ -234,6 +254,92 @@
     targets.forEach(target => {
       if (target.worldLocked && !target.attached) target.y += movement;
     });
+  }
+
+  function circlesTouch(a, b) {
+    const dx = a.x - b.x;
+    const dy = a.y - b.y;
+    const radii = a.r + b.r;
+    return dx * dx + dy * dy <= radii * radii;
+  }
+
+  function updateTargetMotion(deltaSeconds) {
+    targets.forEach(target => {
+      if (target.attached) return;
+      target.x += target.vx * deltaSeconds;
+      target.y += target.vy * deltaSeconds;
+      if (target.x < target.r || target.x > WORLD_WIDTH - target.r) {
+        target.x = clamp(target.x, target.r, WORLD_WIDTH - target.r);
+        target.vx *= -1;
+      }
+    });
+  }
+
+  function fireProjectile() {
+    if (!active || !player) return { ok: false, code: 'inactive' };
+    projectiles.push({
+      x: player.x,
+      y: player.y - player.r,
+      r: 3,
+      vy: -(Number(config.projectileSpeed) || 560)
+    });
+    shotsFired += 1;
+    emitCue('blaster-fire');
+    return { ok: true, code: 'fired' };
+  }
+
+  function updateProjectiles(deltaSeconds) {
+    fireClock += deltaSeconds;
+    const delay = Math.max(.12, Number(config.fireDelay) || .24);
+    if (controls.fire && fireClock >= delay) {
+      fireClock %= delay;
+      fireProjectile();
+    }
+
+    projectiles.forEach(projectile => {
+      projectile.y += projectile.vy * deltaSeconds;
+    });
+    for (let projectileIndex = projectiles.length - 1; projectileIndex >= 0; projectileIndex -= 1) {
+      const projectile = projectiles[projectileIndex];
+      if (projectile.y < -20) {
+        projectiles.splice(projectileIndex, 1);
+        continue;
+      }
+      const target = targets.find(item =>
+        item.destructible && !item.attached && circlesTouch(projectile, item));
+      if (!target) continue;
+      projectiles.splice(projectileIndex, 1);
+      target.hp -= 1;
+      emitCue('target-hit', { targetId: target.id, type: target.type, hp: target.hp });
+      if (typeof config.onTargetHit === 'function') {
+        config.onTargetHit(targetSnapshot(target));
+      }
+      if (target.hp <= 0) {
+        const destroyed = targetSnapshot(target);
+        removeTarget(target.id);
+        targetsDestroyed += 1;
+        emitCue('target-destroyed', { targetId: destroyed.id, type: destroyed.type });
+        if (typeof config.onTargetDestroyed === 'function') {
+          config.onTargetDestroyed(destroyed);
+        }
+      }
+    }
+  }
+
+  function updatePlayerCollisions() {
+    if (missionTime < player.invulnerableUntil) return;
+    const target = targets.find(item =>
+      item.collisionDamage > 0 && !item.attached && circlesTouch(player, item));
+    if (!target) return;
+    const damage = target.collisionDamage;
+    const hit = targetSnapshot(target);
+    removeTarget(target.id);
+    player.hull = Math.max(0, player.hull - damage);
+    player.invulnerableUntil = missionTime + .7;
+    emitCue('player-damage', { targetId: hit.id, damage, hull: player.hull });
+    if (typeof config.onPlayerDamage === 'function') {
+      config.onPlayerDamage({ target: hit, damage, hull: player.hull });
+    }
   }
 
   function updateScanner(deltaSeconds) {
@@ -278,10 +384,14 @@
   function step(deltaSeconds) {
     if (!active || !player) return;
     const delta = clamp(Number(deltaSeconds) || 0, 0, .1);
+    missionTime += delta;
     updateMovement(delta);
     updateForwardScroll(delta);
+    updateTargetMotion(delta);
     updateScanner(delta);
     updateTractor(delta);
+    updateProjectiles(delta);
+    updatePlayerCollisions();
     if (typeof config.onUpdate === 'function') config.onUpdate(getSnapshot());
   }
 
@@ -289,6 +399,32 @@
     if (!Object.prototype.hasOwnProperty.call(controls, name)) return false;
     controls[name] = !!pressed;
     return true;
+  }
+
+  function addTarget(source) {
+    if (!active) return null;
+    const target = normalizeTarget(source, targets.length);
+    targets.push(target);
+    return targetSnapshot(target);
+  }
+
+  function removeTarget(targetId) {
+    const index = targets.findIndex(target => target.id === targetId);
+    if (index < 0) return false;
+    if (attachedTargetId === targetId) attachedTargetId = null;
+    targets.splice(index, 1);
+    return true;
+  }
+
+  function updateTarget(targetId, changes) {
+    const target = targets.find(item => item.id === targetId);
+    if (!target || !changes || typeof changes !== 'object') return null;
+    ['x', 'y', 'vx', 'vy', 'collisionDamage'].forEach(key => {
+      if (Number.isFinite(changes[key])) target[key] = changes[key];
+    });
+    if (typeof changes.interactable === 'boolean') target.interactable = changes.interactable;
+    if (typeof changes.tractorable === 'boolean') target.tractorable = changes.tractorable;
+    return targetSnapshot(target);
   }
 
   function activateTractor() {
@@ -340,6 +476,8 @@
       scanProgress: target.scanProgress,
       attached: target.attached,
       interacted: target.interacted,
+      hp: target.hp,
+      collisionDamage: target.collisionDamage,
       data: target.data
     };
   }
@@ -352,7 +490,11 @@
       attachedTargetId,
       scanTargetId,
       scanStrength,
-      scrollDistance
+      scrollDistance,
+      missionTime,
+      hull: player ? player.hull : 0,
+      shotsFired,
+      targetsDestroyed
     };
   }
 
@@ -398,6 +540,25 @@
       context.beginPath();
       context.arc(0, 0, 5, 0, Math.PI * 2);
       context.fill();
+    } else if (target.type === 'debris') {
+      const points = target.points || [.82, 1.08, .9, 1.13, .78, 1.02, .88, 1.1];
+      context.beginPath();
+      points.forEach((scale, index) => {
+        const angle = (index / points.length) * Math.PI * 2;
+        const x = Math.cos(angle) * target.r * scale;
+        const y = Math.sin(angle) * target.r * scale;
+        if (index === 0) context.moveTo(x, y);
+        else context.lineTo(x, y);
+      });
+      context.closePath();
+      context.fillStyle = '#293249';
+      context.strokeStyle = '#8294b1';
+      context.fill();
+      context.stroke();
+    } else if (target.type === 'salvage') {
+      context.rotate(Math.PI / 4);
+      context.fillStyle = '#b79cff';
+      context.fillRect(-target.r * .7, -target.r * .7, target.r * 1.4, target.r * 1.4);
     } else {
       context.beginPath();
       context.arc(0, 0, target.r, 0, Math.PI * 2);
@@ -466,10 +627,21 @@
     context.restore();
   }
 
+  function drawProjectiles() {
+    projectiles.forEach(projectile => {
+      context.fillStyle = '#fff1a6';
+      context.shadowColor = '#fff1a6';
+      context.shadowBlur = 8;
+      context.fillRect(projectile.x - 2, projectile.y - 9, 4, 13);
+      context.shadowBlur = 0;
+    });
+  }
+
   function draw() {
     if (!context || !player) return;
     drawBackground();
     targets.forEach(drawTarget);
+    drawProjectiles();
     drawScanner();
     drawTractor();
     drawPlayer();
@@ -480,6 +652,7 @@
     const deltaSeconds = Math.min(.04, Math.max(0, (now - lastFrameAt) / 1000));
     lastFrameAt = now;
     step(deltaSeconds);
+    if (!active) return;
     draw();
     frameId = requestAnimationFrame(loop);
   }
@@ -494,9 +667,12 @@
     player = {
       x: clamp(Number(config.startX) || WORLD_WIDTH / 2, 16, WORLD_WIDTH - 16),
       y: clamp(Number(config.startY) || WORLD_HEIGHT - 95, 16, WORLD_HEIGHT - 16),
-      r: 16
+      r: 16,
+      hull: Math.max(1, Number(config.startingHull) || 100),
+      invulnerableUntil: 0
     };
     targets = Array.isArray(config.targets) ? config.targets.map(normalizeTarget) : [];
+    projectiles = [];
     controls = emptyControls();
     pointerActive = false;
     pointerTarget = null;
@@ -504,6 +680,10 @@
     scanTargetId = null;
     scanStrength = 0;
     scrollDistance = 0;
+    missionTime = 0;
+    fireClock = 0;
+    shotsFired = 0;
+    targetsDestroyed = 0;
     active = true;
     lastFrameAt = performance.now();
     addListeners();
@@ -522,6 +702,7 @@
     config = null;
     player = null;
     targets = [];
+    projectiles = [];
     stars = [];
     controls = emptyControls();
     pointerActive = false;
@@ -530,6 +711,10 @@
     scanTargetId = null;
     scanStrength = 0;
     scrollDistance = 0;
+    missionTime = 0;
+    fireClock = 0;
+    shotsFired = 0;
+    targetsDestroyed = 0;
   }
 
   window.JourneyMissionRuntime = Object.freeze({
@@ -537,6 +722,10 @@
     destroy,
     step,
     setControl,
+    fireProjectile,
+    addTarget,
+    removeTarget,
+    updateTarget,
     activateTractor,
     interact,
     getSnapshot,

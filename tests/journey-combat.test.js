@@ -134,7 +134,9 @@ test('starting combat repeatedly does not duplicate runtime listeners', () => {
 
 test('combat includes weapon audio, hull-hit feedback, and denser hazard pacing', () => {
   assert.match(source, /playCombatSfx\('blaster'\)/);
-  assert.match(source, /playCombatSfx\('miss', 'over'\)/);
+  assert.match(source, /playJourneyRockImpact\(\)/);
+  assert.match(source, /playJourneyRockBreak\(\)/);
+  assert.match(source, /playJourneyRockPlayerHit\(\)/);
   assert.match(source, /journey-combat-damage-alert/);
   assert.match(source, /damageFlashUntil/);
   assert.match(source, /config\.difficulty \* \.14/);

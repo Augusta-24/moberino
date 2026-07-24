@@ -219,6 +219,51 @@ test('interaction targets complete once within proximity', () => {
   api.destroy();
 });
 
+test('projectiles destroy configured debris and collisions damage the ship', () => {
+  const { api } = createHarness();
+  const destroyed = [];
+  const damage = [];
+  api.start(runtimeConfig({
+    startingHull: 100,
+    targets: [
+      {
+        id: 'blocking-rock',
+        type: 'debris',
+        x: 210,
+        y: 525,
+        r: 20,
+        scannable: false,
+        destructible: true,
+        hp: 1
+      },
+      {
+        id: 'impact-rock',
+        type: 'debris',
+        x: 210,
+        y: 600,
+        r: 18,
+        scannable: false,
+        collisionDamage: 14
+      }
+    ],
+    onTargetDestroyed(target) {
+      destroyed.push(target.id);
+    },
+    onPlayerDamage(event) {
+      damage.push(event.damage);
+    }
+  }));
+
+  api.fireProjectile();
+  api.step(.1);
+
+  assert.deepEqual(destroyed, ['blocking-rock']);
+  assert.deepEqual(damage, [14]);
+  assert.equal(api.getSnapshot().hull, 86);
+  assert.equal(api.getSnapshot().targetsDestroyed, 1);
+  api.destroy();
+});
+
 test('runtime lifecycle removes controls and animation frames cleanly', () => {
   const { api, canvas, document, cancelledFrames } = createHarness();
   api.start(runtimeConfig());

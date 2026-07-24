@@ -1387,6 +1387,179 @@ body.on-journey {
   touch-action: none;
 }
 
+#journey-scrap-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.journey-scrap-hud {
+  grid-template-columns: 70px minmax(105px, 1fr) 52px 62px 52px;
+}
+
+.journey-scrap-status {
+  position: absolute;
+  top: 9px;
+  right: 64px;
+  left: 9px;
+  z-index: 2;
+  border: 1px solid rgba(255,241,166,.42);
+  border-radius: 4px;
+  padding: 7px 8px;
+  background: rgba(4,10,24,.82);
+  color: #fff1a6;
+  font: 12px/1.25 'VCR', monospace;
+  letter-spacing: .7px;
+  pointer-events: none;
+}
+
+.journey-mission-controls {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  left: 8px;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  pointer-events: none;
+}
+
+.journey-mission-controls button {
+  min-height: 45px;
+  border: 1px solid rgba(105,215,255,.72);
+  border-radius: 6px;
+  background: rgba(6,19,41,.88);
+  color: #69d7ff;
+  font: 12px/1 'VCR', monospace;
+  letter-spacing: 1px;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.journey-mission-controls button:first-child {
+  border-color: rgba(255,241,166,.75);
+  color: #fff1a6;
+}
+
+.journey-mission-controls button:last-child {
+  border-color: rgba(183,156,255,.78);
+  color: #c9b7ff;
+}
+
+.journey-scrap-frame.is-hit {
+  animation: journey-combat-hit-shake .42s ease-out;
+}
+
+.journey-belt-exit {
+  grid-template-rows: auto minmax(210px, 1fr) auto auto;
+}
+
+.journey-belt-exit-visual {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: min(100%, 520px);
+  height: 100%;
+  min-height: 230px;
+}
+
+.journey-belt-exit-visual .journey-arrival-flight {
+  position: relative;
+  z-index: 2;
+}
+
+.journey-belt-exit-rocks {
+  position: absolute;
+  top: 5%;
+  bottom: 4%;
+  width: 31%;
+}
+
+.journey-belt-exit-rocks.is-left {
+  left: 0;
+}
+
+.journey-belt-exit-rocks.is-right {
+  right: 0;
+}
+
+.journey-belt-exit-rocks i {
+  position: absolute;
+  width: 48px;
+  height: 40px;
+  border: 2px solid #8294b1;
+  background: #293249;
+  clip-path: polygon(15% 4%, 76% 0, 100% 34%, 82% 82%, 43% 100%, 0 69%, 5% 24%);
+  opacity: .78;
+}
+
+.journey-belt-exit-rocks i:nth-child(1) { top: 4%; left: 12%; transform: rotate(18deg); }
+.journey-belt-exit-rocks i:nth-child(2) { top: 42%; left: 40%; transform: rotate(-22deg) scale(.72); }
+.journey-belt-exit-rocks i:nth-child(3) { bottom: 2%; left: 5%; transform: rotate(38deg) scale(1.15); }
+.journey-belt-exit-rocks.is-right i:nth-child(1) { right: 6%; left: auto; transform: rotate(-26deg) scale(1.2); }
+.journey-belt-exit-rocks.is-right i:nth-child(2) { right: 44%; left: auto; transform: rotate(14deg) scale(.66); }
+.journey-belt-exit-rocks.is-right i:nth-child(3) { right: 14%; left: auto; transform: rotate(-8deg); }
+
+.journey-belt-exit-signal {
+  position: absolute;
+  top: 4%;
+  left: 50%;
+  width: 86px;
+  height: 86px;
+  border: 1px solid rgba(255,241,166,.76);
+  border-radius: 50%;
+  box-shadow: 0 0 24px rgba(255,241,166,.23);
+  transform: translateX(-50%);
+}
+
+.journey-belt-exit-signal::before,
+.journey-belt-exit-signal::after {
+  position: absolute;
+  inset: 12px;
+  border: 1px solid rgba(105,215,255,.62);
+  border-radius: 50%;
+  content: "";
+}
+
+.journey-belt-exit-signal::after {
+  inset: -16px;
+  border-style: dashed;
+  animation: journey-distress-scan 7s linear infinite;
+}
+
+.journey-belt-exit-signal i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 155px;
+  background: linear-gradient(#fff1a6, rgba(255,241,166,0));
+  box-shadow: 0 0 10px #fff1a6;
+  transform: translate(-50%, 0);
+  transform-origin: top;
+}
+
+.journey-belt-exit-signal i:nth-child(1) {
+  transform: translate(-50%, 0) rotate(23deg);
+}
+
+.journey-belt-exit-signal i:nth-child(2) {
+  transform: translate(-50%, 0) rotate(-23deg);
+}
+
+.journey-belt-exit-signal span {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 50%;
+  color: #fff1a6;
+  font: 12px/1 'VCR', monospace;
+  letter-spacing: 1.5px;
+  transform: translateX(-50%);
+}
+
 .journey-combat-damage-alert {
   position: absolute;
   top: 16%;
@@ -3300,6 +3473,7 @@ body.on-journey {
   .journey-distant-distress,
   .journey-distant-distress::after,
   .journey-distant-distress i,
+  .journey-belt-exit-signal::after,
   .journey-map-node.is-selectable circle,
   .journey-combat-frame.is-hit,
   .journey-signal-branch,
