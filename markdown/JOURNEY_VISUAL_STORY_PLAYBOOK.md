@@ -77,6 +77,8 @@ with optional branches visibly reconnecting to the main journey.
 
 Rescued companions must occupy a persistent, visible crew position in the cockpit.
 Show their face or silhouette and name; a message or “aboard” label alone is not enough.
+Center companion faces precisely inside every portrait frame. On rescue and character
+reveal screens, keep the character portrait, name, and confirmation on one centered axis.
 
 Ship repair, upgrades, and detailed logs belong on separate screens. Do not stack every system onto the cockpit.
 

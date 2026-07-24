@@ -2064,9 +2064,11 @@ body.on-journey {
   position: relative;
   width: 45px;
   height: 43px;
+  margin-inline: auto;
   border-radius: 48% 48% 42% 42%;
   background: #b79cff;
   box-shadow: inset 0 -8px 0 rgba(45,25,78,.22), 0 0 12px rgba(183,156,255,.42);
+  transform-origin: 50% 50%;
 }
 
 .journey-pip-face::before,
@@ -2282,11 +2284,14 @@ body.on-journey {
 }
 
 .journey-pip-portrait {
+  position: relative;
   display: grid;
   place-items: center;
   width: 112px;
   height: 112px;
+  margin-right: auto;
   margin-bottom: 18px;
+  margin-left: auto;
   border: 3px solid #b79cff;
   border-radius: 28px;
   background: rgba(183,156,255,.12);
@@ -2294,7 +2299,11 @@ body.on-journey {
 }
 
 .journey-pip-portrait .journey-pip-face {
-  transform: scale(1.65);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: 0;
+  transform: translate(-50%, -50%) scale(1.65);
 }
 
 .journey-rescue-success > span {
@@ -3528,13 +3537,14 @@ body.on-journey {
 
 .journey-cockpit-companion {
   display: grid;
-  justify-items: center;
+  place-items: center;
   min-width: 58px;
   border: 1px solid rgba(183,156,255,.72);
   border-radius: 8px;
   padding: 4px 3px;
   background: rgba(183,156,255,.1);
   box-shadow: inset 0 0 15px rgba(183,156,255,.08);
+  text-align: center;
 }
 
 .journey-cockpit-companion .journey-pip-face {
