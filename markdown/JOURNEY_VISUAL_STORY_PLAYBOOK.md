@@ -4,6 +4,9 @@ This is the production language for The Wayfarer journey game. It applies to new
 
 The game should feel like a visual space adventure—not a dashboard with story text added to it.
 
+Mission mechanics and encounter variety are defined in
+[JOURNEY_GAMEPLAY_PLAYBOOK.md](JOURNEY_GAMEPLAY_PLAYBOOK.md).
+
 ## Core experience
 
 The player is the arcade character they selected.

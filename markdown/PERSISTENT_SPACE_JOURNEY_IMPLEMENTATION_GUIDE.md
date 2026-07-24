@@ -2,6 +2,10 @@
 
 > Visual, cinematic, copy, and interaction decisions are defined in
 > [JOURNEY_VISUAL_STORY_PLAYBOOK.md](JOURNEY_VISUAL_STORY_PLAYBOOK.md).
+>
+> Mission verbs, encounter variety, route consequences, rewards, and gameplay
+> acceptance rules are defined in
+> [JOURNEY_GAMEPLAY_PLAYBOOK.md](JOURNEY_GAMEPLAY_PLAYBOOK.md).
 
 ## Project goal
 
@@ -61,6 +65,8 @@ that destination ready to launch.
 
 All new screens and story beats must follow
 [JOURNEY_VISUAL_STORY_PLAYBOOK.md](JOURNEY_VISUAL_STORY_PLAYBOOK.md).
+All new missions and route decisions must follow
+[JOURNEY_GAMEPLAY_PLAYBOOK.md](JOURNEY_GAMEPLAY_PLAYBOOK.md).
 
 ## Implemented checkpoint
 
@@ -73,11 +79,12 @@ All new screens and story beats must follow
 - **Stage 4:** Chapter One is data-driven through Ogre Gate and First Settlement.
   Fuel costs, locks, visits, completion, destination selection, and Pilot's Call
   branching persist.
-- **Stage 5:** Scrap Belt combat is isolated from Space Mobe and returns persistent
-  hull damage and salvage. It includes stronger difficulty, sound hooks, impact
-  feedback, and a visual arrival beat.
-- **Stage 6:** the distress route, rescue result, and Pip passenger persistence are
-  implemented. The abandoned-cache branch is also playable.
+- **Stage 5 prototype:** Scrap Belt combat is isolated from Space Mobe and returns
+  persistent hull damage and salvage, but its timer-based asteroid survival design
+  is not the accepted final mission.
+- **Stage 6 prototype:** passenger persistence and both branch results work, but the
+  Distress Signal incorrectly reuses the asteroid encounter and the cache recovery
+  is not sufficiently interactive. These are scaffolding, not completed missions.
 - **Stage 7:** Repair Moon has a dedicated maintenance flow, instant paid hull repair, and
   a persistent blaster upgrade.
 - **Visual story foundation:** the selected hero leads the opening crystal-theft
@@ -89,18 +96,25 @@ Settlement exist in the route data but are intentionally marked unavailable.
 
 ## Next milestone
 
-Finish Chapter One as one complete vertical slice:
+Prove the gameplay identity before building Ogre Gate:
 
-1. Create an Ogre Gate arrival cinematic that makes the obstruction and stakes
-   visually obvious.
-2. Implement the Journey-specific Ogre boss encounter without changing Space Mobe.
-3. Return persistent damage and a single, non-duplicating boss reward.
-4. Recover the first visible Star Crystal and unlock First Settlement.
-5. Build the First Settlement arrival and chapter-completion beat.
-6. Run the mandatory validation gate across the entire first journey, including
-   returning sessions and both Pilot's Call branches.
+1. Build the reusable forward-navigation, free vertical movement, scanning, tractor,
+   and interaction foundations needed by Chapter One.
+2. Rebuild Scrap Belt as forward navigation and selective salvage rather than timed
+   survival.
+3. Make the Pilot's Call consequential: play one branch, transform the unchosen
+   story thread, and show the reconnection at Repair Moon.
+4. Rebuild Distress Signal as signal triangulation, visible pod recovery, towing,
+   and physical passenger boarding.
+5. Rebuild Abandoned Cache as a signal, power-routing, and vault-unlock interaction
+   with physical crystal acquisition.
+6. Rebuild Repair Moon as visible hands-on repair and upgrade installation rather
+   than a form-like service screen.
+7. Only then create the adaptive Ogre Gate boss, First Settlement, and the Chapter
+   One validation run.
 
-Do not expand the galaxy before this milestone is tested as a coherent adventure.
+Do not expand the galaxy or build another asteroid-reskin encounter before this
+milestone is tested as a coherent adventure.
 The creature-companion introduction belongs in the next authored stretch after the
 Chapter One vertical slice proves the core rhythm.
 
