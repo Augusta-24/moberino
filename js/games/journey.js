@@ -574,14 +574,24 @@
     ).join('')}</div>`;
   }
 
+  function arrivalDistressBeacon() {
+    return `
+      <div class="journey-distant-distress" aria-label="A distress beacon pulses in the distance">
+        <span></span>
+        <i></i>
+        <b>SOS</b>
+      </div>`;
+  }
+
   function renderArrivalScene(node) {
     const root = host();
     if (!root || !node || !active) return;
     const hero = selectedHero();
     root.innerHTML = `
-      <main class="journey-arrival-scene ${node.id === 'scrap-belt' ? 'is-scrap-belt' : ''}">
+      <main class="journey-arrival-scene ${node.id === 'scrap-belt' ? 'is-scrap-belt' : ''} ${node.id === 'distress-signal' ? 'is-distress-signal' : ''}">
         <div class="journey-starfield" aria-hidden="true"></div>
         ${node.id === 'scrap-belt' ? arrivalDebrisField() : ''}
+        ${node.id === 'distress-signal' ? arrivalDistressBeacon() : ''}
         <div class="journey-arrival-location"><span>ARRIVING</span><strong>${node.name}</strong></div>
         <div class="journey-arrival-flight">${shipIllustration('journey-arrival-ship-svg')}</div>
         <section class="journey-arrival-dialogue">

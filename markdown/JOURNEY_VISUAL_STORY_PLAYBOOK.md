@@ -30,6 +30,29 @@ Examples:
 - Show a recovered crystal. Do not hide it inside a reward table.
 - Show a character arrive or speak. Do not deliver every story beat through a log entry.
 
+## Visual contract
+
+Before building any Journey screen or story beat, define five things:
+
+1. **Purpose:** What must the player understand?
+2. **Must-see subject:** What person, place, object, threat, or reward proves it?
+3. **Motion:** What physical action communicates that the event is happening?
+4. **Player action:** What is the one clear thing the player does next?
+5. **Persistent consequence:** What changes and where will the player see it afterward?
+
+Every concrete noun or claim in the headline and dialogue needs a visible counterpart.
+If the dialogue mentions a beacon, show the beacon. If it mentions a blockade, show
+the blockade. If someone is trapped, show where they are trapped. If a crystal is
+recovered, show the crystal moving into the player’s possession.
+
+Do not treat a ship over a generic star field as a finished destination cinematic.
+The destination needs a specific silhouette, signal, hazard, character, structure,
+weather effect, or other identifying evidence.
+
+Use the visual contract to anticipate the whole beat, including arrival, action,
+feedback, result, and the changed cockpit state. Do not wait for a screenshot review
+to add the central subject of the scene.
+
 ## Screen types
 
 ### Cockpit
@@ -265,6 +288,9 @@ After several missions, introduce a creature companion through an authored arriv
 Before considering a new screen complete, verify:
 
 - Can the player understand what happened by looking?
+- Does every concrete noun or dialogue claim have a visible counterpart?
+- Is this unmistakably this destination rather than a generic star field?
+- Did we design the arrival, action, result, and persistent return state together?
 - Is there only one main idea?
 - Is the selected hero or relevant character visible when appropriate?
 - Is all required text white, yellow, or another high-contrast semantic color?
@@ -276,4 +302,3 @@ Before considering a new screen complete, verify:
 - If blocked, does it explain why?
 - Do sound and animation match the event?
 - Does the result persist and appear back in the cockpit?
-

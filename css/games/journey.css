@@ -2575,6 +2575,85 @@ body.on-journey {
   100% { transform: translate(-50%, 35%) rotate(calc(var(--rotation) + 95deg)); }
 }
 
+.journey-distant-distress {
+  position: absolute;
+  z-index: 1;
+  top: 25%;
+  left: 69%;
+  width: 76px;
+  height: 76px;
+  border: 1px solid rgba(255,124,143,.72);
+  border-radius: 50%;
+  box-shadow: 0 0 22px rgba(255,124,143,.2);
+  color: #fff1a6;
+  pointer-events: none;
+  animation: journey-distress-ring 2.6s ease-out infinite;
+}
+
+.journey-distant-distress::before,
+.journey-distant-distress::after {
+  position: absolute;
+  inset: 12px;
+  border: 1px solid rgba(105,215,255,.66);
+  border-radius: 50%;
+  content: "";
+}
+
+.journey-distant-distress::after {
+  inset: -18px;
+  border-style: dashed;
+  opacity: .38;
+  animation: journey-distress-scan 7s linear infinite;
+}
+
+.journey-distant-distress span {
+  position: absolute;
+  top: 31px;
+  left: 29px;
+  width: 18px;
+  height: 28px;
+  border: 2px solid #69d7ff;
+  border-radius: 50% 50% 42% 42%;
+  background: #152843;
+  box-shadow: 0 0 12px rgba(105,215,255,.7);
+  transform: rotate(18deg);
+}
+
+.journey-distant-distress i {
+  position: absolute;
+  top: 34px;
+  left: 35px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ff7c8f;
+  box-shadow: 0 0 6px #ff7c8f, 0 0 16px #ff7c8f;
+  animation: journey-distress-core 1s steps(2, end) infinite;
+}
+
+.journey-distant-distress b {
+  position: absolute;
+  top: calc(100% + 9px);
+  left: 50%;
+  color: #fff1a6;
+  font: 12px/1 'VCR', monospace;
+  letter-spacing: 2px;
+  transform: translateX(-50%);
+}
+
+@keyframes journey-distress-ring {
+  0%, 22% { opacity: .42; transform: scale(.72); }
+  70%, 100% { opacity: 1; transform: scale(1.12); }
+}
+
+@keyframes journey-distress-scan {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes journey-distress-core {
+  50% { opacity: .25; }
+}
+
 .journey-arrival-flight {
   z-index: 2;
   width: min(42vw, 240px);
@@ -3218,6 +3297,9 @@ body.on-journey {
   .journey-status-alert > i,
   .journey-arrival-flight,
   .journey-arrival-debris i,
+  .journey-distant-distress,
+  .journey-distant-distress::after,
+  .journey-distant-distress i,
   .journey-map-node.is-selectable circle,
   .journey-combat-frame.is-hit,
   .journey-signal-branch,

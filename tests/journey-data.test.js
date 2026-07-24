@@ -134,6 +134,10 @@ test('the cockpit centers the route and moves detail into ship and log views', (
   assert.match(controller, /function arrivalDebrisField/);
   assert.match(controller, /journey-arrival-debris/);
   assert.match(controller, /node\.id === 'scrap-belt' \? arrivalDebrisField\(\) : ''/);
+  assert.match(controller, /function arrivalDistressBeacon/);
+  assert.match(controller, /journey-distant-distress/);
+  assert.match(controller, /node\.id === 'distress-signal' \? arrivalDistressBeacon\(\) : ''/);
+  assert.match(controller, /A distress beacon pulses in the distance/);
   assert.match(controller, /STAR CRYSTAL RECOVERED/);
   assert.ok(
     controller.indexOf('<section class="journey-map-panel">') <
