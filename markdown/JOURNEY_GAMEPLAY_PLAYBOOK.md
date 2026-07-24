@@ -65,6 +65,18 @@ encounters that specifically benefit from it.
 Scanning must require interpretation or positioning. It is not a progress bar the
 player watches.
 
+Use a three-beat scanning language when acquiring an important signal:
+
+1. **Reveal:** scanning exposes the source and its radio envelope.
+2. **Track:** the source may move, drift, flicker, or become obstructed; the player
+   must position themselves inside its signal area.
+3. **Capture:** holding the scan while maintaining contact fills a visible lock
+   ring. Leaving the signal area drains partial progress.
+
+Every phase needs audiovisual feedback. Pulses should become faster, brighter, or
+higher in pitch as the player approaches lock. Full capture needs a distinct lock
+animation and sound, followed by a visible change to the objective or route.
+
 ### Interact
 
 - attach a tractor beam,

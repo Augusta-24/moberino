@@ -13,6 +13,7 @@
   let salvageCollected = 0;
   let storedSalvageId = null;
   let tractorAttachedAt = 0;
+  let lastScanToneAt = 0;
 
   function playTone(frequency, type, duration, volume, endFrequency) {
     try {
@@ -76,6 +77,22 @@
     });
   }
 
+  function playSignalReveal() {
+    playTone(220, 'sine', .11, .03, 293.66);
+    playTone(440, 'triangle', .15, .028, 523.25);
+  }
+
+  function playScanPulse(detail) {
+    const now = Date.now();
+    const progress = Math.max(0, Math.min(1, Number(detail.progress) || 0));
+    const interval = detail.phase === 'capture' ? 470 - progress * 300 : 560;
+    if (now - lastScanToneAt < interval) return;
+    lastScanToneAt = now;
+    const base = detail.phase === 'capture' ? 300 : 180;
+    const frequency = base + (Number(detail.strength) || 0) * 360 + progress * 260;
+    playTone(frequency, 'sine', .07, .018, frequency * 1.035);
+  }
+
   function playSalvageStored() {
     playTone(440, 'triangle', .09, .035, 523.25);
     playTone(659.25, 'sine', .12, .02, 783.99);
@@ -116,6 +133,9 @@
       hiddenUntilScanned: true,
       scannable: true,
       scanSeconds: 1.8,
+      scanRevealSeconds: .75,
+      captureRadius: 118,
+      scanDecayRate: .7,
       color: '#fff1a6'
     });
     return targets;
@@ -158,15 +178,29 @@
 
   function updateHud(snapshot) {
     const routePercent = Math.min(100, Math.round(snapshot.scrollDistance / ROUTE_DISTANCE * 100));
+    const signal = snapshot.targets.find(target => target.id === 'crystal-trail-signal');
+    const revealed = !!(signal && signal.revealed);
+    const capturePercent = signal
+      ? Math.round(signal.scanProgress / signal.scanSeconds * 100)
+      : 0;
+    const dx = signal ? snapshot.player.x - signal.x : 0;
+    const dy = signal ? snapshot.player.y - signal.y : 0;
+    const insideRadio = !!(signal && revealed && Math.sqrt(dx * dx + dy * dy) <= signal.captureRadius);
     setText('journey-scrap-distance', `${routePercent}%`);
     setText('journey-scrap-salvage', `${salvageCollected}`);
     setText(
       'journey-scrap-signal',
-      signalLocked ? 'LOCKED' : snapshot.scanTargetId ? `${Math.round(snapshot.scanStrength * 100)}%` : 'SEARCH'
+      signalLocked ? 'LOCKED' : revealed ? `${capturePercent}%` : snapshot.scanTargetId ? 'FOUND?' : 'SEARCH'
     );
     setText(
       'journey-scrap-status',
-      signalLocked ? 'TRAIL LOCKED · REACH THE FAR SIDE' : 'HOLD SCAN AND MOVE TOWARD THE PULSE'
+      signalLocked
+        ? 'TRAIL LOCKED · REACH THE FAR SIDE'
+        : revealed
+          ? insideRadio
+            ? 'CAPTURING SIGNAL · STAY INSIDE THE RING'
+            : 'CHASE THE SIGNAL · ENTER ITS RADIO RING'
+          : 'HOLD SCAN TO REVEAL THE SOURCE'
     );
     updateHull(snapshot.hull);
   }
@@ -201,6 +235,13 @@
   }
 
   function onUpdate(snapshot) {
+    const signal = snapshot.targets.find(target => target.id === 'crystal-trail-signal');
+    if (signal && signal.revealed && !signal.scanned) {
+      JourneyMissionRuntime.updateTarget(signal.id, {
+        x: 210 + Math.sin(snapshot.missionTime * .72) * 105,
+        y: 145 + Math.sin(snapshot.missionTime * 1.13) * 38
+      });
+    }
     updateHud(snapshot);
     snapshot.targets
       .filter(target => target.y > WORLD_HEIGHT + 80 && target.id !== 'crystal-trail-signal')
@@ -230,6 +271,7 @@
     salvageCollected = 0;
     storedSalvageId = null;
     tractorAttachedAt = 0;
+    lastScanToneAt = 0;
     JourneyMissionRuntime.start({
       canvasId: nextConfig.canvasId,
       startX: WORLD_WIDTH / 2,
@@ -251,6 +293,12 @@
         if (target.id !== 'crystal-trail-signal') return;
         signalLocked = true;
         playScanLock();
+      },
+      onScanReveal(target) {
+        if (target.id === 'crystal-trail-signal') playSignalReveal();
+      },
+      onCue(name, detail) {
+        if (name === 'scan-pulse') playScanPulse(detail);
       },
       onTargetHit() {
         playRockImpact();
@@ -288,6 +336,7 @@
     signalLocked = false;
     storedSalvageId = null;
     tractorAttachedAt = 0;
+    lastScanToneAt = 0;
     if (typeof JourneyMissionRuntime !== 'undefined') JourneyMissionRuntime.destroy();
   }
 

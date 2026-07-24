@@ -171,6 +171,54 @@ test('scanner reports strength and locks a nearby hidden signal', () => {
   api.destroy();
 });
 
+test('important signals reveal, require proximity capture, and lose partial lock outside the ring', () => {
+  const { api } = createHarness();
+  const reveals = [];
+  const locks = [];
+  api.start(runtimeConfig({
+    targets: [{
+      id: 'moving-source',
+      type: 'signal',
+      x: 210,
+      y: 520,
+      scanRevealSeconds: .1,
+      scanSeconds: .3,
+      captureRadius: 100,
+      scanDecayRate: 1,
+      hiddenUntilScanned: true
+    }],
+    onScanReveal(target) {
+      reveals.push(target.id);
+    },
+    onScanLock(target) {
+      locks.push(target.id);
+    }
+  }));
+
+  api.setControl('scan', true);
+  api.step(.1);
+  assert.equal(api.getSnapshot().targets[0].revealed, true);
+  assert.deepEqual(reveals, ['moving-source']);
+
+  api.step(.1);
+  const partial = api.getSnapshot().targets[0].scanProgress;
+  assert.ok(partial > 0);
+
+  api.updateTarget('moving-source', { y: 200 });
+  api.setControl('scan', false);
+  api.step(.1);
+  assert.ok(api.getSnapshot().targets[0].scanProgress < partial);
+
+  api.updateTarget('moving-source', { y: 520 });
+  api.setControl('scan', true);
+  api.step(.1);
+  api.step(.1);
+  api.step(.1);
+  assert.equal(api.getSnapshot().targets[0].scanned, true);
+  assert.deepEqual(locks, ['moving-source']);
+  api.destroy();
+});
+
 test('tractor attaches, tows, and releases a nearby target', () => {
   const { api } = createHarness();
   api.start(runtimeConfig({

@@ -71,6 +71,7 @@
 
   function normalizeTarget(source, index) {
     const target = source || {};
+    const revealSeconds = Math.max(0, Number(target.scanRevealSeconds) || 0);
     return {
       id: typeof target.id === 'string' ? target.id : `target-${index}`,
       type: target.type || 'object',
@@ -80,6 +81,11 @@
       scannable: target.scannable !== false,
       scanSeconds: Math.max(.1, Number(target.scanSeconds) || 1.2),
       scanProgress: 0,
+      scanRevealSeconds: revealSeconds,
+      scanRevealProgress: 0,
+      revealed: !!target.revealed || revealSeconds === 0,
+      captureRadius: Math.max(0, Number(target.captureRadius) || 0),
+      scanDecayRate: Math.max(0, Number(target.scanDecayRate) || 0),
       scanned: !!target.scanned,
       hiddenUntilScanned: !!target.hiddenUntilScanned,
       tractorable: !!target.tractorable,
@@ -347,19 +353,65 @@
     const candidate = nearestTarget(target => target.scannable && !target.scanned, scanRange);
     scanTargetId = candidate ? candidate.target.id : null;
     scanStrength = candidate ? clamp(1 - candidate.distance / scanRange, 0, 1) : 0;
-    if (!controls.scan || !candidate) return;
+    if (!candidate) {
+      targets.forEach(target => {
+        if (!target.scannable || !target.revealed || target.scanned || target.scanDecayRate <= 0) return;
+        target.scanProgress = clamp(
+          target.scanProgress - deltaSeconds * target.scanDecayRate,
+          0,
+          target.scanSeconds
+        );
+      });
+      return;
+    }
 
     const target = candidate.target;
-    target.scanProgress = clamp(
-      target.scanProgress + deltaSeconds * (.45 + scanStrength),
-      0,
-      target.scanSeconds
-    );
-    emitCue('scan-pulse', {
-      targetId: target.id,
-      strength: scanStrength,
-      progress: target.scanProgress / target.scanSeconds
-    });
+    if (!target.revealed) {
+      if (!controls.scan) return;
+      target.scanRevealProgress = clamp(
+        target.scanRevealProgress + deltaSeconds * (.55 + scanStrength),
+        0,
+        target.scanRevealSeconds
+      );
+      emitCue('scan-pulse', {
+        targetId: target.id,
+        phase: 'reveal',
+        strength: scanStrength,
+        progress: target.scanRevealProgress / target.scanRevealSeconds
+      });
+      if (target.scanRevealProgress >= target.scanRevealSeconds) {
+        target.revealed = true;
+        emitCue('scan-reveal', { targetId: target.id });
+        if (typeof config.onScanReveal === 'function') {
+          config.onScanReveal(targetSnapshot(target));
+        }
+      }
+      return;
+    }
+
+    const insideCapture = !target.captureRadius || candidate.distance <= target.captureRadius;
+    if (controls.scan && insideCapture) {
+      target.scanProgress = clamp(
+        target.scanProgress + deltaSeconds * (1 + scanStrength * .2),
+        0,
+        target.scanSeconds
+      );
+    } else if (target.scanDecayRate > 0) {
+      target.scanProgress = clamp(
+        target.scanProgress - deltaSeconds * target.scanDecayRate,
+        0,
+        target.scanSeconds
+      );
+    }
+    if (controls.scan) {
+      emitCue('scan-pulse', {
+        targetId: target.id,
+        phase: 'capture',
+        strength: scanStrength,
+        insideCapture,
+        progress: target.scanProgress / target.scanSeconds
+      });
+    }
     if (target.scanProgress >= target.scanSeconds && !target.scanned) {
       target.scanned = true;
       emitCue('scan-lock', { targetId: target.id });
@@ -476,6 +528,12 @@
       scanProgress: target.scanProgress,
       attached: target.attached,
       interacted: target.interacted,
+      revealed: target.revealed,
+      scanRevealProgress: target.scanRevealProgress,
+      scanRevealSeconds: target.scanRevealSeconds,
+      scanProgress: target.scanProgress,
+      scanSeconds: target.scanSeconds,
+      captureRadius: target.captureRadius,
       hp: target.hp,
       collisionDamage: target.collisionDamage,
       data: target.data
@@ -512,8 +570,8 @@
   }
 
   function drawTarget(target) {
-    if (target.hiddenUntilScanned && !target.scanned && target.id !== scanTargetId) return;
-    const faint = target.hiddenUntilScanned && !target.scanned;
+    if (target.hiddenUntilScanned && !target.revealed && target.id !== scanTargetId) return;
+    const faint = target.hiddenUntilScanned && !target.revealed;
     context.save();
     context.translate(target.x, target.y);
     context.globalAlpha = faint ? .32 : 1;
@@ -534,6 +592,30 @@
       context.fill();
     } else if (target.type === 'signal') {
       const pulse = target.r + Math.sin(performance.now() / 220) * 5;
+      if (target.revealed && target.captureRadius) {
+        context.save();
+        context.globalAlpha = .4;
+        context.setLineDash([9, 8]);
+        context.beginPath();
+        context.arc(0, 0, target.captureRadius, 0, Math.PI * 2);
+        context.stroke();
+        context.setLineDash([]);
+        context.globalAlpha = 1;
+        if (target.scanProgress > 0) {
+          context.strokeStyle = '#fff1a6';
+          context.lineWidth = 5;
+          context.beginPath();
+          context.arc(
+            0,
+            0,
+            target.captureRadius,
+            -Math.PI / 2,
+            -Math.PI / 2 + Math.PI * 2 * (target.scanProgress / target.scanSeconds)
+          );
+          context.stroke();
+        }
+        context.restore();
+      }
       context.beginPath();
       context.arc(0, 0, pulse, 0, Math.PI * 2);
       context.stroke();

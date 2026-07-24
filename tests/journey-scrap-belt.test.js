@@ -20,6 +20,12 @@ test('Scrap Belt is authored on the reusable mission runtime', () => {
   assert.match(source, /runtime\.player\.y/);
   assert.match(source, /scanRange:/);
   assert.match(source, /onScanLock/);
+  assert.match(source, /onScanReveal/);
+  assert.match(source, /scanRevealSeconds:/);
+  assert.match(source, /captureRadius:/);
+  assert.match(source, /scanDecayRate:/);
+  assert.match(source, /playScanPulse/);
+  assert.match(source, /Math\.sin\(snapshot\.missionTime/);
   assert.match(source, /onTractorAttach/);
   assert.match(source, /onTargetDestroyed/);
   assert.match(source, /onPlayerDamage/);
