@@ -149,6 +149,22 @@ test('the cockpit centers the route and moves detail into ship and log views', (
   );
 });
 
+test('the cockpit gear opens state-backed developer checkpoints', () => {
+  const controller = fs.readFileSync(
+    path.join(__dirname, '..', 'js', 'games', 'journey.js'),
+    'utf8'
+  );
+
+  assert.match(controller, /class="journey-debug-gear"/);
+  assert.match(controller, /window\.journeyOpenDebug/);
+  assert.match(controller, /function renderDebugMenu/);
+  assert.match(controller, /window\.journeyDebugCheckpoint/);
+  assert.match(controller, /JourneyState\.prepareDebugCheckpoint\(checkpointId\)/);
+  assert.match(controller, /window\.journeyDebugRestoreShip/);
+  assert.match(controller, /JourneyState\.restoreDebugShip\(\)/);
+  assert.match(controller, /RETEST A BEAT/);
+});
+
 test('dock repairs are immediate instead of using a short countdown', () => {
   const controller = fs.readFileSync(
     path.join(__dirname, '..', 'js', 'games', 'journey.js'),

@@ -413,6 +413,7 @@
             <span>${typeof charFace === 'function' ? charFace(hero, 'normal') : hero.emoji}</span>
             <small>${hero.name}</small>
           </div>
+          <button class="journey-debug-gear" type="button" onclick="journeyOpenDebug()" aria-label="Open Journey developer checkpoints" title="Developer checkpoints">⚙</button>
         </header>
         <button class="journey-message-bar ${!unreadIntel && systemWarning ? 'is-status-warning' : ''}" type="button" onclick="${unreadIntel ? `journeyReadIntel('${unreadIntel.id}')` : systemWarning ? 'journeyOpenEngineering()' : 'journeyOpenLog()'}">
           <span>${unreadIntel ? 'INCOMING INTEL' : systemWarning ? '⚠ SHIP STATUS' : 'SHIP MESSAGE'}</span>
@@ -453,6 +454,46 @@
             : destination
               ? `<button type="button" onclick="journeyDepart()" ${canDepart ? '' : 'disabled'}>DEPART <small>${canDepart ? `${destination.fuelCost} FUEL · READY` : departure.blockers.map(blocker => blocker.message).join(' · ')}</small></button>`
               : ''}
+        </section>
+      </main>`;
+  }
+
+  function renderDebugMenu() {
+    const root = host();
+    const state = JourneyState.getState();
+    if (!root || !state || !active) return;
+    const location = JourneyData.getNode(state.currentNodeId);
+    const checkpoints = [
+      ['opening', 'OPENING STORY', 'Replay the crystal theft and first launch.'],
+      ['lantern-station', 'LANTERN STATION', 'Launch from Home with the starting low tank.'],
+      ['scrap-belt', 'SCRAP BELT', 'Depart Lantern with fuel and enter the first mission.'],
+      ['pilot-call', "PILOT'S CALL", 'Open the unread two-signal transmission.'],
+      ['distress-signal', 'DISTRESS SIGNAL', 'Depart for the rescue and signal-search mission.'],
+      ['abandoned-cache', 'ABANDONED CACHE', 'Depart for the supply cache and first crystal.'],
+      ['repair-moon', 'REPAIR MOON', 'Arrive with Pip, damage, and salvage to spend.']
+    ];
+    root.innerHTML = `
+      <main class="journey-debug-screen" aria-labelledby="journey-debug-title">
+        <header>
+          <button type="button" onclick="journeyShip()">◀ COCKPIT</button>
+          <div><span>DEVELOPMENT ONLY</span><strong id="journey-debug-title">CHECKPOINTS</strong></div>
+          <b>⚙ DEV</b>
+        </header>
+        <section class="journey-debug-intro">
+          <strong>RETEST A BEAT</strong>
+          <p>Each checkpoint replaces the Journey save with the route, intel, crew, and resources required immediately before that beat.</p>
+        </section>
+        <section class="journey-debug-grid">
+          ${checkpoints.map(([id, title, detail]) => `
+            <button type="button" onclick="journeyDebugCheckpoint('${id}')">
+              <span>LOAD CHECKPOINT</span>
+              <strong>${title}</strong>
+              <small>${detail}</small>
+            </button>`).join('')}
+        </section>
+        <section class="journey-debug-utility">
+          <div><strong>CURRENT SAVE</strong><span>${location.name.toUpperCase()} · ${Math.round(state.resources.hull)} HULL · ${Math.round(state.resources.fuel)} FUEL</span></div>
+          <button type="button" onclick="journeyDebugRestoreShip()">RESTORE SHIP</button>
         </section>
       </main>`;
   }
@@ -1120,6 +1161,33 @@
 
   window.journeyShip = function () {
     playMenuSound();
+    renderShip();
+  };
+
+  window.journeyOpenDebug = function () {
+    playMenuSound();
+    renderDebugMenu();
+  };
+
+  window.journeyDebugCheckpoint = function (checkpointId) {
+    playMenuSound();
+    const result = JourneyState.prepareDebugCheckpoint(checkpointId);
+    if (!result.ok) return;
+    clearStoryTimers();
+    pendingEncounterPresentation = null;
+    JourneyCombat.destroy();
+    if (typeof JourneyScrapBelt !== 'undefined') JourneyScrapBelt.destroy();
+    if (typeof JourneyMissionRuntime !== 'undefined') JourneyMissionRuntime.destroy();
+    shipNotice = `DEV CHECKPOINT · ${checkpointId.replace(/-/g, ' ').toUpperCase()}`;
+    if (checkpointId === 'opening') renderJourneyIntro();
+    else renderShip();
+  };
+
+  window.journeyDebugRestoreShip = function () {
+    playMenuSound();
+    const result = JourneyState.restoreDebugShip();
+    if (!result.ok) return;
+    shipNotice = 'DEV TOOL · SHIP RESTORED';
     renderShip();
   };
 

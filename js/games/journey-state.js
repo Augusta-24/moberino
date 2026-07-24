@@ -259,6 +259,91 @@
     return state;
   }
 
+  function prepareDebugCheckpoint(checkpointId) {
+    const validCheckpoints = [
+      'opening',
+      'lantern-station',
+      'scrap-belt',
+      'pilot-call',
+      'distress-signal',
+      'abandoned-cache',
+      'repair-moon'
+    ];
+    if (!validCheckpoints.includes(checkpointId)) {
+      return mutationResult(false, 'unknown-debug-checkpoint', { checkpointId });
+    }
+
+    const now = Date.now();
+    const previousCreatedAt = state && state.createdAt;
+    const checkpoint = clone(DEFAULT_SAVE);
+    checkpoint.createdAt = typeof previousCreatedAt === 'number' ? previousCreatedAt : now;
+    checkpoint.lastPlayedAt = now;
+
+    if (checkpointId !== 'opening') checkpoint.settings.tutorialComplete = true;
+    if (checkpointId === 'lantern-station') checkpoint.selectedDestinationId = 'fuel-stop-1';
+
+    if (['scrap-belt', 'pilot-call', 'distress-signal', 'abandoned-cache', 'repair-moon'].includes(checkpointId)) {
+      checkpoint.currentNodeId = 'fuel-stop-1';
+      checkpoint.resources.fuel = checkpoint.resources.maxFuel;
+      checkpoint.currency.salvage = 8;
+      checkpoint.route.visitedNodes = ['home-orbit', 'fuel-stop-1'];
+      checkpoint.route.completedNodes = ['fuel-stop-1'];
+      checkpoint.route.unlockedNodes = ['home-orbit', 'fuel-stop-1', 'scrap-belt'];
+      checkpoint.selectedDestinationId = 'scrap-belt';
+      checkpoint.totalDistance = 18;
+    }
+
+    if (['pilot-call', 'distress-signal', 'abandoned-cache', 'repair-moon'].includes(checkpointId)) {
+      checkpoint.currentNodeId = 'scrap-belt';
+      checkpoint.selectedDestinationId = null;
+      checkpoint.resources.fuel = 34;
+      checkpoint.resources.hull = 76;
+      checkpoint.currency.salvage = 31;
+      checkpoint.route.visitedNodes.push('scrap-belt');
+      checkpoint.route.completedNodes.push('scrap-belt');
+      checkpoint.route.unlockedNodes.push('distress-signal', 'abandoned-cache');
+      checkpoint.log.transmissions = ['scrap-belt-signals'];
+      checkpoint.totalDistance = 52;
+    }
+
+    if (['distress-signal', 'abandoned-cache', 'repair-moon'].includes(checkpointId)) {
+      checkpoint.log.readTransmissions = ['scrap-belt-signals'];
+    }
+
+    if (checkpointId === 'distress-signal') checkpoint.selectedDestinationId = 'distress-signal';
+    if (checkpointId === 'abandoned-cache') checkpoint.selectedDestinationId = 'abandoned-cache';
+
+    if (checkpointId === 'repair-moon') {
+      checkpoint.currentNodeId = 'distress-signal';
+      checkpoint.selectedDestinationId = 'repair-moon';
+      checkpoint.resources.fuel = 27;
+      checkpoint.resources.hull = 61;
+      checkpoint.currency.salvage = 42;
+      checkpoint.passengers.active = ['pip'];
+      checkpoint.passengers.rescued = ['pip'];
+      checkpoint.route.visitedNodes.push('distress-signal');
+      checkpoint.route.completedNodes.push('distress-signal');
+      checkpoint.route.unlockedNodes.push('repair-moon');
+      checkpoint.totalDistance = 81;
+    }
+
+    state = sanitize(checkpoint);
+    returnSummary = [`Debug checkpoint loaded: ${checkpointId}.`];
+    saveJourneyState(`debug-checkpoint-${checkpointId}`);
+    return mutationResult(true, 'debug-checkpoint-loaded', { checkpointId, state });
+  }
+
+  function restoreDebugShip() {
+    if (!state) return mutationResult(false, 'no-save');
+    state.resources.hull = state.resources.maxHull;
+    state.resources.fuel = state.resources.maxFuel;
+    state.resources.power = state.resources.maxPower;
+    state.resources.pilot = 100;
+    state.timers.repairCompleteAt = null;
+    saveJourneyState('debug-restore-ship');
+    return mutationResult(true, 'debug-ship-restored');
+  }
+
   function getState() {
     return state;
   }
@@ -616,6 +701,8 @@
     hasSave,
     load,
     createNew,
+    prepareDebugCheckpoint,
+    restoreDebugShip,
     getState,
     getReturnSummary,
     saveJourneyState,

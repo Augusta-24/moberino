@@ -1341,12 +1341,15 @@ Implement:
 
 Create a simple developer debug panel or temporary console helpers for:
 
-- set fuel,
-- set hull,
-- set power,
-- set pilot readiness,
-- jump to route node,
-- clear save.
+- loading a known-good checkpoint immediately before each authored beat,
+- restoring hull, fuel, power, and pilot readiness without changing progression,
+- rebuilding prerequisite route, intel, crew, and resource state rather than
+  jumping only the visible screen.
+
+During active development, the Journey cockpit exposes these tools from a gear
+in the top bar. A checkpoint intentionally replaces the Journey save so every
+retest begins from a reproducible state and still uses normal route and mission
+logic.
 
 Ensure debug controls are disabled or removed for production.
 

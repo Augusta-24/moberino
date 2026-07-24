@@ -60,6 +60,57 @@ test('new Journey saves use an independent key and expected defaults', () => {
   assert.equal(storage.has('space-best-campaign'), false);
 });
 
+test('debug checkpoints rebuild coherent saves immediately before each beat', () => {
+  const { api } = createHarness();
+  api.createNew();
+
+  assert.equal(api.prepareDebugCheckpoint('scrap-belt').ok, true);
+  let state = api.getState();
+  assert.equal(state.currentNodeId, 'fuel-stop-1');
+  assert.equal(state.selectedDestinationId, 'scrap-belt');
+  assert.equal(state.resources.fuel, 40);
+  assert.equal(state.route.completedNodes.includes('fuel-stop-1'), true);
+  assert.equal(state.settings.tutorialComplete, true);
+
+  assert.equal(api.prepareDebugCheckpoint('pilot-call').ok, true);
+  state = api.getState();
+  assert.equal(state.currentNodeId, 'scrap-belt');
+  assert.equal(state.selectedDestinationId, null);
+  assert.deepEqual(Array.from(api.getUnreadTransmissionIds()), ['scrap-belt-signals']);
+
+  assert.equal(api.prepareDebugCheckpoint('distress-signal').ok, true);
+  state = api.getState();
+  assert.equal(state.selectedDestinationId, 'distress-signal');
+  assert.deepEqual(Array.from(api.getUnreadTransmissionIds()), []);
+
+  assert.equal(api.prepareDebugCheckpoint('repair-moon').ok, true);
+  state = api.getState();
+  assert.equal(state.currentNodeId, 'distress-signal');
+  assert.equal(state.selectedDestinationId, 'repair-moon');
+  assert.equal(state.route.completedNodes.includes('distress-signal'), true);
+  assert.equal(state.route.unlockedNodes.includes('repair-moon'), true);
+  assert.deepEqual(Array.from(state.passengers.active), ['pip']);
+});
+
+test('debug ship restore preserves progression and rejects unknown checkpoints', () => {
+  const { api } = createHarness();
+  const state = api.createNew();
+  state.resources.hull = 18;
+  state.resources.fuel = 2;
+  state.resources.power = 5;
+  state.resources.pilot = 9;
+  state.currency.salvage = 17;
+
+  assert.equal(api.prepareDebugCheckpoint('missing-level').code, 'unknown-debug-checkpoint');
+  assert.equal(api.getState().resources.hull, 18);
+  assert.equal(api.restoreDebugShip().ok, true);
+  assert.equal(api.getState().resources.hull, 100);
+  assert.equal(api.getState().resources.fuel, 40);
+  assert.equal(api.getState().resources.power, 100);
+  assert.equal(api.getState().resources.pilot, 100);
+  assert.equal(api.getState().currency.salvage, 17);
+});
+
 test('malformed saves recover safely and clamp persistent meters', () => {
   const malformed = JSON.stringify({
     version: -10,
