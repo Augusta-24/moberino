@@ -607,70 +607,41 @@ body.on-journey {
 
 .journey-maintenance-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin: 22px 0;
 }
 
-.journey-scrap-balance {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 18px;
-  border: 1px solid var(--journey-gold);
-  border-radius: 8px;
-  padding: 12px 14px;
+.journey-repair-consequence {
+  margin: 4px 0 0;
+  color: #d7cdb8;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.journey-repair-consequence strong {
+  color: #ff8797;
+  font-weight: normal;
+}
+
+.journey-repair-warning {
+  margin: 10px 0 0;
   color: var(--journey-gold);
-  font-size: 13px;
-  letter-spacing: 1.5px;
-}
-
-.journey-scrap-balance strong {
-  color: #f5f3ec;
-  font: 30px/1 'Bebas Neue', sans-serif;
-}
-
-.journey-maintenance-notice {
-  margin-top: 10px;
-  border-left: 3px solid var(--journey-gold);
-  padding: 9px 12px;
-  background: rgba(255,241,166,.09);
-  color: #f5f3ec;
   font-size: 14px;
   line-height: 1.4;
 }
 
-.journey-next-mission {
+.journey-repair-next {
   margin: 4px 0 18px;
-  border: 1px solid rgba(183,156,255,.55);
-  border-radius: 9px;
-  padding: 14px;
-  background: rgba(183,156,255,.09);
+  color: #9fb3c8;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
-.journey-next-mission span,
-.journey-next-mission strong {
-  display: block;
-}
-
-.journey-next-mission span {
+.journey-repair-next span {
+  margin-right: 8px;
   color: var(--journey-gold);
   font-size: 12px;
   letter-spacing: 1.5px;
-}
-
-.journey-next-mission strong {
-  margin-top: 5px;
-  color: #f5f3ec;
-  font: 28px/1 'Bebas Neue', sans-serif;
-  letter-spacing: 2px;
-}
-
-.journey-next-mission p {
-  margin-top: 7px;
-  color: #f5f3ec;
-  font-size: 15px;
-  line-height: 1.45;
 }
 
 .journey-maintenance-grid article {
@@ -3619,12 +3590,6 @@ body.on-journey {
   width: 10px;
 }
 
-.journey-cockpit-companion > span {
-  margin-top: 2px;
-  color: #d2c3ff;
-  font: 12px/1 'VCR', monospace;
-}
-
 .journey-cockpit-condition span {
   color: #f5f3ec;
   font-size: 12px;
@@ -3774,7 +3739,6 @@ body.on-journey {
 }
 
 .journey-log-branch,
-.journey-repair-branch,
 .journey-choice-consequence {
   margin-top: 14px;
   border: 1px solid rgba(255,200,87,.66);
@@ -3785,15 +3749,12 @@ body.on-journey {
 
 .journey-log-branch span,
 .journey-log-branch strong,
-.journey-repair-branch span,
-.journey-repair-branch strong,
 .journey-choice-consequence span,
 .journey-choice-consequence strong {
   display: block;
 }
 
 .journey-log-branch span,
-.journey-repair-branch span,
 .journey-choice-consequence span {
   color: #ff8797;
   font-size: 12px;
@@ -3801,7 +3762,6 @@ body.on-journey {
 }
 
 .journey-log-branch strong,
-.journey-repair-branch strong,
 .journey-choice-consequence strong {
   margin-top: 6px;
   color: var(--journey-gold);
@@ -3810,7 +3770,6 @@ body.on-journey {
 }
 
 .journey-log-branch p,
-.journey-repair-branch p,
 .journey-choice-consequence p {
   margin-top: 7px;
   color: #fff;
@@ -4774,3 +4733,198 @@ body.on-journey {
     transform: translateX(0);
   }
 }
+
+
+
+/* ---- Abandoned Cache · "Wake the Vault" power-lattice puzzle ---------- */
+.journey-cache-mission-screen {
+  display: grid;
+  grid-template-rows: 64px minmax(0, 1fr);
+  width: min(100%, 580px);
+  height: 100%;
+  margin: 0 auto;
+  padding: max(8px, env(safe-area-inset-top)) 10px max(8px, env(safe-area-inset-bottom));
+  overflow: hidden;
+  background: #02040a;
+}
+.journey-cache-mission-screen > header {
+  position: relative; z-index: 8; display: grid; align-content: center;
+  border: 1px solid rgba(60,90,120,.34); border-radius: 8px 8px 0 0;
+  padding: 8px 14px; background: rgba(6,11,22,.98);
+}
+.journey-cache-mission-screen > header span { display: block; color: #5f9fc0; font: 12px/1 'VCR', monospace; letter-spacing: 1.5px; }
+.journey-cache-mission-screen > header strong { display: block; margin-top: 5px; color: #e8d79a; font: 21px/1 'Bebas Neue', sans-serif; letter-spacing: 2px; }
+
+.journey-cache-stage {
+  position: relative; min-height: 0; overflow: hidden;
+  border: 1px solid rgba(60,90,120,.28); border-top: 0;
+  background: radial-gradient(120% 90% at 50% 30%, #0c141f, #070c15 55%, #02040a 100%);
+  touch-action: manipulation;
+}
+.journey-cache-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.journey-cache-scan { position: absolute; inset: 0; pointer-events: none; opacity: .5; background: repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 1px, transparent 1px 3px); }
+.journey-cache-vig { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at 50% 42%, transparent 40%, rgba(0,0,0,.55) 78%, rgba(0,0,0,.85) 100%); }
+.jc-feed { fill: #eafcff; filter: drop-shadow(0 0 5px #4fd4ff); }
+
+/* conduit tiles: unsealed = warm/loose, sealed = cyan, flooded = bright */
+.journey-cache-tile { cursor: pointer; }
+.jc-plate { fill: #0d141d; stroke: #02060c; stroke-width: 2; transition: stroke .2s; }
+.jc-bevel-top { fill: #243244; opacity: .7; }
+.jc-chan { transition: transform .16s cubic-bezier(.34,1.4,.5,1); }
+.jc-seg { fill: #b0763a; transition: fill .18s; }
+.jc-hub { fill: #7a5b32; stroke: #050a10; stroke-width: 2; transition: fill .18s; }
+.journey-cache-tile.is-sealed .jc-seg { fill: #5fd0ff; }
+.journey-cache-tile.is-sealed .jc-hub { fill: #7fe0ff; }
+.journey-cache-tile.is-sealed .jc-plate { stroke: #223a4e; }
+.journey-cache-tile.is-flooded .jc-seg { fill: #eafcff; filter: drop-shadow(0 0 5px #4fd4ff); }
+.journey-cache-tile.is-flooded .jc-hub { fill: #eafcff; filter: drop-shadow(0 0 6px #7fe0ff); }
+.journey-cache-tile.is-flooded .jc-plate { stroke: #3a6a8c; }
+
+/* Leak warning: independent of energized/blue state, so a leak can never hide
+   behind an otherwise-lit tile. A faint, slow amber ring around the plate — a
+   quiet hint, not an alarm — visible whether the tile is dark, energized, or
+   anything in between. */
+.journey-cache-tile.is-leaking .jc-plate { stroke: #c97a4a; stroke-width: 1.5; animation: jc-leak-pulse 2.4s ease-in-out infinite; }
+@keyframes jc-leak-pulse {
+  0%, 100% { stroke-opacity: .55; }
+  50% { stroke-opacity: .22; }
+}
+
+/* diegetic power-on: board is dark until you board the cache */
+.journey-cache-svg { transition: filter .45s ease; }
+.journey-cache-stage.is-dark .journey-cache-svg { filter: brightness(.32) saturate(.55); }
+.journey-cache-stage.is-powering .journey-cache-svg { animation: jc-poweron .64s ease; }
+@keyframes jc-poweron {
+  0% { filter: brightness(.32) saturate(.55); }
+  18% { filter: brightness(1.35); }
+  32% { filter: brightness(.55); }
+  52% { filter: brightness(1.45); }
+  70% { filter: brightness(.8); }
+  100% { filter: brightness(1); }
+}
+
+/* lock-bolts */
+.jc-bolt-stub { stroke: #1a2a3a; stroke-width: 5; transition: stroke .3s; }
+.jc-bolt-housing { fill: #141f2b; stroke: #2b3d50; stroke-width: 2; }
+.jc-bolt-pin { fill: #3a4d63; transition: transform .35s cubic-bezier(.5,-0.4,.4,1.4); }
+.jc-bolt-lamp { fill: #223343; transition: fill .2s; }
+.journey-cache-bolt.is-lit .jc-bolt-lamp { fill: #9fe8ff; filter: drop-shadow(0 0 8px #7fe0ff); }
+.journey-cache-bolt.is-lit .jc-bolt-pin { transform: translateY(-11px); }
+.journey-cache-bolt.is-lit .jc-bolt-stub { stroke: #5fd0ff; filter: drop-shadow(0 0 5px #4fc0ef); }
+.journey-cache-bolt.is-lit { animation: jc-clunk .34s ease; }
+.journey-cache-stage.is-solved .jc-vault-ring { stroke: #b7f0ff; filter: drop-shadow(0 0 14px #7fe0ff); }
+
+/* ENERGIZE control (plan phase only) */
+.journey-cache-energize {
+  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
+  z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  min-height: 56px; border: 2px solid #f0b24a; border-radius: 9px; padding: 8px 30px;
+  background: rgba(240,178,74,.14); color: #ffd98a; cursor: pointer;
+  box-shadow: 0 0 26px rgba(240,178,74,.28);
+}
+.journey-cache-energize span { font: 12px/1 'VCR', monospace; letter-spacing: 2px; color: #b98a3a; }
+.journey-cache-energize strong { font: 22px/1 'Bebas Neue', sans-serif; letter-spacing: 3px; }
+.journey-cache-stage:not(.phase-plan) .journey-cache-energize,
+.journey-cache-stage.is-paused .journey-cache-energize { display: none; }
+
+/* start overlay */
+.journey-cache-start {
+  position: absolute; inset: 0; z-index: 12; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; border: 0; padding: 26px;
+  background: rgba(2,5,12,.84); color: #e6eefc; text-align: center; cursor: pointer;
+}
+.journey-cache-start strong { color: #7fd4ff; font: 38px/.95 'Bebas Neue', sans-serif; letter-spacing: 3px; text-shadow: 0 0 22px rgba(80,160,210,.5); }
+.journey-cache-start small { margin-top: 18px; max-width: 34ch; color: #cdddf0; font: 18px/1.55 'VCR', monospace; }
+.journey-cache-start b { margin-top: 26px; border: 2px solid #3f7fb0; border-radius: 7px; padding: 15px 24px; background: rgba(60,130,180,.16); color: #bfe4ff; font: 16px/1 'VCR', monospace; letter-spacing: 1px; }
+.journey-cache-stage:not(.is-paused) .journey-cache-start { display: none; }
+
+/* fail / re-plan */
+.journey-cache-fail {
+  position: absolute; inset: 0; z-index: 13; display: none; flex-direction: column;
+  align-items: center; justify-content: center; padding: 26px;
+  background: radial-gradient(circle at 50% 40%, rgba(150,50,40,.2), transparent 45%), rgba(2,5,12,.9);
+  color: #f0e2d2; text-align: center;
+}
+.journey-cache-fail.is-shown { display: flex; }
+.journey-cache-fail span { color: #d8a24a; font: 13px/1 'VCR', monospace; letter-spacing: 2px; }
+.journey-cache-fail strong { margin-top: 10px; color: #e88a5a; font: 34px/.95 'Bebas Neue', sans-serif; letter-spacing: 2px; }
+.journey-cache-fail p { margin: 12px 0 0; max-width: 32ch; color: #cdb9a8; font: 16px/1.5 'VCR', monospace; }
+.journey-cache-fail button { min-height: 54px; margin-top: 24px; border: 2px solid #d8a24a; border-radius: 7px; padding: 12px 22px; background: rgba(216,162,74,.14); color: #f4dcb0; font: 15px/1 'VCR', monospace; cursor: pointer; }
+
+/* crystal reveal */
+.journey-reveal-screen {
+  position: relative; width: min(100%, 580px); height: 100%; margin: 0 auto;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 22px; padding: 24px; overflow: hidden; background: radial-gradient(120% 80% at 50% 34%, #10203a, #060b16 60%, #02040a 100%);
+}
+.journey-reveal-crystal { width: 170px; height: 220px; animation: jc-crystal-float 3.6s ease-in-out infinite; }
+.journey-reveal-crystal svg { width: 100%; height: 100%; filter: drop-shadow(0 0 22px rgba(120,150,255,.55)); }
+.journey-reveal-caption { text-align: center; }
+.journey-reveal-caption span { display: block; color: #8aa6d8; font: 13px/1 'VCR', monospace; letter-spacing: 3px; }
+.journey-reveal-caption h1 { margin: 8px 0 0; color: #c3d2ff; font: 46px/.95 'Bebas Neue', sans-serif; letter-spacing: 3px; text-shadow: 0 0 24px rgba(120,150,255,.4); }
+.journey-reveal-continue { margin-top: 4px; }
+
+@keyframes jc-vent { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+@keyframes jc-clunk { 0% { transform: scale(1.18); } 60% { transform: scale(.96); } 100% { transform: scale(1); } }
+@keyframes jc-crystal-float { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-14px) rotate(2deg); } }
+
+/* ---- Generic polyomino-packing engine (journey-packing-engine.js) ----- */
+.jpe-region-bg { fill: rgba(4,8,14,.6); stroke: rgba(255,255,255,.1); stroke-width: 1.5; }
+.jpe-socket { fill: rgba(255,255,255,.04); stroke: rgba(255,255,255,.18); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.jpe-piece { cursor: grab; touch-action: none; transition: transform .12s ease; }
+.jpe-piece-hit { fill: transparent; }
+.jpe-piece.is-dragging { cursor: grabbing; transition: none; }
+.jpe-piece .jpe-cell { transition: fill .15s ease, opacity .15s ease; }
+.jpe-piece.is-placed .jpe-cell { filter: drop-shadow(0 0 3px rgba(0,0,0,.5)); }
+
+/* ---- Repair Moon · dry-dock hull-patch mission -------------------------- */
+.journey-repair-mission-screen {
+  display: grid; grid-template-rows: 64px minmax(0, 1fr);
+  width: min(100%, 580px); height: 100%; margin: 0 auto;
+  padding: max(8px, env(safe-area-inset-top)) 10px max(8px, env(safe-area-inset-bottom));
+  overflow: hidden; background: #02040a;
+}
+.journey-repair-mission-screen > header {
+  position: relative; z-index: 8; display: grid; align-content: center;
+  border: 1px solid rgba(60,90,120,.34); border-radius: 8px 8px 0 0;
+  padding: 8px 14px; background: rgba(6,11,22,.98);
+}
+.journey-repair-mission-screen > header span { display: block; color: #5f9fc0; font: 12px/1 'VCR', monospace; letter-spacing: 1.5px; }
+.journey-repair-mission-screen > header strong { display: block; margin-top: 5px; color: #e8d79a; font: 21px/1 'Bebas Neue', sans-serif; letter-spacing: 2px; }
+
+.journey-repair-stage {
+  position: relative; min-height: 0; overflow: hidden;
+  border: 1px solid rgba(60,90,120,.28); border-top: 0;
+  background: radial-gradient(120% 90% at 50% 30%, #0c141f, #070c15 55%, #02040a 100%);
+  touch-action: manipulation;
+}
+.journey-repair-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; transition: filter .45s ease; }
+.journey-repair-stage.is-dark .journey-repair-svg { filter: brightness(.32) saturate(.55); }
+.journey-repair-stage.is-powering .journey-repair-svg { animation: jr-poweron .64s ease; }
+@keyframes jr-poweron {
+  0% { filter: brightness(.32) saturate(.55); }
+  18% { filter: brightness(1.35); }
+  32% { filter: brightness(.55); }
+  52% { filter: brightness(1.45); }
+  70% { filter: brightness(.8); }
+  100% { filter: brightness(1); }
+}
+.journey-repair-scan { position: absolute; inset: 0; pointer-events: none; opacity: .5; background: repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 1px, transparent 1px 3px); }
+.journey-repair-vig { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at 50% 42%, transparent 40%, rgba(0,0,0,.55) 78%, rgba(0,0,0,.85) 100%); }
+
+.journey-repair-stage.is-welded .journey-repair-svg { animation: jr-weld-flash .5s ease; }
+@keyframes jr-weld-flash {
+  0% { filter: brightness(1); }
+  30% { filter: brightness(1.6) saturate(1.3); }
+  100% { filter: brightness(1); }
+}
+
+.journey-repair-start {
+  position: absolute; inset: 0; z-index: 12; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; border: 0; padding: 26px;
+  background: rgba(2,5,12,.84); color: #e6eefc; text-align: center; cursor: pointer;
+}
+.journey-repair-start strong { color: #e8d79a; font: 36px/.95 'Bebas Neue', sans-serif; letter-spacing: 3px; text-shadow: 0 0 22px rgba(210,170,90,.4); }
+.journey-repair-start small { margin-top: 18px; max-width: 34ch; color: #cdddf0; font: 18px/1.55 'VCR', monospace; }
+.journey-repair-start b { margin-top: 26px; border: 2px solid #b0854a; border-radius: 7px; padding: 15px 24px; background: rgba(176,133,74,.16); color: #f0d9ab; font: 16px/1 'VCR', monospace; letter-spacing: 1px; }
+.journey-repair-stage:not(.is-paused) .journey-repair-start { display: none; }

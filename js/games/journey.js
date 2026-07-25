@@ -4,7 +4,14 @@
   'use strict';
 
   const hostId = 'journey-wrap';
+  // Seven Star Crystals is the whole-game goal. Chapter One recovers only the
+  // first; see the guide's "Crystal handling" note. This is the single source of
+  // truth for the "/ 7" the cockpit, log, and recovery beat display.
+  const CRYSTAL_GOAL = 7;
   let active = false;
+  let pendingCacheLaunch = null;
+  let pendingCacheSuccess = null;
+  let pendingRepairLaunch = null;
   let shipNotice = '';
   let maintenanceNotice = '';
   let storyTimers = [];
@@ -54,7 +61,7 @@
   }
 
   function crystalCluster(count) {
-    const total = Math.max(1, count || 7);
+    const total = Math.max(1, count || CRYSTAL_GOAL);
     return `<div class="journey-crystal-cluster ${total === 1 ? 'is-single' : 'is-arc'}">${Array.from({ length: total }, (_, index) =>
       `<i style="--crystal-index:${total === 1 ? 3 : index}"></i>`
     ).join('')}</div>`;
@@ -101,7 +108,7 @@
       {
         eyebrow: 'A QUIET MORNING · HOME ORBIT',
         title: `${hero.name} FOUND AN EMPTY VAULT`,
-        visual: `${heroPortrait('sad')}${crystalCluster(7)}`,
+        visual: `${heroPortrait('sad')}${crystalCluster(CRYSTAL_GOAL)}`,
         line: 'The seven Star Crystals were gone.'
       },
       {
@@ -471,7 +478,7 @@
           <i>${unreadIntel ? 'OPEN →' : systemWarning ? 'WARNING' : 'LOG →'}</i>
         </button>
         <section class="journey-map-panel">
-          <div class="journey-map-title"><span>CHAPTER ONE · CRYSTAL TRAIL</span><strong>${state.currency.crystals} / 7 CRYSTALS</strong></div>
+          <div class="journey-map-title"><span>CHAPTER ONE · CRYSTAL TRAIL</span><strong>${state.currency.crystals} / ${CRYSTAL_GOAL} CRYSTALS</strong></div>
           ${cockpitMap(state, location, route)}
         </section>
         <section class="journey-cockpit-ship ${state.passengers.active.includes('pip') ? 'has-pip' : ''}">
@@ -480,7 +487,6 @@
           ${state.passengers.active.includes('pip') ? `
             <div class="journey-cockpit-companion" aria-label="Pip is aboard the Wayfarer">
               <div class="journey-pip-face" aria-hidden="true"><i></i><i></i><b></b></div>
-              <span>PIP</span>
             </div>` : ''}
           <div class="journey-quick-status">
             <span>HULL<strong>${Math.round(r.hull)}</strong></span>
@@ -717,24 +723,6 @@
       </main>`;
   }
 
-  function renderCrystalRecovery() {
-    const root = host();
-    const hero = selectedHero();
-    const state = JourneyState.getState();
-    if (!root || !state || !active) return;
-    root.innerHTML = `
-      <main class="journey-story-screen">
-        <div class="journey-starfield" aria-hidden="true"></div>
-        <div class="journey-story-stage is-visible">
-          <div class="journey-story-eyebrow">ABANDONED CACHE · HIDDEN COMPARTMENT</div>
-          <div class="journey-story-title">STAR CRYSTAL RECOVERED</div>
-          <div class="journey-story-visual">${crystalCluster(1)}</div>
-          <div class="journey-story-line">${hero.name}: “One down. Six still out there.”</div>
-          <button class="journey-primary-btn" type="button" onclick="journeyFinishCrystalBeat()">CONTINUE → · ${state.currency.crystals} / 7 CRYSTALS</button>
-        </div>
-      </main>`;
-  }
-
   function renderLanternRefuel(startFuel, gained, firstVisit) {
     const root = host();
     const state = JourneyState.getState();
@@ -896,11 +884,11 @@
     const branch = pilotCallStatus(state);
     root.innerHTML = `
       <main class="journey-log-screen">
-        <header><button type="button" onclick="journeyShip()">◀ COCKPIT</button><div><span>WAYFARER ARCHIVE</span><strong>JOURNEY LOG</strong></div><b>${state.currency.crystals} / 7 ✦</b></header>
+        <header><button type="button" onclick="journeyShip()">◀ COCKPIT</button><div><span>WAYFARER ARCHIVE</span><strong>JOURNEY LOG</strong></div><b>${state.currency.crystals} / ${CRYSTAL_GOAL} ✦</b></header>
         <section>
           <div class="journey-log-summary">
             <span>DISTANCE<strong>${Math.round(state.totalDistance)}</strong></span>
-            <span>CRYSTALS<strong>${state.currency.crystals} / 7</strong></span>
+            <span>CRYSTALS<strong>${state.currency.crystals} / ${CRYSTAL_GOAL}</strong></span>
             <span>FRIENDS<strong>${state.passengers.rescued.length}</strong></span>
           </div>
           ${branch ? `
@@ -928,28 +916,274 @@
     const root = host();
     const state = JourneyState.getState();
     if (!root || !state || !node || !active) return;
+    pendingCacheLaunch = { node };
+    pendingCacheSuccess = null;
     root.innerHTML = `
-      <main class="journey-intel-screen journey-cache-screen" aria-labelledby="journey-cache-title">
-        <section>
-          <div class="journey-kicker">DISCOVERY · ${node.name.toUpperCase()}</div>
-          <h1 id="journey-cache-title">COLD STORAGE</h1>
-          <p>The cache is old but intact. Its beacon was meant for a ship that never returned.</p>
-          <div class="journey-cache-reward">
-            <span>RECOVERABLE</span>
-            <strong>1 STAR CRYSTAL · 18 SALVAGE</strong>
-          </div>
-          <button class="journey-primary-btn" type="button" onclick="journeyCollectCache()">RECOVER SUPPLIES</button>
-          <button class="journey-text-btn" type="button" onclick="journeyShip()">RETURN TO SHIP</button>
+      <main class="journey-cache-mission-screen">
+        <header>
+          <span>ABANDONED CACHE · COLD STORAGE</span>
+          <strong id="journey-cache-objective">SEAL THE VAULT</strong>
+        </header>
+        <div id="journey-cache-stage" class="journey-cache-stage is-paused" aria-label="Route power through the frozen conduit grid to open the vault">
+          <svg class="journey-cache-svg" viewBox="0 92 560 728" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+              <linearGradient id="jcMetalTop" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#28323f"/><stop offset="18%" stop-color="#1a222d"/><stop offset="100%" stop-color="#0c1119"/>
+              </linearGradient>
+              <radialGradient id="jcCore" cx="50%" cy="50%" r="50%">
+                <stop offset="0" stop-color="#e6a24d"/><stop offset="45%" stop-color="#a5641f"/><stop offset="100%" stop-color="#4a2a08" stop-opacity="0"/>
+              </radialGradient>
+              <radialGradient id="jcCrys" cx="50%" cy="34%" r="75%">
+                <stop offset="0" stop-color="#dff4ff"/><stop offset="45%" stop-color="#7fbfe6"/><stop offset="100%" stop-color="#4b53c9"/>
+              </radialGradient>
+              <radialGradient id="jcHalo" cx="50%" cy="50%" r="50%">
+                <stop offset="0" stop-color="#8ea6d8" stop-opacity=".55"/><stop offset="100%" stop-color="#8ea6d8" stop-opacity="0"/>
+              </radialGradient>
+              <linearGradient id="jcIce" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#cfe6f2" stop-opacity=".9"/><stop offset="100%" stop-color="#7fa2b8" stop-opacity=".2"/>
+              </linearGradient>
+              <filter id="jcGlowBig" x="-120%" y="-120%" width="340%" height="340%"><feGaussianBlur stdDeviation="18"/></filter>
+              <filter id="jcSoft" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="2.2"/></filter>
+              <filter id="jcFrost" x="-30%" y="-30%" width="160%" height="160%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.14 0.2" numOctaves="3" seed="4" result="n"/>
+                <feDisplacementMap in="SourceGraphic" in2="n" scale="10"/></filter>
+              <clipPath id="jcPort"><circle cx="280" cy="150" r="46"/></clipPath>
+            </defs>
+
+            <!-- vault bulkhead + crystal (goal) -->
+            <path d="M-20,215 Q280,120 580,215 L580,90 L-20,90 Z" fill="url(#jcMetalTop)"/>
+            <path d="M-20,215 Q280,120 580,215" fill="none" stroke="#05090f" stroke-width="6"/>
+            <rect x="264" y="150" width="32" height="86" fill="#0a1019" stroke="#1d2a38" stroke-width="2"/>
+            <circle cx="280" cy="150" r="70" fill="url(#jcHalo)" filter="url(#jcGlowBig)" opacity=".5"/>
+            <circle class="jc-vault-ring" cx="280" cy="150" r="52" fill="#060c15" stroke="#26384a" stroke-width="6"/>
+            <g clip-path="url(#jcPort)">
+              <circle cx="280" cy="150" r="46" fill="#0a121d"/>
+              <path d="M280,120 L296,142 L290,182 L270,182 L264,142 Z" fill="url(#jcCrys)" filter="url(#jcSoft)" opacity=".85"/>
+              <path d="M234,150 h92 M280,104 v92" stroke="#cfe6f2" stroke-width="10" opacity=".22" filter="url(#jcFrost)"/>
+            </g>
+            <text x="280" y="116" fill="#5f7fa0" font-size="12" letter-spacing="4" text-anchor="middle">VAULT LOCK</text>
+
+            <!-- three lock-bolts (sinks): light + retract as current reaches them -->
+            <g id="journey-cache-bolt-0" class="journey-cache-bolt" transform="translate(181,224)">
+              <line class="jc-bolt-stub" x1="0" y1="8" x2="0" y2="30"/>
+              <rect class="jc-bolt-housing" x="-17" y="-16" width="34" height="30" rx="4"/>
+              <rect class="jc-bolt-pin" x="-6" y="-2" width="12" height="30"/>
+              <circle class="jc-bolt-lamp" cx="0" cy="-4" r="5"/>
+            </g>
+            <g id="journey-cache-bolt-1" class="journey-cache-bolt" transform="translate(313,224)">
+              <line class="jc-bolt-stub" x1="0" y1="8" x2="0" y2="30"/>
+              <rect class="jc-bolt-housing" x="-17" y="-16" width="34" height="30" rx="4"/>
+              <rect class="jc-bolt-pin" x="-6" y="-2" width="12" height="30"/>
+              <circle class="jc-bolt-lamp" cx="0" cy="-4" r="5"/>
+            </g>
+            <g id="journey-cache-bolt-2" class="journey-cache-bolt" transform="translate(445,224)">
+              <line class="jc-bolt-stub" x1="0" y1="8" x2="0" y2="30"/>
+              <rect class="jc-bolt-housing" x="-17" y="-16" width="34" height="30" rx="4"/>
+              <rect class="jc-bolt-pin" x="-6" y="-2" width="12" height="30"/>
+              <circle class="jc-bolt-lamp" cx="0" cy="-4" r="5"/>
+            </g>
+
+            <!-- recessed housing -->
+            <rect x="68" y="244" width="424" height="410" rx="10" fill="#05090f" stroke="#1a2534" stroke-width="3"/>
+            <rect x="76" y="252" width="408" height="394" rx="7" fill="none" stroke="#020509" stroke-width="8" opacity=".7"/>
+
+            <!-- reactor core (source) -->
+            <ellipse cx="118" cy="742" rx="110" ry="72" fill="url(#jcCore)" filter="url(#jcGlowBig)" opacity=".55"/>
+            <circle cx="118" cy="742" r="46" fill="#0a0e14" stroke="#3a3020" stroke-width="5"/>
+            <g stroke="#d9902f" stroke-width="5" stroke-linecap="round" opacity=".9">
+              <line x1="98" y1="724" x2="138" y2="724"/><line x1="92" y1="742" x2="144" y2="742"/><line x1="98" y1="760" x2="138" y2="760"/>
+            </g>
+            <rect x="106" y="636" width="24" height="70" rx="6" fill="#151f2b" stroke="#0a121c" stroke-width="2"/>
+            <rect class="jc-feed" x="113" y="636" width="6" height="70"/>
+            <text x="118" y="800" fill="#c88f4a" font-size="12" letter-spacing="3" text-anchor="middle">REACTOR CORE</text>
+
+            <!-- pressure gauge -->
+            <g transform="translate(438,752)">
+              <circle r="46" fill="#070c14" stroke="#233242" stroke-width="4"/>
+              <g stroke="#43586e" stroke-width="2">
+                <line x1="0" y1="-38" x2="0" y2="-31"/><line x1="27" y1="-27" x2="22" y2="-22"/><line x1="38" y1="0" x2="31" y2="0"/>
+                <line x1="-27" y1="-27" x2="-22" y2="-22"/><line x1="-38" y1="0" x2="-31" y2="0"/>
+              </g>
+              <path d="M-38,0 A38 38 0 0 1 38 0" fill="none" stroke="#2c4a63" stroke-width="4" opacity=".7"/>
+              <g id="journey-cache-needle" transform="rotate(-120)"><line x1="0" y1="0" x2="0" y2="-33" stroke="#6fd0ff" stroke-width="3" stroke-linecap="round"/></g>
+              <circle r="4" fill="#6fd0ff"/>
+              <text x="0" y="40" fill="#4a6a86" font-size="12" letter-spacing="2" text-anchor="middle">SEALED</text>
+            </g>
+
+            <!-- conduit tiles injected here -->
+            <g id="journey-cache-grid"></g>
+          </svg>
+          <div class="journey-cache-scan" aria-hidden="true"></div>
+          <div class="journey-cache-vig" aria-hidden="true"></div>
+
+          <button id="journey-cache-start" class="journey-cache-start" type="button" onclick="journeyBeginCache()">
+            <strong>SEAL THE VAULT</strong>
+            <small>A dead supply cache. Rotate every conduit until nothing leaks, and its lattice wakes.</small>
+            <b>BOARD THE CACHE →</b>
+          </button>
+        </div>
+      </main>`;
+    JourneyCache.start({
+      stageId: 'journey-cache-stage',
+      encounterId: 'cache-recovery-1',
+      crystalId: 'azure-cache',
+      startingHull: state.resources.hull,
+      initiallyPaused: true,
+      onSuccessReady(result) {
+        pendingCacheLaunch = null;
+        pendingCacheSuccess = { node, result };
+        // The vault is open and the crystal secured — apply the outcome now
+        // (both writes are idempotent), then reveal it.
+        JourneyState.resolvePeacefulNode({
+          nodeId: 'abandoned-cache', salvage: 18, power: 6,
+          unlockNodeIds: ['repair-moon'], discoveryId: 'cache-log-1'
+        });
+        JourneyState.awardCrystal('azure-cache');
+        shipNotice = 'STAR CRYSTAL ABOARD · PIP INTERCEPTED AT OGRE GATE';
+        renderCrystalReveal();
+      }
+    });
+  }
+
+  function renderCrystalReveal() {
+    const root = host();
+    const hero = selectedHero();
+    const state = JourneyState.getState();
+    if (!root || !state || !active) return;
+    root.innerHTML = `
+      <main class="journey-reveal-screen">
+        <div class="journey-starfield" aria-hidden="true"></div>
+        <div class="journey-reveal-crystal" aria-hidden="true">
+          <svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="jcRevA" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#f2fbff"/><stop offset="55%" stop-color="#9bd4ff"/><stop offset="100%" stop-color="#5a63e0"/>
+              </linearGradient>
+              <linearGradient id="jcRevB" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#bfe6ff"/><stop offset="100%" stop-color="#4048b8"/>
+              </linearGradient>
+              <radialGradient id="jcRevHalo" cx="50%" cy="46%" r="55%">
+                <stop offset="0" stop-color="#a9c6ff" stop-opacity=".9"/><stop offset="100%" stop-color="#a9c6ff" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <circle cx="100" cy="120" r="98" fill="url(#jcRevHalo)"/>
+            <polygon points="100,14 148,86 100,110 52,86" fill="url(#jcRevA)"/>
+            <polygon points="52,86 100,110 78,246 60,150" fill="url(#jcRevB)"/>
+            <polygon points="148,86 100,110 122,246 140,150" fill="url(#jcRevA)"/>
+            <polygon points="100,110 122,246 78,246" fill="url(#jcRevB)" opacity=".82"/>
+            <polyline points="100,14 100,110 100,246" fill="none" stroke="#f2fbff" stroke-width="1.4" opacity=".5"/>
+            <polyline points="52,86 100,110 148,86" fill="none" stroke="#f2fbff" stroke-width="1.4" opacity=".5"/>
+          </svg>
+        </div>
+        <div class="journey-reveal-caption">
+          <span>CACHE RECOVERED</span>
+          <h1>FIRST STAR CRYSTAL</h1>
+        </div>
+        <section class="journey-arrival-dialogue">
+          <div class="journey-arrival-speaker" style="--hero-color:${hero.color}">${typeof charFace === 'function' ? charFace(hero, 'normal') : hero.emoji}</div>
+          <div><span>${hero.name}</span><p>“One down. Six still out there.”</p></div>
         </section>
+        <button class="journey-primary-btn journey-reveal-continue" type="button" onclick="journeyFinishCrystalBeat()">CONTINUE → · ${state.currency.crystals} / ${CRYSTAL_GOAL} CRYSTALS</button>
       </main>`;
   }
 
   function renderRepairMoon(node) {
+    const state = JourneyState.getState();
+    if (!state || !node || !active) return;
+    const hullFull = state.resources.hull >= state.resources.maxHull;
+    if (!hullFull) { renderRepairPuzzle(node); return; }
+    renderRepairWorkshop(node);
+  }
+
+  function renderRepairPuzzle(node) {
     const root = host();
     const state = JourneyState.getState();
     if (!root || !state || !node || !active) return;
-    const hullFull = state.resources.hull >= state.resources.maxHull;
-    const canRepair = !hullFull && state.currency.salvage >= 5;
+    pendingRepairLaunch = { node };
+    root.innerHTML = `
+      <main class="journey-repair-mission-screen">
+        <header>
+          <span>REPAIR MOON · DRY DOCK</span>
+          <strong id="journey-repair-objective">PATCH THE HULL</strong>
+        </header>
+        <div id="journey-repair-stage" class="journey-repair-stage is-paused is-dark">
+          <svg class="journey-repair-svg" viewBox="0 0 560 800" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="jrHull" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#3a4656"/><stop offset="45%" stop-color="#2a3442"/><stop offset="100%" stop-color="#161d28"/>
+              </linearGradient>
+              <pattern id="jrStars" width="120" height="120" patternUnits="userSpaceOnUse">
+                <circle cx="14" cy="20" r="1" fill="#dfefff" opacity=".5"/>
+                <circle cx="70" cy="60" r="1.3" fill="#fff" opacity=".7"/>
+                <circle cx="100" cy="15" r=".8" fill="#bcd" opacity=".4"/>
+                <circle cx="40" cy="95" r="1" fill="#cef" opacity=".5"/>
+              </pattern>
+            </defs>
+            <rect x="0" y="0" width="560" height="92" fill="#050a13" opacity=".94"/>
+            <line x1="0" y1="92" x2="560" y2="92" stroke="#1e2d3d"/>
+            <text x="24" y="36" fill="#5f9fc0" font-size="14" letter-spacing="3">WAYFARER · STARBOARD SECTION</text>
+            <text x="24" y="72" fill="#e8d79a" font-size="26" letter-spacing="1.5" font-family="Arial Narrow,Arial,sans-serif" font-weight="700">HULL BREACH DETECTED</text>
+
+            <rect x="30" y="108" width="500" height="300" rx="10" fill="#070c15" stroke="#1a2534" stroke-width="3"/>
+            <rect x="56" y="130" width="448" height="256" rx="6" fill="url(#jrHull)" stroke="#0b1119" stroke-width="3"/>
+            <!-- A handful of large, unevenly-sized hull plates (not a tiled
+                 pattern) read as real structure at a glance without competing
+                 with the puzzle's own regular cell grid drawn on top. -->
+            <g class="jr-plates" fill="none" stroke="#0c1522" stroke-width="1.5" opacity=".4">
+              <rect x="60" y="134" width="182" height="104" rx="4"/>
+              <rect x="250" y="134" width="250" height="132" rx="4"/>
+              <rect x="60" y="242" width="146" height="140" rx="4"/>
+              <rect x="212" y="270" width="150" height="112" rx="4"/>
+              <rect x="368" y="270" width="132" height="112" rx="4"/>
+            </g>
+            <g class="jr-rivets" fill="#0b1119" opacity=".5">
+              <circle cx="68" cy="142" r="2"/><circle cx="234" cy="230" r="2"/>
+              <circle cx="258" cy="142" r="2"/><circle cx="492" cy="258" r="2"/>
+              <circle cx="68" cy="374" r="2"/><circle cx="198" cy="250" r="2"/>
+              <circle cx="220" cy="374" r="2"/><circle cx="354" cy="278" r="2"/>
+              <circle cx="376" cy="278" r="2"/><circle cx="492" cy="374" r="2"/>
+            </g>
+            <g id="journey-repair-region"></g>
+
+            <rect x="30" y="428" width="500" height="352" rx="10" fill="#05090f" stroke="#1a2534" stroke-width="3"/>
+            <text x="44" y="452" fill="#3f5f80" font-size="11" letter-spacing="3">SALVAGED SCRAP · DRAG TO SEAT · TAP TO ROTATE</text>
+            <g id="journey-repair-tray"></g>
+          </svg>
+          <div class="journey-repair-scan" aria-hidden="true"></div>
+          <div class="journey-repair-vig" aria-hidden="true"></div>
+
+          <button id="journey-repair-start" class="journey-repair-start" type="button" onclick="journeyBeginRepairPuzzle()">
+            <strong>PATCH THE HULL</strong>
+            <small>Drag salvaged plates into the breach and rotate them to fit. Every plate seated, no gaps, no overlaps.</small>
+            <b>BOARD THE DRY DOCK →</b>
+          </button>
+        </div>
+      </main>`;
+    JourneyRepair.start({
+      stageId: 'journey-repair-stage',
+      regionGroupId: 'journey-repair-region',
+      trayGroupId: 'journey-repair-tray',
+      cellSize: 30,
+      regionOrigin: { x: 76, y: 148 },
+      trayOrigin: { x: 40, y: 478 },
+      trayCols: 4,
+      traySpacing: 125,
+      regionBackgroundFill: 'url(#jrStars)',
+      maxHull: state.resources.maxHull,
+      initiallyPaused: true,
+      onSuccessReady(result) {
+        pendingRepairLaunch = null;
+        JourneyState.repairHull(result.hullRemaining, 0);
+        shipNotice = 'HULL PATCHED · NO SCRAP SPENT';
+        renderRepairMoon(node);
+      }
+    });
+  }
+
+  function renderRepairWorkshop(node) {
+    const root = host();
+    const state = JourneyState.getState();
+    if (!root || !state || !node || !active) return;
     const upgradeCost = state.upgrades.blasterLevel === 0 ? 0 : 15;
     const readyForGate = state.upgrades.blasterLevel >= 1;
     const branch = pilotCallStatus(state);
@@ -958,28 +1192,14 @@
     root.innerHTML = `
       <main class="journey-intel-screen journey-repair-screen" aria-labelledby="journey-repair-title">
         <section>
-          <div class="journey-kicker">SAFE HARBOR · ${node.name.toUpperCase()}</div>
+          <div class="journey-kicker">HULL PATCHED · ${Math.round(state.resources.hull)} / ${Math.round(state.resources.maxHull)}</div>
           <h1 id="journey-repair-title">DRY DOCK</h1>
-          <p><strong>MISSION:</strong> Prepare the Wayfarer for the guardian at Ogre Gate. Repair damage and install one permanent upgrade.</p>
-          ${branch ? `
-            <div class="journey-repair-branch">
-              <span>${branch.consequenceTitle}</span>
-              <strong>OGRE GATE OBJECTIVE UPDATED</strong>
-              <p>${branch.consequenceDetail}</p>
-            </div>` : ''}
-          <div class="journey-scrap-balance">AVAILABLE SCRAP <strong>${state.currency.salvage}</strong></div>
-          ${notice ? `<div class="journey-maintenance-notice">${notice}</div>` : ''}
+          <p>Every plate seated and welded. Install one permanent upgrade before departing for Ogre Gate.</p>
+          ${branch ? `<p class="journey-repair-consequence"><strong>${branch.consequenceTitle}</strong> — ${branch.consequenceDetail}</p>` : ''}
+          ${notice ? `<p class="journey-repair-warning">${notice}</p>` : ''}
           <div class="journey-maintenance-grid">
             <article>
-              <span>HULL · ${Math.round(state.resources.hull)} / ${Math.round(state.resources.maxHull)}</span>
-              <strong>${hullFull ? 'HULL READY' : 'FULL REPAIR'}</strong>
-              <p>${hullFull ? 'No repair needed.' : 'Restore the hull now and return to the route.'}</p>
-              <button type="button" onclick="journeyRepairAtDock()" ${canRepair ? '' : 'disabled'}>
-                ${hullFull ? 'HULL FULL' : state.currency.salvage < 5 ? 'NEEDS 5 SCRAP' : 'REPAIR NOW · 5 SCRAP'}
-              </button>
-            </article>
-            <article>
-              <span>WORKSHOP · ${state.currency.salvage} SALVAGE</span>
+              <span>WORKSHOP · ${state.currency.salvage} SALVAGE AVAILABLE</span>
               <strong>BLASTER TUNING ${state.upgrades.blasterLevel}</strong>
               <p>Shorter delay between automatic shots. Permanent upgrade.</p>
               <button type="button" onclick="journeyBuyBlasterUpgrade()" ${state.currency.salvage >= upgradeCost ? '' : 'disabled'}>
@@ -987,11 +1207,7 @@
               </button>
             </article>
           </div>
-          <div class="journey-next-mission">
-            <span>NEXT MISSION</span>
-            <strong>OGRE GATE</strong>
-            <p>A route guardian blocks the road to the first settlement. This encounter is the next build slice.</p>
-          </div>
+          <p class="journey-repair-next"><span>NEXT · OGRE GATE</span> A route guardian blocks the road to the first settlement.</p>
           <button class="journey-primary-btn" type="button" onclick="journeyFinishRepairMoon()" ${readyForGate ? '' : 'disabled'}>
             ${readyForGate ? 'SHIP READY · SAVE PROGRESS' : 'INSTALL 1 UPGRADE FIRST'}
           </button>
@@ -1456,8 +1672,13 @@
     pendingScrapBeltRetry = null;
     pendingDistressLaunch = null;
     pendingDistressSuccess = null;
+    pendingCacheLaunch = null;
+    pendingCacheSuccess = null;
+    pendingRepairLaunch = null;
     scrapBeltTutorialStep = 0;
     if (typeof JourneyDistressRescue !== 'undefined') JourneyDistressRescue.destroy();
+    if (typeof JourneyCache !== 'undefined') JourneyCache.destroy();
+    if (typeof JourneyRepair !== 'undefined') JourneyRepair.destroy();
     renderShip();
   };
 
@@ -1477,10 +1698,15 @@
     pendingScrapBeltRetry = null;
     pendingDistressLaunch = null;
     pendingDistressSuccess = null;
+    pendingCacheLaunch = null;
+    pendingCacheSuccess = null;
+    pendingRepairLaunch = null;
     scrapBeltTutorialStep = 0;
     JourneyCombat.destroy();
     if (typeof JourneyScrapBelt !== 'undefined') JourneyScrapBelt.destroy();
     if (typeof JourneyDistressRescue !== 'undefined') JourneyDistressRescue.destroy();
+    if (typeof JourneyCache !== 'undefined') JourneyCache.destroy();
+    if (typeof JourneyRepair !== 'undefined') JourneyRepair.destroy();
     if (typeof JourneyMissionRuntime !== 'undefined') JourneyMissionRuntime.destroy();
     shipNotice = `DEV CHECKPOINT · ${checkpointId.replace(/-/g, ' ').toUpperCase()}`;
     if (checkpointId === 'opening') renderJourneyIntro();
@@ -1683,41 +1909,27 @@
     renderEncounterResults(presentation.node, presentation.result, presentation.applied);
   };
 
-  window.journeyCollectCache = function () {
+  window.journeyBeginCache = function () {
+    if (!pendingCacheLaunch) return;
     playMenuSound();
-    const result = JourneyState.resolvePeacefulNode({
-      nodeId: 'abandoned-cache',
-      salvage: 18,
-      power: 6,
-      unlockNodeIds: ['repair-moon'],
-      discoveryId: 'cache-log-1'
-    });
-    if (result.ok) {
-      JourneyState.awardCrystal('azure-cache');
-      shipNotice = 'STAR CRYSTAL ABOARD · PIP INTERCEPTED AT OGRE GATE';
-      renderCrystalRecovery();
-      return;
-    }
-    renderShip();
+    const overlay = document.getElementById('journey-cache-start');
+    if (overlay) overlay.remove();
+    JourneyCache.begin();
+  };
+
+  window.journeyBeginRepairPuzzle = function () {
+    if (!pendingRepairLaunch) return;
+    playMenuSound();
+    const overlay = document.getElementById('journey-repair-start');
+    if (overlay) overlay.remove();
+    JourneyRepair.begin();
   };
 
   window.journeyFinishCrystalBeat = function () {
     playMenuSound();
+    pendingCacheSuccess = null;
+    if (typeof JourneyCache !== 'undefined') JourneyCache.destroy();
     renderShip();
-  };
-
-  window.journeyRepairAtDock = function () {
-    playMenuSound();
-    const state = JourneyState.getState();
-    const result = state
-      ? JourneyState.repairHull(state.resources.maxHull, 5)
-      : { ok: false };
-    maintenanceNotice = result.ok
-      ? 'HULL RESTORED · 5 SCRAP SPENT'
-      : 'REPAIR UNAVAILABLE';
-    const node = state && currentNode(state);
-    if (node && node.id === 'repair-moon' && !state.route.completedNodes.includes(node.id)) renderRepairMoon(node);
-    else renderShip();
   };
 
   window.journeyBuyBlasterUpgrade = function () {
@@ -1725,9 +1937,11 @@
     const stateBefore = JourneyState.getState();
     const upgradeCost = stateBefore && stateBefore.upgrades.blasterLevel === 0 ? 0 : 15;
     const result = JourneyState.purchaseUpgrade('blasterLevel', upgradeCost);
-    maintenanceNotice = result.ok
-      ? `BLASTER TUNED · LEVEL ${result.level} · ${upgradeCost ? `${upgradeCost} SCRAP SPENT` : 'FIRST TUNE COMPLIMENTARY'}`
-      : 'NOT ENOUGH SCRAP FOR THIS UPGRADE';
+    // A successful purchase is already reflected live in the workshop card
+    // itself (level + button text update) — an extra confirmation box would
+    // just restate the same fact a second time. Only surface a notice for the
+    // failure case, which isn't visible anywhere else on the screen.
+    maintenanceNotice = result.ok ? '' : 'NOT ENOUGH SCRAP FOR THIS UPGRADE';
     const state = JourneyState.getState();
     renderRepairMoon(currentNode(state));
   };
@@ -1797,10 +2011,15 @@
     pendingScrapBeltRetry = null;
     pendingDistressLaunch = null;
     pendingDistressSuccess = null;
+    pendingCacheLaunch = null;
+    pendingCacheSuccess = null;
+    pendingRepairLaunch = null;
     scrapBeltTutorialStep = 0;
     JourneyCombat.destroy();
     if (typeof JourneyScrapBelt !== 'undefined') JourneyScrapBelt.destroy();
     if (typeof JourneyDistressRescue !== 'undefined') JourneyDistressRescue.destroy();
+    if (typeof JourneyCache !== 'undefined') JourneyCache.destroy();
+    if (typeof JourneyRepair !== 'undefined') JourneyRepair.destroy();
     if (typeof JourneyMissionRuntime !== 'undefined') JourneyMissionRuntime.destroy();
     JourneyState.saveJourneyState('exit');
     JourneyState.clearInMemory();

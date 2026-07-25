@@ -99,7 +99,7 @@
 
   let arcadeEdgeSwipe = null;
   function arcadeSwipeGuardActive() {
-    return document.body.matches('.on-lobby,.on-char,.on-signin,.on-facefactory,.on-whack,.on-match,.on-space,.on-journey,.on-signal,.on-snoob,.on-consume');
+    return document.body.matches('.on-lobby,.on-char,.on-signin,.on-facefactory,.on-whack,.on-match,.on-space,.on-journey,.on-gridlock,.on-signal,.on-snoob,.on-consume');
   }
 
   document.addEventListener('touchstart', e => {
@@ -211,6 +211,7 @@
     const onMatch = p === 'match';
     const onSpace = p === 'space';
     const onJourney = p === 'journey';
+    const onGridLock = p === 'gridlock';
     const onSignal = p === 'signal';
     const onSnoob = p === 'snoob';
     const onConsume = p === 'consume';
@@ -223,6 +224,7 @@
     document.body.classList.toggle('on-match', onMatch);
     document.body.classList.toggle('on-space', onSpace);
     document.body.classList.toggle('on-journey', onJourney);
+    document.body.classList.toggle('on-gridlock', onGridLock);
     document.body.classList.toggle('on-signal', onSignal);
     document.body.classList.toggle('on-snoob', onSnoob);
     document.body.classList.toggle('on-consume', onConsume);
@@ -230,10 +232,10 @@
     document.documentElement.classList.add('arcade-root');
 
     try {
-      if ((onLobby || onCharSelect || onSignIn || onFaceFactory || onWhack || onMatch || onSpace || onJourney || onSignal || onSnoob || onConsume || onPet) && typeof ArcadeMusic !== 'undefined' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
+      if ((onLobby || onCharSelect || onSignIn || onFaceFactory || onWhack || onMatch || onSpace || onJourney || onGridLock || onSignal || onSnoob || onConsume || onPet) && typeof ArcadeMusic !== 'undefined' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
       if (typeof ArcadeMusic !== 'undefined') {
         if (onLobby || onCharSelect || onSignIn) ArcadeMusic.unduck();
-        if (onFaceFactory || onWhack || onMatch || onSpace || onJourney || onSignal || onSnoob || onConsume || onPet) ArcadeMusic.duck();
+        if (onFaceFactory || onWhack || onMatch || onSpace || onJourney || onGridLock || onSignal || onSnoob || onConsume || onPet) ArcadeMusic.duck();
       }
     } catch(e) {}
 
@@ -255,12 +257,14 @@
     if (onMatch && typeof initMatch === 'function') initMatch();
     if (onSpace && typeof initSpace === 'function') initSpace();
     if (onJourney && typeof initJourney === 'function') initJourney();
+    if (onGridLock && typeof initGridLock === 'function') initGridLock();
     if (onSignal && typeof initSignal === 'function') initSignal();
     if (onSnoob && typeof initSnoob === 'function') initSnoob();
     if (onConsume && typeof initConsume === 'function') initConsume();
     if (onPet && typeof initPet === 'function') initPet();
     if (!onSpace && typeof spacePause === 'function') spacePause();
     if (!onJourney && typeof journeyBack === 'function') journeyBack();
+    if (!onGridLock && typeof gridLockBack === 'function') gridLockBack();
     if (!onSignal && typeof signalBack === 'function') signalBack();
     if (!onFaceFactory && typeof faceFactoryBack === 'function') faceFactoryBack();
     if (!onWhack && typeof whackBack === 'function') whackBack();

@@ -21,7 +21,8 @@
 <link rel="stylesheet" href="css/games/face-factory.css">
 <link rel="stylesheet" href="css/games/whack.css">
 <link rel="stylesheet" href="css/games/space.css">
-<link rel="stylesheet" href="css/games/journey.css?v=20260724-40">
+<link rel="stylesheet" href="css/games/journey.css?v=20260724-63">
+<link rel="stylesheet" href="css/games/gridlock.css?v=20260725-12">
 <link rel="stylesheet" href="css/games/signal.css">
 <link rel="stylesheet" href="css/games/match.css">
 <link rel="stylesheet" href="css/games/snoob.css">
@@ -349,51 +350,6 @@
 </div>
 </div>
 </div>
-<div class="carousel-item" id="ci-journey">
-<div class="game-card" onclick="SFX.menuSelect();nav('journey')" style="border-color:#69d7ff66;cursor:pointer">
-<div class="game-card-art journey-card-art">
-<svg aria-hidden="true" height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0" viewBox="0 0 200 240" width="100%">
-<defs>
-<linearGradient id="journey-card-space" x1="0" y1="0" x2="1" y2="1">
-<stop offset="0%" stop-color="#08162d"/>
-<stop offset="56%" stop-color="#171137"/>
-<stop offset="100%" stop-color="#070713"/>
-</linearGradient>
-<linearGradient id="journey-card-trail" x1="0" y1="0" x2="0" y2="1">
-<stop offset="0%" stop-color="#fff7a8"/>
-<stop offset="35%" stop-color="#69d7ff"/>
-<stop offset="100%" stop-color="#69d7ff" stop-opacity="0"/>
-</linearGradient>
-</defs>
-<rect fill="url(#journey-card-space)" height="240" width="200"/>
-<circle cx="29" cy="28" fill="#fff" opacity=".8" r="1.3"/>
-<circle cx="76" cy="18" fill="#69d7ff" opacity=".7" r="1"/>
-<circle cx="151" cy="34" fill="#fff7a8" opacity=".75" r="1.5"/>
-<circle cx="178" cy="76" fill="#fff" opacity=".55" r="1"/>
-<circle cx="45" cy="92" fill="#fff" opacity=".4" r="1"/>
-<circle cx="122" cy="73" fill="#b79cff" opacity=".65" r="1.2"/>
-<circle cx="92" cy="127" fill="#fff" opacity=".45" r="1"/>
-<circle cx="164" cy="145" fill="#69d7ff" opacity=".5" r="1.2"/>
-<path d="M16 194 C54 168 89 174 116 143 S160 91 193 79" fill="none" opacity=".26" stroke="#69d7ff" stroke-dasharray="4 7" stroke-linecap="round" stroke-width="2"/>
-<circle cx="21" cy="191" fill="#0c2440" r="7" stroke="#69d7ff" stroke-width="2"/>
-<circle cx="76" cy="168" fill="#111e3f" r="5" stroke="#b79cff" stroke-width="1.5"/>
-<circle cx="120" cy="139" fill="#302315" r="6" stroke="#fff7a8" stroke-width="1.5"/>
-<circle cx="173" cy="92" fill="#1d1537" r="8" stroke="#ff7ac8" stroke-width="2"/>
-<g transform="translate(96 147)">
-<path d="M0 -30 L15 10 L7 7 L0 18 L-7 7 L-15 10 Z" fill="#d8f5ff" stroke="#69d7ff" stroke-width="2"/>
-<path d="M-5 10 L0 34 L5 10 Z" fill="url(#journey-card-trail)"/>
-<circle cx="0" cy="-8" fill="#102b49" r="5" stroke="#fff7a8" stroke-width="1.5"/>
-</g>
-</svg>
-</div>
-<div class="game-card-info">
-<div class="game-card-badge" style="background:#69d7ff22;color:#69d7ff;border:1px solid #69d7ff66">SPACE JOURNEY</div>
-<div class="game-card-marquee" style="color:#69d7ff;text-shadow:0 0 20px #69d7ff88">JOURNEY</div>
-<div class="game-card-desc">PREPARE · TRAVEL · DISCOVER</div>
-<div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#69d7ff22;border:1.5px solid #69d7ff;border-radius:5px;padding:10px 24px;color:#69d7ff;width:100%;text-shadow:0 0 8px #69d7ff66;text-align:center">▶ PLAY</div>
-</div>
-</div>
-</div>
 <div class="carousel-item" id="ci-signal">
 <div class="game-card" onclick="SFX.menuSelect();nav('signal')" style="border-color:#00e5ff55;cursor:pointer">
 <div class="game-card-art" style="background:linear-gradient(160deg,#030116 0%,#071333 52%,#120029 100%)">
@@ -547,48 +503,47 @@
 </div>
 </div>
 </div>
-<div class="carousel-item" id="ci-pet">
-<div class="game-card" onclick="SFX.menuSelect();nav('pet')" style="border-color:#7fe9a666;cursor:pointer">
-<div class="game-card-art" style="background:radial-gradient(120% 80% at 50% 20%,#0a2a1c 0%,#06180f 55%,#03100a 100%)">
+<div class="carousel-item" id="ci-gridlock">
+<div class="game-card" onclick="SFX.menuSelect();nav('gridlock')" style="border-color:#5fd0ff66;cursor:pointer">
+<div class="game-card-art" style="background:radial-gradient(120% 90% at 50% 30%,#0c141f 0%,#070c15 55%,#02040a 100%)">
 <svg height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0" viewBox="0 0 200 240" width="100%">
-<rect fill="#04140d" height="240" width="200"/>
-<g opacity=".7">
-<text fill="#7fe9a6" font-size="8" opacity=".3" x="24" y="30">♥</text>
-<text fill="#ffe61a" font-size="6" opacity=".26" x="164" y="24">✦</text>
-<text fill="#7fe9a6" font-size="6" opacity=".24" x="176" y="70">✦</text>
-<text fill="#b6f5cf" font-size="9" opacity=".24" x="20" y="96">♥</text>
-<text fill="#7fe9a6" font-size="5" opacity=".2" x="150" y="104">✦</text>
+<rect fill="#070c15" height="240" width="200"/>
+<g opacity=".18" stroke="#5fd0ff" stroke-width="1">
+<line x1="0" x2="200" y1="60" y2="60"/>
+<line x1="0" x2="200" y1="120" y2="120"/>
+<line x1="0" x2="200" y1="180" y2="180"/>
+<line x1="50" x2="50" y1="0" y2="240"/>
+<line x1="100" x2="100" y1="0" y2="240"/>
+<line x1="150" x2="150" y1="0" y2="240"/>
 </g>
-<defs>
-<radialGradient id="ci-pet-body" cx="42%" cy="34%" r="72%">
-<stop offset="0%" stop-color="#c2f7d8"/>
-<stop offset="58%" stop-color="#7fe9a6"/>
-<stop offset="100%" stop-color="#3aa876"/>
-</radialGradient>
-</defs>
-<g transform="translate(100 128) scale(1.35) translate(-60 -72)">
-<ellipse cx="60" cy="118" rx="30" ry="6" fill="#000" opacity="0.3"/>
-<path d="M46 34 Q40 12 32 6" stroke="#3aa876" stroke-width="4" fill="none" stroke-linecap="round"/>
-<path d="M74 34 Q80 12 88 6" stroke="#3aa876" stroke-width="4" fill="none" stroke-linecap="round"/>
-<circle cx="32" cy="6" r="7" fill="#c2f7d8"/>
-<circle cx="88" cy="6" r="7" fill="#c2f7d8"/>
-<ellipse cx="44" cy="112" rx="11" ry="7" fill="#3aa876"/>
-<ellipse cx="76" cy="112" rx="11" ry="7" fill="#3aa876"/>
-<path d="M60 34 C88 34 100 56 100 78 C100 104 82 116 60 116 C38 116 20 104 20 78 C20 56 32 34 60 34 Z" fill="url(#ci-pet-body)" stroke="#3aa876" stroke-width="2.5"/>
-<ellipse cx="60" cy="88" rx="24" ry="20" fill="#fff" opacity="0.16"/>
-<circle cx="38" cy="80" r="6" fill="#5fd691" opacity="0.4"/>
-<circle cx="82" cy="80" r="6" fill="#5fd691" opacity="0.4"/>
-<path d="M38 72 q7 -9 14 0" stroke="#153a28" stroke-width="3.4" fill="none" stroke-linecap="round"/>
-<path d="M68 72 q7 -9 14 0" stroke="#153a28" stroke-width="3.4" fill="none" stroke-linecap="round"/>
-<path d="M50 88 q10 12 20 0" stroke="#153a28" stroke-width="3.2" fill="#2a6047" stroke-linecap="round"/>
+<g stroke="#b0763a" stroke-width="9" stroke-linecap="round" fill="none" opacity=".85">
+<path d="M50 60 H100 V120"/>
+<path d="M100 120 H150 V60"/>
+<path d="M50 180 V120"/>
 </g>
+<g fill="#7a5b32" stroke="#050a10" stroke-width="1.5">
+<circle cx="50" cy="60" r="8"/>
+<circle cx="100" cy="60" r="8"/>
+<circle cx="100" cy="120" r="8"/>
+<circle cx="150" cy="60" r="8"/>
+<circle cx="150" cy="120" r="8"/>
+<circle cx="50" cy="120" r="8"/>
+<circle cx="50" cy="180" r="8"/>
+</g>
+<g fill="#5fd0ff" opacity=".9">
+<circle cx="50" cy="60" r="4"/>
+<circle cx="100" cy="60" r="4"/>
+<circle cx="100" cy="120" r="4"/>
+</g>
+<circle cx="150" cy="120" fill="#c97a4a" opacity=".8" r="4"/>
+<circle cx="50" cy="180" fill="#c97a4a" opacity=".8" r="4"/>
 </svg>
 </div>
 <div class="game-card-info">
-<div class="game-card-badge" style="background:#7fe9a622;color:#7fe9a6;border:1px solid #7fe9a666">VIRTUAL PET</div>
-<div class="game-card-marquee" style="color:#7fe9a6;text-shadow:0 0 20px #7fe9a688">PET MOBE</div>
-<div class="game-card-desc">HATCH · CARE · EVOLVE</div>
-<div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#7fe9a622;border:1.5px solid #7fe9a6;border-radius:5px;padding:10px 24px;color:#7fe9a6;width:100%;text-shadow:0 0 8px #7fe9a666;text-align:center">▶ PLAY</div>
+<div class="game-card-badge" style="background:#5fd0ff22;color:#5fd0ff;border:1px solid #5fd0ff66">PUZZLE</div>
+<div class="game-card-marquee" style="color:#5fd0ff;text-shadow:0 0 20px #5fd0ff88">GRID LOCK</div>
+<div class="game-card-desc">ROTATE · ROUTE THE POWER · SEAL IT</div>
+<div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#5fd0ff22;border:1.5px solid #5fd0ff;border-radius:5px;padding:10px 24px;color:#5fd0ff;width:100%;text-shadow:0 0 8px #5fd0ff66;text-align:center">▶ PLAY</div>
 </div>
 </div>
 </div>
@@ -657,6 +612,19 @@
 <div class="page" id="pg-journey">
 <div class="journey-wrap" id="journey-wrap">
 <!-- Filled by Journey JS -->
+</div>
+</div>
+
+<div class="page" id="pg-gridlock">
+<div class="cats-header">
+<button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE MENU</button>
+<div class="arcade-header-actions" style="display:flex;align-items:center;gap:8px">
+<button class="arcade-lb-btn" onclick="openLeaderboard()">🏆</button>
+<button class="arcade-mute-btn" onclick="toggleArcadeMute()">♪ ON</button>
+</div>
+</div>
+<div class="gridlock-wrap" id="gridlock-wrap">
+<!-- Filled by GridLock JS -->
 </div>
 </div>
 
@@ -747,13 +715,18 @@
 <script src="js/games/whack.js"></script>
 <script src="js/games/match.js"></script>
 <script src="js/games/space.js"></script>
-<script src="js/games/journey-data.js?v=20260724-40"></script>
-<script src="js/games/journey-state.js?v=20260724-40"></script>
-<script src="js/games/journey-combat.js?v=20260724-40"></script>
-<script src="js/games/journey-mission-runtime.js?v=20260724-40"></script>
-<script src="js/games/journey-scrap-belt.js?v=20260724-40"></script>
-<script src="js/games/journey-distress-rescue.js?v=20260724-40"></script>
-<script src="js/games/journey.js?v=20260724-40"></script>
+<script src="js/games/journey-data.js?v=20260724-56"></script>
+<script src="js/games/journey-state.js?v=20260724-56"></script>
+<script src="js/games/journey-combat.js?v=20260724-56"></script>
+<script src="js/games/journey-mission-runtime.js?v=20260724-56"></script>
+<script src="js/games/journey-scrap-belt.js?v=20260724-56"></script>
+<script src="js/games/journey-distress-rescue.js?v=20260724-56"></script>
+<script src="js/games/journey-cache.js?v=20260724-56"></script>
+<script src="js/games/journey-packing-engine.js?v=20260724-62"></script>
+<script src="js/games/journey-repair.js?v=20260724-57"></script>
+<script src="js/games/journey.js?v=20260724-63"></script>
+<script src="js/games/gridlock.js?v=20260725-4"></script>
+<script src="js/games/gridlock-game.js?v=20260725-2"></script>
 <script src="js/games/signal.js"></script>
 <script src="js/games/snoob-boards.js"></script>
 <script src="js/games/snoob.js"></script>

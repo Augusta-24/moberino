@@ -96,9 +96,11 @@ All new missions and route decisions must follow
   extension, and sees Pip brought aboard. Passenger persistence is applied only
   after the physical rescue. Pip then remains visibly centered in rescue results
   and occupies a persistent crew position in the cockpit.
-- **Stage 7 is only scaffolded:** Repair Moon currently supports instant paid hull
-  repair and a persistent blaster upgrade, but it is still a form-like service
-  screen. It does not yet meet the hands-on maintenance contract.
+- **Stage 7 (Repair Moon) is complete — August 2026:** the hull-repair beat is now
+  "Dry Dock," a hands-on hull-scrap packing puzzle. See **Kanoodle Dock puzzle
+  pattern** below; the underlying engine is built generic and reusable, not a
+  Repair-Moon-specific one-off. The upgrade-install workshop screen (unchanged)
+  follows once the hull is patched.
 - **Gameplay foundation:** the isolated Journey mission runtime now provides full
   horizontal and vertical movement, forward world scrolling, proximity scanning and
   signal locks, tractor attachment and towing, contextual interactions, keyboard
@@ -111,10 +113,83 @@ All new missions and route decisions must follow
 - **Development support:** the cockpit gear opens reproducible state-backed
   checkpoints for retesting the opening, Scrap Belt, Pilot's Call, both branch
   arrivals, and both Repair Moon branch states.
+- **Stage 7.5 (Abandoned Cache) is complete — August 2026:** the cache branch is a
+  real mission, "Seal the Vault." See **Seal-the-Vault puzzle pattern** below; it is
+  validated and intended to be reused for later crystal recoveries.
 
 The implemented route currently ends before **Ogre Gate**. Ogre Gate and First
 Settlement exist in the route data but are intentionally marked unavailable.
-Abandoned Cache exists as route and story scaffolding but is not yet a real mission.
+
+### Seal-the-Vault puzzle pattern — reusable for later crystal missions
+
+`js/games/journey-cache.js` is a generic, procedurally-generated conduit-lattice
+puzzle in the Infinity-Loop tradition, not a hand-authored one-off. Reuse it (copy
+the file, retune the constants) for future crystal-recovery missions rather than
+inventing a new mechanic per region:
+
+- **Design rule it satisfies:** the whole board is one coupled network — every
+  tile's openings must match a neighbor's (or a sanctioned external opening at the
+  source/sink edges) with zero dead tiles. Rotating one tile constrains its
+  neighbors, so every tile is a real decision solved by deduction, and the puzzle
+  cannot be brute-forced tile-by-tile. This replaced an earlier sparse
+  core-to-bolt path design that failed exactly this test (75% of tiles were inert
+  filler, five tiles had only one legal orientation). Do not regress to a sparse
+  path/pressure-gauge model for a future crystal puzzle — it fails the same way.
+- **Solvable by construction:** the board is generated from a randomized spanning
+  tree over the grid (guarantees full connectivity) plus extra loop edges
+  (`LOOP_EDGE_CHANCE`, richer coupling, fewer dead-end caps), then each cell's
+  required opening-set is converted to the matching piece (`END`/`I`/`L`/`T`/`X`)
+  and scrambled to a different rotation. This means it is correct by construction,
+  not hand-verified per board — confirmed by brute-checking 1,000 generated boards
+  (see PR history around August 2026).
+- **Difficulty consistency, not just solvability:** "always winnable" and "always a
+  real puzzle" are different guarantees — check both. A 4-way (`X`) crossing has
+  full rotational symmetry, so it starts already sealed and costs the player zero
+  decisions; sampling 3,000 raw generations showed ~6.5% of boards exceeded 15% of
+  tiles being `X` (up to 30% in the worst case) — a quietly easier board with no
+  visible cause. `generate()` now rejects and regenerates any board over
+  `MAX_X_FRACTION` (currently 0.15), which converges in ~1.1 attempts on average
+  and eliminated the tail entirely across the same sample size. Apply the same
+  reject-and-regenerate check to any future reuse of this pattern — don't assume a
+  procedurally solvable board is automatically a consistently *hard* one.
+- **Tunable per crystal/region:** `COLS`, `ROWS`, `SOURCE`, and the `SINKS` array
+  (any number of sinks, not just three) are the only things that need to change to
+  reshape the puzzle for a new location. Smaller grid = gentler puzzle for an early
+  crystal; larger grid or more sinks = harder for a later one.
+- **Win condition is generic:** when every tile is sealed (no leaks anywhere) *and*
+  the flood from the source reaches every sink, the network floods outward in
+  visible layers and each sink fires its own confirmation (here: vault lock-bolts
+  CLUNK and light one at a time) before the mission's `onSuccessReady` fires.
+- Keep the isolated lifecycle contract used here (`start/begin/destroy`,
+  `onSuccessReady`, no `JourneyState`/`localStorage` access) for any reused copy.
+- **"Sealed" must mean reachable from the source, not just locally matched — this
+  was a real, player-reported bug.** The loop edges that make the lattice richer
+  can also let a small cluster of tiles rotate into a state where every one of
+  their four sides locally matches its immediate neighbour, while the whole
+  cluster is disconnected from the reactor core. The original `evaluate()` only
+  checked local matching, so those tiles displayed sealed (blue) while blocking
+  the win — a player fixing only the visibly-unsealed (amber) tiles could get
+  stuck indefinitely, because the actual problem was hiding in tiles that looked
+  finished. Fixed by computing `floodReaches()` first and requiring
+  `reached.has(key(tile))` as part of the sealed condition, so a tile cannot
+  display sealed without being verified connected to the source — this is a
+  structural guarantee, not a probabilistic improvement. Any future reuse of this
+  pattern must tie its "sealed"/"complete" visual state to actual reachability
+  from the source, never to local matching alone.
+- **Reachable ≠ leak-free — these are two separate signals, both needed.** After
+  the reachability fix above, tile colour was changed to mean "current has
+  physically flowed here" (`is-sealed` = reachable from source), matching how a
+  player actually reads the board. But reachable-via-one-side does not mean a
+  tile has no leak on another side — a tile can be lit blue through one matched
+  opening while a different opening on the same tile still leaks. Left alone,
+  that leak is invisible: the whole board can render as one solid blue mass and
+  still not win, with nothing pointing at the problem. Fixed with a second,
+  independent class, `is-leaking` (pulsing amber ring), applied whenever any of a
+  tile's openings classify as a leak — regardless of whether that same tile is
+  also `is-sealed`. Winning still requires the strict condition (zero leaks
+  anywhere AND all sinks reached), unchanged. Any reuse of this pattern needs
+  both signals: colour = "energized," ring = "still has an open leak here" — one
+  is not a substitute for the other.
 
 ## Roadmap from the current checkpoint
 
@@ -137,27 +212,114 @@ order:
   state into one coherent branch.
 - Debug checkpoints now cover Repair Moon after either path.
 
-### 2. Next: Build Abandoned Cache as the second complete mission family
+### 2. Abandoned Cache as the second complete mission family — completed August 2026
 
-- Arrival shows the actual silent cache structure, sealed vault, and weak power.
-- Use a short Signal Lullaby-style tonal sequence to authenticate or tune the
-  cache frequency.
-- Route limited power through a readable physical circuit or panel.
-- Open the vault and make the player visibly extract the first Star Crystal.
-- Give clear audiovisual confirmation for each stage and a full crystal-recovery
-  achievement beat.
-- Failure retries the interaction without awarding the crystal, salvage, or route
-  completion.
+- The cache is "Seal the Vault": a generated, fully-coupled conduit lattice (see
+  **Seal-the-Vault puzzle pattern** above). Every tile must be sealed; sealing
+  floods the network from the reactor core to three vault lock-bolts, which CLUNK
+  and light one at a time before the crystal-recovery achievement beat.
+- The board powers on diegetically when boarded (dark → flicker → lit) instead of
+  a text-instruction overlay.
+- Crystal and route persistence apply once, after the reveal screen is confirmed
+  (`resolvePeacefulNode` + `awardCrystal('azure-cache')`, both idempotent).
+- Superseded designs, for history: a Signal-Lullaby tonal-decode phase and a
+  sparse core-to-bolt path with a draining pressure/charge gauge were both built
+  and rejected as too easy/brute-forceable before landing on the sealed-lattice
+  model. Do not reintroduce either as the primary mechanic.
 
-### 3. Rebuild Repair Moon as hands-on maintenance
+#### Crystal handling (read before touching crystal code)
 
-- Show the Wayfarer docked with its real current damage.
-- Let the player patch, align, reconnect, or replace visible ship components.
+- **Seven is the whole-game goal, not the chapter goal.** The intro cinematic
+  establishes seven stolen Star Crystals across all regions. Chapter One recovers
+  exactly **one** — "the first Star Crystal." The count goes 0 → 1 and never higher
+  in Chapter One.
+- **One crystal, two possible pickup points.** The Pilot's Call decides *where* you
+  recover crystal #1, not whether you get it:
+  - **Check the Cache** → extract crystal #1 here; Pip's rescue moves to Ogre Gate.
+  - **Answer the Beacon** → rescue Pip now; crystal #1 moves to Ogre Gate and is
+    recovered there.
+  Both branches must record the **same** crystal id (`azure-cache`) so the count can
+  never reach 2 in Chapter One.
+- **The counter already exists — do not add a new save field.** `currency.crystals`
+  holds the count and `JourneyState.awardCrystal(crystalId)` is idempotent (it dedupes
+  on `log.discoveries` via `crystal:<id>`). Award once from each pickup point with the
+  same id; the dedupe guarantees "record exactly once."
+- **Display is `X / 7`.** The goal is the `CRYSTAL_GOAL` constant in `journey.js`
+  (cockpit map, log, and recovery beat). Never reintroduce a bare literal `7`.
+
+### 3. Rebuild Repair Moon as hands-on maintenance — completed August 2026
+
+- Repair Moon is "Dry Dock": a generated hull-scrap dissection/packing puzzle (see
+  **Kanoodle Dock puzzle pattern** below) hosted in a dry-dock scene, followed by
+  the existing upgrade-install workshop screen once the hull is patched.
+- Superseded designs, for history: a single-shape-per-hole "matching" mechanic was
+  rejected as a shape-sorter ("still feels like put the triangle in the triangle
+  hole"); a layered box-flap tucking-order mechanic was rejected as unclear. Do not
+  reintroduce either as the primary mechanic.
 - Keep repair immediate and tactile; do not reintroduce a short countdown.
 - Install one permanent upgrade physically and show the changed component on the
-  ship.
+  ship (unchanged from before — only the repair mechanic itself was redesigned).
 - Let Pip speak or assist when Pip is aboard. If the cache path was chosen, use the
   intercepted distress update to establish what Ogre Gate now requires.
+
+### Kanoodle Dock puzzle pattern — reusable engine for future packing missions
+
+`js/games/journey-packing-engine.js` is a generic, reusable polyomino-packing
+engine (Kanoodle/dissection-puzzle style), separate from `js/games/journey-repair.js`
+which is the Repair Moon-specific consumer. Reuse the engine directly (new
+`start()` config, no copy-and-retune) for any future "combine several irregular
+pieces to completely tile a region" mission:
+
+- **Design rule it satisfies:** no piece has a single "right hole" — 8 pieces from
+  a fixed library (domino through tetrominoes) must combine, via both position and
+  rotation, to exactly tile a generated region with zero gaps and zero overlap.
+  This is genuinely combinatorial, not a shape-sorter (rejected direction — "still
+  feels like put the triangle in the triangle hole").
+- **Solvable by construction, difficulty controlled by rejection sampling:** a
+  region is built by constructively packing the chosen pieces together from empty
+  space (guarantees at least one solution, same principle as the cache's spanning
+  tree), then an exact backtracking solver (`solveCount`) counts *every* valid
+  tiling of that exact region with that exact piece set. `generate()` rejects and
+  retries until the true solution count lands in `[targetMin, targetMax]`
+  (Repair Moon uses 3–4) — never accept a board on the construction solution alone,
+  since the true count is usually higher.
+- **Two independent search bounds, because they guard different failure modes:**
+  `solutionCap` stops counting once a board is known to exceed the target band;
+  `nodeBudget` bounds total backtracking work regardless of solution count, because
+  a region that is merely hard to classify (many dead ends before the first
+  solution, or before proving there are none) can blow up the search tree without
+  ever tripping the solution cap. A board that can't be classified within budget is
+  rejected outright, never accepted as an unverified guess.
+- **Bound the generated region's bounding box, not just its cell count.** The
+  constructive packer grows in any direction with no shape preference, so an
+  accepted region can come out tall-and-thin even at a modest cell count —
+  `maxDimension` rejects those before they can overflow a fixed-size host panel.
+  Caught by looking at the rendered result, not assumed from cell count alone.
+- **Coordinate conversion between screen and puzzle space must scale each axis
+  independently.** The host `<svg>` is CSS-stretched to `width:100%;height:100%` of
+  its container, which does not preserve the viewBox's aspect ratio — a single
+  width-derived scale factor applied to both x and y silently corrupts drop
+  coordinates whenever the rendered aspect ratio differs from the viewBox's, with
+  error growing for cells further from the origin (this is why only some
+  lower-row pieces intermittently failed to place, not all of them). Always compute
+  `scaleX`/`scaleY` separately from the viewBox and the element's own
+  `getBoundingClientRect()`.
+- **Resolve `stageId` down to the actual `<svg>` element, not a wrapping
+  container.** A mission may host the puzzle inside a `<div>` for surrounding
+  chrome; only a real `<svg>` element has a usable `.viewBox`, so the engine's
+  `start()` resolves `stageId` to the element itself if it's already an `<svg>`, or
+  to its first `<svg>` descendant otherwise. Passing a wrapper id straight through
+  silently defaults both scale factors to 1 with no error — this was the second,
+  harder-to-find half of the coordinate bug above, since it looked identical to the
+  first (both produce "small aspect-ratio-shaped error") but required fixing
+  separately.
+- **Keep the isolated lifecycle contract** (`start/begin/destroy`, `onComplete`, no
+  `JourneyState`/`localStorage` access) in the engine; let the consuming mission
+  module (`journey-repair.js`) own all fantasy/persistence and translate the
+  engine's generic `onComplete` into the mission's `onSuccessReady` result shape.
+- **Deferred, not built:** a standalone arcade spinoff of this engine, and reuse in
+  a second in-game mission — the engine is built generic enough for both, but
+  neither has a second call site yet.
 
 ### 4. Build Ogre Gate as the Chapter One synthesis
 
@@ -2405,15 +2567,15 @@ Use plain language.
 
 ```text
 Completed: standalone game, persistence, visual cockpit, Lantern refuel,
-           Scrap Belt mission runtime, Pilot's Call presentation, Pip rescue,
-           vertical route, debug checkpoints, and visual/gameplay playbooks
+           Scrap Belt mission runtime, Pilot's Call commitment and thread
+           transformation, Pip rescue, Abandoned Cache "Seal the Vault" puzzle
+           (reusable pattern — see Seal-the-Vault section), vertical route,
+           debug checkpoints, and visual/gameplay playbooks
 
-Next 1. Persist the committed Pilot's Call branch and transform the unchosen thread
-Next 2. Build Abandoned Cache decoding, power routing, and crystal extraction
-Next 3. Rebuild Repair Moon as hands-on repair and upgrade installation
-Next 4. Build the branch-adaptive Ogre Gate set piece
-Next 5. Build First Settlement and Chapter One completion
-Next 6. Playtest both paths and stabilize the Chapter One validation build
+Next 1. Rebuild Repair Moon as hands-on repair and upgrade installation
+Next 2. Build the branch-adaptive Ogre Gate set piece
+Next 3. Build First Settlement and Chapter One completion
+Next 4. Playtest both paths and stabilize the Chapter One validation build
 ```
 
 Keep these as separate testable checkpoints.

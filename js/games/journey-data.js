@@ -89,7 +89,7 @@
       name: 'Abandoned Cache',
       shortName: 'CACHE',
       type: 'peaceful',
-      description: 'Optional supplies off the main route.',
+      description: 'Decode the vault and recover the first Star Crystal.',
       connections: ['scrap-belt', 'repair-moon'],
       fuelCost: 5,
       distance: 22,

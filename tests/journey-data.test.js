@@ -108,7 +108,7 @@ test('Pilot’s Call commitment closes one route and carries its consequence for
   assert.match(controller, /PIP AT GATE/);
   assert.match(controller, /PILOT'S CALL · COMMITTED/);
   assert.match(controller, /journey-log-branch/);
-  assert.match(controller, /journey-repair-branch/);
+  assert.match(controller, /journey-repair-consequence/);
   assert.match(controller, /repair-moon-cache/);
   assert.match(controller, /CACHE CRYSTAL MOVED TO OGRE GATE/);
   assert.match(controller, /PIP INTERCEPTED AT OGRE GATE/);
@@ -165,7 +165,7 @@ test('the cockpit centers the route and moves detail into ship and log views', (
   assert.match(controller, /journey-distress-beacon/);
   assert.match(controller, /node\.id === 'distress-signal' \? arrivalDistressBeacon\(\) : ''/);
   assert.match(controller, /A distress beacon pulses in the distance/);
-  assert.match(controller, /STAR CRYSTAL RECOVERED/);
+  assert.match(controller, /FIRST STAR CRYSTAL/);
   assert.match(controller, /journey-cockpit-companion/);
   assert.match(controller, /Pip is aboard the Wayfarer/);
   assert.match(controller, /journey-pip-face/);
@@ -195,15 +195,18 @@ test('the cockpit gear opens state-backed developer checkpoints', () => {
   assert.match(controller, /RETEST A BEAT/);
 });
 
-test('dock repairs are immediate instead of using a short countdown', () => {
+test('dock repairs are hands-on (a packing puzzle) instead of an instant paid button or a countdown', () => {
   const controller = fs.readFileSync(
     path.join(__dirname, '..', 'js', 'games', 'journey.js'),
     'utf8'
   );
 
-  assert.match(controller, /REPAIR NOW · 5 SCRAP/);
-  assert.match(controller, /5 SCRAP · INSTANT/);
-  assert.match(controller, /JourneyState\.repairHull\(state\.resources\.maxHull, 5\)/);
+  assert.match(controller, /function renderRepairPuzzle/);
+  assert.match(controller, /JourneyRepair\.start/);
+  assert.match(controller, /window\.journeyBeginRepairPuzzle/);
+  assert.match(controller, /JourneyState\.repairHull\(result\.hullRemaining, 0\)/);
+  assert.doesNotMatch(controller, /REPAIR NOW · 5 SCRAP/);
+  assert.doesNotMatch(controller, /window\.journeyRepairAtDock/);
   assert.doesNotMatch(controller, /45000/);
   assert.doesNotMatch(controller, /45 SEC/);
   assert.doesNotMatch(controller, /journeyStartTimedRepair/);
