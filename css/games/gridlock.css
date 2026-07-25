@@ -1,0 +1,186 @@
+/* GRID LOCK — standalone game shell + puzzle visuals.
+   Puzzle-visual rules below are duplicated from css/games/journey.css's
+   journey-cache- and jc- prefixed block (renamed gridlock- and gl- prefixed)
+   so the two can style independently without selector collisions. Cockpit and
+   launch styles are new,
+   built to echo Journey's cockpit language (dark panel, Bebas Neue headers,
+   VCR mono body, cyan/gold accents) at a much smaller footprint — this game
+   has no map, no meters, no resources, only the identity and the launch.
+   Architecture note: this is a deliberate duplicate, not a shared/extracted
+   stylesheet — do not import or merge with journey.css. */
+
+/* ---- Page shell ----------------------------------------------------------
+   Self-contained page + header sizing (mirrors #pg-signal's pattern in
+   signal.css) rather than hooking into arcade.css's legacy per-game
+   body-class rules, which don't have a slot for a new page and would
+   otherwise leave .cats-header unstyled here. */
+#pg-gridlock {
+  position: relative;
+  z-index: 1;
+  height: calc(var(--app-vh, 100dvh) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  margin-top: env(safe-area-inset-top, 0px);
+  overflow: hidden;
+  display: none;
+  flex-direction: column;
+  background: #02040a;
+}
+#pg-gridlock.active { display: flex; }
+#pg-gridlock .cats-header {
+  flex: none;
+  align-self: stretch;
+  width: 100%;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: rgba(6,11,22,.94);
+}
+.gridlock-wrap {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ---- Navigation cockpit and reusable level map ------------------------- */
+.gridlock-cockpit { display:grid; grid-template-rows:auto auto minmax(0,1fr) auto; gap:10px; width:min(100%,680px); height:100%; margin:0 auto; padding:12px; color:#e6eefc; background:linear-gradient(180deg,#07101e,#02040a); }
+.gridlock-cockpit-header { display:grid; grid-template-columns:92px 1fr 92px; align-items:center; gap:8px; min-height:52px; text-align:center; }
+.gridlock-cockpit-header button,.gridlock-map-back { border:1px solid rgba(95,208,255,.5); border-radius:5px; padding:9px 10px; background:rgba(8,21,37,.82); color:#8ddcff; font:11px/1 'VCR',monospace; letter-spacing:1px; cursor:pointer; }
+.gridlock-cockpit-header > div span,.gridlock-cockpit-header > div strong { display:block; }
+.gridlock-cockpit-header > div span,.gridlock-cockpit-status,.gridlock-world-copy > span,.gridlock-map-heading span,.gridlock-cockpit-footer { color:#e8d79a; font:10px/1.3 'VCR',monospace; letter-spacing:1.5px; }
+.gridlock-cockpit-header > div strong { margin-top:4px; color:#7fd4ff; font:29px/1 'Bebas Neue',sans-serif; letter-spacing:4px; }
+.gridlock-cockpit-status { color:#7fd4ff; text-align:right; }
+.gridlock-world-panel { display:flex; align-items:center; justify-content:space-between; min-height:104px; border:1px solid rgba(95,208,255,.38); border-radius:9px; padding:16px 22px; background:radial-gradient(circle at 82% 50%,rgba(95,208,255,.16),transparent 24%),rgba(8,20,35,.76); }
+.gridlock-world-copy > span,.gridlock-world-copy > strong,.gridlock-world-copy > small { display:block; }
+.gridlock-world-copy > strong { margin:6px 0; color:#f4f7ff; font:30px/1 'Bebas Neue',sans-serif; letter-spacing:2px; }
+.gridlock-world-copy > small { max-width:32ch; color:#b8cce0; font:11px/1.45 'VCR',monospace; }
+.gridlock-world-core { position:relative; width:66px; height:66px; border:2px solid #5fd0ff; border-radius:50%; box-shadow:0 0 24px rgba(95,208,255,.35),inset 0 0 18px rgba(95,208,255,.25); }
+.gridlock-world-core i,.gridlock-world-core b { position:absolute; inset:18px; border-radius:50%; background:#e8d79a; box-shadow:0 0 12px #e8d79a; }.gridlock-world-core b { inset:5px; border:1px solid rgba(95,208,255,.6); background:transparent; }
+.gridlock-map-panel { position:relative; min-height:0; overflow:auto; border:1px solid rgba(95,208,255,.3); border-radius:9px; padding:16px; background:radial-gradient(ellipse at 50% 15%,rgba(40,88,130,.22),transparent 46%),#050b14; }
+.gridlock-map-heading { position:relative; z-index:1; text-align:center; }.gridlock-map-heading span,.gridlock-map-heading strong { display:block; }.gridlock-map-heading strong { margin-top:5px; color:#7fd4ff; font:22px/1 'Bebas Neue',sans-serif; letter-spacing:2px; }
+.gridlock-map-path { position:absolute; top:79px; bottom:48px; left:50%; border-left:2px dashed rgba(95,208,255,.45); }
+.gridlock-map-nodes { position:relative; z-index:1; display:grid; gap:20px; max-width:380px; margin:24px auto 0; }
+.gridlock-map-node { display:grid; grid-template-columns:48px 1fr; grid-template-rows:auto auto; align-items:center; column-gap:12px; border:1px solid rgba(95,208,255,.4); border-radius:8px; padding:10px; background:rgba(8,20,35,.9); color:#e6eefc; text-align:left; cursor:pointer; }
+.gridlock-map-node > span { grid-row:1 / 3; display:grid; place-items:center; width:38px; height:38px; border:2px solid #5fd0ff; border-radius:50%; color:#7fd4ff; font:22px/1 'Bebas Neue',sans-serif; }.gridlock-map-node strong { font:19px/1 'Bebas Neue',sans-serif; letter-spacing:1px; }.gridlock-map-node small { margin-top:4px; color:#b8cce0; font:10px/1 'VCR',monospace; letter-spacing:1px; }
+.gridlock-map-node.is-complete > span { border-color:#e8d79a; background:#e8d79a; color:#13202d; }.gridlock-map-node.is-locked { opacity:.42; cursor:default; }.gridlock-cockpit-footer { text-align:center; color:#9db5cc; }
+
+/* ---- Puzzle mission screen (hosts the GridLock engine) ------------------ */
+
+.gridlock-mission-screen {
+  display: grid;
+  grid-template-rows: 64px minmax(0, 1fr);
+  width: min(100%, 580px);
+  height: 100%;
+  margin: 0 auto;
+  padding: max(8px, env(safe-area-inset-top)) 10px max(8px, env(safe-area-inset-bottom));
+  overflow: hidden;
+  background: #02040a;
+}
+.gridlock-mission-screen > header {
+  position: relative; z-index: 8; display: grid; align-content: center;
+  border: 1px solid rgba(60,90,120,.34); border-radius: 8px 8px 0 0;
+  padding: 8px 14px; background: rgba(6,11,22,.98);
+}
+.gridlock-mission-screen > header { grid-template-columns:auto 1fr; gap:12px; align-items:center; }.gridlock-mission-screen > header span { display:block; color:#5f9fc0; font:12px/1 'VCR',monospace; letter-spacing:1.5px; }.gridlock-mission-screen > header strong { display:block; margin-top:5px; color:#e8d79a; font:21px/1 'Bebas Neue',sans-serif; letter-spacing:2px; }
+
+.gridlock-stage {
+  position: relative; min-height: 0; overflow: hidden;
+  border: 1px solid rgba(60,90,120,.28); border-top: 0;
+  background: radial-gradient(120% 90% at 50% 30%, #0c141f, #070c15 55%, #02040a 100%);
+  touch-action: manipulation;
+}
+.gridlock-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; transition: filter .45s ease; }
+.gridlock-scan { position: absolute; inset: 0; pointer-events: none; opacity: .5; background: repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 1px, transparent 1px 3px); }
+.gridlock-vig { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at 50% 42%, transparent 40%, rgba(0,0,0,.55) 78%, rgba(0,0,0,.85) 100%); }
+.gl-feed { fill: #eafcff; filter: drop-shadow(0 0 5px #4fd4ff); }
+
+/* conduit tiles: unsealed = warm/loose, sealed = cyan, flooded = bright */
+.gridlock-tile { cursor: pointer; }
+/* Border is a direct power read: orange = no power yet, blue = powered.
+   Nothing in between. The red cap (below) is the separate signal for
+   "powered but this exact edge is a dead end." */
+.gl-plate { fill: #0d141d; stroke: #c97a4a; stroke-width: 1.5; stroke-opacity: .55; transition: stroke .2s; }
+.gl-bevel-top { fill: #243244; opacity: .7; }
+.gl-chan { transition: transform .16s cubic-bezier(.34,1.4,.5,1); }
+.gl-seg { fill: #b0763a; transition: fill .18s; }
+.gl-hub { fill: #7a5b32; stroke: #050a10; stroke-width: 2; transition: fill .18s; }
+.gridlock-tile.is-sealed .gl-seg { fill: #5fd0ff; }
+.gridlock-tile.is-sealed .gl-hub { fill: #7fe0ff; }
+.gridlock-tile.is-sealed .gl-plate { stroke: #5fd0ff; stroke-width: 1.5; stroke-opacity: 1; }
+.gridlock-tile.is-flooded .gl-seg { fill: #eafcff; filter: drop-shadow(0 0 5px #4fd4ff); }
+.gridlock-tile.is-flooded .gl-hub { fill: #eafcff; filter: drop-shadow(0 0 6px #7fe0ff); }
+.gridlock-tile.is-flooded .gl-plate { stroke: #3a6a8c; }
+
+/* Leak warning: independent of energized/blue state, so a leak can never hide
+   behind an otherwise-lit tile. Only shows on a segment that's both
+   energized and a dead end — a cap band right on the end of that (now blue,
+   via is-sealed above) segment, not a mark on every unpowered leak during
+   scrambling. Red so the cap reads as distinct from the segment's own
+   colour in any state (amber when unpowered, blue when sealed, white when
+   flooded), never blending in as "more pipe." */
+.gl-leak-cap { fill: #d94a4a; opacity: 0; transition: opacity .15s; }
+.gridlock-tile.leakcap-n .gl-leak-cap-n,
+.gridlock-tile.leakcap-e .gl-leak-cap-e,
+.gridlock-tile.leakcap-s .gl-leak-cap-s,
+.gridlock-tile.leakcap-w .gl-leak-cap-w { opacity: .95; }
+
+/* diegetic power-on: board is dark until you board the grid */
+.gridlock-stage.is-dark .gridlock-svg { filter: brightness(.32) saturate(.55); }
+.gridlock-stage.is-powering .gridlock-svg { animation: gl-poweron .64s ease; }
+@keyframes gl-poweron {
+  0% { filter: brightness(.32) saturate(.55); }
+  18% { filter: brightness(1.35); }
+  32% { filter: brightness(.55); }
+  52% { filter: brightness(1.45); }
+  70% { filter: brightness(.8); }
+  100% { filter: brightness(1); }
+}
+
+/* lock-bolts */
+.gl-bolt-stub { stroke: #1a2a3a; stroke-width: 5; transition: stroke .3s; }
+.gl-bolt-housing { fill: #141f2b; stroke: #2b3d50; stroke-width: 2; }
+.gl-bolt-pin { fill: #3a4d63; transition: transform .35s cubic-bezier(.5,-0.4,.4,1.4); }
+.gl-bolt-lamp { fill: #223343; transition: fill .2s; }
+.gridlock-bolt.is-lit .gl-bolt-lamp { fill: #9fe8ff; filter: drop-shadow(0 0 8px #7fe0ff); }
+.gridlock-bolt.is-lit .gl-bolt-pin { transform: translateY(-11px); }
+.gridlock-bolt.is-lit .gl-bolt-stub { stroke: #5fd0ff; filter: drop-shadow(0 0 5px #4fc0ef); }
+.gridlock-bolt.is-lit { animation: gl-clunk .34s ease; }
+@keyframes gl-clunk {
+  0% { transform: translateX(0); }
+  30% { transform: translateX(-1.5px); }
+  60% { transform: translateX(1.5px); }
+  100% { transform: translateX(0); }
+}
+.gridlock-stage.is-solved .gl-vault-ring { stroke: #b7f0ff; filter: drop-shadow(0 0 14px #7fe0ff); }
+
+/* start overlay */
+.gridlock-start {
+  position: absolute; inset: 0; z-index: 12; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; border: 0; padding: 26px;
+  background: rgba(2,5,12,.84); color: #e6eefc; text-align: center; cursor: pointer;
+}
+.gridlock-start strong { color: #7fd4ff; font: 38px/.95 'Bebas Neue', sans-serif; letter-spacing: 3px; text-shadow: 0 0 22px rgba(80,160,210,.5); }
+.gridlock-start small { margin-top: 18px; max-width: 34ch; color: #cdddf0; font: 18px/1.55 'VCR', monospace; }
+.gridlock-start b { margin-top: 26px; border: 2px solid #3f7fb0; border-radius: 7px; padding: 15px 24px; background: rgba(60,130,180,.16); color: #bfe4ff; font: 16px/1 'VCR', monospace; letter-spacing: 1px; }
+.gridlock-stage:not(.is-paused) .gridlock-start { display: none; }
+
+/* ---- Solved beat (temporary — this is the placeholder future level-complete
+   screen will replace once progression is built) --------------------------- */
+
+.gridlock-solved {
+  position: absolute; inset: 0; z-index: 14; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px; padding: 26px;
+  background: radial-gradient(circle at 50% 40%, rgba(80,160,220,.18), transparent 55%), rgba(2,5,12,.92);
+  color: #e6eefc; text-align: center;
+}
+.gridlock-solved span { color: #ffd98a; font: 13px/1 'VCR', monospace; letter-spacing: 2px; }
+.gridlock-solved strong { color: #7fd4ff; font: 40px/.95 'Bebas Neue', sans-serif; letter-spacing: 3px; text-shadow: 0 0 22px rgba(80,160,210,.4); }
+.gridlock-solved small { color:#cdddf0; font:11px/1.4 'VCR',monospace; letter-spacing:1px; }
+.gridlock-solved-actions { display: flex; gap: 10px; margin-top: 8px; }
+.gridlock-solved-actions button {
+  min-height: 50px; border: 2px solid #3f7fb0; border-radius: 7px; padding: 12px 22px;
+  background: rgba(60,130,180,.16); color: #bfe4ff; font: 14px/1 'VCR', monospace;
+  letter-spacing: 1px; cursor: pointer;
+}
+@media (max-width:430px) { .gridlock-cockpit{padding:8px}.gridlock-cockpit-header{grid-template-columns:70px 1fr 58px}.gridlock-cockpit-status{font-size:8px}.gridlock-world-panel{padding:14px}.gridlock-mission-screen{padding:6px}.gridlock-solved-actions{flex-wrap:wrap;justify-content:center}.gridlock-solved-actions button{min-height:42px;padding:10px 12px;font-size:11px;} }
