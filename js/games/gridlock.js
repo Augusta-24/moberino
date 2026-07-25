@@ -14,7 +14,6 @@
 (function () {
   'use strict';
 
-<<<<<<< HEAD
   let COLS = 6;
   let ROWS = 6;
   let X0 = 82;
@@ -23,16 +22,6 @@
   let SOURCE = { r: 5, c: 0 };
   let SINKS = [{ r: 0, c: 1, bolt: 0 }, { r: 0, c: 3, bolt: 1 }, { r: 0, c: 5, bolt: 2 }];
   let LOOP_EDGE_CHANCE = 0.34;   // extra edges beyond the spanning tree → loops, fewer trivial end-caps
-=======
-  const COLS = 6;
-  const ROWS = 6;
-  const X0 = 82;
-  const Y0 = 250;
-  const S = 66;
-  const SOURCE = { r: 5, c: 0 };
-  const SINKS = [{ r: 0, c: 1, bolt: 0 }, { r: 0, c: 3, bolt: 1 }, { r: 0, c: 5, bolt: 2 }];
-  const LOOP_EDGE_CHANCE = 0.34;   // extra edges beyond the spanning tree → loops, fewer trivial end-caps
->>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
 
   const ORDER = ['n', 'e', 's', 'w'];
   const DELTA = { n: [-1, 0], e: [0, 1], s: [1, 0], w: [0, -1] };
@@ -99,11 +88,7 @@
   // sections of the board into freebies. Sampled across 3000 generations, ~6.5%
   // of raw boards exceeded this — reject and regenerate rather than ship an
   // inconsistently easy lattice. Convergence is fast (usually the first retry).
-<<<<<<< HEAD
   let MAX_X_FRACTION = 0.15;
-=======
-  const MAX_X_FRACTION = 0.15;
->>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
   const MAX_GENERATE_ATTEMPTS = 20;
 
   function buildConnectivity() {
@@ -137,7 +122,6 @@
     return conn;
   }
 
-<<<<<<< HEAD
   function applyGenerationConfig(nextConfig) {
     const size = nextConfig && nextConfig.size || {};
     ROWS = Math.max(3, Math.round(size.rows || 6));
@@ -154,8 +138,6 @@
     MAX_X_FRACTION = Number.isFinite(rules.maxCrossingFraction) ? rules.maxCrossingFraction : .15;
   }
 
-=======
->>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
   function xFraction(conn) {
     let xCount = 0;
     for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (conn[r][c].size === 4) xCount += 1;
@@ -370,10 +352,7 @@
   function start(nextConfig) {
     destroy();
     config = nextConfig || {};
-<<<<<<< HEAD
     applyGenerationConfig(config);
-=======
->>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
     stage = element(nextConfig.stageId);
     gridGroup = element('gridlock-grid');
     if (!stage || !gridGroup) return false;

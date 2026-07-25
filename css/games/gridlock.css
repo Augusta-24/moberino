@@ -43,7 +43,6 @@
   overflow: hidden;
 }
 
-<<<<<<< HEAD
 /* ---- Navigation cockpit and reusable level map ------------------------- */
 .gridlock-cockpit { display:grid; grid-template-rows:auto auto minmax(0,1fr) auto; gap:10px; width:min(100%,680px); height:100%; margin:0 auto; padding:12px; color:#e6eefc; background:linear-gradient(180deg,#07101e,#02040a); }
 .gridlock-cockpit-header { display:grid; grid-template-columns:92px 1fr 92px; align-items:center; gap:8px; min-height:52px; text-align:center; }
@@ -66,8 +65,6 @@
 .gridlock-map-node > span { grid-row:1 / 3; display:grid; place-items:center; width:38px; height:38px; border:2px solid #5fd0ff; border-radius:50%; color:#7fd4ff; font:22px/1 'Bebas Neue',sans-serif; }.gridlock-map-node strong { font:19px/1 'Bebas Neue',sans-serif; letter-spacing:1px; }.gridlock-map-node small { margin-top:4px; color:#b8cce0; font:10px/1 'VCR',monospace; letter-spacing:1px; }
 .gridlock-map-node.is-complete > span { border-color:#e8d79a; background:#e8d79a; color:#13202d; }.gridlock-map-node.is-locked { opacity:.42; cursor:default; }.gridlock-cockpit-footer { text-align:center; color:#9db5cc; }
 
-=======
->>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
 /* ---- Puzzle mission screen (hosts the GridLock engine) ------------------ */
 
 .gridlock-mission-screen {
@@ -85,12 +82,7 @@
   border: 1px solid rgba(60,90,120,.34); border-radius: 8px 8px 0 0;
   padding: 8px 14px; background: rgba(6,11,22,.98);
 }
-<<<<<<< HEAD
 .gridlock-mission-screen > header { grid-template-columns:auto 1fr; gap:12px; align-items:center; }.gridlock-mission-screen > header span { display:block; color:#5f9fc0; font:12px/1 'VCR',monospace; letter-spacing:1.5px; }.gridlock-mission-screen > header strong { display:block; margin-top:5px; color:#e8d79a; font:21px/1 'Bebas Neue',sans-serif; letter-spacing:2px; }
-=======
-.gridlock-mission-screen > header span { display: block; color: #5f9fc0; font: 12px/1 'VCR', monospace; letter-spacing: 1.5px; }
-.gridlock-mission-screen > header strong { display: block; margin-top: 5px; color: #e8d79a; font: 21px/1 'Bebas Neue', sans-serif; letter-spacing: 2px; }
->>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
 
 .gridlock-stage {
   position: relative; min-height: 0; overflow: hidden;
@@ -184,17 +176,11 @@
 }
 .gridlock-solved span { color: #ffd98a; font: 13px/1 'VCR', monospace; letter-spacing: 2px; }
 .gridlock-solved strong { color: #7fd4ff; font: 40px/.95 'Bebas Neue', sans-serif; letter-spacing: 3px; text-shadow: 0 0 22px rgba(80,160,210,.4); }
-<<<<<<< HEAD
 .gridlock-solved small { color:#cdddf0; font:11px/1.4 'VCR',monospace; letter-spacing:1px; }
-=======
->>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
 .gridlock-solved-actions { display: flex; gap: 10px; margin-top: 8px; }
 .gridlock-solved-actions button {
   min-height: 50px; border: 2px solid #3f7fb0; border-radius: 7px; padding: 12px 22px;
   background: rgba(60,130,180,.16); color: #bfe4ff; font: 14px/1 'VCR', monospace;
   letter-spacing: 1px; cursor: pointer;
 }
-<<<<<<< HEAD
 @media (max-width:430px) { .gridlock-cockpit{padding:8px}.gridlock-cockpit-header{grid-template-columns:70px 1fr 58px}.gridlock-cockpit-status{font-size:8px}.gridlock-world-panel{padding:14px}.gridlock-mission-screen{padding:6px}.gridlock-solved-actions{flex-wrap:wrap;justify-content:center}.gridlock-solved-actions button{min-height:42px;padding:10px 12px;font-size:11px;} }
-=======
->>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
