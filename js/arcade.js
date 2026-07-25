@@ -99,7 +99,11 @@
 
   let arcadeEdgeSwipe = null;
   function arcadeSwipeGuardActive() {
+<<<<<<< HEAD
     return document.body.matches('.on-lobby,.on-char,.on-signin,.on-facefactory,.on-whack,.on-match,.on-space,.on-gridlock,.on-signal,.on-snoob,.on-consume');
+=======
+    return document.body.matches('.on-lobby,.on-char,.on-signin,.on-facefactory,.on-whack,.on-match,.on-space,.on-journey,.on-gridlock,.on-signal,.on-snoob,.on-consume');
+>>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
   }
 
   document.addEventListener('touchstart', e => {
@@ -210,6 +214,10 @@
     const onWhack = p === 'whack';
     const onMatch = p === 'match';
     const onSpace = p === 'space';
+<<<<<<< HEAD
+=======
+    const onJourney = p === 'journey';
+>>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
     const onGridLock = p === 'gridlock';
     const onSignal = p === 'signal';
     const onSnoob = p === 'snoob';
@@ -222,6 +230,10 @@
     document.body.classList.toggle('on-whack', onWhack);
     document.body.classList.toggle('on-match', onMatch);
     document.body.classList.toggle('on-space', onSpace);
+<<<<<<< HEAD
+=======
+    document.body.classList.toggle('on-journey', onJourney);
+>>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
     document.body.classList.toggle('on-gridlock', onGridLock);
     document.body.classList.toggle('on-signal', onSignal);
     document.body.classList.toggle('on-snoob', onSnoob);
@@ -230,10 +242,17 @@
     document.documentElement.classList.add('arcade-root');
 
     try {
+<<<<<<< HEAD
       if ((onLobby || onCharSelect || onSignIn || onFaceFactory || onWhack || onMatch || onSpace || onGridLock || onSignal || onSnoob || onConsume || onPet) && typeof ArcadeMusic !== 'undefined' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
       if (typeof ArcadeMusic !== 'undefined') {
         if (onLobby || onCharSelect || onSignIn) ArcadeMusic.unduck();
         if (onFaceFactory || onWhack || onMatch || onSpace || onGridLock || onSignal || onSnoob || onConsume || onPet) ArcadeMusic.duck();
+=======
+      if ((onLobby || onCharSelect || onSignIn || onFaceFactory || onWhack || onMatch || onSpace || onJourney || onGridLock || onSignal || onSnoob || onConsume || onPet) && typeof ArcadeMusic !== 'undefined' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
+      if (typeof ArcadeMusic !== 'undefined') {
+        if (onLobby || onCharSelect || onSignIn) ArcadeMusic.unduck();
+        if (onFaceFactory || onWhack || onMatch || onSpace || onJourney || onGridLock || onSignal || onSnoob || onConsume || onPet) ArcadeMusic.duck();
+>>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
       }
     } catch(e) {}
 
@@ -254,12 +273,20 @@
     if (onWhack && typeof initWhack === 'function') initWhack();
     if (onMatch && typeof initMatch === 'function') initMatch();
     if (onSpace && typeof initSpace === 'function') initSpace();
+<<<<<<< HEAD
+=======
+    if (onJourney && typeof initJourney === 'function') initJourney();
+>>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
     if (onGridLock && typeof initGridLock === 'function') initGridLock();
     if (onSignal && typeof initSignal === 'function') initSignal();
     if (onSnoob && typeof initSnoob === 'function') initSnoob();
     if (onConsume && typeof initConsume === 'function') initConsume();
     if (onPet && typeof initPet === 'function') initPet();
     if (!onSpace && typeof spacePause === 'function') spacePause();
+<<<<<<< HEAD
+=======
+    if (!onJourney && typeof journeyBack === 'function') journeyBack();
+>>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
     if (!onGridLock && typeof gridLockBack === 'function') gridLockBack();
     if (!onSignal && typeof signalBack === 'function') signalBack();
     if (!onFaceFactory && typeof faceFactoryBack === 'function') faceFactoryBack();

@@ -51,7 +51,7 @@ body.on-home {
   padding-bottom: 0;
 }
 /* Neon arcade floor — even diamond grid, fills full viewport */
-body.on-lobby, body.on-char, body.on-signin, body.on-facefactory, body.on-whack, body.on-match, body.on-space, body.on-signal, body.on-snoob, body.on-consume {
+body.on-lobby, body.on-char, body.on-signin, body.on-facefactory, body.on-whack, body.on-match, body.on-space, body.on-journey, body.on-signal, body.on-snoob, body.on-consume {
   min-height: var(--app-vh, 100dvh);
   background-color: #02040e;
   overflow: hidden;
@@ -62,6 +62,7 @@ body.on-facefactory,
 body.on-whack,
 body.on-match,
 body.on-space,
+body.on-journey,
 body.on-signal,
 body.on-snoob,
 body.on-consume {
@@ -88,7 +89,7 @@ body.on-char {
     repeating-linear-gradient(-45deg, rgba(0,229,255,0.04) 0px, rgba(0,229,255,0.04) 1px, transparent 1px, transparent 31px);
   background-size: auto, 44px 44px, 44px 44px;
 }
-#pg-lobby, #pg-charselect, #pg-signin, #pg-facefactory, #pg-whack, #pg-match, #pg-space, #pg-signal, #pg-snoob, #pg-consume {
+#pg-lobby, #pg-charselect, #pg-signin, #pg-facefactory, #pg-whack, #pg-match, #pg-space, #pg-journey, #pg-signal, #pg-snoob, #pg-consume {
   background: transparent;
 }
 
@@ -141,8 +142,8 @@ body.on-char {
   border-radius: 4px; padding: 5px 10px; color: #ff00cc; cursor: pointer;
   text-shadow: 0 0 8px #ff00cc66; white-space: nowrap;
 }
-body.on-lobby button, body.on-char button, body.on-whack button, body.on-match button, body.on-space button, body.on-snoob button, body.on-consume button,
-body.on-lobby .game-card, body.on-char .game-card, body.on-whack .game-card, body.on-match .game-card, body.on-space .game-card, body.on-snoob .game-card, body.on-consume .game-card {
+body.on-lobby button, body.on-char button, body.on-whack button, body.on-match button, body.on-space button, body.on-journey button, body.on-snoob button, body.on-consume button,
+body.on-lobby .game-card, body.on-char .game-card, body.on-whack .game-card, body.on-match .game-card, body.on-space .game-card, body.on-journey .game-card, body.on-snoob .game-card, body.on-consume .game-card {
   touch-action: manipulation;
 }
 /* ── Arcade page header: compact ── */

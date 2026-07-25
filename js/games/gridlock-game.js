@@ -1,10 +1,25 @@
+<<<<<<< HEAD
 /* Grid Lock UI. It composes level data, progression, and the puzzle engine. */
+=======
+/* GRID LOCK — standalone game shell. Hosts the GridLock puzzle engine
+   (gridlock.js) directly — no separate cockpit/launch screen, since the
+   puzzle scene already has its own "board the grid" start overlay and a
+   future map screen will own the pre-mission beat instead. Architecture
+   step only: prove the arcade → puzzle structure works end to end with the
+   existing puzzle gameplay unchanged. No progression, worlds, difficulty, or
+   new mechanics yet — that's deliberately deferred to a later pass (see the
+   placeholder "solved beat" below). This module never touches Journey's
+   state or DOM; it is a fully independent game. */
+>>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
 (function () {
   'use strict';
 
   const hostId = 'gridlock-wrap';
   let active = false;
+<<<<<<< HEAD
   let selectedLevelId = null;
+=======
+>>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
 
   function host() { return document.getElementById(hostId); }
 
@@ -12,6 +27,7 @@
     if (typeof SFX !== 'undefined' && typeof SFX.menuSelect === 'function') SFX.menuSelect();
   }
 
+<<<<<<< HEAD
   function selectedLevel() { return GridLockLevels.get(selectedLevelId) || GridLockLevels.get(GridLockLevels.firstId); }
 
   function renderCockpit() {
@@ -46,17 +62,27 @@
       </main>`;
   }
 
+=======
+>>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
   // ---- Puzzle mission screen ------------------------------------------------
 
   function renderPuzzle() {
     const root = host();
     if (!root || !active) return;
+<<<<<<< HEAD
     const level = selectedLevel();
     root.innerHTML = `
       <main class="gridlock-mission-screen">
         <header>
           <button type="button" class="gridlock-map-back" onclick="gridLockReturnToMap()">◀ MAP</button>
           <div><span>GRID LOCK · ${level.name.toUpperCase()}</span><strong id="gridlock-objective">SEAL THE GRID</strong></div>
+=======
+    root.innerHTML = `
+      <main class="gridlock-mission-screen">
+        <header>
+          <span>GRID LOCK · CONDUIT BAY</span>
+          <strong id="gridlock-objective">SEAL THE GRID</strong>
+>>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
         </header>
         <div id="gridlock-stage" class="gridlock-stage is-paused" aria-label="Route power through the conduit grid to unlock it">
           <svg class="gridlock-svg" viewBox="0 92 560 728" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -159,6 +185,7 @@
       </main>`;
     GridLock.start({
       stageId: 'gridlock-stage',
+<<<<<<< HEAD
       size: level.size,
       generationRules: level.generationRules,
       onSuccessReady(result) { showSolvedBeat(result.stats); }
@@ -181,6 +208,22 @@
         <button type="button" onclick="gridLockPlayAgain()">REPLAY</button>
         ${next ? `<button type="button" onclick="gridLockOpenLevel('${next.id}')">NEXT RELAY</button>` : ''}
         <button type="button" onclick="gridLockReturnToMap()">RETURN TO MAP</button>
+=======
+      onSuccessReady() { showSolvedBeat(); }
+    });
+  }
+
+  function showSolvedBeat() {
+    const stage = document.getElementById('gridlock-stage');
+    if (!stage || !active) return;
+    const overlay = document.createElement('div');
+    overlay.className = 'gridlock-solved';
+    overlay.innerHTML = `
+      <span>GRID UNLOCKED</span>
+      <strong>SOLVED</strong>
+      <div class="gridlock-solved-actions">
+        <button type="button" onclick="gridLockPlayAgain()">PLAY AGAIN</button>
+>>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
       </div>`;
     stage.appendChild(overlay);
   }
@@ -201,6 +244,7 @@
     renderPuzzle();
   };
 
+<<<<<<< HEAD
   window.gridLockOpenLevel = function (levelId) {
     if (!active || !GridLockProgression.isUnlocked(levelId)) return;
     selectedLevelId = levelId;
@@ -216,11 +260,17 @@
     renderCockpit();
   };
 
+=======
+>>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
   // ---- Lifecycle (called by arcade.js nav()) --------------------------------
 
   window.initGridLock = function () {
     active = true;
+<<<<<<< HEAD
     renderCockpit();
+=======
+    renderPuzzle();
+>>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
   };
 
   window.gridLockBack = function () {

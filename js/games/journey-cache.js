@@ -1,29 +1,14 @@
-/* GRID LOCK — standalone puzzle engine, duplicated from js/games/journey-cache.js
-   ("Seal the Vault") so it can be developed independently of Journey. A coupled
-   conduit-lattice puzzle in the Infinity-Loop tradition. Every conduit opening on
-   the whole board must connect to a matching opening on a neighbour: any loose
-   end anywhere keeps the lattice unsealed. Rotating one tile constrains its
-   neighbours, so every tile is a real decision solved by deduction, and there is
-   no dead space. When the whole lattice is sealed and the core is joined to all
-   three bolts, current floods the network and the bolts fire. This module owns
-   the interaction only and never touches persistent save state — it is a
-   byte-for-byte copy of the gameplay logic in journey-cache.js, renamed so the
-   two can render in the same document without id/class collisions. Do not import
-   this from journey.js or vice versa; the two are intentionally independent
-   copies per the "duplicate, don't extract" architecture decision. */
+/* Authored Abandoned Cache mission: "Seal the Vault" — a coupled conduit-lattice
+   puzzle in the Infinity-Loop tradition. Every conduit opening on the whole board
+   must connect to a matching opening on a neighbour: any loose end anywhere keeps
+   the lattice unsealed. Rotating one tile constrains its neighbours, so every tile
+   is a real decision solved by deduction, and there is no dead space. When the
+   whole lattice is sealed and the core is joined to all three bolts, current
+   floods the network and the bolts fire. This module owns the interaction only
+   and never touches persistent save state. */
 (function () {
   'use strict';
 
-<<<<<<< HEAD
-  let COLS = 6;
-  let ROWS = 6;
-  let X0 = 82;
-  const Y0 = 250;
-  const S = 66;
-  let SOURCE = { r: 5, c: 0 };
-  let SINKS = [{ r: 0, c: 1, bolt: 0 }, { r: 0, c: 3, bolt: 1 }, { r: 0, c: 5, bolt: 2 }];
-  let LOOP_EDGE_CHANCE = 0.34;   // extra edges beyond the spanning tree → loops, fewer trivial end-caps
-=======
   const COLS = 6;
   const ROWS = 6;
   const X0 = 82;
@@ -32,7 +17,6 @@
   const SOURCE = { r: 5, c: 0 };
   const SINKS = [{ r: 0, c: 1, bolt: 0 }, { r: 0, c: 3, bolt: 1 }, { r: 0, c: 5, bolt: 2 }];
   const LOOP_EDGE_CHANCE = 0.34;   // extra edges beyond the spanning tree → loops, fewer trivial end-caps
->>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
 
   const ORDER = ['n', 'e', 's', 'w'];
   const DELTA = { n: [-1, 0], e: [0, 1], s: [1, 0], w: [0, -1] };
@@ -71,7 +55,7 @@
   }
   function later(cb, delay) { let h = null; const run = () => { if (h !== null) timers = timers.filter(x => x !== h); cb(); }; h = window.setTimeout(run, delay); timers.push(h); return h; }
   function clearTimers() { timers.forEach(id => window.clearTimeout(id)); timers = []; }
-  function setObjective(text) { const o = element('gridlock-objective'); if (o) o.textContent = text; }
+  function setObjective(text) { const o = element('journey-cache-objective'); if (o) o.textContent = text; }
   function addListener(node, type, handler, options) { if (!node) return; node.addEventListener(type, handler, options); listeners.push({ node, type, handler }); }
   function tileAt(r, c) { if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return null; return tiles[r * COLS + c]; }
 
@@ -99,11 +83,7 @@
   // sections of the board into freebies. Sampled across 3000 generations, ~6.5%
   // of raw boards exceeded this — reject and regenerate rather than ship an
   // inconsistently easy lattice. Convergence is fast (usually the first retry).
-<<<<<<< HEAD
-  let MAX_X_FRACTION = 0.15;
-=======
   const MAX_X_FRACTION = 0.15;
->>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
   const MAX_GENERATE_ATTEMPTS = 20;
 
   function buildConnectivity() {
@@ -137,25 +117,6 @@
     return conn;
   }
 
-<<<<<<< HEAD
-  function applyGenerationConfig(nextConfig) {
-    const size = nextConfig && nextConfig.size || {};
-    ROWS = Math.max(3, Math.round(size.rows || 6));
-    COLS = Math.max(3, Math.round(size.columns || 6));
-    X0 = (560 - COLS * S) / 2;
-    SOURCE = { r: ROWS - 1, c: 0 };
-    SINKS = [
-      { r: 0, c: Math.min(1, COLS - 1), bolt: 0 },
-      { r: 0, c: Math.floor(COLS / 2), bolt: 1 },
-      { r: 0, c: COLS - 1, bolt: 2 }
-    ].filter((sink, index, sinks) => sinks.findIndex(other => other.c === sink.c) === index);
-    const rules = nextConfig && nextConfig.generationRules || {};
-    LOOP_EDGE_CHANCE = Number.isFinite(rules.loopEdgeChance) ? rules.loopEdgeChance : .34;
-    MAX_X_FRACTION = Number.isFinite(rules.maxCrossingFraction) ? rules.maxCrossingFraction : .15;
-  }
-
-=======
->>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
   function xFraction(conn) {
     let xCount = 0;
     for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (conn[r][c].size === 4) xCount += 1;
@@ -187,35 +148,20 @@
 
   function buildTile(r, c, def) {
     const cx = X0 + c * S + S / 2, cy = Y0 + r * S + S / 2, half = S / 2 - 3;
-    const g = svg('g', { transform: `translate(${cx},${cy})`, class: 'gridlock-tile' });
-    g.appendChild(svg('rect', { x: -half, y: -half, width: half * 2, height: half * 2, rx: 6, class: 'gl-plate' }));
-    g.appendChild(svg('rect', { x: -half + 3, y: -half + 2, width: half * 2 - 6, height: 3, class: 'gl-bevel-top' }));
-    const chan = svg('g', { class: 'gl-chan' });
-    // reach stops flush at the plate's own edge (not half+2 past it) so a
-    // segment never pokes outside the tile's visible border.
-    const w = 13, reach = half;
-    // A small band capping the outer end of a segment, kept just inside the
-    // plate's own edge (never past it) — hidden by default, shown only when
-    // that specific segment is both energized and a dead end (see
-    // evaluate()'s leakcap-n/e/s/w classes, keyed to this LOCAL direction so
-    // the cap rotates together with its segment as the piece is turned).
-    const capDist = half - 3, capBand = 14, capThick = 4;
+    const g = svg('g', { transform: `translate(${cx},${cy})`, class: 'journey-cache-tile' });
+    g.appendChild(svg('rect', { x: -half, y: -half, width: half * 2, height: half * 2, rx: 6, class: 'jc-plate' }));
+    g.appendChild(svg('rect', { x: -half + 3, y: -half + 2, width: half * 2 - 6, height: 3, class: 'jc-bevel-top' }));
+    const chan = svg('g', { class: 'jc-chan' });
+    const w = 13, reach = half + 2;
     SHAPES[def.shape].forEach(dir => {
-      const seg = svg('rect', { rx: 4, class: 'gl-seg' });
+      const seg = svg('rect', { rx: 4, class: 'jc-seg' });
       if (dir === 'n') { seg.setAttribute('x', -w / 2); seg.setAttribute('y', -reach); seg.setAttribute('width', w); seg.setAttribute('height', reach + 4); }
       if (dir === 's') { seg.setAttribute('x', -w / 2); seg.setAttribute('y', -4); seg.setAttribute('width', w); seg.setAttribute('height', reach + 4); }
       if (dir === 'e') { seg.setAttribute('x', -4); seg.setAttribute('y', -w / 2); seg.setAttribute('width', reach + 4); seg.setAttribute('height', w); }
       if (dir === 'w') { seg.setAttribute('x', -reach); seg.setAttribute('y', -w / 2); seg.setAttribute('width', reach + 4); seg.setAttribute('height', w); }
       chan.appendChild(seg);
-
-      const cap = svg('rect', { rx: 1.5, class: `gl-leak-cap gl-leak-cap-${dir}` });
-      if (dir === 'n') { cap.setAttribute('x', -capBand / 2); cap.setAttribute('y', -capDist - capThick / 2); cap.setAttribute('width', capBand); cap.setAttribute('height', capThick); }
-      if (dir === 's') { cap.setAttribute('x', -capBand / 2); cap.setAttribute('y', capDist - capThick / 2); cap.setAttribute('width', capBand); cap.setAttribute('height', capThick); }
-      if (dir === 'e') { cap.setAttribute('x', capDist - capThick / 2); cap.setAttribute('y', -capBand / 2); cap.setAttribute('width', capThick); cap.setAttribute('height', capBand); }
-      if (dir === 'w') { cap.setAttribute('x', -capDist - capThick / 2); cap.setAttribute('y', -capBand / 2); cap.setAttribute('width', capThick); cap.setAttribute('height', capBand); }
-      chan.appendChild(cap);
     });
-    chan.appendChild(svg('circle', { r: 8, class: 'gl-hub' }));
+    chan.appendChild(svg('circle', { r: 8, class: 'jc-hub' }));
     chan.setAttribute('transform', `rotate(${def.startRot * 90})`);
     g.appendChild(chan);
     const tile = { r, c, shape: def.shape, rot: def.startRot, solvedRot: def.solvedRot, g, chan };
@@ -273,38 +219,21 @@
     // while still failing to win, with no visual cue pointing at the problem.
     // is-leaking flags any tile with an unresolved leak independently of
     // is-sealed, so a leak can never hide behind an energized/blue tile.
-    //
-    // The visible cap mark is deliberately narrower than "is-leaking": it
-    // only lights up on a segment that is BOTH energized (its tile is
-    // reached) AND a dead end. A freshly-scrambled board has leaks
-    // everywhere before any current has even arrived — marking all of them
-    // would be constant background noise with nothing meaningful to say yet.
-    // The genuinely useful moment is "power got here, but this end goes
-    // nowhere," which only exists once the tile is actually lit.
     const reached = floodReaches();
     let allMatched = true, openings = 0, matchedOpenings = 0;
     tiles.forEach(t => {
       let matched = true;
-      const isReached = reached.has(key(t.r, t.c));
-      const activeCapDirs = [];
-      SHAPES[t.shape].forEach(localDir => {
-        openings += 1;
-        const absDir = ORDER[(ORDER.indexOf(localDir) + t.rot) % 4];
-        const leak = classify(t, absDir) === 'leak';
-        if (leak) matched = false; else matchedOpenings += 1;
-        if (leak && isReached) activeCapDirs.push(localDir);
-      });
+      effConns(t).forEach(dir => { openings += 1; if (classify(t, dir) === 'leak') matched = false; else matchedOpenings += 1; });
       if (!matched) allMatched = false;
-      t.g.classList.toggle('is-sealed', isReached);
+      t.g.classList.toggle('is-sealed', reached.has(key(t.r, t.c)));
       t.g.classList.toggle('is-leaking', !matched);
-      ORDER.forEach(dir => t.g.classList.toggle(`leakcap-${dir}`, activeCapDirs.includes(dir)));
     });
     updateMeter(openings ? matchedOpenings / openings : 0);
     if (allMatched && SINKS.every(s => reached.has(key(s.r, s.c)))) win();
   }
 
   function updateMeter(frac) {
-    const needle = element('gridlock-needle');
+    const needle = element('journey-cache-needle');
     if (needle) needle.setAttribute('transform', `rotate(${-120 + frac * 240})`);
   }
 
@@ -325,7 +254,7 @@
     solved = true;
     phase = 'done';
     if (stage) stage.classList.add('is-solved');
-    setObjective('LATTICE SEALED · GRID LOCK OPEN');
+    setObjective('LATTICE SEALED · WAKING THE VAULT');
     // flood the network from the core, layer by layer
     const order = [];
     const seen = new Set([key(SOURCE.r, SOURCE.c)]);
@@ -353,7 +282,10 @@
       const done = config; active = false;
       if (typeof done.onSuccessReady === 'function') {
         done.onSuccessReady({
-          outcome: 'success',
+          attemptId: done.attemptId, encounterId: done.encounterId, outcome: 'success',
+          hullRemaining: done.startingHull, damageTaken: 0, fuelCollected: 0, salvageCollected: 0,
+          objectiveComplete: true, rescuedPassengerId: null, bossDefeated: null,
+          crystalId: done.crystalId || 'azure-cache',
           stats: { rotations, durationMs: Math.max(0, Math.round(performance.now() - startedAt)) }
         });
       }
@@ -361,7 +293,7 @@
   }
 
   function lightBolt(index) {
-    const bolt = element(`gridlock-bolt-${index}`);
+    const bolt = element(`journey-cache-bolt-${index}`);
     if (bolt && !bolt.classList.contains('is-lit')) { bolt.classList.add('is-lit'); playTone(320 + index * 60, 640, .22, .06, 'square'); }
   }
 
@@ -369,13 +301,9 @@
 
   function start(nextConfig) {
     destroy();
-    config = nextConfig || {};
-<<<<<<< HEAD
-    applyGenerationConfig(config);
-=======
->>>>>>> 1341c6516aa75d2082c6e373d28246cae1be59d7
+    config = nextConfig;
     stage = element(nextConfig.stageId);
-    gridGroup = element('gridlock-grid');
+    gridGroup = element('journey-cache-grid');
     if (!stage || !gridGroup) return false;
     active = true; phase = 'idle'; solved = false; rotations = 0; startedAt = performance.now();
 
@@ -413,5 +341,5 @@
   // read-only: current + solving rotation per tile (used by tests; harmless)
   function snapshot() { return tiles.map(t => ({ r: t.r, c: t.c, rot: t.rot, solvedRot: t.solvedRot })); }
 
-  window.GridLock = Object.freeze({ start, begin, destroy, snapshot, isActive() { return active; } });
+  window.JourneyCache = Object.freeze({ start, begin, destroy, snapshot, isActive() { return active; } });
 })();
