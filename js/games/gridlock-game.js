@@ -792,7 +792,7 @@
               <text id="gridlock-meter-bolts" x="0" y="-11" class="gl-meter-bolts">BOLTS ONLINE 0 / 3</text>
               <rect x="0" y="0" width="220" height="20" rx="10" class="gl-meter-track"/>
               <rect id="gridlock-meter-fill" x="3" y="3" width="0" height="14" rx="7" class="gl-meter-fill"/>
-              <text id="gridlock-system-status" x="220" y="47" text-anchor="end" class="gl-meter-status">SYSTEM FAULT</text>
+              <text id="gridlock-system-status" x="110" y="47" text-anchor="middle" class="gl-meter-status">SYSTEM FAULT</text>
             </g>
 
             <!-- conduit tiles injected here -->
