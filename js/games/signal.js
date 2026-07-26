@@ -120,19 +120,13 @@
   const SIGNAL_PRESETS = {
     style: [
       { id: 'space-funk', label: 'SPACE FUNK' },
-      { id: 'dream-synth', label: 'DREAM SYNTH' },
       { id: 'boss-rave', label: 'BOSS RAVE' },
-      { id: 'chiptune', label: 'CHIPTUNE' },
-      { id: 'dark-minor', label: 'NOIR MOON' },
-      { id: 'vaporwave', label: 'VAPORWAVE' },
-      { id: 'toy-box', label: 'TOY BOX' },
-      { id: 'steel-island', label: 'STEEL ISLAND' },
-      { id: 'jazz-club', label: 'JAZZ CLUB' },
-      { id: 'velvet-hall', label: 'VELVET HALL' },
-      { id: 'haunted-organ', label: 'HAUNTED ORGAN' },
-      { id: 'desert-caravan', label: 'DESERT' },
-      { id: 'cyber-garage', label: 'CYBER GARAGE' },
+      { id: 'dream-synth', label: 'DREAM SYNTH' },
       { id: 'crystal-cave', label: 'CRYSTAL CAVE' },
+      { id: 'dark-minor', label: 'NOIR MOON' },
+      { id: 'jazz-club', label: 'JAZZ CLUB' },
+      { id: 'steel-island', label: 'STEEL ISLAND' },
+      { id: 'desert-caravan', label: 'DESERT' },
     ],
     mood: [
       { id: 'minor', label: 'MOODY' },
@@ -163,22 +157,17 @@
     'space-funk': { root: 110.00, rootSemi: 9, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'triangle', drumVol: 1, shimmer: 1, bassWeight: 1.08, keyGlow: 1, echo: 0.9, resonance: 1.05 },
     'dream-synth': { root: 123.47, rootSemi: 11, bassWave: 'sine', keysWave: 'sine', chimeWave: 'triangle', drumVol: 0.88, shimmer: 1.5, bassWeight: 0.86, keyGlow: 1.3, echo: 1.35, resonance: 0.85 },
     'boss-rave': { root: 116.54, rootSemi: 10, bassWave: 'sawtooth', keysWave: 'triangle', chimeWave: 'triangle', drumVol: 1.15, shimmer: 1.1, bassWeight: 1.22, keyGlow: 1.08, echo: 0.75, resonance: 1.35, master: 1.06 },
-    'chiptune': { root: 146.83, rootSemi: 2, bassWave: 'square', keysWave: 'square', chimeWave: 'square', drumVol: 0.85, shimmer: 0.8, bassWeight: 0.9, keyGlow: 0.86, echo: 0.35, resonance: 1.65 },
     'dark-minor': { root: 103.83, rootSemi: 8, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'triangle', drumVol: 1.05, shimmer: 0.7, bassWeight: 1.18, keyGlow: 0.9, echo: 0.7, resonance: 1.12, forceMinor: true },
-    'vaporwave': { root: 92.50, rootSemi: 6, bassWave: 'sine', keysWave: 'sine', chimeWave: 'triangle', drumVol: 0.85, shimmer: 1.8, bassWeight: 0.8, keyGlow: 1.45, echo: 1.8, resonance: 0.7 },
-    'toy-box': { root: 130.81, rootSemi: 0, bassWave: 'triangle', keysWave: 'square', chimeWave: 'sine', drumVol: 0.85, shimmer: 1.35, bassWeight: 0.76, keyGlow: 0.94, echo: 0.65, resonance: 1.45 },
     'steel-island': { root: 98.00, rootSemi: 7, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.92, shimmer: 2.2, bassWeight: 1, keyGlow: 1.08, echo: 1.15, resonance: 1.7 },
     'jazz-club': { root: 116.54, rootSemi: 10, bassWave: 'sine', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.86, shimmer: 0.9, bassWeight: 0.94, keyGlow: 0.82, echo: 0.55, resonance: 0.95, master: 0.96 },
-    'velvet-hall': { root: 98.00, rootSemi: 7, bassWave: 'sine', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.85, shimmer: 0.72, bassWeight: 1.06, keyGlow: 0.78, echo: 1.2, resonance: 1.28, master: 0.94 },
-    'haunted-organ': { root: 87.31, rootSemi: 5, bassWave: 'triangle', keysWave: 'sine', chimeWave: 'triangle', drumVol: 0.86, shimmer: 0.55, bassWeight: 1.12, keyGlow: 1.12, echo: 1.05, resonance: 1.25, forceMinor: true },
     'desert-caravan': { root: 146.83, rootSemi: 2, bassWave: 'triangle', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.95, shimmer: 1.15, bassWeight: 0.94, keyGlow: 0.96, echo: 0.82, resonance: 1.55 },
-    'cyber-garage': { root: 123.47, rootSemi: 11, bassWave: 'sawtooth', keysWave: 'square', chimeWave: 'square', drumVol: 1.15, shimmer: 0.7, bassWeight: 1.25, keyGlow: 1, echo: 0.45, resonance: 1.9, master: 1.08 },
     'crystal-cave': { root: 104.65, rootSemi: 8, bassWave: 'sine', keysWave: 'triangle', chimeWave: 'sine', drumVol: 0.85, shimmer: 2.5, bassWeight: 0.74, keyGlow: 1.35, echo: 1.55, resonance: 1.6 },
   };
 
   let canvas = null, ctx = null, overlay = null, loopButton = null, resetButton = null, undoButton = null, signalExitButton = null, guidedControls = null, guidedControlsKey = '';
-  let freeControls = null, freeChangeButton = null, freeSaveButton = null, freeMenuButton = null;
-  let loopButtonStyleCache = null, resetButtonStyleCache = null;
+  let shellTabsEl = null, shellDrawerEl = null, shellFinishBtn = null;
+  let shellDrawerOpen = false;
+  let layerStatus = [];
   let W = 0, H = 0, dpr = 1, raf = 0, last = 0, state = 'idle';
   let signalAudioCtx = null, signalMasterGain = null, signalLimiter = null;
   let player, bullets, rocks, sparks, floatTexts, stars, boss;
@@ -186,7 +175,6 @@
   let combo = 0, bestCombo = 0, currentSoloLane = 1;
   let currentLayerIndex = 0, additionsThisLayer = 0, totalAdditions = 0;
   let mode = 'arcade', freeLayerIndex = 0, freeRecording = false;
-  let freeLayerMenuKeepsLoop = false;
   let pendingStartMode = 'arcade';
   let setupOpen = false, setupStep = 'palette', guidedStage = 'practice';
   let guidedOverdubBase = null;
@@ -231,8 +219,8 @@
   function laneCenter(i) { return laneWidth() * (i + 0.5); }
   function isFreeMode() { return mode === 'free'; }
   function isGuidedBuildMode() { return mode === 'arcade' && (signalSettings.recordingStyle || 'guided') === 'guided'; }
-  function shouldRecordStamp() { return !(isGuidedBuildMode() && (guidedStage === 'practice' || guidedStage === 'waiting')) && (!isFreeMode() || freeRecording); }
-  function freeHasRecordedLoop() { return gridStamps().length > 0; }
+  // Explore never records — it's a no-stakes instrument playground now.
+  function shouldRecordStamp() { return !isFreeMode() && !(isGuidedBuildMode() && (guidedStage === 'practice' || guidedStage === 'waiting')); }
   function styleDef() { return STYLE_DEFS[signalSettings.style] || STYLE_DEFS['space-funk']; }
   function soundProfile() {
     return {
@@ -267,17 +255,23 @@
   // Bottom edge of the loop-grid HUD (title + layer rows + step dots) drawn
   // in drawHud. Every instrument surface must start below this line.
   function loopGridBottom() { return 72 + LAYERS.length * 11 + 8; }
-  function playFieldTop() { return guidedCoachActive() ? 286 : loopGridBottom() + 18; }
+  // Explore has no loop-grid HUD (nothing ever records), so it needs far
+  // less headroom than guided/build.
+  function playFieldTop() { return guidedCoachActive() ? 286 : isFreeMode() ? 90 : loopGridBottom() + 18; }
   function playFieldBottom(limit) {
-    const base = H - LOOP_PANEL_H - (guidedCoachActive() ? 124 : 20);
+    // Both modes share the bottom instrument tab bar; guided also stacks its
+    // practice/record coach buttons and the FINISH button above it, so it
+    // needs enough room for all three at once.
+    const bottomReserve = guidedCoachActive() ? 260 : shellActive() ? 84 : 20;
+    const base = H - LOOP_PANEL_H - bottomReserve;
     if (!guidedCoachActive() || !limit) return base;
     return Math.min(base, playFieldTop() + limit);
   }
   function swellSurfaceTop() { return playFieldTop(); }
   function swellSurfaceBottom() { return playFieldBottom(guidedCoachActive() ? 390 : 0); }
   function activeLayerLabel() {
-    if (isFreeMode()) return `FREE PLAY: ${activeLayer().name}`;
-    if (isGuidedBuildMode()) return `${guidedStage === 'record' ? 'RECORD' : 'PRACTICE'} ${activeLayer().name}`;
+    if (isFreeMode()) return `EXPLORE: ${activeLayer().name}`;
+    if (isGuidedBuildMode()) return `${guidedStage === 'record' ? 'RECORD' : guidedStage === 'done' ? 'SAVED' : 'PRACTICE'} ${activeLayer().name}`;
     return `PLAY ${activeLayer().name}`;
   }
   function fallbackStepsForType(type) {
@@ -372,125 +366,242 @@
     const layer = activeLayer();
     for (let i = 0; i < LANES.length; i++) LANES[i] = { ...layer.options[i], inst: layer.inst, mult: layer.mult };
   }
-  function ensureFreeControls() {
-    if (freeControls || !loopButton || !loopButton.parentElement) return;
-    const row = loopButton.parentElement;
-    freeControls = document.createElement('div');
-    freeControls.style.display = 'none';
-    freeControls.style.gap = '5px';
-    freeControls.style.alignItems = 'stretch';
-    freeControls.style.justifyContent = 'center';
-    const makeButton = (text, handler) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'signal-loop-btn';
-      btn.style.flex = '0 1 auto';
-      btn.style.minWidth = '0';
-      btn.style.maxWidth = 'none';
-      btn.style.width = '76px';
-      btn.style.padding = '0 5px';
-      btn.style.fontSize = '8px';
-      btn.style.letterSpacing = '0.8px';
-      btn.textContent = text;
-      btn.addEventListener('click', handler);
-      return btn;
-    };
-    freeChangeButton = makeButton('LAYER', () => showFreeLayerMenu(true));
-    freeSaveButton = makeButton('SAVE', showFreeSave);
-    freeMenuButton = makeButton('MENU', showIntro);
-    freeControls.append(freeChangeButton, freeSaveButton, freeMenuButton);
-    row.appendChild(freeControls);
+  // Explore and Build a Track share one shell: one entry screen, tap-to-switch
+  // icon tabs, a collapsible style/mood/tempo drawer. Explore never records —
+  // it's a no-stakes instrument playground. Build a Track layers a
+  // practice/record coach and a FINISH action on top of the same shell.
+  const LAYER_ICONS = {
+    drums: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="6" cy="8" r="1.5"/><circle cx="12" cy="8" r="1.5"/><circle cx="18" cy="8" r="1.5"/><circle cx="6" cy="16" r="1.5"/><circle cx="12" cy="16" r="1.5"/><circle cx="18" cy="16" r="1.5"/></svg>',
+    bass: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h3.5l2-7 4.5 14 2-7H20"/></svg>',
+    keys: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 6v5M11 6v5M15 6v5M7 15h4"/></svg>',
+    chimes: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4a5 5 0 0 1 5 5v2.5l1.6 3.5H5.4L7 11.5V9a5 5 0 0 1 5-5z"/><path d="M10 18a2 2 0 0 0 4 0"/></svg>',
+    swell: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17a4 4 0 0 1-.8-7.92 5 5 0 0 1 9.6-1.94A4.5 4.5 0 0 1 17 17H7z"/></svg>',
+    fx: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 3l1.1 3.4L16.5 7.6l-3.4 1.1L12 12.1l-1.1-3.4-3.4-1.1 3.4-1.1L12 3z"/><path d="M18.2 12.6l.6 1.8 1.8.6-1.8.6-.6 1.8-.6-1.8-1.8-.6 1.8-.6.6-1.8z"/></svg>',
+  };
+  function shellActive() { return (isFreeMode() || isGuidedBuildMode()) && state === 'playing' && phase === 'build'; }
+
+  function selectFreeInstrumentTab(index) {
+    const next = clamp(Math.floor(index || 0), 0, LAYERS.length - 1);
+    if (next === freeLayerIndex) return;
+    switchFreeLayer(next);
+    restartLoopPlayback();
+    updateLoopButton();
   }
-  function cacheButtonStyles() {
-    if (!loopButtonStyleCache && loopButton) {
-      loopButtonStyleCache = {
-        flex: loopButton.style.flex,
-        width: loopButton.style.width,
-        maxWidth: loopButton.style.maxWidth,
-        padding: loopButton.style.padding,
-        fontSize: loopButton.style.fontSize,
-        letterSpacing: loopButton.style.letterSpacing,
-      };
-    }
-    if (!resetButtonStyleCache && resetButton) {
-      resetButtonStyleCache = {
-        width: resetButton.style.width,
-        fontSize: resetButton.style.fontSize,
-        letterSpacing: resetButton.style.letterSpacing,
-        padding: resetButton.style.padding,
-      };
-    }
+
+  // Guided navigation is free-form now: tap any tab any time. Untouched
+  // layers land in practice; kept layers show a SAVED state with RE-RECORD.
+  function switchGuidedLayer(index) {
+    const next = clamp(Math.floor(index || 0), 0, LAYERS.length - 1);
+    if (next === currentLayerIndex) return;
+    currentLayerIndex = next;
+    undoStack = [];
+    additionsThisLayer = recordedChoices.filter(ch => choiceLayerIndex(ch) === currentLayerIndex).length;
+    rocks = [];
+    bullets = [];
+    pointerActive = false;
+    pinchActive = false;
+    thereminPulse = 0;
+    applyLayerOptions();
+    if (asteroidSurfaceActive()) initAsteroidSurface();
+    if (fxActive()) initFxJunk();
+    laneFlash = [1, 1, 1];
+    guidedStage = layerStatus[currentLayerIndex] === 'done' ? 'done' : 'practice';
+    restartLoopPlayback();
+    updateLoopButton();
+    showLayerToast();
   }
-  function restoreButtonStyles() {
-    if (loopButtonStyleCache && loopButton) Object.assign(loopButton.style, loopButtonStyleCache);
-    if (resetButtonStyleCache && resetButton) Object.assign(resetButton.style, resetButtonStyleCache);
+
+  function selectShellTab(index) {
+    if (!shellActive()) return;
+    if (isGuidedBuildMode()) switchGuidedLayer(index);
+    else selectFreeInstrumentTab(index);
   }
-  function applyFreeButtonStyles() {
-    cacheButtonStyles();
-    if (loopButton) {
-      loopButton.style.flex = '1 1 auto';
-      loopButton.style.width = 'auto';
-      loopButton.style.maxWidth = 'none';
-      loopButton.style.padding = '0 6px';
-      loopButton.style.fontSize = '10px';
-      loopButton.style.letterSpacing = '1.8px';
-    }
-    if (resetButton) {
-      resetButton.style.width = '72px';
-      resetButton.style.fontSize = '9px';
-      resetButton.style.letterSpacing = '0.8px';
-      resetButton.style.padding = '0 5px';
-    }
+
+  function ensureShellTabs() {
+    if (shellTabsEl) return shellTabsEl;
+    shellTabsEl = document.createElement('div');
+    shellTabsEl.id = 'signal-shell-tabs';
+    Object.assign(shellTabsEl.style, {
+      position: 'fixed', left: '8px', right: '8px',
+      bottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)',
+      zIndex: '999999', display: 'none', gap: '5px',
+      pointerEvents: 'auto', boxSizing: 'border-box',
+    });
+    LAYERS.forEach((layer, index) => {
+      const tab = document.createElement('button');
+      tab.type = 'button';
+      tab.dataset.layerIndex = String(index);
+      Object.assign(tab.style, {
+        flex: '1 1 0', minWidth: '0', minHeight: '60px',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px',
+        borderRadius: '9px', border: '1.5px solid rgba(234,255,255,0.16)',
+        background: 'rgba(2,4,14,0.92)', color: 'rgba(234,255,255,0.5)',
+        fontFamily: "'VCR', monospace", fontSize: '8px', letterSpacing: '0.6px',
+        cursor: 'pointer', pointerEvents: 'auto',
+      });
+      const icon = document.createElement('span');
+      icon.innerHTML = LAYER_ICONS[layer.id] || '';
+      Object.assign(icon.style, { display: 'flex', lineHeight: '0' });
+      const label = document.createElement('span');
+      label.textContent = layer.name;
+      tab.append(icon, label);
+      tab.addEventListener('click', () => selectShellTab(index));
+      shellTabsEl.appendChild(tab);
+    });
+    document.body.appendChild(shellTabsEl);
+    return shellTabsEl;
   }
-  function updateFreeControls() {
-    ensureFreeControls();
-    if (!freeControls) return;
-    const show = false;
-    const hasLoop = freeHasRecordedLoop();
-    freeControls.style.display = show && hasLoop ? 'contents' : 'none';
-    if (loopButton && loopButton.parentElement) {
-      loopButton.parentElement.style.flexWrap = 'nowrap';
-      loopButton.parentElement.style.gap = show ? '7px' : '';
-      loopButton.parentElement.style.width = show ? (hasLoop ? 'min(430px, calc(100vw - 18px))' : 'min(360px, calc(100vw - 18px))') : '';
+
+  function renderShellTabs() {
+    const el = ensureShellTabs();
+    Array.from(el.children).forEach(tab => {
+      const index = Number(tab.dataset.layerIndex);
+      const layer = LAYERS[index];
+      const active = index === currentLayerIndex;
+      const color = layer.options[0].color;
+      tab.style.borderColor = active ? color : 'rgba(234,255,255,0.16)';
+      tab.style.color = active ? color : 'rgba(234,255,255,0.5)';
+      tab.style.background = active ? `${color}1a` : 'rgba(2,4,14,0.92)';
+      tab.style.boxShadow = active ? `0 0 14px ${color}55` : 'none';
+    });
+  }
+
+  function ensureShellDrawer() {
+    if (shellDrawerEl) return shellDrawerEl;
+    shellDrawerEl = document.createElement('div');
+    shellDrawerEl.id = 'signal-shell-drawer';
+    Object.assign(shellDrawerEl.style, {
+      position: 'fixed', left: '8px', right: '8px',
+      top: 'calc(env(safe-area-inset-top, 0px) + 50px)',
+      zIndex: '999998', display: 'none',
+      background: 'rgba(4,10,26,0.97)', border: '1px solid rgba(143,115,255,0.4)', borderRadius: '10px',
+      padding: '10px 10px 12px', boxShadow: '0 12px 24px rgba(0,0,0,0.5)', boxSizing: 'border-box',
+      pointerEvents: 'auto', maxHeight: 'calc(100dvh - 140px)', overflowY: 'auto',
+    });
+    document.body.appendChild(shellDrawerEl);
+    return shellDrawerEl;
+  }
+
+  function renderShellDrawer() {
+    const el = ensureShellDrawer();
+    const styleChips = SIGNAL_PRESETS.style.map(item => {
+      const active = signalSettings.style === item.id;
+      return `<button type="button" data-style="${item.id}" style="min-height:30px;padding:5px 6px;border-radius:6px;border:1.5px solid ${active ? '#8f73ff' : 'rgba(143,115,255,0.28)'};background:${active ? 'rgba(143,115,255,0.28)' : 'rgba(143,115,255,0.06)'};color:${active ? '#eaffff' : 'rgba(234,255,255,0.62)'};font-family:'VCR',monospace;font-size:9px;letter-spacing:0.5px;cursor:pointer;">${item.label}</button>`;
+    }).join('');
+    const moodChips = SIGNAL_PRESETS.mood.map(item => {
+      const active = signalSettings.mood === item.id;
+      return `<button type="button" data-mood="${item.id}" style="padding:5px 9px;border-radius:12px;border:1px solid ${active ? '#8f73ff' : 'rgba(143,115,255,0.28)'};background:${active ? 'rgba(143,115,255,0.28)' : 'transparent'};color:${active ? '#eaffff' : 'rgba(234,255,255,0.5)'};font-family:'VCR',monospace;font-size:9px;letter-spacing:0.8px;cursor:pointer;">${item.label}</button>`;
+    }).join('');
+    el.innerHTML = `
+      <div style="font-size:9px;letter-spacing:1.5px;color:rgba(234,255,255,0.4);margin-bottom:6px;">STYLE</div>
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-bottom:12px;">${styleChips}</div>
+      <div style="font-size:9px;letter-spacing:1.5px;color:rgba(234,255,255,0.4);margin-bottom:6px;">MOOD</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;">${moodChips}</div>
+      <div style="font-size:9px;letter-spacing:1.5px;color:rgba(234,255,255,0.4);margin-bottom:6px;">TEMPO</div>
+      <div id="signal-tempo-value" style="font-family:'VCR',monospace;font-size:16px;letter-spacing:2px;color:#ffe61a;margin-bottom:4px;">${tempoBpm()} BPM</div>
+      <input type="range" min="${MIN_TEMPO_BPM}" max="${MAX_TEMPO_BPM}" value="${tempoBpm()}" style="width:100%;accent-color:#8f73ff;" id="signal-shell-tempo-slider">
+    `;
+    el.querySelectorAll('[data-style]').forEach(btn => btn.addEventListener('click', () => setShellDrawerStyle(btn.dataset.style)));
+    el.querySelectorAll('[data-mood]').forEach(btn => btn.addEventListener('click', () => setShellDrawerMood(btn.dataset.mood)));
+    const slider = el.querySelector('#signal-shell-tempo-slider');
+    if (slider) slider.addEventListener('input', e => setTempoBpm(e.target.value));
+  }
+
+  function setShellDrawerStyle(id) {
+    if (!SIGNAL_PRESETS.style.some(p => p.id === id)) return;
+    signalSettings.style = id;
+    applySettings();
+    renderShellDrawer();
+  }
+  function setShellDrawerMood(id) {
+    if (!SIGNAL_PRESETS.mood.some(p => p.id === id)) return;
+    signalSettings.mood = id;
+    applySettings();
+    renderShellDrawer();
+  }
+
+  function toggleShellDrawer() {
+    if (!shellActive()) return;
+    shellDrawerOpen = !shellDrawerOpen;
+    const el = ensureShellDrawer();
+    if (shellDrawerOpen) {
+      renderShellDrawer();
+      el.style.display = 'block';
+    } else {
+      el.style.display = 'none';
     }
-    if (show) applyFreeButtonStyles();
-    else restoreButtonStyles();
-    if (freeSaveButton) {
-      freeChangeButton.classList.toggle('hidden', true);
-      freeSaveButton.classList.toggle('hidden', !hasLoop);
-      freeMenuButton.classList.toggle('hidden', true);
+    if (loopButton) loopButton.textContent = shellDrawerOpen ? 'STYLE ▴' : 'STYLE ▾';
+  }
+
+  // FINISH is deliberately bigger/filled — it's the one action that ends a
+  // Build a Track session, so it should read as more important than a chip.
+  function ensureShellFinishButton() {
+    if (shellFinishBtn) return shellFinishBtn;
+    shellFinishBtn = document.createElement('button');
+    shellFinishBtn.type = 'button';
+    shellFinishBtn.textContent = 'FINISH ▶';
+    shellFinishBtn.title = 'Finish track';
+    shellFinishBtn.setAttribute('aria-label', 'Finish track');
+    Object.assign(shellFinishBtn.style, {
+      position: 'fixed', right: '8px',
+      // Sits above the coach panel (which can stack two 48px buttons), so it
+      // never collides with RESTART LAYER/KEEP or RE-RECORD underneath it.
+      bottom: 'calc(env(safe-area-inset-bottom, 0px) + 196px)',
+      zIndex: '999999', display: 'none', pointerEvents: 'auto',
+      minHeight: '46px', padding: '0 18px', borderRadius: '23px', border: '0',
+      background: '#ffe61a', color: '#02040e',
+      fontFamily: "'VCR', monospace", fontSize: '13px', letterSpacing: '1.5px', fontWeight: 'bold',
+      cursor: 'pointer', boxShadow: '0 0 20px rgba(255,230,26,0.55)',
+    });
+    shellFinishBtn.addEventListener('click', finishTrack);
+    document.body.appendChild(shellFinishBtn);
+    return shellFinishBtn;
+  }
+
+  function updateShellUI() {
+    const visible = shellActive();
+    ensureShellTabs();
+    ensureShellFinishButton();
+    shellTabsEl.style.display = visible ? 'flex' : 'none';
+    const canFinish = visible && isGuidedBuildMode() && layerStatus.some(s => s === 'done');
+    shellFinishBtn.style.display = canFinish ? 'block' : 'none';
+    if (!visible) {
+      shellDrawerOpen = false;
+      if (shellDrawerEl) shellDrawerEl.style.display = 'none';
+      return;
     }
+    renderShellTabs();
   }
   function updateLoopButton() {
     if (!loopButton) return;
     const show = (state === 'playing' || state === 'replay') && phase !== 'countin' && phase !== 'countdown';
-    // In Guided build the big coach buttons at the bottom own every action.
-    // The top bar keeps only UNDO (while recording) and the exit ×.
+    // Guided build's practice/record actions live in the big coach buttons;
+    // the top bar's loop button is repurposed as the STYLE drawer toggle in
+    // both Explore and Build a Track.
     const guidedBuild = state === 'playing' && isGuidedBuildMode() && phase === 'build';
-    const showLoop = show && !guidedBuild;
+    const showLoop = show;
     const wasHidden = loopButton.classList.contains('hidden');
     loopButton.classList.toggle('hidden', !showLoop);
     if (wasHidden === showLoop) fitCanvas();
-    if (resetButton) resetButton.classList.toggle('hidden', !(show && phase === 'build' && !guidedBuild));
-    if (undoButton) undoButton.classList.toggle('hidden', !(show && phase === 'build' && (!guidedBuild || guidedStage === 'record')));
+    if (resetButton) resetButton.classList.toggle('hidden', !(show && phase === 'build' && !guidedBuild && !isFreeMode()));
+    // Explore never records, so there's nothing to undo — only guided build
+    // (and the legacy non-guided arcade fallback) ever show UNDO.
+    if (undoButton) undoButton.classList.toggle('hidden', isFreeMode() || !(show && phase === 'build' && (!guidedBuild || guidedStage === 'record')));
     if (!show) {
       loopButton.disabled = false;
-      updateFreeControls();
+      updateShellUI();
       syncSignalChrome();
       updateGuidedControls();
       return;
     }
     const canUndo = canUndoLastStamp();
     loopButton.disabled = false;
-    if (isFreeMode()) {
-      loopButton.textContent = 'NEXT LAYER ›';
-      if (resetButton) {
-        resetButton.classList.toggle('hidden', phase !== 'build');
-        resetButton.textContent = 'CLEAR';
-        resetButton.title = 'Clear Free Mode loop';
-        resetButton.setAttribute('aria-label', 'Clear Free Mode loop');
-      }
-    } else if (!guidedBuild) {
+    if (isFreeMode() || guidedBuild) {
+      // Layer switching lives in the bottom instrument tabs now — this button
+      // just opens the style/mood/tempo drawer. Explore has nothing to clear
+      // (it never records); guided's CLEAR lives in the coach buttons.
+      loopButton.textContent = shellDrawerOpen ? 'STYLE ▴' : 'STYLE ▾';
+    } else {
       if (state === 'replay') {
         loopButton.textContent = 'END REPLAY';
         if (resetButton) resetButton.classList.add('hidden');
@@ -512,7 +623,7 @@
       undoButton.style.opacity = canUndo ? '1' : '0.46';
       undoButton.style.cursor = canUndo ? 'pointer' : 'default';
     }
-    updateFreeControls();
+    updateShellUI();
     syncSignalChrome();
     updateGuidedControls();
   }
@@ -632,7 +743,9 @@
     const d = soundProfile();
     expressiveTapSeq += 1;
     const alternate = expressiveTapSeq % 2 === 0;
-    osc.type = inst === 'bass' ? (d.bassWave || 'triangle') : inst === 'keys' ? (alternate ? 'sine' : (d.keysWave || 'triangle')) : (alternate ? 'triangle' : 'sine');
+    // Keys always match the recorded/playback waveform (playPitched) so live
+    // preview never sounds different from what lands in the loop.
+    osc.type = inst === 'bass' ? (d.bassWave || 'triangle') : inst === 'keys' ? (d.keysWave || 'triangle') : (alternate ? 'triangle' : 'sine');
     osc.frequency.setValueAtTime(note, t);
     filter.type = 'lowpass';
     filter.frequency.setValueAtTime(inst === 'bass' ? 720 : 1250, t);
@@ -1148,7 +1261,9 @@
       position: 'fixed',
       left: '10px',
       right: '10px',
-      bottom: 'calc(env(safe-area-inset-bottom, 0px) + 10px)',
+      // Docks just above the shared instrument tab bar rather than owning
+      // the full bottom edge.
+      bottom: 'calc(env(safe-area-inset-bottom, 0px) + 78px)',
       zIndex: '999999',
       display: 'none',
       gridTemplateColumns: '1fr 1fr',
@@ -1220,9 +1335,10 @@
     guidedControlsKey = key;
     el.innerHTML = '';
     el.style.gap = '8px';
+    // Navigation between instruments now lives in the tab bar, so this panel
+    // only ever needs to move the CURRENT layer through practice -> record.
     if (guidedStage === 'practice') {
-      el.style.gridTemplateColumns = '1fr 1fr';
-      el.appendChild(guidedControlButton('SKIP LAYER', skipGuidedLayer, false));
+      el.style.gridTemplateColumns = '1fr';
       el.appendChild(guidedControlButton('READY', startGuidedRecordPass, true));
       return;
     }
@@ -1238,13 +1354,15 @@
     }
     if (guidedStage === 'record') {
       // The loop just keeps running while the player adds notes. Two stacked
-      // full-width buttons only — UNDO NOTE lives across the top bar. To end
-      // early, SKIP LAYER through the rest during practice; KEEP on the last
-      // layer finishes the track.
+      // full-width buttons only — UNDO NOTE lives across the top bar.
       el.style.gridTemplateColumns = '1fr';
-      const lastLayer = currentLayerIndex >= LAYERS.length - 1;
       el.appendChild(guidedControlButton('RESTART LAYER', captureRetryLayer, false));
-      el.appendChild(guidedControlButton(lastLayer ? 'FINISH TRACK' : 'KEEP · NEXT', captureNextLayer, true));
+      el.appendChild(guidedControlButton('KEEP', captureNextLayer, true));
+      return;
+    }
+    if (guidedStage === 'done') {
+      el.style.gridTemplateColumns = '1fr';
+      el.appendChild(guidedControlButton('RE-RECORD', reRecordGuidedLayer, false));
     }
   }
 
@@ -1304,13 +1422,17 @@
     const headerBack = document.querySelector('#pg-signal .arcade-exit-btn');
     const row = document.querySelector('#pg-signal .signal-loop-row');
     const inRun = state === 'playing' || state === 'replay';
+    const menuChromeVisible = state === 'idle';
     // Replay is a run state too — without it here the whole button row (and
     // the only way back to the save screen, END REPLAY) stays display:none.
     const runBarVisible = inRun && phase === 'build';
 
     if (header) {
       if (!signalHeaderStyles) signalHeaderStyles = snapshotStyles(header, ['display', 'height', 'padding', 'background', 'backdropFilter', 'webkitBackdropFilter', 'alignItems', 'justifyContent', 'gap', 'position', 'zIndex', 'left', 'right', 'top', 'pointerEvents', 'width', 'alignSelf', 'boxSizing', 'flexWrap']);
-      header.style.display = inRun ? 'none' : 'flex';
+      // Completed-track, mix, replay-library, and other focused overlays carry
+      // their own navigation. Showing the global Arcade control there creates
+      // a second exit route above the result card.
+      header.style.display = menuChromeVisible ? 'flex' : 'none';
       header.style.height = '46px';
       header.style.padding = '6px 10px';
       header.style.background = 'transparent';
@@ -1320,7 +1442,7 @@
       header.style.justifyContent = 'space-between';
       header.style.gap = '8px';
       header.style.flexWrap = 'nowrap';
-      header.style.position = inRun ? 'absolute' : 'relative';
+      header.style.position = menuChromeVisible ? 'relative' : 'absolute';
       header.style.zIndex = '40';
       header.style.pointerEvents = 'auto';
       header.style.width = '100%';
@@ -1383,10 +1505,12 @@
     row.style.maxWidth = 'none';
     row.style.margin = '0';
     row.style.zIndex = '60';
-    // Guided build owns its actions in the big bottom buttons, so the top bar
-    // is just a full-width UNDO NOTE plus the × quit in the corner.
+    // Guided build owns practice/record actions in the big bottom buttons, so
+    // the top bar is just UNDO NOTE, the STYLE drawer toggle, and the × quit.
+    // Explore never records, so it's just the STYLE toggle and the × quit.
     const guidedTop = isGuidedBuildMode() && phase === 'build' && state !== 'replay';
-    row.style.gridTemplateColumns = guidedTop ? 'minmax(0, 1fr) 42px' : '76px 58px minmax(0, 1fr) 42px';
+    const freeTop = isFreeMode() && phase === 'build' && state !== 'replay';
+    row.style.gridTemplateColumns = freeTop ? 'minmax(0, 1fr) 42px' : guidedTop ? 'minmax(0, 1fr) 84px 42px' : '76px 58px minmax(0, 1fr) 42px';
     row.style.gap = '5px';
     row.style.alignItems = 'stretch';
     row.style.justifyContent = 'stretch';
@@ -1396,7 +1520,7 @@
 
     if (loopButton) {
       if (!signalLoopButtonStyles) signalLoopButtonStyles = snapshotStyles(loopButton, ['gridColumn', 'width', 'maxWidth', 'minHeight', 'fontSize', 'letterSpacing', 'padding', 'boxSizing']);
-      loopButton.style.gridColumn = '3';
+      loopButton.style.gridColumn = freeTop ? '1' : guidedTop ? '2' : '3';
       loopButton.style.width = '100%';
       loopButton.style.maxWidth = 'none';
       loopButton.style.minHeight = '40px';
@@ -1418,7 +1542,7 @@
     if (undo) {
       if (!signalUndoButtonStyles) signalUndoButtonStyles = snapshotStyles(undo, ['gridColumn', 'width', 'minHeight', 'fontSize', 'letterSpacing', 'padding', 'boxSizing', 'opacity', 'cursor']);
       const canUndo = canUndoLastStamp();
-      undo.classList.toggle('hidden', phase !== 'build' || state === 'replay' || (isGuidedBuildMode() && guidedStage !== 'record'));
+      undo.classList.toggle('hidden', isFreeMode() || phase !== 'build' || state === 'replay' || (isGuidedBuildMode() && guidedStage !== 'record'));
       undo.disabled = !canUndo;
       undo.textContent = guidedTop ? 'UNDO NOTE' : 'UNDO';
       undo.style.opacity = canUndo ? '1' : '0.46';
@@ -1433,7 +1557,7 @@
       undo.style.boxSizing = 'border-box';
     }
     if (exit) {
-      exit.style.gridColumn = guidedTop ? '2' : '4';
+      exit.style.gridColumn = freeTop ? '2' : guidedTop ? '3' : '4';
       exit.style.width = '42px';
       exit.style.minWidth = '42px';
       exit.style.minHeight = '40px';
@@ -1588,6 +1712,7 @@
     undoStack = [];
     undoSeq = 0;
     grooveByLayer = Array.from({ length: LAYERS.length }, () => null);
+    layerStatus = Array.from({ length: LAYERS.length }, () => 'empty');
     lastGrooveToast = null;
     replaying = false;
     replayUntil = 0;
@@ -1895,10 +2020,10 @@
 
   function padRect(row, col) {
     const left = 38, right = 16, top = playFieldTop();
-    // The bottom buttons are fixed to the viewport, below the canvas, so the
-    // pad grid can grow most of the way down the canvas — much closer than the
-    // shared playFieldBottom reserve allows. Keep a margin above the footer.
-    const bottom = Math.max(top + 150, Math.min(H - LOOP_PANEL_H - 44, top + 560));
+    // Guided build now stacks a tab bar, coach buttons, and a FINISH button
+    // at the bottom of the viewport — enough real chrome that pads need to
+    // respect the same shared reserve every other surface uses.
+    const bottom = Math.max(top + 150, Math.min(playFieldBottom(0), top + 560));
     const colGap = 10, rowGap = 12;
     const gw = (W - left - right - (PAD_COLS - 1) * colGap) / PAD_COLS;
     const gh = (bottom - top - 2 * rowGap) / 3;
@@ -2493,37 +2618,25 @@
     playRandomSfx('success', 0.8);
   }
 
-  // KEEP: commit the layer the player has been looping on and move to the
-  // next layer's practice stage (or finish the track on the last layer).
+  // KEEP: commit the layer the player has been looping on. Navigation is
+  // free-form now — the player picks the next instrument from the tab bar
+  // (or taps FINISH once they're happy with what they've got).
   function captureNextLayer() {
     if (!(isGuidedBuildMode() && guidedStage === 'record' && state === 'playing' && phase === 'build')) return;
     grooveByLayer[currentLayerIndex] = scoreLayerGrid(currentLayerIndex);
     lastGrooveToast = null;
-    if (currentLayerIndex >= LAYERS.length - 1) {
-      state = 'playing';
-      finishTrack();
-      return;
-    }
-    currentLayerIndex += 1;
-    guidedStage = 'practice';
-    additionsThisLayer = 0;
-    undoStack = [];
-    rocks = [];
-    bullets = [];
-    pointerActive = false;
-    pinchActive = false;
-    replaying = false;
-    applyLayerOptions();
-    laneFlash = [1, 1, 1];
-    state = 'playing';
-    phase = 'build';
-    overlay.classList.add('hidden');
+    layerStatus[currentLayerIndex] = 'done';
+    guidedStage = 'done';
     updateLoopButton();
-    restartLoopPlayback();
     showLayerToast();
-    last = performance.now();
-    cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(frame);
+  }
+
+  // RE-RECORD: scrap a kept layer's take and drop back to practice.
+  function reRecordGuidedLayer() {
+    if (!(isGuidedBuildMode() && guidedStage === 'done' && state === 'playing' && phase === 'build')) return;
+    layerStatus[currentLayerIndex] = 'empty';
+    guidedStage = 'practice';
+    resetCurrentLoop();
   }
 
   // RESTART LAYER: scrap this layer's take and drop back to practice so the
@@ -2597,38 +2710,12 @@
     showLayerToast();
   }
 
-  function skipGuidedLayer() {
-    if (!isGuidedBuildMode() || state !== 'playing' || phase !== 'build') return;
-    if (currentLayerIndex >= LAYERS.length - 1) {
-      finishTrack();
-      return;
-    }
-    guidedOverdubBase = null;
-    currentLayerIndex += 1;
-    guidedStage = 'practice';
-    additionsThisLayer = 0;
-    rocks = [];
-    bullets = [];
-    pointerActive = false;
-    pinchActive = false;
-    applyLayerOptions();
-    laneFlash = [1, 1, 1];
-    phase = 'build';
-    restartLoopPlayback();
-    updateLoopButton();
-    showLayerToast();
-  }
-
   function requestLoopEnd() {
     if (state !== 'playing' || loopEndArmed) return;
     if (phase !== 'build') return;
     if (isGuidedBuildMode()) {
       if (guidedStage === 'practice') startGuidedRecordPass();
       else if (guidedStage === 'record') captureNextLayer();
-      return;
-    }
-    if (isFreeMode()) {
-      showFreeLayerMenu(true);
       return;
     }
     loopEndArmed = true;
@@ -3864,11 +3951,12 @@
       c.fillStyle = 'rgba(234,255,255,0.78)';
       c.fillText(state === 'mix' ? 'MIX PLAYBACK' : state === 'replay' ? (isFreeMode() ? 'FREE REPLAY' : 'REPLAY') : activeLayerLabel(), 12, titleY);
       c.textAlign = 'right';
-      c.fillText(isFreeMode() && state === 'playing' && freeRecording ? 'REC' : `${tempoBpm()} BPM`, W - 12, titleY);
+      c.fillText(`${tempoBpm()} BPM`, W - 12, titleY);
     }
     c.textAlign = 'left';
-    // Loop rows live up top now, right under the layer title.
-    if (state === 'playing' || state === 'replay' || state === 'mix') {
+    // Loop rows live up top now, right under the layer title. Explore never
+    // records, so it skips the grid entirely — nothing would ever fill it.
+    if (!isFreeMode() && (state === 'playing' || state === 'replay' || state === 'mix')) {
       const loopX = 26, loopY = 72;
       const rowH = 7, rowGap = 4;
       const w = (W - 40) / LOOP_STEPS;
@@ -4180,25 +4268,32 @@
     overlay.classList.remove('signal-tempo-mode');
     overlay.classList.add('signal-menu-mode');
     overlay.innerHTML = `
-      <div class="signal-panel" style="width:min(460px,calc(100vw - 24px));max-width:460px;padding:18px 16px 16px;box-sizing:border-box">
-        <div class="signal-title" style="font-size:24px;line-height:1.1;margin-bottom:14px">SPACE AND SOUND</div>
-        <button class="signal-btn secondary" style="min-height:82px;font-size:17px;line-height:1.15;margin-bottom:10px;background:rgba(5,20,42,.78) !important;border:2px solid rgba(0,229,255,.72) !important;color:#00e5ff !important;box-shadow:none !important" onclick="signalShowSetup('arcade')">
-          BUILD A TRACK<br><span style="display:block;font-size:14px;letter-spacing:1px;line-height:1.25;color:#eaffff;opacity:.95;margin-top:8px">Make a song one layer at a time.</span>
+      <div class="signal-panel signal-reference-menu" style="--arcade-accent:#00e5ff">
+        <div class="signal-mode-banner"><div class="signal-title">SPACE AND SOUND</div></div>
+        <div class="signal-choice-stack">
+        <button class="signal-btn secondary signal-mode-hero arcade-hero-card" onclick="signalStartBuildTrack()">
+          <span class="signal-track-art" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+          <span class="signal-mode-copy"><strong>BUILD A TRACK</strong><span>Make a song one layer at a time.</span></span>
         </button>
-        <button class="signal-btn secondary" style="min-height:82px;font-size:17px;line-height:1.15;margin-bottom:10px;background:rgba(5,20,42,.78) !important;border:2px solid rgba(0,229,255,.72) !important;color:#00e5ff !important;box-shadow:none !important" onclick="signalShowSetup('free')">
-          FREE PLAY<br><span style="display:block;font-size:14px;letter-spacing:1px;line-height:1.25;color:#eaffff;opacity:.95;margin-top:8px">Mess around with sounds.</span>
-        </button>
-        <button class="signal-btn secondary" style="min-height:82px;font-size:17px;line-height:1.15;background:rgba(6,26,16,.78) !important;border:2px solid rgba(51,255,102,.68) !important;color:#33ff66 !important;box-shadow:none !important" onclick="signalShowJukebox()">
-          ♪ JUKEBOX ♫<br><span style="display:block;font-size:14px;letter-spacing:1px;line-height:1.25;color:#eaffff;opacity:.95;margin-top:8px">Play back your saved loops.</span>
-        </button>
+        <div class="signal-secondary-grid">
+          <button class="signal-btn secondary signal-mode-row signal-mode-explore arcade-mode-row" onclick="signalStartExplore()">
+            <svg class="signal-mode-icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M39 11c-4 7-6 13-5 20 1 8-3 15-10 17-6 2-11-1-11-6 0-4 3-7 8-8 4-1 7 0 10 2"/><path d="M37 13l11 6-5 9-10-6M48 19l4-7M21 42c3-1 6 0 8 3"/></svg>
+            <span class="signal-mode-copy"><strong>EXPLORE</strong><span>Play with sounds.</span></span>
+          </button>
+          <button class="signal-btn secondary signal-mode-row signal-mode-library arcade-mode-row" onclick="signalShowJukebox()">
+            <svg class="signal-mode-icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M24 13v32M24 17l25-5v30"/><ellipse cx="17" cy="47" rx="8" ry="6"/><ellipse cx="42" cy="44" rx="8" ry="6"/></svg>
+            <span class="signal-mode-copy"><strong>JUKEBOX</strong><span>Saved loops.</span></span>
+          </button>
+        </div>
+        </div>
       </div>`;
   }
 
   function setupNavButtonsHTML(primaryLabel, primaryAction, backAction) {
     return `
       <div style="position:sticky;bottom:0;z-index:2;display:grid;grid-template-columns:.72fr 1fr;gap:10px;margin-top:12px;padding:10px 0 2px;background:linear-gradient(180deg,rgba(3,12,32,0),rgba(3,12,32,.96) 30%,rgba(6,3,22,.98))">
-        <button class="signal-btn secondary" style="min-height:46px;font-size:11px;margin-top:0" onclick="${backAction || 'signalShowIntro()'}">BACK</button>
-        <button class="signal-btn secondary" style="min-height:46px;font-size:12px;margin-top:0;background:rgba(2,4,14,.94) !important;border:2px solid rgba(0,229,255,.72) !important;color:#eaffff !important;box-shadow:0 0 14px rgba(0,229,255,.16) !important" onclick="${primaryAction}">${primaryLabel}</button>
+        <button class="signal-btn secondary arcade-action is-quiet" onclick="${backAction || 'signalShowIntro()'}">BACK</button>
+        <button class="signal-btn secondary arcade-action is-primary" onclick="${primaryAction}">${primaryLabel}</button>
       </div>`;
   }
 
@@ -4263,15 +4358,15 @@
     stopBpmPreview();
     const panelStyle = setupPanelStyle();
     const free = pendingStartMode === 'free';
-    const modeTag = free ? 'FREE PLAY' : 'BUILD A TRACK';
+    const modeTag = free ? 'EXPLORE' : 'BUILD A TRACK';
     // Build A Track is always Guided now: palette -> feel (2 steps).
     // Free Play adds a "start on" layer pick (3 steps).
     const totalSteps = free ? 3 : 2;
     if (setupStep === 'feel') {
       overlay.innerHTML = `
-        <div class="signal-panel" style="${panelStyle}">
-          <div class="signal-subtitle" style="margin:0 0 4px">${modeTag} · STEP 2 OF ${totalSteps}</div>
-          <div class="signal-title" style="font-size:22px;margin-bottom:14px">CHOOSE FEEL</div>
+        <div class="signal-panel arcade-setup" style="${panelStyle};--arcade-accent:#00e5ff">
+          <div class="signal-subtitle arcade-setup-progress">${modeTag} · STEP 2 OF ${totalSteps}</div>
+          <div class="signal-title arcade-setup-question">CHOOSE FEEL</div>
           <div class="signal-preset-label" style="font-size:12px;margin-bottom:8px">MOOD</div>
           ${setupChipGridHTML('mood', SIGNAL_PRESETS.mood, 2)}
           <div class="signal-preset-label" style="font-size:12px;margin-top:14px;margin-bottom:8px">TEMPO</div>
@@ -4287,9 +4382,9 @@
         return `<button type="button" class="signal-chip ${on ? 'active' : ''}" style="min-height:54px;font-size:14px;letter-spacing:1px;border-width:${on ? '2px' : '1px'};box-shadow:${on ? '0 0 20px rgba(0,229,255,.35)' : 'none'}" onclick="signalSetFreeLayer(${index})">${on ? '✓ ' : ''}${layer.name}</button>`;
       }).join('');
       overlay.innerHTML = `
-        <div class="signal-panel" style="${panelStyle}">
-          <div class="signal-subtitle" style="margin:0 0 4px">FREE PLAY · STEP 3 OF 3</div>
-          <div class="signal-title" style="font-size:22px;margin-bottom:6px">START ON</div>
+        <div class="signal-panel arcade-setup" style="${panelStyle};--arcade-accent:#00e5ff">
+          <div class="signal-subtitle arcade-setup-progress">EXPLORE · STEP 3 OF 3</div>
+          <div class="signal-title arcade-setup-question">START ON</div>
           <div class="signal-subtitle" style="margin-bottom:12px">Pick your first instrument — you can switch anytime.</div>
           <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${rows}</div>
           ${setupNavButtonsHTML('START ›', 'signalConfirmSetup()', "signalSetupStep('feel')")}
@@ -4298,9 +4393,9 @@
     }
     setupStep = 'palette';
     overlay.innerHTML = `
-      <div class="signal-panel" style="${panelStyle}">
-        <div class="signal-subtitle" style="margin:0 0 4px">${modeTag} · STEP 1 OF ${totalSteps}</div>
-        <div class="signal-title" style="font-size:22px;margin-bottom:14px">CHOOSE PALETTE</div>
+      <div class="signal-panel arcade-setup" style="${panelStyle};--arcade-accent:#00e5ff">
+        <div class="signal-subtitle arcade-setup-progress">${modeTag} · STEP 1 OF ${totalSteps}</div>
+        <div class="signal-title arcade-setup-question">CHOOSE PALETTE</div>
         ${setupChipGridHTML('style', SIGNAL_PRESETS.style, 2)}
         ${setupNavButtonsHTML('NEXT ›', "signalSetupStep('feel')", "signalShowIntro()")}
       </div>`;
@@ -4335,40 +4430,6 @@
       </div>`;
   }
 
-  function freeLayerMenuHTML() {
-    const rows = LAYERS.map((layer, index) => `
-      <button class="signal-chip ${index === freeLayerIndex ? 'active' : ''}" style="min-height:38px" onclick="signalChooseFreeLayer(${index})">▶ ${layer.name}</button>
-    `).join('');
-    const hasLoop = freeLayerMenuKeepsLoop && freeHasRecordedLoop();
-    return `
-      <div class="signal-panel">
-        <div class="signal-title">FREE PLAY</div>
-        <div class="signal-subtitle">${hasLoop ? 'PICK A LAYER — YOUR LOOP KEEPS PLAYING.' : 'TAP A LAYER TO START FREE PLAY.'}</div>
-        <div class="signal-tempo-box" style="margin:10px 0 12px;padding:12px">
-          <div id="signal-tempo-value" class="signal-tempo-value" style="font-size:22px">${tempoBpm()} BPM</div>
-          <input class="signal-tempo-slider" type="range" min="${MIN_TEMPO_BPM}" max="${MAX_TEMPO_BPM}" value="${tempoBpm()}" oninput="signalSetTempo(this.value, true)">
-        </div>
-        <div class="signal-presets" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:7px">${rows}</div>
-        ${hasLoop ? '<button class="signal-btn secondary" onclick="signalShowFreeSave()">SAVE LOOP</button>' : ''}
-        <button class="signal-btn secondary" onclick="signalShowIntro()">BACK TO MENU</button>
-      </div>`;
-  }
-
-  function showFreeLayerMenu(keepLoop) {
-    cancelAnimationFrame(raf);
-    setupOpen = false;
-    freeLayerMenuKeepsLoop = keepLoop == null ? isFreeMode() && (state === 'playing' || freeHasRecordedLoop()) : !!keepLoop;
-    mode = 'free';
-    state = 'built';
-    freeRecording = false;
-    loopEndArmed = false;
-    updateLoopButton();
-    overlay.classList.remove('hidden');
-    overlay.classList.remove('signal-menu-mode');
-    overlay.classList.remove('signal-tempo-mode');
-    overlay.innerHTML = freeLayerMenuHTML();
-  }
-
   function switchFreeLayer(index) {
     freeLayerIndex = clamp(Math.floor(index || 0), 0, LAYERS.length - 1);
     currentLayerIndex = freeLayerIndex;
@@ -4387,7 +4448,6 @@
 
   function startFreeMode(index) {
     setArcadeModeSelect(false);
-    freeLayerMenuKeepsLoop = false;
     fitCanvas();
     freeLayerIndex = clamp(Math.floor(index || 0), 0, LAYERS.length - 1);
     resetRun('free');
@@ -4403,51 +4463,6 @@
     last = performance.now();
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(frame);
-  }
-
-  function chooseFreeLayer(index) {
-    if (!freeLayerMenuKeepsLoop) {
-      startFreeMode(index);
-      return;
-    }
-    freeLayerMenuKeepsLoop = false;
-    // Switching instruments keeps everything already recorded — the sandbox
-    // is for layering, not for losing work.
-    const nextLayer = clamp(Math.floor(index || 0), 0, LAYERS.length - 1);
-    switchFreeLayer(nextLayer);
-    state = 'playing';
-    phase = 'build';
-    freeRecording = true;
-    overlay.classList.add('hidden');
-    updateLoopButton();
-    restartLoopPlayback();
-    last = performance.now();
-    cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(frame);
-  }
-
-  function showFreeSave() {
-    if (!isFreeMode() || !freeHasRecordedLoop()) return;
-    freeRecording = false;
-    updateLoopButton();
-    overlay.classList.remove('hidden');
-    overlay.classList.remove('signal-menu-mode');
-    overlay.classList.remove('signal-tempo-mode');
-    overlay.innerHTML = `
-      <div class="signal-panel">
-        <div class="signal-title">SAVE LOOP</div>
-        <div class="signal-subtitle">${activeLayer().name} · ${recipeExtra(currentRecipe())}</div>
-        <div style="display:flex;gap:8px;margin-top:14px">
-          <input id="signal-name" maxlength="12" placeholder="NAME" style="flex:1;min-width:0;height:42px;box-sizing:border-box;background:#02040e;border:1.5px solid ${COLOR};border-radius:4px;color:#fff;text-align:center;text-transform:uppercase;font-family:'VCR',monospace;font-size:14px;letter-spacing:3px">
-          <button id="signal-save-btn" class="signal-btn" style="width:58px;margin:0" onclick="signalSaveRecipe()">▶</button>
-        </div>
-        <div id="signal-save-status" class="signal-subtitle" style="min-height:18px;margin-top:8px"></div>
-        <button class="signal-btn secondary" onclick="signalResumeFreeMode()">BACK TO LOOP</button>
-        <button class="signal-btn secondary" onclick="signalShowJukebox()">JUKEBOX</button>
-        <button class="signal-btn secondary" onclick="signalShowIntro()">MENU</button>
-      </div>`;
-    const input = document.getElementById('signal-name');
-    if (input) input.focus({ preventScroll: true });
   }
 
   function resumeFreeMode() {
@@ -4570,7 +4585,7 @@
     const settings = recipe && recipe.settings ? recipe.settings : signalSettings;
     const base = `${presetLabel('style', settings.style)} · ${presetLabel('mood', settings.mood)}`;
     if (recipe && recipe.meta && recipe.meta.mode === 'free') {
-      return `FREE PLAY · ${recipe.meta.freeLayerName || 'LAYER'} · ${base}`;
+      return `EXPLORE · ${recipe.meta.freeLayerName || 'LAYER'} · ${base}`;
     }
     return base;
   }
@@ -4639,31 +4654,43 @@
     const seconds = Math.round(elapsed / 1000);
     const hitCount = gridStamps().reduce((n, s) => n + (s.pieces ? s.pieces.length : s.notes ? s.notes.length : 1), 0);
     const canSave = won || hitCount > 0;
+    let playerName = '';
+    try {
+      if (typeof PlayerID !== 'undefined' && PlayerID && typeof PlayerID.get === 'function') {
+        playerName = PlayerID.get() || '';
+      }
+    } catch (e) {}
+    const safePlayerName = String(playerName).replace(/[&"<>\u0000-\u001f]/g, ch => ({
+      '&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;'
+    }[ch] || ''));
     overlay.classList.remove('hidden');
     overlay.classList.remove('signal-tempo-mode');
     overlay.classList.remove('signal-menu-mode');
     overlay.innerHTML = `
-      <div class="signal-panel">
-        <div class="signal-title">TRACK BUILT</div>
-        <div class="signal-subtitle">SAVED CHOICES READY FOR REPLAY.</div>
+      <div class="signal-panel signal-result-panel" style="--result-color:${COLOR}">
+        <div class="signal-result-heading">
+          <div class="signal-title">TRACK BUILT</div>
+          <div class="signal-subtitle">YOUR LOOP IS READY.</div>
+        </div>
         <div class="signal-stats">
           <div class="signal-stat">TIME<b>${seconds}s</b></div>
           <div class="signal-stat">TRACK<b>${hitCount} HITS</b></div>
         </div>
         ${canSave ? `
-          <div style="display:flex;gap:8px;margin-top:14px">
-            <input id="signal-name" maxlength="12" placeholder="NAME" style="flex:1;min-width:0;height:42px;box-sizing:border-box;background:#02040e;border:1.5px solid ${COLOR};border-radius:4px;color:#fff;text-align:center;text-transform:uppercase;font-family:'VCR',monospace;font-size:14px;letter-spacing:3px">
-            <button id="signal-save-btn" class="signal-btn" style="width:58px;margin:0" onclick="signalSaveRecipe()">▶</button>
+          <div class="signal-result-save-label">${playerName ? 'SAVE TO YOUR ARCADE PROFILE' : 'NAME YOUR LOOP'}</div>
+          <div class="signal-result-save">
+            <input id="signal-name" maxlength="12" autocomplete="off" spellcheck="false" aria-label="Loop name" placeholder="LOOP NAME" value="${safePlayerName}">
+            <button id="signal-save-btn" class="signal-btn signal-result-save-btn" onclick="signalSaveRecipe()">SAVE LOOP</button>
           </div>
-          <div id="signal-save-status" class="signal-subtitle" style="min-height:18px;margin-top:8px"></div>` : ''}
-        ${canSave ? `<button class="signal-btn secondary" onclick="signalReplayTrack()">REPLAY TRACK</button>` : ''}
-        ${canSave ? `<button class="signal-btn secondary" onclick="signalShowMix()">MIX</button>` : ''}
-        ${won ? `<button class="signal-btn secondary" onclick="signalShowJukebox()">JUKEBOX</button>` : ''}
-        <button class="signal-btn secondary" onclick="signalShowIntro()">MENU</button>
-        <button class="signal-btn" onclick="signalStart()">PLAY AGAIN</button>
+          <div id="signal-save-status" class="signal-result-save-status" aria-live="polite"></div>` : ''}
+        <div class="signal-result-actions">
+          ${canSave ? `<button class="signal-btn arcade-result-primary" onclick="signalReplayTrack()">REPLAY TRACK</button>` : ''}
+          ${canSave ? `<button class="signal-btn secondary arcade-result-secondary" onclick="signalShowMix()">MIX</button>` : ''}
+          <button class="signal-btn secondary arcade-result-secondary" onclick="signalStart()">BUILD ANOTHER</button>
+          <button class="signal-btn secondary arcade-result-arcade" onclick="signalShowIntro()">GAME MENU</button>
+          <button class="signal-btn secondary arcade-result-arcade" onclick="nav('lobby')">ARCADE</button>
+        </div>
       </div>`;
-    const input = document.getElementById('signal-name');
-    if (input) input.focus({ preventScroll: true });
   }
 
   function saveScore() {
@@ -4725,9 +4752,7 @@
     if (input) input.disabled = true;
     if (button) {
       button.disabled = true;
-      button.textContent = 'Saving loop...';
-      button.style.width = 'auto';
-      button.style.minWidth = '190px';
+      button.textContent = 'SAVING...';
     }
     let recipeOnline = false;
     if (window.SignalRecipeRemote && typeof window.SignalRecipeRemote.submit === 'function') {
@@ -4737,7 +4762,7 @@
       }
     }
     if (status) status.textContent = recipeOnline ? 'SAVED ONLINE · JUKEBOX READY' : 'SAVED LOCAL · JUKEBOX READY';
-    if (button) button.textContent = recipeOnline ? 'Saved online' : 'Saved local';
+    if (button) button.textContent = 'SAVED';
     playRandomSfx('save', 1);
   }
 
@@ -5001,27 +5026,41 @@
   window.signalStartTempo = function() {
     skipCountIn();
   };
-  window.signalShowFreeLayers = showFreeLayerMenu;
   window.signalShowSetup = showSetup;
   window.signalConfirmSetup = confirmSetup;
   window.signalStartFreeMode = startFreeMode;
-  window.signalChooseFreeLayer = chooseFreeLayer;
+  window.signalStartExplore = function() {
+    pendingStartMode = 'free';
+    signalSettings.grooveAssist = 'light';
+    startFreeMode(freeLayerIndex);
+  };
+  window.signalStartBuildTrack = function() {
+    pendingStartMode = 'arcade';
+    signalSettings.recordingStyle = 'guided';
+    signalSettings.grooveAssist = 'light';
+    start();
+    // Land straight on the stage with the style/mood/tempo drawer already
+    // open — you pick your palette before the coach walks you through it.
+    shellDrawerOpen = true;
+    renderShellDrawer();
+    ensureShellDrawer().style.display = 'block';
+    if (loopButton) loopButton.textContent = 'STYLE ▴';
+  };
   window.signalResumeFreeMode = resumeFreeMode;
-  window.signalShowFreeSave = showFreeSave;
   window.signalEndLoop = function(e) {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
     if (phase === 'countin' && state === 'playing') skipCountIn();
     else if (state === 'replay') stopReplayToMix();
-    else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'record') captureNextLayer();
+    else if ((isFreeMode() || isGuidedBuildMode()) && phase === 'build') toggleShellDrawer();
     else requestLoopEnd();
   };
   window.signalResetLoop = function(e) {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
     if (state === 'replay') return;
-    if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'practice') skipGuidedLayer();
-    else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'record') captureRetryLayer();
+    if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'record') captureRetryLayer();
+    else if (isGuidedBuildMode() && phase === 'build' && guidedStage === 'done') reRecordGuidedLayer();
     else resetCurrentLoop();
   };
   window.signalUndoLoop = function(e) {

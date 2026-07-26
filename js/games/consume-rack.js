@@ -32,13 +32,26 @@
   function load() { try { return JSON.parse(localStorage.getItem(key()) || '{}'); } catch (e) { return {}; } }
   function save(data) { try { localStorage.setItem(key(), JSON.stringify(data)); } catch (e) {} }
   function makeTag(profiles) { for (let i = 0; i < 100; i++) { const tag = TAGS[Math.floor(Math.random() * TAGS.length)] + (2 + Math.floor(Math.random() * 8)); if (!profiles[tag]) return tag; } return `KNOT${Math.floor(Math.random() * 90 + 10)}`; }
+  function migrateProgress(player) {
+    if (!player) return { completed: {}, served: [] };
+    if (player.stars) {
+      player.completed ||= {};
+      Object.keys(player.stars).forEach(level => { if (player.stars[level]) player.completed[level] = true; });
+      delete player.stars;
+    }
+    player.completed ||= {};
+    player.served = Array.isArray(player.served) ? player.served.map(Number).filter(Number.isFinite) : [];
+    player.lastServed = Number(player.lastServed) || 0;
+    return player;
+  }
   function profile() {
     const data = load(); data.profiles ||= {};
     // Retroactively adopt the shared cross-game code if it differs — old
     // progress under the previous tag stays put, just no longer active.
     const shared = typeof window.PlayerID !== 'undefined' ? window.PlayerID.get() : null;
-    if (shared && shared !== data.active) { data.profiles[shared] ||= { stars: {} }; data.active = shared; save(data); }
-    else if (!data.active || !data.profiles[data.active]) { data.active = makeTag(data.profiles); data.profiles[data.active] = { stars: {} }; save(data); }
+    Object.keys(data.profiles).forEach(tag => migrateProgress(data.profiles[tag]));
+    if (shared && shared !== data.active) { data.profiles[shared] = migrateProgress(data.profiles[shared]); data.active = shared; save(data); }
+    else if (!data.active || !data.profiles[data.active]) { data.active = makeTag(data.profiles); data.profiles[data.active] = { completed: {}, served: [] }; save(data); }
     if (typeof window.PlayerID !== 'undefined') window.PlayerID.set(data.active);
     return data;
   }
@@ -47,19 +60,40 @@
     if (tag.length < 2) return { ok: false, msg: '2-12 LETTERS/NUMBERS' };
     const data = profile();
     if (tag !== data.active) {
-      const cur = (data.profiles[data.active] && data.profiles[data.active].stars) || {};
-      data.profiles[tag] ||= { stars: {} };
-      const dest = data.profiles[tag].stars;
-      for (const k in cur) if ((cur[k] || 0) > (dest[k] || 0)) dest[k] = cur[k];
+      const cur = migrateProgress(data.profiles[data.active]).completed;
+      const dest = (data.profiles[tag] = migrateProgress(data.profiles[tag])).completed;
+      for (const k in cur) if (cur[k]) dest[k] = true;
       data.active = tag; save(data);
       if (typeof window.PlayerID !== 'undefined') window.PlayerID.set(tag);
     }
     return { ok: true };
   }
-  function done(stars) { return Math.max(0, ...Object.keys(stars || profile().profiles[profile().active].stars).map(Number)); }
-  function total(stars) { return Object.values(stars || profile().profiles[profile().active].stars).reduce((sum, n) => sum + n, 0); }
-  function record(n, value) { const data = profile(), stars = data.profiles[data.active].stars; stars[n] = Math.max(stars[n] || 0, value); save(data); }
-  function sync() { try { const data = profile(), high = done(data.profiles[data.active].stars); if (high && typeof RemoteLB !== 'undefined') RemoteLB.submit(cfg().title === 'WORDS' ? 'consume-words' : 'consume-numbers', data.active, high, 0, `L${high}`).catch(() => {}); } catch (e) {} }
+  function done(completed) { return Math.max(0, ...Object.keys(completed || migrateProgress(profile().profiles[profile().active]).completed).map(Number)); }
+  function record(n) { const data = profile(); migrateProgress(data.profiles[data.active]).completed[n] = true; save(data); }
+  function chooseUnseenLevel() {
+    const data = profile(), player = migrateProgress(data.profiles[data.active]), pool = levels();
+    const completedCount = Object.values(player.completed).filter(Boolean).length;
+    const introductoryCount = Math.max(1, Math.ceil(pool.length / 3));
+    const standardCount = Math.max(introductoryCount, Math.ceil(pool.length * 2 / 3));
+    const eligibleCount = completedCount < 2 ? introductoryCount : completedCount < 5 ? standardCount : pool.length;
+    const served = new Set(player.served);
+    let candidates = pool.slice(0, eligibleCount).filter(level => !served.has(level.n));
+    if (!candidates.length) candidates = pool.filter(level => !served.has(level.n));
+    if (!candidates.length) {
+      player.served = [];
+      candidates = pool.filter(level => level.n !== player.lastServed);
+      if (!candidates.length) candidates = pool.slice();
+    }
+    const selected = candidates[Math.floor(Math.random() * candidates.length)];
+    player.served.push(selected.n);
+    player.lastServed = selected.n;
+    save(data);
+    return selected.n;
+  }
+  function serveUnseenPuzzle() {
+    if (levels().length) start(chooseUnseenLevel());
+  }
+  function sync() { try { const data = profile(), high = done(migrateProgress(data.profiles[data.active]).completed); if (high && typeof RemoteLB !== 'undefined') RemoteLB.submit(cfg().title === 'WORDS' ? 'consume-words' : 'consume-numbers', data.active, high, 0, `L${high}`).catch(() => {}); } catch (e) {} }
 
   function validGroup(group) {
     if (group.length < 3) return false;
@@ -74,6 +108,7 @@
 
   function start(n) {
     const data = levels()[n - 1]; if (!data) return;
+    setArcadeExitVisible(true);
     setArcadeModeSelect(false);
     nextTile = 1;
     const tile = value => ({ id: nextTile++, value });
@@ -198,8 +233,17 @@
     // to a centered group. The old full-size ghost made the group shift under
     // the pointer and could make neighboring insertion targets oscillate.
     const marker = insertionMarker();
+    marker.classList.add('kt-drag-marker');
     const remaining = [...container.querySelectorAll('[data-tile]')].filter(element => Number(element.dataset.tile) !== drag.id);
-    if (target.index < remaining.length) container.insertBefore(marker, remaining[target.index]); else container.appendChild(marker);
+    const anchor = remaining[Math.min(target.index, remaining.length - 1)];
+    const containerRect = container.getBoundingClientRect();
+    const anchorRect = anchor?.getBoundingClientRect();
+    const edge = anchorRect
+      ? (target.index < remaining.length ? anchorRect.left : anchorRect.right)
+      : containerRect.left + containerRect.width / 2;
+    marker.style.left = `${edge - containerRect.left - 2}px`;
+    marker.style.top = `${(anchorRect ? anchorRect.top + (anchorRect.height - 44) / 2 : containerRect.top + (containerRect.height - 44) / 2) - containerRect.top}px`;
+    container.appendChild(marker);
   }
 
   function beginDrag(event, element, pointer) {
@@ -326,12 +370,46 @@
   }
 
   function checkWin() { return !state.rack.length && state.groups.length && state.groups.every(group => validGroup(group.tiles)); }
-  function win() { if (state.won) return; state.won = true; record(state.n, 1); sync(); if (typeof SFX !== 'undefined') SFX.win(); const next = state.n < levels().length; const overlay = document.createElement('div'); overlay.className = 'kt-win'; overlay.innerHTML = `<strong>PUZZLE SOLVED!</strong><div>${next ? '<button data-next>NEXT</button>' : ''}<button data-replay>REPLAY</button><button data-journey>JOURNEY</button></div>`; wrap.appendChild(overlay); overlay.addEventListener('click', event => { if (event.target.hasAttribute('data-next')) start(state.n + 1); if (event.target.hasAttribute('data-replay')) start(state.n); if (event.target.hasAttribute('data-journey')) journey(); }); }
+  function win() {
+    if (state.won) return;
+    state.won = true;
+    record(state.n);
+    sync();
+    if (typeof SFX !== 'undefined') SFX.win();
+    setArcadeExitVisible(false);
+    const completedLevel = state.n;
+    wrap.innerHTML = buildArcadeResultCard({
+      uid: `tile-swap-${mode}`,
+      boardKey: `consume-${mode}`,
+      artGame: 'consume',
+      color: cfg().accent,
+      marquee: 'PUZZLE SOLVED!',
+      scoreLabel: 'GAME',
+      scoreValue: cfg().title,
+      scoreExtra: `${state.moves} MOVES · A NEW PUZZLE IS READY`,
+      canSave: false,
+      showBoard: false,
+      showSaveArea: false,
+      buttons: `
+        <button class="kt-result-btn arcade-result-primary" data-another>PLAY ANOTHER</button>
+        <button class="kt-result-btn arcade-result-secondary" data-replay>REPLAY</button>
+        <button class="kt-result-btn arcade-result-secondary" data-modes>TILE SWAP MENU</button>
+        <button class="kt-result-btn arcade-result-arcade" data-arcade>ARCADE</button>
+      `,
+    });
+    mountSelectionArt(`tile-swap-${mode}-art`, 'consume');
+    wrap.onclick = event => {
+      if (event.target.hasAttribute('data-another')) serveUnseenPuzzle();
+      if (event.target.hasAttribute('data-replay')) start(completedLevel);
+      if (event.target.hasAttribute('data-modes')) window.renderConsumeModes();
+      if (event.target.hasAttribute('data-arcade')) nav('lobby');
+    };
+  }
 
   function renderPlay() {
     wrap.style.setProperty('--kt', cfg().accent);
-    wrap.innerHTML = `<div class="kt-hud"><button data-journey>JOURNEY</button><strong>${cfg().title} · LEVEL ${state.n}</strong><button data-reset>RESET</button></div><div class="kt-table" id="kt-table"></div><button class="kt-check" id="kt-check">CHECK</button><div class="kt-rack" id="kt-rack" data-rack-drop></div>`;
-    wrap.querySelector('.kt-hud').addEventListener('click', event => { if (event.target.hasAttribute('data-journey')) journey(); if (event.target.hasAttribute('data-reset')) start(state.n); });
+    wrap.innerHTML = `<div class="kt-hud"><button data-modes>TILE SWAP</button><strong>${cfg().title}</strong><button data-reset>RESET</button></div><div class="kt-table" id="kt-table"></div><button class="kt-check" id="kt-check">CHECK</button><div class="kt-rack" id="kt-rack" data-rack-drop></div>`;
+    wrap.querySelector('.kt-hud').addEventListener('click', event => { if (event.target.hasAttribute('data-modes')) window.renderConsumeModes(); if (event.target.hasAttribute('data-reset')) start(state.n); });
     wrap.onpointerdown = pointerDown;
     wrap.onpointermove = dragMove;
     wrap.onpointerup = finishDrag;
@@ -350,9 +428,20 @@
   }
   function update(movedId) {
     if (!state || !wrap) return;
+    const previous = new Map([...wrap.querySelectorAll('[data-tile]')].map(tile => [tile.dataset.tile, tile.getBoundingClientRect()]));
     wrap.querySelector('#kt-table').innerHTML = state.groups.map(group => groupMarkup(group, movedId)).join('') +
       (state.pickedId ? `<button class="kt-new-group-cue kt-tap-new-group" type="button" data-new-group>NEW GROUP</button>` : '');
     wrap.querySelector('#kt-rack').innerHTML = `<span class="kt-rack-label">RACK</span>${tilesWithSlots(state.rack, 'rack', null, movedId)}`;
+    if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      wrap.querySelectorAll('[data-tile]').forEach(tile => {
+        const before = previous.get(tile.dataset.tile), after = tile.getBoundingClientRect();
+        if (!before) return;
+        const dx = before.left - after.left, dy = before.top - after.top;
+        if (Math.abs(dx) > 1 || Math.abs(dy) > 1) tile.animate([
+          { transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' },
+        ], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' });
+      });
+    }
   }
 
   function showHowToPlay() {
@@ -366,17 +455,48 @@
     wrap.appendChild(overlay);
   }
 
-  function journey() {
-    setArcadeModeSelect(true);
-    state = null;
-    const data = profile(), stars = data.profiles[data.active].stars, unlocked = done(stars) + 1;
-    wrap.style.setProperty('--kt', cfg().accent);
-    wrap.innerHTML = `<div class="kt-journey"><div class="kt-journey-actions"><button data-modes>MODES</button><button data-help>HOW TO PLAY</button></div><h1>${cfg().title}</h1><p>${cfg().intro}</p><h2>LEVELS</h2><div class="kt-levels">${levels().map(level => { const locked = level.n > unlocked; return `<button class="${locked ? 'locked' : ''}" data-level="${level.n}">${level.n}</button>`; }).join('')}</div><section class="kt-codebox player-login-switch" role="button" tabindex="0" onclick="openPlayerSignIn()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPlayerSignIn()}" aria-label="Change arcade login"><div class="kt-code-row"><span>LOGGED IN AS</span><strong>${esc(data.active)}</strong></div></section></div>`;
-    wrap.querySelector('[data-modes]').addEventListener('click', () => window.renderConsumeModes());
-    wrap.querySelector('[data-help]').addEventListener('click', showHowToPlay);
-    wrap.querySelector('.kt-levels').addEventListener('click', event => { const button = event.target.closest('[data-level]'); if (button && !button.classList.contains('locked')) start(Number(button.dataset.level)); });
-  }
-  window.initConsumeRack = next => { mode = next; wrap = document.getElementById('consume-wrap'); journey(); };
+  window.initConsumeRack = next => { mode = next; wrap = document.getElementById('consume-wrap'); serveUnseenPuzzle(); };
   window.consumeRackBack = () => { state = null; mode = null; };
-  window.renderConsumeModes = () => { wrap = document.getElementById('consume-wrap'); if (!wrap) return; setArcadeModeSelect(true); wrap.innerHTML = `<div class="consume-modes"><div class="cw-title">TILE SWAP</div><div class="cw-intro">Choose a way to untangle the tiles.</div><button data-mode="grid"><strong>GRID</strong><span>Build real words from a shared tile grid.</span></button><button data-mode="words"><strong>WORDS</strong><span>Rearrange every tile into valid words.</span></button><button data-mode="numbers"><strong>RUMMY</strong><span>Rearrange every tile into runs and sets.</span></button></div>`; wrap.querySelector('.consume-modes').addEventListener('click', event => { const button = event.target.closest('[data-mode]'); if (!button) return; if (button.dataset.mode === 'grid') window.initConsumeGrid(); else window.initConsumeRack(button.dataset.mode); }); };
+  function modeArt(kind) {
+    if (kind === 'grid') {
+      return `<div class="consume-mode-art consume-grid-art" aria-hidden="true">
+        ${['M','O','B','E','A','R','C','S','T','I','L','E','P','L','A','Y'].map((letter, index) =>
+          `<i class="${[0,1,2,3,6,10,14].includes(index) ? 'lit' : ''}">${letter}</i>`).join('')}
+      </div>`;
+    }
+    const tiles = kind === 'words'
+      ? [['W','cyan'],['O','pink'],['R','yellow'],['D','cyan'],['S','pink']]
+      : [['3','red'],['4','blue'],['5','green'],['8','yellow'],['8','red']];
+    return `<div class="consume-mode-art consume-float-art consume-${kind}-art" aria-hidden="true">
+      ${tiles.map(([value, color], index) => `<i class="${color}" style="--tile-i:${index}">${value}</i>`).join('')}
+    </div>`;
+  }
+
+  window.renderConsumeModes = () => {
+    wrap = document.getElementById('consume-wrap');
+    if (!wrap) return;
+    state = null;
+    mode = null;
+    setArcadeModeSelect(true, { label: 'ARCADE' });
+    wrap.innerHTML = `<div class="consume-modes">
+      <div class="consume-mode-banner"><div class="cw-title">TILE SWAP</div></div>
+      <div class="consume-mode-grid">
+        <button class="consume-mode-card" style="--mode-color:#ff7180" data-mode="grid">
+          ${modeArt('grid')}<strong>GRID</strong><span>BUILD WORDS FROM<br>A SHARED GRID</span>
+        </button>
+        <button class="consume-mode-card" style="--mode-color:#ff75d5" data-mode="words">
+          ${modeArt('words')}<strong>WORDS</strong><span>REARRANGE TILES<br>INTO WORDS</span>
+        </button>
+        <button class="consume-mode-card" style="--mode-color:#ffb35c" data-mode="numbers">
+          ${modeArt('numbers')}<strong>RUMMY</strong><span>MAKE NUMBER RUNS<br>AND SETS</span>
+        </button>
+      </div>
+    </div>`;
+    wrap.querySelector('.consume-modes').addEventListener('click', event => {
+      const button = event.target.closest('[data-mode]');
+      if (!button) return;
+      if (button.dataset.mode === 'grid') window.initConsumeGrid();
+      else window.initConsumeRack(button.dataset.mode);
+    });
+  };
 })();

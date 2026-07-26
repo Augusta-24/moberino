@@ -71,46 +71,36 @@
     if (state === 'idle') {
       if (!ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
       wrap.innerHTML = `
-        <div class="whack-mode-shell" style="max-width:440px;margin-top:24px">
-          <div class="whack-mode-title">CHOOSE MODE</div>
-          <div class="game-card whack-mode-card" style="border-color:#ffe61a66;cursor:default;min-height:0">
-            <div class="game-card-art" style="background:#0d0a1e">
-              <div id="match-mode-art" style="position:absolute;inset:0;z-index:0;opacity:0.97;transform:scale(1.26) translateY(10px);filter:saturate(1.18) brightness(.8);pointer-events:none;mix-blend-mode:screen"></div>
-            </div>
-            <div class="game-card-info" style="position:relative;z-index:2">
-            <div style="font-family:'Bebas Neue',cursive;font-size:34px;letter-spacing:5px;line-height:1;color:#ffe61a;text-shadow:0 0 14px #ffe61a88;margin-bottom:8px">MEMORY MOBE</div>
-            <svg viewBox="0 0 280 80" width="100%" height="70" style="display:block;margin:0 auto 8px">
-              <g class="card-drift" style="--r0:-4deg;--r1:1deg;animation-delay:0s"><rect x="8" y="6" width="50" height="66" rx="6" fill="#2a1a55" stroke="#ffe61a" stroke-width="1.5" opacity="0.8"/><text x="33" y="46" text-anchor="middle" font-size="22" fill="#ffe61a" opacity="0.5" font-family="'Bebas Neue',cursive">?</text></g>
-              <g class="card-drift" style="--r0:0deg;--r1:3deg;animation-delay:0.4s"><rect x="66" y="6" width="50" height="66" rx="6" fill="#3a2a77" stroke="#ffe61a" stroke-width="2"/><path d="M75,38 L82,47 L97,27" stroke="#ffe61a" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
-              <g class="card-drift" style="--r0:3deg;--r1:-2deg;animation-delay:0.8s"><rect x="124" y="6" width="50" height="66" rx="6" fill="#2a1a55" stroke="#ffe61a" stroke-width="1.5" opacity="0.8"/><text x="149" y="46" text-anchor="middle" font-size="22" fill="#ffe61a" opacity="0.5" font-family="'Bebas Neue',cursive">?</text></g>
-              <g class="card-drift" style="--r0:0deg;--r1:-3deg;animation-delay:1.2s" opacity="0.85"><rect x="182" y="6" width="50" height="66" rx="6" fill="#3a2a77" stroke="#ffe61a" stroke-width="2"/><path d="M191,38 L198,47 L213,27" stroke="#ffe61a" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
-              <text x="248" y="24" font-size="14" fill="#ffe61a" opacity="0.9">✦</text>
-              <text x="258" y="40" font-size="10" fill="#ffe61a" opacity="0.7">✦</text>
+        <div class="match-mode-shell">
+          <div class="match-mode-banner"><h1>MEMORY MOBE</h1></div>
+          <div class="match-mode-art" aria-hidden="true">
+            <svg class="match-mode-preview-svg" viewBox="0 0 320 112">
+              <g class="card-drift" style="--r0:-4deg;--r1:1deg;animation-delay:0s"><rect x="24" y="16" width="58" height="80" rx="8"/><text x="53" y="68">?</text></g>
+              <g class="card-drift match-mode-preview-hit" style="--r0:0deg;--r1:3deg;animation-delay:.4s"><rect x="94" y="16" width="58" height="80" rx="8"/><path d="M107 57l11 13 23-32"/></g>
+              <g class="card-drift" style="--r0:3deg;--r1:-2deg;animation-delay:.8s"><rect x="164" y="16" width="58" height="80" rx="8"/><text x="193" y="68">?</text></g>
+              <g class="card-drift match-mode-preview-hit" style="--r0:0deg;--r1:-3deg;animation-delay:1.2s"><rect x="234" y="16" width="58" height="80" rx="8"/><path d="M247 57l11 13 23-32"/></g>
+              <text class="match-mode-spark" x="302" y="30">✦</text>
             </svg>
-            <div class="game-card-marquee" style="color:#ffe61a;text-shadow:0 0 16px rgba(255,230,26,0.65)">FLIP CARDS TO FIND PAIRS</div>
-            <div style="height:8px"></div>
-            <div class="match-mode-select" style="display:flex;flex-direction:column;gap:8px;align-items:stretch;margin-top:2px">
-            <button class="whack-btn match-mode-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.14);padding:10px 16px;text-align:left" onclick="matchGoFreeSetup()">
-              <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;line-height:1.1">FREE PLAY</div>
-              <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:0.5px;opacity:0.9;margin-top:4px;white-space:nowrap">4-20 PAIRS · UNLIMITED MOVES · NO TIME LIMIT</div>
+          </div>
+          <div class="match-mode-select">
+            <button class="match-mode-card" style="--mode-color:#33ff66" onclick="matchGoFreeSetup()">
+              <svg class="match-mode-icon" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="25"/><circle cx="23" cy="27" r="2.7"/><circle cx="41" cy="27" r="2.7"/><path d="M19 37Q32 49 45 37"/></svg>
+              <span class="match-mode-copy"><strong>FREE PLAY</strong><span>4–20 PAIRS · NO TIMER</span></span>
             </button>
-            <button class="whack-btn match-mode-btn" style="border-color:#ffe61a;background:rgba(255,230,26,0.14);padding:10px 16px;text-align:left" onclick="matchPlay('hard')">
-              <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;line-height:1.1">HARD</div>
-              <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:0.5px;opacity:0.9;margin-top:4px;white-space:nowrap">12 PAIRS · UNLIMITED MOVES · 60 SECONDS</div>
+            <button class="match-mode-card" style="--mode-color:#ffe61a" onclick="matchPlay('hard')">
+              <svg class="match-mode-icon" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="25"/><circle cx="23" cy="27" r="2.7"/><circle cx="41" cy="27" r="2.7"/><path d="M21 41H43"/></svg>
+              <span class="match-mode-copy"><strong>HARD</strong><span>12 PAIRS · 60 SECONDS</span></span>
             </button>
-            <button class="whack-btn match-mode-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.1);padding:10px 16px;text-align:left" onclick="matchPlay('challenge')">
-              <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;line-height:1.1">CHALLENGE</div>
-              <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:0.5px;opacity:0.9;margin-top:4px;white-space:nowrap">16 PAIRS · UNLIMITED MOVES · 60 SECONDS</div>
+            <button class="match-mode-card" style="--mode-color:#ff9933" onclick="matchPlay('challenge')">
+              <svg class="match-mode-icon" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="25"/><circle cx="23" cy="27" r="2.7"/><circle cx="41" cy="27" r="2.7"/><path d="M19 45Q32 33 45 45"/></svg>
+              <span class="match-mode-copy"><strong>CHALLENGE</strong><span>16 PAIRS · 60 SECONDS</span></span>
             </button>
-            <button class="whack-btn match-mode-btn" style="border-color:#ff4444;background:rgba(255,68,68,0.1);padding:10px 16px;text-align:left" onclick="matchPlay('impossible')">
-              <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;line-height:1.1">IMPOSSIBLE</div>
-              <div style="font-family:'VCR',monospace;font-size:11px;letter-spacing:0.5px;opacity:0.9;margin-top:4px;white-space:nowrap">21 PAIRS · ${IMPOSSIBLE_MOVE_CUTOFF} MOVES</div>
+            <button class="match-mode-card" style="--mode-color:#ff4444" onclick="matchPlay('impossible')">
+              <svg class="match-mode-icon" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="25"/><path d="M18 30L27 24M46 30L37 24"/><ellipse cx="32" cy="43" rx="7" ry="9"/></svg>
+              <span class="match-mode-copy"><strong>IMPOSSIBLE</strong><span>21 PAIRS · ${IMPOSSIBLE_MOVE_CUTOFF} MOVES</span></span>
             </button>
-            </div>
-            </div>
           </div>
         </div>`;
-      mountSelectionArt('match-mode-art', 'match');
       return;
     }
 
@@ -226,9 +216,9 @@
           extra: `FREE PLAY · ${freePlayCharCount} PAIRS`,
           ascending: true,
           buttons: `
-            <button class="whack-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.30)" onclick="matchGoFreeSetup()">PLAY AGAIN</button>
-            <button class="whack-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.30)" onclick="matchChangeMode()">CHANGE MODE</button>
-            <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="nav('lobby')">BACK TO ARCADE</button>
+            <button class="whack-btn arcade-result-primary" onclick="matchGoFreeSetup()">PLAY AGAIN</button>
+            <button class="whack-btn arcade-result-secondary" onclick="matchChangeMode()">MEMORY MENU</button>
+            <button class="whack-btn arcade-result-arcade" onclick="nav('lobby')">ARCADE</button>
           `,
         });
         loadRemoteBoard(boardKey, `${uid}-board`, '#ff9933', 'score');
@@ -269,13 +259,15 @@
           seconds: (matchMode === 'hard' || matchMode === 'challenge') ? matchTimer : 0,
           ascending,
           canSave: didWin,
+          showBoard: didWin,
+          showSaveArea: didWin,
           buttons: `
-            <button class="whack-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.30)" onclick="matchPlay('${matchMode}')">PLAY AGAIN</button>
-            <button class="whack-btn" style="border-color:#ff9933;background:rgba(255,153,51,0.30)" onclick="matchChangeMode()">CHANGE MODE</button>
-            <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="nav('lobby')">BACK TO ARCADE</button>
+            <button class="whack-btn arcade-result-primary" onclick="matchPlay('${matchMode}')">${didWin ? 'PLAY AGAIN' : 'RETRY'}</button>
+            <button class="whack-btn arcade-result-secondary" onclick="matchChangeMode()">MEMORY MENU</button>
+            <button class="whack-btn arcade-result-arcade" onclick="nav('lobby')">ARCADE</button>
           `,
         });
-        loadRemoteBoard(boardKey, `${uid}-board`, '#ff9933', field);
+        if (didWin) loadRemoteBoard(boardKey, `${uid}-board`, '#ff9933', field);
         mountSelectionArt(`${uid}-art`, 'match');
       }
     }

@@ -14,7 +14,7 @@
 }
 .whack-mode-shell {
   width: 100%;
-  max-width: 440px;
+  max-width: 720px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -22,25 +22,98 @@
 }
 .whack-mode-title {
   font-family: 'Bebas Neue', cursive;
-  font-size: clamp(22px, 3vw, 29px);
-  letter-spacing: 5px;
-  line-height: 1;
-  color: #ffffff;
-  text-shadow: 0 0 9px rgba(242,239,232,0.28);
+  font-size: clamp(42px, 8vw, 60px);
+  letter-spacing: 6px;
+  line-height: .95;
+  color: #b884ff;
+  text-shadow: 0 0 20px rgba(184,132,255,.54);
   text-align: center;
+  margin:0;
+}
+.whack-mode-banner {
+  width:calc(100% + 24px);
+  margin:0 -12px 4px;
+  padding:15px 12px 16px;
+  background:linear-gradient(180deg,rgba(184,132,255,.12),rgba(184,132,255,.035));
+}
+body.on-whack.arcade-mode-select #arcade-float,
+body.on-whack.arcade-selection-open #arcade-float {
+  display:none;
+}
+.whack-menu-difficulty {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  border: 1px solid rgba(242,239,232,.14);
+  border-radius: 7px;
+  background: rgba(5,2,18,.62);
+}
+.whack-menu-difficulty span {
+  font: 10px/1 'VCR',monospace;
+  letter-spacing: 1.5px;
+  color: rgba(242,239,232,.58);
+}
+.whack-menu-difficulty button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(242,239,232,.2);
+  border-radius: 5px;
+  background: transparent;
+  color: rgba(242,239,232,.62);
+  font: 10px/1 'VCR',monospace;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+.whack-menu-difficulty button.active {
+  border-color: #caa5ff;
+  background: rgba(202,165,255,.2);
+  color: #f4eaff;
+  box-shadow: 0 0 12px rgba(202,165,255,.16);
 }
 .whack-mode-grid {
   width: 100%;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 10px;
+  gap: 14px;
 }
 .whack-mode-card {
-  min-height: 216px;
-  border-color: #ff993355;
-  background: rgba(9,5,25,0.74);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.035), 0 14px 34px rgba(0,0,0,0.28);
+  width:100%;
+  min-height:166px;
+  justify-self:center;
+  display:grid;
+  grid-template-columns:minmax(0,38%) minmax(0,1fr);
+  align-items:center;
+  gap:0;
+  padding:0;
+  overflow:hidden;
+  border:2px solid var(--mode-color);
+  border-radius:18px;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--mode-color) 14%,#090719),#070611);
+  color:#fff;
+  text-align:left;
+  cursor:pointer;
+  box-shadow:0 12px 30px #0008,0 0 18px color-mix(in srgb,var(--mode-color) 24%,transparent);
   transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+.whack-mode-card[hidden] { display: none !important; }
+.whack-mode-card.whack-mode-primary {
+  min-height:166px;
+  grid-template-columns:minmax(0,38%) minmax(0,1fr);
+  padding:0;
+  box-shadow:0 14px 34px #0009,0 0 26px color-mix(in srgb,var(--mode-color) 30%,transparent);
+}
+.whack-mode-card.whack-mode-secondary {
+  min-height:166px;
+  grid-template-columns:minmax(0,38%) minmax(0,1fr);
+  opacity:.88;
+}
+.whack-mode-card.whack-mode-secondary .game-card-marquee {
+  font-size:26px;
+}
+.whack-mode-card.whack-mode-secondary .game-card-desc {
+  font-size:13px;
 }
 .whack-mode-card::after {
   content: "";
@@ -62,11 +135,31 @@
   transform: translateX(22%) rotate(8deg);
 }
 .whack-mode-card .game-card-art {
-  opacity: 0.9;
+  position:relative;
+  inset:auto;
+  width:100%;
+  height:100%;
+  min-height:0;
+  align-self:stretch;
+  aspect-ratio:auto;
+  overflow:hidden;
+  opacity:1;
+  border:0;
+  border-radius:16px 0 0 16px;
+  display:grid;
+  place-items:center;
+  background:transparent !important;
+  box-shadow:none;
+}
+.whack-mode-card .game-card-art svg > rect:first-child {
+  fill:transparent;
 }
 .whack-mode-card .game-card-info {
-  padding: 15px 16px 15px;
-  background: linear-gradient(to top, rgba(5,2,18,0.98) 68%, rgba(5,2,18,0.58) 84%, rgba(5,2,18,0.1));
+  position:relative;
+  inset:auto;
+  min-width:0;
+  padding:14px 16px;
+  background:none;
 }
 .whack-mode-name {
   position: absolute;
@@ -79,11 +172,11 @@
   color: #ffffff;
 }
 .whack-mode-card .game-card-marquee {
-  color: #ff9933;
-  text-shadow: 0 0 16px rgba(255,153,51,0.65);
-  font-size: 16px;
-  letter-spacing: 3px;
-  margin-bottom: 7px;
+  color:var(--mode-color);
+  text-shadow:0 0 12px color-mix(in srgb,var(--mode-color) 55%,transparent);
+  font-size:30px;
+  letter-spacing:2px;
+  margin-bottom:10px;
 }
 .whack-mode-card .game-card-desc {
   opacity: 0.92;
@@ -92,7 +185,7 @@
 .whack-mode-diff {
   margin-top: 14px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 .whack-mode-diff .whack-btn {
@@ -110,10 +203,57 @@
 }
 @media (max-width: 860px) {
   .whack-mode-grid { grid-template-columns: 1fr; gap: 8px; }
-  .whack-mode-card { min-height: 152px; }
-  .whack-mode-card .game-card-info { padding: 10px 14px 11px; }
-  .whack-mode-card .game-card-marquee { font-size: 14px; margin-bottom: 4px; }
+  .whack-mode-card,
+  .whack-mode-card.whack-mode-primary,
+  .whack-mode-card.whack-mode-secondary { min-height:162px; }
+  .whack-mode-card .game-card-marquee { margin-bottom:8px; }
   .whack-mode-diff { margin-top: 9px; }
+}
+@media(max-width:430px){
+  .whack-mode-title{font-size:46px}
+  .whack-mode-banner{padding:13px 12px 14px}
+  .whack-mode-card,
+  .whack-mode-card.whack-mode-primary,
+  .whack-mode-card.whack-mode-secondary{grid-template-columns:minmax(0,38%) minmax(0,1fr);gap:13px;padding:11px 13px;min-height:158px}
+  .whack-mode-card .game-card-marquee{font-size:25px;letter-spacing:1.3px;white-space:nowrap}
+  .whack-mode-card.whack-mode-secondary .game-card-marquee{font-size:24px}
+}
+/* Face Factory's mobile card frame, with Whack content substituted in. */
+@media(max-width:620px){
+  .whack-mode-grid{
+    grid-template-columns:1fr;
+    gap:10px;
+    margin:8px 0;
+  }
+  .whack-mode-card,
+  .whack-mode-card.whack-mode-primary,
+  .whack-mode-card.whack-mode-secondary{
+    min-height:128px;
+    grid-template-columns:minmax(150px,34%) minmax(0,1fr);
+    column-gap:0;
+    row-gap:5px;
+    padding:0;
+    text-align:left;
+    overflow:hidden;
+  }
+  .whack-mode-card .game-card-art{
+    width:100%;
+    height:100%;
+    aspect-ratio:auto;
+    grid-row:1 / span 2;
+    justify-self:start;
+  }
+  .whack-mode-card .game-card-info{
+    min-width:0;
+    align-self:center;
+  }
+  .whack-mode-card .game-card-marquee,
+  .whack-mode-card.whack-mode-secondary .game-card-marquee{
+    margin-bottom:8px;
+    font-size:25px;
+    letter-spacing:1.3px;
+    white-space:normal;
+  }
 }
 .whack-hud {
   display: flex; justify-content: space-between; align-items: center;
@@ -397,6 +537,23 @@
   20%  { opacity:1; transform: scale(1.1); }
   60%  { opacity:1; transform: scale(1.0); }
   100% { opacity:0; transform: scale(0.9); }
+}
+
+/* Calm shared card finish. */
+.whack-mode-card,
+.whack-mode-card.whack-mode-primary,
+.whack-mode-card.whack-mode-secondary {
+  background:linear-gradient(180deg,color-mix(in srgb,var(--mode-color) var(--arcade-card-wash),#090719),#070611);
+  box-shadow:0 12px 30px #0008,0 0 10px color-mix(in srgb,var(--mode-color) var(--arcade-card-glow),transparent);
+}
+.whack-mode-card.whack-mode-primary {
+  box-shadow:0 14px 34px #0009,0 0 14px color-mix(in srgb,var(--mode-color) var(--arcade-card-hero-glow),transparent);
+}
+.whack-mode-card .game-card-marquee {
+  text-shadow:0 0 7px color-mix(in srgb,var(--mode-color) var(--arcade-card-title-glow),transparent);
+}
+.whack-mode-card .game-card-art {
+  box-shadow:none;
 }
 
 /* Memory Mobe card-art: gentle drifting/rotating motion so the illustration reads as

@@ -183,8 +183,27 @@
   }
   window.setArcadeExitVisible = setArcadeExitVisible;
 
-  window.setArcadeModeSelect = function(show) {
+  let arcadeContextBackAction = null;
+  window.setArcadeModeSelect = function(show, options) {
     document.body.classList.toggle('arcade-mode-select', !!show);
+    const button = document.getElementById('arcade-mode-back');
+    if (!button) return;
+    const config = options && typeof options === 'object' ? options : {};
+    const label = String(config.label || 'ARCADE').replace(/^◀\s*/, '');
+    button.textContent = `◀ ${label}`;
+    button.setAttribute('aria-label', `Back to ${label.toLowerCase()}`);
+    arcadeContextBackAction = typeof config.action === 'function' ? config.action : null;
+  };
+
+  window.runArcadeContextBack = function() {
+    if (typeof SFX !== 'undefined' && typeof SFX.menuSelect === 'function') SFX.menuSelect();
+    if (arcadeContextBackAction) {
+      const action = arcadeContextBackAction;
+      arcadeContextBackAction = null;
+      action();
+      return;
+    }
+    nav('lobby');
   };
 
   window.confirmExitArcade = function() {
@@ -241,8 +260,12 @@
 
     if (onLobby) {
       if (!window._arcadeSessionStarted) {
+        const playerTag = typeof PlayerID !== 'undefined' ? PlayerID.get() : null;
+        if (!playerTag) { nav('signin'); return; }
         window._arcadeSessionStarted = true;
-        if (typeof openCharSelect === 'function') { openCharSelect('lobby'); return; }
+        if (typeof hasPlayerCharacter === 'function' && !hasPlayerCharacter(playerTag)) {
+          if (typeof openCharSelect === 'function') { openCharSelect('lobby'); return; }
+        }
       }
       if (typeof initArcadeFloat === 'function') initArcadeFloat();
       if (typeof drawPixelIcons === 'function') drawPixelIcons();
@@ -897,19 +920,19 @@ function getLeaderboardKey(game, options) {
 
 function getLeaderboardBoards() {
   return [
-    { key: 'whack-classic-easy', label: 'FRENZY · NORMAL', color: '#00e5ff', field: 'score' },
-    { key: 'whack-classic-hard', label: 'FRENZY · HARD', color: '#00e5ff', field: 'score' },
-    { key: 'whack-frenzy-easy', label: 'SURVIVAL · NORMAL', color: '#ff00cc', field: 'score' },
-    { key: 'whack-frenzy-hard', label: 'SURVIVAL · HARD', color: '#ff00cc', field: 'score' },
-    { key: 'match-hard', label: 'MATCH · HARD', color: '#ffe61a', field: 'seconds' },
-    { key: 'match-challenge', label: 'MATCH · CHALLENGE', color: '#ff9933', field: 'seconds' },
-    { key: 'match-impossible', label: 'MATCH · IMPOSSIBLE', color: '#ff4444', field: 'score' },
+    { key: 'whack-classic-easy', label: '30 SECOND RUSH · NORMAL', color: '#b884ff', field: 'score' },
+    { key: 'whack-classic-hard', label: '30 SECOND RUSH · HARD', color: '#b884ff', field: 'score' },
+    { key: 'whack-frenzy-easy', label: '3 LIVES · NORMAL', color: '#33cc66', field: 'score' },
+    { key: 'whack-frenzy-hard', label: '3 LIVES · HARD', color: '#33cc66', field: 'score' },
+    { key: 'match-hard', label: 'MEMORY MOBE · HARD', color: '#ffe61a', field: 'seconds' },
+    { key: 'match-challenge', label: 'MEMORY MOBE · CHALLENGE', color: '#ff9933', field: 'seconds' },
+    { key: 'match-impossible', label: 'MEMORY MOBE · IMPOSSIBLE', color: '#ff4444', field: 'score' },
     { key: 'space', label: 'SPACE MOBE', color: '#33ff66', field: 'score' },
-    { key: 'signal', label: 'SIGNAL DRIFT', color: '#00e5ff', field: 'score' },
+    { key: 'signal', label: 'SPACE AND SOUND', color: '#8f73ff', field: 'score' },
     { key: 'snoob', label: 'SNOOB', color: '#e4b65f', field: 'score' },
-    { key: 'consume', label: 'TILE SWAP · GRID', color: '#38d8ff', field: 'score' },
-    { key: 'consume-words', label: 'TILE SWAP · WORDS', color: '#ff75d5', field: 'score' },
-    { key: 'consume-numbers', label: 'TILE SWAP · RUMMY', color: '#ffb35c', field: 'score' },
+    { key: 'consume', label: 'TILE SWAP · GRID', color: '#ff7180', field: 'score' },
+    { key: 'consume-words', label: 'TILE SWAP · WORDS', color: '#ff7180', field: 'score' },
+    { key: 'consume-numbers', label: 'TILE SWAP · RUMMY', color: '#ff7180', field: 'score' },
     { key: 'pet', label: 'PET MOBE', color: '#ff6ec7', field: 'score' },
   ];
 }
@@ -917,13 +940,13 @@ function getLeaderboardBoards() {
 function getLeaderboardGroups() {
   const boards = getLeaderboardBoards();
   return [
-    { title: 'WHACK', keys: ['whack-classic-easy', 'whack-classic-hard', 'whack-frenzy-easy', 'whack-frenzy-hard'] },
-    { title: 'MATCH', keys: ['match-hard', 'match-challenge', 'match-impossible'] },
-    { title: 'SPACE', keys: ['space'] },
-    { title: 'SIGNAL', keys: ['signal'] },
-    { title: 'SNOOB', keys: ['snoob'] },
-    { title: 'TILE SWAP', keys: ['consume', 'consume-words', 'consume-numbers'] },
-    { title: 'PET MOBE', keys: ['pet'] },
+    { id: 'whack', tab: 'WHACK', title: 'WHACK-A-MOBE', color: '#b884ff', keys: ['whack-classic-easy', 'whack-classic-hard', 'whack-frenzy-easy', 'whack-frenzy-hard'] },
+    { id: 'memory', tab: 'MEMORY', title: 'MEMORY MOBE', color: '#ffe61a', keys: ['match-hard', 'match-challenge', 'match-impossible'] },
+    { id: 'space', tab: 'SPACE', title: 'SPACE MOBE', color: '#33ff66', keys: ['space'] },
+    { id: 'sound', tab: 'SOUND', title: 'SPACE AND SOUND', color: '#8f73ff', keys: ['signal'] },
+    { id: 'snoob', tab: 'SNOOB', title: 'SNOOB', color: '#e4b65f', keys: ['snoob'] },
+    { id: 'tile', tab: 'TILE SWAP', title: 'TILE SWAP', color: '#ff7180', keys: ['consume', 'consume-words', 'consume-numbers'] },
+    { id: 'pet', tab: 'PET', title: 'PET MOBE', color: '#ff6ec7', keys: ['pet'] },
   ].map(group => ({ ...group, boards: group.keys.map(key => boards.find(b => b.key === key)).filter(Boolean) }));
 }
 
@@ -931,7 +954,7 @@ function getLeaderboardBoardMeta(game, options) {
   const key = getLeaderboardKey(game, options);
   const board = getLeaderboardBoards().find(b => b.key === key);
   if (board) return board;
-  const fallbackColor = game === 'whack' ? '#ff00cc' : game === 'match' ? '#ffe61a' : game === 'signal' ? '#00e5ff' : game === 'snoob' ? '#e4b65f' : game === 'consume' ? '#38d8ff' : '#33ff66';
+  const fallbackColor = game === 'whack' ? '#ff00cc' : game === 'match' ? '#ffe61a' : game === 'signal' ? '#8f73ff' : game === 'snoob' ? '#e4b65f' : game === 'consume' ? '#ff7180' : '#33ff66';
   return { key, label: key.toUpperCase(), color: fallbackColor, field: 'score' };
 }
 
@@ -1004,6 +1027,7 @@ async function finishPlayerSignIn(tag, restore) {
   PlayerID.set(tag);
   if (restore) await restorePlayerProgress(tag);
   window._forcePlayerSignIn = false;
+  window._arcadeSessionStarted = false;
   updatePlayerStatus();
   SFX.menuSelect();
   nav('lobby');
@@ -1335,13 +1359,19 @@ function buildArcadeResultCard(options) {
   const rowsLine = options.rowsLine || '';
   const statusLine = options.statusLine || '';
   const buttons = options.buttons || '';
+  const showBoard = options.showBoard !== false;
+  const showSaveArea = options.showSaveArea !== false;
   const saveMarginTop = Object.prototype.hasOwnProperty.call(options, 'saveMarginTop') ? options.saveMarginTop : 26;
+  const playerTag = (() => {
+    try { return PlayerID.get() || ''; }
+    catch (e) { return ''; }
+  })();
   const attr = value => String(value ?? '').replace(/[&"<>\u0000-\u001f]/g, ch => ({
     '&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;'
   }[ch] || ''));
   return `
-    <div class="arcade-cabinet" style="--nc:${color};max-width:${options.maxWidth || 390}px;width:92vw;position:relative">
-      <div id="${artTargetId}" style="position:absolute;inset:0;z-index:0;opacity:0.40;transform:scale(1.26) translateY(10px);filter:saturate(1.18) brightness(1.02);pointer-events:none;mix-blend-mode:screen"></div>
+    <div class="arcade-cabinet arcade-result-card" style="--nc:${color};--result-color:${color};max-width:${options.maxWidth || 430}px;width:92vw;position:relative">
+      <div id="${artTargetId}" class="arcade-result-art"></div>
       <div class="arcade-cab-rail"></div>
       <div class="arcade-cab-marquee" style="background:${options.marqueeSolid ? (options.marqueeBg || color) : `linear-gradient(135deg,${color},${options.marqueeEnd || '#0e0b1d'})`};opacity:0.9">${options.marquee || 'GAME OVER'}</div>
       <div class="arcade-cab-screen" style="position:relative;z-index:2;overflow:hidden;padding:14px 14px 12px;min-height:${options.minHeight || 0}px;background:rgba(5,3,16,0.90)">
@@ -1354,15 +1384,15 @@ function buildArcadeResultCard(options) {
             ${rowsLine ? `<div style="font-family:'VCR',monospace;font-size:12px;letter-spacing:2px;color:rgba(242,239,232,0.34)">${rowsLine}</div>` : ''}
             ${statusLine ? `<div id="${statusId}" style="font-family:'VCR',monospace;font-size:11px;letter-spacing:2px;color:${color};text-shadow:0 0 8px ${color}66">${statusLine}</div>` : `<div id="${statusId}" style="display:none"></div>`}
           </div>
-          <div id="${boardTargetId}"></div>
-          ${canSave ? `<div data-save-row="arcade" style="width:min(100%,280px);height:40px;margin:${saveMarginTop}px auto 0;display:flex;align-items:stretch;gap:8px">
-            <input id="${inputId}" data-arcade-name="1" maxlength="12" autocomplete="off" spellcheck="false" placeholder="ENTER NAME"
+          ${showBoard ? `<div id="${boardTargetId}" class="arcade-result-board"></div>` : `<div id="${boardTargetId}" hidden></div>`}
+          ${showSaveArea && canSave ? `<div class="arcade-result-save-label">${playerTag ? 'SAVE TO YOUR ARCADE PROFILE' : 'SAVE YOUR SCORE'}</div><div data-save-row="arcade" class="arcade-result-save" style="margin-top:${saveMarginTop}px">
+            <input id="${inputId}" data-arcade-name="1" maxlength="12" autocomplete="off" spellcheck="false" placeholder="ARCADE NAME" value="${attr(playerTag)}"
               style="flex:1;min-width:0;height:40px;box-sizing:border-box;background:#0e0b22;border:1.5px solid ${color};border-radius:4px;padding:10px 12px;font-family:'VCR',monospace;font-size:15px;letter-spacing:4px;color:#fff;text-align:center;text-transform:uppercase;outline:none">
             <button id="${saveButtonId}" type="button" aria-label="Submit score" data-arcade-save="1"
               data-board-key="${attr(boardKey)}" data-local-score="${attr(saveValue)}" data-remote-score="${attr(saveValue)}" data-seconds="${attr(options.seconds || 0)}" data-extra="${attr(options.extra || '')}" data-ascending="${options.ascending ? 'true' : 'false'}"
               data-input-id="${attr(inputId)}" data-status-id="${attr(statusId)}" data-board-target-id="${attr(boardTargetId)}" data-neon-color="${attr(color)}" data-field="${attr(boardField)}" data-art-target-id="${attr(artTargetId)}" data-art-game="${attr(artGame)}" data-eligible="true"
               style="flex:0 0 44px;width:44px;height:40px;box-sizing:border-box;background:${color}22;border:1.5px solid ${color};border-radius:4px;color:${color};cursor:pointer;text-shadow:0 0 8px ${color}66;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center">${submitLabel}</button>
-          </div>` : `<div style="width:min(100%,280px);margin:${saveMarginTop}px auto 0;font-family:'VCR',monospace;font-size:10px;letter-spacing:2px;line-height:1.5;color:rgba(242,239,232,0.42);text-align:center">CLEAR THE MODE TO SAVE A LEADERBOARD SCORE</div>`}
+          </div>` : showSaveArea ? `<div class="arcade-result-ineligible" style="margin-top:${saveMarginTop}px">CLEAR THE MODE TO SAVE A LEADERBOARD SCORE</div>` : ''}
         </div>
       </div>
       <div class="arcade-cab-foot" style="position:relative;z-index:2;flex-direction:column;align-items:center;gap:8px;background:rgba(5,3,16,0.90);padding:22px 16px 18px;border-top:1px solid rgba(242,239,232,0.12)">${buttons}</div>
@@ -1552,39 +1582,84 @@ window.closeLbOverlay = function() {
   const ov = document.getElementById('lb-overlay');
   if (ov) ov.style.display = 'none';
 };
-window._lbActiveTab = 'whack';
+window._lbActiveTab = 'whack-classic-easy';
+window._lbLastByGroup = {};
+
+function leaderboardFilterButton(label, key, activeKey, color) {
+  return `<button class="lb-filter ${activeKey === key ? 'active' : ''}"
+    style="--lb-color:${color}"
+    onclick="renderLbTabs('${key}')">${label}</button>`;
+}
+
+function leaderboardFilters(group, activeKey) {
+  if (!group || group.boards.length < 2) return '';
+  if (group.id === 'whack') {
+    const rush = activeKey.startsWith('whack-classic');
+    const hard = activeKey.endsWith('-hard');
+    const difficulty = hard ? 'hard' : 'easy';
+    const family = rush ? 'classic' : 'frenzy';
+    return `<div class="lb-filter-panel">
+      <div class="lb-filter-group">
+        <span class="lb-filter-label">MODE</span>
+        <div class="lb-filter-row" style="--lb-columns:2">
+          ${leaderboardFilterButton('30 SEC RUSH', `whack-classic-${difficulty}`, activeKey, '#b884ff')}
+          ${leaderboardFilterButton('3 LIVES', `whack-frenzy-${difficulty}`, activeKey, '#33cc66')}
+        </div>
+      </div>
+      <div class="lb-filter-group">
+        <span class="lb-filter-label">DIFFICULTY</span>
+        <div class="lb-filter-row" style="--lb-columns:2">
+          ${leaderboardFilterButton('NORMAL', `whack-${family}-easy`, activeKey, rush ? '#b884ff' : '#33cc66')}
+          ${leaderboardFilterButton('HARD', `whack-${family}-hard`, activeKey, rush ? '#b884ff' : '#33cc66')}
+        </div>
+      </div>
+    </div>`;
+  }
+  const labels = group.id === 'memory'
+    ? { 'match-hard': 'HARD', 'match-challenge': 'CHALLENGE', 'match-impossible': 'IMPOSSIBLE' }
+    : { consume: 'GRID', 'consume-words': 'WORDS', 'consume-numbers': 'RUMMY' };
+  return `<div class="lb-filter-panel">
+    <div class="lb-filter-group">
+      <span class="lb-filter-label">MODE</span>
+      <div class="lb-filter-row" style="--lb-columns:${group.boards.length}">
+        ${group.boards.map(board => leaderboardFilterButton(labels[board.key] || board.label, board.key, activeKey, board.color)).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+window.selectLeaderboardGroup = function(groupId) {
+  const group = getLeaderboardGroups().find(item => item.id === groupId);
+  if (!group) return;
+  renderLbTabs(window._lbLastByGroup[groupId] || group.boards[0]?.key);
+};
+
 function renderLbTabs(activeGame) {
-  window._lbActiveTab = activeGame;
   const games = getLeaderboardBoards();
   const groups = getLeaderboardGroups();
   const tabs = document.getElementById('lb-tabs');
   const content = document.getElementById('lb-tab-content');
   if (!tabs || !content) return;
-  tabs.style.cssText = 'display:block;margin-bottom:14px';
-  tabs.innerHTML = groups.map(group => `
-    <div style="width:100%;margin-bottom:10px">
-      <div style="font-family:'VCR',monospace;font-size:10px;letter-spacing:3px;color:rgba(242,239,232,0.35);margin:0 0 6px 2px">${group.title}</div>
-      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">
-        ${group.boards.map(g =>
-          `<button onclick="renderLbTabs('${g.key}')"
-            style="font-family:'VCR',monospace;font-size:11px;letter-spacing:1.2px;line-height:1.25;min-height:38px;padding:8px 10px;border-radius:4px;cursor:pointer;text-align:left;
-              background:${activeGame===g.key?g.color+'22':'rgba(242,239,232,0.035)'};
-              border:${activeGame===g.key?`2px solid ${g.color}`:'1.5px solid rgba(242,239,232,0.12)'};
-              color:${activeGame===g.key?g.color:'rgba(242,239,232,0.62)'};
-              ${activeGame===g.key?`text-shadow:0 0 8px ${g.color}88`:''}"
-          >${g.label}</button>`
-        ).join('')}
-      </div>
+  const selectedGroup = groups.find(group => group.keys.includes(activeGame)) || groups[0];
+  const selectedBoard = games.find(board => board.key === activeGame) || selectedGroup.boards[0];
+  if (!selectedBoard) return;
+  activeGame = selectedBoard.key;
+  window._lbActiveTab = activeGame;
+  window._lbLastByGroup[selectedGroup.id] = activeGame;
+  tabs.innerHTML = `
+    <div class="lb-game-tabs">
+      ${groups.map(group => `<button class="lb-game-tab ${group.id === selectedGroup.id ? 'active' : ''}"
+        style="--lb-color:${group.color}"
+        onclick="selectLeaderboardGroup('${group.id}')">${group.tab}</button>`).join('')}
     </div>
-  `).join('');
-  const g = games.find(x=>x.key===activeGame);
+    ${leaderboardFilters(selectedGroup, activeGame)}`;
+  const g = selectedBoard;
   content.innerHTML = `
-    <div style="border:1.5px solid ${(g && g.color) || '#ffe61a'}55;background:rgba(5,3,16,0.72);border-radius:6px;padding:12px 10px 14px;box-shadow:inset 0 0 35px rgba(0,0,0,0.55)">
-      <div style="font-family:'Bebas Neue',cursive;font-size:30px;letter-spacing:4px;line-height:1;color:${(g && g.color) || '#ffe61a'};text-shadow:0 0 12px ${((g && g.color) || '#ffe61a')}88;margin-bottom:8px">${g ? g.label : activeGame}</div>
+    <div class="lb-scoreboard" style="--lb-color:${g.color}">
+      <div class="lb-scoreboard-title">${g.label}</div>
       <div id="lb-remote-${activeGame}"></div>
     </div>`;
-  loadRemoteBoard(activeGame, `lb-remote-${activeGame}`, g ? g.color : '#ffe61a', g ? g.field : 'score');
-  content.style.cssText = 'line-height:1.8';
+  loadRemoteBoard(activeGame, `lb-remote-${activeGame}`, g.color, g.field);
 }
 
 window.toggleArcadeMute = function() {
@@ -1624,9 +1699,43 @@ const GAME_CHARS = [
   { name: 'THOMAS',  color: '#22cc99', emoji: '🙂', happy: '😄', sad: '😢', img: 'characters/thomas.png', imgWhack: 'characters/thomas_whack.png', imgHappy: 'characters/thomas_happy.png',  imgSad: 'characters/thomas_sad.png',  tilt: 0 },
 ];
 
-// Global character selection (persisted in localStorage by name so reordering is safe)
+// Character preferences follow the same player code used across the arcade.
+const PLAYER_CHARACTER_PROFILES_KEY = 'moberino-character-profiles-v1';
+const PLAYER_CHARACTER_MIGRATION_KEY = 'moberino-character-profile-migrated-v1';
+
+function getPlayerCharacterProfiles() {
+  try {
+    const profiles = JSON.parse(localStorage.getItem(PLAYER_CHARACTER_PROFILES_KEY) || '{}');
+    return profiles && typeof profiles === 'object' && !Array.isArray(profiles) ? profiles : {};
+  } catch (e) { return {}; }
+}
+function getPlayerCharacterName(tag) {
+  const name = getPlayerCharacterProfiles()[String(tag || '')];
+  return GAME_CHARS.some(c => c.name === name) ? name : null;
+}
+function hasPlayerCharacter(tag) {
+  return !!getPlayerCharacterName(tag);
+}
+function savePlayerCharacter(tag, name) {
+  if (!tag || !GAME_CHARS.some(c => c.name === name)) return;
+  const profiles = getPlayerCharacterProfiles();
+  profiles[tag] = name;
+  try { localStorage.setItem(PLAYER_CHARACTER_PROFILES_KEY, JSON.stringify(profiles)); } catch (e) {}
+}
+function migrateCurrentPlayerCharacter() {
+  const tag = PlayerID.get();
+  if (!tag || hasPlayerCharacter(tag)) return;
+  try {
+    if (localStorage.getItem(PLAYER_CHARACTER_MIGRATION_KEY)) return;
+    const legacyName = localStorage.getItem('moberino-char-name');
+    if (GAME_CHARS.some(c => c.name === legacyName)) savePlayerCharacter(tag, legacyName);
+    localStorage.setItem(PLAYER_CHARACTER_MIGRATION_KEY, '1');
+  } catch (e) {}
+}
+migrateCurrentPlayerCharacter();
+
 function getGlobalChar() {
-  const name = localStorage.getItem('moberino-char-name');
+  const name = getPlayerCharacterName(PlayerID.get()) || localStorage.getItem('moberino-char-name');
   if (name) {
     const idx = GAME_CHARS.findIndex(c => c.name === name);
     if (idx >= 0) return idx;
@@ -1637,6 +1746,7 @@ function getGlobalChar() {
 function setGlobalChar(i) {
   localStorage.setItem('moberino-char-name', GAME_CHARS[i].name);
   localStorage.setItem('moberino-char', String(i));
+  savePlayerCharacter(PlayerID.get(), GAME_CHARS[i].name);
 }
 
 // Preload all character images up front so canvas draws are instant
@@ -1755,6 +1865,7 @@ function updateCharPreview(i) {
 
 window.confirmCharSelect = function() {
   const returnTo = window._charSelectReturn || 'lobby';
+  setGlobalChar(getGlobalChar());
   nav(returnTo === 'lobby' && !PlayerID.get() ? 'signin' : returnTo);
 };
 

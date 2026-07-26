@@ -601,6 +601,43 @@
   border-radius: 7px;
   background: rgba(12,26,39,0.9);
 }
+.snoob-mode-frame .snoob-mode-btn.snoob-mode-primary {
+  width: min(100%, 480px);
+  min-height: 190px;
+  align-self: center;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border-width: 2px;
+  border-color: #e4b65f;
+  background: linear-gradient(135deg,rgba(228,182,95,.2),rgba(12,26,39,.94));
+  box-shadow: 0 0 24px rgba(228,182,95,.16);
+}
+.snoob-mode-frame .snoob-mode-btn.snoob-mode-primary strong { font-size: 48px; color: #ffe6a3; }
+.snoob-mode-frame .snoob-mode-btn.snoob-mode-secondary {
+  width: min(100%, 480px);
+  min-height: 84px;
+  align-self: center;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px;
+  opacity: .82;
+}
+.snoob-mode-frame .snoob-mode-btn.snoob-mode-secondary strong {
+  font-size: 21px;
+  letter-spacing: 3px;
+  white-space: nowrap;
+}
+.snoob-mode-frame .snoob-mode-btn.snoob-mode-secondary span {
+  max-width: 210px;
+  text-align: right;
+  font-size: 12px;
+  line-height: 1.5;
+  letter-spacing: .5px;
+}
+.snoob-mode-frame .snoob-mode-btn.snoob-mode-primary span { font-size:12px;line-height:1.5;letter-spacing:.7px; }
 .snoob-mode-frame .snoob-mode-btn:hover {
   border-color: #e4b65f;
   background: color-mix(in srgb, #e4b65f 13%, rgba(12,26,39,0.94));
@@ -608,3 +645,172 @@
 }
 .snoob-mode-frame .snoob-mode-btn strong { color: #f7f1df; text-shadow: none; }
 .snoob-mode-frame .snoob-mode-btn span { color: rgba(247,241,223,0.78); }
+
+/* Hybrid trial: shared arcade hierarchy with Snoob's crisp, restrained finish. */
+.snoob-mode-frame {
+  width:min(100%,720px);
+}
+.snoob-mode-frame .snoob-mode-banner {
+  width:calc(100% + 32px);
+  margin:0 -16px;
+  padding:14px 16px 15px;
+  box-sizing:border-box;
+  background:linear-gradient(180deg,rgba(228,182,95,.105),rgba(228,182,95,.025));
+}
+.snoob-mode-frame .snoob-mode-banner .snoob-title {
+  font-size:clamp(42px,8vw,60px);
+  line-height:.95;
+  color:#f7f1df;
+  text-shadow:3px 3px 0 #111318,0 0 8px rgba(228,182,95,.2);
+}
+.snoob-mode-frame .snoob-modes {
+  margin-top:10px;
+  gap:10px;
+}
+.snoob-mode-frame .snoob-mode-btn.snoob-mode-primary {
+  width:100%;
+  min-height:190px;
+  display:grid;
+  grid-template-columns:minmax(0,42%) minmax(0,1fr);
+  align-items:stretch;
+  gap:0;
+  padding:0;
+  overflow:hidden;
+  border:2px solid #e4b65f;
+  border-radius:18px;
+  background:linear-gradient(135deg,color-mix(in srgb,#e4b65f var(--arcade-card-wash),#0c1a27),#070911);
+  box-shadow:0 14px 34px rgba(0,0,0,.42),0 0 14px color-mix(in srgb,#e4b65f var(--arcade-card-hero-glow),transparent);
+  text-align:left;
+}
+.snoob-hero-art {
+  width:100%;
+  height:100%;
+  align-self:stretch;
+  aspect-ratio:auto;
+  display:grid !important;
+  place-items:center;
+  box-sizing:border-box;
+  padding:10px;
+  overflow:hidden;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.snoob-hero-grid {
+  width:min(100%,178px);
+  display:grid !important;
+  grid-template-columns:repeat(4,1fr);
+  grid-template-rows:repeat(3,1fr);
+  gap:5px;
+}
+.snoob-mode-frame .snoob-mode-btn.snoob-mode-primary > .snoob-mode-copy {
+  align-self:center;
+  padding:14px 16px;
+}
+.snoob-hero-grid > i {
+  min-width:0;
+  aspect-ratio:1;
+  position:relative;
+  display:block;
+  border:1px solid rgba(228,182,95,.08);
+  border-radius:4px;
+  background:rgba(228,182,95,.025);
+}
+.snoob-hero-grid > i[style]::before {
+  content:"";
+  position:absolute;
+  left:20%;
+  right:20%;
+  top:12%;
+  height:42%;
+  border:1.5px solid var(--cap);
+  border-bottom:0;
+  border-radius:50% 50% 4px 4px;
+  background:radial-gradient(ellipse at 34% 25%,#fff 0 11%,rgba(255,255,255,.5) 12% 34%,transparent 35%),linear-gradient(145deg,#f5f2f4,#c9c6ce);
+}
+.snoob-hero-grid > i[style]::after {
+  content:"";
+  position:absolute;
+  left:16%;
+  right:16%;
+  top:49%;
+  height:31%;
+  border:1.5px solid #151318;
+  border-radius:4px 4px 50% 50%;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--cap),white 18%),var(--cap) 55%,color-mix(in srgb,var(--cap),black 20%));
+  box-shadow:inset 0 5px rgba(255,255,255,.18),0 0 6px color-mix(in srgb,var(--cap) 55%,transparent);
+}
+.snoob-mode-copy {
+  min-width:0;
+  display:flex !important;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:7px;
+}
+.snoob-mode-frame .snoob-mode-btn.snoob-mode-primary .snoob-mode-copy strong {
+  color:#ffe6a3;
+  font-size:30px;
+  letter-spacing:3px;
+  line-height:1;
+  text-shadow:none;
+  white-space:nowrap;
+}
+.snoob-mode-frame .snoob-mode-btn.snoob-mode-primary .snoob-mode-copy > span {
+  color:rgba(247,241,223,.78);
+  font:11px/1.45 'VCR',monospace;
+  letter-spacing:.65px;
+}
+.snoob-mode-frame .snoob-mode-btn.snoob-mode-secondary {
+  width:100%;
+  min-height:72px;
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr);
+  align-items:center;
+  justify-content:initial;
+  gap:8px;
+  padding:6px 10px;
+  border:1px solid rgba(247,241,223,.46);
+  border-radius:18px;
+  background:linear-gradient(180deg,color-mix(in srgb,#e4b65f var(--arcade-card-wash),#0c1a27),#070911);
+  box-shadow:0 12px 30px rgba(0,0,0,.38),0 0 10px color-mix(in srgb,#e4b65f var(--arcade-card-glow),transparent);
+  opacity:1;
+  text-align:left;
+}
+.snoob-mode-icon {
+  width:38px;
+  height:38px;
+  color:#e4b65f;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2.4;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.snoob-mode-frame .snoob-mode-btn.snoob-mode-secondary .snoob-mode-copy strong {
+  color:#f7f1df;
+  font-size:24px;
+  letter-spacing:2.2px;
+  line-height:1;
+  text-shadow:none;
+}
+.snoob-mode-frame .snoob-mode-btn.snoob-mode-secondary .snoob-mode-copy > span {
+  max-width:none;
+  color:rgba(247,241,223,.68);
+  font:11px/1.35 'VCR',monospace;
+  letter-spacing:.5px;
+  text-align:left;
+}
+body.on-snoob.arcade-mode-select #arcade-float,
+body.on-snoob.arcade-selection-open #arcade-float {
+  display:none;
+}
+@media(max-width:620px) {
+  .snoob-mode-frame .snoob-mode-btn.snoob-mode-primary {
+    min-height:148px;
+    grid-template-columns:minmax(150px,34%) minmax(0,1fr);
+    padding:0;
+  }
+  .snoob-hero-art { width:100%;height:100%;aspect-ratio:auto;padding:12px; }
+  .snoob-mode-frame .snoob-mode-btn.snoob-mode-primary .snoob-mode-copy strong { font-size:36px; }
+}

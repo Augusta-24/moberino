@@ -17,17 +17,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Russo+One&family=Permanent+Marker&display=swap" rel="stylesheet">
 <link rel="preload" as="fetch" href="arcademusic.mp3" type="audio/mpeg" crossorigin="anonymous">
-<link rel="stylesheet" href="css/arcade.css">
-<link rel="stylesheet" href="css/games/face-factory.css">
-<link rel="stylesheet" href="css/games/whack.css">
-<link rel="stylesheet" href="css/games/space.css">
+<link rel="stylesheet" href="css/arcade.css?v=20260726-11">
+<link rel="stylesheet" href="css/games/face-factory.css?v=20260726-8">
+    <link rel="stylesheet" href="css/games/whack.css?v=20260726-13">
+<link rel="stylesheet" href="css/games/space.css?v=20260726-10">
 <link rel="stylesheet" href="css/games/journey.css?v=20260724-63">
-<link rel="stylesheet" href="css/games/gridlock.css?v=20260725-50">
-<link rel="stylesheet" href="css/games/signal.css">
-<link rel="stylesheet" href="css/games/match.css">
-<link rel="stylesheet" href="css/games/snoob.css">
-<link rel="stylesheet" href="css/games/consume.css">
-<link rel="stylesheet" href="css/games/consume-rack.css">
+    <link rel="stylesheet" href="css/games/gridlock.css?v=20260726-62">
+  <link rel="stylesheet" href="css/games/signal.css?v=20260726-10">
+<link rel="stylesheet" href="css/games/match.css?v=20260726-5">
+    <link rel="stylesheet" href="css/games/snoob.css?v=20260726-9">
+<link rel="stylesheet" href="css/games/consume.css?v=20260726-3">
+<link rel="stylesheet" href="css/games/consume-rack.css?v=20260726-8">
 <link rel="stylesheet" href="css/games/pet.css">
 <script>
 
@@ -132,9 +132,8 @@
 </div>
 <div class="lobby-wrap">
 <button id="arcade-player-status" type="button" onclick="openPlayerSignIn()" aria-label="Change arcade login">LOGGED IN AS <strong></strong></button>
-<div style="text-align:center;padding:4px 0 0">
-<img alt="MOBERINO ARCADE" src="arcade_title.PNG" style="width:67.5%;max-width:450px;height:auto;display:block;margin:0 auto;filter:drop-shadow(0 0 12px rgba(255,0,204,0.5)) drop-shadow(0 0 28px rgba(255,0,204,0.2))"/>
-<div style="font-family:'VCR',monospace;font-size:9px;letter-spacing:3px;color:rgba(242,239,232,0.45);margin-top:7px">ARCADE — INSERT COIN TO PLAY</div>
+<div class="arcade-lobby-logo">
+<img alt="MOBERINO ARCADE" src="arcade_title.PNG"/>
 </div>
 <div id="game-carousel">
 <div class="carousel-item" id="ci-facefactory">
@@ -351,39 +350,39 @@
 </div>
 </div>
 <div class="carousel-item" id="ci-signal">
-<div class="game-card" onclick="SFX.menuSelect();nav('signal')" style="border-color:#00e5ff55;cursor:pointer">
+<div class="game-card" onclick="SFX.menuSelect();nav('signal')" style="border-color:#8f73ff66;cursor:pointer">
 <div class="game-card-art" style="background:linear-gradient(160deg,#030116 0%,#071333 52%,#120029 100%)">
 <svg height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0" viewBox="0 0 200 240" width="100%">
 <rect fill="#02040e" height="240" width="200"/>
-<g opacity="0.42" stroke="#00e5ff" stroke-width="1">
+<g opacity="0.42" stroke="#8f73ff" stroke-width="1">
 <path d="M0 54 C24 42 42 66 66 54 S110 42 134 54 S176 66 200 54" fill="none"/>
 <path d="M0 94 C24 82 42 106 66 94 S110 82 134 94 S176 106 200 94" fill="none" opacity="0.55"/>
 <path d="M0 134 C24 122 42 146 66 134 S110 122 134 134 S176 146 200 134" fill="none" opacity="0.35"/>
 </g>
 <g opacity="0.86">
-<circle cx="45" cy="58" fill="#00e5ff" r="6"/>
+<circle cx="45" cy="58" fill="#8f73ff" r="6"/>
 <circle cx="86" cy="82" fill="#ffe61a" r="8"/>
 <circle cx="150" cy="64" fill="#ff2db8" r="7"/>
 <circle cx="122" cy="124" fill="#7b61ff" r="10"/>
 <circle cx="57" cy="144" fill="#33ff66" r="7"/>
 </g>
 <g fill="none" stroke-linecap="round">
-<path d="M38 184 L52 174 L66 184" stroke="#00e5ff" stroke-width="3"/>
-<path d="M52 174 L52 214" stroke="#00e5ff" stroke-width="2"/>
+<path d="M38 184 L52 174 L66 184" stroke="#8f73ff" stroke-width="3"/>
+<path d="M52 174 L52 214" stroke="#8f73ff" stroke-width="2"/>
 <path d="M87 183 L101 171 L115 183" stroke="#ffe61a" stroke-width="3"/>
 <path d="M101 171 L101 214" stroke="#ffe61a" stroke-width="2"/>
 <path d="M136 184 L150 172 L164 184" stroke="#ff2db8" stroke-width="3"/>
 <path d="M150 172 L150 214" stroke="#ff2db8" stroke-width="2"/>
 </g>
-<rect fill="#00e5ff22" height="16" rx="3" stroke="#00e5ff" width="132" x="34" y="205"/>
-<rect fill="#00e5ff" height="8" rx="2" width="84" x="40" y="209"/>
+<rect fill="#8f73ff22" height="16" rx="3" stroke="#8f73ff" width="132" x="34" y="205"/>
+<rect fill="#8f73ff" height="8" rx="2" width="84" x="40" y="209"/>
 </svg>
 </div>
 <div class="game-card-info">
-<div class="game-card-badge" style="background:#00e5ff22;color:#00e5ff;border:1px solid #00e5ff66">MUSIC</div>
-<div class="game-card-marquee" style="color:#00e5ff;text-shadow:0 0 20px #00e5ff88">SPACE AND SOUND</div>
+<div class="game-card-badge" style="background:#8f73ff22;color:#8f73ff;border:1px solid #8f73ff66">MUSIC</div>
+<div class="game-card-marquee" style="color:#8f73ff;text-shadow:0 0 20px #8f73ff88">SPACE AND SOUND</div>
 <div class="game-card-desc">BUILD A TRACK</div>
-<div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#00e5ff22;border:1.5px solid #00e5ff;border-radius:5px;padding:10px 24px;color:#00e5ff;width:100%;text-shadow:0 0 8px #00e5ff66;text-align:center">▶ PLAY</div>
+<div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#8f73ff22;border:1.5px solid #8f73ff;border-radius:5px;padding:10px 24px;color:#8f73ff;width:100%;text-shadow:0 0 8px #8f73ff66;text-align:center">▶ PLAY</div>
 </div>
 </div>
 </div>
@@ -441,11 +440,11 @@
 </div>
 </div>
 <div class="carousel-item" id="ci-consume">
-<div class="game-card" onclick="SFX.menuSelect();nav('consume')" style="border-color:#38d8ff66;cursor:pointer">
+<div class="game-card" onclick="SFX.menuSelect();nav('consume')" style="border-color:#ff718066;cursor:pointer">
 <div class="game-card-art" style="background:#031018">
 <svg height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0" viewBox="0 0 200 240" width="100%">
 <rect fill="#031018" height="240" width="200"/>
-<g opacity="0.16" stroke="#38d8ff" stroke-width="1">
+<g opacity="0.16" stroke="#ff7180" stroke-width="1">
 <path d="M0 58 H200"/>
 <path d="M0 118 H200"/>
 <path d="M0 178 H200"/>
@@ -459,8 +458,8 @@
 <text fill="#f2efe8" x="19" y="27">C</text>
 </g>
 <g transform="translate(80 32) rotate(5)">
-<rect fill="#102438" height="38" rx="7" stroke="#38d8ff" width="38"/>
-<text fill="#38d8ff" x="19" y="27">A</text>
+<rect fill="#102438" height="38" rx="7" stroke="#ff7180" width="38"/>
+<text fill="#ff7180" x="19" y="27">A</text>
 </g>
 <g transform="translate(130 47) rotate(8)">
 <rect fill="#102438" height="38" rx="7" stroke="#f2efe8" stroke-opacity=".32" width="38"/>
@@ -486,20 +485,20 @@
 <rect fill="#352614" height="32" rx="6" stroke="#ffb35c" stroke-opacity=".78" width="32"/>
 <text fill="#ffb35c" font-size="20" x="16" y="23">7</text>
 </g>
-<path d="M45 169 C66 153 89 153 110 169 S153 185 174 169" fill="none" stroke="#38d8ff" stroke-linecap="round" stroke-width="3"/>
-<rect fill="#38d8ff22" height="38" rx="9" stroke="#38d8ff" width="116" x="42" y="162"/>
-<text fill="#38d8ff" font-family="'Bebas Neue',sans-serif" font-size="32" letter-spacing="5" x="100" y="190">TILES</text>
+<path d="M45 169 C66 153 89 153 110 169 S153 185 174 169" fill="none" stroke="#ff7180" stroke-linecap="round" stroke-width="3"/>
+<rect fill="#ff718022" height="38" rx="9" stroke="#ff7180" width="116" x="42" y="162"/>
+<text fill="#ff7180" font-family="'Bebas Neue',sans-serif" font-size="32" letter-spacing="5" x="100" y="190">TILES</text>
 </g>
 <circle cx="38" cy="205" fill="#ffe61a" opacity=".75" r="3"/>
-<circle cx="166" cy="28" fill="#38d8ff" opacity=".55" r="4"/>
+<circle cx="166" cy="28" fill="#ff7180" opacity=".55" r="4"/>
 <circle cx="158" cy="210" fill="#ff4bd8" opacity=".55" r="3"/>
 </svg>
 </div>
 <div class="game-card-info">
-<div class="game-card-badge" style="background:#38d8ff22;color:#38d8ff;border:1px solid #38d8ff66">PUZZLE</div>
-<div class="game-card-marquee" style="color:#38d8ff;text-shadow:0 0 20px #38d8ff88">TILE SWAP</div>
+<div class="game-card-badge" style="background:#ff718022;color:#ff7180;border:1px solid #ff718066">PUZZLE</div>
+<div class="game-card-marquee" style="color:#ff7180;text-shadow:0 0 20px #ff718088">TILE SWAP</div>
 <div class="game-card-desc">WORD PUZZLE · RUMMY PUZZLE</div>
-<div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#38d8ff22;border:1.5px solid #38d8ff;border-radius:5px;padding:10px 24px;color:#38d8ff;width:100%;text-shadow:0 0 8px #38d8ff66;text-align:center">▶ PLAY</div>
+<div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#ff718022;border:1.5px solid #ff7180;border-radius:5px;padding:10px 24px;color:#ff7180;width:100%;text-shadow:0 0 8px #ff718066;text-align:center">▶ PLAY</div>
 </div>
 </div>
 </div>
@@ -542,7 +541,7 @@
 <div class="game-card-info">
 <div class="game-card-badge" style="background:#5fd0ff22;color:#5fd0ff;border:1px solid #5fd0ff66">PUZZLE</div>
 <div class="game-card-marquee" style="color:#5fd0ff;text-shadow:0 0 20px #5fd0ff88">GRID LOCK</div>
-<div class="game-card-desc">ROTATE · ROUTE THE POWER · SEAL IT</div>
+<div class="game-card-desc" style="white-space:nowrap">ROTATE TILES · SEAL THE CIRCUIT</div>
 <div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#5fd0ff22;border:1.5px solid #5fd0ff;border-radius:5px;padding:10px 24px;color:#5fd0ff;width:100%;text-shadow:0 0 8px #5fd0ff66;text-align:center">▶ PLAY</div>
 </div>
 </div>
@@ -687,18 +686,16 @@
 
 <div id="arcade-float"></div>
 
-<button aria-label="Back to arcade" id="arcade-mode-back" type="button" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE</button>
+<button aria-label="Back to arcade" class="arcade-tier-back" id="arcade-mode-back" type="button" onclick="runArcadeContextBack()">◀ ARCADE</button>
 <button aria-label="Exit game" class="arcade-exit-btn" id="arcade-game-exit" onclick="confirmExitArcade()">✕</button>
 
-<div id="lb-overlay" style="display:none;position:fixed;inset:0;z-index:9800;align-items:flex-start;justify-content:center;overflow-y:auto;background:rgba(5,2,18,0.92);backdrop-filter:blur(10px);padding:20px 16px 40px">
-<div style="width:100%;max-width:440px;margin:0 auto">
-<div style="margin-bottom:16px">
-<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-<button onclick="closeLbOverlay()" style="font-family:'VCR',monospace;font-size:14px;letter-spacing:2px;background:none;border:1px solid rgba(242,239,232,0.2);border-radius:4px;padding:8px 16px;color:rgba(242,239,232,0.6);cursor:pointer">✕ CLOSE</button>
+<div id="lb-overlay">
+<div class="lb-shell">
+<div class="lb-heading">
+<div class="lb-title">HALL OF FAME</div>
+<button class="lb-close" onclick="closeLbOverlay()">✕ CLOSE</button>
 </div>
-<div style="font-family:'Bebas Neue',cursive;font-size:52px;letter-spacing:6px;color:#ffe61a;text-shadow:0 0 16px #ffe61a88;line-height:1">HALL OF FAME</div>
-</div>
-<div id="lb-tabs" style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap"></div>
+<div id="lb-tabs"></div>
 <div id="lb-tab-content"></div>
 </div>
 </div>
@@ -709,12 +706,12 @@
   </div>
   <button class="arcade-install-btn" id="arcade-music-btn" type="button">START MUSIC</button>
 </div>
-<script src="js/arcade.js"></script>
+<script src="js/arcade.js?v=20260726-5"></script>
 <script src="js/games/face-factory-calibration.js"></script>
-<script src="js/games/face-factory.js"></script>
-<script src="js/games/whack.js"></script>
-<script src="js/games/match.js"></script>
-<script src="js/games/space.js"></script>
+<script src="js/games/face-factory.js?v=20260726-4"></script>
+<script src="js/games/whack.js?v=20260726-7"></script>
+<script src="js/games/match.js?v=20260726-5"></script>
+<script src="js/games/space.js?v=20260726-9"></script>
 <script src="js/games/journey-data.js?v=20260724-56"></script>
 <script src="js/games/journey-state.js?v=20260724-56"></script>
 <script src="js/games/journey-combat.js?v=20260724-56"></script>
@@ -729,14 +726,14 @@
 <script src="js/games/gridlock-levels.js?v=20260725-40"></script>
 <script src="js/games/gridlock-progression.js?v=20260725-13"></script>
 <script src="js/games/gridlock.js?v=20260725-46"></script>
-<script src="js/games/gridlock-game.js?v=20260725-49"></script>
-<script src="js/games/signal.js"></script>
+<script src="js/games/gridlock-game.js?v=20260726-62"></script>
+<script src="js/games/signal.js?v=20260726-4"></script>
 <script src="js/games/snoob-boards.js"></script>
-<script src="js/games/snoob.js"></script>
+<script src="js/games/snoob.js?v=20260726-6"></script>
 <script src="js/games/consume-boards.js"></script>
-<script src="js/games/consume.js"></script>
+<script src="js/games/consume.js?v=20260726-2"></script>
 <script src="js/games/consume-rack-boards.js"></script>
-<script src="js/games/consume-rack.js"></script>
+<script src="js/games/consume-rack.js?v=20260726-4"></script>
 <script src="js/games/pet.js"></script>
 </body>
 </html>

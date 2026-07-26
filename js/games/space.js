@@ -10699,11 +10699,46 @@ function nextWave() {
     spaceFx = survivors;
   }
 
-  function spaceModeButtonHTML(label, detail, onclick, color, glyph) {
-    return `<button class="whack-btn" style="width:100%;min-height:46px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-color:${color};background:${color}14;font-size:14px;letter-spacing:2.6px;padding:8px 14px;text-align:left;box-shadow:inset 0 0 18px ${color}10" onclick="${onclick}">
-      <span style="display:flex;align-items:center;gap:10px;min-width:0"><span style="font-size:17px;line-height:1;color:#f2efe8">${glyph || '▶'}</span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${label}</span></span>
-      <span style="font-family:'VCR',monospace;font-size:8px;letter-spacing:1.1px;color:rgba(242,239,232,0.46);line-height:1.25;text-align:right;white-space:nowrap">${detail}</span>
+  function spaceModeButtonHTML(label, detail, onclick, color, icon) {
+    const icons = {
+      weight: `<svg class="space-mode-icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M19 25v14M13 28v8M45 25v14M51 28v8M19 32h26"/></svg>`,
+      play: `<svg class="space-mode-icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M23 17l25 15-25 15z"/></svg>`,
+      boss: `<svg class="space-mode-icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M17 29c0-10 6-17 15-17s15 7 15 17c0 7-4 12-9 15v8h-5v-7h-3v7h-5v-8c-5-3-8-8-8-15z"/><circle cx="26" cy="29" r="2.5"/><circle cx="38" cy="29" r="2.5"/><path d="M28 38h8"/></svg>`
+    };
+    return `<button class="space-mode-card" style="--mode-color:${color}" onclick="${onclick}">
+      ${icons[icon] || icons.play}
+      <span class="space-mode-copy"><strong>${label}</strong><span>${detail}</span></span>
     </button>`;
+  }
+
+  function spaceCampaignArtHTML() {
+    return `<svg class="space-campaign-scene" viewBox="0 0 320 180" aria-hidden="true">
+      <g class="space-campaign-stars" fill="#fff">
+        <circle cx="28" cy="26" r="1.5"/><circle cx="72" cy="58" r="1"/><circle cx="276" cy="31" r="1.4"/><circle cx="249" cy="79" r="1"/><circle cx="45" cy="142" r="1.2"/><circle cx="288" cy="139" r="1"/>
+      </g>
+      <g fill="#25382f" stroke="#33ff66" stroke-width="2">
+        <path d="M24 68l18-11 17 8 4 19-17 13-21-8z"/>
+        <path d="M252 39l22-8 17 15-6 20-25 5-14-16z"/>
+        <path d="M261 124l14-9 16 7 1 16-17 9-17-9z"/>
+      </g>
+      <svg x="70" y="-4" width="180" height="190" viewBox="0 0 240 220">
+        <g class="space-journey-plume">
+          <path d="M91 157 L106 207 L119 165 Z" fill="#69d7ff" opacity=".28"/>
+          <path d="M121 165 L136 207 L149 157 Z" fill="#69d7ff" opacity=".28"/>
+          <path d="M105 158 L120 214 L135 158 Z" fill="#fff1a6" opacity=".8"/>
+        </g>
+        <path d="M93 77 L27 154 L92 137 L106 105 Z" fill="#3d5872" stroke="#69d7ff" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M147 77 L213 154 L148 137 L134 105 Z" fill="#3d5872" stroke="#69d7ff" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M120 14 C146 40 157 91 150 145 L136 174 L120 165 L104 174 L90 145 C83 91 94 40 120 14 Z" fill="#dcecf1" stroke="#69d7ff" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M120 25 L120 160 L104 169 L91 142 C87 99 96 52 120 25 Z" fill="#a9c6d2" opacity=".72"/>
+        <path d="M120 42 C134 54 139 72 137 91 C132 98 108 98 103 91 C101 72 106 54 120 42 Z" fill="#102c4b" stroke="#fff1a6" stroke-width="3"/>
+        <path d="M107 113 L132 104 L137 123 L112 132 Z" fill="#fff1a6" opacity=".72" stroke="#5f6d79" stroke-width="2"/>
+        <path d="M106 115 L132 107 M110 124 L136 115" stroke="#5f6d79" stroke-width="2" opacity=".8"/>
+        <rect x="55" y="132" width="23" height="9" rx="3" fill="#ff7c8f" transform="rotate(-14 55 132)"/>
+        <rect x="161" y="132" width="23" height="9" rx="3" fill="#b79cff" transform="rotate(14 161 132)"/>
+        <circle cx="120" cy="148" r="6" fill="#69d7ff" stroke="#0b213b" stroke-width="2"/>
+      </svg>
+    </svg>`;
   }
 
   function spaceInfoRowHTML(glyph, title, detail, color) {
@@ -10714,21 +10749,26 @@ function nextWave() {
     const iconHTML = isImg
       ? `<img src="${glyph}" alt="" style="width:22px;height:22px;object-fit:contain;filter:drop-shadow(0 0 4px ${color}aa)">`
       : glyph;
-    return `<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid rgba(242,239,232,0.07)">
-      <div style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid ${color}66;border-radius:8px;background:${color}18;color:${color};font-size:18px;flex-shrink:0">${iconHTML}</div>
-      <div style="text-align:left"><div style="font-family:'Bebas Neue',cursive;font-size:19px;letter-spacing:2.4px;color:${color};line-height:1">${title}</div><div style="font-family:'VCR',monospace;font-size:10px;letter-spacing:1px;color:rgba(242,239,232,0.55);line-height:1.35;margin-top:3px">${detail}</div></div>
+    return `<div class="space-info-row">
+      <div class="space-info-row-icon" style="border-color:${color}66;background:${color}18;color:${color}">${iconHTML}</div>
+      <strong style="color:${color}">${title}</strong>
+      <span>${detail}</span>
     </div>`;
   }
 
   function spaceHowToPlayHTML() {
-    return `<div class="whack-mode-shell" style="max-width:430px;margin-top:18px;text-align:center">
+    return `<div class="whack-mode-shell" style="max-width:600px;margin-top:18px;text-align:center">
       <div class="whack-mode-title" style="color:#00e5ff;text-shadow:0 0 16px #00e5ff88">HOW TO PLAY</div>
-      <div class="game-card whack-mode-card" style="border-color:#00e5ff77;cursor:default;min-height:0;padding:18px;background:rgba(5,2,18,0.94)">
+      <div class="space-info-panel">
         ${spaceInfoRowHTML('projectiles/lightning.png', 'LIGHTNING', 'Stores rapid fire in the left socket.', '#ffe61a')}
         ${spaceInfoRowHTML('projectiles/shield.png', 'SHIELD', 'Blocks damage when deployed.', '#00e5ff')}
         ${spaceInfoRowHTML('projectiles/bomb.png', 'BOMB', 'Clears danger around the ship.', '#ff8800')}
         ${spaceInfoRowHTML('projectiles/mystery_crate.png', 'MYSTERY CRATE', 'Shoot it open. It can help or hurt.', '#cc66ff')}
         ${spaceInfoRowHTML('projectiles/blue_bone.png', 'CAPTIVE LOCK', 'Break the blue ring to rescue the Mobe.', '#5ab1ff')}
+        <button class="space-info-boss-preview" onclick="showSpaceOverlay('boss-preview')">
+          <img src="bosses/boss_gizmo.png" alt="">
+          <span><strong>MEET THE BOSSES</strong><small>Preview the Space Mobe rogues.</small></span>
+        </button>
         <button class="whack-btn" style="width:100%;border-color:#00e5ff;background:rgba(0,229,255,0.16);margin-top:14px" onclick="showSpaceOverlay('select')">BACK</button>
       </div>
     </div>`;
@@ -10832,47 +10872,35 @@ function nextWave() {
     if (mode === 'select' || mode === 'boss-preview' || mode === 'how-to-play' || mode === 'debug' || mode === 'mode-complete') ov.classList.remove('hidden');
     ov.classList.toggle('space-over', mode === 'over');
     ov.classList.toggle('space-boss-preview', mode === 'boss-preview');
+    ov.classList.toggle('space-mode-select', mode === 'select');
+    ov.classList.toggle('space-info-view', mode === 'how-to-play');
     ov.style.justifyContent = (mode === 'select' || mode === 'boss-preview' || mode === 'how-to-play' || mode === 'debug' || mode === 'mode-complete') ? 'flex-start' : '';
-    ov.style.paddingTop = (mode === 'select' || mode === 'how-to-play' || mode === 'debug' || mode === 'mode-complete') ? '16px' : '';
-    setArcadeExitVisible(mode !== 'over');
+    ov.style.paddingTop = mode === 'select'
+      ? '0'
+      : (mode === 'how-to-play' || mode === 'debug' || mode === 'mode-complete') ? '16px' : '';
+    setArcadeExitVisible(mode !== 'over' && mode !== 'mode-complete');
     if(mode==='select'){
       const gc=GAME_CHARS[activeChar];
       ov.innerHTML=`
-        <div class="whack-mode-shell" style="max-width:410px;margin-top:10px;padding:0 10px;box-sizing:border-box">
-          <div class="whack-mode-title">SPACE MOBE</div>
-          <div class="game-card whack-mode-card" style="border-color:#33ff6677;cursor:default;min-height:0;overflow:hidden">
-            <div class="game-card-art" style="background:#20222c;min-height:128px">
-              <div id="space-select-art" style="position:absolute;inset:0;z-index:0;opacity:0.42;transform:scale(1.26) translateY(10px);filter:saturate(1.18) brightness(1.02);pointer-events:none;mix-blend-mode:screen"></div>
-            </div>
-            <div class="game-card-info" style="position:relative;z-index:2;padding:16px 18px 20px;background:linear-gradient(to top, rgba(5,2,18,0.97) 78%, rgba(32,34,44,0.34) 100%)">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px;padding:12px 14px;border:1px solid rgba(242,239,232,0.12);border-radius:16px;background:linear-gradient(135deg,rgba(72,74,84,0.34),rgba(18,20,30,0.28));box-shadow:inset 0 0 22px rgba(255,255,255,0.035),0 0 18px rgba(0,0,0,0.14);backdrop-filter:blur(2px)">
-                <div style="display:flex;align-items:center;gap:14px;min-width:0">
-                  <div style="width:96px;height:96px;flex-shrink:0;border-radius:50%;background:radial-gradient(circle at 50% 42%,rgba(242,239,232,0.28),rgba(46,48,58,0.72) 62%,rgba(13,16,24,0.84));display:flex;align-items:center;justify-content:center;border:3px solid ${gc.color}cc;box-shadow:0 0 26px ${gc.color}88,0 0 42px ${gc.color}33,inset 0 0 28px rgba(255,255,255,0.08)">
-                    <div class="char-tilt" style="width:72px;height:72px;filter:drop-shadow(0 0 10px ${gc.color}66)">${charFace(gc,'normal')}</div>
-                  </div>
-                  <div style="text-align:left;min-width:0;position:relative">
-                    <div style="position:absolute;left:-8px;right:-20px;top:22px;height:44px;border-radius:999px;background:radial-gradient(ellipse at 36% 50%,${gc.color}44,${gc.color}1c 44%,transparent 72%);filter:blur(7px);pointer-events:none"></div>
-                    <div style="font-size:10px;letter-spacing:2.2px;color:rgba(242,239,232,0.82);font-family:'VCR',monospace;text-shadow:0 0 10px rgba(255,255,255,0.18)">TODAY'S PILOT</div>
-                    <div style="position:relative;font-family:'Bebas Neue',cursive;font-size:44px;letter-spacing:3.5px;color:${gc.color};text-shadow:0 0 10px ${gc.color}cc,0 1px 0 rgba(255,255,255,0.22);line-height:0.98;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px">${gc.name}</div>
-                  </div>
-                </div>
-                <div class="space-select-icon-col">
-                  <button class="space-select-icon-btn" onclick="showSpaceOverlay('how-to-play')" aria-label="How to play" title="How to play" style="color:#00e5ff">ⓘ</button>
-                  <button class="space-select-icon-btn" onclick="showSpaceOverlay('boss-preview')" aria-label="Bosses" title="Bosses" style="color:#33ff66"><img src="bosses/boss_gizmo.png" alt="" style="width:24px;height:24px;object-fit:contain;filter:drop-shadow(0 0 4px #33ff66aa)"></button>
-                  <button class="space-select-icon-btn" onclick="showSpaceOverlay('debug')" aria-label="Debug" title="Debug" style="color:#ffe61a">⚙</button>
-                </div>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:8px">
-                <div class="space-select-group-label">LEARN</div>
-                ${spaceModeButtonHTML('SPACE TUTORIAL', 'SAFE LESSONS', 'spaceAcademyStart()', '#7b61ff', '★')}
-                <div class="space-select-group-label" style="margin-top:6px">PLAY</div>
-                ${spaceModeButtonHTML('PLAY CAMPAIGN', `${SPACE_CAMPAIGN_FINAL_WAVE} WAVES / 6 RESCUES`, 'spaceStart()', '#33ff66', '▶')}
-                ${spaceModeButtonHTML('BOSS RUN', 'BOSSES ONLY', 'spaceBossRunStart()', '#ffe61a', '☠')}
-              </div>
+        <div class="space-mode-shell">
+          <div class="space-mode-banner">
+            <h1>SPACE MOBE</h1>
+            <button class="space-title-info" onclick="showSpaceOverlay('how-to-play')" aria-label="How to play" title="How to play">ⓘ</button>
+          </div>
+          <div class="space-mode-grid">
+            <button class="space-campaign-card" style="--mode-color:#33ff66" onclick="spaceStart()">
+              <div class="space-campaign-art">${spaceCampaignArtHTML()}</div>
+              <span class="space-mode-copy">
+                <strong>PLAY CAMPAIGN</strong>
+                <span>${SPACE_CAMPAIGN_FINAL_WAVE} WAVES · 6 RESCUES</span>
+              </span>
+            </button>
+            <div class="space-secondary-grid">
+              ${spaceModeButtonHTML('SPACE TUTORIAL', 'SAFE LESSONS', 'spaceAcademyStart()', '#7b61ff', 'weight')}
+              ${spaceModeButtonHTML('BOSS RUN', 'BOSSES ONLY', 'spaceBossRunStart()', '#ffe61a', 'boss')}
             </div>
           </div>
         </div>`;
-      mountSelectionArt('space-select-art', 'space');
     } else if(mode==='boss-preview'){
       ov.innerHTML = bossPreviewHTML();
       startSpaceBossPreviewAnimation();
@@ -10901,10 +10929,9 @@ function nextWave() {
         minHeight: 300,
         saveMarginTop: 18,
         buttons: `
-          <button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#ffe61a;background:rgba(255,230,26,0.24)" onclick="spaceBossRunStart()">BOSS RUN AGAIN</button>
-          <button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN</button>
-          <button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#7b61ff;background:rgba(123,97,255,0.22)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
-          <button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:rgba(242,239,232,0.35);background:rgba(242,239,232,0.08)" onclick="nav('lobby')">BACK TO ARCADE</button>
+          <button class="whack-btn arcade-result-primary" onclick="spaceBossRunStart()">BOSS RUN AGAIN</button>
+          <button class="whack-btn arcade-result-secondary" onclick="showSpaceOverlay('select')">SPACE MENU</button>
+          <button class="whack-btn arcade-result-arcade" onclick="nav('lobby')">ARCADE</button>
         `,
       });
       loadRemoteBoard(boardKey, `${uid}-board`, '#ffe61a', 'bosses');
@@ -10939,9 +10966,9 @@ function nextWave() {
           minHeight: 220,
           saveMarginTop: 18,
           buttons: `
-            ${spaceLeaderboardMode() === 'bossrun' ? `<button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#ffe61a;background:rgba(255,230,26,0.24)" onclick="spaceBossRunStart()">BOSS RUN AGAIN</button>` : `<button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN AGAIN</button>`}
-            <button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#7b61ff;background:rgba(123,97,255,0.22)" onclick="showSpaceOverlay('select')">BACK TO SPACE MENU</button>
-            <button class="whack-btn" style="width:100%;min-height:50px;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#ff00cc;background:rgba(255,0,204,0.24)" onclick="nav('lobby')">BACK TO ARCADE</button>
+            ${spaceLeaderboardMode() === 'bossrun' ? `<button class="whack-btn arcade-result-primary" onclick="spaceBossRunStart()">BOSS RUN AGAIN</button>` : `<button class="whack-btn arcade-result-primary" onclick="spaceStart()">PLAY CAMPAIGN AGAIN</button>`}
+            <button class="whack-btn arcade-result-secondary" onclick="showSpaceOverlay('select')">SPACE MENU</button>
+            <button class="whack-btn arcade-result-arcade" onclick="nav('lobby')">ARCADE</button>
           `,
         });
         loadRemoteBoard(boardKey, `${uid}-board`, '#33ff66', field);

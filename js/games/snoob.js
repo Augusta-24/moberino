@@ -260,8 +260,9 @@
       field: 'score',
       extra: `WAVE ${wave} · ${shots} SHOTS · ${drops} DROPS`,
       buttons: `
-        <button class="whack-btn" style="border-color:#e4b65f;background:rgba(228,182,95,0.24)" onclick="snoobStart()">PLAY AGAIN</button>
-        <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.24)" onclick="nav('lobby')">BACK TO ARCADE</button>
+        <button class="whack-btn arcade-result-primary" onclick="snoobStart()">PLAY AGAIN</button>
+        <button class="whack-btn arcade-result-secondary" onclick="snoobModes()">SNOOB MENU</button>
+        <button class="whack-btn arcade-result-arcade" onclick="nav('lobby')">ARCADE</button>
       `,
     });
     loadRemoteBoard(BOARD_KEY, 'snoob-board', COLOR, 'score');
@@ -1660,7 +1661,7 @@
     try {
       if (typeof RemoteLB === 'undefined' || !RemoteLB.submit) return;
       const hi = jHighest(); if (!hi) return;
-      RemoteLB.submit(JOURNEY_GAME, jProfile().active, hi, 0, '★' + jTotal() + ' · L' + hi).catch(() => {});
+      RemoteLB.submit(JOURNEY_GAME, jProfile().active, hi, 0, `L${hi} · ${Object.values(jStars()).filter(Boolean).length}/${JLEVELS.length} CLEAR`).catch(() => {});
     } catch(e) {}
   }
   function jEsc(s) {
@@ -1684,18 +1685,27 @@
     const host = prepHost();
     if (!host) return;
     setArcadeExitVisible(true);
-    setArcadeModeSelect(true);
+    setArcadeModeSelect(true, { label: 'ARCADE' });
     host.innerHTML = `
       <div class="snoob-cabinet-frame snoob-mode-frame">
         <div class="snoob-menu-shell">
-          <div class="snoob-title">SNOOB</div>
-          <div class="snoob-sub">RETRO STICKER SHOOTER</div>
+          <div class="snoob-mode-banner">
+            <div class="snoob-title">SNOOB</div>
+          </div>
           <div class="snoob-modes">
-            <button class="snoob-mode-btn" onclick="snoobJourney()">
-              <strong>JOURNEY</strong><span>CLEAR EACH BOARD · EARN STARS</span>
+            <button class="snoob-mode-btn snoob-mode-primary" onclick="snoobStart()">
+              <span class="snoob-hero-art" aria-hidden="true">
+                <span class="snoob-hero-grid">
+                  <i style="--cap:#ff2aa3"></i><i style="--cap:#00a8ff"></i><i></i><i style="--cap:#ffe000"></i>
+                  <i></i><i style="--cap:#33cc66"></i><i style="--cap:#ff7a28"></i><i></i>
+                  <i style="--cap:#7b61ff"></i><i></i><i style="--cap:#ff2aa3"></i><i style="--cap:#00a8ff"></i>
+                </span>
+              </span>
+              <span class="snoob-mode-copy"><strong>PLAY</strong><span>ENDLESS · SURVIVE · CHASE A HIGH SCORE</span></span>
             </button>
-            <button class="snoob-mode-btn" onclick="snoobStart()">
-              <strong>ENDLESS</strong><span>SURVIVE · CHASE A HIGH SCORE</span>
+            <button class="snoob-mode-btn snoob-mode-secondary" onclick="snoobJourney()">
+              <svg class="snoob-mode-icon" viewBox="0 0 64 64" aria-hidden="true"><rect x="12" y="12" width="16" height="16" rx="3"/><rect x="36" y="12" width="16" height="16" rx="3"/><rect x="12" y="36" width="16" height="16" rx="3"/><path d="M44 35l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/></svg>
+              <span class="snoob-mode-copy"><strong>CHALLENGES</strong><span>12 DESIGNED BOARDS</span></span>
             </button>
           </div>
         </div>
@@ -1709,7 +1719,7 @@
     const host = prepHost();
     if (!host) return;
     setArcadeExitVisible(true);
-    setArcadeModeSelect(true);
+    setArcadeModeSelect(true, { label: 'SNOOB', action: () => renderModes() });
     const store = jProfile();
     const st = store.profiles[store.active].stars || {};
     const done = jHighest(st);
@@ -1717,22 +1727,21 @@
     host.innerHTML = `
       <div class="snoob-cabinet-frame snoob-journey-frame">
         <div class="snoob-journey">
-          <button class="snoob-mode-return" onclick="snoobModes()">MODES</button>
           <div class="snoob-title">SNOOB</div>
-          <div class="snoob-sub">JOURNEY · CLEAR EVERY CAPSULE</div>
-          <div class="snoob-level-label">LEVELS</div>
+          <div class="snoob-sub">CHALLENGES · CLEAR EVERY CAPSULE</div>
+          <div class="snoob-level-label">12 DESIGNED BOARDS</div>
           <div class="snoob-level-grid">
             ${JLEVELS.map(lvl => {
-              const stars = st[lvl.n] || 0;
-              const cls = stars ? 'done' : (lvl.n === next ? 'next' : 'lock');
-              return `<button class="snoob-node ${cls}" type="button" data-level="${lvl.n}"><span>${lvl.n}</span>${stars ? `<em>${'★'.repeat(stars)}</em>` : ''}</button>`;
+              const completed = Boolean(st[lvl.n]);
+              const cls = completed ? 'done' : (lvl.n === next ? 'next' : 'lock');
+              return `<button class="snoob-node ${cls}" type="button" data-level="${lvl.n}"><span>${lvl.n}</span>${completed ? '<em>✓</em>' : ''}</button>`;
             }).join('')}
           </div>
           <div class="snoob-codebox player-login-switch" role="button" tabindex="0" onclick="openPlayerSignIn()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPlayerSignIn()}" aria-label="Change arcade login">
             <div class="snoob-codebox-row">
               <span class="snoob-codebox-label">LOGGED IN AS</span>
               <span class="snoob-me-name">${jEsc(store.active)}</span>
-              <span class="snoob-me-stars">★ ${jTotal(st)}</span>
+              <span class="snoob-me-stars">${Object.values(st).filter(Boolean).length}/${JLEVELS.length} CLEAR</span>
             </div>
           </div>
         </div>
@@ -1789,7 +1798,7 @@
     raf = requestAnimationFrame(step);
   }
 
-  function renderJourneyResult(win, stars) {
+  function renderJourneyResult(win) {
     cancelAnimationFrame(raf);
     const host = document.getElementById('snoob-wrap');
     if (!host) return;
@@ -1798,23 +1807,28 @@
     setArcadeExitVisible(false);
     setArcadeModeSelect(false);
     const hasNext = win && journeyN < JLEVELS.length;
-    const starRow = win
-      ? `<div class="snoob-result-stars">${[1, 2, 3].map(i => `<span class="${i <= stars ? 'on' : ''}">★</span>`).join('')}</div>`
-      : '';
-    host.innerHTML = `
-      <div class="snoob-cabinet-frame">
-        <div class="snoob-result">
-          <div class="snoob-title" style="color:${win ? '#e4b65f' : '#ff5b6f'}">${win ? 'LEVEL ' + journeyN + ' CLEAR' : 'LEVEL FAILED'}</div>
-          ${starRow}
-          <div class="snoob-sub">${win ? `${shots} SHOTS · PAR ${journeyPar}` : 'THE STACK REACHED THE LINE'}</div>
-          <div class="snoob-result-btns">
-            ${hasNext ? `<button class="snoob-btn snoob-btn-go" onclick="snoobNextLevel()">NEXT LEVEL ▶</button>` : ''}
-            ${win && !hasNext ? `<button class="snoob-btn snoob-btn-go" onclick="snoobJourney()">ALL CLEAR!</button>` : ''}
-            <button class="snoob-btn" onclick="snoobRetryLevel()">${win ? 'REPLAY' : 'RETRY'}</button>
-            <button class="snoob-btn" onclick="snoobJourney()">LEVELS</button>
-          </div>
-        </div>
-      </div>`;
+    host.innerHTML = buildArcadeResultCard({
+      uid: `snoob-challenge-${journeyN}`,
+      boardKey: 'snoob-journey',
+      artGame: 'snoob',
+      color: win ? '#e4b65f' : '#ff5b6f',
+      marquee: win ? `LEVEL ${journeyN} CLEAR` : 'LEVEL FAILED',
+      scoreLabel: win ? 'SHOTS' : 'RESULT',
+      scoreValue: win ? shots : 'TRY AGAIN',
+      scoreExtra: win ? `PAR ${journeyPar}` : 'THE STACK REACHED THE LINE',
+      canSave: false,
+      showBoard: false,
+      showSaveArea: false,
+      buttons: `
+        ${hasNext ? `<button class="snoob-btn arcade-result-primary" onclick="snoobNextLevel()">NEXT LEVEL ▶</button>` : ''}
+        ${win && !hasNext ? `<button class="snoob-btn arcade-result-primary" onclick="snoobJourney()">BACK TO CHALLENGES</button>` : ''}
+        ${!win ? `<button class="snoob-btn arcade-result-primary" onclick="snoobRetryLevel()">RETRY</button>` : ''}
+        ${win ? `<button class="snoob-btn arcade-result-secondary" onclick="snoobRetryLevel()">REPLAY</button>` : ''}
+        <button class="snoob-btn arcade-result-secondary" onclick="snoobJourney()">CHALLENGES</button>
+        <button class="snoob-btn arcade-result-arcade" onclick="nav('lobby')">ARCADE</button>
+      `,
+    });
+    mountSelectionArt(`snoob-challenge-${journeyN}-art`, 'snoob');
   }
 
   window.snoobModes = function() { renderModes(); };

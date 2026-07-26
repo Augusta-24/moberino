@@ -211,7 +211,12 @@
     const wrap = document.getElementById('whack-wrap');
     if (!wrap) return;
     setArcadeExitVisible(state !== 'over');
-    setArcadeModeSelect(state === 'mode-select' || state === 'mole-select');
+    setArcadeModeSelect(
+      state === 'mode-select' || state === 'mole-select',
+      state === 'mole-select'
+        ? { label: 'WHACK', action: () => window.whackChangeMode() }
+        : { label: 'ARCADE' }
+    );
     wrap.classList.toggle('mode-select-layout', state === 'mode-select');
     document.body.classList.toggle('arcade-selection-open', state === 'mode-select' || state === 'mole-select');
     if (state === 'mode-select' || state === 'mole-select') {
@@ -220,9 +225,10 @@
 
     if (state === 'mode-select') {
       wrap.innerHTML = `
-<div class="whack-mode-shell">          <div class="whack-mode-title">CHOOSE MODE</div>
+<div class="whack-mode-shell">
+          <div class="whack-mode-banner"><div class="whack-mode-title">WHACK-A-MOBE</div></div>
           <div class="whack-mode-grid">
-            <div class="game-card whack-mode-card" style="border-color:#b884ff66;cursor:default">
+            <button class="game-card whack-mode-card whack-mode-primary" type="button" style="--mode-color:#b884ff;border-color:#b884ff" onclick="whackLaunchMenuMode('classic')">
               <div class="game-card-art" style="background:#0d0a1e">
                 <svg viewBox="0 0 200 120" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0">
                   <rect width="200" height="120" fill="#0d0a1e"/>
@@ -233,8 +239,8 @@
                   <line x1="50" y1="0" x2="50" y2="120" stroke="#ff9933" stroke-width="0.4" opacity="0.075"/>
                   <line x1="100" y1="0" x2="100" y2="120" stroke="#ff9933" stroke-width="0.4" opacity="0.075"/>
                   <line x1="150" y1="0" x2="150" y2="120" stroke="#ff9933" stroke-width="0.4" opacity="0.075"/>
-                  <ellipse cx="145" cy="40" rx="46" ry="29" fill="#ff6600" opacity="0.12"/>
-                  <g transform="translate(151, 45) rotate(40) scale(0.82)" opacity="1">
+                  <ellipse cx="102" cy="43" rx="46" ry="29" fill="#ff6600" opacity="0.12"/>
+                  <g transform="translate(108, 46) rotate(40) scale(0.88)" opacity="1">
                     <rect x="-5" y="4" width="10" height="64" rx="4" fill="#6B3410"/>
                     <rect x="-5" y="4" width="5" height="64" rx="3" fill="#8B4513"/>
                     <line x1="-1" y1="12" x2="-1" y2="60" stroke="#5a2a0c" stroke-width="1" opacity="0.5"/>
@@ -254,19 +260,14 @@
                   <line x1="186" y1="14" x2="172" y2="26" stroke="#ff9933" stroke-width="1.4" opacity="0.14" stroke-linecap="round"/>
                   <line x1="162" y1="4" x2="150" y2="14" stroke="#ff9933" stroke-width="1" opacity="0.1" stroke-linecap="round"/>
                 </svg>
-                <div class="whack-mode-name" style="text-shadow:0 0 8px rgba(136,72,214,0.62)">FRENZY</div>
               </div>
               <div class="game-card-info">
-                <div class="game-card-marquee" style="color:#b178ff;text-shadow:0 0 16px rgba(143,77,224,0.74)">30 SECOND RUSH</div>
-                <div class="game-card-desc">WHACK AGAINST TIME.</div>
-                <div class="whack-mode-diff">
-                  <button class="whack-btn" style="border-color:#caa5ff;background:rgba(202,165,255,0.24);color:#f4eaff" onclick="whackSelectModeDifficulty('classic','easy')">NORMAL</button>
-                  <button class="whack-btn" style="border-color:#8f4de0;background:rgba(124,67,201,0.28);color:#ead4ff" onclick="whackSelectModeDifficulty('classic','hard')">HARD</button>
-                </div>
+                <div class="game-card-marquee">30 SECOND RUSH</div>
+                <div class="game-card-desc">Score as many hits as you can.</div>
               </div>
-            </div>
+            </button>
 
-            <div class="game-card whack-mode-card" style="border-color:#ffb04a66;cursor:default">
+            <div class="game-card whack-mode-card" hidden aria-hidden="true" style="border-color:#ffb04a66;cursor:default">
               <div class="game-card-art" style="background:#0d0a1e">
                 <svg viewBox="0 0 200 120" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0">
                   <rect width="200" height="120" fill="#0d0a1e"/>
@@ -302,7 +303,7 @@
               </div>
             </div>
 
-            <div class="game-card whack-mode-card" style="border-color:#33cc6666;cursor:default">
+            <button class="game-card whack-mode-card whack-mode-secondary" type="button" style="--mode-color:#33cc66;border-color:#33cc66" onclick="whackLaunchMenuMode('whack')">
               <div class="game-card-art" style="background:#0d0a1e">
                 <svg viewBox="0 0 200 120" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0">
                   <rect width="200" height="120" fill="#0d0a1e"/>
@@ -313,23 +314,26 @@
                   <line x1="50" y1="0" x2="50" y2="120" stroke="#33cc66" stroke-width="0.4" opacity="0.09"/>
                   <line x1="100" y1="0" x2="100" y2="120" stroke="#33cc66" stroke-width="0.4" opacity="0.09"/>
                   <line x1="150" y1="0" x2="150" y2="120" stroke="#33cc66" stroke-width="0.4" opacity="0.09"/>
-                  <text x="128" y="88" font-family="sans-serif" font-size="72" fill="#33cc66" opacity="0.78" text-anchor="middle">✓</text>
-                  <text x="36" y="55" font-family="sans-serif" font-size="32" fill="#ff4444" opacity="0.52" text-anchor="middle">✗</text>
-                  <text x="64" y="22" font-size="13" fill="#33ff66" opacity="0.68">✦</text>
+                  <rect x="48" y="13" width="104" height="94" rx="13" fill="#07130f" stroke="#33cc66" stroke-width="2.5" opacity="0.9"/>
+                  <line x1="100" y1="13" x2="100" y2="107" stroke="#33cc66" stroke-width="0.5" opacity="0.14"/>
+                  <line x1="48" y1="60" x2="152" y2="60" stroke="#33cc66" stroke-width="0.5" opacity="0.14"/>
+                  <text x="108" y="88" font-family="sans-serif" font-size="68" fill="#33cc66" opacity="0.86" text-anchor="middle">✓</text>
+                  <text x="67" y="51" font-family="sans-serif" font-size="27" fill="#ff4444" opacity="0.62" text-anchor="middle">✗</text>
+                  <text x="75" y="24" font-size="11" fill="#33ff66" opacity="0.68">✦</text>
                   <text x="180" y="16" font-size="10" fill="#33ff66" opacity="0.48">✦</text>
                   <text x="22" y="14" font-size="8" fill="#00e5ff" opacity="0.32">✦</text>
                 </svg>
-                <div class="whack-mode-name" style="text-shadow:0 0 8px rgba(51,204,102,0.62)">WHACK</div>
               </div>
               <div class="game-card-info">
-                <div class="game-card-marquee" style="color:#33cc66;text-shadow:0 0 15px rgba(51,204,102,0.62)">3 LIVES · ENDLESS</div>
-                <div class="game-card-desc">HOW LONG CAN YOU LAST?</div>
-                <div class="whack-mode-diff">
-                  <button class="whack-btn" style="border-color:#66dd99;background:rgba(102,221,153,0.22);color:#e6fff0" onclick="whackSelectModeDifficulty('whack','easy')">NORMAL</button>
-                  <button class="whack-btn" style="border-color:#22aa55;background:rgba(34,170,85,0.28);color:#ccffdd" onclick="whackSelectModeDifficulty('whack','hard')">HARD</button>
-                </div>
+                <div class="game-card-marquee">3 LIVES</div>
+                <div class="game-card-desc">Find the target. Avoid yourself.</div>
               </div>
-            </div>
+            </button>
+          </div>
+          <div class="whack-menu-difficulty" role="group" aria-label="Difficulty">
+            <span>DIFFICULTY</span>
+            <button class="${difficulty === 'easy' ? 'active' : ''}" type="button" onclick="whackSetMenuDifficulty('easy')">NORMAL</button>
+            <button class="${difficulty === 'hard' ? 'active' : ''}" type="button" onclick="whackSetMenuDifficulty('hard')">HARD</button>
           </div>
         </div>`;
       return;
@@ -479,9 +483,9 @@
         ascending: false,
         saveMarginTop: 12,
         buttons: `
-          <button class="whack-btn" style="border-color:#33cc66;background:rgba(51,204,102,0.30)" onclick="whackPlay()">PLAY AGAIN</button>
-          <button class="whack-btn" style="border-color:#33cc66;background:rgba(51,204,102,0.30)" onclick="whackChangeMode()">CHANGE MODE</button>
-          <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="nav('lobby')">BACK TO ARCADE</button>
+          <button class="whack-btn arcade-result-primary" onclick="whackPlay()">PLAY AGAIN</button>
+          <button class="whack-btn arcade-result-secondary" onclick="whackChangeMode()">WHACK MENU</button>
+          <button class="whack-btn arcade-result-arcade" onclick="nav('lobby')">ARCADE</button>
         `,
       });
       loadRemoteBoard(boardKey, `${uid}-board`, '#33cc66', 'score');
@@ -512,9 +516,9 @@
         ascending: false,
         saveMarginTop: 12,
         buttons: `
-          <button class="whack-btn" style="border-color:#00e5ff;background:rgba(0,229,255,0.30)" onclick="whackPlay()">PLAY AGAIN</button>
-          <button class="whack-btn" style="border-color:#00e5ff;background:rgba(0,229,255,0.30)" onclick="whackChangeMode()">CHANGE MODE</button>
-          <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="nav('lobby')">BACK TO ARCADE</button>
+          <button class="whack-btn arcade-result-primary" onclick="whackPlay()">PLAY AGAIN</button>
+          <button class="whack-btn arcade-result-secondary" onclick="whackChangeMode()">WHACK MENU</button>
+          <button class="whack-btn arcade-result-arcade" onclick="nav('lobby')">ARCADE</button>
         `,
       });
       loadRemoteBoard(boardKey, `${uid}-board`, '#00e5ff', 'score');
@@ -548,9 +552,9 @@
         ascending: false,
         saveMarginTop: 12,
         buttons: `
-          <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="whackPlay()">PLAY AGAIN</button>
-          <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="whackChangeMode()">CHANGE MODE</button>
-          <button class="whack-btn" style="border-color:#ff00cc;background:rgba(255,0,204,0.30)" onclick="nav('lobby')">BACK TO ARCADE</button>
+          <button class="whack-btn arcade-result-primary" onclick="whackPlay()">PLAY AGAIN</button>
+          <button class="whack-btn arcade-result-secondary" onclick="whackChangeMode()">WHACK MENU</button>
+          <button class="whack-btn arcade-result-arcade" onclick="nav('lobby')">ARCADE</button>
         `,
       });
       loadRemoteBoard(boardKey, `${uid}-board`, '#ff00cc', 'score');
@@ -2081,6 +2085,15 @@
     gameMode = mode;
     syncWhackLeaderboardState();
     render();
+  };
+
+  window.whackSetMenuDifficulty = function(value) {
+    difficulty = value === 'hard' ? 'hard' : 'easy';
+    if (state === 'mode-select') render();
+  };
+
+  window.whackLaunchMenuMode = function(mode) {
+    window.whackSelectModeDifficulty(mode, difficulty);
   };
   window.whackSetDifficulty = function(d) {
     difficulty = d;

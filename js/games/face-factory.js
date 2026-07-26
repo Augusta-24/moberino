@@ -150,7 +150,7 @@
   function shell(title, content, backAction = "faceFactoryShowMenu()") {
     const topbar = screen === 'menu'
       ? '<div class="ff-topbar" aria-hidden="true"></div>'
-      : `<div class="ff-topbar"><button class="ff-back" type="button" onclick="${backAction}">◀ GAMES</button></div>`;
+      : `<div class="ff-topbar"><button class="ff-back" type="button" onclick="${backAction}">◀ FACE FACTORY</button></div>`;
     return `<div class="ff-shell">
       ${topbar}
       <main class="ff-screen">${content}</main>
@@ -233,7 +233,6 @@
     setArcadeModeSelect(true);
     root.innerHTML = shell('FACE FACTORY', `
       <div class="ff-title">FACE FACTORY</div>
-      <div class="ff-subtitle">THREE WAYS TO PLAY WITH THE FAMILY</div>
       <div class="ff-mode-grid">
         <button class="ff-mode-card" style="--mode-color:#ffe61a" type="button" onclick="faceFactoryOpen('puzzle')">
           ${puzzleModePreview()}<strong>BUILD THE FACES</strong><span>TWO FACES<br>EIGHT BIG PIECES</span>
@@ -250,6 +249,7 @@
   window.faceFactoryOpen = function(next) {
     clearTimers();
     screen = next;
+    setArcadeExitVisible(true);
     setArcadeModeSelect(false);
     sound('menuSelect');
     if (next === 'reels') renderReels();
@@ -278,6 +278,7 @@
     return `<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="7" y="9" width="26" height="22" rx="5"/><path d="M14 13v14m6-14v14m6-14v14"/><path d="M10 35h20"/></svg>`;
   }
   function renderReels() {
+    setArcadeExitVisible(true);
     mixChars = distinctChars(3);
     reelCoins = 0;
     reelRound = 1;
@@ -574,6 +575,7 @@
     return `<button class="ff-piece" id="${id}" type="button" draggable="true" data-ci="${ci}" data-pos="${pos}" style="${pieceStyle(ci, pos)}" aria-label="Piece of ${GAME_CHARS[ci].name}" onclick="faceFactorySelectPiece('${id}')" ondragstart="faceFactoryDragPiece(event,'${id}')">${puzzlePieceArt(ci, pos)}</button>`;
   }
   function startPuzzle() {
+    setArcadeExitVisible(true);
     const chars = distinctChars(2);
     puzzle = { chars, placed: 0, showHint: false };
     selectedPiece = null;
@@ -655,12 +657,16 @@
     sound('menuSelect');
   };
   function finishPuzzle() {
+    setArcadeExitVisible(false);
     document.querySelectorAll('.ff-puzzle-board').forEach(spark);
     const msg = document.getElementById('ff-puzzle-message');
     if (msg) msg.textContent = 'THE FAMILY IS BACK TOGETHER!';
     document.getElementById('ff-piece-tray')?.classList.add('ff-puzzle-complete');
     const actions = document.getElementById('ff-puzzle-actions');
-    if (actions) actions.innerHTML = '<button class="ff-play-again-btn" type="button" onclick="faceFactoryNewPuzzle()">PLAY AGAIN</button>';
+    if (actions) actions.innerHTML = `<div class="ff-completion-actions">
+      <button class="ff-play-again-btn ff-completion-primary" type="button" onclick="faceFactoryNewPuzzle()">PLAY AGAIN</button>
+      <button class="ff-play-again-btn ff-completion-secondary" type="button" onclick="faceFactoryShowMenu()">FACE FACTORY MENU</button>
+    </div>`;
     celebrate(true);
   }
 
@@ -894,6 +900,7 @@
     </div>`;
   }
   function renderCrazyMixer(randomize, tuning = tuneMode) {
+    setArcadeExitVisible(true);
     const poolIsTuningSet = tuning && mixPool.length === FACE_FACTORY_CHARS.length && FACE_FACTORY_CHARS.every(ci => mixPool.includes(ci));
     const poolIsFixSet = !tuning && mixPool.length === FIX_POOL_SIZE && mixPool.every(ci => FIX_CHARS.includes(ci));
     if (randomize || (tuning ? !poolIsTuningSet : !poolIsFixSet)) {
@@ -1055,6 +1062,7 @@
     renderCrazyMixer(false, true);
   };
   function finishCrazyFix() {
+    setArcadeExitVisible(false);
     mixWon = true;
     const winner = mixChars[0];
     const face = document.getElementById('ff-crazy-face');
@@ -1062,7 +1070,10 @@
     const msg = document.getElementById('ff-crazy-message');
     if (msg) msg.textContent = `YOU FIXED ${GAME_CHARS[winner].name}!`;
     const action = document.getElementById('ff-crazy-win-action');
-    if (action) action.innerHTML = '<button class="ff-play-again-btn" type="button" onclick="faceFactoryPlayAgain()">PLAY AGAIN</button>';
+    if (action) action.innerHTML = `<div class="ff-completion-actions">
+      <button class="ff-play-again-btn ff-completion-primary" type="button" onclick="faceFactoryPlayAgain()">PLAY AGAIN</button>
+      <button class="ff-play-again-btn ff-completion-secondary" type="button" onclick="faceFactoryShowMenu()">FACE FACTORY MENU</button>
+    </div>`;
     spark(face);
     celebrate(true);
   }
@@ -1271,6 +1282,7 @@
   };
 
   function startGuessRound() {
+    setArcadeExitVisible(true);
     const used = [];
     const chars = [0,1,2].map(part => {
       const ci = shuffle(charsForPart(part)).find(candidate => !used.includes(candidate));
@@ -1318,12 +1330,16 @@
     else later(finishGuess, 1050);
   };
   function finishGuess() {
+    setArcadeExitVisible(false);
     celebrate(true);
     wrap().innerHTML = shell('CRAZY FACE', `<section class="ff-panel">
       ${crazyHeading('guess')}
       <div class="ff-crazy-face ff-holo ff-celebrate">${guess.chars.map((ci, p) => bandMarkup(p, ci, false)).join('')}</div>
       <div class="ff-message">YOU FOUND EVERYONE!</div>
-      <button class="ff-play-again-btn" type="button" onclick="faceFactoryCrazyMode('guess')">PLAY AGAIN</button>
+      <div class="ff-completion-actions">
+        <button class="ff-play-again-btn ff-completion-primary" type="button" onclick="faceFactoryCrazyMode('guess')">PLAY AGAIN</button>
+        <button class="ff-play-again-btn ff-completion-secondary" type="button" onclick="faceFactoryShowMenu()">FACE FACTORY MENU</button>
+      </div>
     </section>`);
   }
 })();

@@ -28,59 +28,90 @@
     }
     return 'MOBE' + Math.floor(Math.random() * 90 + 10);
   }
+  function migrateProgress(profile) {
+    if (!profile) return { completed: {}, served: [] };
+    if (profile.stars) {
+      profile.completed ||= {};
+      Object.keys(profile.stars).forEach(level => { if (profile.stars[level]) profile.completed[level] = true; });
+      delete profile.stars;
+    }
+    profile.completed ||= {};
+    profile.served = Array.isArray(profile.served) ? profile.served.map(Number).filter(Number.isFinite) : [];
+    profile.lastServed = Number(profile.lastServed) || 0;
+    return profile;
+  }
   function ensureProfile() {
     const s = loadStore();
     if (s.stars && !s.profiles) {
       const tag = genTag({});
       s.active = tag;
-      s.profiles = { [tag]: { stars: s.stars } };
+      s.profiles = { [tag]: migrateProgress({ stars: s.stars }) };
       delete s.stars;
     }
     if (!s.profiles) s.profiles = {};
+    Object.keys(s.profiles).forEach(tag => migrateProgress(s.profiles[tag]));
     // Retroactively adopt the shared cross-game code if it differs — old
     // progress under the previous tag stays put, just no longer active.
     const shared = typeof window.PlayerID !== 'undefined' ? window.PlayerID.get() : null;
     if (shared && shared !== s.active) {
-      if (!s.profiles[shared]) s.profiles[shared] = { stars: {} };
+      s.profiles[shared] = migrateProgress(s.profiles[shared]);
       s.active = shared;
       saveStore(s);
     } else if (!s.active || !s.profiles[s.active]) {
       s.active = genTag(s.profiles);
-      s.profiles[s.active] = { stars: {} };
+      s.profiles[s.active] = { completed: {}, served: [] };
       saveStore(s);
     }
     if (typeof window.PlayerID !== 'undefined') window.PlayerID.set(s.active);
     return s;
   }
-  function myStars() { const s = ensureProfile(); return s.profiles[s.active].stars || {}; }
-  function recordStars(lvl, stars) {
+  function myCompleted() { const s = ensureProfile(); return migrateProgress(s.profiles[s.active]).completed; }
+  function recordComplete(lvl) {
     const s = ensureProfile();
-    const p = s.profiles[s.active];
-    if (stars > (p.stars[lvl] || 0)) p.stars[lvl] = stars;
+    const p = migrateProgress(s.profiles[s.active]);
+    p.completed[lvl] = true;
     saveStore(s);
   }
-  function highestDone(stars) {
+  function chooseUnseenLevel() {
+    const store = ensureProfile();
+    const player = migrateProgress(store.profiles[store.active]);
+    const completedCount = Object.values(player.completed).filter(Boolean).length;
+    const introductoryCount = Math.max(1, Math.ceil(LEVELS.length / 3));
+    const standardCount = Math.max(introductoryCount, Math.ceil(LEVELS.length * 2 / 3));
+    const eligibleCount = completedCount < 2 ? introductoryCount : completedCount < 5 ? standardCount : LEVELS.length;
+    const served = new Set(player.served);
+    let candidates = LEVELS.slice(0, eligibleCount).filter(level => !served.has(level.n));
+    if (!candidates.length) candidates = LEVELS.filter(level => !served.has(level.n));
+    if (!candidates.length) {
+      player.served = [];
+      candidates = LEVELS.filter(level => level.n !== player.lastServed);
+      if (!candidates.length) candidates = LEVELS.slice();
+    }
+    const selected = candidates[Math.floor(Math.random() * candidates.length)];
+    player.served.push(selected.n);
+    player.lastServed = selected.n;
+    saveStore(store);
+    return selected.n;
+  }
+  function serveUnseenPuzzle() {
+    if (!LEVELS.length) return;
+    startLevel(chooseUnseenLevel());
+  }
+  function highestDone(completed) {
     let m = 0;
-    const st = stars || myStars();
+    const st = completed || myCompleted();
     for (const k in st) m = Math.max(m, +k);
     return m;
   }
-  function totalStars(stars) {
-    let t = 0;
-    const st = stars || myStars();
-    for (const k in st) t += st[k];
-    return t;
-  }
-  // Rename the active profile to a player-chosen code, carrying stars along.
+  // Rename the active profile to a player-chosen code, carrying completion along.
   function setCustomTag(raw) {
     const tag = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
     if (tag.length < 2) return { ok: false, msg: '2-12 LETTERS/NUMBERS' };
     const s = ensureProfile();
     if (tag === s.active) return { ok: true };
-    const cur = (s.profiles[s.active] && s.profiles[s.active].stars) || {};
-    if (!s.profiles[tag]) s.profiles[tag] = { stars: {} };
-    const dest = s.profiles[tag].stars;
-    for (const k in cur) if ((cur[k] || 0) > (dest[k] || 0)) dest[k] = cur[k];
+    const cur = migrateProgress(s.profiles[s.active]).completed;
+    const dest = (s.profiles[tag] = migrateProgress(s.profiles[tag])).completed;
+    for (const k in cur) if (cur[k]) dest[k] = true;
     s.active = tag;
     saveStore(s);
     if (typeof window.PlayerID !== 'undefined') window.PlayerID.set(tag);
@@ -88,9 +119,9 @@
   }
   function adoptTag(tag, upToLevel) {
     const s = ensureProfile();
-    if (!s.profiles[tag]) s.profiles[tag] = { stars: {} };
+    s.profiles[tag] = migrateProgress(s.profiles[tag]);
     for (let n = 1; n <= upToLevel; n++) {
-      if (!s.profiles[tag].stars[n]) s.profiles[tag].stars[n] = 1;
+      s.profiles[tag].completed[n] = true;
     }
     s.active = tag;
     saveStore(s);
@@ -101,9 +132,7 @@
       if (typeof RemoteLB === 'undefined' || !RemoteLB.submit) return;
       const hi = highestDone();
       if (!hi) return;
-      const st = myStars();
-      const stars = totalStars(st);
-      RemoteLB.submit('consume', ensureProfile().active, (hi * 100) + stars, 0, `${stars}★ · L${hi}`)
+      RemoteLB.submit('consume', ensureProfile().active, hi, 0, `L${hi}`)
         .catch(() => {});
     } catch(e) {}
   }
@@ -153,6 +182,7 @@
   function startLevel(n) {
     const data = LEVELS[n - 1];
     if (!data) return;
+    setArcadeExitVisible(true);
     setArcadeModeSelect(false);
     killTimers();
     nextWordId = 1;
@@ -312,43 +342,50 @@
     if (!S || S.won) return;
     S.won = true;
     const elapsedSeconds = Math.max(1, Math.round((Date.now() - S.startTime) / 1000));
-    const par = S.data.size === 9 ? 45 : S.data.size === 16 ? 90 : S.data.size === 20 ? 120 : 180;
-    const withinPar = elapsedSeconds <= par;
-    const stars = S.shatters === 0 && withinPar ? 3 : (S.shatters === 0 || withinPar ? 2 : 1);
-    const starDisplay = '★'.repeat(stars) + '☆'.repeat(3 - stars);
-    const message = stars === 3 ? 'PERFECT' : stars === 2 ? 'WELL DONE' : 'SOLVED';
+    const message = S.shatters === 0 ? 'CLEAN CLEAR' : 'SOLVED';
     const minutes = Math.floor(elapsedSeconds / 60);
     const seconds = String(elapsedSeconds % 60).padStart(2, '0');
-    recordStars(S.n, stars);
+    recordComplete(S.n);
     syncJourney();
     CSFX.win();
-    const hasNext = S.n < LEVELS.length;
-    const ov = document.createElement('div');
-    ov.className = 'cw-win';
-    ov.innerHTML =
-      `<div class="cw-win-title">${message}</div>` +
-      `<div class="cw-win-stars" aria-label="${stars} stars">${starDisplay}</div>` +
-      `<div class="cw-win-sub">${minutes}:${seconds} · ${S.shatters} SHATTER${S.shatters === 1 ? '' : 'S'}</div>` +
-      `<div class="cw-win-btns">` +
-      (hasNext ? `<button class="cw-btn primary" data-act="next">NEXT LEVEL ▶</button>` : '') +
-      `<button class="cw-btn" data-act="replay">REPLAY</button>` +
-      `<button class="cw-btn" data-act="journey">JOURNEY</button></div>`;
-    wrap.appendChild(ov);
-    ov.addEventListener('click', e => {
+    setArcadeExitVisible(false);
+    const completedLevel = S.n;
+    wrap.innerHTML = buildArcadeResultCard({
+      uid: 'tile-swap-grid',
+      boardKey: 'consume-grid',
+      artGame: 'consume',
+      color: '#ff7180',
+      marquee: message,
+      scoreLabel: 'TIME',
+      scoreValue: `${minutes}:${seconds}`,
+      scoreExtra: `${S.shatters} SHATTER${S.shatters === 1 ? '' : 'S'} · A NEW PUZZLE IS READY`,
+      canSave: false,
+      showBoard: false,
+      showSaveArea: false,
+      buttons: `
+        <button class="cw-btn arcade-result-primary" data-act="another">PLAY ANOTHER</button>
+        <button class="cw-btn arcade-result-secondary" data-act="replay">REPLAY</button>
+        <button class="cw-btn arcade-result-secondary" data-act="modes">TILE SWAP MENU</button>
+        <button class="cw-btn arcade-result-arcade" data-act="arcade">ARCADE</button>
+      `,
+    });
+    mountSelectionArt('tile-swap-grid-art', 'consume');
+    wrap.onclick = e => {
       const act = e.target.getAttribute && e.target.getAttribute('data-act');
       if (!act) return;
       SFX.menuSelect();
-      if (act === 'next') transitionToLevel(S.n + 1);
-      else if (act === 'replay') startLevel(S.n);
-      else renderJourney();
-    });
+      if (act === 'another') transitionToUnseenPuzzle();
+      else if (act === 'replay') startLevel(completedLevel);
+      else if (act === 'modes' && typeof window.renderConsumeModes === 'function') window.renderConsumeModes();
+      else if (act === 'arcade') nav('lobby');
+    };
   }
 
-  function transitionToLevel(n) {
+  function transitionToUnseenPuzzle() {
     if (!S || !wrap) return;
     wrap.classList.add('cw-level-leaving');
     later(() => {
-      startLevel(n);
+      serveUnseenPuzzle();
       wrap.classList.remove('cw-level-leaving');
       wrap.classList.add('cw-level-entering');
       later(() => wrap?.classList.remove('cw-level-entering'), 480);
@@ -359,8 +396,8 @@
     if (!wrap || !S) return;
     wrap.innerHTML =
       `<div class="cw-hud">` +
-      `<button class="cw-btn" data-act="journey">JOURNEY</button>` +
-      `<strong>GRID · LEVEL ${S.n}</strong>` +
+      `<button class="cw-btn" data-act="modes">TILE SWAP</button>` +
+      `<strong>GRID</strong>` +
       `<button class="cw-btn" data-act="reset">RESET</button>` +
       `</div>` +
       `<div class="cw-board" id="cw-board" style="--cw-cols:${S.boardCols}"></div>` +
@@ -375,7 +412,7 @@
       `</div>`;
     wrap.querySelector('.cw-hud').addEventListener('click', e => {
       const act = e.target.getAttribute && e.target.getAttribute('data-act');
-      if (act === 'journey') { SFX.menuSelect(); renderJourney(); }
+      if (act === 'modes') { SFX.menuSelect(); window.renderConsumeModes?.(); }
       if (act === 'reset') resetLevel();
     });
     wrap.querySelector('#cw-board').addEventListener('click', e => {
@@ -470,57 +507,17 @@
       : '';
   }
 
-  function renderJourney() {
-    setArcadeModeSelect(true);
-    killTimers();
-    S = null;
-    const store = ensureProfile();
-    const st = store.profiles[store.active].stars || {};
-    const done = highestDone(st);
-    const next = Math.min(done + 1, LEVELS.length);
-    wrap.innerHTML =
-      `<div class="cw-levels">` +
-      `<button class="cw-btn cw-mode-return" type="button" data-act="modes">MODES</button>` +
-      `<div class="cw-title">WORD GRID</div>` +
-      `<div class="cw-intro">Make real words from the grid. Tap a completed word to return its tiles and rearrange them.</div>` +
-      `<div class="cw-section-label">LEVELS</div>` +
-      `<div class="cw-level-grid">` +
-      LEVELS.map(lvl => {
-        const complete = st[lvl.n] || 0;
-        const cls = complete ? 'done' : (lvl.n === next ? 'next' : 'lock');
-        return `<button class="cw-node ${cls}" type="button" data-level="${lvl.n}">` +
-          `<span>${lvl.n}</span><em>${'★'.repeat(complete)}</em></button>`;
-      }).join('') +
-      `</div>` +
-      `<div class="cw-code-card player-login-switch" role="button" tabindex="0" onclick="openPlayerSignIn()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPlayerSignIn()}" aria-label="Change arcade login">` +
-      `<div class="cw-code-row"><span class="cw-code-label">LOGGED IN AS</span>` +
-      `<span class="cw-me-name">${esc(store.active)}</span></div></div>` +
-      `</div>`;
-    wrap.querySelector('.cw-level-grid').addEventListener('click', e => {
-      const node = e.target.closest('[data-level]');
-      if (!node) return;
-      const n = +node.getAttribute('data-level');
-      if (n > done + 1) { CSFX.bad(); return; }
-      SFX.menuSelect();
-      startLevel(n);
-    });
-    wrap.querySelector('[data-act="modes"]').addEventListener('click', () => {
-      SFX.menuSelect();
-      if (typeof window.renderConsumeModes === 'function') window.renderConsumeModes();
-    });
-  }
-
   window.initConsumeGrid = function() {
     wrap = document.getElementById('consume-wrap');
     if (!wrap || !LEVELS.length) return;
-    renderJourney();
+    serveUnseenPuzzle();
   };
 
   window.initConsume = function() {
     wrap = document.getElementById('consume-wrap');
     if (!wrap) return;
     if (typeof window.renderConsumeModes === 'function') window.renderConsumeModes();
-    else renderJourney();
+    else serveUnseenPuzzle();
   };
 
   window.consumeBack = function() {

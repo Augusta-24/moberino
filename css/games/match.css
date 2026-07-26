@@ -8,6 +8,143 @@
   gap: 6px; overflow: hidden;
 }
 .match-wrap.mode-select-layout { overflow-y: auto; padding-top: max(52px, calc(env(safe-area-inset-top, 0px) + 48px)); }
+.match-mode-shell {
+  width:min(100%,720px);
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.match-mode-banner {
+  width:calc(100% + 20px);
+  margin:0 -10px;
+  padding:15px 10px 16px;
+  background:linear-gradient(180deg,rgba(255,230,26,.12),rgba(255,230,26,.035));
+}
+.match-mode-banner h1 {
+  margin:0;
+  color:#ffe61a;
+  font:clamp(42px,8vw,60px)/.95 'Bebas Neue',sans-serif;
+  letter-spacing:6px;
+  text-align:center;
+  text-shadow:0 0 20px rgba(255,230,26,.5);
+}
+.match-mode-art {
+  position:relative;
+  width:100%;
+  height:132px;
+  overflow:hidden;
+  box-sizing:border-box;
+  border:2px solid rgba(255,230,26,.72);
+  border-radius:18px;
+  background:linear-gradient(145deg,#19142b,#080611);
+  box-shadow:inset 0 0 20px #0008,0 0 18px rgba(255,230,26,.16);
+}
+.match-mode-preview-svg {
+  width:100%;
+  height:100%;
+  display:block;
+  overflow:visible;
+}
+.match-mode-preview-svg g {
+  color:#ffe61a;
+}
+.match-mode-preview-svg rect {
+  fill:#211642;
+  stroke:currentColor;
+  stroke-width:2;
+}
+.match-mode-preview-svg text {
+  fill:#ffe61a;
+  font:28px 'Bebas Neue',sans-serif;
+  text-anchor:middle;
+  opacity:.62;
+}
+.match-mode-preview-svg path {
+  fill:none;
+  stroke:#ffe61a;
+  stroke-width:6;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.match-mode-preview-svg .match-mode-preview-hit rect {
+  fill:#3a2a77;
+  filter:drop-shadow(0 0 8px rgba(255,230,26,.34));
+}
+.match-mode-preview-svg .match-mode-spark {
+  font:18px sans-serif;
+  opacity:.9;
+}
+.match-mode-select {
+  display:grid;
+  grid-template-columns:1fr;
+  gap:10px;
+}
+.match-mode-card {
+  width:100%;
+  min-height:86px;
+  box-sizing:border-box;
+  display:grid;
+  grid-template-columns:64px minmax(0,1fr);
+  align-items:center;
+  gap:14px;
+  padding:12px 18px;
+  border:2px solid var(--mode-color);
+  border-radius:18px;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--mode-color) 14%,#090719),#070611);
+  color:#fff;
+  text-align:left;
+  cursor:pointer;
+  box-shadow:0 12px 30px #0008,0 0 18px color-mix(in srgb,var(--mode-color) 24%,transparent);
+}
+.match-mode-icon {
+  width:58px;
+  height:58px;
+  overflow:visible;
+  color:var(--mode-color);
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2.6;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  filter:drop-shadow(0 0 8px color-mix(in srgb,var(--mode-color) 48%,transparent));
+}
+.match-mode-icon circle:not(:first-child) {
+  fill:currentColor;
+  stroke:none;
+}
+.match-mode-copy {
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:6px;
+}
+.match-mode-card strong {
+  color:var(--mode-color);
+  font:28px/1 'Bebas Neue',sans-serif;
+  letter-spacing:3px;
+  text-shadow:0 0 12px color-mix(in srgb,var(--mode-color) 55%,transparent);
+}
+.match-mode-copy > span {
+  color:rgba(242,239,232,.78);
+  font:13px/1.45 'VCR',monospace;
+  letter-spacing:.6px;
+}
+.match-mode-card:hover {
+  transform:translateY(-1px);
+  box-shadow:0 18px 40px #0009,0 0 22px color-mix(in srgb,var(--mode-color) 30%,transparent);
+}
+body.on-match.arcade-mode-select #arcade-float,
+body.on-match.arcade-selection-open #arcade-float {
+  display:none;
+}
+@media(max-width:620px) {
+  .match-mode-shell { gap:10px; }
+  .match-mode-art { height:112px; }
+  .match-mode-card { min-height:82px;grid-template-columns:56px minmax(0,1fr);gap:12px;padding:10px 14px; }
+  .match-mode-icon { width:52px;height:52px; }
+  .match-mode-card strong { font-size:25px; }
+}
 .match-msg { font-family: 'Bebas Neue', cursive; font-size: 34px; letter-spacing: 6px; text-align: center; }
 .match-sub { font-size: 11px; letter-spacing: 2px; color: rgba(242,239,232,0.55); text-align: center; }
 .match-hud { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 460px; box-sizing: border-box; }
@@ -183,4 +320,16 @@
   0%   { opacity: 0; transform: translate(-50%,-50%) scale(0.4); }
   18%  { opacity: 1; }
   100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.2); }
+}
+
+/* Calm shared card finish. */
+.match-mode-card {
+  background:linear-gradient(180deg,color-mix(in srgb,var(--mode-color) var(--arcade-card-wash),#090719),#070611);
+  box-shadow:0 12px 30px #0008,0 0 10px color-mix(in srgb,var(--mode-color) var(--arcade-card-glow),transparent);
+}
+.match-mode-card strong {
+  text-shadow:0 0 7px color-mix(in srgb,var(--mode-color) var(--arcade-card-title-glow),transparent);
+}
+.match-mode-icon {
+  filter:drop-shadow(0 0 5px color-mix(in srgb,var(--mode-color) var(--arcade-card-title-glow),transparent));
 }
