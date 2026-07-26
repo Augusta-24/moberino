@@ -26,15 +26,7 @@
 }
 #pg-gridlock.active { display: flex; }
 #pg-gridlock .cats-header {
-  flex: none;
-  align-self: stretch;
-  width: 100%;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 16px;
-  background: rgba(6,11,22,.94);
+  display: none;
 }
 .gridlock-wrap {
   flex: 1;
@@ -43,37 +35,136 @@
   overflow: hidden;
 }
 
+/* ---- World themes --------------------------------------------------------
+   Each world carries a data-gl-theme attribute (set in gridlock-game.js,
+   never in the engine) on its screen root or map-node. These variables only
+   recolor decorative/identity surfaces — world-core icon, panel glow, stage
+   background, the two power-system colors, and the solved crystal. Gameplay-
+   status colors (locked gold, router-online white, flooded white) are
+   intentionally left as literals below so their meaning stays constant
+   across every world. No selector here is themed unless a var() reference
+   was added at its declaration; the default (space, world 1) is always the
+   literal fallback value, so an absent/unrecognized theme renders identically
+   to today. */
+[data-gl-theme="jungle"] {
+  --gl-c1:#8fe07a; --gl-c1-dim:#5c9a4a; --gl-c1-bright:#c8f79a; --gl-c1-glow:rgba(143,224,122,.4);
+  --gl-c2:#e0a542; --gl-c2-dim:#8a6a2e; --gl-c2-bright:#ffd98a; --gl-c2-glow:rgba(224,165,66,.4);
+  --gl-core:#d9b35c; --gl-obstacle:#6b8a63;
+  --gl-bg-1:#142a16; --gl-bg-2:#0c1c0e; --gl-bg-3:#030a04;
+  --gl-crystal-fill:url(#glCrysJungle); --gl-crystal-edge:#eafce0;
+}
+[data-gl-theme="ice"] {
+  --gl-c1:#bfe9ff; --gl-c1-dim:#6fa8c4; --gl-c1-bright:#eaf9ff; --gl-c1-glow:rgba(191,233,255,.4);
+  --gl-c2:#8be8d0; --gl-c2-dim:#4d8f80; --gl-c2-bright:#d4fff2; --gl-c2-glow:rgba(139,232,208,.4);
+  --gl-core:#dceaf5; --gl-obstacle:#7fa6bd;
+  --gl-bg-1:#16222e; --gl-bg-2:#0b1720; --gl-bg-3:#02060a;
+  --gl-crystal-fill:url(#glCrysIce); --gl-crystal-edge:#f2fbff;
+}
+[data-gl-theme="ocean"] {
+  --gl-c1:#4fd8c4; --gl-c1-dim:#2c7d70; --gl-c1-bright:#a7fff0; --gl-c1-glow:rgba(79,216,196,.4);
+  --gl-c2:#ff8f6b; --gl-c2-dim:#9a4f38; --gl-c2-bright:#ffd3bf; --gl-c2-glow:rgba(255,143,107,.4);
+  --gl-core:#cfeee6; --gl-obstacle:#5f8f8a;
+  --gl-bg-1:#0a2430; --gl-bg-2:#051620; --gl-bg-3:#01080c;
+  --gl-crystal-fill:url(#glCrysOcean); --gl-crystal-edge:#e3fbf5;
+}
+[data-gl-theme="magic"] {
+  --gl-c1:#b98bff; --gl-c1-dim:#6c4b99; --gl-c1-bright:#e6d4ff; --gl-c1-glow:rgba(185,139,255,.4);
+  --gl-c2:#ffe066; --gl-c2-dim:#9c8a3e; --gl-c2-bright:#fff6c2; --gl-c2-glow:rgba(255,224,102,.4);
+  --gl-core:#ffe066; --gl-obstacle:#7c6a8f;
+  --gl-bg-1:#1c1230; --gl-bg-2:#120a1e; --gl-bg-3:#05030a;
+  --gl-crystal-fill:url(#glCrysMagic); --gl-crystal-edge:#f3e8ff;
+}
+
 /* ---- Navigation cockpit and reusable level map ------------------------- */
-.gridlock-cockpit { display:grid; grid-template-rows:auto auto minmax(0,1fr) auto; gap:10px; width:min(100%,680px); height:100%; margin:0 auto; padding:12px; color:#e6eefc; background:linear-gradient(180deg,#07101e,#02040a); }
-.gridlock-cockpit-header { display:grid; grid-template-columns:92px 1fr 92px; align-items:center; gap:8px; min-height:52px; text-align:center; }
+.gridlock-cockpit { display:grid; grid-template-rows:auto auto minmax(0,1fr) auto; gap:10px; width:min(100%,680px); height:100%; margin:0 auto; padding:12px; color:#e6eefc; background:linear-gradient(180deg,var(--gl-bg-1,#07101e),var(--gl-bg-3,#02040a)); }
+.gridlock-world-map { display:grid; grid-template-rows:auto minmax(0,1fr) auto; gap:10px; width:min(100%,680px); height:100%; margin:0 auto; padding:12px; color:#e6eefc; background:linear-gradient(180deg,#07101e,#02040a); }
+.gridlock-cockpit-header { display:grid; grid-template-columns:104px minmax(0,1fr) 92px; align-items:center; gap:8px; min-height:52px; text-align:center; }
 .gridlock-cockpit-header button,.gridlock-map-back { border:1px solid rgba(95,208,255,.5); border-radius:5px; padding:9px 10px; background:rgba(8,21,37,.82); color:#8ddcff; font:11px/1 'VCR',monospace; letter-spacing:1px; cursor:pointer; }
+.gridlock-cockpit-header button.arcade-tier-back {
+  box-sizing:border-box;
+  width:104px;
+  height:36px;
+  min-height:36px;
+  padding:1px 9px 0;
+  border:1px solid rgba(255,102,221,.68);
+  border-radius:var(--arcade-radius-panel);
+  background:rgba(31,8,43,.72);
+  box-shadow:0 6px 18px rgba(0,0,0,.28);
+  color:#ff9bea;
+  font:11px/1 'VCR',monospace;
+  letter-spacing:1.25px;
+  white-space:nowrap;
+}
+.gridlock-debug-trigger { justify-self:end; min-width:64px; color:#e8d79a !important; border-color:rgba(232,215,154,.52) !important; }
 .gridlock-cockpit-header > div span,.gridlock-cockpit-header > div strong { display:block; }
 .gridlock-cockpit-header > div span,.gridlock-cockpit-status,.gridlock-world-copy > span,.gridlock-map-heading span,.gridlock-cockpit-footer { color:#e8d79a; font:10px/1.3 'VCR',monospace; letter-spacing:1.5px; }
 .gridlock-cockpit-header > div strong { margin-top:4px; color:#7fd4ff; font:29px/1 'Bebas Neue',sans-serif; letter-spacing:4px; }
 .gridlock-cockpit-status { color:#7fd4ff; text-align:right; }
-.gridlock-world-panel { display:flex; align-items:center; justify-content:space-between; min-height:104px; border:1px solid rgba(95,208,255,.38); border-radius:9px; padding:16px 22px; background:radial-gradient(circle at 82% 50%,rgba(95,208,255,.16),transparent 24%),rgba(8,20,35,.76); }
+.gridlock-world-panel { display:flex; align-items:center; justify-content:space-between; min-height:104px; border:1px solid var(--gl-c1-glow,rgba(95,208,255,.38)); border-radius:9px; padding:16px 22px; background:radial-gradient(circle at 82% 50%,var(--gl-c1-glow,rgba(95,208,255,.16)),transparent 24%),rgba(8,20,35,.76); }
 .gridlock-world-copy > span,.gridlock-world-copy > strong,.gridlock-world-copy > small { display:block; }
 .gridlock-world-copy > strong { margin:6px 0; color:#f4f7ff; font:30px/1 'Bebas Neue',sans-serif; letter-spacing:2px; }
 .gridlock-world-copy > small { max-width:32ch; color:#b8cce0; font:11px/1.45 'VCR',monospace; }
-.gridlock-world-core { position:relative; width:66px; height:66px; border:2px solid #5fd0ff; border-radius:50%; box-shadow:0 0 24px rgba(95,208,255,.35),inset 0 0 18px rgba(95,208,255,.25); }
-.gridlock-world-core i,.gridlock-world-core b { position:absolute; inset:18px; border-radius:50%; background:#e8d79a; box-shadow:0 0 12px #e8d79a; }.gridlock-world-core b { inset:5px; border:1px solid rgba(95,208,255,.6); background:transparent; }
+.gridlock-world-core { position:relative; width:66px; height:66px; border:2px solid var(--gl-c1,#5fd0ff); border-radius:50%; box-shadow:0 0 24px var(--gl-c1-glow,rgba(95,208,255,.35)),inset 0 0 18px var(--gl-c1-glow,rgba(95,208,255,.25)); }
+.gridlock-world-core i,.gridlock-world-core b { position:absolute; inset:18px; border-radius:50%; background:var(--gl-core,#e8d79a); box-shadow:0 0 12px var(--gl-core,#e8d79a); }.gridlock-world-core b { inset:5px; border:1px solid var(--gl-c1-glow,rgba(95,208,255,.6)); background:transparent; }
+.gridlock-world-icon { width:40px; height:40px; }
 .gridlock-map-panel { position:relative; min-height:0; overflow:auto; border:1px solid rgba(95,208,255,.3); border-radius:9px; padding:16px; background:radial-gradient(ellipse at 50% 15%,rgba(40,88,130,.22),transparent 46%),#050b14; }
-.gridlock-map-heading { position:relative; z-index:1; text-align:center; }.gridlock-map-heading span,.gridlock-map-heading strong { display:block; }.gridlock-map-heading strong { margin-top:5px; color:#7fd4ff; font:22px/1 'Bebas Neue',sans-serif; letter-spacing:2px; }
-.gridlock-map-path { position:absolute; top:79px; bottom:48px; left:50%; border-left:2px dashed rgba(95,208,255,.45); }
-.gridlock-map-nodes { position:relative; z-index:1; display:grid; gap:20px; max-width:380px; margin:24px auto 0; }
-.gridlock-map-node { display:grid; grid-template-columns:48px 1fr; grid-template-rows:auto auto; align-items:center; column-gap:12px; border:1px solid rgba(95,208,255,.4); border-radius:8px; padding:10px; background:rgba(8,20,35,.9); color:#e6eefc; text-align:left; cursor:pointer; }
-.gridlock-map-node > span { grid-row:1 / 3; display:grid; place-items:center; width:38px; height:38px; border:2px solid #5fd0ff; border-radius:50%; color:#7fd4ff; font:22px/1 'Bebas Neue',sans-serif; }.gridlock-map-node strong { font:19px/1 'Bebas Neue',sans-serif; letter-spacing:1px; }.gridlock-map-node small { margin-top:4px; color:#b8cce0; font:10px/1 'VCR',monospace; letter-spacing:1px; }
-.gridlock-map-node.is-complete > span { border-color:#e8d79a; background:#e8d79a; color:#13202d; }.gridlock-map-node.is-locked { opacity:.42; cursor:default; }.gridlock-cockpit-footer { text-align:center; color:#9db5cc; }
+.gridlock-map-heading { position:relative; z-index:1; text-align:center; }.gridlock-map-heading span,.gridlock-map-heading strong { display:block; }.gridlock-map-heading strong { margin-top:2px; color:#7fd4ff; font:27px/1 'Bebas Neue',sans-serif; letter-spacing:2.5px; }
+.gridlock-map-nodes { position:relative; z-index:1; display:flex; flex-wrap:wrap; justify-content:center; gap:14px; max-width:320px; margin:12px auto; }
+.gridlock-path-node { position:relative; width:50px; height:50px; border-radius:50%; border:2px solid var(--gl-c1,#5fd0ff); background:rgba(8,20,35,.94); color:#7fd4ff; display:grid; place-items:center; font:20px/1 'Bebas Neue',sans-serif; cursor:pointer; box-shadow:0 0 12px rgba(0,0,0,.6); }
+.gridlock-path-node.is-locked { opacity:.4; cursor:default; }
+.gridlock-path-node.is-complete { border-color:#e8d79a; background:#e8d79a; color:#13202d; }
+.gridlock-path-lock { position:absolute; bottom:-3px; right:-3px; width:16px; height:16px; border-radius:50%; background:#0b1726; border:1px solid rgba(255,255,255,.35); }
+.gridlock-path-lock::before { content:''; position:absolute; inset:4px; border:1.5px solid #a8b2ba; border-bottom:0; border-radius:3px 3px 0 0; top:1px; }
+.gridlock-cockpit-footer { text-align:center; color:#9db5cc; }
+.gridlock-world-map-panel {
+  position:relative; min-height:0; overflow:auto; display:flex; flex-direction:column; border:1px solid rgba(95,208,255,.3); border-radius:9px; padding:12px 14px;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 50% 15%,rgba(40,88,130,.22),transparent 46%),#050b14;
+}
+.gridlock-world-map-panel::before,.gridlock-world-map-panel::after { content:''; position:absolute; width:20px; height:20px; border:2px solid rgba(141,220,255,.55); pointer-events:none; }
+.gridlock-world-map-panel::before { top:7px; left:7px; border-right:0; border-bottom:0; }
+.gridlock-world-map-panel::after { bottom:7px; right:7px; border-left:0; border-top:0; }
+/* Flex-fill (not fixed heights) so all five world cards always fit the
+   panel's actual available height instead of overflowing into a scroll on
+   shorter screens — they grow to use extra room on taller ones instead. */
+.gridlock-world-nodes { position:relative; z-index:1; flex:1; min-height:0; display:flex; flex-direction:column; gap:8px; max-width:440px; width:100%; margin:8px auto 0; }
+.gridlock-world-node { position:relative; flex:1; min-height:62px; display:grid; grid-template-columns:58px 1fr; grid-template-rows:1fr 1fr; align-items:center; row-gap:0; column-gap:14px; border:1px solid var(--gl-c1-glow,rgba(95,208,255,.44)); border-radius:8px; padding:8px 16px; background:radial-gradient(circle at 10% 50%,var(--gl-c1-glow,rgba(95,208,255,.1)),transparent 24%),rgba(8,20,35,.92); color:#e6eefc; text-align:left; cursor:pointer; }.gridlock-world-node strong { grid-column:2; align-self:end; color:var(--gl-c1,#7fd4ff); font:27px/1 'Bebas Neue',sans-serif; letter-spacing:2px; }.gridlock-world-node em { grid-column:2; align-self:start; margin-top:5px; color:color-mix(in srgb,var(--gl-c1,#7fd4ff) 78%,#d8e3ef); font:10px/1 'VCR',monospace; font-style:normal; letter-spacing:1.1px; }.gridlock-world-node .gridlock-world-icon { grid-column:1; grid-row:1 / 3; place-self:center; }.gridlock-world-node.is-locked { padding-right:54px;opacity:.42;cursor:default; }.gridlock-world-node.is-complete { border-color:#e8d79a; }
+.gridlock-world-icon { box-sizing:border-box; width:56px; height:56px; color:var(--gl-c1,#7fd4ff); filter:drop-shadow(0 0 7px var(--gl-c1-glow,rgba(95,208,255,.35))); }
+.gridlock-world-icon > i { inset:15px;opacity:.24; }
+.gridlock-world-icon > b { inset:5px; }
+.gridlock-world-icon svg { position:absolute;left:50%;top:50%;z-index:2;width:36px;height:36px;overflow:visible;transform:translate(-50%,-50%);transform-origin:center;filter:drop-shadow(0 0 4px var(--gl-c1-glow,rgba(95,208,255,.4))); }
+.gridlock-world-icon .gl-core-planet { fill:var(--gl-core,#e8d79a);stroke:none; }
+.gridlock-world-icon .gl-core-leaf { fill:color-mix(in srgb,var(--gl-c1,#7fd4ff) 58%,transparent);stroke:var(--gl-c1,#7fd4ff);stroke-width:2; }
+.gridlock-world-icon .gl-core-crystal { fill:color-mix(in srgb,var(--gl-c1,#7fd4ff) 34%,transparent);stroke:var(--gl-c1,#7fd4ff);stroke-width:2;stroke-linejoin:round; }
+.gridlock-world-icon .gl-core-wave { fill:none;stroke:var(--gl-c1,#7fd4ff);stroke-width:4;stroke-linecap:round; }
+.gridlock-world-icon .gl-core-castle { fill:color-mix(in srgb,var(--gl-c1,#7fd4ff) 34%,transparent);stroke:var(--gl-c1,#7fd4ff);stroke-width:2;stroke-linejoin:round; }
+.gridlock-world-icon .gl-core-detail { fill:none;stroke:var(--gl-c2,#e8d79a);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;opacity:.9; }
+.gridlock-world-icon .gl-icon-grid { fill:none; stroke:currentColor; stroke-width:1; opacity:.22; }
+.gridlock-world-icon .gl-icon-route { fill:none; stroke:var(--gl-c1,#7fd4ff); stroke-width:4; stroke-linecap:round; stroke-linejoin:round; }
+.gridlock-world-icon .gl-icon-route-b { stroke:var(--gl-c2,#e8d79a); }
+.gridlock-world-icon .gl-icon-node,.gridlock-world-icon .gl-icon-tile,.gridlock-world-icon .gl-icon-router,.gridlock-world-icon .gl-icon-bolt { fill:#07111e; stroke:var(--gl-c1,#7fd4ff); stroke-width:2.5; }
+.gridlock-world-icon .gl-icon-obstacle { fill:none; stroke:var(--gl-obstacle,#7fa6bd); stroke-width:5; stroke-linecap:round; }
+.gridlock-world-icon .gl-icon-lock { fill:#07111e; stroke:#e8d79a; stroke-width:2; }
+.gridlock-world-icon .gl-icon-arrow,.gridlock-world-icon .gl-icon-router-mark,.gridlock-world-icon .gl-icon-switch { fill:none; stroke:#e8d79a; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+.gridlock-world-check { position:absolute; top:-9px; right:-9px; width:26px; height:26px; border-radius:50%; background:#e8d79a; color:#13202d; display:grid; place-items:center; font:15px/1 'VCR',monospace; font-style:normal; box-shadow:0 0 10px rgba(0,0,0,.6),0 0 8px rgba(232,215,154,.5); }
+.gridlock-world-lock { position:absolute; right:18px; top:50%; width:20px; height:17px; box-sizing:border-box; border:2px solid var(--gl-c1,#7fd4ff); border-radius:3px; transform:translateY(-34%); opacity:.82; }
+.gridlock-world-lock::before { content:''; position:absolute; left:3px; right:3px; bottom:12px; height:10px; border:2px solid var(--gl-c1,#7fd4ff); border-bottom:0; border-radius:8px 8px 0 0; }
+.gridlock-world-lock::after { content:''; position:absolute; left:50%; top:5px; width:3px; height:6px; border-radius:2px; background:var(--gl-c1,#7fd4ff); transform:translateX(-50%); }
+.gridlock-debug-panel { min-height:0; overflow:auto; border:1px solid rgba(95,208,255,.3); border-radius:9px; padding:18px; background:radial-gradient(ellipse at 50% 15%,rgba(40,88,130,.22),transparent 46%),#050b14; }
+.gridlock-debug-world { max-width:460px; margin:20px auto; border:1px solid rgba(95,208,255,.32); border-radius:8px; padding:14px; background:rgba(8,20,35,.72); }.gridlock-debug-world > span,.gridlock-debug-world > strong { display:block; }.gridlock-debug-world > span { color:#e8d79a; font:10px/1 'VCR',monospace; letter-spacing:1.5px; }.gridlock-debug-world > strong { margin:5px 0 12px; color:#7fd4ff; font:24px/1 'Bebas Neue',sans-serif; letter-spacing:2px; }.gridlock-debug-world > div { display:grid; gap:7px; }.gridlock-debug-world button { display:flex; align-items:center; justify-content:space-between; width:100%; border:1px solid rgba(95,208,255,.42); border-radius:5px; padding:10px; background:#0b1726; color:#dcecff; font:12px/1 'VCR',monospace; text-align:left; cursor:pointer; }.gridlock-debug-world button small { color:#e8d79a; font:10px/1 'VCR',monospace; }
 
 /* ---- Puzzle mission screen (hosts the GridLock engine) ------------------ */
 
 .gridlock-mission-screen {
   display: grid;
   grid-template-rows: 64px minmax(0, 1fr);
-  width: min(100%, 580px);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 760px;
   height: 100%;
   margin: 0 auto;
-  padding: max(8px, env(safe-area-inset-top)) 10px max(8px, env(safe-area-inset-bottom));
+  padding: max(4px, env(safe-area-inset-top)) 4px max(4px, env(safe-area-inset-bottom));
   overflow: hidden;
   background: #02040a;
 }
@@ -82,32 +173,99 @@
   border: 1px solid rgba(60,90,120,.34); border-radius: 8px 8px 0 0;
   padding: 8px 14px; background: rgba(6,11,22,.98);
 }
-.gridlock-mission-screen > header { grid-template-columns:auto 1fr; gap:12px; align-items:center; }.gridlock-mission-screen > header span { display:block; color:#5f9fc0; font:12px/1 'VCR',monospace; letter-spacing:1.5px; }.gridlock-mission-screen > header strong { display:block; margin-top:5px; color:#e8d79a; font:21px/1 'Bebas Neue',sans-serif; letter-spacing:2px; }
+.gridlock-mission-screen > header { grid-template-columns:auto 1fr auto; gap:12px; align-items:center; }.gridlock-mission-screen > header strong { color:#e8d79a; font:21px/1 'Bebas Neue',sans-serif; letter-spacing:2px; }
+.gridlock-board-actions { display:flex; gap:6px; }
+.gridlock-board-actions button { border:1px solid rgba(95,208,255,.48); border-radius:5px; padding:8px 9px; background:rgba(8,21,37,.82); color:#8ddcff; font:10px/1 'VCR',monospace; letter-spacing:1px; cursor:pointer; }
+.gridlock-board-actions button:disabled { opacity:.3; cursor:default; }
 
 .gridlock-stage {
   position: relative; min-height: 0; overflow: hidden;
   border: 1px solid rgba(60,90,120,.28); border-top: 0;
-  background: radial-gradient(120% 90% at 50% 30%, #0c141f, #070c15 55%, #02040a 100%);
+  background: radial-gradient(120% 90% at 50% 30%, var(--gl-bg-1,#0c141f), var(--gl-bg-2,#070c15) 55%, var(--gl-bg-3,#02040a) 100%);
   touch-action: manipulation;
 }
 .gridlock-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; transition: filter .45s ease; }
 .gridlock-scan { position: absolute; inset: 0; pointer-events: none; opacity: .5; background: repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 1px, transparent 1px 3px); }
+.gridlock-motif { position: absolute; inset: 0; pointer-events: none; }
 .gridlock-vig { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at 50% 42%, transparent 40%, rgba(0,0,0,.55) 78%, rgba(0,0,0,.85) 100%); }
+.gl-leaf-accent { fill: var(--gl-c1,#8fe07a); opacity: .85; }
+.gl-ice-accent { fill: var(--gl-c1,#bfe9ff); opacity: .85; }
+.gl-coral-accent path { stroke: #e0836b; } .gl-coral-accent circle { fill: #ff9d7f; }
+.gl-lantern-accent circle { fill: url(#glLanternGlow); }
+.gl-crystal-facet-line { stroke: var(--gl-c1-dim,#6285a1); opacity: .5; }
+.gridlock-stage.is-solved .gl-crystal-facet-line { stroke: var(--gl-crystal-edge,#dff7ff); filter: drop-shadow(0 0 5px var(--gl-c1-bright,#7fe0ff)); opacity: 1; }
+.gl-ember { animation: gl-ember-flicker 2.6s ease-in-out infinite; }
+.gl-ember:nth-of-type(2) { animation-delay: -.8s; }
+.gl-ember:nth-of-type(3) { animation-delay: -1.6s; }
+@keyframes gl-ember-flicker { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+[data-gl-theme="jungle"] .gridlock-motif {
+  background:
+    radial-gradient(140px 90px at 14% 12%, rgba(143,224,122,.12), transparent 70%),
+    radial-gradient(170px 110px at 86% 18%, rgba(224,165,66,.09), transparent 70%),
+    radial-gradient(120px 150px at 50% 96%, rgba(143,224,122,.10), transparent 70%);
+}
+[data-gl-theme="jungle"] #gridlock-housing { stroke: url(#glVineBorder); stroke-width: 9; }
+[data-gl-theme="jungle"] .gl-obstacle-plate { fill: url(#glVineFill); }
+[data-gl-theme="space"] #gridlock-housing { stroke: url(#glSpaceRivetBorder); stroke-width: 8; }
+[data-gl-theme="space"] .gl-obstacle-plate { fill: url(#glSpaceDebrisFill); }
+[data-gl-theme="ice"] #gridlock-housing { stroke: url(#glIceBorder); stroke-width: 9; }
+[data-gl-theme="ice"] .gl-obstacle-plate { fill: url(#glIceFill); }
+[data-gl-theme="ocean"] #gridlock-housing { stroke: url(#glCoralBorder); stroke-width: 9; }
+[data-gl-theme="ocean"] .gl-obstacle-plate { fill: url(#glCoralFill); }
+[data-gl-theme="magic"] #gridlock-housing { stroke: url(#glRuneBorder); stroke-width: 9; }
+[data-gl-theme="magic"] .gl-obstacle-plate { fill: url(#glRuneFill); }
 .gl-feed { fill: #eafcff; filter: drop-shadow(0 0 5px #4fd4ff); }
+.gl-port-wire { fill:none; stroke:#334d66; stroke-width:3; stroke-linecap:round; }
+.gl-crystal-halo { fill:var(--gl-c1,#5fd0ff); opacity:.025; filter:drop-shadow(0 0 13px var(--gl-c1,#5fd0ff)); transition:opacity .45s ease; }
+.gl-crystal-frame { fill:#09111b; stroke:var(--gl-c1-dim,#52738d); stroke-width:3; }
+.gl-crystal-core { fill:#132232; stroke:var(--gl-c1-dim,#36536a); stroke-width:2; transition:fill .45s ease,stroke .45s ease,filter .45s ease; }
+.gl-crystal-facet { fill:var(--gl-c1-dim,#6285a1); opacity:.18; transition:fill .45s ease,opacity .45s ease; }.gl-crystal-center { fill:var(--gl-c1-dim,#375066); transition:fill .45s ease,filter .45s ease; }
+.gridlock-stage.is-solved .gl-crystal-halo { opacity:.36; }.gridlock-stage.is-solved .gl-crystal-frame { stroke:var(--gl-crystal-edge,#dff7ff); filter:drop-shadow(0 0 10px var(--gl-c1-bright,#7fe0ff)); }.gridlock-stage.is-solved .gl-crystal-core { fill:var(--gl-crystal-fill,url(#glCrys)); stroke:var(--gl-crystal-edge,#dff7ff); filter:drop-shadow(0 0 7px var(--gl-c1-bright,#7fe0ff)); }.gridlock-stage.is-solved .gl-crystal-facet { fill:var(--gl-crystal-edge,#eafcff); opacity:.74; }.gridlock-stage.is-solved .gl-crystal-center { fill:var(--gl-crystal-edge,#dff7ff); filter:drop-shadow(0 0 5px var(--gl-c1-bright,#7fe0ff)); }.gridlock-stage.is-solved .gl-port-wire { stroke:var(--gl-c1-bright,#7fe0ff); filter:drop-shadow(0 0 5px var(--gl-c1-bright,#4fc0ef)); }
+.gl-source-frame { fill:#0c131c; stroke:#8a6732; stroke-width:3; }
+.gl-source-inner { fill:#17150f; stroke:#d9902f; stroke-width:2; }
+.gl-source-bars { stroke:#e0a43b; stroke-width:4; stroke-linecap:round; opacity:.95; }
+.gl-source-feed-housing { fill:#111a24; stroke:#344456; stroke-width:2; }
+.gl-source-label { fill:#c88f4a; font-size:11px; letter-spacing:2px; }
+.gl-meter-bolts,.gl-meter-status { font-family:'VCR',monospace; letter-spacing:1.45px; paint-order:stroke; stroke:#02040a; stroke-width:3px; stroke-linejoin:round; }
+.gl-meter-bolts { fill:#eaf6ff; font-size:15px; }.gl-meter-status { fill:#ffe9b0; font-size:14px; }
+.gl-meter-track { fill:#0b1119; stroke:#2b455d; stroke-width:2; }.gl-meter-fill { fill:var(--gl-c1,#5fd0ff); filter:drop-shadow(0 0 5px var(--gl-c1,#4fd4ff)); transition:width .22s ease; }
 
 /* conduit tiles: unsealed = warm/loose, sealed = cyan, flooded = bright */
 .gridlock-tile { cursor: pointer; }
-/* Border is a direct power read: orange = no power yet, blue = powered.
-   Nothing in between. The red cap (below) is the separate signal for
-   "powered but this exact edge is a dead end." */
+.gridlock-empty { cursor: default; }
+.gridlock-obstacle { pointer-events:none; }
+.gl-obstacle-plate { fill:#18202a; stroke:var(--gl-obstacle,#64717b); stroke-width:2; }
+.gl-obstacle-mark { fill:none; stroke:#9da8af; stroke-width:3; stroke-linecap:round; opacity:.72; }
+.gridlock-tile.is-locked { cursor:default; }
+.gridlock-tile.is-locked .gl-plate { fill:#17212b; stroke:#d9c46f; stroke-opacity:1; }
+.gridlock-tile.is-locked .gl-bevel-top { fill:#6f6232; opacity:.74; }
+.gl-lock-shackle { fill:none; stroke:#f0dc78; stroke-width:3; stroke-linecap:round; }
+.gl-lock-body { fill:#d9c46f; stroke:#070b10; stroke-width:1.5; }
+.gl-lock-keyhole { fill:#27303a; }
+.gl-lock-keyhole-stem { fill:none; stroke:#27303a; stroke-width:2; stroke-linecap:round; }
+.gl-movement-bay-shadow { fill:#06090d; opacity:.82; }.gl-movement-bay-floor { fill:#596267; stroke:#c1c9cc; stroke-width:1.7; }.gl-movement-bay-seam { stroke:#d0d6d8; stroke-width:1; opacity:.52; }
+.gl-empty-slot { fill:rgba(13,19,24,.9); stroke:#d4dcde; stroke-width:1.5; stroke-dasharray:5 4; transition:stroke .16s,fill .16s; }.gl-empty-slot-core { fill:#8d989d; opacity:.65; transition:fill .16s,filter .16s; }
+.gridlock-tile.is-in-movement-bay .gl-plate { fill-opacity:.62; }.gridlock-tile.is-in-movement-bay .gl-bevel-top { opacity:.36; }
+/* Tiles remain copper until the whole grid seals. Power is shown on individual
+   arms: a blue arm is truly connected to the core; a copper arm is still loose.
+   The red cap remains the specific signal for a powered dead end. */
 .gl-plate { fill: #0d141d; stroke: #c97a4a; stroke-width: 1.5; stroke-opacity: .55; transition: stroke .2s; }
 .gl-bevel-top { fill: #243244; opacity: .7; }
 .gl-chan { transition: transform .16s cubic-bezier(.34,1.4,.5,1); }
 .gl-seg { fill: #b0763a; transition: fill .18s; }
 .gl-hub { fill: #7a5b32; stroke: #050a10; stroke-width: 2; transition: fill .18s; }
-.gridlock-tile.is-sealed .gl-seg { fill: #5fd0ff; }
-.gridlock-tile.is-sealed .gl-hub { fill: #7fe0ff; }
-.gridlock-tile.is-sealed .gl-plate { stroke: #5fd0ff; stroke-width: 1.5; stroke-opacity: 1; }
+.gl-seg.is-powered { fill: var(--gl-c1,#5fd0ff); }
+.gl-seg.is-powered-green { fill:var(--gl-c2,#71e39a); }
+.gridlock-tile.is-router .gl-seg.is-powered-dual { fill:#eafcff; filter:drop-shadow(0 0 5px #9ee9ff); }
+.gridlock-tile.is-router .gl-plate { fill:#101925; stroke:#9fb8ca; stroke-width:2.5; stroke-opacity:1; }
+.gridlock-tile.is-router .gl-bevel-top { fill:#7890a3; opacity:.72; }
+.gl-router-insulator { fill:#050a10; stroke:#d5e3ec; stroke-width:3; filter:drop-shadow(0 0 3px rgba(207,230,244,.55)); }
+.gridlock-tile.is-router .gl-router-vertical,.gridlock-tile.is-router .gl-router-horizontal { stroke:#07101a; stroke-width:1; }
+.gridlock-tile.is-router-online .gl-plate { stroke:#eafcff; filter:drop-shadow(0 0 7px #72d9ff); }
+.gridlock-tile.is-energized .gl-hub { fill: var(--gl-c1-bright,#7fe0ff); }
+.gridlock-tile.is-energized-green .gl-hub { fill:var(--gl-c2-bright,#b0f7c8); }
+.gridlock-tile.is-closed .gl-plate { stroke:var(--gl-c1,#5fd0ff); stroke-opacity:1; }
+.gridlock-tile.is-closed-green .gl-plate { stroke:var(--gl-c2,#71e39a); stroke-opacity:1; }
 .gridlock-tile.is-flooded .gl-seg { fill: #eafcff; filter: drop-shadow(0 0 5px #4fd4ff); }
 .gridlock-tile.is-flooded .gl-hub { fill: #eafcff; filter: drop-shadow(0 0 6px #7fe0ff); }
 .gridlock-tile.is-flooded .gl-plate { stroke: #3a6a8c; }
@@ -115,7 +273,7 @@
 /* Leak warning: independent of energized/blue state, so a leak can never hide
    behind an otherwise-lit tile. Only shows on a segment that's both
    energized and a dead end — a cap band right on the end of that (now blue,
-   via is-sealed above) segment, not a mark on every unpowered leak during
+   via is-powered above) segment, not a mark on every unpowered leak during
    scrambling. Red so the cap reads as distinct from the segment's own
    colour in any state (amber when unpowered, blue when sealed, white when
    flooded), never blending in as "more pipe." */
@@ -139,31 +297,104 @@
 
 /* lock-bolts */
 .gl-bolt-stub { stroke: #1a2a3a; stroke-width: 5; transition: stroke .3s; }
-.gl-bolt-housing { fill: #141f2b; stroke: #2b3d50; stroke-width: 2; }
+.gl-bolt-housing { fill: #141f2b; stroke: #64768a; stroke-width: 2.5; filter: drop-shadow(0 1px 3px rgba(0,0,0,.85)); }
 .gl-bolt-pin { fill: #3a4d63; transition: transform .35s cubic-bezier(.5,-0.4,.4,1.4); }
 .gl-bolt-lamp { fill: #223343; transition: fill .2s; }
-.gridlock-bolt.is-lit .gl-bolt-lamp { fill: #9fe8ff; filter: drop-shadow(0 0 8px #7fe0ff); }
+.gridlock-bolt.is-cyan .gl-bolt-housing { fill:#0d2635; stroke:var(--gl-c1-dim,#45bfe9); filter:drop-shadow(0 0 2px rgba(69,191,233,.45)); }
+.gridlock-bolt.is-cyan .gl-bolt-pin { fill:#38677f; }
+.gridlock-bolt.is-green .gl-bolt-housing { stroke:var(--gl-c2-dim,#39734d); }
+.gridlock-bolt.is-programmable { cursor:pointer; }
+.gridlock-bolt.is-unassigned .gl-bolt-housing { fill:#1c222a; stroke:#a8b2ba; stroke-dasharray:3 2; }
+.gl-bolt-switch rect { fill:#111923; stroke:#d2dbe0; stroke-width:1.5; }
+.gl-bolt-switch circle { fill:#d2dbe0; transition:cx .18s ease,fill .18s ease; }
+.gridlock-bolt.is-unassigned .gl-bolt-switch circle { fill:#a8b2ba; }
+.gridlock-bolt.is-cyan .gl-bolt-switch rect { stroke:var(--gl-c1,#5fd0ff); }
+.gridlock-bolt.is-cyan .gl-bolt-switch circle { fill:var(--gl-c1,#5fd0ff); }
+.gridlock-bolt.is-green .gl-bolt-switch rect { stroke:var(--gl-c2,#71e39a); }
+.gridlock-bolt.is-green .gl-bolt-switch circle { fill:var(--gl-c2,#71e39a); }
+.gridlock-bolt.is-lit .gl-bolt-lamp { fill: var(--gl-c1-bright,#9fe8ff); filter: drop-shadow(0 0 8px var(--gl-c1-bright,#7fe0ff)); }
 .gridlock-bolt.is-lit .gl-bolt-pin { transform: translateY(-11px); }
-.gridlock-bolt.is-lit .gl-bolt-stub { stroke: #5fd0ff; filter: drop-shadow(0 0 5px #4fc0ef); }
+.gridlock-bolt.is-programmable.is-lit .gl-bolt-pin { transform:none; }
+.gridlock-bolt.is-lit .gl-bolt-stub { stroke: var(--gl-c1,#5fd0ff); filter: drop-shadow(0 0 5px var(--gl-c1,#4fc0ef)); }
+.gridlock-bolt.is-lit .gl-bolt-housing { stroke:var(--gl-c1,#5fd0ff); filter:drop-shadow(0 0 5px var(--gl-c1,#4fc0ef)); }
+.gridlock-bolt.is-green.is-lit .gl-bolt-lamp { fill:var(--gl-c2-bright,#b0f7c8); filter:drop-shadow(0 0 8px var(--gl-c2,#71e39a)); }
+.gridlock-bolt.is-green.is-lit .gl-bolt-stub { stroke:var(--gl-c2,#71e39a); filter:drop-shadow(0 0 5px var(--gl-c2,#71e39a)); }
+.gridlock-bolt.is-green.is-lit .gl-bolt-housing { stroke:var(--gl-c2,#71e39a); filter:drop-shadow(0 0 5px var(--gl-c2,#71e39a)); }
+.gridlock-source-port { pointer-events:none; }
+.gl-source-stub { stroke-width:6; stroke-linecap:round; }
+.gl-source-port-housing { fill:#0a1119; stroke-width:2.5; }
+.gl-source-port-inner { fill:#111b25; stroke-width:1.5; }
+.gl-source-port-pin { fill:#334b5d; }
+.gl-source-port-lamp { stroke:#071019; stroke-width:1.5; }
+.gl-source-port-bars { fill:none; stroke-width:2; stroke-linecap:round; opacity:.9; }
+.gridlock-source-port.is-cyan .gl-source-stub { stroke:var(--gl-c1,#5fd0ff); filter:drop-shadow(0 0 4px var(--gl-c1,#4fc0ef)); }
+.gridlock-source-port.is-cyan .gl-source-port-housing { stroke:var(--gl-c1-dim,#45bfe9); filter:drop-shadow(0 0 5px rgba(69,191,233,.36)); }
+.gridlock-source-port.is-cyan .gl-source-port-inner { stroke:#277f9f; }
+.gridlock-source-port.is-cyan .gl-source-port-pin { fill:#38677f; }
+.gridlock-source-port.is-cyan .gl-source-port-lamp { fill:var(--gl-c1-bright,#9fe8ff); }
+.gridlock-source-port.is-cyan .gl-source-port-bars { stroke:var(--gl-c1,#5fd0ff); }
+.gridlock-source-port.is-green .gl-source-stub { stroke:var(--gl-c2,#71e39a); filter:drop-shadow(0 0 4px var(--gl-c2,#71e39a)); }
+.gridlock-source-port.is-green .gl-source-port-housing { stroke:var(--gl-c2-dim,#56bd79); filter:drop-shadow(0 0 5px rgba(113,227,154,.32)); }
+.gridlock-source-port.is-green .gl-source-port-inner { stroke:#39734d; }
+.gridlock-source-port.is-green .gl-source-port-pin { fill:#3b6d50; }
+.gridlock-source-port.is-green .gl-source-port-lamp { fill:var(--gl-c2-bright,#b0f7c8); }
+.gridlock-source-port.is-green .gl-source-port-bars { stroke:var(--gl-c2,#71e39a); }
+.gridlock-source.is-green .gl-source-frame { stroke:#478d61; }
+.gridlock-source.is-green .gl-source-inner { stroke:var(--gl-c2,#71e39a); }
+.gridlock-source.is-green .gl-source-bars { stroke:var(--gl-c2,#71e39a); }
+.gridlock-source.is-green .gl-feed { fill:var(--gl-c2-bright,#b0f7c8); filter:drop-shadow(0 0 5px var(--gl-c2,#71e39a)); }
+.gridlock-source.is-green .gl-source-label { fill:var(--gl-c2,#71e39a); }
+.gridlock-source.is-cyan .gl-source-frame { stroke:#3289aa; }
+.gridlock-source.is-cyan .gl-source-inner { stroke:var(--gl-c1,#5fd0ff); }
+.gridlock-source.is-cyan .gl-source-bars { stroke:var(--gl-c1,#5fd0ff); }
+.gridlock-source.is-cyan .gl-source-label { fill:var(--gl-c1,#5fd0ff); }
+.gridlock-source .gl-feed { display:none; }
 .gridlock-bolt.is-lit { animation: gl-clunk .34s ease; }
+.gridlock-bolt.is-firing { animation:gl-bolt-fire .38s cubic-bezier(.25,.9,.35,1.35); }
+.gridlock-stage.is-sealing .gl-crystal-halo { opacity:.18; animation:gl-crystal-charge .5s ease-in-out infinite alternate; }
+@keyframes gl-bolt-fire {
+  0% { transform:translateY(0) scale(1); }
+  38% { transform:translateY(-3px) scale(1.08); }
+  100% { transform:translateY(0) scale(1); }
+}
+@keyframes gl-crystal-charge {
+  from { opacity:.08; }
+  to { opacity:.3; }
+}
 @keyframes gl-clunk {
   0% { transform: translateX(0); }
   30% { transform: translateX(-1.5px); }
   60% { transform: translateX(1.5px); }
   100% { transform: translateX(0); }
 }
-.gridlock-stage.is-solved .gl-vault-ring { stroke: #b7f0ff; filter: drop-shadow(0 0 14px #7fe0ff); }
 
-/* start overlay */
+/* start overlay — a compact card anchored low on the stage, not a full
+   cover, so the spotlighted board underneath stays the main visual */
 .gridlock-start {
-  position: absolute; inset: 0; z-index: 12; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; border: 0; padding: 26px;
-  background: rgba(2,5,12,.84); color: #e6eefc; text-align: center; cursor: pointer;
+  position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 12;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  width: min(92%, 420px); border: 1px solid rgba(95,208,255,.4); border-radius: 10px;
+  padding: 14px 18px; background: rgba(4,8,18,.94); color: #e6eefc; text-align: center; cursor: pointer;
 }
-.gridlock-start strong { color: #7fd4ff; font: 38px/.95 'Bebas Neue', sans-serif; letter-spacing: 3px; text-shadow: 0 0 22px rgba(80,160,210,.5); }
-.gridlock-start small { margin-top: 18px; max-width: 34ch; color: #cdddf0; font: 18px/1.55 'VCR', monospace; }
-.gridlock-start b { margin-top: 26px; border: 2px solid #3f7fb0; border-radius: 7px; padding: 15px 24px; background: rgba(60,130,180,.16); color: #bfe4ff; font: 16px/1 'VCR', monospace; letter-spacing: 1px; }
+.gridlock-start strong { color: #7fd4ff; font: 26px/.95 'Bebas Neue', sans-serif; letter-spacing: 2px; text-shadow: 0 0 16px rgba(80,160,210,.5); }
+.gridlock-start small { max-width: 38ch; color: #cdddf0; font: 13px/1.5 'VCR', monospace; }
+.gridlock-start b { margin-top: 2px; border: 2px solid #3f7fb0; border-radius: 7px; padding: 9px 18px; background: rgba(60,130,180,.16); color: #bfe4ff; font: 13px/1 'VCR', monospace; letter-spacing: 1px; }
 .gridlock-stage:not(.is-paused) .gridlock-start { display: none; }
+
+/* level-intro spotlight: dim the real board via an SVG mask and cut a
+   bright hole over whatever the level's rule set actually is. Overrides the
+   engine's global is-dark filter so the hole reads at full brightness
+   instead of 32% — the mask rect supplies all the darkening instead. */
+.gridlock-stage.has-gl-spotlight.is-dark .gridlock-svg { filter: none; }
+.gl-spot-ring { stroke: #8ddcff; stroke-width: 2.5; stroke-dasharray: 5 4; fill: none; filter: drop-shadow(0 0 6px rgba(141,220,255,.6)); animation: gl-spot-ring-pulse 1.8s ease-in-out infinite; }
+@keyframes gl-spot-ring-pulse { 0%,100% { opacity: .6; } 50% { opacity: 1; } }
+.gl-spot-demo-slide { animation: gl-spot-slide 1.8s ease-in-out infinite; }
+@keyframes gl-spot-slide { 0%,10% { transform: translateY(0); } 45%,55% { transform: translateY(var(--gl-travel)); } 90%,100% { transform: translateY(0); } }
+.gl-spot-demo-pulse-a,.gl-spot-demo-pulse-b { animation: gl-spot-travel 1.6s linear infinite; }
+.gl-spot-demo-pulse-b { animation-delay: -.8s; }
+@keyframes gl-spot-travel { from { transform: translateX(0); } to { transform: translateX(var(--gl-travel)); } }
+.gl-spot-demo-knob { animation: gl-spot-knob 1.8s ease-in-out infinite; }
+@keyframes gl-spot-knob { 0%,15% { transform: translateX(0); fill: #d2dbe0; } 50%,65% { transform: translateX(8px); fill: #8ddcff; } 100% { transform: translateX(0); fill: #d2dbe0; } }
 
 /* ---- Solved beat (temporary — this is the placeholder future level-complete
    screen will replace once progression is built) --------------------------- */
