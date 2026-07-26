@@ -104,8 +104,9 @@
   }
   function tilesWithSlots(tiles, type, groupId, movedId) {
     if (!state?.pickedId) return tiles.map(tile => tileMarkup(tile, movedId)).join('');
-    return slotMarkup(type, 0, groupId) + tiles.map((tile, index) =>
-      tileMarkup(tile, movedId) + slotMarkup(type, index + 1, groupId)
+    if (!tiles.length) return `<span class="kt-empty-slot">${slotMarkup(type, 0, groupId)}</span>`;
+    return tiles.map((tile, index) =>
+      `<span class="kt-tile-position">${slotMarkup(type, index, groupId)}${tileMarkup(tile, movedId)}${index === tiles.length - 1 ? slotMarkup(type, index + 1, groupId) : ''}</span>`
     ).join('');
   }
   function groupMarkup(group, movedId) {
@@ -351,7 +352,7 @@
     if (!state || !wrap) return;
     wrap.querySelector('#kt-table').innerHTML = state.groups.map(group => groupMarkup(group, movedId)).join('') +
       (state.pickedId ? `<button class="kt-new-group-cue kt-tap-new-group" type="button" data-new-group>NEW GROUP</button>` : '');
-    wrap.querySelector('#kt-rack').innerHTML = `<span>RACK</span>${tilesWithSlots(state.rack, 'rack', null, movedId)}`;
+    wrap.querySelector('#kt-rack').innerHTML = `<span class="kt-rack-label">RACK</span>${tilesWithSlots(state.rack, 'rack', null, movedId)}`;
   }
 
   function showHowToPlay() {

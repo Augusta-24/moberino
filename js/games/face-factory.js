@@ -666,7 +666,7 @@
 
   // ── CRAZY FACE FIXER + RECOGNITION ROUND ───────────────────────────────
   const bandLabels = ['EYES & BROWS', 'NOSE', 'SMILE & CHIN'];
-  const FIX_POOL_SIZE = 15;
+  const FIX_POOL_SIZE = FIX_CHARS.length;
   // Precomputed alpha silhouettes are used only by Build Faces. Crazy Face deliberately
   // keeps the original 512px portrait canvas and uses the manual landmark calibration,
   // so hair, shoulders, and different source crops are never mistaken for face geometry.
@@ -996,7 +996,7 @@
     shellEl.appendChild(flash);
     sound('cameraShutter');
     later(() => flash.remove(), 650);
-    const styles = ['neon', 'gold', 'instant'];
+    const styles = ['walnut', 'floral', 'quilt', 'brass', 'seaside', 'instant'];
     const style = styles[portraitStyleIndex % styles.length];
     portraitStyleIndex++;
     later(() => {
@@ -1004,12 +1004,14 @@
       const overlay = document.createElement('div');
       overlay.className = 'ff-portrait-overlay';
       overlay.id = 'ff-portrait-overlay';
-      overlay.innerHTML = `<div class="ff-portrait-card ff-portrait-${style}">
-        <button class="ff-portrait-close" type="button" aria-label="Close portrait" onclick="faceFactoryClosePortrait()">×</button>
-        <div class="ff-portrait-kicker">FACE FACTORY ORIGINAL</div>
-        <div class="ff-crazy-face ff-portrait-face">${mixChars.map((ci, part) => bandMarkup(part, ci, false, undefined, false, false, showFunnyNames)).join('')}</div>
-        <div class="ff-portrait-caption">FAMILY FUN · ${style.toUpperCase()} EDITION</div>
-        <button class="ff-portrait-retake" type="button" onclick="faceFactoryTakePortrait()">${cameraIcon()}<span>NEW STYLE</span></button>
+      overlay.innerHTML = `<div class="ff-portrait-stage">
+        <div class="ff-portrait-card ff-portrait-${style}">
+          <div class="ff-crazy-face ff-portrait-face">${mixChars.map((ci, part) => bandMarkup(part, ci, false)).join('')}</div>
+        </div>
+        <div class="ff-portrait-controls">
+          <button class="ff-portrait-retake" type="button" onclick="faceFactoryTakePortrait()">${cameraIcon()}<span>NEW STYLE</span></button>
+          <button class="ff-portrait-close" type="button" aria-label="Close portrait" onclick="faceFactoryClosePortrait()">×</button>
+        </div>
       </div>`;
       shellEl.appendChild(overlay);
       spark(overlay.querySelector('.ff-portrait-card'));

@@ -18,6 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent
 OUT = ROOT / "js" / "games" / "consume-boards.js"
+ESDB_WORDS = ROOT / "data" / "word-list-esdb-50.txt"
 N_LEVELS = 30
 ALPH = "abcdefghijklmnopqrstuvwxyz"
 COMMON_RANK_LIMIT = 4000
@@ -129,12 +130,12 @@ PROPER_ONLY = {
 
 
 def load_words():
-    """Build the single common-word vocabulary used by solver and runtime.
+    """Build separate generation and answer-acceptance vocabularies.
 
-    The source list is frequency-ranked.  Four-plus-letter words must be in its
-    top COMMON_RANK_LIMIT entries and in the system dictionary; three-letter
-    words use the hand-reviewed THREE_OK list because short frequency lists are
-    especially noisy.  STOP handles names, abbreviations, and web artifacts.
+    Intended solutions come from a compact frequency-ranked list so the game
+    never asks players to discover obscure words. Runtime acceptance and every
+    board audit use the broader American-English ESDB size-50 list. Keeping the
+    solver on that same broad list prevents uncounted alternate solutions.
     """
     freq = [w.strip().lower() for w in (ROOT / "word_list_10k.txt").read_text().splitlines()]
     freq = [w for w in freq if w.isalpha() and w.isascii()]
@@ -173,14 +174,32 @@ def load_words():
             continue
         ranks[w] = len(ranks) + 100001
         common_words.append(w)
+
+    if not ESDB_WORDS.exists():
+        raise FileNotFoundError(
+            f"missing {ESDB_WORDS.relative_to(ROOT)}; see licenses/ESDB-Copyright.txt"
+        )
+    acceptance_words = {
+        w.strip() for w in ESDB_WORDS.read_text().splitlines()
+        if 3 <= len(w.strip()) <= 8
+        and w.strip().isascii()
+        and w.strip().isalpha()
+        and w.strip().islower()
+    }
+    acceptance_words.update(common_words)
+    acceptance_words.difference_update(STOP | PROPER_ONLY | CONTENT_DENYLIST)
+    acceptance_words = {
+        w for w in acceptance_words
+        if not w.startswith(CONTENT_DENY_STEMS) and set(w) & VOWELS
+    }
     solutions = [w for w in common_words if len(w) <= 6]
-    return common_words, solutions, ranks
+    return common_words, solutions, ranks, frozenset(acceptance_words)
 
 
-PLAY_WORDS, SOLUTION_WORDS, RANKS = load_words()
-# Deliberately the same set: accepting a broader runtime dictionary makes the
-# solver's solution/trap counts untrue and rewards random obscure-word guesses.
-RUNTIME_WORDS = frozenset(PLAY_WORDS)
+GENERATION_WORDS, SOLUTION_WORDS, RANKS, RUNTIME_WORDS = load_words()
+# PLAY_WORDS is the exhaustive acceptance set used by every solver and audit.
+# Only SOLUTION_WORDS is used to choose intended/generated answers.
+PLAY_WORDS = RUNTIME_WORDS
 WORD_COUNTS = {w: tuple(Counter(w).get(ch, 0) for ch in ALPH) for w in PLAY_WORDS}
 SOLUTION_BY_LEN = {n: [w for w in SOLUTION_WORDS if len(w) == n] for n in range(3, 7)}
 SHARP_SOLUTION_BY_LEN = {
