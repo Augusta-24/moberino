@@ -108,13 +108,14 @@
     if (!spotlight) return { markup: '', active: false };
     const { rect } = spotlight;
     const pad = 6;
+    const canvasHeight = Math.max(728, puzzleLayout.board.y + puzzleLayout.board.height - 92 + 86);
     const markup = `
       <g id="gridlock-intro-spotlight">
         <mask id="gridlock-spotlight-mask">
-          <rect x="0" y="92" width="560" height="728" fill="white"/>
+          <rect x="0" y="92" width="560" height="${canvasHeight}" fill="white"/>
           <rect x="${rect.x - pad}" y="${rect.y - pad}" width="${rect.w + pad * 2}" height="${rect.h + pad * 2}" rx="8" fill="black"/>
         </mask>
-        <rect x="0" y="92" width="560" height="728" fill="rgba(2,6,14,.86)" mask="url(#gridlock-spotlight-mask)"/>
+        <rect x="0" y="92" width="560" height="${canvasHeight}" fill="rgba(2,6,14,.86)" mask="url(#gridlock-spotlight-mask)"/>
         <rect class="gl-spot-ring" x="${rect.x - pad}" y="${rect.y - pad}" width="${rect.w + pad * 2}" height="${rect.h + pad * 2}" rx="8" fill="none"/>
         ${spotlightDemoMarkup(spotlight)}
       </g>`;
@@ -127,7 +128,7 @@
   // The full-canvas backdrop pattern ("the green space is pattern space") —
   // drawn first, so the opaque board/housing/hood sit on top of it and it
   // only shows through in the margins around them.
-  function backdropMarkup(theme) {
+  function backdropMarkup(theme, canvasHeight) {
     const layers = {
       jungle: ['glJunglePatternBack', 'glJunglePattern', 'glJungleBigLeaf', 'glJunglePatternFront'],
       space: ['glSpacePatternBack', 'glSpacePattern', 'glSpaceBigRock', 'glSpaceFront'],
@@ -139,10 +140,10 @@
     if (!ids) return '';
     const [back, mid, big, front] = ids;
     return `
-        <rect x="0" y="92" width="560" height="728" fill="url(#${back})" filter="url(#glBackBlur)"/>
-        <rect x="0" y="92" width="560" height="728" fill="url(#${mid})"/>
-        <rect x="0" y="92" width="560" height="728" fill="url(#${big})"/>
-        <rect x="0" y="92" width="560" height="728" fill="url(#${front})"/>`;
+        <rect x="0" y="92" width="560" height="${canvasHeight}" fill="url(#${back})" filter="url(#glBackBlur)"/>
+        <rect x="0" y="92" width="560" height="${canvasHeight}" fill="url(#${mid})"/>
+        <rect x="0" y="92" width="560" height="${canvasHeight}" fill="url(#${big})"/>
+        <rect x="0" y="92" width="560" height="${canvasHeight}" fill="url(#${front})"/>`;
   }
 
   function hoodMarkup(theme) {
@@ -471,6 +472,8 @@
     const theme = themeFor(level.worldId);
     const showWorldIntro = level.order === 1;
     const puzzleLayout = GridLock.layoutFor(level);
+    const canvasBottom = Math.max(820, puzzleLayout.board.y + puzzleLayout.board.height + 86);
+    const canvasHeight = canvasBottom - 92;
     const introSpot = showWorldIntro ? introSpotlightMarkup(level, puzzleLayout) : { markup: '', active: false };
     const sourceMarkup = puzzleLayout.sources.map((source, sourceIndex) => `
       <g id="gridlock-source-${sourceIndex}" class="gridlock-source-port ${puzzleLayout.systems[sourceIndex].color === 'green' ? 'is-green' : 'is-cyan'}"
@@ -509,7 +512,7 @@
           </div>
         </header>
         <div id="gridlock-stage" class="gridlock-stage is-paused${introSpot.active ? ' has-gl-spotlight' : ''}" aria-label="Route power through the conduit grid to unlock it">
-          <svg class="gridlock-svg" viewBox="0 92 560 728" preserveAspectRatio="xMidYMin meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <svg class="gridlock-svg" viewBox="0 92 560 ${canvasHeight}" preserveAspectRatio="xMidYMin meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <defs>
               <linearGradient id="glMetalTop" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0" stop-color="#28323f"/><stop offset="18%" stop-color="#1a222d"/><stop offset="100%" stop-color="#0c1119"/>
@@ -774,7 +777,7 @@
                 <feDisplacementMap in="SourceGraphic" in2="n" scale="10"/></filter>
             </defs>
 
-            ${backdropMarkup(theme)}
+            ${backdropMarkup(theme, canvasHeight)}
             ${hoodMarkup(theme)}
             ${puzzleLayout.sinks.filter(sink => sink.side === 'n').map(sink => `<path class="gl-port-wire" d="M280,174 C280,194 ${sink.x},194 ${sink.x},214"/>`).join('')}
             ${crystalMarkup(theme)}

@@ -19,9 +19,16 @@ from pathlib import Path
 ROOT = Path(__file__).parent
 OUT = ROOT / "js" / "games" / "consume-boards.js"
 ESDB_WORDS = ROOT / "data" / "word-list-esdb-50.txt"
-N_LEVELS = 30
+SUBTLEX_WORDS = ROOT / "data" / "subtlex-us-zipf.tsv"
+# Zipf thresholds on the SUBTLEX-US scale (roughly 1-7; 3.0 is about one use per
+# million words). GENERATION is what a board may be built from and show on
+# screen; KNOWN is what every difficulty measurement solves over. Measured
+# against a hand-picked probe of thirty everyday words, 3.0 admits all but
+# "assert" while still excluding usury, obeah and kumquat.
+GENERATION_ZIPF = 4.0
+KNOWN_ZIPF = 3.0
+N_LEVELS = 50
 ALPH = "abcdefghijklmnopqrstuvwxyz"
-COMMON_RANK_LIMIT = 4000
 
 VOWELS = set("aeiou")
 RARE = set("jqxzv")
@@ -90,19 +97,79 @@ EXTRA_PLAY_WORDS = {
     "wing", "yard", "zing",
 }
 
-# Keep the common vocabulary appropriate for the arcade as well as familiar.
-CONTENT_DENYLIST = {
-    "anal", "anus", "asshole", "bastard", "bitch", "clit", "cunt", "dick",
-    "dildo", "fag", "faggot", "fuck", "fucker", "fucking", "homo", "nigger",
-    "nigga", "penis", "porn", "prick", "pussy", "rape", "rapist", "retard",
-    "retarded", "sex", "sexual", "shit", "slut", "spic", "tits", "twat",
-    "whore",
+# Keep the arcade's vocabulary appropriate as well as familiar.
+#
+# Matching is on whole words, never on prefixes.  Prefix matching looks tighter
+# but is wrong in both directions at once: "anal" as a prefix silently deletes
+# analysis, analyze, analog and analyst, while "chink", "coon" and "squaw" sail
+# through because nothing in a short stem list resembles them.  Base forms are
+# listed once here and expanded to their inflections below, so the check stays
+# exact and the list stays readable.
+CONTENT_DENY_BASE = {
+    # profanity and vulgar anatomy
+    "anal", "anus", "arse", "arsehole", "ass", "asshole", "ballsack", "bastard",
+    "bimbo", "bollocks", "boner", "boob", "bugger", "bullshit", "clit", "cock",
+    "crap", "cum", "cunt", "damn", "dick", "dildo", "dong", "douche", "dyke",
+    "ejaculate", "erection", "fart", "feck", "fellatio", "floozy", "fondle",
+    "gash", "handjob", "hooter", "horny", "hussy", "incest", "jerkoff", "jism",
+    "jizz", "knob", "masturbate", "milf", "minge", "molest", "nonce", "nude",
+    "nutsack", "orgasm", "orgy", "penis", "perv", "pervert", "pimp", "piss",
+    "porn", "prick", "prostitute", "pussy", "quim", "rape", "rapist", "rimjob",
+    "screw", "scrotum", "semen", "sex", "sexual", "shag", "shit", "shite",
+    "skank", "slag", "slut", "sodomy", "sperm", "spunk", "strapon", "stripper",
+    "testicle", "tit", "titty", "turd", "twat", "vagina", "vulva", "wank",
+    "wanker", "whore",
+    # slurs -- ethnic, racial, religious, sexual, and disability
+    "chink", "coon", "dago", "darkie", "fag", "faggot", "gimp",
+    "gook", "gringo", "gyp", "gypsy", "haji", "half-breed", "heeb", "homo",
+    "honky", "injun", "jap", "kike", "kraut", "lesbo", "mick", "mong", "nigga",
+    "nigger", "paki", "pickaninny", "raghead", "redneck", "retard", "retarded",
+    "sambo", "spade", "spastic", "spic", "squaw", "tard", "towelhead",
+    "tranny", "wetback", "wog", "wop", "yid", "zipperhead",
+    # drugs, self-harm, and other themes a family arcade should not surface
+    "cocaine", "heroin", "meth", "opioid", "overdose", "suicide",
+    # Terms the ESDB list carries that read badly on a family arcade board.
+    "erotic", "hooker", "queer", "slaver", "swastika",
 }
-CONTENT_DENY_STEMS = (
-    "anal", "cunt", "dick", "dildo", "fag", "fuck", "homo", "nigg",
-    "porn", "prick", "rape", "retard", "sex", "slut", "spic", "twat",
-    "whore",
-)
+
+# Innocent words the inflection expansion collides with: spice/spices/spicy fall
+# out of "spic", knobby out of "knob", cocky out of "cock".  Cheaper and clearer
+# to name the handful of collisions than to hand-trim the base forms.
+CONTENT_ALLOW = {
+    "cocked", "cocker", "cockers", "cocky", "cocks",
+    "knobby", "spiced", "spices", "spicy", "tarts",
+}
+
+# A handful of cores that cannot appear inside an innocent English word.  These
+# catch compounds the inflection expansion would miss (motherfucker, bullshitting)
+# and are deliberately few -- "rape" is excluded here because it hides inside
+# grape, drapery and scraper, and "spic" because of spice.
+CONTENT_DENY_CORES = ("fuck", "cunt", "nigg", "faggot", "dildo", "jizz",
+                      "wank", "bukkake", "whore", "asshole", "kike")
+
+
+def _expand_content_denylist():
+    """Expand each base form to the inflections a word list actually contains."""
+    forms = set()
+    for base in CONTENT_DENY_BASE:
+        forms.add(base)
+        forms.update(base + suffix for suffix in
+                     ("s", "es", "ed", "d", "ing", "er", "ers", "y", "ie", "ies"))
+        if base.endswith("e"):
+            forms.update((base[:-1] + "ing", base[:-1] + "ed", base[:-1] + "y"))
+        if base.endswith("y"):
+            forms.add(base[:-1] + "ies")
+        # Single final consonant doubles before a vowel suffix: shag -> shagging.
+        if len(base) > 2 and base[-1] not in VOWELS and base[-2] in VOWELS:
+            forms.update(base + base[-1] + suffix for suffix in ("ing", "ed", "er", "ers", "y"))
+    return frozenset(forms) - CONTENT_ALLOW
+
+
+CONTENT_DENYLIST = _expand_content_denylist()
+
+
+def content_denied(word):
+    return word in CONTENT_DENYLIST or any(core in word for core in CONTENT_DENY_CORES)
 
 # Proper nouns are disallowed in standard word-game play.  Homographs with an
 # ordinary lowercase meaning (for example, "van", "grant", or "jersey") stay
@@ -130,42 +197,78 @@ PROPER_ONLY = {
 
 
 def load_words():
-    """Build separate generation and answer-acceptance vocabularies.
+    """Build the three vocabularies the pipeline needs, each answering one question.
 
-    Intended solutions come from a compact frequency-ranked list so the game
-    never asks players to discover obscure words. Runtime acceptance and every
-    board audit use the broader American-English ESDB size-50 list. Keeping the
-    solver on that same broad list prevents uncounted alternate solutions.
+    1. GENERATION ("can this definitely be solved?") -- the compact
+       frequency-ranked head of the list. Every intended answer and every word a
+       board puts on screen comes from here, so a clear is always reachable with
+       words anyone knows.
+    2. KNOWN ("would a player find this?") -- the whole frequency list. This is
+       what every difficulty measurement runs on: solution counts, traps, and
+       whether a board has a lazy way out. Grading on the full acceptance list
+       instead means a board gets condemned for an escape hatch that needs a word
+       like "sferics", which no player is ever going to reach for.
+    3. ACCEPTANCE ("is this a real word?") -- the broad American-English ESDB
+       size-50 list, shipped to the runtime so a legitimate word is never
+       rejected. Deliberately *not* used for difficulty.
     """
-    freq = [w.strip().lower() for w in (ROOT / "word_list_10k.txt").read_text().splitlines()]
-    freq = [w for w in freq if w.isalpha() and w.isascii()]
+    if not SUBTLEX_WORDS.exists():
+        raise FileNotFoundError(
+            f"missing {SUBTLEX_WORDS.relative_to(ROOT)}; rebuild it with "
+            f"tools/fetch_subtlex.py (see licenses/SUBTLEX-US-CITATION.txt)"
+        )
+    zipf, dominant_pos = {}, {}
+    for line in SUBTLEX_WORDS.read_text().splitlines():
+        if line.startswith("#"):
+            continue
+        word, value, part_of_speech = line.split("\t")
+        zipf[word] = float(value)
+        dominant_pos[word] = part_of_speech
+
     sysdict = set()
     sd = Path("/usr/share/dict/words")
     if sd.exists():
         sysdict = {w.strip().lower() for w in sd.read_text().splitlines()
                    if w.strip().islower() and w.strip().isalpha()}
 
+    def blocked(w):
+        return (w in STOP or w in PROPER_ONLY or content_denied(w)
+                or not (set(w) & VOWELS))
+
+    # Tier 2, KNOWN: everything a player could reasonably be expected to think
+    # of. Three-letter words are admitted on frequency alone here -- the curated
+    # THREE_OK whitelist below governs what a board may *use*, but a player who
+    # plays a common short word outside it is still making a move the difficulty
+    # model needs to have counted.
+    known_words = {w for w, value in zipf.items()
+                   if value >= KNOWN_ZIPF and 3 <= len(w) <= 8 and not blocked(w)}
+
+    # Tier 1, GENERATION: the words boards are built from and put on screen.
+    # Ranked by descending frequency so downstream tie-breaks still prefer the
+    # most familiar option, and cross-checked against the system dictionary and
+    # the curated short-word whitelist.
+    # A subtitle corpus is full of first names, so frequency alone happily
+    # nominates "jess", "morgan" and "randy" as common words. The part-of-speech
+    # tag catches them: dropping Name-dominant entries removes ~400 names and
+    # places from generation. It also costs mark, bill, jack, van and grant --
+    # real words that happen to read as names more often -- which is the right
+    # trade here, because they stay legal to play and still count toward
+    # difficulty; they just never get printed onto a board.
     ranks = {}
     common_words = []
-    for rank, w in enumerate(freq):
-        if not (3 <= len(w) <= 8):
+    for w, value in sorted(zipf.items(), key=lambda item: -item[1]):
+        if value < GENERATION_ZIPF or not (3 <= len(w) <= 8) or blocked(w):
             continue
-        if rank >= COMMON_RANK_LIMIT:
-            continue
-        if (w in STOP or w in PROPER_ONLY or w in CONTENT_DENYLIST
-                or w.startswith(CONTENT_DENY_STEMS) or not (set(w) & VOWELS)):
+        if dominant_pos.get(w) == "Name":
             continue
         if sysdict and w not in sysdict:
             continue
         if len(w) == 3 and w not in THREE_OK:
             continue
-        if w in ranks:
-            continue
-        ranks[w] = rank
+        ranks[w] = len(ranks)
         common_words.append(w)
     for w in sorted(THREE_OK):
-        if (w in STOP or w in PROPER_ONLY or w in CONTENT_DENYLIST
-                or w.startswith(CONTENT_DENY_STEMS) or w in ranks):
+        if (w in STOP or w in PROPER_ONLY or content_denied(w) or w in ranks):
             continue
         ranks[w] = len(ranks) + 100000
         common_words.append(w)
@@ -187,19 +290,28 @@ def load_words():
         and w.strip().islower()
     }
     acceptance_words.update(common_words)
-    acceptance_words.difference_update(STOP | PROPER_ONLY | CONTENT_DENYLIST)
+    acceptance_words.difference_update(STOP | PROPER_ONLY)
+    # Real words the content filter removes, kept aside so the runtime can tell a
+    # player "that one does not count here" instead of the misleading "not a word".
+    blocked_words = {w for w in acceptance_words if content_denied(w) and set(w) & VOWELS}
     acceptance_words = {
         w for w in acceptance_words
-        if not w.startswith(CONTENT_DENY_STEMS) and set(w) & VOWELS
+        if not content_denied(w) and set(w) & VOWELS
     }
     solutions = [w for w in common_words if len(w) <= 6]
-    return common_words, solutions, ranks, frozenset(acceptance_words)
+    known_words.update(common_words)
+    known_words &= acceptance_words
+    return (common_words, solutions, ranks, frozenset(known_words),
+            frozenset(acceptance_words), frozenset(blocked_words))
 
 
-GENERATION_WORDS, SOLUTION_WORDS, RANKS, RUNTIME_WORDS = load_words()
-# PLAY_WORDS is the exhaustive acceptance set used by every solver and audit.
-# Only SOLUTION_WORDS is used to choose intended/generated answers.
-PLAY_WORDS = RUNTIME_WORDS
+(GENERATION_WORDS, SOLUTION_WORDS, RANKS, KNOWN_WORDS,
+ RUNTIME_WORDS, BLOCKED_WORDS) = load_words()
+# PLAY_WORDS is what every difficulty measurement solves over: the words a player
+# can be expected to think of. RUNTIME_WORDS stays wider so the game still accepts
+# any legitimate word, and SOLUTION_WORDS stays narrower so generated answers and
+# on-screen words are always familiar.
+PLAY_WORDS = KNOWN_WORDS
 WORD_COUNTS = {w: tuple(Counter(w).get(ch, 0) for ch in ALPH) for w in PLAY_WORDS}
 SOLUTION_BY_LEN = {n: [w for w in SOLUTION_WORDS if len(w) == n] for n in range(3, 7)}
 SHARP_SOLUTION_BY_LEN = {
@@ -238,37 +350,66 @@ def shuffled_pool(counts, rng):
 
 
 def level_spec(n):
+    """Per-level gates, calibrated by sampling each phase against the KNOWN tier.
+
+    Solution counts scale steeply with pool size: a 16-tile board typically has
+    around ten full clears, a 25-tile board several thousand. The windows below
+    therefore differ by phase by orders of magnitude, and each one targets the
+    constrained tail of its own phase rather than a single global notion of
+    "few solutions". order_by_phase_difficulty then sorts accepted boards inside
+    their phase, so the shipped ramp reflects measured difficulty.
+    """
     specs = [
-        dict(size=9, cols=3, phase="3x3", patterns=[[3, 3, 3]], min_clear_words=3, solutions=(2, 9), traps=(0, 18), long_trap=0),
-        dict(size=9, cols=3, phase="3x3", patterns=[[3, 3, 3], [4, 5], [3, 6]], min_clear_words=2, solutions=(2, 6), traps=(3, 30), long_trap=5),
-        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 4, 4, 5]], solutions=(5, 18), traps=(2, 48), long_trap=4),
-        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 3, 4, 6]], solutions=(4, 16), traps=(3, 52), long_trap=4),
-        dict(size=16, cols=4, phase="4x4", patterns=[[3, 4, 4, 5], [5, 5, 6]], solutions=(4, 14), traps=(4, 56), long_trap=5),
-        dict(size=16, cols=4, phase="4x4", patterns=[[3, 4, 4, 5], [4, 4, 4, 4]], solutions=(3, 12), traps=(5, 60), long_trap=5),
-        dict(size=16, cols=4, phase="4x4", patterns=[[3, 3, 4, 6], [3, 4, 4, 5]], solutions=(3, 11), traps=(6, 64), long_trap=5),
-        dict(size=16, cols=4, phase="4x4", patterns=[[3, 3, 4, 6], [5, 5, 6]], solutions=(2, 10), traps=(7, 68), long_trap=5),
-        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [4, 6, 6]], solutions=(2, 9), traps=(8, 72), long_trap=5),
-        dict(size=16, cols=4, phase="4x4", patterns=[[3, 4, 4, 5], [4, 6, 6]], solutions=(2, 8), traps=(9, 76), long_trap=6),
-        dict(size=16, cols=4, phase="4x4", patterns=[[3, 3, 4, 6], [5, 5, 6]], solutions=(2, 7), traps=(10, 80), long_trap=6),
-        dict(size=16, cols=4, phase="4x4", patterns=[[5, 5, 6], [4, 6, 6]], solutions=(2, 6), traps=(11, 84), long_trap=6),
-        dict(size=20, cols=5, phase="4x5", patterns=[[4, 4, 4, 4, 4], [3, 4, 4, 4, 5]], solutions=(4, 18), traps=(5, 100), long_trap=5),
-        dict(size=20, cols=5, phase="4x5", patterns=[[3, 4, 4, 4, 5], [4, 4, 6, 6]], solutions=(3, 15), traps=(7, 115), long_trap=5),
-        dict(size=20, cols=5, phase="4x5", patterns=[[4, 4, 6, 6], [3, 5, 6, 6]], solutions=(2, 12), traps=(9, 130), long_trap=6),
-        dict(size=20, cols=5, phase="4x5", patterns=[[3, 5, 6, 6], [4, 4, 4, 4, 4]], solutions=(2, 9), traps=(11, 145), long_trap=6),
-        dict(size=25, cols=5, phase="5x5", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6]], max_candidates=220, solutions=(5, 45), traps=(4, 180), long_trap=5),
-        dict(size=25, cols=5, phase="5x5", patterns=[[5, 5, 5, 5, 5], [3, 4, 6, 6, 6]], max_candidates=210, solutions=(4, 40), traps=(5, 190), long_trap=5),
-        dict(size=25, cols=5, phase="5x5", patterns=[[4, 4, 5, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=3, max_candidates=200, solutions=(3, 36), traps=(6, 200), long_trap=6),
-        dict(size=25, cols=5, phase="5x5", patterns=[[3, 4, 6, 6, 6], [5, 5, 5, 5, 5]], sharp_source=True, rare_score=3, max_candidates=190, solutions=(3, 32), traps=(7, 210), long_trap=6),
-        dict(size=25, cols=5, phase="5x5", patterns=[[4, 4, 5, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=3, max_candidates=180, solutions=(3, 28), traps=(8, 220), long_trap=6),
-        dict(size=25, cols=5, phase="5x5", patterns=[[3, 4, 6, 6, 6], [4, 4, 5, 6, 6]], sharp_source=True, rare_score=4, max_candidates=175, solutions=(2, 25), traps=(9, 230), long_trap=6),
-        dict(size=25, cols=5, phase="5x5", patterns=[[3, 3, 4, 5, 5, 5], [5, 5, 5, 5, 5]], sharp_source=True, rare_score=4, max_candidates=170, solutions=(2, 22), traps=(10, 240), long_trap=6),
-        dict(size=25, cols=5, phase="5x5", patterns=[[3, 4, 6, 6, 6], [4, 4, 5, 6, 6]], sharp_source=True, rare_score=4, max_candidates=165, solutions=(2, 20), traps=(11, 250), long_trap=6),
-        dict(size=25, cols=5, phase="5x5-expert", patterns=[[3, 4, 6, 6, 6], [4, 4, 5, 6, 6]], sharp_source=True, rare_score=5, max_candidates=160, solutions=(2, 18), traps=(12, 260), long_trap=6),
-        dict(size=25, cols=5, phase="5x5-expert", patterns=[[3, 3, 4, 5, 5, 5], [4, 4, 5, 6, 6]], sharp_source=True, rare_score=5, max_candidates=155, solutions=(2, 16), traps=(13, 270), long_trap=6),
-        dict(size=25, cols=5, phase="5x5-expert", patterns=[[3, 4, 6, 6, 6], [5, 5, 5, 5, 5]], sharp_source=True, rare_score=5, max_candidates=150, solutions=(2, 14), traps=(14, 280), long_trap=6),
-        dict(size=25, cols=5, phase="5x5-expert", patterns=[[3, 3, 4, 5, 5, 5], [4, 4, 5, 6, 6]], sharp_source=True, rare_score=6, max_candidates=145, solutions=(2, 12), traps=(15, 290), long_trap=6),
-        dict(size=25, cols=5, phase="5x5-expert", patterns=[[3, 4, 6, 6, 6], [4, 4, 5, 6, 6]], sharp_source=True, rare_score=6, max_candidates=140, solutions=(2, 10), traps=(16, 300), long_trap=6),
-        dict(size=25, cols=5, phase="5x5-expert", patterns=[[3, 3, 4, 5, 5, 5], [3, 4, 6, 6, 6]], sharp_source=True, rare_score=6, max_candidates=135, solutions=(2, 8), traps=(18, 320), long_trap=6),
+        dict(size=9, cols=3, phase="3x3", patterns=[[3, 3, 3]], min_clear_words=3, max_candidates=900, solutions=(2, 20), traps=(0, 120), long_trap=0),
+        dict(size=9, cols=3, phase="3x3", patterns=[[3, 3, 3], [4, 5], [3, 6]], min_clear_words=2, max_candidates=900, solutions=(2, 14), traps=(3, 120), long_trap=0),
+        dict(size=9, cols=3, phase="3x3", patterns=[[3, 3, 3], [4, 5], [3, 6]], min_clear_words=2, max_candidates=900, solutions=(2, 9), traps=(6, 120), long_trap=5),
+        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 4, 4, 5], [3, 3, 4, 6], [5, 5, 6], [4, 6, 6]], sharp_source=True, rare_score=3, max_candidates=1000, solutions=(2, 30), traps=(15, 320), long_trap=4),
+        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 4, 4, 5], [3, 3, 4, 6], [5, 5, 6], [4, 6, 6]], sharp_source=True, rare_score=3, max_candidates=1000, solutions=(2, 28), traps=(23, 320), long_trap=4),
+        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 4, 4, 5], [3, 3, 4, 6], [5, 5, 6], [4, 6, 6]], sharp_source=True, rare_score=3, max_candidates=1000, solutions=(2, 27), traps=(31, 320), long_trap=4),
+        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 4, 4, 5], [3, 3, 4, 6], [5, 5, 6], [4, 6, 6]], sharp_source=True, rare_score=3, max_candidates=1000, solutions=(2, 26), traps=(38, 320), long_trap=4),
+        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 4, 4, 5], [3, 3, 4, 6], [5, 5, 6], [4, 6, 6]], sharp_source=True, rare_score=3, max_candidates=1000, solutions=(2, 24), traps=(46, 320), long_trap=4),
+        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 4, 4, 5], [3, 3, 4, 6], [5, 5, 6], [4, 6, 6]], sharp_source=True, rare_score=3, max_candidates=1000, solutions=(2, 22), traps=(54, 320), long_trap=5),
+        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 4, 4, 5], [3, 3, 4, 6], [5, 5, 6], [4, 6, 6]], sharp_source=True, rare_score=3, max_candidates=1000, solutions=(2, 21), traps=(62, 320), long_trap=5),
+        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 4, 4, 5], [3, 3, 4, 6], [5, 5, 6], [4, 6, 6]], sharp_source=True, rare_score=3, max_candidates=1000, solutions=(2, 20), traps=(70, 320), long_trap=5),
+        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 4, 4, 5], [3, 3, 4, 6], [5, 5, 6], [4, 6, 6]], sharp_source=True, rare_score=3, max_candidates=1000, solutions=(2, 18), traps=(78, 320), long_trap=5),
+        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 4, 4, 5], [3, 3, 4, 6], [5, 5, 6], [4, 6, 6]], sharp_source=True, rare_score=3, max_candidates=1000, solutions=(2, 16), traps=(85, 320), long_trap=5),
+        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 4, 4, 5], [3, 3, 4, 6], [5, 5, 6], [4, 6, 6]], sharp_source=True, rare_score=3, max_candidates=1000, solutions=(2, 15), traps=(93, 320), long_trap=5),
+        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 4, 4, 5], [3, 3, 4, 6], [5, 5, 6], [4, 6, 6]], sharp_source=True, rare_score=3, max_candidates=1000, solutions=(2, 14), traps=(101, 320), long_trap=5),
+        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 4, 4, 5], [3, 3, 4, 6], [5, 5, 6], [4, 6, 6]], sharp_source=True, rare_score=3, max_candidates=1000, solutions=(2, 12), traps=(109, 320), long_trap=6),
+        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 4, 4, 5], [3, 3, 4, 6], [5, 5, 6], [4, 6, 6]], sharp_source=True, rare_score=3, max_candidates=1000, solutions=(2, 10), traps=(117, 320), long_trap=6),
+        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 4, 4, 5], [3, 3, 4, 6], [5, 5, 6], [4, 6, 6]], sharp_source=True, rare_score=3, max_candidates=1000, solutions=(2, 9), traps=(124, 320), long_trap=6),
+        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 4, 4, 5], [3, 3, 4, 6], [5, 5, 6], [4, 6, 6]], sharp_source=True, rare_score=3, max_candidates=1000, solutions=(2, 8), traps=(132, 320), long_trap=6),
+        dict(size=16, cols=4, phase="4x4", patterns=[[4, 4, 4, 4], [3, 4, 4, 5], [3, 3, 4, 6], [5, 5, 6], [4, 6, 6]], sharp_source=True, rare_score=3, max_candidates=1000, solutions=(2, 6), traps=(140, 320), long_trap=6),
+        dict(size=20, cols=5, phase="4x5", patterns=[[4, 4, 4, 4, 4], [3, 4, 4, 4, 5], [4, 4, 6, 6], [3, 5, 6, 6]], sharp_source=True, rare_score=4, max_candidates=1200, solutions=(2, 240), traps=(25, 400), long_trap=5),
+        dict(size=20, cols=5, phase="4x5", patterns=[[4, 4, 4, 4, 4], [3, 4, 4, 4, 5], [4, 4, 6, 6], [3, 5, 6, 6]], sharp_source=True, rare_score=4, max_candidates=1200, solutions=(2, 208), traps=(49, 400), long_trap=5),
+        dict(size=20, cols=5, phase="4x5", patterns=[[4, 4, 4, 4, 4], [3, 4, 4, 4, 5], [4, 4, 6, 6], [3, 5, 6, 6]], sharp_source=True, rare_score=4, max_candidates=1200, solutions=(2, 177), traps=(73, 400), long_trap=5),
+        dict(size=20, cols=5, phase="4x5", patterns=[[4, 4, 4, 4, 4], [3, 4, 4, 4, 5], [4, 4, 6, 6], [3, 5, 6, 6]], sharp_source=True, rare_score=4, max_candidates=1200, solutions=(2, 145), traps=(98, 400), long_trap=6),
+        dict(size=20, cols=5, phase="4x5", patterns=[[4, 4, 4, 4, 4], [3, 4, 4, 4, 5], [4, 4, 6, 6], [3, 5, 6, 6]], sharp_source=True, rare_score=4, max_candidates=1200, solutions=(2, 113), traps=(122, 400), long_trap=6),
+        dict(size=20, cols=5, phase="4x5", patterns=[[4, 4, 4, 4, 4], [3, 4, 4, 4, 5], [4, 4, 6, 6], [3, 5, 6, 6]], sharp_source=True, rare_score=4, max_candidates=1200, solutions=(2, 82), traps=(146, 400), long_trap=6),
+        dict(size=20, cols=5, phase="4x5", patterns=[[4, 4, 4, 4, 4], [3, 4, 4, 4, 5], [4, 4, 6, 6], [3, 5, 6, 6]], sharp_source=True, rare_score=4, max_candidates=1200, solutions=(2, 50), traps=(170, 400), long_trap=6),
+        dict(size=25, cols=5, phase="5x5", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=5, max_candidates=1500, solutions=(2, 2600), traps=(30, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=5, max_candidates=1500, solutions=(2, 2458), traps=(43, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=5, max_candidates=1500, solutions=(2, 2317), traps=(57, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=5, max_candidates=1500, solutions=(2, 2175), traps=(70, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=5, max_candidates=1500, solutions=(2, 2033), traps=(83, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=5, max_candidates=1500, solutions=(2, 1892), traps=(97, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=5, max_candidates=1500, solutions=(2, 1750), traps=(110, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=5, max_candidates=1500, solutions=(2, 1608), traps=(123, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=5, max_candidates=1500, solutions=(2, 1467), traps=(137, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=5, max_candidates=1500, solutions=(2, 1325), traps=(150, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=5, max_candidates=1500, solutions=(2, 1183), traps=(163, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=5, max_candidates=1500, solutions=(2, 1042), traps=(177, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=5, max_candidates=1500, solutions=(2, 900), traps=(190, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5-expert", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=6, max_candidates=1500, solutions=(2, 800), traps=(60, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5-expert", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=6, max_candidates=1500, solutions=(2, 733), traps=(78, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5-expert", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=6, max_candidates=1500, solutions=(2, 667), traps=(96, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5-expert", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=6, max_candidates=1500, solutions=(2, 600), traps=(113, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5-expert", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=6, max_candidates=1500, solutions=(2, 533), traps=(131, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5-expert", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=6, max_candidates=1500, solutions=(2, 467), traps=(149, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5-expert", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=6, max_candidates=1500, solutions=(2, 400), traps=(167, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5-expert", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=6, max_candidates=1500, solutions=(2, 333), traps=(184, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5-expert", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=6, max_candidates=1500, solutions=(2, 267), traps=(202, 480), long_trap=6),
+        dict(size=25, cols=5, phase="5x5-expert", patterns=[[5, 5, 5, 5, 5], [4, 4, 5, 6, 6], [3, 4, 6, 6, 6], [3, 3, 4, 5, 5, 5]], sharp_source=True, rare_score=6, max_candidates=1500, solutions=(2, 200), traps=(220, 480), long_trap=6),
     ]
     return specs[min(n - 1, len(specs) - 1)]
 
@@ -296,10 +437,34 @@ def analyze_pool(counts, min_solutions=1, max_solutions=60, max_candidates=360):
         return {
             "candidates": candidates,
             "solutions": [],
+            "solutionCount": 0,
+            "minWords": None,
             "traps": [],
             "too_open": True,
             "too_common": True,
         }
+
+    vectors = [WORD_COUNTS[w] for w in candidates]
+    by_letter = [[i for i, vector in enumerate(vectors) if vector[j]] for j in range(26)]
+
+    def pivot(rem):
+        """Words that could cover the scarcest remaining letter.
+
+        Any partition of `rem` has to cover that letter with exactly one word, so
+        branching on it alone is both exhaustive and vastly narrower than trying
+        every candidate at every level -- on a 25-tile pool that difference is
+        the difference between seconds and hours.
+        """
+        best = None
+        for j in range(26):
+            if not rem[j]:
+                continue
+            options = [i for i in by_letter[j] if fits(vectors[i], rem)]
+            if not options:
+                return ()
+            if best is None or len(options) < len(best):
+                best = options
+        return best or ()
 
     @lru_cache(maxsize=None)
     def can_partition(rem):
@@ -308,16 +473,19 @@ def analyze_pool(counts, min_solutions=1, max_solutions=60, max_candidates=360):
             return True
         if rem_size < 3:
             return False
-        for w in candidates:
-            wc = WORD_COUNTS[w]
-            if fits(wc, rem) and can_partition(sub_counts(rem, wc)):
-                return True
-        return False
+        return any(can_partition(sub_counts(rem, vectors[i])) for i in pivot(rem))
 
     solutions = []
 
-    def enumerate_partitions(rem, start, chosen):
-        if len(solutions) > max_solutions:
+    def enumerate_partitions(rem, start, chosen, limit):
+        """Collect up to `limit` example partitions, for the shipped sample only.
+
+        The pack stores a handful of solutions as a sanity aid; the *count* comes
+        from count_partitions and the shortest clear from fewest_words, both of
+        which memoize. Enumerating every partition of a 25-tile pool would mean
+        walking thousands of paths to display eight of them.
+        """
+        if len(solutions) >= limit:
             return
         rem_size = count_size(rem)
         if rem_size == 0:
@@ -329,27 +497,73 @@ def analyze_pool(counts, min_solutions=1, max_solutions=60, max_candidates=360):
             w = candidates[i]
             wc = WORD_COUNTS[w]
             if fits(wc, rem):
+                rest = sub_counts(rem, wc)
+                # can_partition is memoized, so testing the residue up front is far
+                # cheaper than walking a branch that cannot finish the pool.
+                if not can_partition(rest):
+                    continue
                 chosen.append(w)
-                enumerate_partitions(sub_counts(rem, wc), i, chosen)
+                enumerate_partitions(rest, i, chosen, limit)
                 chosen.pop()
-                if len(solutions) > max_solutions:
+                if len(solutions) >= limit:
                     return
 
-    enumerate_partitions(counts, 0, [])
-    if len(solutions) > max_solutions:
+    @lru_cache(maxsize=None)
+    def fewest_words(rem):
+        """Shortest full clear, as a word count. Memoized, so it never enumerates."""
+        rem_size = count_size(rem)
+        if rem_size == 0:
+            return 0
+        if rem_size < 3:
+            return None
+        best = None
+        for i in pivot(rem):
+            deeper = fewest_words(sub_counts(rem, vectors[i]))
+            if deeper is not None and (best is None or deeper + 1 < best):
+                best = deeper + 1
+        return best
+
+    # Count before enumerating. Counting memoizes on the remainder, so branches
+    # that reconverge get collapsed instead of re-walked; enumeration cannot do
+    # that because it has to carry the chosen words down each path. This rejects
+    # a wide-open 25-tile pool in a moment rather than after an exhaustive walk
+    # that in practice never finishes.
+    @lru_cache(maxsize=None)
+    def count_partitions(rem):
+        rem_size = count_size(rem)
+        if rem_size == 0:
+            return 1
+        if rem_size < 3:
+            return 0
+        total = 0
+        for i in pivot(rem):
+            total += count_partitions(sub_counts(rem, vectors[i]))
+            if total > max_solutions:
+                return total
+        return total
+
+    solution_count = count_partitions(counts)
+    if solution_count > max_solutions:
         return {
             "candidates": candidates,
-            "solutions": solutions,
+            "solutions": [],
+            "solutionCount": solution_count,
+            "minWords": None,
             "traps": [],
             "too_open": True,
         }
-    if len(solutions) < min_solutions:
+
+    if solution_count < min_solutions:
         return {
             "candidates": candidates,
-            "solutions": solutions,
+            "solutions": [],
+            "solutionCount": solution_count,
+            "minWords": None,
             "traps": [],
             "too_open": False,
         }
+
+    enumerate_partitions(counts, 0, [], 8)
 
     traps = []
     for w in candidates:
@@ -363,8 +577,10 @@ def analyze_pool(counts, min_solutions=1, max_solutions=60, max_candidates=360):
     return {
         "candidates": candidates,
         "solutions": solutions,
+        "solutionCount": solution_count,
+        "minWords": fewest_words(counts),
         "traps": traps,
-        "too_open": len(solutions) > max_solutions,
+        "too_open": False,
     }
 
 
@@ -377,9 +593,9 @@ def board_score(analysis):
 
 def accept(n, counts, source, analysis):
     spec = level_spec(n)
-    sol_count = len(analysis["solutions"])
+    sol_count = analysis["solutionCount"]
     trap_count = len(analysis["traps"])
-    min_words = min((len(s) for s in analysis["solutions"]), default=0)
+    min_words = analysis["minWords"] or 0
     min_sol, max_sol = spec["solutions"]
     min_trap, max_trap = spec["traps"]
     has_long = spec["long_trap"] == 0 or any(len(w) >= spec["long_trap"] for w in analysis["traps"])
@@ -418,7 +634,7 @@ def make_level(n, rng, attempts=12000):
         if accept(n, counts, source, analysis):
             best = (attempt, source, counts, analysis)
             break
-        if analysis["solutions"] and len(analysis["solutions"]) >= 2:
+        if analysis["solutionCount"] >= 2 and not analysis["too_open"]:
             score = board_score(analysis)
             if best is None or score > board_score(best[3]):
                 best = (attempt, source, counts, analysis)
@@ -427,12 +643,12 @@ def make_level(n, rng, attempts=12000):
 
     attempt, source, counts, analysis = best
     sols = analysis["solutions"]
-    min_words = min(len(s) for s in sols)
+    min_words = analysis["minWords"]
     pattern = [len(w) for w in source]
     trap_sample = sorted(analysis["traps"], key=lambda w: (-len(w), RANKS.get(w, 999999), w))[:16]
     letters = shuffled_pool(counts, rng)
     print(
-        f"L{n:02d} {spec['phase']} pool={len(letters):2d} sol={len(sols):2d} "
+        f"L{n:02d} {spec['phase']} pool={len(letters):2d} sol={analysis['solutionCount']:5d} "
         f"min_words={min_words} traps={len(analysis['traps']):2d} "
         f"attempts={attempt:4d} pattern={'+'.join(map(str, pattern))} source={'+'.join(source)} "
         f"pool={letters.upper()} sample_traps={','.join(trap_sample[:7]).upper()}",
@@ -446,7 +662,7 @@ def make_level(n, rng, attempts=12000):
         "phase": spec["phase"],
         "sourcePattern": pattern,
         "minWords": min_words,
-        "solutionCount": len(sols),
+        "solutionCount": analysis["solutionCount"],
         "trapCount": len(analysis["traps"]),
         "trapSample": trap_sample[:10],
         "solutions": [list(s) for s in sols[:8]],
@@ -473,21 +689,33 @@ def order_by_phase_difficulty(levels):
     return ordered
 
 
+def pack_text(payload):
+    """Render the runtime pack: boards, the legal lexicon, and the blocked list.
+
+    CONSUME_BLOCKED holds real words the content filter removes. Shipping it lets
+    the game answer "that word is not counted here" rather than "not a word",
+    which would otherwise be both wrong and confusing.
+    """
+    words = sorted(RUNTIME_WORDS, key=lambda w: (len(w), RANKS.get(w, 999999), w))
+    blocked = sorted(BLOCKED_WORDS)
+    return (
+        "// Generated by generate_consume_boards.py - do not hand-edit.\n"
+        "// Consume boards are solver-checked and every shipped level has at least two full solutions.\n"
+        f"const CONSUME_DATA = {json.dumps(payload, separators=(',', ':'))};\n"
+        f"const CONSUME_DICT = new Set({json.dumps(words, separators=(',', ':'))});\n"
+        f"const CONSUME_BLOCKED = new Set({json.dumps(blocked, separators=(',', ':'))});\n"
+    )
+
+
 def emit(levels):
     payload = {
         "version": 1,
         "generatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "levels": levels,
     }
-    words = sorted(RUNTIME_WORDS, key=lambda w: (len(w), RANKS.get(w, 999999), w))
-    text = (
-        "// Generated by generate_consume_boards.py - do not hand-edit.\n"
-        "// Consume boards are solver-checked and every shipped level has at least two full solutions.\n"
-        f"const CONSUME_DATA = {json.dumps(payload, separators=(',', ':'))};\n"
-        f"const CONSUME_DICT = new Set({json.dumps(words, separators=(',', ':'))});\n"
-    )
-    OUT.write_text(text)
-    print(f"wrote {OUT.relative_to(ROOT)} ({len(levels)} levels, {len(words)} legal words)")
+    OUT.write_text(pack_text(payload))
+    print(f"wrote {OUT.relative_to(ROOT)} ({len(levels)} levels, "
+          f"{len(RUNTIME_WORDS)} legal words, {len(BLOCKED_WORDS)} blocked)")
 
 
 def analyze_current():
@@ -507,8 +735,8 @@ def analyze_current():
         )
         print(
             f"L{lvl['n']:02d} {lvl.get('phase', '?')} pool={len(lvl['pool']):2d} "
-            f"sol={len(analysis['solutions']):2d} traps={len(analysis['traps']):2d} "
-            f"min_words={min(len(s) for s in analysis['solutions'])}"
+            f"sol={analysis['solutionCount']:5d} traps={len(analysis['traps']):2d} "
+            f"min_words={analysis['minWords']}"
         )
 
 
@@ -519,14 +747,9 @@ def refresh_dictionary():
     start = src.index(marker) + len(marker)
     end = src.index(";\nconst CONSUME_DICT", start)
     data = json.loads(src[start:end])
-    words = sorted(RUNTIME_WORDS, key=lambda w: (len(w), RANKS.get(w, 999999), w))
-    OUT.write_text(
-        "// Generated by generate_consume_boards.py - do not hand-edit.\n"
-        "// Consume boards are solver-checked and every shipped level has at least two full solutions.\n"
-        f"const CONSUME_DATA = {json.dumps(data, separators=(',', ':'))};\n"
-        f"const CONSUME_DICT = new Set({json.dumps(words, separators=(',', ':'))});\n"
-    )
-    print(f"refreshed {OUT.relative_to(ROOT)} ({len(words)} legal words)")
+    OUT.write_text(pack_text(data))
+    print(f"refreshed {OUT.relative_to(ROOT)} ({len(RUNTIME_WORDS)} legal words, "
+          f"{len(BLOCKED_WORDS)} blocked)")
 
 
 def main():

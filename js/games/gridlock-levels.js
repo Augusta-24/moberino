@@ -178,6 +178,13 @@
     }
   ];
 
+  WORLDS.forEach(world => {
+    world.levels.forEach(level => {
+      const rows = level.order >= 9 ? 8 : level.order >= 6 ? 7 : level.size.rows;
+      level.size = { rows, columns: level.size.columns };
+    });
+  });
+
   const levels = WORLDS.flatMap(world => world.levels.map(level => Object.freeze({ ...level, worldId: world.id })));
   const byId = new Map(levels.map(level => [level.id, level]));
 

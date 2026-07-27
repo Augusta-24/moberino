@@ -627,6 +627,25 @@ body.arcade-mode-select.on-consume .consume-wrap {
   letter-spacing: 1.8px;
   color: rgba(242,239,232,0.42);
 }
+.cw-goal {
+  font: 10px 'VCR', monospace;
+  letter-spacing: 2px;
+  color: rgba(242,239,232,0.5);
+  text-align: center;
+  padding-bottom: 4px;
+}
+.cw-goal .over { color: var(--cw); }
+.cw-flash {
+  font: 11px 'VCR', monospace;
+  letter-spacing: 2px;
+  color: #ff6b6b;
+  text-align: center;
+  padding: 2px 0 4px;
+  animation: cwFlashIn 0.18s ease-out;
+}
+@keyframes cwFlashIn {
+  from { opacity: 0; transform: translateY(4px); }
+}
 .cw-return-hint.stuck {
   color: var(--cw);
 }

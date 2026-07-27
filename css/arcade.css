@@ -480,6 +480,9 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{
   scroll-behavior:smooth;
+  width: 100%;
+  height: var(--app-vh, 100dvh);
+  overflow: hidden;
 }
 /* Mobile gesture guard — suppress double-tap/pinch zoom without altering layout.
    touch-action/overscroll-behavior do not inherit, so per-element opt-outs
@@ -502,8 +505,10 @@ body {
   background: var(--navy);
   color: var(--white);
   font-family: 'VCR', monospace;
-  min-height: 100vh;
-  overflow-x: hidden;
+  width: 100%;
+  height: var(--app-vh, 100dvh);
+  min-height: 0;
+  overflow: hidden;
   padding-bottom: calc(62px + env(safe-area-inset-bottom));
 }
 body.on-home {

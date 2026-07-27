@@ -184,11 +184,8 @@
     const size = nextConfig && nextConfig.size || {};
     const rows = Math.max(3, Math.round(size.rows || 6));
     const columns = Math.max(3, Math.round(size.columns || 6));
-    const presentation = { width: 470, verticalSpace: 470 };
-    const cellSize = Math.floor(Math.min(
-      presentation.width / columns,
-      presentation.verticalSpace / rows
-    ));
+    const presentation = { width: 470 };
+    const cellSize = Math.floor(presentation.width / Math.max(columns, 6));
     const boardX = (560 - columns * cellSize) / 2;
     const boardY = Y0;
     const sinkPosition = sink => {
@@ -208,7 +205,7 @@
     const systems = dualSystems
       ? requestedSystems.systems.map((system, systemIndex) => ({
         ...system,
-        source: { ...system.source, system: systemIndex, x: boardX + system.source.c * cellSize + cellSize / 2, y: boardY + rows * cellSize },
+        source: { ...system.source, r: rows - 1, system: systemIndex, x: boardX + system.source.c * cellSize + cellSize / 2, y: boardY + rows * cellSize },
         sinks: system.sinks.map(sink => ({ ...sink, system: systemIndex, ...sinkPosition(sink) }))
       }))
       : [{ id: 'cyan', color: 'cyan', source: { r: rows - 1, c: 0, x: boardX + cellSize / 2, y: boardY + rows * cellSize }, sinks: defaultSinks }];
@@ -355,19 +352,24 @@
   }
 
   function barrierLayouts() {
-    const candidates = new Set(obstacleCandidates().map(cell => key(cell.r, cell.c)));
+    const candidates = obstacleCandidates();
     const layouts = [];
-    for (let column = 1; column < COLS - 1; column += 1) {
-      for (let startRow = 0; startRow <= ROWS - obstacleConfig.count; startRow += 1) {
-        const cells = Array.from({ length: obstacleConfig.count }, (_, index) => ({ r: startRow + index, c: column }));
-        if (cells.every(cell => candidates.has(key(cell.r, cell.c)))) layouts.push(cells);
+    for (let attempt = 0; attempt < obstacleConfig.maxGenerationAttempts * 12; attempt += 1) {
+      const shuffled = candidates.slice();
+      for (let index = shuffled.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(Math.random() * (index + 1));
+        [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
       }
-    }
-    for (let row = 1; row < ROWS - 1; row += 1) {
-      for (let startColumn = 0; startColumn <= COLS - obstacleConfig.count; startColumn += 1) {
-        const cells = Array.from({ length: obstacleConfig.count }, (_, index) => ({ r: row, c: startColumn + index }));
-        if (cells.every(cell => candidates.has(key(cell.r, cell.c)))) layouts.push(cells);
-      }
+      const selected = [];
+      shuffled.forEach(candidate => {
+        if (selected.length >= obstacleConfig.count) return;
+        if (selected.every(cell => Math.abs(cell.r - candidate.r) + Math.abs(cell.c - candidate.c) > 1)) selected.push(candidate);
+      });
+      if (selected.length !== obstacleConfig.count) continue;
+      const rows = new Set(selected.map(cell => cell.r));
+      const columns = new Set(selected.map(cell => cell.c));
+      if (rows.size === 1 || columns.size === 1) continue;
+      if (remainingCellsAreConnected(selected) && forcesSourceDetour(selected)) layouts.push(selected);
     }
     return layouts;
   }
@@ -378,12 +380,11 @@
     if (obstacleConfig.count > candidates.length) throw new Error('Grid Lock obstacle count exceeds available board cells.');
     if (obstacleConfig.pattern === 'barrier') {
       const layouts = barrierLayouts();
-      for (let attempt = 0; attempt < obstacleConfig.maxGenerationAttempts && layouts.length; attempt += 1) {
-        const index = Math.floor(Math.random() * layouts.length);
-        const selected = layouts.splice(index, 1)[0];
-        if (remainingCellsAreConnected(selected) && forcesSourceDetour(selected)) return new Set(selected.map(cell => key(cell.r, cell.c)));
+      if (layouts.length) {
+        const selected = layouts[Math.floor(Math.random() * layouts.length)];
+        return new Set(selected.map(cell => key(cell.r, cell.c)));
       }
-      throw new Error('Grid Lock could not generate a detour-producing obstacle barrier.');
+      throw new Error('Grid Lock could not generate a detour-producing dispersed obstacle layout.');
     }
     for (let attempt = 0; attempt < obstacleConfig.maxGenerationAttempts; attempt += 1) {
       const shuffled = candidates.slice();
@@ -435,7 +436,9 @@
       POWER_SYSTEMS[0].color = POWER_SYSTEMS[1].color;
       POWER_SYSTEMS[1].color = firstColor;
     }
-    SYSTEM_SPLIT_COLUMNS = POWER_SYSTEMS.length > 1 ? requestedSystems.splitColumns.slice(0, ROWS) : [];
+    SYSTEM_SPLIT_COLUMNS = POWER_SYSTEMS.length > 1
+      ? Array.from({ length: ROWS }, (_, row) => requestedSystems.splitColumns[row] ?? requestedSystems.splitColumns[requestedSystems.splitColumns.length - 1] ?? Math.floor(COLS / 2))
+      : [];
     const requestedRouters = nextConfig && nextConfig.modifiers && Array.isArray(nextConfig.modifiers.specialTiles)
       ? nextConfig.modifiers.specialTiles.filter(tile => tile.type === 'router')
       : [];
@@ -480,7 +483,9 @@
     const requestedObstacles = nextConfig && nextConfig.modifiers && nextConfig.modifiers.obstacles;
     obstacleConfig = requestedObstacles && requestedObstacles.enabled
       ? {
-        count: Math.max(0, Math.round(Number(requestedObstacles.count) || 0)),
+        count: requestedObstacles.pattern === 'barrier'
+          ? Math.max(3, Math.round(Number(requestedObstacles.count) || 0))
+          : Math.max(0, Math.round(Number(requestedObstacles.count) || 0)),
         pattern: requestedObstacles.pattern === 'barrier' ? 'barrier' : 'scatter',
         maxGenerationAttempts: Math.max(1, Math.round(Number(requestedObstacles.maxGenerationAttempts) || 48))
       }

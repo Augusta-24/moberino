@@ -183,7 +183,12 @@ test('levels declare generator inputs and normalized modifier contracts', () => 
   assert.equal(levels.worlds[3].levels.length, 10);
   assert.equal(levels.worlds[4].levels.length, 10);
   assert.equal(levels.worlds[0].levels.filter(level => level.order < 3).every(level => level.size.rows === 5 && level.size.columns === 5), true);
-  assert.equal(levels.worlds[0].levels.filter(level => level.order >= 3).every(level => level.size.rows === 6 && level.size.columns === 6), true);
+  assert.equal(levels.worlds[0].levels.filter(level => level.order >= 3 && level.order < 6).every(level => level.size.rows === 6 && level.size.columns === 6), true);
+  levels.worlds.forEach(world => {
+    assert.equal(world.levels.filter(level => level.order >= 6 && level.order < 9).every(level => level.size.rows === 7), true);
+    assert.equal(world.levels.filter(level => level.order >= 9).every(level => level.size.rows === 8), true);
+    assert.equal(world.levels.every(level => level.size.columns <= 6), true);
+  });
   levels.worlds.forEach(world => world.levels.forEach((level, index) => {
     assert.equal(level.order, index + 1);
     assert.ok(level.size.rows >= 5 && level.size.columns >= 5);
@@ -344,7 +349,7 @@ test('Barrier Grid retains sliding, enforces a detour, and remains solvable', ()
       const solutionEmpty = level.modifiers.slidingPieces.emptyCell;
       const blockedPathCells = new Set(occupied);
       blockedPathCells.add(`${solutionEmpty.r},${solutionEmpty.c}`);
-      assert.equal(obstacles.length, level.modifiers.obstacles.count, `${level.id} run ${run}`);
+      assert.equal(obstacles.length, Math.max(3, level.modifiers.obstacles.count), `${level.id} run ${run}`);
       assert.equal(harness.api.snapshot().length, level.size.rows * level.size.columns - obstacles.length - 1);
       assert.equal(occupied.has(`${layout.source.r},${layout.source.c}`), false);
       layout.sinks.forEach(sink => assert.equal(occupied.has(`${sink.r},${sink.c}`), false));
@@ -353,9 +358,8 @@ test('Barrier Grid retains sliding, enforces a detour, and remains solvable', ()
       assert.ok(harness.api.snapshot().filter(tile => tile.locked).every(tile => !tile.movable && tile.rot === tile.solvedRot));
       const sameRow = obstacles.every(cell => cell.r === obstacles[0].r);
       const sameColumn = obstacles.every(cell => cell.c === obstacles[0].c);
-      assert.ok(sameRow || sameColumn, `${level.id} barrier is linear`);
-      const positions = obstacles.map(cell => sameRow ? cell.c : cell.r).sort((left, right) => left - right);
-      assert.equal(positions.every((position, index) => position === positions[0] + index), true);
+      assert.equal(sameRow || sameColumn, false, `${level.id} blockers do not form a straight wall`);
+      assert.ok(obstacles.every(cell => obstacles.every(other => other === cell || Math.abs(cell.r - other.r) + Math.abs(cell.c - other.c) > 1)), `${level.id} blockers stay dispersed`);
       assert.ok(layout.sinks.some(sink => shortestGridDistance(level.size.rows, level.size.columns, blockedPathCells, layout.source, sink) > Math.abs(layout.source.r - sink.r) + Math.abs(layout.source.c - sink.c)), `${level.id} creates a detour`);
       harness.api.begin();
       const locked = harness.api.snapshot().find(tile => tile.locked);
@@ -393,7 +397,7 @@ test('Router Array generates its fixed insulated crossovers and solves both syst
         }));
       }
       if (level.id === 'router-03') {
-        assert.equal(harness.api.obstacleCells().length, 2);
+        assert.equal(harness.api.obstacleCells().length, 3);
         assert.equal(harness.api.snapshot().filter(tile => tile.locked && tile.type !== 'router').length, 1);
       }
       const solved = solveSliding(harness, level);

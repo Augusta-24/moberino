@@ -8,6 +8,8 @@
   const CONSUME_THEMES = ['space', 'jungle', 'ice', 'ocean', 'magic'];
   let mode = null, wrap = null, state = null, nextTile = 1;
   const rackWordSet = new Set(typeof CONSUME_RACK_DATA === 'undefined' ? [] : CONSUME_RACK_DATA.wordDictionary);
+  const rackBlockedSet = new Set(typeof CONSUME_RACK_DATA === 'undefined' ? [] : (CONSUME_RACK_DATA.blockedWords || []));
+  const groupWord = tiles => tiles.map(tile => tile.value).join('').toLowerCase();
   function ktTone(freq, delay = 0, duration = 0.08, volume = 0.035, end = freq) {
     try {
       const context = getAudioCtx(), oscillator = context.createOscillator(), gain = context.createGain();
@@ -45,7 +47,10 @@
     </div>`;
   }
   const levels = () => (typeof CONSUME_RACK_DATA === 'undefined' ? [] : CONSUME_RACK_DATA[mode].levels);
-  const key = () => `moberino-knot-swap-${mode}-v2`;
+  // v3: board identities changed wholesale when the level packs were rebuilt
+  // against a corrected dictionary, so old per-level completion marks would
+  // point at puzzles that no longer exist under those numbers.
+  const key = () => `moberino-knot-swap-${mode}-v3`;
   const esc = text => String(text).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
   function load() { try { return JSON.parse(localStorage.getItem(key()) || '{}'); } catch (e) { return {}; } }
   function save(data) { try { localStorage.setItem(key(), JSON.stringify(data)); } catch (e) {} }
@@ -88,38 +93,62 @@
   }
   function done(completed) { return Math.max(0, ...Object.keys(completed || migrateProgress(profile().profiles[profile().active]).completed).map(Number)); }
   function record(n) { const data = profile(); migrateProgress(data.profiles[data.active]).completed[n] = true; save(data); }
-  function chooseUnseenLevel() {
-    const data = profile(), player = migrateProgress(data.profiles[data.active]), pool = levels();
-    const completedCount = Object.values(player.completed).filter(Boolean).length;
-    const introductoryCount = mode === 'numbers'
-      ? Math.max(1, Math.ceil(pool.length / 2))
-      : Math.max(1, Math.ceil(pool.length / 3));
-    const standardCount = mode === 'numbers'
-      ? Math.max(introductoryCount, Math.ceil(pool.length * 0.85))
-      : Math.max(introductoryCount, Math.ceil(pool.length * 2 / 3));
-    const eligibleCount = completedCount < 2 ? introductoryCount : completedCount < 5 ? standardCount : pool.length;
-    const served = new Set(player.served);
-    let candidates = pool.slice(0, eligibleCount).filter(level => !served.has(level.n));
-    if (!candidates.length) candidates = pool.filter(level => !served.has(level.n));
-    if (!candidates.length) {
-      player.served = [];
-      candidates = pool.filter(level => level.n !== player.lastServed);
-      if (!candidates.length) candidates = pool.slice();
-    }
-    const selected = candidates[Math.floor(Math.random() * candidates.length)];
-    player.served.push(selected.n);
+  // Boards ship sorted easiest to hardest, so the lowest uncompleted one walks
+  // the player up the curve rather than bouncing around it.
+  function nextLevelInOrder() {
+    const player = migrateProgress(profile().profiles[profile().active]);
+    const next = levels().find(level => !player.completed[level.n]);
+    return next ? next.n : null;
+  }
+  function randomLevel() {
+    const data = profile(), player = migrateProgress(data.profiles[data.active]);
+    let pool = levels().filter(level => level.n !== player.lastServed);
+    if (!pool.length) pool = levels().slice();
+    const selected = pool[Math.floor(Math.random() * pool.length)];
     player.lastServed = selected.n;
     save(data);
     return selected.n;
   }
+  function clearedCount() {
+    const player = migrateProgress(profile().profiles[profile().active]);
+    return levels().filter(level => player.completed[level.n]).length;
+  }
   function serveUnseenPuzzle() {
-    if (levels().length) start(chooseUnseenLevel());
+    if (!levels().length) return;
+    const next = nextLevelInOrder();
+    if (next === null) renderAllCleared();
+    else start(next);
+  }
+  function renderAllCleared() {
+    const total = levels().length;
+    wrap.innerHTML = buildArcadeResultCard({
+      uid: `tile-swap-${mode}`,
+      boardKey: `consume-${mode}`,
+      artGame: 'consume',
+      color: cfg().accent,
+      marquee: 'ALL BOARDS CLEARED',
+      scoreLabel: 'BOARDS',
+      scoreValue: `${total}/${total}`,
+      scoreExtra: `YOU HAVE SOLVED EVERY ${cfg().title} PUZZLE`,
+      canSave: false,
+      showBoard: false,
+      showSaveArea: false,
+      buttons: `
+        <button class="kt-result-btn arcade-result-primary" data-random>PLAY A RANDOM BOARD</button>
+        <button class="kt-result-btn arcade-result-secondary" data-modes>TILE SWAP MENU</button>
+      `,
+    });
+    mountSelectionArt(`tile-swap-${mode}-art`, 'consume');
+    wrap.onclick = event => {
+      if (event.target.hasAttribute('data-random')) start(randomLevel());
+      else if (event.target.hasAttribute('data-modes')) window.renderConsumeModes();
+    };
   }
   function sync() { try { const data = profile(), high = done(migrateProgress(data.profiles[data.active]).completed); if (high && typeof RemoteLB !== 'undefined') RemoteLB.submit(cfg().title === 'WORDS' ? 'consume-words' : 'consume-numbers', data.active, high, 0, `L${high}`).catch(() => {}); } catch (e) {} }
 
   function validGroup(group) {
     if (group.length < 3) return false;
-    if (mode === 'words') return rackWordSet.has(group.map(tile => tile.value).join('').toLowerCase());
+    if (mode === 'words') return rackWordSet.has(groupWord(group));
     const parsed = group.map(tile => ({ suit: tile.value[0], rank: Number(tile.value.slice(1)) }));
     const sameSuit = parsed.every(tile => tile.suit === parsed[0].suit);
     const ranks = parsed.map(tile => tile.rank).sort((a, b) => a - b);
@@ -393,6 +422,31 @@
   }
 
   function checkWin() { return !state.rack.length && state.groups.length && state.groups.every(group => validGroup(group.tiles)); }
+
+  function checkFailure() {
+    if (state.rack.length) return 'RACK NOT EMPTY';
+    const broken = state.groups.filter(group => !validGroup(group.tiles));
+    if (!broken.length) return 'KEEP GOING';
+    if (mode !== 'words') return broken.length > 1 ? `${broken.length} GROUPS NOT VALID` : 'THAT GROUP IS NOT A RUN OR SET';
+    // A blocked word is a real word the arcade does not count, so say that
+    // rather than "not a word", which would read as the game being wrong.
+    const blocked = broken.find(group => rackBlockedSet.has(groupWord(group.tiles)));
+    if (blocked) return `${groupWord(blocked.tiles).toUpperCase()} IS NOT COUNTED HERE`;
+    const short = broken.find(group => group.tiles.length < 3);
+    if (short) return 'WORDS NEED 3+ LETTERS';
+    return `${groupWord(broken[0].tiles).toUpperCase()} IS NOT A WORD`;
+  }
+
+  function flashMessage(text) {
+    const flash = wrap && wrap.querySelector('#kt-flash');
+    if (!flash) return;
+    flash.textContent = text || '';
+    flash.hidden = !text;
+    clearTimeout(flashMessage.timer);
+    flashMessage.timer = setTimeout(() => {
+      if (flash.isConnected) flash.hidden = true;
+    }, 1800);
+  }
   function win() {
     if (state.won) return;
     state.won = true;
@@ -409,7 +463,7 @@
       marquee: 'PUZZLE SOLVED!',
       scoreLabel: 'GAME',
       scoreValue: cfg().title,
-      scoreExtra: `${state.moves} MOVES · A NEW PUZZLE IS READY`,
+      scoreExtra: `${state.moves} MOVES · ${clearedCount()}/${levels().length} BOARDS`,
       canSave: false,
       showBoard: false,
       showSaveArea: false,
@@ -431,7 +485,7 @@
 
   function renderPlay() {
     wrap.style.setProperty('--kt', cfg().accent);
-    wrap.innerHTML = `${playSceneryMarkup()}<div class="kt-hud"><button data-modes>TILE SWAP</button><strong>${cfg().title}</strong><button data-reset>RESET</button></div><div class="kt-table" id="kt-table"></div><button class="kt-check" id="kt-check">CHECK</button><div class="kt-rack" id="kt-rack" data-rack-drop></div>`;
+    wrap.innerHTML = `${playSceneryMarkup()}<div class="kt-hud"><button data-modes>TILE SWAP</button><strong>${cfg().title}</strong><button data-reset>RESET</button></div><div class="kt-goal">BOARD ${state.n}/${levels().length}</div><div class="kt-table" id="kt-table"></div><div class="kt-flash" id="kt-flash" role="status" aria-live="polite" hidden></div><button class="kt-check" id="kt-check">CHECK</button><div class="kt-rack" id="kt-rack" data-rack-drop></div>`;
     wrap.querySelector('.kt-hud').addEventListener('click', event => { if (event.target.hasAttribute('data-modes')) window.renderConsumeModes(); if (event.target.hasAttribute('data-reset')) start(state.n); });
     wrap.onpointerdown = pointerDown;
     wrap.onpointermove = dragMove;
@@ -446,7 +500,13 @@
       });
       else if (event.target.closest('[data-new-group]')) placePicked({ type: 'new-group' });
     });
-    wrap.querySelector('#kt-check').addEventListener('click', () => { const table = wrap.querySelector('#kt-table'); if (checkWin()) win(); else { table.classList.remove('bad'); void wrap.offsetWidth; table.classList.add('bad'); if (typeof SFX !== 'undefined') SFX.mismatch(); } });
+    wrap.querySelector('#kt-check').addEventListener('click', () => {
+      const table = wrap.querySelector('#kt-table');
+      if (checkWin()) { win(); return; }
+      table.classList.remove('bad'); void wrap.offsetWidth; table.classList.add('bad');
+      if (typeof SFX !== 'undefined') SFX.mismatch();
+      flashMessage(checkFailure());
+    });
     update();
   }
   function update(movedId) {

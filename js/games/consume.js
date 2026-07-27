@@ -1,7 +1,10 @@
 // Consume - flat letter-pool word puzzle.
 // Boards come from generate_consume_boards.py and are gated by an exhaustive solver.
 (function() {
-  const STORE_KEY = 'moberino-consume-v1';
+  // v2: board identities changed wholesale when the level packs were rebuilt
+  // against a corrected dictionary, so old per-level completion marks would
+  // point at puzzles that no longer exist under those numbers.
+  const STORE_KEY = 'moberino-consume-v2';
   const DATA = (typeof CONSUME_DATA !== 'undefined') ? CONSUME_DATA : { levels: [] };
   const LEVELS = DATA.levels || [];
   const ACCENT = '#38d8ff';
@@ -73,30 +76,61 @@
     p.completed[lvl] = true;
     saveStore(s);
   }
-  function chooseUnseenLevel() {
+  // Levels ship sorted easiest to hardest, so serving the lowest uncompleted one
+  // walks the player up the difficulty curve instead of jumping around it.
+  function nextLevelInOrder() {
     const store = ensureProfile();
     const player = migrateProgress(store.profiles[store.active]);
-    const completedCount = Object.values(player.completed).filter(Boolean).length;
-    const introductoryCount = Math.max(1, Math.ceil(LEVELS.length / 3));
-    const standardCount = Math.max(introductoryCount, Math.ceil(LEVELS.length * 2 / 3));
-    const eligibleCount = completedCount < 2 ? introductoryCount : completedCount < 5 ? standardCount : LEVELS.length;
-    const served = new Set(player.served);
-    let candidates = LEVELS.slice(0, eligibleCount).filter(level => !served.has(level.n));
-    if (!candidates.length) candidates = LEVELS.filter(level => !served.has(level.n));
-    if (!candidates.length) {
-      player.served = [];
-      candidates = LEVELS.filter(level => level.n !== player.lastServed);
-      if (!candidates.length) candidates = LEVELS.slice();
-    }
-    const selected = candidates[Math.floor(Math.random() * candidates.length)];
-    player.served.push(selected.n);
+    const next = LEVELS.find(level => !player.completed[level.n]);
+    return next ? next.n : null;
+  }
+  function randomLevel() {
+    const store = ensureProfile();
+    const player = migrateProgress(store.profiles[store.active]);
+    let pool = LEVELS.filter(level => level.n !== player.lastServed);
+    if (!pool.length) pool = LEVELS.slice();
+    const selected = pool[Math.floor(Math.random() * pool.length)];
     player.lastServed = selected.n;
     saveStore(store);
     return selected.n;
   }
+  function completedCount() {
+    const completed = myCompleted();
+    return LEVELS.filter(level => completed[level.n]).length;
+  }
   function serveUnseenPuzzle() {
     if (!LEVELS.length) return;
-    startLevel(chooseUnseenLevel());
+    const next = nextLevelInOrder();
+    if (next === null) renderAllCleared();
+    else startLevel(next);
+  }
+  function renderAllCleared() {
+    setArcadeExitVisible(false);
+    wrap.innerHTML = buildArcadeResultCard({
+      uid: 'tile-swap-grid',
+      boardKey: 'consume-grid',
+      artGame: 'consume',
+      color: '#ff7180',
+      marquee: 'ALL BOARDS CLEARED',
+      scoreLabel: 'BOARDS',
+      scoreValue: `${LEVELS.length}/${LEVELS.length}`,
+      scoreExtra: 'YOU HAVE SOLVED EVERY GRID PUZZLE',
+      canSave: false,
+      showBoard: false,
+      showSaveArea: false,
+      buttons: `
+        <button class="cw-btn arcade-result-primary" data-act="random">PLAY A RANDOM BOARD</button>
+        <button class="cw-btn arcade-result-secondary" data-act="modes">TILE SWAP MENU</button>
+        <button class="cw-btn arcade-result-arcade" data-act="arcade">ARCADE</button>
+      `,
+    });
+    mountSelectionArt('tile-swap-grid-art', 'consume');
+    wrap.onclick = event => {
+      const act = event.target.getAttribute && event.target.getAttribute('data-act');
+      if (act === 'random') { shuffleTheme(); startLevel(randomLevel()); }
+      else if (act === 'modes' && typeof window.renderConsumeModes === 'function') window.renderConsumeModes();
+      else if (act === 'arcade') nav('lobby');
+    };
   }
   function shuffleTheme() {
     if (!wrap) return;
@@ -216,6 +250,7 @@
       won: false,
       returned: new Set(),
       flashing: new Map(),
+      flash: '',
       startTime: Date.now(),
       shatters: 0,
       wordsFormed: 0,
@@ -304,19 +339,30 @@
     updateAll();
   }
 
+  function rejectReason(word) {
+    if (word.length < 3) return 'TOO SHORT';
+    if (typeof CONSUME_BLOCKED !== 'undefined' && CONSUME_BLOCKED.has(word)) {
+      return 'NOT COUNTED HERE';
+    }
+    if (typeof CONSUME_DICT === 'undefined' || !CONSUME_DICT.has(word)) return 'NOT A WORD';
+    return '';
+  }
+
   function submitTray() {
     if (!S || S.won || !S.tray.length) return;
     const word = tileWord(S.tray);
-    const ok = word.length >= 3 && typeof CONSUME_DICT !== 'undefined' && CONSUME_DICT.has(word);
-    if (!ok) {
+    const reason = rejectReason(word);
+    if (reason) {
       S.bad = true;
+      S.flash = reason;
       CSFX.bad();
       updateTray();
       later(() => {
         if (!S) return;
         S.bad = false;
+        S.flash = '';
         updateTray();
-      }, 340);
+      }, 1400);
       return;
     }
     const wordId = nextWordId++;
@@ -361,9 +407,16 @@
     if (!S || S.won) return;
     S.won = true;
     const elapsedSeconds = Math.max(1, Math.round((Date.now() - S.startTime) / 1000));
-    const message = S.shatters === 0 ? 'CLEAN CLEAR' : 'SOLVED';
     const minutes = Math.floor(elapsedSeconds / 60);
     const seconds = String(elapsedSeconds % 60).padStart(2, '0');
+    // The generator knows the shortest possible clear, so matching it is the real
+    // achievement; a clean clear with no shatters is the secondary one.
+    const used = S.tableau.length;
+    const best = S.data.minWords;
+    const message = used <= best ? 'PERFECT CLEAR' : S.shatters === 0 ? 'CLEAN CLEAR' : 'SOLVED';
+    const wordNote = used <= best
+      ? `${used} WORDS · THE SHORTEST POSSIBLE`
+      : `${used} WORDS · BEST POSSIBLE IS ${best}`;
     recordComplete(S.n);
     syncJourney();
     CSFX.win();
@@ -377,7 +430,7 @@
       marquee: message,
       scoreLabel: 'TIME',
       scoreValue: `${minutes}:${seconds}`,
-      scoreExtra: `${S.shatters} SHATTER${S.shatters === 1 ? '' : 'S'} · A NEW PUZZLE IS READY`,
+      scoreExtra: `${wordNote} · ${S.shatters} SHATTER${S.shatters === 1 ? '' : 'S'} · ${completedCount()}/${LEVELS.length} BOARDS`,
       canSave: false,
       showBoard: false,
       showSaveArea: false,
@@ -420,8 +473,11 @@
       `<strong>GRID</strong>` +
       `<button class="cw-btn" data-act="reset">RESET</button>` +
       `</div>` +
+      `<div class="cw-goal">BOARD ${S.n}/${LEVELS.length} · CLEARS IN ${S.data.minWords} WORDS` +
+      `<span id="cw-progress"></span></div>` +
       `<div class="cw-board" id="cw-board" style="--cw-cols:${S.boardCols}"></div>` +
       `<div class="cw-tray-shell">` +
+      `<div class="cw-flash" id="cw-flash" role="status" aria-live="polite" hidden></div>` +
       `<div class="cw-tray" id="cw-tray"></div>` +
       `<button class="cw-clear" type="button" data-act="clear" aria-label="Clear selected tiles">CLEAR</button>` +
       `<button class="cw-spell" data-act="submit">SPELL IT</button>` +
@@ -496,6 +552,17 @@
     const tray = wrap && wrap.querySelector('#cw-tray');
     if (!tray || !S) return;
     tray.classList.toggle('bad', !!S.bad);
+    const flash = wrap.querySelector('#cw-flash');
+    if (flash) {
+      flash.hidden = !S.flash;
+      flash.textContent = S.flash || '';
+    }
+    const progress = wrap.querySelector('#cw-progress');
+    if (progress) {
+      const used = S.tableau.length;
+      progress.textContent = used ? ` · ${used} SPELLED` : '';
+      progress.className = used > S.data.minWords ? 'over' : '';
+    }
     const word = tileWord(S.tray);
     tray.classList.toggle('valid', word.length >= 3 && typeof CONSUME_DICT !== 'undefined' && CONSUME_DICT.has(word));
     tray.innerHTML = S.tray.length

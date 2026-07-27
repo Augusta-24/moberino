@@ -1,0 +1,34 @@
+SUBTLEX-US word frequencies
+===========================
+
+data/subtlex-us-zipf.tsv is derived from the SUBTLEX-US frequency list published
+by the Center for Reading Research, Ghent University. It keeps only three fields
+(word, Zipf value, dominant part of speech) for lowercase alphabetic words of
+3-8 letters. Rebuild it with tools/fetch_subtlex.py.
+
+Source
+------
+https://www.ugent.be/pp/experimentele-psychologie/en/research/documents/subtlexus
+http://crr.ugent.be/programs-data/subtitle-frequencies
+
+Citation
+--------
+Brysbaert, M. & New, B. (2009). Moving beyond Kucera and Francis: A critical
+evaluation of current word frequency norms and the introduction of a new and
+improved word frequency measure for American English. Behavior Research
+Methods, 41(4), 977-990.
+
+van Heuven, W. J. B., Mandera, P., Keuleers, E. & Brysbaert, M. (2014).
+SUBTLEX-UK: A new and improved word frequency database for British English.
+Quarterly Journal of Experimental Psychology, 67(6), 1176-1190.
+(introduces the Zipf scale used in this file)
+
+Terms
+-----
+Ghent University offers the list for free download and it is widely reused in
+published research, but the download page states no explicit licence or
+redistribution terms. Confirm those terms with the Center for Reading Research
+before publishing the derived file in a public repository. If you would rather
+not redistribute it, delete data/subtlex-us-zipf.tsv and have contributors run
+tools/fetch_subtlex.py; the generators fail with a clear message when the file
+is absent, and nothing that ships to the browser depends on it.

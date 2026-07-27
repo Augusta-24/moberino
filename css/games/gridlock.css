@@ -47,8 +47,8 @@
    literal fallback value, so an absent/unrecognized theme renders identically
    to today. */
 [data-gl-theme="jungle"] {
-  --gl-c1:#8fe07a; --gl-c1-dim:#5c9a4a; --gl-c1-bright:#c8f79a; --gl-c1-glow:rgba(143,224,122,.4);
-  --gl-c2:#e0a542; --gl-c2-dim:#8a6a2e; --gl-c2-bright:#ffd98a; --gl-c2-glow:rgba(224,165,66,.4);
+  --gl-c1:#c9a7ff; --gl-c1-dim:#8c6fc4; --gl-c1-bright:#eadcff; --gl-c1-glow:rgba(201,167,255,.45);
+  --gl-c2:#e0c2ff; --gl-c2-dim:#9a78bd; --gl-c2-bright:#f4eaff; --gl-c2-glow:rgba(224,194,255,.42);
   --gl-core:#d9b35c; --gl-obstacle:#6b8a63;
   --gl-bg-1:#142a16; --gl-bg-2:#0c1c0e; --gl-bg-3:#030a04;
   --gl-crystal-fill:url(#glCrysJungle); --gl-crystal-edge:#eafce0;
@@ -68,8 +68,8 @@
   --gl-crystal-fill:url(#glCrysOcean); --gl-crystal-edge:#e3fbf5;
 }
 [data-gl-theme="magic"] {
-  --gl-c1:#b98bff; --gl-c1-dim:#6c4b99; --gl-c1-bright:#e6d4ff; --gl-c1-glow:rgba(185,139,255,.4);
-  --gl-c2:#ffe066; --gl-c2-dim:#9c8a3e; --gl-c2-bright:#fff6c2; --gl-c2-glow:rgba(255,224,102,.4);
+  --gl-c1:#5fd0ff; --gl-c1-dim:#328eaf; --gl-c1-bright:#b9efff; --gl-c1-glow:rgba(95,208,255,.45);
+  --gl-c2:#71e39a; --gl-c2-dim:#438e5e; --gl-c2-bright:#c4f8d5; --gl-c2-glow:rgba(113,227,154,.45);
   --gl-core:#ffe066; --gl-obstacle:#7c6a8f;
   --gl-bg-1:#1c1230; --gl-bg-2:#120a1e; --gl-bg-3:#05030a;
   --gl-crystal-fill:url(#glCrysMagic); --gl-crystal-edge:#f3e8ff;

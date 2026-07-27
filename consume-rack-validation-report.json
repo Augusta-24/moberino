@@ -3,7 +3,607 @@
     {
       "mode": "words",
       "level": 1,
-      "solutions": 70,
+      "solutions": 249,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 6,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 26
+      },
+      "difficultyScore": 20351,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 2,
+      "solutions": 199,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 6,
+        "brokenGroups": 2,
+        "untouchedGroups": 2,
+        "effort": 26
+      },
+      "difficultyScore": 20401,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 3,
+      "solutions": 166,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 6,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 26
+      },
+      "difficultyScore": 20434,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 4,
+      "solutions": 140,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 6,
+        "brokenGroups": 2,
+        "untouchedGroups": 2,
+        "effort": 26
+      },
+      "difficultyScore": 20460,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 5,
+      "solutions": 227,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
+      },
+      "difficultyScore": 20473,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 6,
+      "solutions": 220,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
+      },
+      "difficultyScore": 20480,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 7,
+      "solutions": 112,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 6,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 26
+      },
+      "difficultyScore": 20488,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 8,
+      "solutions": 204,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
+      },
+      "difficultyScore": 20496,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 9,
+      "solutions": 96,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 6,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 26
+      },
+      "difficultyScore": 20504,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 10,
+      "solutions": 190,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
+      },
+      "difficultyScore": 20510,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 11,
+      "solutions": 81,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 6,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 26
+      },
+      "difficultyScore": 20519,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 12,
+      "solutions": 173,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
+      },
+      "difficultyScore": 20527,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 13,
+      "solutions": 163,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
+      },
+      "difficultyScore": 20537,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 14,
+      "solutions": 159,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
+      },
+      "difficultyScore": 20541,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 15,
+      "solutions": 49,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 6,
+        "brokenGroups": 2,
+        "untouchedGroups": 2,
+        "effort": 26
+      },
+      "difficultyScore": 20551,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 16,
+      "solutions": 140,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
+      },
+      "difficultyScore": 20560,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 17,
+      "solutions": 34,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 6,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 26
+      },
+      "difficultyScore": 20566,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 18,
+      "solutions": 25,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 6,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 26
+      },
+      "difficultyScore": 20575,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 19,
+      "solutions": 121,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
+      },
+      "difficultyScore": 20579,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 20,
+      "solutions": 113,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
+      },
+      "difficultyScore": 20587,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 21,
+      "solutions": 107,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
+      },
+      "difficultyScore": 20593,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 22,
+      "solutions": 98,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
+      },
+      "difficultyScore": 20602,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 23,
+      "solutions": 88,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 2,
+        "effort": 27
+      },
+      "difficultyScore": 20612,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 24,
+      "solutions": 83,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
+      },
+      "difficultyScore": 20617,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 25,
+      "solutions": 72,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
+      },
+      "difficultyScore": 20628,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 26,
+      "solutions": 62,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
+      },
+      "difficultyScore": 20638,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 27,
+      "solutions": 58,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
+      },
+      "difficultyScore": 20642,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 28,
+      "solutions": 52,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
+      },
+      "difficultyScore": 20648,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 29,
+      "solutions": 46,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
+      },
+      "difficultyScore": 20654,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 30,
+      "solutions": 37,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
+      },
+      "difficultyScore": 20663,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 31,
+      "solutions": 133,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 8,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 28
+      },
+      "difficultyScore": 20667,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 32,
+      "solutions": 26,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
+      },
+      "difficultyScore": 20674,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 33,
+      "solutions": 117,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 8,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 28
+      },
+      "difficultyScore": 20683,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 34,
+      "solutions": 111,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 8,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 28
+      },
+      "difficultyScore": 20689,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 35,
+      "solutions": 7,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 7,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 27
+      },
+      "difficultyScore": 20693,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 36,
+      "solutions": 101,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 8,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 28
+      },
+      "difficultyScore": 20699,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 37,
+      "solutions": 88,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 8,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 28
+      },
+      "difficultyScore": 20712,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 38,
+      "solutions": 58,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 8,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 28
+      },
+      "difficultyScore": 20742,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 39,
+      "solutions": 36,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 8,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 28
+      },
+      "difficultyScore": 20764,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 40,
+      "solutions": 20,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 8,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 28
+      },
+      "difficultyScore": 20780,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 41,
+      "solutions": 41,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 9,
@@ -11,44 +611,119 @@
         "untouchedGroups": 1,
         "effort": 29
       },
-      "difficultyScore": 20830,
+      "difficultyScore": 20859,
       "valid": true,
       "errors": []
     },
     {
       "mode": "words",
-      "level": 2,
-      "solutions": 27,
+      "level": 42,
+      "solutions": 25,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 9,
+        "brokenGroups": 2,
+        "untouchedGroups": 1,
+        "effort": 29
+      },
+      "difficultyScore": 20875,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 43,
+      "solutions": 199,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 9,
+        "brokenGroups": 3,
+        "untouchedGroups": 1,
+        "effort": 39
+      },
+      "difficultyScore": 30701,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 44,
+      "solutions": 88,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 9,
+        "brokenGroups": 3,
+        "untouchedGroups": 1,
+        "effort": 39
+      },
+      "difficultyScore": 30812,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 45,
+      "solutions": 40,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 9,
+        "brokenGroups": 3,
+        "untouchedGroups": 1,
+        "effort": 39
+      },
+      "difficultyScore": 30860,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 46,
+      "solutions": 47,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 10,
-        "brokenGroups": 2,
+        "brokenGroups": 3,
         "untouchedGroups": 1,
-        "effort": 30
+        "effort": 40
       },
-      "difficultyScore": 20973,
+      "difficultyScore": 30953,
       "valid": true,
       "errors": []
     },
     {
       "mode": "words",
-      "level": 3,
-      "solutions": 8,
+      "level": 47,
+      "solutions": 11,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 10,
-        "brokenGroups": 2,
-        "untouchedGroups": 1,
-        "effort": 30
+        "brokenGroups": 3,
+        "untouchedGroups": 0,
+        "effort": 40
       },
-      "difficultyScore": 20992,
+      "difficultyScore": 30989,
       "valid": true,
       "errors": []
     },
     {
       "mode": "words",
-      "level": 4,
-      "solutions": 109,
+      "level": 48,
+      "solutions": 22,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "movedTiles": 11,
+        "brokenGroups": 3,
+        "untouchedGroups": 1,
+        "effort": 41
+      },
+      "difficultyScore": 31078,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "words",
+      "level": 49,
+      "solutions": 51,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "movedTiles": 12,
@@ -56,314 +731,89 @@
         "untouchedGroups": 1,
         "effort": 42
       },
-      "difficultyScore": 31091,
+      "difficultyScore": 31149,
       "valid": true,
       "errors": []
     },
     {
       "mode": "words",
-      "level": 5,
-      "solutions": 10,
+      "level": 50,
+      "solutions": 11,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "movedTiles": 12,
-        "brokenGroups": 3,
-        "untouchedGroups": 0,
-        "effort": 42
-      },
-      "difficultyScore": 31190,
-      "valid": true,
-      "errors": []
-    },
-    {
-      "mode": "words",
-      "level": 6,
-      "solutions": 82,
-      "solutionsCapped": false,
-      "minimumRearrangementEffort": {
-        "movedTiles": 14,
-        "brokenGroups": 3,
-        "untouchedGroups": 1,
-        "effort": 44
-      },
-      "difficultyScore": 31318,
-      "valid": true,
-      "errors": []
-    },
-    {
-      "mode": "words",
-      "level": 7,
-      "solutions": 52,
-      "solutionsCapped": false,
-      "minimumRearrangementEffort": {
-        "movedTiles": 14,
-        "brokenGroups": 3,
-        "untouchedGroups": 1,
-        "effort": 44
-      },
-      "difficultyScore": 31348,
-      "valid": true,
-      "errors": []
-    },
-    {
-      "mode": "words",
-      "level": 8,
-      "solutions": 6,
-      "solutionsCapped": false,
-      "minimumRearrangementEffort": {
-        "movedTiles": 14,
-        "brokenGroups": 3,
-        "untouchedGroups": 1,
-        "effort": 44
-      },
-      "difficultyScore": 31394,
-      "valid": true,
-      "errors": []
-    },
-    {
-      "mode": "words",
-      "level": 9,
-      "solutions": 5,
-      "solutionsCapped": false,
-      "minimumRearrangementEffort": {
-        "movedTiles": 14,
-        "brokenGroups": 3,
-        "untouchedGroups": 1,
-        "effort": 44
-      },
-      "difficultyScore": 31395,
-      "valid": true,
-      "errors": []
-    },
-    {
-      "mode": "words",
-      "level": 10,
-      "solutions": 4,
-      "solutionsCapped": false,
-      "minimumRearrangementEffort": {
-        "movedTiles": 17,
-        "brokenGroups": 3,
-        "untouchedGroups": 1,
-        "effort": 47
-      },
-      "difficultyScore": 31696,
-      "valid": true,
-      "errors": []
-    },
-    {
-      "mode": "words",
-      "level": 11,
-      "solutions": 27,
-      "solutionsCapped": false,
-      "minimumRearrangementEffort": {
-        "movedTiles": 18,
-        "brokenGroups": 4,
-        "untouchedGroups": 1,
-        "effort": 58
-      },
-      "difficultyScore": 41773,
-      "valid": true,
-      "errors": []
-    },
-    {
-      "mode": "words",
-      "level": 12,
-      "solutions": 18,
-      "solutionsCapped": false,
-      "minimumRearrangementEffort": {
-        "movedTiles": 18,
-        "brokenGroups": 4,
-        "untouchedGroups": 1,
-        "effort": 58
-      },
-      "difficultyScore": 41782,
-      "valid": true,
-      "errors": []
-    },
-    {
-      "mode": "words",
-      "level": 13,
-      "solutions": 19,
-      "solutionsCapped": false,
-      "minimumRearrangementEffort": {
-        "movedTiles": 19,
-        "brokenGroups": 4,
-        "untouchedGroups": 1,
-        "effort": 59
-      },
-      "difficultyScore": 41881,
-      "valid": true,
-      "errors": []
-    },
-    {
-      "mode": "words",
-      "level": 14,
-      "solutions": 3,
-      "solutionsCapped": false,
-      "minimumRearrangementEffort": {
-        "movedTiles": 19,
+        "movedTiles": 13,
         "brokenGroups": 4,
         "untouchedGroups": 0,
-        "effort": 59
+        "effort": 53
       },
-      "difficultyScore": 41897,
-      "valid": true,
-      "errors": []
-    },
-    {
-      "mode": "words",
-      "level": 15,
-      "solutions": 30,
-      "solutionsCapped": false,
-      "minimumRearrangementEffort": {
-        "movedTiles": 20,
-        "brokenGroups": 4,
-        "untouchedGroups": 0,
-        "effort": 60
-      },
-      "difficultyScore": 41970,
-      "valid": true,
-      "errors": []
-    },
-    {
-      "mode": "words",
-      "level": 16,
-      "solutions": 4,
-      "solutionsCapped": false,
-      "minimumRearrangementEffort": {
-        "movedTiles": 20,
-        "brokenGroups": 4,
-        "untouchedGroups": 1,
-        "effort": 60
-      },
-      "difficultyScore": 41996,
-      "valid": true,
-      "errors": []
-    },
-    {
-      "mode": "words",
-      "level": 17,
-      "solutions": 7,
-      "solutionsCapped": false,
-      "minimumRearrangementEffort": {
-        "movedTiles": 22,
-        "brokenGroups": 4,
-        "untouchedGroups": 1,
-        "effort": 62
-      },
-      "difficultyScore": 42193,
-      "valid": true,
-      "errors": []
-    },
-    {
-      "mode": "words",
-      "level": 18,
-      "solutions": 8,
-      "solutionsCapped": false,
-      "minimumRearrangementEffort": {
-        "movedTiles": 25,
-        "brokenGroups": 5,
-        "untouchedGroups": 0,
-        "effort": 75
-      },
-      "difficultyScore": 52492,
-      "valid": true,
-      "errors": []
-    },
-    {
-      "mode": "words",
-      "level": 19,
-      "solutions": 12,
-      "solutionsCapped": false,
-      "minimumRearrangementEffort": {
-        "movedTiles": 28,
-        "brokenGroups": 5,
-        "untouchedGroups": 0,
-        "effort": 78
-      },
-      "difficultyScore": 52788,
-      "valid": true,
-      "errors": []
-    },
-    {
-      "mode": "words",
-      "level": 20,
-      "solutions": 5,
-      "solutionsCapped": false,
-      "minimumRearrangementEffort": {
-        "movedTiles": 28,
-        "brokenGroups": 5,
-        "untouchedGroups": 0,
-        "effort": 78
-      },
-      "difficultyScore": 52795,
+      "difficultyScore": 41289,
       "valid": true,
       "errors": []
     },
     {
       "mode": "numbers",
       "level": 1,
-      "solutions": 1,
+      "solutions": 212,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "tableTilesMoved": 1,
-        "tableGroupsTouched": 1,
-        "rackTilesPlaced": 3,
-        "minimumDrags": 4
+        "tableTilesMoved": 2,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 5,
+        "minimumDrags": 7
       },
-      "difficultyScore": null,
+      "difficultyScore": 19988,
       "valid": true,
       "errors": []
     },
     {
       "mode": "numbers",
       "level": 2,
-      "solutions": 1,
+      "solutions": 28,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "tableTilesMoved": 1,
-        "tableGroupsTouched": 1,
-        "rackTilesPlaced": 3,
-        "minimumDrags": 4
+        "tableTilesMoved": 2,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 5,
+        "minimumDrags": 7
       },
-      "difficultyScore": null,
+      "difficultyScore": 20172,
       "valid": true,
       "errors": []
     },
     {
       "mode": "numbers",
       "level": 3,
-      "solutions": 1,
+      "solutions": 16,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "tableTilesMoved": 2,
         "tableGroupsTouched": 2,
-        "rackTilesPlaced": 3,
-        "minimumDrags": 5
+        "rackTilesPlaced": 5,
+        "minimumDrags": 7
       },
-      "difficultyScore": null,
+      "difficultyScore": 20184,
       "valid": true,
       "errors": []
     },
     {
       "mode": "numbers",
       "level": 4,
-      "solutions": 1,
+      "solutions": 10,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "tableTilesMoved": 2,
         "tableGroupsTouched": 2,
-        "rackTilesPlaced": 3,
-        "minimumDrags": 5
+        "rackTilesPlaced": 5,
+        "minimumDrags": 7
       },
-      "difficultyScore": null,
+      "difficultyScore": 20190,
       "valid": true,
       "errors": []
     },
     {
       "mode": "numbers",
       "level": 5,
-      "solutions": 1,
+      "solutions": 6,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "tableTilesMoved": 2,
@@ -371,97 +821,97 @@
         "rackTilesPlaced": 4,
         "minimumDrags": 6
       },
-      "difficultyScore": null,
+      "difficultyScore": 20194,
       "valid": true,
       "errors": []
     },
     {
       "mode": "numbers",
       "level": 6,
-      "solutions": 3,
+      "solutions": 5,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "tableTilesMoved": 3,
-        "tableGroupsTouched": 3,
+        "tableTilesMoved": 2,
+        "tableGroupsTouched": 2,
         "rackTilesPlaced": 4,
-        "minimumDrags": 7
+        "minimumDrags": 6
       },
-      "difficultyScore": null,
+      "difficultyScore": 20195,
       "valid": true,
       "errors": []
     },
     {
       "mode": "numbers",
       "level": 7,
-      "solutions": 1,
+      "solutions": 4,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "tableTilesMoved": 3,
+        "tableTilesMoved": 2,
         "tableGroupsTouched": 2,
         "rackTilesPlaced": 4,
-        "minimumDrags": 7
+        "minimumDrags": 6
       },
-      "difficultyScore": null,
+      "difficultyScore": 20196,
       "valid": true,
       "errors": []
     },
     {
       "mode": "numbers",
       "level": 8,
-      "solutions": 2,
+      "solutions": 3,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "tableTilesMoved": 3,
+        "tableTilesMoved": 2,
         "tableGroupsTouched": 2,
-        "rackTilesPlaced": 4,
+        "rackTilesPlaced": 5,
         "minimumDrags": 7
       },
-      "difficultyScore": null,
+      "difficultyScore": 20197,
       "valid": true,
       "errors": []
     },
     {
       "mode": "numbers",
       "level": 9,
-      "solutions": 1,
+      "solutions": 3,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "tableTilesMoved": 4,
-        "tableGroupsTouched": 3,
+        "tableTilesMoved": 2,
+        "tableGroupsTouched": 2,
         "rackTilesPlaced": 4,
-        "minimumDrags": 8
+        "minimumDrags": 6
       },
-      "difficultyScore": null,
+      "difficultyScore": 20197,
       "valid": true,
       "errors": []
     },
     {
       "mode": "numbers",
       "level": 10,
-      "solutions": 6,
+      "solutions": 2,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "tableTilesMoved": 4,
+        "tableTilesMoved": 2,
         "tableGroupsTouched": 2,
         "rackTilesPlaced": 4,
-        "minimumDrags": 8
+        "minimumDrags": 6
       },
-      "difficultyScore": null,
+      "difficultyScore": 20198,
       "valid": true,
       "errors": []
     },
     {
       "mode": "numbers",
       "level": 11,
-      "solutions": 1,
+      "solutions": 2,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "tableTilesMoved": 5,
+        "tableTilesMoved": 2,
         "tableGroupsTouched": 2,
         "rackTilesPlaced": 4,
-        "minimumDrags": 9
+        "minimumDrags": 6
       },
-      "difficultyScore": null,
+      "difficultyScore": 20198,
       "valid": true,
       "errors": []
     },
@@ -471,12 +921,12 @@
       "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "tableTilesMoved": 6,
-        "tableGroupsTouched": 3,
-        "rackTilesPlaced": 4,
-        "minimumDrags": 10
+        "tableTilesMoved": 2,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 3,
+        "minimumDrags": 5
       },
-      "difficultyScore": null,
+      "difficultyScore": 20199,
       "valid": true,
       "errors": []
     },
@@ -486,12 +936,12 @@
       "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "tableTilesMoved": 6,
-        "tableGroupsTouched": 5,
-        "rackTilesPlaced": 4,
-        "minimumDrags": 10
+        "tableTilesMoved": 2,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 3,
+        "minimumDrags": 5
       },
-      "difficultyScore": null,
+      "difficultyScore": 20199,
       "valid": true,
       "errors": []
     },
@@ -501,12 +951,12 @@
       "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "tableTilesMoved": 7,
-        "tableGroupsTouched": 4,
-        "rackTilesPlaced": 4,
-        "minimumDrags": 11
+        "tableTilesMoved": 2,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 3,
+        "minimumDrags": 5
       },
-      "difficultyScore": null,
+      "difficultyScore": 20199,
       "valid": true,
       "errors": []
     },
@@ -516,27 +966,27 @@
       "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "tableTilesMoved": 7,
-        "tableGroupsTouched": 4,
-        "rackTilesPlaced": 4,
-        "minimumDrags": 11
+        "tableTilesMoved": 2,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 3,
+        "minimumDrags": 5
       },
-      "difficultyScore": null,
+      "difficultyScore": 20199,
       "valid": true,
       "errors": []
     },
     {
       "mode": "numbers",
       "level": 16,
-      "solutions": 7,
+      "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "tableTilesMoved": 7,
-        "tableGroupsTouched": 4,
-        "rackTilesPlaced": 4,
-        "minimumDrags": 11
+        "tableTilesMoved": 2,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 3,
+        "minimumDrags": 5
       },
-      "difficultyScore": null,
+      "difficultyScore": 20199,
       "valid": true,
       "errors": []
     },
@@ -546,12 +996,12 @@
       "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "tableTilesMoved": 10,
-        "tableGroupsTouched": 5,
-        "rackTilesPlaced": 4,
-        "minimumDrags": 14
+        "tableTilesMoved": 2,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 3,
+        "minimumDrags": 5
       },
-      "difficultyScore": null,
+      "difficultyScore": 20199,
       "valid": true,
       "errors": []
     },
@@ -561,42 +1011,492 @@
       "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "tableTilesMoved": 10,
-        "tableGroupsTouched": 4,
-        "rackTilesPlaced": 4,
-        "minimumDrags": 14
+        "tableTilesMoved": 2,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 3,
+        "minimumDrags": 5
       },
-      "difficultyScore": null,
+      "difficultyScore": 20199,
       "valid": true,
       "errors": []
     },
     {
       "mode": "numbers",
       "level": 19,
-      "solutions": 2,
+      "solutions": 50,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
-        "tableTilesMoved": 10,
-        "tableGroupsTouched": 4,
+        "tableTilesMoved": 3,
+        "tableGroupsTouched": 2,
         "rackTilesPlaced": 5,
-        "minimumDrags": 15
+        "minimumDrags": 8
       },
-      "difficultyScore": null,
+      "difficultyScore": 20250,
       "valid": true,
       "errors": []
     },
     {
       "mode": "numbers",
       "level": 20,
+      "solutions": 15,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 3,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 5,
+        "minimumDrags": 8
+      },
+      "difficultyScore": 20285,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 21,
+      "solutions": 12,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 3,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 7
+      },
+      "difficultyScore": 20288,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 22,
+      "solutions": 8,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 3,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 5,
+        "minimumDrags": 8
+      },
+      "difficultyScore": 20292,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 23,
+      "solutions": 7,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 3,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 7
+      },
+      "difficultyScore": 20293,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 24,
+      "solutions": 6,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 3,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 5,
+        "minimumDrags": 8
+      },
+      "difficultyScore": 20294,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 25,
+      "solutions": 5,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 3,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 7
+      },
+      "difficultyScore": 20295,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 26,
+      "solutions": 4,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 3,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 7
+      },
+      "difficultyScore": 20296,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 27,
+      "solutions": 3,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 3,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 5,
+        "minimumDrags": 8
+      },
+      "difficultyScore": 20297,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 28,
+      "solutions": 2,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 3,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 7
+      },
+      "difficultyScore": 20298,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 29,
+      "solutions": 2,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 3,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 7
+      },
+      "difficultyScore": 20298,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 30,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 3,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 7
+      },
+      "difficultyScore": 20299,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 31,
+      "solutions": 49,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 4,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 5,
+        "minimumDrags": 9
+      },
+      "difficultyScore": 20351,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 32,
+      "solutions": 20,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 4,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 5,
+        "minimumDrags": 9
+      },
+      "difficultyScore": 20380,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 33,
+      "solutions": 12,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 4,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 8
+      },
+      "difficultyScore": 20388,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 34,
+      "solutions": 7,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 4,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 8
+      },
+      "difficultyScore": 20393,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 35,
+      "solutions": 5,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 4,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 8
+      },
+      "difficultyScore": 20395,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 36,
+      "solutions": 4,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 4,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 5,
+        "minimumDrags": 9
+      },
+      "difficultyScore": 20396,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 37,
+      "solutions": 3,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 4,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 3,
+        "minimumDrags": 7
+      },
+      "difficultyScore": 20397,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 38,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 4,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 3,
+        "minimumDrags": 7
+      },
+      "difficultyScore": 20399,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 39,
+      "solutions": 13,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 5,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 5,
+        "minimumDrags": 10
+      },
+      "difficultyScore": 20487,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 40,
+      "solutions": 2,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 5,
+        "tableGroupsTouched": 2,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 9
+      },
+      "difficultyScore": 20498,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 41,
+      "solutions": 605,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 5,
+        "tableGroupsTouched": 3,
+        "rackTilesPlaced": 5,
+        "minimumDrags": 10
+      },
+      "difficultyScore": 29895,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 42,
+      "solutions": 2,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 3,
+        "tableGroupsTouched": 3,
+        "rackTilesPlaced": 5,
+        "minimumDrags": 8
+      },
+      "difficultyScore": 30298,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 43,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 4,
+        "tableGroupsTouched": 3,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 8
+      },
+      "difficultyScore": 30399,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 44,
+      "solutions": 4,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 5,
+        "tableGroupsTouched": 3,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 9
+      },
+      "difficultyScore": 30496,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 45,
+      "solutions": 10,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 6,
+        "tableGroupsTouched": 3,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 10
+      },
+      "difficultyScore": 30590,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 46,
+      "solutions": 4,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 6,
+        "tableGroupsTouched": 3,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 10
+      },
+      "difficultyScore": 30596,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 47,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 6,
+        "tableGroupsTouched": 3,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 10
+      },
+      "difficultyScore": 30599,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 48,
+      "solutions": 2,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 7,
+        "tableGroupsTouched": 3,
+        "rackTilesPlaced": 5,
+        "minimumDrags": 12
+      },
+      "difficultyScore": 30698,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 49,
+      "solutions": 1,
+      "solutionsCapped": false,
+      "minimumRearrangementEffort": {
+        "tableTilesMoved": 7,
+        "tableGroupsTouched": 4,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 11
+      },
+      "difficultyScore": 40699,
+      "valid": true,
+      "errors": []
+    },
+    {
+      "mode": "numbers",
+      "level": 50,
       "solutions": 1,
       "solutionsCapped": false,
       "minimumRearrangementEffort": {
         "tableTilesMoved": 10,
-        "tableGroupsTouched": 4,
-        "rackTilesPlaced": 5,
-        "minimumDrags": 15
+        "tableGroupsTouched": 5,
+        "rackTilesPlaced": 4,
+        "minimumDrags": 14
       },
-      "difficultyScore": null,
+      "difficultyScore": 50999,
       "valid": true,
       "errors": []
     }
