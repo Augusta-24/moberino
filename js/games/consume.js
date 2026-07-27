@@ -430,7 +430,7 @@
       marquee: message,
       scoreLabel: 'TIME',
       scoreValue: `${minutes}:${seconds}`,
-      scoreExtra: `${wordNote} · ${S.shatters} SHATTER${S.shatters === 1 ? '' : 'S'} · ${completedCount()}/${LEVELS.length} BOARDS`,
+      scoreExtra: `<span style="color:#fff;font-size:16px">LEVEL ${completedCount()}/${LEVELS.length}</span>`,
       canSave: false,
       showBoard: false,
       showSaveArea: false,

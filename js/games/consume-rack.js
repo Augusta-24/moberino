@@ -463,7 +463,7 @@
       marquee: 'PUZZLE SOLVED!',
       scoreLabel: 'GAME',
       scoreValue: cfg().title,
-      scoreExtra: `${state.moves} MOVES · ${clearedCount()}/${levels().length} BOARDS`,
+      scoreExtra: `<span style="color:#fff;font-size:16px">LEVEL ${clearedCount()}/${levels().length}</span>`,
       canSave: false,
       showBoard: false,
       showSaveArea: false,
