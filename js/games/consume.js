@@ -264,6 +264,25 @@
     startLevel(S.n);
   }
 
+  function shuffleBoard() {
+    if (!S || S.won) return;
+    const indexes = S.tiles
+      .map((tile, index) => (!tile.wordId && !S.tray.includes(tile)) ? index : -1)
+      .filter(index => index >= 0);
+    if (indexes.length < 2) return;
+    const shuffled = indexes.map(index => S.tiles[index]);
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    if (shuffled.every((tile, index) => tile === S.tiles[indexes[index]])) {
+      shuffled.push(shuffled.shift());
+    }
+    indexes.forEach((boardIndex, index) => { S.tiles[boardIndex] = shuffled[index]; });
+    CSFX.tap();
+    updateBoard();
+  }
+
   function tileWord(tiles) {
     return tiles.map(t => t.ch).join('').toLowerCase();
   }
@@ -471,7 +490,10 @@
       `<div class="cw-hud">` +
       `<button class="cw-btn" data-act="modes">TILE SWAP</button>` +
       `<strong>GRID</strong>` +
+      `<div class="cw-hud-actions">` +
+      `<button class="cw-btn" data-act="shuffle">SHUFFLE</button>` +
       `<button class="cw-btn" data-act="reset">RESET</button>` +
+      `</div>` +
       `</div>` +
       `<div class="cw-goal">BOARD ${S.n}/${LEVELS.length} · <span class="cw-goal-words">${S.data.minWords}` +
       `${S.data.maxWords > S.data.minWords ? '+' : ''}</span> WORDS TO SOLVE` +
@@ -492,6 +514,7 @@
     wrap.querySelector('.cw-hud').addEventListener('click', e => {
       const act = e.target.getAttribute && e.target.getAttribute('data-act');
       if (act === 'modes') { SFX.menuSelect(); window.renderConsumeModes?.(); }
+      if (act === 'shuffle') shuffleBoard();
       if (act === 'reset') resetLevel();
     });
     wrap.querySelector('#cw-board').addEventListener('click', e => {

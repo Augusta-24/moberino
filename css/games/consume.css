@@ -358,6 +358,10 @@ body.arcade-mode-select.on-consume .consume-wrap {
   text-align: center;
   text-shadow: 0 0 12px color-mix(in srgb, var(--cw) 38%, transparent);
 }
+.cw-hud-actions {
+  display: flex;
+  gap: 6px;
+}
 .cw-meta {
   font-family: 'VCR', monospace;
   font-size: 9px;
@@ -745,6 +749,8 @@ body.arcade-mode-select.on-consume .consume-wrap {
   .cw-tile { font-size: 18px; }
   .cw-hud { gap: 5px; }
   .cw-hud strong { font-size: 22px; }
+  .cw-hud-actions { gap: 4px; }
+  .cw-hud .cw-hud-actions .cw-btn { padding-inline: 7px; font-size: 9px; }
   .cw-code-card { padding: 14px 12px; }
   .cw-code-row { gap: 7px; }
   .cw-code-label { font-size: 10px; letter-spacing: .8px; }

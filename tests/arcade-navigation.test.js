@@ -77,6 +77,14 @@ test('every Tile Swap mode shuffles a protected Shape Mobe-style world theme', (
   assert.match(rackCss, /\.kt-rack[^}]*background: rgba\(5,14,20,0\.96\)/);
 });
 
+test('Tile Swap Word Grid can shuffle only free board tiles', () => {
+  const grid = read('js/games/consume.js');
+  assert.match(grid, /function shuffleBoard\(\)/);
+  assert.match(grid, /!tile\.wordId && !S\.tray\.includes\(tile\)/);
+  assert.match(grid, /data-act="shuffle">SHUFFLE/);
+  assert.match(grid, /if \(act === 'shuffle'\) shuffleBoard\(\)/);
+});
+
 test('Rummy opens from a deeper random pool than the other Tile Swap modes', () => {
   const tabletop = read('js/games/consume-rack.js');
   assert.match(tabletop, /const introductoryCount = mode === 'numbers'/);
