@@ -30,6 +30,35 @@
 <link rel="stylesheet" href="css/games/consume.css?v=20260727-1">
 <link rel="stylesheet" href="css/games/consume-rack.css?v=20260726-8">
 <link rel="stylesheet" href="css/games/pet.css?v=20260726-1">
+
+<style>
+/* Mobile carousel gesture polish: the JS carousel owns horizontal swipes, while
+   the page/browser still owns vertical scrolling. This prevents sticky swipes,
+   accidental text/card highlighting, and delayed tap clicks after a drag. */
+#game-carousel {
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  overflow: hidden;
+}
+#game-carousel-track {
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  cursor: grab;
+}
+#game-carousel-track.dragging {
+  cursor: grabbing;
+}
+#game-carousel-track *,
+#game-carousel .game-card {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+}
+</style>
 <script>
 
 // Locks #pg-home's height to a JS-measured pixel value instead of letting the browser

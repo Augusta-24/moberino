@@ -1605,13 +1605,18 @@ function initCarousel() {
   window.scrollCarousel = goTo;
 
   // ── Pointer-driven drag: one path for mouse (desktop) and touch (mobile) ──
-  // Deliberately does NOT use setPointerCapture: capturing the pointer on an
-  // ancestor is a known way to make click delivery to a descendant <button>
-  // unreliable (especially on mobile Safari) — every "Play" tap doubles as a
-  // pointerdown here, so that would break launching games entirely. Listening
-  // on window for move/up instead gets the same "keep tracking off-element"
-  // behavior without touching click delivery at all.
-  let dragging = false, dragPointerId = null, dragStartX = 0, dragBaseVIdx = firstReal, dragBaseX = 0;
+  // Mobile fix: do not claim every touch as a drag immediately. First wait for
+  // clear horizontal intent; otherwise a normal tap on a game card remains a
+  // tap, and a vertical page scroll remains a scroll. Once horizontal intent is
+  // confirmed, we prevent the synthetic click that mobile browsers often fire
+  // after a swipe release.
+  let pointerActive = false;
+  let dragging = false;
+  let dragPointerId = null;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let dragBaseVIdx = firstReal;
+  let dragBaseX = 0;
   let lastX = 0, lastT = 0, velocity = 0, dragMoved = false;
   let suppressClickUntil = 0;
 
@@ -1620,62 +1625,94 @@ function initCarousel() {
   // into empty space (visible as a blank gap) before the gesture even ends.
   function clampDx(dx) { return Math.max(-step, Math.min(step, dx)); }
 
+  function resetPointerState() {
+    pointerActive = false;
+    dragging = false;
+    dragPointerId = null;
+    track.classList.remove('dragging');
+  }
+
   track.addEventListener('pointerdown', (e) => {
     if (animating || N <= 1) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    dragging = true;
+    pointerActive = true;
+    dragging = false;
     dragMoved = false;
     dragPointerId = e.pointerId;
     dragStartX = e.clientX;
+    dragStartY = e.clientY;
     dragBaseVIdx = visualIdx;
     dragBaseX = centerOffset - dragBaseVIdx * step;
-    track.classList.remove('animate');
-    track.classList.add('dragging');
-    lastX = e.clientX; lastT = performance.now(); velocity = 0;
+    lastX = e.clientX;
+    lastT = performance.now();
+    velocity = 0;
   });
+
   window.addEventListener('pointermove', (e) => {
-    if (!dragging || e.pointerId !== dragPointerId) return;
-    const dx = clampDx(e.clientX - dragStartX);
-    // 10px, not 4: ordinary tap/click jitter (finger or mouse never lands at the
-    // exact same pixel on release) was crossing a tighter threshold and getting
-    // misread as a drag, which suppressed the resulting click — the "Play"
-    // button stopped launching anything. Real swipes clear this well before
-    // release (the advance threshold below is ~60px), so raising it costs
-    // nothing there.
-    if (Math.abs(dx) > 10) dragMoved = true;
+    if (!pointerActive || e.pointerId !== dragPointerId) return;
+
+    const rawDx = e.clientX - dragStartX;
+    const rawDy = e.clientY - dragStartY;
+
+    if (!dragging) {
+      const horizontalIntent = Math.abs(rawDx) > 8 && Math.abs(rawDx) > Math.abs(rawDy) * 1.25;
+      const verticalIntent = Math.abs(rawDy) > 8 && Math.abs(rawDy) > Math.abs(rawDx);
+
+      if (verticalIntent) {
+        resetPointerState();
+        return;
+      }
+      if (!horizontalIntent) return;
+
+      dragging = true;
+      dragMoved = true;
+      suppressClickUntil = performance.now() + 700;
+      track.classList.remove('animate');
+      track.classList.add('dragging');
+    }
+
+    e.preventDefault();
+
+    const dx = clampDx(rawDx);
     track.style.transform = `translateX(${dragBaseX + dx}px)`;
     const now = performance.now();
     const dt = now - lastT;
     if (dt > 0) velocity = (e.clientX - lastX) / dt;
-    lastX = e.clientX; lastT = now;
-  });
+    lastX = e.clientX;
+    lastT = now;
+  }, { passive: false });
+
   function endDrag(e) {
-    if (!dragging || e.pointerId !== dragPointerId) return;
-    dragging = false;
-    track.classList.remove('dragging');
+    if (!pointerActive || e.pointerId !== dragPointerId) return;
+
+    const wasDragging = dragging;
     const dx = clampDx(e.clientX - dragStartX);
-    const advance = Math.abs(dx) > step * 0.18 || Math.abs(velocity) > 0.5;
-    // Mobile Safari can coalesce a quick swipe so pointerup contains meaningful
-    // travel even when no pointermove crossed the drag threshold. Mark that
-    // release as a drag too, otherwise the button under the finger may receive
-    // a synthetic click while the carousel advances.
-    if (Math.abs(dx) > 10 || advance) {
-      dragMoved = true;
-      // iOS may dispatch the synthetic click after pointerup and after other
-      // gesture bookkeeping has completed. Keep a brief time-based guard so
-      // that delayed click cannot launch the card beneath the release point.
-      suppressClickUntil = performance.now() + 500;
-      e.preventDefault();
-    }
+    const advance = wasDragging && (Math.abs(dx) > step * 0.16 || Math.abs(velocity) > 0.35);
+
+    resetPointerState();
+
+    if (!wasDragging) return;
+
+    dragMoved = true;
+    suppressClickUntil = performance.now() + 700;
+    e.preventDefault();
+
     if (advance) goTo(dx < 0 ? 1 : -1);
     else setTransform(dragBaseVIdx, true);
   }
   window.addEventListener('pointerup', endDrag);
   window.addEventListener('pointercancel', endDrag);
+
   // A drag that moved the track shouldn't also fire the card's "Play" click.
-  track.addEventListener('click', (e) => {
+  // Use document capture instead of only the track because several cards use
+  // inline onclick handlers or real <button> elements. Capture catches the
+  // delayed synthetic mobile click before those launch handlers run.
+  document.addEventListener('click', (e) => {
+    const inCarousel = e.target.closest && e.target.closest('#game-carousel');
+    if (!inCarousel) return;
     if (dragMoved || performance.now() < suppressClickUntil) {
       e.preventDefault();
+      e.stopPropagation();
       e.stopImmediatePropagation();
       dragMoved = false;
     }
@@ -1698,7 +1735,7 @@ function initCarousel() {
     // yank the card out from under the touch. Mobile browsers fire resize for
     // address-bar show/hide during ordinary page scroll, not just real
     // viewport changes, so this isn't a rare case to guard against.
-    resizeTimer = setTimeout(() => { if (dragging) return; syncToCurrentIndex(); }, 120);
+    resizeTimer = setTimeout(() => { if (pointerActive || dragging) return; syncToCurrentIndex(); }, 180);
   });
 
   requestAnimationFrame(() => requestAnimationFrame(() => {
