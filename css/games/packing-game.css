@@ -16,12 +16,15 @@
   --packing-cabinet-line-bright: rgba(105, 190, 141, .58);
   position: relative;
   z-index: 1;
+  width: 100%;
+  max-width: 100%;
   height: calc(var(--app-vh, 100dvh) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   margin-top: env(safe-area-inset-top, 0px);
   overflow: hidden;
   display: none;
   flex-direction: column;
   background: var(--packing-cabinet-deep);
+  box-sizing: border-box;
 }
 #pg-packing.active { display: flex; }
 #pg-packing .cats-header {
@@ -31,7 +34,9 @@
   flex: 1;
   min-height: 0;
   width: 100%;
+  max-width: 100%;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* ---- World themes --------------------------------------------------------
@@ -81,8 +86,8 @@
 }
 
 /* ---- Navigation cockpit and reusable level map ------------------------- */
-.packing-cockpit { display:grid; grid-template-rows:auto auto minmax(0,1fr) auto; gap:10px; width:min(100%,680px); height:100%; margin:0 auto; padding:12px; color:#e6eefc; background:linear-gradient(180deg,var(--packing-cabinet-raised),var(--packing-cabinet-deep)); }
-.packing-world-map { display:grid; grid-template-rows:auto minmax(0,1fr) auto; gap:10px; width:min(100%,680px); height:100%; margin:0 auto; padding:12px; color:#e6eefc; background:linear-gradient(180deg,var(--packing-cabinet-raised),var(--packing-cabinet-deep)); }
+.packing-cockpit { display:grid; grid-template-rows:auto auto minmax(0,1fr) auto; gap:10px; width:min(100%,680px); max-width:100%; height:100%; margin:0 auto; padding:12px; color:#e6eefc; background:linear-gradient(180deg,var(--packing-cabinet-raised),var(--packing-cabinet-deep)); box-sizing:border-box; }
+.packing-world-map { display:grid; grid-template-rows:auto minmax(0,1fr) auto; gap:10px; width:min(100%,680px); max-width:100%; height:100%; margin:0 auto; padding:12px; color:#e6eefc; background:linear-gradient(180deg,var(--packing-cabinet-raised),var(--packing-cabinet-deep)); box-sizing:border-box; }
 .packing-cockpit-header { display:grid; grid-template-columns:104px minmax(0,1fr) 92px; align-items:center; gap:8px; min-height:52px; text-align:center; }
 .packing-cockpit-header button,.packing-map-back { border:1px solid var(--packing-cabinet-line-bright); border-radius:5px; padding:9px 10px; background:rgba(5,25,17,.86); color:#9be0b7; font:11px/1 'VCR',monospace; letter-spacing:1px; cursor:pointer; white-space:nowrap; }
 .packing-cockpit-header > button:first-child { box-sizing:border-box; width:104px; min-width:104px; }
@@ -165,7 +170,7 @@
   grid-template-rows: 64px minmax(0, 1fr);
   box-sizing: border-box;
   width: 100%;
-  max-width: 760px;
+  max-width: min(100%, 760px);
   height: 100%;
   margin: 0 auto;
   padding: max(4px, env(safe-area-inset-top)) 4px max(4px, env(safe-area-inset-bottom));
@@ -489,12 +494,6 @@
   .packing-solved-actions button{min-height:42px;padding:10px 12px;font-size:11px;}
 }
 
-@media (pointer: coarse) {
-  .packing-stage-kicker { display:none; }
-  .packing-rack-mobile-hint { display:block; }
-}
-
-
 #pg-packing,
 #pg-packing *,
 .packing-mission-screen,
@@ -547,8 +546,31 @@
 .packing-canopy-right { filter:drop-shadow(-7px 7px 4px rgba(0,0,0,.5)); }
 .packing-forest-light { fill:#5be78a; opacity:.08; filter:drop-shadow(0 0 22px #5be78a); }
 .packing-rack-bg { fill:color-mix(in srgb,var(--pg-bg-2,#06130b) 88%,transparent); stroke:var(--pg-c1,#286a40); stroke-width:2.5; filter:drop-shadow(0 8px 14px rgba(0,0,0,.45)); }
-.packing-stage-kicker { fill:#bfe8cc; font:11px/1 'VCR',monospace; letter-spacing:1.5px; }
-.packing-rack-mobile-hint { display:none; fill:#d9ffe5; font:16px/1 'VCR',monospace; letter-spacing:1.5px; pointer-events:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
+.packing-stage-kicker {
+  fill:#f4ffe8;
+  font:12px/1 'VCR',monospace;
+  letter-spacing:1.6px;
+  font-weight:600;
+  paint-order:stroke;
+  stroke:#05210e;
+  stroke-width:5px;
+  stroke-linejoin:round;
+}
+.packing-rack-mobile-hint {
+  display:block;
+  fill:#f9ffe7;
+  font:14px/1 'VCR',monospace;
+  letter-spacing:1.4px;
+  font-weight:600;
+  paint-order:stroke;
+  stroke:#06160d;
+  stroke-width:4.5px;
+  stroke-linejoin:round;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-select:none;
+  -webkit-touch-callout:none;
+}
 .pge-region-bg { stroke:var(--pg-c1,#65e996); stroke-width:3; filter:drop-shadow(0 0 12px var(--pg-c1-glow,rgba(78,203,125,.3))); }
 [data-gl-theme="jungle"] .pge-region-bg { stroke:url(#packing-jungle-border); stroke-width:7; }
 [data-gl-theme="ice"] .pge-region-bg { stroke:url(#packing-ice-border); stroke-width:7; }

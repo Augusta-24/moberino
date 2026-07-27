@@ -82,6 +82,13 @@ test('Shape Mobe celebrates the solved board before opening its completion panel
   assert.match(css, /\.pge-piece\.is-victory-locked \.pge-cell/);
 });
 
+test('packing-game mobile shells keep their padded widths within the viewport', () => {
+  const css = fs.readFileSync(path.join(root, 'css/games/packing-game.css'), 'utf8');
+  assert.match(css, /\.packing-cockpit\s*\{[^}]*box-sizing:\s*border-box;/s);
+  assert.match(css, /\.packing-world-map\s*\{[^}]*box-sizing:\s*border-box;/s);
+  assert.match(css, /\.packing-mission-screen\s*\{[^}]*box-sizing:\s*border-box;/s);
+});
+
 test('campaign declares five cumulative worlds and a playable ten-level World 1', () => {
   const { levels } = loadCampaign();
   assert.equal(levels.worlds.length, 5);
