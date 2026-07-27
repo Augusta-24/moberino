@@ -1521,7 +1521,16 @@ function initCarousel() {
 
   function setTransform(vIdx, animate) {
     track.classList.toggle('animate', animate);
-    track.style.transform = `translateX(${centerOffset - vIdx * step}px)`;
+    const baseX = centerOffset - vIdx * step;
+    let x = baseX;
+    const activeItem = items[vIdx];
+    if (activeItem) {
+      const carouselRect = carousel.getBoundingClientRect();
+      const itemRect = activeItem.getBoundingClientRect();
+      const correction = Math.round((carouselRect.left + carouselRect.width / 2) - (itemRect.left + itemRect.width / 2));
+      x = baseX + correction;
+    }
+    track.style.transform = `translateX(${x}px)`;
   }
 
   function applyActive(lIdx, vIdx) {
