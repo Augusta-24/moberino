@@ -1524,8 +1524,7 @@ function initCarousel() {
     const activeItem = items[vIdx];
     let x = centerOffset - vIdx * step;
     if (activeItem) {
-      const itemRect = activeItem.getBoundingClientRect();
-      x = (carousel.clientWidth - itemRect.width) / 2 - activeItem.offsetLeft;
+      x = (carousel.clientWidth - cardW) / 2 - activeItem.offsetLeft;
     }
     track.style.transform = `translateX(${x}px)`;
   }
