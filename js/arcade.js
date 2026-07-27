@@ -1522,16 +1522,10 @@ function initCarousel() {
   function setTransform(vIdx, animate) {
     track.classList.toggle('animate', animate);
     const activeItem = items[vIdx];
-    let baseX = centerOffset - vIdx * step;
+    let x = centerOffset - vIdx * step;
     if (activeItem) {
-      baseX = centerOffset - activeItem.offsetLeft;
-    }
-    let x = baseX;
-    if (activeItem) {
-      const carouselRect = carousel.getBoundingClientRect();
       const itemRect = activeItem.getBoundingClientRect();
-      const correction = Math.round((carouselRect.left + carouselRect.width / 2) - (itemRect.left + itemRect.width / 2));
-      x = baseX + correction;
+      x = (carousel.clientWidth - itemRect.width) / 2 - activeItem.offsetLeft;
     }
     track.style.transform = `translateX(${x}px)`;
   }
