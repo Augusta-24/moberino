@@ -531,8 +531,9 @@ body.arcade-mode-select.on-consume .consume-wrap {
   align-items: center;
   gap: 7px;
 }
-.cw-tray-shell {
+.cw-tray-pos {
   position: relative;
+  width: 100%;
 }
 .cw-tray {
   width: 100%;
@@ -612,6 +613,9 @@ body.arcade-mode-select.on-consume .consume-wrap {
   .cw-level-entering .cw-board .cw-tile { animation: none; }
 }
 
+.cw-tableau:empty {
+  display: none;
+}
 .cw-tableau {
   width: 100%;
   min-height: 0;

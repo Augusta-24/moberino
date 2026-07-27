@@ -178,10 +178,50 @@
     }
   ];
 
+  const PROGRESSION_OVERRIDES = Object.freeze({
+    'training-array': {
+      6: { rows: 6, generationRules: { minBranchFraction: .45, maxCorridorLength: 5 } },
+      7: { rows: 6, generationRules: { minBranchFraction: .47, maxCorridorLength: 5 } },
+      8: { rows: 7, generationRules: { minBranchFraction: .49, maxCorridorLength: 4 } },
+      9: { rows: 7, generationRules: { minBranchFraction: .51, maxCorridorLength: 4 } },
+      10: { rows: 8, generationRules: { minBranchFraction: .54, maxCorridorLength: 4 } }
+    },
+    'sliding-array': {
+      6: { rows: 6, generationRules: { minBranchFraction: .46, maxCorridorLength: 5 } },
+      7: { rows: 6, generationRules: { minBranchFraction: .48, maxCorridorLength: 5 } },
+      8: { rows: 6, generationRules: { minBranchFraction: .50, maxCorridorLength: 4 } },
+      9: { rows: 7, generationRules: { minBranchFraction: .51, maxCorridorLength: 4 } },
+      10: { rows: 7, generationRules: { minBranchFraction: .54, maxCorridorLength: 4 } }
+    },
+    'obstacle-array': {
+      6: { rows: 6, generationRules: { maxCorridorLength: 4 } },
+      7: { rows: 7, generationRules: { maxCorridorLength: 4 } },
+      8: { rows: 7, generationRules: { maxCorridorLength: 4 } },
+      9: { rows: 7, generationRules: { maxCorridorLength: 4 } },
+      10: { rows: 8, generationRules: { maxCorridorLength: 4 } }
+    },
+    'router-array': {
+      6: { rows: 6, generationRules: { maxCorridorLength: 5 } },
+      7: { rows: 6, generationRules: { maxCorridorLength: 5 } },
+      8: { rows: 7, generationRules: { maxCorridorLength: 4 } },
+      9: { rows: 7, generationRules: { maxCorridorLength: 4 } },
+      10: { rows: 8, generationRules: { maxCorridorLength: 4 } }
+    },
+    'command-array': {
+      6: { rows: 6, generationRules: { maxCorridorLength: 5 } },
+      7: { rows: 7, generationRules: { maxCorridorLength: 4 } },
+      8: { rows: 7, generationRules: { maxCorridorLength: 4 } },
+      9: { rows: 7, generationRules: { maxCorridorLength: 4 } },
+      10: { rows: 8, generationRules: { maxCorridorLength: 4 } }
+    }
+  });
+
   WORLDS.forEach(world => {
     world.levels.forEach(level => {
-      const rows = level.order >= 9 ? 8 : level.order >= 6 ? 7 : level.size.rows;
-      level.size = { rows, columns: level.size.columns };
+      const override = PROGRESSION_OVERRIDES[world.id] && PROGRESSION_OVERRIDES[world.id][level.order];
+      if (!override) return;
+      level.size = { rows: override.rows, columns: level.size.columns };
+      level.generationRules = { ...level.generationRules, ...override.generationRules };
     });
   });
 

@@ -478,8 +478,10 @@
       `<div class="cw-board" id="cw-board" style="--cw-cols:${S.boardCols}"></div>` +
       `<div class="cw-tray-shell">` +
       `<div class="cw-flash" id="cw-flash" role="status" aria-live="polite" hidden></div>` +
+      `<div class="cw-tray-pos">` +
       `<div class="cw-tray" id="cw-tray"></div>` +
       `<button class="cw-clear" type="button" data-act="clear" aria-label="Clear selected tiles">CLEAR</button>` +
+      `</div>` +
       `<button class="cw-spell" data-act="submit">SPELL IT</button>` +
       `</div>` +
       `<div class="cw-tableau-shell">` +
@@ -569,7 +571,7 @@
       ? S.tray.map(t => `<button class="cw-tile tray" type="button" data-tray-tile="${t.id}">${esc(t.ch.toUpperCase())}</button>`).join('')
       : '';
     const btn = wrap.querySelector('.cw-spell');
-    if (btn) btn.disabled = S.tray.length < 3;
+    if (btn) btn.disabled = false;
     const clear = wrap.querySelector('.cw-clear');
     if (clear) clear.disabled = !S.tray.length;
   }

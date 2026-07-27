@@ -26,6 +26,8 @@
   let SYSTEM_SPLIT_COLUMNS = [];
   let routerConfigs = [];
   let LOOP_EDGE_CHANCE = 0.34;   // extra edges beyond the spanning tree → loops, fewer trivial end-caps
+  let MIN_BRANCH_FRACTION = null;
+  let MAX_CORRIDOR_LENGTH = null;
 
   const ORDER = ['n', 'e', 's', 'w'];
   const DELTA = { n: [-1, 0], e: [0, 1], s: [1, 0], w: [0, -1] };
@@ -502,6 +504,8 @@
     const rules = nextConfig && nextConfig.generationRules || {};
     LOOP_EDGE_CHANCE = Number.isFinite(rules.loopEdgeChance) ? rules.loopEdgeChance : .34;
     MAX_X_FRACTION = Number.isFinite(rules.maxCrossingFraction) ? rules.maxCrossingFraction : .15;
+    MIN_BRANCH_FRACTION = Number.isFinite(rules.minBranchFraction) ? rules.minBranchFraction : null;
+    MAX_CORRIDOR_LENGTH = Number.isFinite(rules.maxCorridorLength) ? Math.round(rules.maxCorridorLength) : null;
   }
 
   function xFraction(conn) {
@@ -510,25 +514,82 @@
     return xCount / (ROWS * COLS - blockedCells.size - (solutionEmpty ? 1 : 0));
   }
 
+  function complexityMetrics(conn) {
+    let tileCount = 0;
+    let branchCount = 0;
+    const seenEdges = new Set();
+    const corridorLengths = [];
+    const isDecisionTile = (r, c) => {
+      if (isSolutionEmpty(r, c) || isBlockedCell(r, c)) return false;
+      if (isLockedCell(r, c) || isMovementCell(r, c) || isRouterCell(r, c)) return true;
+      return conn[r][c].size !== 2;
+    };
+    for (let r = 0; r < ROWS; r += 1) {
+      for (let c = 0; c < COLS; c += 1) {
+        if (isSolutionEmpty(r, c) || isBlockedCell(r, c)) continue;
+        tileCount += 1;
+        if (conn[r][c].size >= 3) branchCount += 1;
+      }
+    }
+    for (let r = 0; r < ROWS; r += 1) {
+      for (let c = 0; c < COLS; c += 1) {
+        if (!isDecisionTile(r, c)) continue;
+        conn[r][c].forEach(direction => {
+          const startKey = `${r},${c},${direction}`;
+          if (seenEdges.has(startKey)) return;
+          let length = 0;
+          let row = r;
+          let column = c;
+          let currentDirection = direction;
+          while (true) {
+            seenEdges.add(`${row},${column},${currentDirection}`);
+            const [rowOffset, columnOffset] = DELTA[currentDirection];
+            const nextRow = row + rowOffset;
+            const nextColumn = column + columnOffset;
+            length += 1;
+            if (nextRow < 0 || nextRow >= ROWS || nextColumn < 0 || nextColumn >= COLS || isSolutionEmpty(nextRow, nextColumn) || isBlockedCell(nextRow, nextColumn)) break;
+            const opposite = OPP[currentDirection];
+            seenEdges.add(`${nextRow},${nextColumn},${opposite}`);
+            if (isDecisionTile(nextRow, nextColumn)) break;
+            const nextDirection = [...conn[nextRow][nextColumn]].find(candidate => candidate !== opposite);
+            if (!nextDirection) break;
+            row = nextRow;
+            column = nextColumn;
+            currentDirection = nextDirection;
+          }
+          corridorLengths.push(length);
+        });
+      }
+    }
+    return {
+      branchFraction: tileCount ? branchCount / tileCount : 0,
+      maxCorridorLength: corridorLengths.length ? Math.max(...corridorLengths) : 0
+    };
+  }
+
   function generate() {
     let conn = null;
     let topologyError = null;
     const topologyAttempts = obstacleConfig ? obstacleConfig.maxGenerationAttempts : 1;
+    const meetsComplexityRules = candidateConn => {
+      const metrics = complexityMetrics(candidateConn);
+      const branchOkay = MIN_BRANCH_FRACTION === null || metrics.branchFraction >= MIN_BRANCH_FRACTION;
+      const corridorOkay = MAX_CORRIDOR_LENGTH === null || metrics.maxCorridorLength <= MAX_CORRIDOR_LENGTH;
+      return xFraction(candidateConn) <= MAX_X_FRACTION && branchOkay && corridorOkay;
+    };
     for (let attempt = 0; attempt < topologyAttempts && !conn; attempt += 1) {
       blockedCells = generateObstacleCells();
-      try {
-        conn = buildConnectivity();
-      } catch (error) {
-        if (!String(error && error.message).includes('could not reach every generated cell')) throw error;
-        topologyError = error;
+      for (let complexityAttempt = 0; complexityAttempt < MAX_GENERATE_ATTEMPTS && !conn; complexityAttempt += 1) {
+        try {
+          const candidateConn = buildConnectivity();
+          if (meetsComplexityRules(candidateConn)) conn = candidateConn;
+        } catch (error) {
+          if (!String(error && error.message).includes('could not reach every generated cell')) throw error;
+          topologyError = error;
+        }
       }
     }
     if (!conn) throw topologyError || new Error('Grid Lock could not generate separated live-system routes.');
-    for (let attempt = 0; attempt < MAX_GENERATE_ATTEMPTS; attempt += 1) {
-      if (xFraction(conn) <= MAX_X_FRACTION) break;
-      conn = buildConnectivity();
-    }
-    if (xFraction(conn) > MAX_X_FRACTION) throw new Error('Grid Lock could not satisfy generated crossing constraints.');
     lockedCells = generateLockedCells(conn);
 
     const board = [];

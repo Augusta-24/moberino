@@ -128,6 +128,53 @@ function shortestGridDistance(rows, columns, blocked, start, end) {
   return Infinity;
 }
 
+const ORDER = ['n', 'e', 's', 'w'];
+const SHAPES = { END: ['n'], I: ['n', 's'], L: ['n', 'e'], T: ['n', 'e', 's'], X: ['n', 'e', 's', 'w'] };
+const OPP = { n: 's', e: 'w', s: 'n', w: 'e' };
+const DELTA = { n: [-1, 0], e: [0, 1], s: [1, 0], w: [0, -1] };
+
+function tileOpenings(tile) {
+  return new Set(SHAPES[tile.shape].map(direction => ORDER[(ORDER.indexOf(direction) + tile.solvedRot) % 4]));
+}
+
+function generatedComplexity(harness) {
+  const tiles = harness.api.snapshot();
+  const tileMap = new Map(tiles.map(tile => [`${tile.r},${tile.c}`, tile]));
+  const seenEdges = new Set();
+  const corridorLengths = [];
+  const isDecisionTile = tile => tile.locked || tile.movable || tile.type === 'router' || tileOpenings(tile).size !== 2;
+  const branchCount = tiles.filter(tile => tileOpenings(tile).size >= 3).length;
+  tiles.forEach(tile => {
+    if (!isDecisionTile(tile)) return;
+    tileOpenings(tile).forEach(direction => {
+      const edgeKey = `${tile.r},${tile.c},${direction}`;
+      if (seenEdges.has(edgeKey)) return;
+      let length = 0;
+      let current = tile;
+      let currentDirection = direction;
+      while (true) {
+        seenEdges.add(`${current.r},${current.c},${currentDirection}`);
+        const [rowOffset, columnOffset] = DELTA[currentDirection];
+        const next = tileMap.get(`${current.r + rowOffset},${current.c + columnOffset}`);
+        length += 1;
+        if (!next) break;
+        const opposite = OPP[currentDirection];
+        seenEdges.add(`${next.r},${next.c},${opposite}`);
+        if (isDecisionTile(next)) break;
+        const nextDirection = [...tileOpenings(next)].find(candidate => candidate !== opposite);
+        if (!nextDirection) break;
+        current = next;
+        currentDirection = nextDirection;
+      }
+      corridorLengths.push(length);
+    });
+  });
+  return {
+    branchFraction: tiles.length ? branchCount / tiles.length : 0,
+    maxCorridorLength: corridorLengths.length ? Math.max(...corridorLengths) : 0
+  };
+}
+
 function solveSliding(harness, config) {
   const layout = harness.api.layoutFor(config);
   harness.api.begin();
@@ -177,6 +224,13 @@ test('map routing derives the correct world from the active level and preserves 
 
 test('levels declare generator inputs and normalized modifier contracts', () => {
   const levels = loadLevels();
+  const expectedRows = {
+    'training-array': { 6: 6, 7: 6, 8: 7, 9: 7, 10: 8 },
+    'sliding-array': { 6: 6, 7: 6, 8: 6, 9: 7, 10: 7 },
+    'obstacle-array': { 6: 6, 7: 7, 8: 7, 9: 7, 10: 8 },
+    'router-array': { 6: 6, 7: 6, 8: 7, 9: 7, 10: 8 },
+    'command-array': { 6: 6, 7: 7, 8: 7, 9: 7, 10: 8 }
+  };
   assert.equal(levels.worlds[0].levels.length, 10);
   assert.equal(levels.worlds[1].levels.length, 10);
   assert.equal(levels.worlds[2].levels.length, 10);
@@ -185,9 +239,10 @@ test('levels declare generator inputs and normalized modifier contracts', () => 
   assert.equal(levels.worlds[0].levels.filter(level => level.order < 3).every(level => level.size.rows === 5 && level.size.columns === 5), true);
   assert.equal(levels.worlds[0].levels.filter(level => level.order >= 3 && level.order < 6).every(level => level.size.rows === 6 && level.size.columns === 6), true);
   levels.worlds.forEach(world => {
-    assert.equal(world.levels.filter(level => level.order >= 6 && level.order < 9).every(level => level.size.rows === 7), true);
-    assert.equal(world.levels.filter(level => level.order >= 9).every(level => level.size.rows === 8), true);
-    assert.equal(world.levels.every(level => level.size.columns <= 6), true);
+    world.levels.forEach(level => {
+      if (expectedRows[world.id][level.order]) assert.equal(level.size.rows, expectedRows[world.id][level.order], `${level.id} rows`);
+      assert.equal(level.size.columns <= 6, true);
+    });
   });
   levels.worlds.forEach(world => world.levels.forEach((level, index) => {
     assert.equal(level.order, index + 1);
@@ -223,6 +278,21 @@ test('levels declare generator inputs and normalized modifier contracts', () => 
     });
   });
   assert.equal([...levels.get('command-03').modifiers.powerSystems.systems.flatMap(system => system.sinks).map(sink => sink.side)].sort().join(','), 'e,n,n,w');
+});
+
+test('late-level generation rules keep larger boards dense and avoid long wraparound corridors', () => {
+  const levels = loadLevels();
+  levels.worlds.forEach(world => {
+    world.levels.filter(level => level.generationRules.minBranchFraction || level.generationRules.maxCorridorLength).forEach(level => {
+      for (let run = 0; run < 3; run += 1) {
+        const harness = createHarness();
+        assert.equal(harness.api.start({ ...level, stageId: 'gridlock-stage' }), true, `${level.id} run ${run}`);
+        const metrics = generatedComplexity(harness);
+        if (level.generationRules.minBranchFraction) assert.ok(metrics.branchFraction >= level.generationRules.minBranchFraction, `${level.id} branch density ${metrics.branchFraction}`);
+        if (level.generationRules.maxCorridorLength) assert.ok(metrics.maxCorridorLength <= level.generationRules.maxCorridorLength, `${level.id} corridor length ${metrics.maxCorridorLength}`);
+      }
+    });
+  });
 });
 
 test('layout anchors always share the generated board geometry', () => {
