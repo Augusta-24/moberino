@@ -196,6 +196,12 @@
   align-items: flex-start;
   justify-content: center;
 }
+
+/* Allow the stage to scroll vertically on short mobile viewports so the
+   rack (bottom area) can be reached without the browser scaling the page.
+   Use the app-aware vh variable where available. */
+/* removed forced max-height to avoid forcing scroll; stage should stay
+   non-scrollable and we adjust layout to keep rack visible */
 .packing-stage::before {
   content: '';
   position: absolute;
@@ -214,12 +220,11 @@
   /* Center the board and prefer filling width rather than being constrained by
      the container height. Keeps viewBox-based coordinate math intact while
      giving the board more horizontal room on narrow screens. */
-  position: relative;
-  z-index: 0;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   display: block;
-  width: min(100%, 560px);
-  height: auto;
-  margin: 0 auto;
   transition: filter .45s ease;
 }
 [data-gl-theme="space"] .packing-stage::before {
