@@ -494,6 +494,33 @@
   .packing-rack-mobile-hint { display:block; }
 }
 
+
+#pg-packing,
+#pg-packing *,
+.packing-mission-screen,
+.packing-stage,
+.packing-svg,
+.pge-piece {
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+  -webkit-tap-highlight-color:transparent;
+}
+
+.packing-stage,
+.packing-svg,
+.pge-piece {
+  touch-action:none;
+}
+
+.packing-stage-kicker,
+.packing-rack-mobile-hint {
+  pointer-events:none;
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+}
+
 /* Packing-owned interior. The outer cabinet mirrors Grid Lock; the stage uses
    its full height for a large container plus the piece rack the puzzle needs. */
 #pg-packing { background:#020905; }
@@ -521,7 +548,7 @@
 .packing-forest-light { fill:#5be78a; opacity:.08; filter:drop-shadow(0 0 22px #5be78a); }
 .packing-rack-bg { fill:color-mix(in srgb,var(--pg-bg-2,#06130b) 88%,transparent); stroke:var(--pg-c1,#286a40); stroke-width:2.5; filter:drop-shadow(0 8px 14px rgba(0,0,0,.45)); }
 .packing-stage-kicker { fill:#bfe8cc; font:11px/1 'VCR',monospace; letter-spacing:1.5px; }
-.packing-rack-mobile-hint { display:none; fill:#d9ffe5; font:16px/1 'VCR',monospace; letter-spacing:1.5px; pointer-events:none; user-select:none; -webkit-user-select:none; }
+.packing-rack-mobile-hint { display:none; fill:#d9ffe5; font:16px/1 'VCR',monospace; letter-spacing:1.5px; pointer-events:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
 .pge-region-bg { stroke:var(--pg-c1,#65e996); stroke-width:3; filter:drop-shadow(0 0 12px var(--pg-c1-glow,rgba(78,203,125,.3))); }
 [data-gl-theme="jungle"] .pge-region-bg { stroke:url(#packing-jungle-border); stroke-width:7; }
 [data-gl-theme="ice"] .pge-region-bg { stroke:url(#packing-ice-border); stroke-width:7; }

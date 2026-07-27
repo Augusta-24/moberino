@@ -358,6 +358,7 @@
       rackBottom: 1095,
       rackBackgroundId: 'packing-rack-bg',
       rackLabelId: 'packing-rack-label',
+      rackMobileHintId: 'packing-rack-mobile-hint',
       rackTopPadding: 4,
       rackRowSpacing: 118,
       trayCellSize: 29,

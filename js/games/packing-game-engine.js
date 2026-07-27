@@ -1191,6 +1191,9 @@
         y: (point.y - position.y) * liftScale + touchLift
       }
     };
+    if (piece.g.setPointerCapture && event.pointerId != null) {
+      try { piece.g.setPointerCapture(event.pointerId); } catch (error) {}
+    }
     selectPiece(piece, dragPosition(point, dragging));
     piece.g.classList.add('is-dragging');
   }
@@ -1225,6 +1228,7 @@
   function moveDrag(event) {
     if (!dragging) return;
     if (dragging.pointerId != null && event.pointerId != null && event.pointerId !== dragging.pointerId) return;
+    if (event.preventDefault) event.preventDefault();
     const point = pointFromEvent(event);
     dragging.currentPoint = point;
     const position = dragPosition(point, dragging);
@@ -1235,11 +1239,21 @@
     dragging.piece.g.classList.toggle('is-invalid-drop', !placement.fits);
   }
 
+  function pointInRack(point) {
+    return rackArea &&
+      point.x >= rackArea.x && point.x <= rackArea.x + rackArea.width &&
+      point.y >= rackArea.y && point.y <= rackArea.y + rackArea.height;
+  }
+
   function endDrag(event) {
     if (!dragging) return;
     if (dragging.pointerId != null && event.pointerId != null && event.pointerId !== dragging.pointerId) return;
+    if (event.preventDefault) event.preventDefault();
     const drag = dragging;
     const { piece, moved } = drag;
+    if (piece.g.releasePointerCapture && event.pointerId != null) {
+      try { piece.g.releasePointerCapture(event.pointerId); } catch (error) {}
+    }
     piece.g.classList.remove('is-dragging');
     dragging = null;
     if (!moved) {
@@ -1259,22 +1273,29 @@
     lastTapPiece = null;
     lastTapAt = -Infinity;
 
+    // Placement must win over the rack hit-test. On touch screens the piece is
+    // lifted above the finger, so a valid-looking board drop can still have the
+    // finger down in the rack area. Using the visual/floating piece position
+    // first makes the drop behavior match what the player sees.
+    const placement = placementAtPosition(piece, piece.floatPosition);
+    if (placement.fits) {
+      placePieceAt(piece, placement.r, placement.c);
+      playTone(300, 460, .14, .035);
+      if (checkComplete()) win();
+      return;
+    }
+
     const point = pointFromEvent(event);
-    if (rackArea && point.x >= rackArea.x && point.x <= rackArea.x + rackArea.width && point.y >= rackArea.y && point.y <= rackArea.y + rackArea.height) {
+    if (pointInRack(point)) {
       returnPieceHome(piece);
       playTone(220, 150, .1, .02);
       return;
     }
-    const placement = placementAtPosition(piece, piece.floatPosition);
-    if (!placement.fits) {
-      restorePiece(piece);
-      playTone(200, 150, .12, .025);
-      return;
-    }
-    placePieceAt(piece, placement.r, placement.c);
-    playTone(300, 460, .14, .035);
-    if (checkComplete()) win();
+
+    restorePiece(piece);
+    playTone(200, 150, .12, .025);
   }
+
 
   function win() {
     if (solved) return;
@@ -1394,6 +1415,8 @@
       }
       const rackLabel = element(nextConfig.rackLabelId);
       if (rackLabel) rackLabel.setAttribute('y', rackArea.y - 28);
+      const rackMobileHint = element(nextConfig.rackMobileHintId);
+      if (rackMobileHint) rackMobileHint.setAttribute('y', rackArea.y - 28);
     }
     // A rect sized to the region's own bounding box, drawn beneath the sockets,
     // so a host can visually distinguish "this is the puzzle" from its
@@ -1509,6 +1532,7 @@
 
     addListener(stage, 'pointermove', moveDrag, { passive: false });
     addListener(stage, 'pointerup', endDrag, { passive: false });
+    addListener(stage, 'pointercancel', endDrag, { passive: false });
     addListener(stage, 'pointerleave', endDrag, { passive: false });
     addListener(stage, 'pointerdown', event => {
       if (event.packingRotateHandled) return;
