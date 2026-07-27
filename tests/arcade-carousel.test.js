@@ -27,6 +27,19 @@ test('carousel quarantines delayed synthetic clicks after a swipe', () => {
   assert.match(source, /e\.stopImmediatePropagation\(\)/);
 });
 
+test('carousel queues a follow-up swipe while a transition is still active', () => {
+  assert.match(source, /let pendingDir = 0/);
+  assert.match(source, /if \(animating\) \{[\s\S]*pendingDir = dir;/);
+  assert.match(source, /if \(pendingDir !== 0\) \{/);
+  assert.match(source, /beginTransition\(nextDir\)/);
+});
+
+test('carousel uses a more forgiving touch swipe threshold', () => {
+  assert.match(source, /step \* 0\.14/);
+  assert.match(source, /pointerType === 'touch'/);
+  assert.match(source, /Math\.abs\(velocity\) > 0\.4/);
+});
+
 test('carousel re-entry refreshes the current slide instead of only restoring ready state', () => {
   assert.match(source, /if \(carousel\.dataset\.carouselReady === '1'\) \{[\s\S]*carousel\._refreshCarouselLayout/);
   assert.match(source, /function syncToCurrentIndex\(\)/);

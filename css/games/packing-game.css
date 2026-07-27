@@ -177,9 +177,6 @@
   overflow: hidden;
   background: #02040a;
 }
-@media (min-height:620px) {
-  .packing-mission-screen { width:min(100%,calc((100dvh - 64px) * .5)); }
-}
 .packing-mission-screen > header {
   position: relative; z-index: 8; display: grid; align-content: center;
   border: 1px solid rgba(60,90,120,.34); border-radius: 8px 8px 0 0;
@@ -518,6 +515,16 @@
   -webkit-user-select:none;
   user-select:none;
   -webkit-touch-callout:none;
+}
+
+@media (pointer: coarse) {
+  .packing-stage-kicker { display: none; }
+  .packing-rack-mobile-hint { display: block; }
+}
+
+@media (max-width: 720px) {
+  .packing-stage-kicker { display: none !important; }
+  .packing-rack-mobile-hint { display: block !important; stroke-width: 3px !important; font-size: 15px !important; }
 }
 
 /* Packing-owned interior. The outer cabinet mirrors Grid Lock; the stage uses

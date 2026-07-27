@@ -1566,6 +1566,7 @@ function initCarousel() {
   // the wrap on a timer in that case instead of waiting forever for an event
   // that isn't coming; it's cleared whenever transitionend does fire normally.
   let transitionSafetyTimer = null;
+  let pendingDir = 0;
 
   function finishTransition() {
     if (!animating) return;
@@ -1578,14 +1579,26 @@ function initCarousel() {
       const real = firstReal;
       withoutCardTransition(() => { visualIdx = real; setTransform(real, false); applyActive(logIdx, real); });
     }
+
+    if (pendingDir !== 0) {
+      const nextDir = pendingDir;
+      pendingDir = 0;
+      requestAnimationFrame(() => {
+        if (!animating && !dragging) beginTransition(nextDir);
+      });
+    }
   }
   track.addEventListener('transitionend', (e) => {
     if (e.target !== track || e.propertyName !== 'transform') return;
     finishTransition();
   });
 
-  function goTo(dir) {
-    if (animating || N <= 1) return;
+  function beginTransition(dir) {
+    if (N <= 1) return;
+    if (animating) {
+      pendingDir = dir;
+      return;
+    }
     const current = logIdx;
     logIdx = (logIdx + dir + N) % N;
     _carouselIdx = logIdx;
@@ -1602,7 +1615,7 @@ function initCarousel() {
     clearTimeout(transitionSafetyTimer);
     transitionSafetyTimer = setTimeout(finishTransition, 400);
   }
-  window.scrollCarousel = goTo;
+  window.scrollCarousel = beginTransition;
 
   // ── Pointer-driven drag: one path for mouse (desktop) and touch (mobile) ──
   // Deliberately does NOT use setPointerCapture: capturing the pointer on an
@@ -1654,7 +1667,7 @@ function initCarousel() {
     dragging = false;
     track.classList.remove('dragging');
     const dx = clampDx(e.clientX - dragStartX);
-    const advance = Math.abs(dx) > step * 0.18 || Math.abs(velocity) > 0.5;
+    const advance = Math.abs(dx) > step * 0.14 || (e.pointerType === 'touch' ? Math.abs(velocity) > 0.4 : Math.abs(velocity) > 0.5);
     // Mobile Safari can coalesce a quick swipe so pointerup contains meaningful
     // travel even when no pointermove crossed the drag threshold. Mark that
     // release as a drag too, otherwise the button under the finger may receive
@@ -1667,7 +1680,7 @@ function initCarousel() {
       suppressClickUntil = performance.now() + 500;
       e.preventDefault();
     }
-    if (advance) goTo(dx < 0 ? 1 : -1);
+    if (advance) beginTransition(dx < 0 ? 1 : -1);
     else setTransform(dragBaseVIdx, true);
   }
   window.addEventListener('pointerup', endDrag);
@@ -1688,7 +1701,7 @@ function initCarousel() {
   carousel.addEventListener('wheel', (e) => {
     if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
     e.preventDefault();
-    goTo(e.deltaX > 0 ? 1 : -1);
+    beginTransition(e.deltaX > 0 ? 1 : -1);
   }, { passive: false });
 
   let resizeTimer = null;
