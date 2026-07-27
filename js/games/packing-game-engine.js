@@ -648,6 +648,7 @@
   let puzzle = null;       // { region, pieceIndexList, solution, ... }
   let trayPieces = [];     // { pieceIndex, orientIdx (current), g, cellSize, home:{x,y}, placedAt:null|[r,c] }
   let listeners = [];
+  let victoryTimers = [];
   let dragging = null;
   let selectedPiece = null;
   let selectionGhosts = [];
@@ -1279,7 +1280,38 @@
     if (solved) return;
     solved = true;
     playTone(392, 784, .32, .06);
-    if (config && typeof config.onComplete === 'function') config.onComplete({ solution: puzzle.solution, pieceIndexList: puzzle.pieceIndexList });
+    const stageHost = config && element(config.stageId);
+    if (stageHost && stageHost.classList) stageHost.classList.add('is-completing');
+    const celebrateCells = trayPieces
+      .filter(piece => piece.placedAt)
+      .flatMap(piece => (piece.cellNodes || []).map(node => ({
+        piece,
+        node,
+        r: piece.placedAt[0] + Number(node.getAttribute('data-cell-r') || 0),
+        c: piece.placedAt[1] + Number(node.getAttribute('data-cell-c') || 0),
+      })))
+      .sort((a, b) => a.r - b.r || a.c - b.c);
+    const reducedMotion = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const cellDelay = reducedMotion ? 8 : 90;
+    celebrateCells.forEach((entry, index) => {
+      if (typeof setTimeout !== 'function') entry.node.classList.add('is-victory-lit');
+      else victoryTimers.push(setTimeout(() => entry.node.classList.add('is-victory-lit'), index * cellDelay));
+    });
+    trayPieces.filter(piece => piece.placedAt).forEach(piece => {
+      const pieceCells = celebrateCells.filter(entry => entry.piece === piece);
+      const lockDelay = pieceCells.length ? (celebrateCells.indexOf(pieceCells.at(-1)) + 1) * cellDelay + (reducedMotion ? 0 : 180) : 0;
+      if (typeof setTimeout !== 'function') piece.g.classList.add('is-victory-locked');
+      else victoryTimers.push(setTimeout(() => piece.g.classList.add('is-victory-locked'), lockDelay));
+    });
+    const finish = () => {
+      victoryTimers = [];
+      if (!active || !config) return;
+      if (stageHost && stageHost.classList) stageHost.classList.add('is-solved');
+      if (typeof config.onComplete === 'function') config.onComplete({ solution: puzzle.solution, pieceIndexList: puzzle.pieceIndexList });
+    };
+    const totalDuration = reducedMotion ? 120 : Math.max(2200, celebrateCells.length * cellDelay + 900);
+    if (typeof setTimeout === 'function') victoryTimers.push(setTimeout(finish, totalDuration));
+    else finish();
   }
 
   // ---- Lifecycle --------------------------------------------------------------
@@ -1539,6 +1571,8 @@
   }
 
   function destroy() {
+    if (typeof clearTimeout === 'function') victoryTimers.forEach(timer => clearTimeout(timer));
+    victoryTimers = [];
     listeners.forEach(({ node, type, handler }) => node.removeEventListener(type, handler));
     listeners = [];
     active = false; paused = true; solved = false;

@@ -22,6 +22,145 @@
   padding: max(52px, calc(env(safe-area-inset-top, 0px) + 48px)) 10px max(12px, env(safe-area-inset-bottom, 0px));
   overflow-y: auto;
   width: 100%;
+  position: relative;
+  isolation: isolate;
+}
+.consume-wrap::before,
+.consume-wrap::after { content:''; position:absolute; inset:0; z-index:-2; pointer-events:none; }
+.consume-wrap::after { z-index:-1; opacity:.58; }
+.consume-wrap > * { position:relative; z-index:1; }
+
+.consume-scenery {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.consume-scenery-piece {
+  position: absolute;
+  opacity: .68;
+  filter: drop-shadow(0 0 18px rgba(255,255,255,.08));
+}
+.consume-scenery-piece-a { top: 106px; left: -10px; }
+.consume-scenery-piece-b { top: 148px; right: -20px; }
+.consume-scenery-piece-c { bottom: 124px; left: -16px; }
+.consume-scenery-piece-d { bottom: 104px; right: -10px; }
+.consume-scenery-space .consume-scenery-piece-a,
+.consume-scenery-space .consume-scenery-piece-b,
+.consume-scenery-space .consume-scenery-piece-c,
+.consume-scenery-space .consume-scenery-piece-d {
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 32% 30%, rgba(255,255,255,.2) 0 6%, transparent 7%),
+    radial-gradient(circle at 68% 64%, rgba(255,255,255,.12) 0 5%, transparent 6%),
+    linear-gradient(145deg, rgba(101,126,176,.92), rgba(34,48,76,.96));
+  box-shadow: inset 0 0 0 1px rgba(197,214,255,.12);
+}
+.consume-scenery-space .consume-scenery-piece-a { width: 92px; height: 76px; transform: rotate(-18deg); }
+.consume-scenery-space .consume-scenery-piece-b { width: 108px; height: 82px; transform: rotate(24deg); opacity: .52; }
+.consume-scenery-space .consume-scenery-piece-c { width: 84px; height: 68px; transform: rotate(12deg); opacity: .44; }
+.consume-scenery-space .consume-scenery-piece-d { width: 96px; height: 74px; transform: rotate(-26deg); }
+.consume-scenery-jungle .consume-scenery-piece-a,
+.consume-scenery-jungle .consume-scenery-piece-b,
+.consume-scenery-jungle .consume-scenery-piece-c,
+.consume-scenery-jungle .consume-scenery-piece-d {
+  width: 118px;
+  height: 168px;
+  background: linear-gradient(180deg, rgba(124,232,131,.55), rgba(15,59,30,.06));
+  clip-path: polygon(50% 0, 63% 12%, 73% 33%, 100% 100%, 74% 81%, 54% 100%, 44% 54%, 24% 100%, 0 81%, 27% 33%, 37% 12%);
+}
+.consume-scenery-ice .consume-scenery-piece-a,
+.consume-scenery-ice .consume-scenery-piece-b,
+.consume-scenery-ice .consume-scenery-piece-c,
+.consume-scenery-ice .consume-scenery-piece-d {
+  background: linear-gradient(180deg, rgba(221,248,255,.8), rgba(123,197,230,.12));
+  clip-path: polygon(50% 0, 100% 42%, 78% 100%, 24% 88%, 0 38%);
+  box-shadow: inset 0 0 0 1px rgba(223,250,255,.26);
+}
+.consume-scenery-ice .consume-scenery-piece-a { width: 82px; height: 102px; transform: rotate(-8deg); }
+.consume-scenery-ice .consume-scenery-piece-b { width: 94px; height: 120px; transform: rotate(12deg); opacity: .54; }
+.consume-scenery-ice .consume-scenery-piece-c { width: 76px; height: 94px; transform: rotate(10deg); }
+.consume-scenery-ice .consume-scenery-piece-d { width: 86px; height: 108px; transform: rotate(-12deg); opacity: .5; }
+.consume-scenery-ocean .consume-scenery-piece-a,
+.consume-scenery-ocean .consume-scenery-piece-b,
+.consume-scenery-ocean .consume-scenery-piece-c,
+.consume-scenery-ocean .consume-scenery-piece-d {
+  width: 132px;
+  height: 66px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(130,247,255,.28), rgba(15,97,115,.02));
+  box-shadow: inset 0 -14px 18px rgba(11,40,48,.15);
+}
+.consume-scenery-magic .consume-scenery-piece-a,
+.consume-scenery-magic .consume-scenery-piece-b,
+.consume-scenery-magic .consume-scenery-piece-c,
+.consume-scenery-magic .consume-scenery-piece-d {
+  width: 82px;
+  height: 82px;
+  background: radial-gradient(circle at 50% 50%, rgba(255,231,139,.95) 0 10%, rgba(255,128,225,.54) 11% 18%, transparent 19%),
+    linear-gradient(135deg, rgba(255,118,215,.2), rgba(162,114,255,.08));
+  clip-path: polygon(50% 0, 61% 35%, 100% 50%, 61% 64%, 50% 100%, 38% 65%, 0 50%, 38% 35%);
+}
+
+/* Shape Mobe-style rotating worlds. A new backdrop is selected for each
+   puzzle; the board/rack panels below remain opaque interaction islands. */
+.consume-wrap[data-consume-theme="space"]::before {
+  background:
+    radial-gradient(circle at 18% 18%,#fff 0 1px,transparent 1.8px),
+    radial-gradient(circle at 76% 12%,#85dfff 0 1px,transparent 2px),
+    radial-gradient(circle at 64% 72%,#fff 0 1.2px,transparent 2px),
+    radial-gradient(circle at 30% 84%,#b685ff 0 1px,transparent 2px),
+    radial-gradient(ellipse at 72% 35%,rgba(83,53,170,.34),transparent 35%),#020713;
+  background-size:97px 113px,151px 127px,181px 163px,223px 191px,auto;
+}
+.consume-wrap[data-consume-theme="space"]::after {
+  background:
+    radial-gradient(circle at 83% 70%, rgba(133,223,255,.18) 0 2px, transparent 3px),
+    radial-gradient(circle at 88% 74%, rgba(255,255,255,.14) 0 1.4px, transparent 2.8px),
+    radial-gradient(circle at 78% 78%, rgba(182,133,255,.16) 0 1.6px, transparent 3px),
+    radial-gradient(ellipse at 84% 73%, rgba(86,103,214,.18), transparent 24%);
+  background-size: 164px 148px, 208px 192px, 236px 224px, auto;
+}
+.consume-wrap[data-consume-theme="jungle"]::before {
+  background:radial-gradient(ellipse at 8% 20%,rgba(70,190,104,.34),transparent 27%),radial-gradient(ellipse at 94% 78%,rgba(35,128,72,.42),transparent 30%),linear-gradient(155deg,#03140d,#071c15 48%,#020b09);
+}
+.consume-wrap[data-consume-theme="jungle"]::after {
+  background:repeating-linear-gradient(115deg,transparent 0 72px,rgba(91,216,122,.11) 74px 77px,transparent 79px 150px);
+}
+.consume-wrap[data-consume-theme="ice"]::before {
+  background:radial-gradient(circle at 74% 18%,rgba(196,247,255,.28),transparent 25%),linear-gradient(145deg,#071724,#0b2938 52%,#06131e);
+}
+.consume-wrap[data-consume-theme="ice"]::after {
+  background:linear-gradient(128deg,transparent 0 18%,rgba(164,232,255,.12) 18.5% 19.5%,transparent 20% 46%,rgba(210,247,255,.1) 46.5% 48%,transparent 48.5%);
+}
+.consume-wrap[data-consume-theme="ocean"]::before {
+  background:radial-gradient(ellipse at 50% 105%,rgba(0,192,214,.32),transparent 45%),linear-gradient(#031321,#042c3e 58%,#031b2c);
+}
+.consume-wrap[data-consume-theme="ocean"]::after {
+  background:repeating-radial-gradient(ellipse at 50% 110%,transparent 0 36px,rgba(110,229,236,.1) 38px 40px,transparent 42px 72px);
+}
+.consume-wrap[data-consume-theme="magic"]::before {
+  background:radial-gradient(circle at 20% 24%,rgba(255,79,223,.24),transparent 28%),radial-gradient(circle at 82% 72%,rgba(122,86,255,.3),transparent 31%),linear-gradient(145deg,#130521,#260936 52%,#080513);
+}
+.consume-wrap[data-consume-theme="magic"]::after {
+  background:radial-gradient(circle at 22% 69%,#ffe38a 0 1px,transparent 2px),radial-gradient(circle at 79% 25%,#ff8de8 0 1px,transparent 2px),radial-gradient(circle at 58% 83%,#bca2ff 0 1px,transparent 2px);background-size:113px 137px,157px 181px,199px 167px;
+}
+@media (max-width: 480px) {
+  .consume-wrap::after { opacity: .42; }
+  .consume-wrap[data-consume-theme="space"]::before {
+    background:
+      radial-gradient(circle at 18% 18%,#fff 0 1px,transparent 1.8px),
+      radial-gradient(circle at 76% 12%,#85dfff 0 1px,transparent 2px),
+      radial-gradient(circle at 64% 72%,#fff 0 1.2px,transparent 2px),
+      radial-gradient(ellipse at 72% 35%,rgba(83,53,170,.26),transparent 32%),#020713;
+    background-size:97px 113px,151px 127px,181px 163px,auto;
+  }
+  .consume-scenery-piece { opacity: .46; transform-origin: center center; }
+  .consume-scenery-piece-a,
+  .consume-scenery-piece-c { left: -28px; }
+  .consume-scenery-piece-b,
+  .consume-scenery-piece-d { right: -30px; }
 }
 body.arcade-mode-select.on-consume .consume-wrap {
   padding-top: max(52px, calc(env(safe-area-inset-top, 0px) + 48px));
@@ -601,9 +740,10 @@ body.arcade-mode-select.on-consume .consume-wrap {
 .cw-node.next { box-shadow: 0 0 12px color-mix(in srgb, var(--cw) 46%, transparent); }
 .cw-btn, .cw-spell { color: #f7f4ec; background: rgba(12,26,39,0.9); border-color: rgba(247,244,236,0.48); }
 .cw-btn.primary, .cw-spell { color: #f7f4ec; border-color: var(--cw); background: color-mix(in srgb, var(--cw) 16%, rgba(12,26,39,0.94)); }
-.cw-board { border-color: rgba(247,244,236,0.34); background: rgba(5,14,20,0.84); box-shadow: inset 0 0 30px rgba(255,113,128,0.05), 0 10px 30px rgba(0,0,0,0.42); }
+.cw-board { border-color: rgba(247,244,236,0.34); background: rgba(5,14,20,0.96); box-shadow: inset 0 0 30px rgba(255,113,128,0.05), 0 10px 30px rgba(0,0,0,0.62),0 0 0 4px rgba(2,7,14,.5); }
 .cw-tile { border-color: rgba(247,244,236,0.5); background: #132b40; color: #fffdf5; font-weight: 700; }
-.cw-tray { border-color: rgba(247,244,236,0.38); background: rgba(5,14,20,0.42); }
+.cw-tray { border-color: rgba(247,244,236,0.38); background: rgba(5,14,20,0.95); box-shadow:0 8px 24px rgba(0,0,0,.46); }
+.cw-tableau { background:rgba(5,14,20,.9); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.42); }
 .cw-return-hint { color: rgba(247,244,236,0.68); }
 .cw-chip { background: rgba(12,26,39,0.9); }
 

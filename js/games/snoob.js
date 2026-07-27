@@ -49,7 +49,7 @@
   const imageBoundsCache = new WeakMap();
   const soundCache = new Map();
   const REAIM_HOLD_MS = 220;
-  const TOUCH_AIM_BLEND = 0.42;
+  const TOUCH_AIM_BLEND = 0.22;
 
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
@@ -219,6 +219,7 @@
     setArcadeExitVisible(true);
     setArcadeModeSelect(false);
     host.innerHTML = `
+      <div class="snoob-screen-title">SNOOB</div>
       <div class="snoob-shell">
         <div class="snoob-hud">
           <div><div class="snoob-stat-label" id="snoob-l-label">SCORE</div><div class="snoob-stat-value" id="snoob-score">0</div></div>

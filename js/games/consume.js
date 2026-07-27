@@ -5,6 +5,7 @@
   const DATA = (typeof CONSUME_DATA !== 'undefined') ? CONSUME_DATA : { levels: [] };
   const LEVELS = DATA.levels || [];
   const ACCENT = '#38d8ff';
+  const CONSUME_THEMES = ['space', 'jungle', 'ice', 'ocean', 'magic'];
 
   let wrap = null;
   let S = null;
@@ -97,6 +98,23 @@
     if (!LEVELS.length) return;
     startLevel(chooseUnseenLevel());
   }
+  function shuffleTheme() {
+    if (!wrap) return;
+    wrap.dataset.consumeTheme = CONSUME_THEMES[Math.floor(Math.random() * CONSUME_THEMES.length)];
+  }
+  function clearTheme() {
+    if (!wrap) return;
+    delete wrap.dataset.consumeTheme;
+  }
+  function playSceneryMarkup() {
+    const theme = wrap?.dataset?.consumeTheme || 'space';
+    return `<div class="consume-scenery consume-scenery-${theme}" aria-hidden="true">
+      <i class="consume-scenery-piece consume-scenery-piece-a"></i>
+      <i class="consume-scenery-piece consume-scenery-piece-b"></i>
+      <i class="consume-scenery-piece consume-scenery-piece-c"></i>
+      <i class="consume-scenery-piece consume-scenery-piece-d"></i>
+    </div>`;
+  }
   function highestDone(completed) {
     let m = 0;
     const st = completed || myCompleted();
@@ -184,6 +202,7 @@
     if (!data) return;
     setArcadeExitVisible(true);
     setArcadeModeSelect(false);
+    shuffleTheme();
     killTimers();
     nextWordId = 1;
     S = {
@@ -395,6 +414,7 @@
   function renderPlay() {
     if (!wrap || !S) return;
     wrap.innerHTML =
+      playSceneryMarkup() +
       `<div class="cw-hud">` +
       `<button class="cw-btn" data-act="modes">TILE SWAP</button>` +
       `<strong>GRID</strong>` +
@@ -522,6 +542,7 @@
 
   window.consumeBack = function() {
     killTimers();
+    clearTheme();
     S = null;
   };
 })();

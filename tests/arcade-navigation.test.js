@@ -24,6 +24,23 @@ test('Snoob launches directly into endless play and its result avoids level menu
   assert.doesNotMatch(source, /onclick="snoobModes\(\)">SNOOB MENU/);
 });
 
+test('Snoob labels its gameplay HUD and keeps touch aiming deliberately damped', () => {
+  const source = read('js/games/snoob.js');
+  assert.match(source, /<div class="snoob-screen-title">SNOOB<\/div>/);
+  assert.doesNotMatch(source, /<div class="snoob-hud-title">SNOOB<\/div>/);
+  assert.match(source, /const TOUCH_AIM_BLEND = 0\.22/);
+  assert.match(source, /updateAimFromEvent\(e, !isMousePointer\(e\)\)/);
+  const css = read('css/games/snoob.css');
+  assert.match(css, /\.snoob-wrap \{[\s\S]*justify-content: flex-start;/);
+  assert.doesNotMatch(css, /\.snoob-screen-title \{[\s\S]*position: fixed;/);
+});
+
+test('Tile Swap mobile space theme avoids a cropped ring line', () => {
+  const gridCss = read('css/games/consume.css');
+  assert.doesNotMatch(gridCss, /transparent 0 42px,#6d54d4 43px 45px,transparent 46px/);
+  assert.match(gridCss, /@media \(max-width: 480px\)/);
+});
+
 test('Tile Swap mode selection serves unseen puzzles without exposing level navigation', () => {
   const grid = read('js/games/consume.js');
   const tabletop = read('js/games/consume-rack.js');
@@ -36,6 +53,35 @@ test('Tile Swap mode selection serves unseen puzzles without exposing level navi
   assert.match(tabletop, /modeArt\('words'\)[\s\S]*modeArt\('numbers'\)/);
   assert.match(grid, /PLAY ANOTHER/);
   assert.match(tabletop, /PLAY ANOTHER/);
+});
+
+test('every Tile Swap mode shuffles a protected Shape Mobe-style world theme', () => {
+  const grid = read('js/games/consume.js');
+  const tabletop = read('js/games/consume-rack.js');
+  const gridCss = read('css/games/consume.css');
+  const rackCss = read('css/games/consume-rack.css');
+  for (const source of [grid, tabletop]) {
+    assert.match(source, /\['space', 'jungle', 'ice', 'ocean', 'magic'\]/);
+    assert.match(source, /wrap\.dataset\.consumeTheme/);
+  }
+  assert.match(grid, /function clearTheme\(\)/);
+  assert.match(tabletop, /function clearTheme\(\)/);
+  assert.match(grid, /playSceneryMarkup\(\)/);
+  assert.match(tabletop, /playSceneryMarkup\(\)/);
+  for (const theme of ['space', 'jungle', 'ice', 'ocean', 'magic']) {
+    assert.match(gridCss, new RegExp(`data-consume-theme="${theme}"`));
+  }
+  assert.match(gridCss, /\.consume-scenery-space/);
+  assert.match(gridCss, /\.consume-scenery-ice/);
+  assert.match(gridCss, /\.cw-board[^}]*background: rgba\(5,14,20,0\.96\)/);
+  assert.match(rackCss, /\.kt-rack[^}]*background: rgba\(5,14,20,0\.96\)/);
+});
+
+test('Rummy opens from a deeper random pool than the other Tile Swap modes', () => {
+  const tabletop = read('js/games/consume-rack.js');
+  assert.match(tabletop, /const introductoryCount = mode === 'numbers'/);
+  assert.match(tabletop, /Math\.ceil\(pool\.length \/ 2\)/);
+  assert.match(tabletop, /Math\.ceil\(pool\.length \* 0\.85\)/);
 });
 
 test('shared contextual Back supports named parents and Grid Lock has one header', () => {

@@ -26,3 +26,10 @@ test('carousel quarantines delayed synthetic clicks after a swipe', () => {
   assert.match(source, /if \(dragMoved \|\| performance\.now\(\) < suppressClickUntil\)/);
   assert.match(source, /e\.stopImmediatePropagation\(\)/);
 });
+
+test('carousel re-entry refreshes the current slide instead of only restoring ready state', () => {
+  assert.match(source, /if \(carousel\.dataset\.carouselReady === '1'\) \{[\s\S]*carousel\._refreshCarouselLayout/);
+  assert.match(source, /function syncToCurrentIndex\(\)/);
+  assert.match(source, /logIdx = \(\(_carouselIdx % N\) \+ N\) % N/);
+  assert.match(source, /carousel\._refreshCarouselLayout = syncToCurrentIndex/);
+});

@@ -191,7 +191,61 @@
   background: radial-gradient(120% 90% at 50% 30%, var(--pg-bg-1,#0c141f), var(--pg-bg-2,#070c15) 55%, var(--pg-bg-3,#02040a) 100%);
   touch-action: manipulation;
 }
-.packing-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; transition: filter .45s ease; }
+.packing-stage::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 170px;
+  z-index: 1;
+  pointer-events: none;
+  opacity: .9;
+  background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
+  mask-image: linear-gradient(180deg, rgba(0,0,0,1), rgba(0,0,0,.86) 62%, rgba(0,0,0,0));
+  -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,1), rgba(0,0,0,.86) 62%, rgba(0,0,0,0));
+}
+.packing-svg { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; display: block; transition: filter .45s ease; }
+[data-gl-theme="space"] .packing-stage::before {
+  background:
+    radial-gradient(circle at 12% 38%, rgba(234,244,255,.92) 0 1.2px, transparent 2px),
+    radial-gradient(circle at 28% 16%, rgba(159,201,255,.8) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 46% 30%, rgba(255,255,255,.88) 0 1.1px, transparent 2px),
+    radial-gradient(circle at 66% 20%, rgba(207,232,255,.78) 0 1px, transparent 1.9px),
+    radial-gradient(circle at 86% 36%, rgba(255,255,255,.84) 0 1.2px, transparent 2px),
+    radial-gradient(ellipse at 22% 52%, rgba(68,92,136,.24), transparent 20%),
+    radial-gradient(ellipse at 78% 42%, rgba(74,86,146,.22), transparent 18%),
+    linear-gradient(180deg, rgba(10,20,36,.08), rgba(10,20,36,0));
+}
+[data-gl-theme="jungle"] .packing-stage::before {
+  background:
+    radial-gradient(ellipse at 14% 20%, rgba(143,224,122,.14), transparent 26%),
+    radial-gradient(ellipse at 82% 26%, rgba(224,165,66,.12), transparent 24%),
+    linear-gradient(180deg, rgba(91,216,122,.09), transparent 58%),
+    linear-gradient(115deg, transparent 0 68px, rgba(91,216,122,.12) 69px 72px, transparent 73px 136px);
+}
+[data-gl-theme="ice"] .packing-stage::before {
+  background:
+    linear-gradient(128deg, transparent 0 18%, rgba(196,247,255,.18) 18.5% 19.5%, transparent 20% 46%, rgba(210,247,255,.14) 46.5% 48%, transparent 48.5%),
+    radial-gradient(circle at 78% 18%, rgba(221,248,255,.16), transparent 20%),
+    linear-gradient(180deg, rgba(191,233,255,.08), transparent 62%);
+}
+[data-gl-theme="ocean"] .packing-stage::before {
+  background:
+    radial-gradient(circle at 16% 26%, rgba(216,255,255,.34) 0 3px, transparent 4px),
+    radial-gradient(circle at 84% 16%, rgba(216,255,255,.28) 0 2px, transparent 3px),
+    repeating-radial-gradient(ellipse at 50% 104%, transparent 0 34px, rgba(110,229,236,.12) 36px 38px, transparent 40px 68px),
+    linear-gradient(180deg, rgba(79,216,196,.08), transparent 62%);
+}
+[data-gl-theme="magic"] .packing-stage::before {
+  background:
+    radial-gradient(circle at 18% 24%, rgba(255,224,102,.9) 0 1.2px, transparent 2px),
+    radial-gradient(circle at 76% 18%, rgba(233,216,255,.9) 0 1.1px, transparent 2px),
+    radial-gradient(circle at 52% 36%, rgba(255,141,232,.82) 0 1px, transparent 2px),
+    radial-gradient(ellipse at 24% 26%, rgba(255,79,223,.12), transparent 24%),
+    radial-gradient(ellipse at 78% 30%, rgba(122,86,255,.14), transparent 22%),
+    linear-gradient(180deg, rgba(255,224,102,.06), transparent 62%);
+}
 .packing-scan { position: absolute; inset: 0; pointer-events: none; opacity: .5; background: repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 1px, transparent 1px 3px); }
 .packing-motif { position: absolute; inset: 0; pointer-events: none; }
 .packing-vig { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at 50% 42%, transparent 40%, rgba(0,0,0,.55) 78%, rgba(0,0,0,.85) 100%); }
@@ -477,9 +531,29 @@
 .pge-piece { cursor:grab; touch-action:none; transition:transform .12s ease; filter:url(#packing-piece-shadow); }
 .pge-piece-hit { fill:transparent; }
 .pge-piece.is-dragging { cursor:grabbing; transition:none; }
+.packing-stage.is-completing::after {
+  content:''; position:absolute; inset:0; z-index:11; pointer-events:none;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.02), transparent 18%, transparent 82%, rgba(255,255,255,.03)),
+    radial-gradient(circle at 50% 45%, rgba(255,255,255,.14), transparent 58%);
+  opacity:.7;
+}
+@media (prefers-reduced-motion:reduce) {
+  .packing-stage.is-completing::after { opacity:.28; }
+}
 .pge-piece .pge-cell { transition:fill .15s ease,opacity .15s ease; }
 .pge-cell { stroke:rgba(5,10,16,.5); stroke-width:1.25; }
 .pge-piece.is-placed .pge-cell { filter:drop-shadow(0 0 4px rgba(0,0,0,.65)); }
+.packing-stage.is-completing .pge-cell.is-victory-lit {
+  stroke: var(--pg-c1-bright,#b6fff4);
+  stroke-width: 2.6;
+  filter: brightness(1.42) drop-shadow(0 0 10px var(--pg-c1-bright,#b6fff4));
+}
+.packing-stage.is-completing .pge-piece.is-victory-locked .pge-cell {
+  stroke: var(--pg-c1-bright,#b6fff4);
+  stroke-width: 2.1;
+  filter: brightness(1.2) drop-shadow(0 0 7px var(--pg-c1-glow,rgba(98,217,144,.35)));
+}
 .pge-piece.is-floating { filter:drop-shadow(0 14px 10px rgba(0,0,0,.72)) drop-shadow(0 0 8px rgba(129,239,166,.7)); }
 .pge-piece.is-floating .pge-cell { stroke:#d8ffe4; stroke-width:3; }
 .pge-piece.is-valid-drop .pge-cell { stroke:#75f5a3; }

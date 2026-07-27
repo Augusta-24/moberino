@@ -1447,6 +1447,9 @@ function initCarousel() {
   if (!carousel) return;
   if (carousel.dataset.carouselReady === '1') {
     carousel.classList.add('ready');
+    if (typeof carousel._refreshCarouselLayout === 'function') {
+      requestAnimationFrame(() => requestAnimationFrame(() => carousel._refreshCarouselLayout()));
+    }
     return;
   }
   carousel.dataset.carouselReady = '1';
@@ -1525,6 +1528,19 @@ function initCarousel() {
     items.forEach((el, i) => el.classList.toggle('active-card', i === vIdx));
     updateCarouselDots(lIdx, N);
   }
+
+  function syncToCurrentIndex() {
+    measure();
+    logIdx = ((_carouselIdx % N) + N) % N;
+    visualIdx = firstReal + logIdx;
+    animating = false;
+    clearTimeout(transitionSafetyTimer);
+    setTransform(visualIdx, false);
+    applyActive(logIdx, visualIdx);
+    carousel.classList.add('ready');
+  }
+
+  carousel._refreshCarouselLayout = syncToCurrentIndex;
 
   // The clone->real teleport swaps which element carries .active-card, and that
   // class drives a 0.15s opacity/transform transition. Left as-is, the real card
@@ -1682,14 +1698,11 @@ function initCarousel() {
     // yank the card out from under the touch. Mobile browsers fire resize for
     // address-bar show/hide during ordinary page scroll, not just real
     // viewport changes, so this isn't a rare case to guard against.
-    resizeTimer = setTimeout(() => { if (dragging) return; measure(); setTransform(visualIdx, false); }, 120);
+    resizeTimer = setTimeout(() => { if (dragging) return; syncToCurrentIndex(); }, 120);
   });
 
   requestAnimationFrame(() => requestAnimationFrame(() => {
-    measure();
-    setTransform(firstReal, false);
-    applyActive(0, firstReal);
-    carousel.classList.add('ready');
+    syncToCurrentIndex();
   }));
 }
 

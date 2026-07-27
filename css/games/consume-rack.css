@@ -45,9 +45,9 @@
 .consume-modes span, .kt-journey p, .kt-code-row, .kt-codebox small { color: rgba(247,244,236,0.84); }
 .consume-modes > button, .kt-hud button, .kt-check, .kt-win button, .kt-journey > button, .kt-code button { background: rgba(12,26,39,0.9); border-color: rgba(247,244,236,0.46); }
 .kt-hud strong { color: #f7f4ec; text-shadow: 0 0 12px color-mix(in srgb, var(--kt) 38%, transparent); }
-.kt-table { border-color: rgba(247,244,236,0.34); background: rgba(5,14,20,0.84); }
+.kt-table { border-color: rgba(247,244,236,0.34); background: rgba(5,14,20,0.96); box-shadow:0 12px 30px rgba(0,0,0,.58),0 0 0 4px rgba(2,7,14,.5); }
 .kt-group.invalid { border-color: rgba(247,244,236,0.38); background: rgba(12,26,39,0.74); }
-.kt-rack { border-color: rgba(247,244,236,0.38); background: rgba(5,14,20,0.62); }
+.kt-rack { border-color: rgba(247,244,236,0.38); background: rgba(5,14,20,0.96); box-shadow:0 10px 26px rgba(0,0,0,.54),0 0 0 4px rgba(2,7,14,.45); }
 .kt-rack > .kt-rack-label { color: rgba(247,244,236,0.72); }
 .kt-tile { border-color: rgba(247,244,236,0.52); background: #132b40; color: #fffdf5; font-weight: 700; }
 .kt-tile.suit-R { --kt-suit:#ef4f61; }

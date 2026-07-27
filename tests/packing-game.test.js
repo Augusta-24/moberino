@@ -72,6 +72,16 @@ test('Packing Game runtime does not depend on Journey or Grid Lock globals', () 
   assert.doesNotMatch(progressionSource, /journey|gridlock/i);
 });
 
+test('Shape Mobe celebrates the solved board before opening its completion panel', () => {
+  assert.match(engineSource, /stageHost\.classList\.add\('is-completing'\)/);
+  assert.match(engineSource, /node\.classList\.add\('is-victory-lit'\)/);
+  assert.match(engineSource, /piece\.g\.classList\.add\('is-victory-locked'\)/);
+  assert.match(engineSource, /Math\.max\(2200, celebrateCells\.length \* cellDelay \+ 900\)/);
+  const css = fs.readFileSync(path.join(root, 'css/games/packing-game.css'), 'utf8');
+  assert.match(css, /\.pge-cell\.is-victory-lit/);
+  assert.match(css, /\.pge-piece\.is-victory-locked \.pge-cell/);
+});
+
 test('campaign declares five cumulative worlds and a playable ten-level World 1', () => {
   const { levels } = loadCampaign();
   assert.equal(levels.worlds.length, 5);

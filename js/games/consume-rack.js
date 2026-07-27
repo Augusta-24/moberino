@@ -5,6 +5,7 @@
     numbers: { title: 'RUMMY', accent: '#ffb35c', intro: 'Rearrange every tile into number runs or sets.' },
   };
   const TAGS = ['FROG', 'MINT', 'TACO', 'DUCK', 'MOON', 'STAR', 'WAVE', 'COMET', 'BAGEL', 'SPARK', 'TURBO', 'COSMO'];
+  const CONSUME_THEMES = ['space', 'jungle', 'ice', 'ocean', 'magic'];
   let mode = null, wrap = null, state = null, nextTile = 1;
   const rackWordSet = new Set(typeof CONSUME_RACK_DATA === 'undefined' ? [] : CONSUME_RACK_DATA.wordDictionary);
   function ktTone(freq, delay = 0, duration = 0.08, volume = 0.035, end = freq) {
@@ -26,6 +27,23 @@
   };
 
   const cfg = () => modes[mode];
+  function shuffleTheme() {
+    if (!wrap) return;
+    wrap.dataset.consumeTheme = CONSUME_THEMES[Math.floor(Math.random() * CONSUME_THEMES.length)];
+  }
+  function clearTheme() {
+    if (!wrap) return;
+    delete wrap.dataset.consumeTheme;
+  }
+  function playSceneryMarkup() {
+    const theme = wrap?.dataset?.consumeTheme || 'space';
+    return `<div class="consume-scenery consume-scenery-${theme}" aria-hidden="true">
+      <i class="consume-scenery-piece consume-scenery-piece-a"></i>
+      <i class="consume-scenery-piece consume-scenery-piece-b"></i>
+      <i class="consume-scenery-piece consume-scenery-piece-c"></i>
+      <i class="consume-scenery-piece consume-scenery-piece-d"></i>
+    </div>`;
+  }
   const levels = () => (typeof CONSUME_RACK_DATA === 'undefined' ? [] : CONSUME_RACK_DATA[mode].levels);
   const key = () => `moberino-knot-swap-${mode}-v2`;
   const esc = text => String(text).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
@@ -73,8 +91,12 @@
   function chooseUnseenLevel() {
     const data = profile(), player = migrateProgress(data.profiles[data.active]), pool = levels();
     const completedCount = Object.values(player.completed).filter(Boolean).length;
-    const introductoryCount = Math.max(1, Math.ceil(pool.length / 3));
-    const standardCount = Math.max(introductoryCount, Math.ceil(pool.length * 2 / 3));
+    const introductoryCount = mode === 'numbers'
+      ? Math.max(1, Math.ceil(pool.length / 2))
+      : Math.max(1, Math.ceil(pool.length / 3));
+    const standardCount = mode === 'numbers'
+      ? Math.max(introductoryCount, Math.ceil(pool.length * 0.85))
+      : Math.max(introductoryCount, Math.ceil(pool.length * 2 / 3));
     const eligibleCount = completedCount < 2 ? introductoryCount : completedCount < 5 ? standardCount : pool.length;
     const served = new Set(player.served);
     let candidates = pool.slice(0, eligibleCount).filter(level => !served.has(level.n));
@@ -110,6 +132,7 @@
     const data = levels()[n - 1]; if (!data) return;
     setArcadeExitVisible(true);
     setArcadeModeSelect(false);
+    shuffleTheme();
     nextTile = 1;
     const tile = value => ({ id: nextTile++, value });
     state = { n, moves: 0, drag: null, pointer: null, pickedId: null, groups: data.groups.map((group, id) => ({ id, tiles: group.map(tile) })), rack: data.rack.map(tile), won: false };
@@ -408,7 +431,7 @@
 
   function renderPlay() {
     wrap.style.setProperty('--kt', cfg().accent);
-    wrap.innerHTML = `<div class="kt-hud"><button data-modes>TILE SWAP</button><strong>${cfg().title}</strong><button data-reset>RESET</button></div><div class="kt-table" id="kt-table"></div><button class="kt-check" id="kt-check">CHECK</button><div class="kt-rack" id="kt-rack" data-rack-drop></div>`;
+    wrap.innerHTML = `${playSceneryMarkup()}<div class="kt-hud"><button data-modes>TILE SWAP</button><strong>${cfg().title}</strong><button data-reset>RESET</button></div><div class="kt-table" id="kt-table"></div><button class="kt-check" id="kt-check">CHECK</button><div class="kt-rack" id="kt-rack" data-rack-drop></div>`;
     wrap.querySelector('.kt-hud').addEventListener('click', event => { if (event.target.hasAttribute('data-modes')) window.renderConsumeModes(); if (event.target.hasAttribute('data-reset')) start(state.n); });
     wrap.onpointerdown = pointerDown;
     wrap.onpointermove = dragMove;
@@ -477,6 +500,7 @@
     if (!wrap) return;
     state = null;
     mode = null;
+    clearTheme();
     setArcadeModeSelect(true, { label: 'ARCADE' });
     wrap.innerHTML = `<div class="consume-modes">
       <div class="consume-mode-banner"><div class="cw-title">TILE SWAP</div></div>
