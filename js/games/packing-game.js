@@ -143,6 +143,15 @@
     const anchorHelp = level.generator.anchorCount ? ' · X=PIVOT' : '';
     const linkedHelp = level.generator.anchorGroupCount ? ' · CYAN X=LINKED' : '';
     const zoneHelp = level.generator.overlapZoneSize ? ' · GLOW=DOUBLE' : '';
+    // Compute a canvas height that matches Gridlock's approach so the SVG
+    // scales to fill the available width instead of being constrained by a
+    // tall fixed viewBox. Use the same region/rack layout values the engine
+    // will receive so visual alignment stays consistent.
+    const regionArea = { x: 26, y: 30, width: 508, height: 610 };
+    const rackBottom = 1095;
+    const canvasBottom = Math.max(820, regionArea.y + regionArea.height + 86, rackBottom + 20);
+    const canvasHeight = canvasBottom; // gridlock used a similar canvasHeight calc
+
     root.innerHTML = `
       <main class="packing-mission-screen" aria-labelledby="packing-level-title" data-gl-theme="${themeFor(level.worldId)}">
         <header>
@@ -153,7 +162,7 @@
           </div>
         </header>
         <div id="packing-stage" class="packing-stage${showIntro ? ' is-paused' : ''}" aria-label="Pack every piece into the container">
-          <svg class="packing-svg" viewBox="0 0 560 1120" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <svg class="packing-svg" viewBox="0 0 560 ${canvasHeight}" preserveAspectRatio="xMidYMin meet" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <filter id="packing-piece-shadow"><feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000" flood-opacity=".55"/></filter>
               <linearGradient id="packing-board-depth" x1="0" y1="0" x2="0" y2="1">

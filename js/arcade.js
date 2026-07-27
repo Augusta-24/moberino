@@ -1627,27 +1627,56 @@ function initCarousel() {
   let dragging = false, dragPointerId = null, dragStartX = 0, dragBaseVIdx = firstReal, dragBaseX = 0;
   let lastX = 0, lastT = 0, velocity = 0, dragMoved = false;
   let suppressClickUntil = 0;
+  let currentX = 0;
+  let touchDragActive = false;
 
   // Clamped to one card-step: the loop only ever keeps one clone past each end,
   // so dragging further than that would drag right off the end of the track
   // into empty space (visible as a blank gap) before the gesture even ends.
   function clampDx(dx) { return Math.max(-step, Math.min(step, dx)); }
 
-  track.addEventListener('pointerdown', (e) => {
-    if (animating || N <= 1) return;
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
+  function beginDrag(clientX, pointerId, pointerType) {
+    if (N <= 1) return;
+    if (pointerType === 'mouse') {
+      if (pointerId === null || pointerId === undefined) return;
+    }
+    if (animating) {
+      clearTimeout(transitionSafetyTimer);
+      animating = false;
+      if (N > 1 && visualIdx === firstReal - 1) {
+        visualIdx = firstReal + logIdx;
+        setTransform(visualIdx, false);
+      } else if (N > 1 && visualIdx === firstReal + N) {
+        visualIdx = firstReal;
+        setTransform(visualIdx, false);
+      }
+    }
     dragging = true;
     dragMoved = false;
-    dragPointerId = e.pointerId;
-    dragStartX = e.clientX;
+    dragPointerId = pointerId;
+    dragStartX = clientX;
     dragBaseVIdx = visualIdx;
     dragBaseX = centerOffset - dragBaseVIdx * step;
+    currentX = dragBaseX;
     track.classList.remove('animate');
     track.classList.add('dragging');
-    lastX = e.clientX; lastT = performance.now(); velocity = 0;
+    lastX = clientX; lastT = performance.now(); velocity = 0;
+  }
+
+  track.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'touch') return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    beginDrag(e.clientX, e.pointerId, e.pointerType);
   });
+
+  track.addEventListener('touchstart', (e) => {
+    if (!e.touches || e.touches.length !== 1) return;
+    touchDragActive = true;
+    beginDrag(e.touches[0].clientX, 0, 'touch');
+    e.preventDefault();
+  }, { passive: false });
   window.addEventListener('pointermove', (e) => {
-    if (!dragging || e.pointerId !== dragPointerId) return;
+    if (!dragging || e.pointerId !== dragPointerId || touchDragActive) return;
     const dx = clampDx(e.clientX - dragStartX);
     // 10px, not 4: ordinary tap/click jitter (finger or mouse never lands at the
     // exact same pixel on release) was crossing a tighter threshold and getting
@@ -1656,15 +1685,17 @@ function initCarousel() {
     // release (the advance threshold below is ~60px), so raising it costs
     // nothing there.
     if (Math.abs(dx) > 10) dragMoved = true;
-    track.style.transform = `translateX(${dragBaseX + dx}px)`;
+    currentX = dragBaseX + dx;
+    track.style.transform = `translateX(${currentX}px)`;
     const now = performance.now();
     const dt = now - lastT;
     if (dt > 0) velocity = (e.clientX - lastX) / dt;
     lastX = e.clientX; lastT = now;
   });
   function endDrag(e) {
-    if (!dragging || e.pointerId !== dragPointerId) return;
+    if (!dragging || (e.pointerId !== undefined && e.pointerId !== dragPointerId)) return;
     dragging = false;
+    touchDragActive = false;
     track.classList.remove('dragging');
     const dx = clampDx(e.clientX - dragStartX);
     const advance = Math.abs(dx) > step * 0.14 || (e.pointerType === 'touch' ? Math.abs(velocity) > 0.4 : Math.abs(velocity) > 0.5);
@@ -1681,10 +1712,48 @@ function initCarousel() {
       e.preventDefault();
     }
     if (advance) beginTransition(dx < 0 ? 1 : -1);
-    else setTransform(dragBaseVIdx, true);
+    else {
+      visualIdx = dragBaseVIdx;
+      setTransform(dragBaseVIdx, true);
+    }
   }
   window.addEventListener('pointerup', endDrag);
   window.addEventListener('pointercancel', endDrag);
+  window.addEventListener('touchmove', (e) => {
+    if (!dragging || !touchDragActive || !e.touches || e.touches.length !== 1) return;
+    const dx = clampDx(e.touches[0].clientX - dragStartX);
+    if (Math.abs(dx) > 10) dragMoved = true;
+    currentX = dragBaseX + dx;
+    track.style.transform = `translateX(${currentX}px)`;
+    const now = performance.now();
+    const dt = now - lastT;
+    if (dt > 0) velocity = (e.touches[0].clientX - lastX) / dt;
+    lastX = e.touches[0].clientX; lastT = now;
+  }, { passive: false });
+  window.addEventListener('touchend', (e) => {
+    if (!dragging || !touchDragActive) return;
+    const dx = clampDx((e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : dragStartX) - dragStartX);
+    const advance = Math.abs(dx) > step * 0.14 || Math.abs(velocity) > 0.4;
+    if (Math.abs(dx) > 10 || advance) {
+      dragMoved = true;
+      suppressClickUntil = performance.now() + 500;
+      e.preventDefault();
+    }
+    if (advance) beginTransition(dx < 0 ? 1 : -1);
+    else {
+      visualIdx = dragBaseVIdx;
+      setTransform(dragBaseVIdx, true);
+    }
+    dragging = false;
+    touchDragActive = false;
+  }, { passive: false });
+  window.addEventListener('touchcancel', () => {
+    if (!dragging) return;
+    dragging = false;
+    touchDragActive = false;
+    visualIdx = dragBaseVIdx;
+    setTransform(dragBaseVIdx, true);
+  });
   // A drag that moved the track shouldn't also fire the card's "Play" click.
   track.addEventListener('click', (e) => {
     if (dragMoved || performance.now() < suppressClickUntil) {

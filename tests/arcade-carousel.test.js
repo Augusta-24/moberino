@@ -40,6 +40,17 @@ test('carousel uses a more forgiving touch swipe threshold', () => {
   assert.match(source, /Math\.abs\(velocity\) > 0\.4/);
 });
 
+test('carousel cancels an in-flight transition when a new drag begins', () => {
+  assert.match(source, /if \(animating\) \{[\s\S]*clearTimeout\(transitionSafetyTimer\);[\s\S]*animating = false/);
+  assert.match(source, /dragBaseVIdx = visualIdx/);
+});
+
+test('carousel listens for touch drags on mobile', () => {
+  assert.match(source, /track\.addEventListener\('touchstart'/);
+  assert.match(source, /window\.addEventListener\('touchmove'/);
+  assert.match(source, /window\.addEventListener\('touchend'/);
+});
+
 test('carousel re-entry refreshes the current slide instead of only restoring ready state', () => {
   assert.match(source, /if \(carousel\.dataset\.carouselReady === '1'\) \{[\s\S]*carousel\._refreshCarouselLayout/);
   assert.match(source, /function syncToCurrentIndex\(\)/);

@@ -192,6 +192,9 @@
   border: 1px solid rgba(60,90,120,.28); border-top: 0;
   background: radial-gradient(120% 90% at 50% 30%, var(--pg-bg-1,#0c141f), var(--pg-bg-2,#070c15) 55%, var(--pg-bg-3,#02040a) 100%);
   touch-action: manipulation;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
 }
 .packing-stage::before {
   content: '';
@@ -207,7 +210,18 @@
   mask-image: linear-gradient(180deg, rgba(0,0,0,1), rgba(0,0,0,.86) 62%, rgba(0,0,0,0));
   -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,1), rgba(0,0,0,.86) 62%, rgba(0,0,0,0));
 }
-.packing-svg { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; display: block; transition: filter .45s ease; }
+.packing-svg {
+  /* Center the board and prefer filling width rather than being constrained by
+     the container height. Keeps viewBox-based coordinate math intact while
+     giving the board more horizontal room on narrow screens. */
+  position: relative;
+  z-index: 0;
+  display: block;
+  width: min(100%, 560px);
+  height: auto;
+  margin: 0 auto;
+  transition: filter .45s ease;
+}
 [data-gl-theme="space"] .packing-stage::before {
   background:
     radial-gradient(circle at 12% 38%, rgba(234,244,255,.92) 0 1.2px, transparent 2px),
