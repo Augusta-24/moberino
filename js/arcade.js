@@ -1597,6 +1597,7 @@ function initCarousel() {
   // behavior without touching click delivery at all.
   let dragging = false, dragPointerId = null, dragStartX = 0, dragBaseVIdx = firstReal, dragBaseX = 0;
   let lastX = 0, lastT = 0, velocity = 0, dragMoved = false;
+  let suppressClickUntil = 0;
 
   // Clamped to one card-step: the loop only ever keeps one clone past each end,
   // so dragging further than that would drag right off the end of the track
@@ -1644,6 +1645,10 @@ function initCarousel() {
     // a synthetic click while the carousel advances.
     if (Math.abs(dx) > 10 || advance) {
       dragMoved = true;
+      // iOS may dispatch the synthetic click after pointerup and after other
+      // gesture bookkeeping has completed. Keep a brief time-based guard so
+      // that delayed click cannot launch the card beneath the release point.
+      suppressClickUntil = performance.now() + 500;
       e.preventDefault();
     }
     if (advance) goTo(dx < 0 ? 1 : -1);
@@ -1653,7 +1658,11 @@ function initCarousel() {
   window.addEventListener('pointercancel', endDrag);
   // A drag that moved the track shouldn't also fire the card's "Play" click.
   track.addEventListener('click', (e) => {
-    if (dragMoved) { e.preventDefault(); e.stopPropagation(); dragMoved = false; }
+    if (dragMoved || performance.now() < suppressClickUntil) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      dragMoved = false;
+    }
   }, true);
 
   // Trackpad/mouse-wheel horizontal scroll steps the carousel too, so desktop

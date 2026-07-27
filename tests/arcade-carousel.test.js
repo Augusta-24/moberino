@@ -18,5 +18,11 @@ test('carousel release suppresses clicks when a fast swipe skips pointermove', (
   assert.ok(endDrag);
   assert.match(endDrag[1], /if \(Math\.abs\(dx\) > 10 \|\| advance\)/);
   assert.match(endDrag[1], /dragMoved = true/);
+  assert.match(endDrag[1], /suppressClickUntil = performance\.now\(\) \+ 500/);
   assert.match(endDrag[1], /e\.preventDefault\(\)/);
+});
+
+test('carousel quarantines delayed synthetic clicks after a swipe', () => {
+  assert.match(source, /if \(dragMoved \|\| performance\.now\(\) < suppressClickUntil\)/);
+  assert.match(source, /e\.stopImmediatePropagation\(\)/);
 });

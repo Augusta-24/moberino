@@ -1233,6 +1233,11 @@ body.on-char.arcade-music-prompt-visible #char-select-screen {
   cursor: grab;
 }
 #game-carousel-track.dragging { cursor: grabbing; }
+#game-carousel-track.dragging .game-card:active {
+  /* A swipe begins over a clickable card. Do not visually depress the card
+     while the pointer gesture belongs to the carousel. */
+  transform: translateZ(0);
+}
 #game-carousel-track.animate { transition: transform 0.36s cubic-bezier(.22,.68,0,1); }
 #game-carousel-track.instant { transition: none; }
 /* Arrows + dots are redundant once you can swipe — shown only when a real pointing
