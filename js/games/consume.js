@@ -473,7 +473,8 @@
       `<strong>GRID</strong>` +
       `<button class="cw-btn" data-act="reset">RESET</button>` +
       `</div>` +
-      `<div class="cw-goal">BOARD ${S.n}/${LEVELS.length} · CLEARS IN ${S.data.minWords} WORDS` +
+      `<div class="cw-goal">BOARD ${S.n}/${LEVELS.length} · <span class="cw-goal-words">${S.data.minWords}` +
+      `${S.data.maxWords > S.data.minWords ? '+' : ''}</span> WORDS TO SOLVE` +
       `<span id="cw-progress"></span></div>` +
       `<div class="cw-board" id="cw-board" style="--cw-cols:${S.boardCols}"></div>` +
       `<div class="cw-tray-shell">` +

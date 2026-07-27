@@ -439,6 +439,7 @@ def analyze_pool(counts, min_solutions=1, max_solutions=60, max_candidates=360):
             "solutions": [],
             "solutionCount": 0,
             "minWords": None,
+            "maxWords": None,
             "traps": [],
             "too_open": True,
             "too_common": True,
@@ -549,6 +550,7 @@ def analyze_pool(counts, min_solutions=1, max_solutions=60, max_candidates=360):
             "solutions": [],
             "solutionCount": solution_count,
             "minWords": None,
+            "maxWords": None,
             "traps": [],
             "too_open": True,
         }
@@ -559,11 +561,29 @@ def analyze_pool(counts, min_solutions=1, max_solutions=60, max_candidates=360):
             "solutions": [],
             "solutionCount": solution_count,
             "minWords": None,
+            "maxWords": None,
             "traps": [],
             "too_open": False,
         }
 
     enumerate_partitions(counts, 0, [], 8)
+
+    @lru_cache(maxsize=None)
+    def most_words(rem):
+        """Longest full clear, as a word count. Tells the UI whether the shown
+        minimum is a true floor (a real solution runs longer) or the only length
+        any solution has."""
+        rem_size = count_size(rem)
+        if rem_size == 0:
+            return 0
+        if rem_size < 3:
+            return None
+        best = None
+        for i in pivot(rem):
+            deeper = most_words(sub_counts(rem, vectors[i]))
+            if deeper is not None and (best is None or deeper + 1 > best):
+                best = deeper + 1
+        return best
 
     traps = []
     for w in candidates:
@@ -579,6 +599,7 @@ def analyze_pool(counts, min_solutions=1, max_solutions=60, max_candidates=360):
         "solutions": solutions,
         "solutionCount": solution_count,
         "minWords": fewest_words(counts),
+        "maxWords": most_words(counts),
         "traps": traps,
         "too_open": False,
     }

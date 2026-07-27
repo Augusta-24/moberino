@@ -638,6 +638,10 @@ body.arcade-mode-select.on-consume .consume-wrap {
   text-align: center;
   padding-bottom: 4px;
 }
+.cw-goal-words {
+  font-size: 20px;
+  color: #fff;
+}
 .cw-goal .over { color: var(--cw); }
 .cw-flash {
   font: 11px 'VCR', monospace;
