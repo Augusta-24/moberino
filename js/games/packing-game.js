@@ -420,7 +420,17 @@
         bottom = Math.max(bottom, 820);
         // round up and add a small margin
         const desired = Math.ceil(bottom + 12);
-        svg.setAttribute('viewBox', `0 0 560 ${desired}`);
+        // Ensure the SVG's rendered height (in CSS pixels) will fit the
+        // available viewport space. Compute a max viewBox height that maps to
+        // the stage's available pixel height given the SVG's current width.
+        const stageRect = stageHost.getBoundingClientRect();
+        const header = document.querySelector('.packing-mission-screen > header');
+        const headerH = header ? header.getBoundingClientRect().height : 64;
+        const availPx = Math.max(240, window.innerHeight - headerH - 40); // conservative available area
+        const svgWidthPx = svg.getBoundingClientRect().width || Math.min(window.innerWidth, 560);
+        const maxViewBoxH = Math.floor((availPx / svgWidthPx) * 560);
+        const finalH = Math.min(desired, Math.max(560, maxViewBoxH));
+        svg.setAttribute('viewBox', `0 0 560 ${finalH}`);
         // update any full-canvas rects that used the old 1120 height
         svg.querySelectorAll('rect').forEach(r => {
           const h = parseFloat(r.getAttribute('height') || '0');
