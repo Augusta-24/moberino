@@ -16,13 +16,12 @@ test('Whack leads with Rush, keeps 3 Lives secondary, and hides Party Mix', () =
   assert.match(source, /whackLaunchMenuMode\('whack'\)/);
 });
 
-test('Snoob leads with Endless play and keeps authored boards under Challenges', () => {
+test('Snoob launches directly into endless play and its result avoids level menus', () => {
   const source = read('js/games/snoob.js');
-  assert.match(source, /snoob-mode-primary" onclick="snoobStart\(\)"/);
-  assert.match(source, /<strong>PLAY<\/strong><span>ENDLESS/);
-  assert.doesNotMatch(source, /<strong>▶ PLAY<\/strong>/);
-  assert.match(source, /<strong>CHALLENGES<\/strong>/);
-  assert.match(source, /label: 'SNOOB'/);
+  assert.match(source, /window\.initSnoob = function\(\)[\s\S]*window\.snoobStart\(\)/);
+  assert.match(source, />PLAY AGAIN<\/button>/);
+  assert.match(source, />HIGH SCORES<\/button>/);
+  assert.doesNotMatch(source, /onclick="snoobModes\(\)">SNOOB MENU/);
 });
 
 test('Tile Swap mode selection serves unseen puzzles without exposing level navigation', () => {
@@ -55,6 +54,20 @@ test('character selection is stored per player code and only gates new profiles'
   assert.match(arcade, /savePlayerCharacter\(PlayerID\.get\(\), GAME_CHARS\[i\]\.name\)/);
   assert.match(arcade, /!hasPlayerCharacter\(playerTag\)/);
   assert.match(arcade, /window\._arcadeSessionStarted = false/);
+});
+
+test('new arcade player codes use a five-letter word and two digits', () => {
+  const arcade = read('js/arcade.js');
+  const wordsMatch = arcade.match(/const PLAYER_TAG_WORDS = \[([\s\S]*?)\];/);
+  assert.ok(wordsMatch);
+  const words = [...wordsMatch[1].matchAll(/'([A-Z]+)'/g)].map(match => match[1]);
+  assert.ok(words.length > 0);
+  assert.equal(words.every(word => word.length === 5), true);
+  assert.match(arcade, /10 \+ Math\.floor\(Math\.random\(\) \* 90\)/);
+  assert.ok(arcade.includes('^[A-Z]{5}[0-9]{2}$'));
+  assert.match(arcade, /!ArcadeProfiles\.valid\(playerTag\)/);
+  assert.match(arcade, /ArcadeProfiles\.discardLocalProfile\(playerTag\)/);
+  assert.match(arcade, /PlayerID\.clear\(\)/);
 });
 
 test('shared arcade UX foundation defines semantic layout and radius rules', () => {

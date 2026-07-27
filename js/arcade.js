@@ -99,7 +99,7 @@
 
   let arcadeEdgeSwipe = null;
   function arcadeSwipeGuardActive() {
-    return document.body.matches('.on-lobby,.on-char,.on-signin,.on-facefactory,.on-whack,.on-match,.on-space,.on-journey,.on-gridlock,.on-signal,.on-snoob,.on-consume');
+    return document.body.matches('.on-lobby,.on-char,.on-signin,.on-facefactory,.on-whack,.on-match,.on-space,.on-journey,.on-gridlock,.on-packing,.on-signal,.on-snoob,.on-consume');
   }
 
   document.addEventListener('touchstart', e => {
@@ -231,6 +231,7 @@
     const onSpace = p === 'space';
     const onJourney = p === 'journey';
     const onGridLock = p === 'gridlock';
+    const onPacking = p === 'packing';
     const onSignal = p === 'signal';
     const onSnoob = p === 'snoob';
     const onConsume = p === 'consume';
@@ -244,6 +245,7 @@
     document.body.classList.toggle('on-space', onSpace);
     document.body.classList.toggle('on-journey', onJourney);
     document.body.classList.toggle('on-gridlock', onGridLock);
+    document.body.classList.toggle('on-packing', onPacking);
     document.body.classList.toggle('on-signal', onSignal);
     document.body.classList.toggle('on-snoob', onSnoob);
     document.body.classList.toggle('on-consume', onConsume);
@@ -251,10 +253,10 @@
     document.documentElement.classList.add('arcade-root');
 
     try {
-      if ((onLobby || onCharSelect || onSignIn || onFaceFactory || onWhack || onMatch || onSpace || onJourney || onGridLock || onSignal || onSnoob || onConsume || onPet) && typeof ArcadeMusic !== 'undefined' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
+      if ((onLobby || onCharSelect || onSignIn || onFaceFactory || onWhack || onMatch || onSpace || onJourney || onGridLock || onPacking || onSignal || onSnoob || onConsume || onPet) && typeof ArcadeMusic !== 'undefined' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
       if (typeof ArcadeMusic !== 'undefined') {
         if (onLobby || onCharSelect || onSignIn) ArcadeMusic.unduck();
-        if (onFaceFactory || onWhack || onMatch || onSpace || onJourney || onGridLock || onSignal || onSnoob || onConsume || onPet) ArcadeMusic.duck();
+        if (onFaceFactory || onWhack || onMatch || onSpace || onJourney || onGridLock || onPacking || onSignal || onSnoob || onConsume || onPet) ArcadeMusic.duck();
       }
     } catch(e) {}
 
@@ -281,6 +283,7 @@
     if (onSpace && typeof initSpace === 'function') initSpace();
     if (onJourney && typeof initJourney === 'function') initJourney();
     if (onGridLock && typeof initGridLock === 'function') initGridLock();
+    if (onPacking && typeof initPackingGame === 'function') initPackingGame();
     if (onSignal && typeof initSignal === 'function') initSignal();
     if (onSnoob && typeof initSnoob === 'function') initSnoob();
     if (onConsume && typeof initConsume === 'function') initConsume();
@@ -288,6 +291,7 @@
     if (!onSpace && typeof spacePause === 'function') spacePause();
     if (!onJourney && typeof journeyBack === 'function') journeyBack();
     if (!onGridLock && typeof gridLockBack === 'function') gridLockBack();
+    if (!onPacking && typeof packingGameBack === 'function') packingGameBack();
     if (!onSignal && typeof signalBack === 'function') signalBack();
     if (!onFaceFactory && typeof faceFactoryBack === 'function') faceFactoryBack();
     if (!onWhack && typeof whackBack === 'function') whackBack();
@@ -298,8 +302,16 @@
     if (!onPet && typeof petBack === 'function') petBack();
   };
 
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     document.documentElement.classList.add('arcade-root');
+    let playerTag = typeof PlayerID !== 'undefined' ? PlayerID.get() : null;
+    if (playerTag && typeof ArcadeProfiles !== 'undefined' && !ArcadeProfiles.valid(playerTag)) {
+      ArcadeProfiles.discardLocalProfile(playerTag);
+      PlayerID.clear();
+      playerTag = null;
+    } else if (playerTag && typeof ArcadeProfiles !== 'undefined') {
+      await ArcadeProfiles.activate(playerTag, { create: true });
+    }
     nav('lobby');
     updateArcadeInstallPrompt();
     updateArcadeMusicPrompt();
@@ -912,7 +924,6 @@ function getLeaderboardKey(game, options) {
   if (game === 'whack') return opts.key || getWhackLeaderboardKey();
   if (game === 'match') return opts.key || getMatchLeaderboardKey();
     if (game === 'space') return opts.key || getSpaceLeaderboardKey();
-    if (game === 'signal') return opts.key || 'signal';
     if (game === 'snoob') return opts.key || 'snoob';
     if (game === 'consume') return opts.key || 'consume';
     return opts.key || game;
@@ -928,12 +939,10 @@ function getLeaderboardBoards() {
     { key: 'match-challenge', label: 'MEMORY MOBE · CHALLENGE', color: '#ff9933', field: 'seconds' },
     { key: 'match-impossible', label: 'MEMORY MOBE · IMPOSSIBLE', color: '#ff4444', field: 'score' },
     { key: 'space', label: 'SPACE MOBE', color: '#33ff66', field: 'score' },
-    { key: 'signal', label: 'SPACE AND SOUND', color: '#8f73ff', field: 'score' },
     { key: 'snoob', label: 'SNOOB', color: '#e4b65f', field: 'score' },
     { key: 'consume', label: 'TILE SWAP · GRID', color: '#ff7180', field: 'score' },
     { key: 'consume-words', label: 'TILE SWAP · WORDS', color: '#ff7180', field: 'score' },
     { key: 'consume-numbers', label: 'TILE SWAP · RUMMY', color: '#ff7180', field: 'score' },
-    { key: 'pet', label: 'PET MOBE', color: '#ff6ec7', field: 'score' },
   ];
 }
 
@@ -943,10 +952,8 @@ function getLeaderboardGroups() {
     { id: 'whack', tab: 'WHACK', title: 'WHACK-A-MOBE', color: '#b884ff', keys: ['whack-classic-easy', 'whack-classic-hard', 'whack-frenzy-easy', 'whack-frenzy-hard'] },
     { id: 'memory', tab: 'MEMORY', title: 'MEMORY MOBE', color: '#ffe61a', keys: ['match-hard', 'match-challenge', 'match-impossible'] },
     { id: 'space', tab: 'SPACE', title: 'SPACE MOBE', color: '#33ff66', keys: ['space'] },
-    { id: 'sound', tab: 'SOUND', title: 'SPACE AND SOUND', color: '#8f73ff', keys: ['signal'] },
     { id: 'snoob', tab: 'SNOOB', title: 'SNOOB', color: '#e4b65f', keys: ['snoob'] },
     { id: 'tile', tab: 'TILE SWAP', title: 'TILE SWAP', color: '#ff7180', keys: ['consume', 'consume-words', 'consume-numbers'] },
-    { id: 'pet', tab: 'PET', title: 'PET MOBE', color: '#ff6ec7', keys: ['pet'] },
   ].map(group => ({ ...group, boards: group.keys.map(key => boards.find(b => b.key === key)).filter(Boolean) }));
 }
 
@@ -974,18 +981,25 @@ window.PlayerID = {
   set(tag) {
     try { if (tag) localStorage.setItem(PLAYER_TAG_KEY, tag); } catch (e) {}
   },
+  clear() {
+    try { localStorage.removeItem(PLAYER_TAG_KEY); } catch (e) {}
+  },
 };
 
-const PLAYER_TAG_WORDS = ['FROG','MINT','TACO','DUCK','MOON','STAR','WAVE','COMET','MANGO',
-  'PIZZA','NEON','DISCO','LASER','LEMON','BERRY','MAPLE','SODA','JELLY','BAGEL',
-  'NACHO','SPARK','TURBO','COSMO','ASTRO','LUNA','NOVA','BLIP','ZOOM','DINO'];
+const PLAYER_TAG_WORDS = [
+  'COMET', 'MANGO', 'PIZZA', 'DISCO', 'LASER', 'LEMON', 'BERRY', 'MAPLE',
+  'JELLY', 'BAGEL', 'NACHO', 'SPARK', 'TURBO', 'COSMO', 'ASTRO',
+];
 let proposedPlayerTag = '';
 
 function cleanPlayerTag(raw) {
   return String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
 }
+function validPlayerTag(tag) {
+  return /^[A-Z]{5}[0-9]{2}$/.test(String(tag || ''));
+}
 function makePlayerTag() {
-  return PLAYER_TAG_WORDS[Math.floor(Math.random() * PLAYER_TAG_WORDS.length)] + (2 + Math.floor(Math.random() * 8));
+  return PLAYER_TAG_WORDS[Math.floor(Math.random() * PLAYER_TAG_WORDS.length)] + (10 + Math.floor(Math.random() * 90));
 }
 function preparePlayerSignIn() {
   if (PlayerID.get() && !window._forcePlayerSignIn) { nav('lobby'); return; }
@@ -1024,8 +1038,16 @@ async function restorePlayerProgress(tag) {
   });
 }
 async function finishPlayerSignIn(tag, restore) {
+  let profile = { ok: true, existed: false };
+  if (typeof ArcadeProfiles !== 'undefined') {
+    profile = await ArcadeProfiles.activate(tag, { create: true, requireRemote: true });
+    if (!profile.ok) throw new Error('PROFILE_UNAVAILABLE');
+  }
   PlayerID.set(tag);
-  if (restore) await restorePlayerProgress(tag);
+  if (restore && !profile.existed && !profile.cached) {
+    await restorePlayerProgress(tag);
+    if (typeof ArcadeProfiles !== 'undefined') await ArcadeProfiles.syncNow(tag);
+  }
   window._forcePlayerSignIn = false;
   window._arcadeSessionStarted = false;
   updatePlayerStatus();
@@ -1037,8 +1059,8 @@ window.useEnteredPlayerCode = async function() {
   const error = document.getElementById('arcade-signin-error');
   const button = document.querySelector('.arcade-signin-entry button');
   const tag = cleanPlayerTag(input && input.value);
-  if (tag.length < 2) {
-    if (error) error.textContent = 'ENTER 2–12 LETTERS OR NUMBERS';
+  if (!validPlayerTag(tag)) {
+    if (error) error.textContent = 'ENTER 5 LETTERS + 2 NUMBERS';
     if (input) input.focus();
     return;
   }
@@ -1046,6 +1068,9 @@ window.useEnteredPlayerCode = async function() {
   if (button) { button.disabled = true; button.textContent = 'CHECKING...'; }
   if (error) error.textContent = 'RESTORING PROGRESS...';
   try { await finishPlayerSignIn(tag, true); }
+  catch (profileError) {
+    if (error) error.textContent = 'COULD NOT LOAD THAT PROFILE · CHECK CONNECTION';
+  }
   finally {
     if (input) input.disabled = false;
     if (button) { button.disabled = false; button.textContent = 'ENTER CODE'; }
@@ -1053,16 +1078,21 @@ window.useEnteredPlayerCode = async function() {
 };
 window.useRandomPlayerCode = async function() {
   const button = document.getElementById('arcade-random-code');
+  const error = document.getElementById('arcade-signin-error');
   if (button) button.disabled = true;
   try {
     let tag = proposedPlayerTag || makePlayerTag();
-    if (typeof RemoteLB !== 'undefined' && RemoteLB.tagExists) {
+    if (typeof ArcadeProfiles !== 'undefined' && ArcadeProfiles.exists) {
+      for (let attempt = 0; attempt < 12 && await ArcadeProfiles.exists(tag); attempt++) tag = makePlayerTag();
+    } else if (typeof RemoteLB !== 'undefined' && RemoteLB.tagExists) {
       for (let attempt = 0; attempt < 12 && await RemoteLB.tagExists(tag); attempt++) tag = makePlayerTag();
     }
     proposedPlayerTag = tag;
     const value = document.getElementById('arcade-random-code-value');
     if (value) value.textContent = tag;
     await finishPlayerSignIn(tag, false);
+  } catch (profileError) {
+    if (error) error.textContent = 'COULD NOT CREATE PROFILE · CHECK CONNECTION';
   } finally {
     if (button) button.disabled = false;
   }
@@ -1399,7 +1429,17 @@ function buildArcadeResultCard(options) {
     </div>`;
 }
 
-// ── Carousel (infinite loop, JS-driven) ───────────────────────────────────────
+// ── Carousel (infinite loop, index-driven) ─────────────────────────────────
+// A single #game-carousel-track element is positioned with transform:translateX(),
+// animated with a CSS transition, and dragged with Pointer Events — one code path
+// drives both mouse (desktop arrows/drag) and touch (mobile swipe), so the loop
+// works the same way everywhere instead of desktop using a scripted scroll tween
+// and touch relying on native scroll-snap (which couldn't wrap at all). The
+// infinite loop keeps a buffer of cloned cards past each end of the track
+// (sized to however many are actually visible at once, see bufferPerSide
+// below); wrapping animates one step onto the outermost buffered clone like
+// any other step, then `transitionend` — not a scroll-event guess — instantly
+// swaps to the matching real card once the animation is provably finished.
 let _carouselIdx = 0;
 
 function initCarousel() {
@@ -1414,146 +1454,234 @@ function initCarousel() {
   // carousel regardless of where its large card markup lives in arcade.html.
   const faceFactoryCard = carousel.querySelector('#ci-facefactory');
   if (faceFactoryCard) carousel.appendChild(faceFactoryCard);
-  const prefersNativeSnap = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
   const originals = [...carousel.querySelectorAll('.carousel-item')];
   const N = originals.length;
   if (!N) return;
+
+  const track = document.createElement('div');
+  track.id = 'game-carousel-track';
+  originals.forEach(el => track.appendChild(el));
+  carousel.appendChild(track);
 
   function stripCloneIds(clone) {
     [clone, ...clone.querySelectorAll('[id]')].forEach(el => el.removeAttribute('id'));
     clone.dataset.clone = 'true';
   }
 
-  if (N > 1 && !prefersNativeSnap) {
-    const before = originals[N - 1].cloneNode(true);
-    const after = originals[0].cloneNode(true);
-    stripCloneIds(before);
-    stripCloneIds(after);
-    carousel.insertBefore(before, originals[0]);
-    carousel.appendChild(after);
+  // A fixed clone count isn't enough: how many neighbor cards are visible at
+  // once depends on viewport width vs. card width, not just "3 cards" — a wide
+  // desktop window shows a sliver of a further card past the immediate
+  // neighbor too. Measure the real cards (clones don't affect card width/gap)
+  // to work out how many card-steps actually fit in the visible half-width,
+  // then buffer that many clones per side, +1 for the wrap-transit step itself
+  // and +1 margin for modest window resizing. Without enough depth here, that
+  // outer sliver goes blank for the ~360ms spent transiting the wrap, then
+  // pops in once the reset lands — reads exactly like "still loading."
+  let bufferPerSide = 0;
+  if (N > 1) {
+    // Use the layout width, not getBoundingClientRect(): inactive cards are
+    // rendered at scale(.92), and feeding that painted width into the unscaled
+    // track math shifts the selected card slightly to the right.
+    const cw = originals[0].offsetWidth;
+    const st = originals.length > 1 ? (originals[1].offsetLeft - originals[0].offsetLeft) : cw;
+    const co = (carousel.offsetWidth - cw) / 2;
+    bufferPerSide = Math.max(2, Math.ceil(co / st) + 2);
+    for (let k = bufferPerSide; k >= 1; k--) {
+      const clone = originals[((N - k) % N + N) % N].cloneNode(true);
+      stripCloneIds(clone);
+      track.insertBefore(clone, originals[0]);
+    }
+    for (let k = 0; k < bufferPerSide; k++) {
+      const clone = originals[k % N].cloneNode(true);
+      stripCloneIds(clone);
+      track.appendChild(clone);
+    }
   }
 
-  const items = [...carousel.querySelectorAll('.carousel-item')];
-  const firstReal = (N > 1 && !prefersNativeSnap) ? 1 : 0;
+  const items = [...track.querySelectorAll('.carousel-item')];
+  const firstReal = bufferPerSide;
 
   let logIdx = 0;
-  let scrollEndTimer = null;
-  let scrollAnimFrame = null;
-  let scrollRafPending = false;
+  let visualIdx = firstReal;
+  let animating = false;
+  let cardW = 0, step = 0, centerOffset = 0;
 
-  // Native scrollTo({behavior:'smooth'}) has no speed control — its duration is
-  // fixed by the browser, which is what was actually reading as laggy. A short,
-  // explicit rAF tween gives real control over how fast the snap feels.
-  function animateScrollTo(target, duration) {
-    cancelAnimationFrame(scrollAnimFrame);
-    const start = carousel.scrollLeft;
-    const delta = target - start;
-    if (Math.abs(delta) < 1) { carousel.scrollLeft = target; return; }
-    const t0 = performance.now();
-    function tick(now) {
-      const t = Math.min(1, (now - t0) / duration);
-      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
-      carousel.scrollLeft = start + delta * eased;
-      if (t < 1) scrollAnimFrame = requestAnimationFrame(tick);
-    }
-    scrollAnimFrame = requestAnimationFrame(tick);
+  function measure() {
+    // offsetWidth stays in the same (untransformed) coordinate space as
+    // offsetLeft and the track translate below. getBoundingClientRect().width
+    // includes the resting card's scale(.92), which makes centerOffset too
+    // large until that card becomes active.
+    cardW = items[0].offsetWidth;
+    step = items.length > 1 ? (items[1].offsetLeft - items[0].offsetLeft) : cardW;
+    centerOffset = (carousel.offsetWidth - cardW) / 2;
   }
 
-  function scrollToVisualIdx(idx, behavior) {
-    const item = items[idx];
-    if (!item) return;
-    const offset = item.offsetLeft - (carousel.offsetWidth - item.offsetWidth) / 2;
-    if (behavior === 'instant') {
-      carousel.scrollTo({ left: offset, behavior: 'auto' });
-    } else if (prefersNativeSnap) {
-      // On touch devices, native momentum + CSS snap feels crisper than scripted tweening.
-      carousel.scrollTo({ left: offset, behavior: 'smooth' });
-    } else {
-      animateScrollTo(offset, 360);
-    }
+  function setTransform(vIdx, animate) {
+    track.classList.toggle('animate', animate);
+    track.style.transform = `translateX(${centerOffset - vIdx * step}px)`;
   }
 
-  function syncActive(logicalIdx, visualIdx) {
-    const activeVisual = visualIdx == null ? firstReal + logicalIdx : visualIdx;
-    items.forEach((el, i) => el.classList.toggle('active-card', i === activeVisual));
+  function applyActive(lIdx, vIdx) {
+    items.forEach((el, i) => el.classList.toggle('active-card', i === vIdx));
+    updateCarouselDots(lIdx, N);
   }
 
-  function closestVisualIdx() {
-    const center = carousel.scrollLeft + carousel.offsetWidth / 2;
-    let best = 0, bestDist = Infinity;
-    items.forEach((el, i) => {
-      const dist = Math.abs((el.offsetLeft + el.offsetWidth / 2) - center);
-      if (dist < bestDist) { bestDist = dist; best = i; }
-    });
-    return best;
+  // The clone->real teleport swaps which element carries .active-card, and that
+  // class drives a 0.15s opacity/transform transition. Left as-is, the real card
+  // would still have to fade up from its dim/scaled-down resting state right as
+  // it's swapped in, reading as a pop/glitch. Suspending item transitions for one
+  // frame makes that swap as instant as the (already-instant) position reset.
+  function withoutCardTransition(fn) {
+    track.classList.add('instant');
+    fn();
+    void track.offsetWidth;
+    requestAnimationFrame(() => track.classList.remove('instant'));
   }
 
-  function settleToVisualIdx(visualIdx, fromNativeScroll) {
-    if (!prefersNativeSnap && N > 1 && visualIdx === 0) {
-      logIdx = N - 1;
-      _carouselIdx = logIdx;
-      syncActive(logIdx);
-      updateCarouselDots(logIdx, N);
-      scrollToVisualIdx(firstReal + logIdx, 'instant');
-      return;
+  // Deterministic wrap: transitionend fires exactly once when our own animation
+  // genuinely finishes, so — unlike guessing from native scroll settling — there's
+  // no race with in-flight motion to land the reset on the wrong frame.
+  //
+  // Except when it doesn't fire at all: a drag that's already clamped to exactly
+  // one card-step can leave the track sitting on the very clone a boundary goTo()
+  // would also animate to. The target transform is then identical to the current
+  // one, so the browser never starts a transition — and transitionend never
+  // fires — leaving the carousel stuck mid-wrap. transitionSafetyTimer resolves
+  // the wrap on a timer in that case instead of waiting forever for an event
+  // that isn't coming; it's cleared whenever transitionend does fire normally.
+  let transitionSafetyTimer = null;
+
+  function finishTransition() {
+    if (!animating) return;
+    animating = false;
+    clearTimeout(transitionSafetyTimer);
+    if (N > 1 && visualIdx === firstReal - 1) {
+      const real = firstReal + logIdx;
+      withoutCardTransition(() => { visualIdx = real; setTransform(real, false); applyActive(logIdx, real); });
+    } else if (N > 1 && visualIdx === firstReal + N) {
+      const real = firstReal;
+      withoutCardTransition(() => { visualIdx = real; setTransform(real, false); applyActive(logIdx, real); });
     }
-    if (!prefersNativeSnap && N > 1 && visualIdx === items.length - 1) {
-      logIdx = 0;
-      _carouselIdx = logIdx;
-      syncActive(logIdx);
-      updateCarouselDots(logIdx, N);
-      scrollToVisualIdx(firstReal, 'instant');
-      return;
-    }
-    logIdx = Math.max(0, Math.min(N - 1, visualIdx - firstReal));
-    _carouselIdx = logIdx;
-    syncActive(logIdx, visualIdx);
-    updateCarouselDots(logIdx, N);
-    if (!fromNativeScroll) scrollToVisualIdx(visualIdx, 'smooth');
   }
+  track.addEventListener('transitionend', (e) => {
+    if (e.target !== track || e.propertyName !== 'transform') return;
+    finishTransition();
+  });
 
-  // Swipe/touch scroll doesn't call scrollCarousel(), so track scroll settling directly
-  // and gently finish on the nearest centered card.
-  carousel.addEventListener('scroll', () => {
-    if (prefersNativeSnap && !scrollRafPending) {
-      scrollRafPending = true;
-      requestAnimationFrame(() => {
-        scrollRafPending = false;
-        const visualIdx = closestVisualIdx();
-        const nextLog = Math.max(0, Math.min(N - 1, visualIdx - firstReal));
-        if (nextLog !== logIdx) {
-          logIdx = nextLog;
-          _carouselIdx = logIdx;
-          syncActive(logIdx, visualIdx);
-          updateCarouselDots(logIdx, N);
-        }
-      });
-    }
-    clearTimeout(scrollEndTimer);
-    scrollEndTimer = setTimeout(() => {
-      settleToVisualIdx(closestVisualIdx(), prefersNativeSnap);
-    }, prefersNativeSnap ? 90 : 120);
-  }, { passive: true });
-
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    scrollToVisualIdx(firstReal, 'instant');
-    syncActive(0);
-    updateCarouselDots(0, N);
-    carousel.classList.add('ready');
-  }));
-
-  // Merry-go-round wrap: scroll onto a clone, then silently reset to the matching real card.
-  window.scrollCarousel = function(dir) {
+  function goTo(dir) {
+    if (animating || N <= 1) return;
     const current = logIdx;
     logIdx = (logIdx + dir + N) % N;
     _carouselIdx = logIdx;
-    let visualIdx = firstReal + logIdx;
-    if (!prefersNativeSnap && N > 1 && current === 0 && dir < 0) visualIdx = 0;
-    if (!prefersNativeSnap && N > 1 && current === N - 1 && dir > 0) visualIdx = items.length - 1;
-    scrollToVisualIdx(visualIdx, 'smooth');
-    syncActive(logIdx, visualIdx);
-    updateCarouselDots(logIdx, N);
-  };
+    let vIdx = firstReal + logIdx;
+    // Boundary step: animate onto the outer clone adjacent to the current edge
+    // card (continuing the drag/scroll direction) rather than jumping straight
+    // to the real target — the inner clone stays populated as its far neighbor.
+    if (current === 0 && dir < 0) vIdx = firstReal - 1;
+    if (current === N - 1 && dir > 0) vIdx = firstReal + N;
+    animating = true;
+    visualIdx = vIdx;
+    setTransform(vIdx, true);
+    applyActive(logIdx, vIdx);
+    clearTimeout(transitionSafetyTimer);
+    transitionSafetyTimer = setTimeout(finishTransition, 400);
+  }
+  window.scrollCarousel = goTo;
+
+  // ── Pointer-driven drag: one path for mouse (desktop) and touch (mobile) ──
+  // Deliberately does NOT use setPointerCapture: capturing the pointer on an
+  // ancestor is a known way to make click delivery to a descendant <button>
+  // unreliable (especially on mobile Safari) — every "Play" tap doubles as a
+  // pointerdown here, so that would break launching games entirely. Listening
+  // on window for move/up instead gets the same "keep tracking off-element"
+  // behavior without touching click delivery at all.
+  let dragging = false, dragPointerId = null, dragStartX = 0, dragBaseVIdx = firstReal, dragBaseX = 0;
+  let lastX = 0, lastT = 0, velocity = 0, dragMoved = false;
+
+  // Clamped to one card-step: the loop only ever keeps one clone past each end,
+  // so dragging further than that would drag right off the end of the track
+  // into empty space (visible as a blank gap) before the gesture even ends.
+  function clampDx(dx) { return Math.max(-step, Math.min(step, dx)); }
+
+  track.addEventListener('pointerdown', (e) => {
+    if (animating || N <= 1) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    dragging = true;
+    dragMoved = false;
+    dragPointerId = e.pointerId;
+    dragStartX = e.clientX;
+    dragBaseVIdx = visualIdx;
+    dragBaseX = centerOffset - dragBaseVIdx * step;
+    track.classList.remove('animate');
+    track.classList.add('dragging');
+    lastX = e.clientX; lastT = performance.now(); velocity = 0;
+  });
+  window.addEventListener('pointermove', (e) => {
+    if (!dragging || e.pointerId !== dragPointerId) return;
+    const dx = clampDx(e.clientX - dragStartX);
+    // 10px, not 4: ordinary tap/click jitter (finger or mouse never lands at the
+    // exact same pixel on release) was crossing a tighter threshold and getting
+    // misread as a drag, which suppressed the resulting click — the "Play"
+    // button stopped launching anything. Real swipes clear this well before
+    // release (the advance threshold below is ~60px), so raising it costs
+    // nothing there.
+    if (Math.abs(dx) > 10) dragMoved = true;
+    track.style.transform = `translateX(${dragBaseX + dx}px)`;
+    const now = performance.now();
+    const dt = now - lastT;
+    if (dt > 0) velocity = (e.clientX - lastX) / dt;
+    lastX = e.clientX; lastT = now;
+  });
+  function endDrag(e) {
+    if (!dragging || e.pointerId !== dragPointerId) return;
+    dragging = false;
+    track.classList.remove('dragging');
+    const dx = clampDx(e.clientX - dragStartX);
+    const advance = Math.abs(dx) > step * 0.18 || Math.abs(velocity) > 0.5;
+    // Mobile Safari can coalesce a quick swipe so pointerup contains meaningful
+    // travel even when no pointermove crossed the drag threshold. Mark that
+    // release as a drag too, otherwise the button under the finger may receive
+    // a synthetic click while the carousel advances.
+    if (Math.abs(dx) > 10 || advance) {
+      dragMoved = true;
+      e.preventDefault();
+    }
+    if (advance) goTo(dx < 0 ? 1 : -1);
+    else setTransform(dragBaseVIdx, true);
+  }
+  window.addEventListener('pointerup', endDrag);
+  window.addEventListener('pointercancel', endDrag);
+  // A drag that moved the track shouldn't also fire the card's "Play" click.
+  track.addEventListener('click', (e) => {
+    if (dragMoved) { e.preventDefault(); e.stopPropagation(); dragMoved = false; }
+  }, true);
+
+  // Trackpad/mouse-wheel horizontal scroll steps the carousel too, so desktop
+  // isn't limited to the arrows now that the track no longer natively scrolls.
+  // Only hijacks genuinely horizontal intent (deltaX > deltaY) so an ordinary
+  // vertical scroll over the carousel still scrolls the page.
+  carousel.addEventListener('wheel', (e) => {
+    if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+    e.preventDefault();
+    goTo(e.deltaX > 0 ? 1 : -1);
+  }, { passive: false });
+
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    // Skip while a finger's actually on the track: re-snapping mid-drag would
+    // yank the card out from under the touch. Mobile browsers fire resize for
+    // address-bar show/hide during ordinary page scroll, not just real
+    // viewport changes, so this isn't a rare case to guard against.
+    resizeTimer = setTimeout(() => { if (dragging) return; measure(); setTransform(visualIdx, false); }, 120);
+  });
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    measure();
+    setTransform(firstReal, false);
+    applyActive(0, firstReal);
+    carousel.classList.add('ready');
+  }));
 }
 
 function updateCarouselDots(active, total) {
@@ -1571,7 +1699,6 @@ window.openLeaderboard = function() {
   const active = window._lbActiveTab || (
     document.body.classList.contains('on-match') ? getMatchLeaderboardKey()
       : document.body.classList.contains('on-space') ? 'space'
-          : document.body.classList.contains('on-signal') ? 'signal'
             : document.body.classList.contains('on-snoob') ? 'snoob'
             : document.body.classList.contains('on-consume') ? 'consume'
               : getWhackLeaderboardKey()
@@ -1721,6 +1848,7 @@ function savePlayerCharacter(tag, name) {
   const profiles = getPlayerCharacterProfiles();
   profiles[tag] = name;
   try { localStorage.setItem(PLAYER_CHARACTER_PROFILES_KEY, JSON.stringify(profiles)); } catch (e) {}
+  if (typeof ArcadeProfiles !== 'undefined') ArcadeProfiles.setCharacter(tag, name);
 }
 function migrateCurrentPlayerCharacter() {
   const tag = PlayerID.get();

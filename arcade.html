@@ -17,18 +17,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Russo+One&family=Permanent+Marker&display=swap" rel="stylesheet">
 <link rel="preload" as="fetch" href="arcademusic.mp3" type="audio/mpeg" crossorigin="anonymous">
-<link rel="stylesheet" href="css/arcade.css?v=20260726-11">
+<link rel="stylesheet" href="css/arcade.css?v=20260726-18">
 <link rel="stylesheet" href="css/games/face-factory.css?v=20260726-8">
     <link rel="stylesheet" href="css/games/whack.css?v=20260726-13">
 <link rel="stylesheet" href="css/games/space.css?v=20260726-10">
 <link rel="stylesheet" href="css/games/journey.css?v=20260724-63">
-    <link rel="stylesheet" href="css/games/gridlock.css?v=20260726-62">
+    <link rel="stylesheet" href="css/games/gridlock.css?v=20260726-65">
+    <link rel="stylesheet" href="css/games/packing-game.css?v=20260726-18">
   <link rel="stylesheet" href="css/games/signal.css?v=20260726-10">
 <link rel="stylesheet" href="css/games/match.css?v=20260726-5">
     <link rel="stylesheet" href="css/games/snoob.css?v=20260726-9">
 <link rel="stylesheet" href="css/games/consume.css?v=20260726-3">
 <link rel="stylesheet" href="css/games/consume-rack.css?v=20260726-8">
-<link rel="stylesheet" href="css/games/pet.css">
+<link rel="stylesheet" href="css/games/pet.css?v=20260726-1">
 <script>
 
 // Locks #pg-home's height to a JS-measured pixel value instead of letting the browser
@@ -110,14 +111,14 @@
 <div class="arcade-signin-title">SAVE YOUR<br>PROGRESS</div>
 <p class="arcade-signin-copy">Already have an arcade code? Enter it here.</p>
 <div class="arcade-signin-entry">
-<input id="arcade-signin-input" type="text" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="FROG5" aria-label="Arcade code" onkeydown="if(event.key==='Enter')useEnteredPlayerCode()">
+<input id="arcade-signin-input" type="text" maxlength="7" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="MANGO57" aria-label="Arcade code" onkeydown="if(event.key==='Enter')useEnteredPlayerCode()">
 <button type="button" onclick="useEnteredPlayerCode()">ENTER CODE</button>
 </div>
 <div id="arcade-signin-error" role="alert" aria-live="polite"></div>
 <div class="arcade-signin-divider"><span>OR</span></div>
 <p class="arcade-signin-copy">New player? We made a code for you.</p>
-<button id="arcade-random-code" type="button" onclick="useRandomPlayerCode()"><span>PLAY AS</span><strong id="arcade-random-code-value">FROG5</strong><span>▶</span></button>
-<small class="arcade-signin-note">CODES ARE PUBLIC — USE A FUN PHRASE, NEVER A REAL PASSWORD OR PIN.</small>
+<button id="arcade-random-code" type="button" onclick="useRandomPlayerCode()"><span>PLAY AS</span><strong id="arcade-random-code-value">MANGO57</strong><span>▶</span></button>
+<small class="arcade-signin-note">KEEP YOUR CODE TO YOURSELF — IT OPENS YOUR SAVED PROGRESS.</small>
 </div>
 </div>
 
@@ -147,7 +148,8 @@
     </defs>
     <rect width="200" height="240" fill="#090518"/>
     <g opacity=".24" stroke="#ff66dd" stroke-width=".7"><path d="M0 32H200M0 64H200M0 96H200M0 128H200M25 0V170M75 0V170M125 0V170M175 0V170"/></g>
-    <g transform="translate(17 16) scale(.84)">
+    <g fill="#00e5ff" opacity=".72" transform="translate(7 -139)"><path d="M13 194l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/></g>
+    <g transform="translate(35 24) scale(.68)">
     <rect x="13" y="19" width="166" height="157" rx="17" fill="url(#ff-machine)" fill-opacity=".55" stroke="#ff66dd" stroke-opacity=".65" stroke-width="2" filter="url(#ff-neon)"/>
     <rect x="27" y="30" width="138" height="27" rx="8" fill="#130821" fill-opacity=".62" stroke="#ffe61a" stroke-opacity=".65" stroke-width="1.2"/>
     <text x="96" y="49" text-anchor="middle" fill="#ffe61a" font-family="'Bebas Neue',sans-serif" font-size="16" letter-spacing="3">FACE REELS</text>
@@ -178,12 +180,11 @@
     <g transform="translate(179 70)"><path d="M0 58L7 6" stroke="#d9dbea" stroke-width="7" stroke-linecap="round"/><circle cx="8" cy="4" r="11" fill="#ff2db8" stroke="#ff9bea" stroke-width="2" filter="url(#ff-neon)"/></g>
     <rect x="42" y="154" width="108" height="15" rx="7.5" fill="#ff2db8" stroke="#ff9bea"/>
     <text x="96" y="165" text-anchor="middle" fill="#fff" font-family="'VCR',monospace" font-size="7" letter-spacing="2">SPIN!</text>
-    <g fill="#00e5ff" opacity=".72"><path d="M13 194l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/><path d="M175 191l2 4 5 1-4 3 1 5-4-2-4 2 1-5-4-3 5-1z"/></g>
     </g>
   </svg>
 </div>
+<div class="game-card-badge game-card-badge-tab" style="background:#ff66dd;color:#04070c">FAMILY FUN</div>
 <div class="game-card-info">
-<div class="game-card-badge" style="background:#ff66dd22;color:#ff66dd;border:1px solid #ff66dd66">FAMILY FUN</div>
 <div class="game-card-marquee" style="color:#ff66dd;text-shadow:0 0 20px #ff66dd88">FACE FACTORY</div>
 <div class="game-card-desc">SPIN · BUILD · MIX FAMILY FACES</div>
 <div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#ff66dd22;border:1.5px solid #ff66dd;border-radius:5px;padding:10px 24px;color:#ff66dd;width:100%;text-shadow:0 0 8px #ff66dd66;text-align:center">▶ PLAY</div>
@@ -245,8 +246,8 @@
 <ellipse cx="160" cy="137" fill="#060800" rx="20" ry="8"></ellipse>
 </svg>
 </div>
+<div class="game-card-badge game-card-badge-tab" style="background:#ff9933;color:#04070c">ARCADE</div>
 <div class="game-card-info">
-<div class="game-card-badge" style="background:#ff993322;color:#ff9933;border:1px solid #ff993355">ARCADE</div>
 <div class="game-card-marquee" style="color:#ff9933;text-shadow:0 0 20px #ff993388">WHACK-A-MOBE</div>
 <div class="game-card-desc">BOP THE MOBES BEFORE THEY HIDE!</div>
 <div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#ff933322;border:1.5px solid #ff9933;border-radius:5px;padding:10px 24px;color:#ff9933;width:100%;text-shadow:0 0 8px #ff993366;text-align:center">▶ PLAY</div>
@@ -304,8 +305,8 @@
 <text fill="#ff2db8" font-size="14" opacity="0.7" x="60" y="98">✦</text>
 </svg>
 </div>
+<div class="game-card-badge game-card-badge-tab" style="background:#ffe61a;color:#04070c">MEMORY</div>
 <div class="game-card-info">
-<div class="game-card-badge" style="background:#ffe61a22;color:#ffe61a;border:1px solid #ffe61a55">MEMORY</div>
 <div class="game-card-marquee" style="color:#ffe61a;text-shadow:0 0 20px #ffe61a88">MEMORY MOBE</div>
 <div class="game-card-desc">FLIP CARDS · FIND THE PAIRS</div>
 <div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#ffe61a22;border:1.5px solid #ffe61a;border-radius:5px;padding:10px 24px;color:#ffe61a;width:100%;text-shadow:0 0 8px #ffe61a66;text-align:center">▶ PLAY</div>
@@ -341,8 +342,8 @@
 <circle cx="100" cy="215" fill="none" opacity="0.35" r="22" stroke="#00e5ff" stroke-dasharray="4,3" stroke-width="1"></circle>
 </svg>
 </div>
+<div class="game-card-badge game-card-badge-tab" style="background:#33ff66;color:#04070c">ARCADE</div>
 <div class="game-card-info">
-<div class="game-card-badge" style="background:#33ff6622;color:#33ff66;border:1px solid #33ff6655">SHOOTER</div>
 <div class="game-card-marquee" style="color:#33ff66;text-shadow:0 0 20px #33ff6688">SPACE MOBE</div>
 <div class="game-card-desc">BLAST ASTEROIDS · RESCUE HEROES</div>
 <div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#33ff6622;border:1.5px solid #33ff66;border-radius:5px;padding:10px 24px;color:#33ff66;width:100%;text-shadow:0 0 8px #33ff6666;text-align:center">▶ PLAY</div>
@@ -378,8 +379,8 @@
 <rect fill="#8f73ff" height="8" rx="2" width="84" x="40" y="209"/>
 </svg>
 </div>
+<div class="game-card-badge game-card-badge-tab" style="background:#8f73ff;color:#04070c">MUSIC</div>
 <div class="game-card-info">
-<div class="game-card-badge" style="background:#8f73ff22;color:#8f73ff;border:1px solid #8f73ff66">MUSIC</div>
 <div class="game-card-marquee" style="color:#8f73ff;text-shadow:0 0 20px #8f73ff88">SPACE AND SOUND</div>
 <div class="game-card-desc">BUILD A TRACK</div>
 <div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#8f73ff22;border:1.5px solid #8f73ff;border-radius:5px;padding:10px 24px;color:#8f73ff;width:100%;text-shadow:0 0 8px #8f73ff66;text-align:center">▶ PLAY</div>
@@ -431,8 +432,8 @@
 </g>
 </svg>
 </div>
+<div class="game-card-badge game-card-badge-tab" style="background:#e4b65f;color:#04070c">ARCADE</div>
 <div class="game-card-info">
-<div class="game-card-badge" style="background:#e4b65f22;color:#e4b65f;border:1px solid #e4b65f66">PUZZLE</div>
 <div class="game-card-marquee" style="color:#e4b65f;text-shadow:0 0 20px #e4b65f88">SNOOB</div>
 <div class="game-card-desc">AIM · MATCH 3 · DROP THE STACK</div>
 <div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#e4b65f22;border:1.5px solid #e4b65f;border-radius:5px;padding:10px 24px;color:#e4b65f;width:100%;text-shadow:0 0 8px #e4b65f66;text-align:center">▶ PLAY</div>
@@ -473,29 +474,14 @@
 <rect fill="#102438" height="38" rx="7" stroke="#f2efe8" stroke-opacity=".32" width="38"/>
 <text fill="#f2efe8" x="19" y="27">E</text>
 </g>
-<g transform="translate(24 150) rotate(6)">
-<rect fill="#352614" height="32" rx="6" stroke="#ffb35c" stroke-opacity=".78" width="32"/>
-<text fill="#ffb35c" font-size="20" x="16" y="23">8</text>
-</g>
-<g transform="translate(142 141) rotate(-7)">
-<rect fill="#352614" height="32" rx="6" stroke="#ffb35c" stroke-opacity=".78" width="32"/>
-<text fill="#ffb35c" font-size="20" x="16" y="23">3</text>
-</g>
-<g transform="translate(98 204) rotate(4)">
-<rect fill="#352614" height="32" rx="6" stroke="#ffb35c" stroke-opacity=".78" width="32"/>
-<text fill="#ffb35c" font-size="20" x="16" y="23">7</text>
-</g>
-<path d="M45 169 C66 153 89 153 110 169 S153 185 174 169" fill="none" stroke="#ff7180" stroke-linecap="round" stroke-width="3"/>
-<rect fill="#ff718022" height="38" rx="9" stroke="#ff7180" width="116" x="42" y="162"/>
-<text fill="#ff7180" font-family="'Bebas Neue',sans-serif" font-size="32" letter-spacing="5" x="100" y="190">TILES</text>
 </g>
 <circle cx="38" cy="205" fill="#ffe61a" opacity=".75" r="3"/>
 <circle cx="166" cy="28" fill="#ff7180" opacity=".55" r="4"/>
 <circle cx="158" cy="210" fill="#ff4bd8" opacity=".55" r="3"/>
 </svg>
 </div>
+<div class="game-card-badge game-card-badge-tab" style="background:#ff7180;color:#04070c">PUZZLE</div>
 <div class="game-card-info">
-<div class="game-card-badge" style="background:#ff718022;color:#ff7180;border:1px solid #ff718066">PUZZLE</div>
 <div class="game-card-marquee" style="color:#ff7180;text-shadow:0 0 20px #ff718088">TILE SWAP</div>
 <div class="game-card-desc">WORD PUZZLE · RUMMY PUZZLE</div>
 <div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#ff718022;border:1.5px solid #ff7180;border-radius:5px;padding:10px 24px;color:#ff7180;width:100%;text-shadow:0 0 8px #ff718066;text-align:center">▶ PLAY</div>
@@ -538,14 +524,43 @@
 <circle cx="50" cy="180" fill="#c97a4a" opacity=".8" r="4"/>
 </svg>
 </div>
+<div class="game-card-badge game-card-badge-tab" style="background:#5fd0ff;color:#04070c">PUZZLE</div>
 <div class="game-card-info">
-<div class="game-card-badge" style="background:#5fd0ff22;color:#5fd0ff;border:1px solid #5fd0ff66">PUZZLE</div>
 <div class="game-card-marquee" style="color:#5fd0ff;text-shadow:0 0 20px #5fd0ff88">GRID LOCK</div>
-<div class="game-card-desc" style="white-space:nowrap">ROTATE TILES · SEAL THE CIRCUIT</div>
+<div class="game-card-desc">ROTATE TILES · SEAL THE CIRCUIT</div>
 <div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#5fd0ff22;border:1.5px solid #5fd0ff;border-radius:5px;padding:10px 24px;color:#5fd0ff;width:100%;text-shadow:0 0 8px #5fd0ff66;text-align:center">▶ PLAY</div>
 </div>
 </div>
 </div>
+<div class="carousel-item" id="ci-packing">
+<div class="game-card" onclick="SFX.menuSelect();nav('packing')" style="border-color:#4ecb7d66;cursor:pointer">
+<div class="game-card-art" style="background:#040f08">
+<svg height="100%" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0" viewBox="0 0 200 240" width="100%">
+<rect fill="#040f08" height="240" width="200"/>
+<g stroke-dasharray="3 3" stroke="#9aa0a6" stroke-opacity=".35" stroke-width="1.5" fill="#12151a">
+<rect height="34" rx="4" width="34" x="29" y="104"/>
+<rect height="34" rx="4" width="34" x="65" y="32"/>
+<rect height="34" rx="4" width="34" x="137" y="32"/>
+</g>
+<g stroke-width="2">
+<rect fill="#ff5b68" fill-opacity=".3" height="34" rx="4" stroke="#ff5b68" stroke-opacity=".85" width="34" x="29" y="32"/>
+<rect fill="#ff5b68" fill-opacity=".3" height="34" rx="4" stroke="#ff5b68" stroke-opacity=".85" width="34" x="29" y="68"/>
+<rect fill="#ff5b68" fill-opacity=".3" height="34" rx="4" stroke="#ff5b68" stroke-opacity=".85" width="34" x="65" y="68"/>
+<rect fill="#b884ff" fill-opacity=".3" height="34" rx="4" stroke="#b884ff" stroke-opacity=".85" width="34" x="65" y="104"/>
+<rect fill="#b884ff" fill-opacity=".3" height="34" rx="4" stroke="#b884ff" stroke-opacity=".85" width="34" x="101" y="32"/>
+<rect fill="#b884ff" fill-opacity=".3" height="34" rx="4" stroke="#b884ff" stroke-opacity=".85" width="34" x="101" y="68"/>
+<rect fill="#b884ff" fill-opacity=".3" height="34" rx="4" stroke="#b884ff" stroke-opacity=".85" width="34" x="101" y="104"/>
+<rect fill="#5fd0ff" fill-opacity=".3" height="34" rx="4" stroke="#5fd0ff" stroke-opacity=".85" width="34" x="137" y="68"/>
+<rect fill="#5fd0ff" fill-opacity=".3" height="34" rx="4" stroke="#5fd0ff" stroke-opacity=".85" width="34" x="137" y="104"/>
+</g>
+</svg>
+</div>
+<div class="game-card-badge game-card-badge-tab" style="background:#4ecb7d;color:#04070c">PUZZLE</div>
+<div class="game-card-info">
+<div class="game-card-marquee" style="color:#75e69b;text-shadow:0 0 20px #4ecb7d88">SHAPE MOBE</div>
+<div class="game-card-desc">ROTATE PIECES · FILL THE SPACE</div>
+<div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#4ecb7d22;border:1.5px solid #4ecb7d;border-radius:5px;padding:10px 24px;color:#75e69b;width:100%;text-shadow:0 0 8px #4ecb7d66;text-align:center">▶ PLAY</div>
+</div></div></div>
 </div>
 <div class="carousel-nav-row" style="justify-content:space-between;align-items:center;padding:6px 14px 0">
 <button onclick="scrollCarousel(-1)" style="font-size:22px;background:none;border:none;color:rgba(242,239,232,0.4);cursor:pointer;padding:8px">◀</button>
@@ -624,6 +639,15 @@
 </div>
 <div class="gridlock-wrap" id="gridlock-wrap">
 <!-- Filled by GridLock JS -->
+</div>
+</div>
+
+<div class="page" id="pg-packing">
+<div class="cats-header">
+<button class="arcade-exit-btn" onclick="SFX.menuSelect();nav('lobby')">◀ ARCADE MENU</button>
+</div>
+<div class="packing-wrap" id="packing-wrap">
+<!-- Filled by Shape Mobe JS -->
 </div>
 </div>
 
@@ -706,7 +730,8 @@
   </div>
   <button class="arcade-install-btn" id="arcade-music-btn" type="button">START MUSIC</button>
 </div>
-<script src="js/arcade.js?v=20260726-5"></script>
+<script src="js/arcade.js?v=20260726-20"></script>
+<script src="js/arcade-profiles.js?v=20260726-1"></script>
 <script src="js/games/face-factory-calibration.js"></script>
 <script src="js/games/face-factory.js?v=20260726-4"></script>
 <script src="js/games/whack.js?v=20260726-7"></script>
@@ -725,11 +750,15 @@
 <script src="js/games/gridlock-modifiers.js?v=20260725-31"></script>
 <script src="js/games/gridlock-levels.js?v=20260725-40"></script>
 <script src="js/games/gridlock-progression.js?v=20260725-13"></script>
-<script src="js/games/gridlock.js?v=20260725-46"></script>
-<script src="js/games/gridlock-game.js?v=20260726-63"></script>
-<script src="js/games/signal.js?v=20260726-4"></script>
-<script src="js/games/snoob-boards.js"></script>
-<script src="js/games/snoob.js?v=20260726-6"></script>
+<script src="js/games/gridlock.js?v=20260726-47"></script>
+<script src="js/games/gridlock-game.js?v=20260726-64"></script>
+<script src="js/games/packing-game-mechanics.js?v=20260726-5"></script>
+<script src="js/games/packing-game-levels.js?v=20260726-10"></script>
+<script src="js/games/packing-game-progression.js?v=20260726-3"></script>
+<script src="js/games/packing-game-engine.js?v=20260726-19"></script>
+<script src="js/games/packing-game.js?v=20260726-21"></script>
+<script src="js/games/signal.js?v=20260726-6"></script>
+<script src="js/games/snoob.js?v=20260726-7"></script>
 <script src="js/games/consume-boards.js"></script>
 <script src="js/games/consume.js?v=20260726-2"></script>
 <script src="js/games/consume-rack-boards.js"></script>

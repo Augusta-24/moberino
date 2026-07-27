@@ -41,6 +41,8 @@
   let journeyClearPending = false, journeyClearStars = 0;
   let rowPhase = 0;
   let crankSpin = 0;
+  let aimHintT = 0;
+  const AIM_HINT_DURATION = 6.4;
   let raf = 0, last = 0, resizeHandler = null;
   let imagesReady = false;
   const imgCache = new Map();
@@ -261,7 +263,7 @@
       extra: `WAVE ${wave} · ${shots} SHOTS · ${drops} DROPS`,
       buttons: `
         <button class="whack-btn arcade-result-primary" onclick="snoobStart()">PLAY AGAIN</button>
-        <button class="whack-btn arcade-result-secondary" onclick="snoobModes()">SNOOB MENU</button>
+        <button class="whack-btn arcade-result-secondary" onclick="openLeaderboard()">HIGH SCORES</button>
         <button class="whack-btn arcade-result-arcade" onclick="nav('lobby')">ARCADE</button>
       `,
     });
@@ -432,6 +434,10 @@
     updateRattles(dt);
     updateDustMotes(dt);
     if (crankSpin > 0) crankSpin = Math.max(0, crankSpin - dt);
+    // The first-shot finger tutorial cancels itself the moment the player
+    // actually starts aiming, so it never fights with a real touch.
+    if (aimHintT < AIM_HINT_DURATION && (aimArmed || shots > 0)) aimHintT = AIM_HINT_DURATION;
+    if (aimHintT < AIM_HINT_DURATION) aimHintT += dt;
     if (journeyClearPending) {
       if (!fallingPieces.length && !dustMotes.length) finishJourneyClear();
       return;
@@ -1128,8 +1134,11 @@
     ctx.arc(crankX, crankY, dialR, 0, Math.PI * 2);
     ctx.stroke();
 
+    // Fixed rest orientation — the lever no longer tracks aim, since players
+    // mistook that motion for an aiming control. It only moves as a spin
+    // animation right after a shot fires.
     const spin = crankSpin > 0 ? (1 - crankSpin / 0.38) * Math.PI * 2.2 : 0;
-    const crankAngle = aim + Math.PI / 2 + spin + Math.sin(crankSpin * 42) * crankSpin * 0.6;
+    const crankAngle = spin + Math.sin(crankSpin * 42) * crankSpin * 0.6;
     ctx.save();
     ctx.translate(crankX, crankY);
     ctx.rotate(crankAngle);
@@ -1262,6 +1271,7 @@
     drawShooter();
     if (current) drawToken(ctx, current.x, current.y, r * 0.985, current.type, 1, 'normal', (current.visual && current.visual.rot) || 0, 900 + current.type);
     drawNextUpBadge();
+    drawAimHint();
   }
 
   // Journey opens with the full guide, then drops to the short stub from
@@ -1309,6 +1319,109 @@
         lastX = p.x; lastY = p.y;
       }
     }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // One-shot onboarding hint, shown for the first couple seconds of a level:
+  // two static arrows flanking the shooter (you can swing the aim left and
+  // right) plus a finger, sitting between the shooter and the capsules,
+  // that slides left and right to show the aim line swinging.
+  function drawAimHint() {
+    if (state !== 'playing' || current || aimHintT >= AIM_HINT_DURATION) return;
+    const r = radius();
+    const fadeIn = Math.min(1, aimHintT / 0.25);
+    const fadeOut = Math.min(1, (AIM_HINT_DURATION - aimHintT) / 0.5);
+    const alpha = Math.max(0, Math.min(fadeIn, fadeOut));
+    if (alpha <= 0.01) return;
+
+    const amp = Math.min(W * 0.34, r * 6.5);
+    const cycle = 2.6;
+    const phase = (aimHintT % cycle) / cycle;
+    const wave = phase < 0.5 ? phase * 2 : 2 - phase * 2;
+    const eased = wave * wave * (3 - 2 * wave);
+    const swingY = shooter.y - (shooter.y - boardTop()) * 0.42;
+    const fx = shooter.x - amp + amp * 2 * eased;
+
+    // Demo line swinging left/right, echoing the real aim guide, so it
+    // reads as "grab this and move it" rather than a separate gesture.
+    ctx.save();
+    ctx.globalAlpha = alpha * 0.6;
+    ctx.strokeStyle = '#e4b65f';
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([9, 7]);
+    ctx.shadowColor = '#e4b65f';
+    ctx.shadowBlur = r * 0.16;
+    ctx.beginPath();
+    ctx.moveTo(shooter.x, shooter.y);
+    ctx.lineTo(fx, swingY);
+    ctx.stroke();
+    ctx.restore();
+
+    const arrowY = shooter.y - r * 0.05;
+    const pulse = 0.75 + Math.sin(aimHintT * 5) * 0.25;
+    ctx.save();
+    ctx.globalAlpha = alpha * pulse;
+    ctx.fillStyle = '#e4b65f';
+    ctx.shadowColor = '#e4b65f';
+    ctx.shadowBlur = r * 0.2;
+    drawSideArrow(shooter.x - amp, arrowY, -1, r * 0.22);
+    drawSideArrow(shooter.x + amp, arrowY, 1, r * 0.22);
+    ctx.restore();
+
+    drawPointerHand(fx, swingY, alpha);
+  }
+
+  function drawSideArrow(x, y, dir, size) {
+    ctx.beginPath();
+    ctx.moveTo(x + dir * size, y);
+    ctx.lineTo(x - dir * size * 0.6, y - size * 0.62);
+    ctx.lineTo(x - dir * size * 0.6, y + size * 0.62);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Canvas-drawn swipe hand: a raised index finger and three curled fingers,
+  // matching the familiar touch-gesture symbol without relying on emoji fonts.
+  function drawPointerHand(x, y, alpha) {
+    const r = radius();
+    const scale = r * 0.0095;
+    ctx.save();
+    ctx.translate(x, y - r * 0.72);
+    ctx.scale(scale, scale);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = 'rgba(12,26,39,0.92)';
+    ctx.strokeStyle = '#f7f1df';
+    ctx.lineWidth = 8;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = 7;
+    ctx.beginPath();
+    ctx.moveTo(-13, 65);
+    ctx.lineTo(-13, -47);
+    ctx.bezierCurveTo(-13, -60, -5, -68, 6, -68);
+    ctx.bezierCurveTo(17, -68, 25, -60, 25, -47);
+    ctx.lineTo(25, 2);
+    ctx.bezierCurveTo(27, -9, 35, -16, 46, -16);
+    ctx.bezierCurveTo(58, -16, 66, -8, 66, 4);
+    ctx.lineTo(66, 11);
+    ctx.bezierCurveTo(68, 1, 76, -5, 86, -5);
+    ctx.bezierCurveTo(98, -5, 106, 3, 106, 15);
+    ctx.lineTo(106, 23);
+    ctx.bezierCurveTo(108, 14, 115, 9, 125, 9);
+    ctx.bezierCurveTo(137, 9, 145, 17, 145, 29);
+    ctx.lineTo(145, 70);
+    ctx.bezierCurveTo(145, 105, 120, 127, 84, 127);
+    ctx.lineTo(47, 127);
+    ctx.bezierCurveTo(27, 127, 13, 118, 0, 104);
+    ctx.lineTo(-51, 48);
+    ctx.bezierCurveTo(-61, 37, -60, 25, -51, 17);
+    ctx.bezierCurveTo(-43, 9, -32, 10, -22, 18);
+    ctx.lineTo(-13, 25);
+    ctx.closePath();
+    ctx.fill();
     ctx.stroke();
     ctx.restore();
   }
@@ -1786,6 +1899,7 @@
     current = null; aim = -Math.PI / 2; aimArmed = false;
     journeyClearPending = false; journeyClearStars = 0;
     dustMotes = [];
+    aimHintT = 0;
     clearPendingAimTouch();
     loadJourneyBoard(data);
     currentType = randQueuedType();
@@ -1831,11 +1945,6 @@
     mountSelectionArt(`snoob-challenge-${journeyN}-art`, 'snoob');
   }
 
-  window.snoobModes = function() { renderModes(); };
-  window.snoobJourney = function() { renderJourney(); };
-  window.snoobNextLevel = function() { startJourneyLevel(Math.min(journeyN + 1, JLEVELS.length)); };
-  window.snoobRetryLevel = function() { startJourneyLevel(journeyN); };
-
   window.snoobStart = function() {
     mode = 'endless';
     tokenTypes = playableChars();
@@ -1843,6 +1952,7 @@
     current = null; aim = -Math.PI / 2; aimArmed = false;
     journeyClearPending = false; journeyClearStars = 0;
     dustMotes = [];
+    aimHintT = 0;
     clearPendingAimTouch();
     resetBoard();
     currentType = randQueuedType();
@@ -1857,9 +1967,8 @@
 
   window.initSnoob = function() {
     if (!tokenTypes.length) tokenTypes = playableChars();
-    state = 'idle';
     cancelAnimationFrame(raf);
-    renderModes();
+    window.snoobStart();
   };
 
   window.snoobBack = function() {

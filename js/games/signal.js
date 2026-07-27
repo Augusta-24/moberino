@@ -259,16 +259,18 @@
   // less headroom than guided/build.
   function playFieldTop() { return guidedCoachActive() ? 286 : isFreeMode() ? 90 : loopGridBottom() + 18; }
   function playFieldBottom(limit) {
-    // Both modes share the bottom instrument tab bar; guided also stacks its
-    // practice/record coach buttons and the FINISH button above it, so it
-    // needs enough room for all three at once.
-    const bottomReserve = guidedCoachActive() ? 260 : shellActive() ? 84 : 20;
+    // Reserve only the bottom chrome that is currently present. FINISH now
+    // shares the top action slot with UNDO, so it costs no playfield height.
+    let bottomReserve = shellActive() ? 84 : 20;
+    if (guidedCoachActive()) {
+      bottomReserve = guidedStage === 'record' ? 190 : 142;
+    }
     const base = H - LOOP_PANEL_H - bottomReserve;
     if (!guidedCoachActive() || !limit) return base;
     return Math.min(base, playFieldTop() + limit);
   }
   function swellSurfaceTop() { return playFieldTop(); }
-  function swellSurfaceBottom() { return playFieldBottom(guidedCoachActive() ? 390 : 0); }
+  function swellSurfaceBottom() { return playFieldBottom(0); }
   function activeLayerLabel() {
     if (isFreeMode()) return `EXPLORE: ${activeLayer().name}`;
     if (isGuidedBuildMode()) return `${guidedStage === 'record' ? 'RECORD' : guidedStage === 'done' ? 'SAVED' : 'PRACTICE'} ${activeLayer().name}`;
@@ -542,19 +544,19 @@
     shellFinishBtn.textContent = 'FINISH ▶';
     shellFinishBtn.title = 'Finish track';
     shellFinishBtn.setAttribute('aria-label', 'Finish track');
+    shellFinishBtn.className = 'signal-loop-btn signal-finish-btn';
     Object.assign(shellFinishBtn.style, {
-      position: 'fixed', right: '8px',
-      // Sits above the coach panel (which can stack two 48px buttons), so it
-      // never collides with RESTART LAYER/KEEP or RE-RECORD underneath it.
-      bottom: 'calc(env(safe-area-inset-bottom, 0px) + 196px)',
-      zIndex: '999999', display: 'none', pointerEvents: 'auto',
-      minHeight: '46px', padding: '0 18px', borderRadius: '23px', border: '0',
+      display: 'none', pointerEvents: 'auto',
+      width: '100%', minWidth: '0', minHeight: '40px',
+      padding: '0 8px', borderRadius: '9px', border: '0',
       background: '#ffe61a', color: '#02040e',
-      fontFamily: "'VCR', monospace", fontSize: '13px', letterSpacing: '1.5px', fontWeight: 'bold',
+      fontFamily: "'VCR', monospace", fontSize: '11px', letterSpacing: '1.5px', fontWeight: 'bold',
       cursor: 'pointer', boxShadow: '0 0 20px rgba(255,230,26,0.55)',
+      boxSizing: 'border-box',
     });
     shellFinishBtn.addEventListener('click', finishTrack);
-    document.body.appendChild(shellFinishBtn);
+    const row = document.querySelector('#pg-signal .signal-loop-row');
+    (row || document.body).appendChild(shellFinishBtn);
     return shellFinishBtn;
   }
 
@@ -563,7 +565,11 @@
     ensureShellTabs();
     ensureShellFinishButton();
     shellTabsEl.style.display = visible ? 'flex' : 'none';
-    const canFinish = visible && isGuidedBuildMode() && layerStatus.some(s => s === 'done');
+    // UNDO owns this top slot during a recording pass. FINISH replaces it
+    // everywhere else once the player has saved at least one layer.
+    const canFinish = visible && isGuidedBuildMode()
+      && guidedStage !== 'record'
+      && layerStatus.some(s => s === 'done');
     shellFinishBtn.style.display = canFinish ? 'block' : 'none';
     if (!visible) {
       shellDrawerOpen = false;
@@ -1495,6 +1501,7 @@
     const undo = ensureSignalUndoButton();
     if (resetButton && resetButton.parentNode === row) row.appendChild(resetButton);
     if (undo && undo.parentNode === row) row.appendChild(undo);
+    if (shellFinishBtn && shellFinishBtn.parentNode === row) row.appendChild(shellFinishBtn);
     if (loopButton && loopButton.parentNode === row) row.appendChild(loopButton);
     if (exit && exit.parentNode === row) row.appendChild(exit);
     row.style.position = 'absolute';
@@ -1555,6 +1562,9 @@
       undo.style.letterSpacing = guidedTop ? '2px' : '0.4px';
       undo.style.padding = '0 6px';
       undo.style.boxSizing = 'border-box';
+    }
+    if (shellFinishBtn) {
+      shellFinishBtn.style.gridColumn = '1';
     }
     if (exit) {
       exit.style.gridColumn = freeTop ? '2' : guidedTop ? '3' : '4';
@@ -1654,15 +1664,11 @@
     const safeTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat') || '0') || 0;
     const safeBottom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sab') || '0') || 0;
     const availH = ((vv && vv.height) || window.innerHeight || document.documentElement.clientHeight || 640) - safeTop - safeBottom;
-    const ratio = 9 / 16;
-    let cssH = Math.max(320, availH);
-    let cssW = cssH * ratio;
-    if (cssW > availW) {
-      cssW = availW;
-      cssH = cssW / ratio;
-    }
-    cssW = Math.floor(cssW);
-    cssH = Math.floor(cssH);
+    // The bottom controls are viewport-fixed, so the drawing surface must use
+    // the same full viewport height. A fixed 9:16 canvas stranded the extra
+    // height on tall phones as an unusable black band.
+    const cssW = Math.floor(Math.min(availW, 760));
+    const cssH = Math.floor(Math.max(320, availH));
     dpr = Math.min(2, window.devicePixelRatio || 1);
     canvas.style.width = cssW + 'px';
     canvas.style.height = cssH + 'px';
@@ -1757,7 +1763,7 @@
   function initFxJunk() {
     fxJunk = [];
     const top = playFieldTop();
-    const bottom = Math.max(top + 160, playFieldBottom(360));
+    const bottom = Math.max(top + 160, playFieldBottom(0));
     activeLayer().options.forEach((fx, i) => {
       fxJunk.push({
         ...fx,
@@ -1998,7 +2004,7 @@
     // Always size the orb from the playfield bounds so its rings and note
     // wheel never reach up into the loop grid.
     const top = playFieldTop();
-    const bottom = playFieldBottom(guidedCoachActive() ? 430 : 0);
+    const bottom = playFieldBottom(0);
     return {
       x: W / 2,
       y: top + (bottom - top) * 0.52,
@@ -2023,7 +2029,7 @@
     // Guided build now stacks a tab bar, coach buttons, and a FINISH button
     // at the bottom of the viewport — enough real chrome that pads need to
     // respect the same shared reserve every other surface uses.
-    const bottom = Math.max(top + 150, Math.min(playFieldBottom(0), top + 560));
+    const bottom = Math.max(top + 150, playFieldBottom(0));
     const colGap = 10, rowGap = 12;
     const gw = (W - left - right - (PAD_COLS - 1) * colGap) / PAD_COLS;
     const gh = (bottom - top - 2 * rowGap) / 3;
@@ -2080,7 +2086,7 @@
     rocks = [];
     bullets = [];
     const top = playFieldTop();
-    const bottom = Math.max(top + 120, playFieldBottom(350));
+    const bottom = Math.max(top + 120, playFieldBottom(0));
     const spanY = bottom - top;
     if (layer.inst === 'bass') {
       layer.options.forEach((option, lane) => {
@@ -4451,15 +4457,17 @@
     fitCanvas();
     freeLayerIndex = clamp(Math.floor(index || 0), 0, LAYERS.length - 1);
     resetRun('free');
-    switchFreeLayer(freeLayerIndex);
     state = 'playing';
     phase = 'build';
+    switchFreeLayer(freeLayerIndex);
+    if (asteroidSurfaceActive()) initAsteroidSurface();
+    if (fxActive()) initFxJunk();
     loopEndArmed = false;
     freeRecording = false;
     silenceArcadeMusic();
     overlay.classList.add('hidden');
+    restartLoopPlayback();
     updateLoopButton();
-    beginLoopCountdown();
     last = performance.now();
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(frame);

@@ -336,8 +336,6 @@
         bolt.classList.toggle('is-cyan', !sink.programmable && !isGreen);
       }
     });
-    const gauge = document.getElementById('gridlock-gauge');
-    if (gauge) gauge.setAttribute('transform', `translate(${layout.board.x + layout.board.width / 2 - 110},${layout.board.y + layout.board.height + 52})`);
     const housing = document.getElementById('gridlock-housing');
     const housingInner = document.getElementById('gridlock-housing-inner');
     const outerMargin = 8;
@@ -788,13 +786,6 @@
 
             ${sourceMarkup}
 
-            <g id="gridlock-gauge" transform="translate(284,768)">
-              <text id="gridlock-meter-bolts" x="0" y="-11" class="gl-meter-bolts">BOLTS ONLINE 0 / 3</text>
-              <rect x="0" y="0" width="220" height="20" rx="10" class="gl-meter-track"/>
-              <rect id="gridlock-meter-fill" x="3" y="3" width="0" height="14" rx="7" class="gl-meter-fill"/>
-              <text id="gridlock-system-status" x="110" y="47" text-anchor="middle" class="gl-meter-status">SYSTEM FAULT</text>
-            </g>
-
             <!-- conduit tiles injected here -->
             <g id="gridlock-grid"></g>
             ${introSpot.markup}
@@ -809,6 +800,16 @@
             <b>BOARD THE GRID →</b>
           </button>` : ''}
         </div>
+        <section class="gridlock-status-board" aria-label="Grid status">
+          <div class="gridlock-status-summary">
+            <span>GRID STATUS</span>
+            <strong id="gridlock-meter-bolts">BOLTS ONLINE 0 / ${puzzleLayout.sinks.length}</strong>
+          </div>
+          <div class="gridlock-status-progress" aria-hidden="true">
+            <i id="gridlock-meter-fill"></i>
+          </div>
+          <strong id="gridlock-system-status" class="gridlock-status-message">SYSTEM FAULT</strong>
+        </section>
       </main>`;
     alignPuzzleAnchors(puzzleLayout);
     GridLock.start({

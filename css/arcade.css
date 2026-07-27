@@ -832,6 +832,7 @@ body.arcade-selection-open .af-pizza { opacity: 0.085; }
 #vhs-bands {
   position: fixed; inset: 0; z-index: 9200;
   pointer-events: none; overflow: hidden;
+  display: none !important;
 }
 #vhs-bands::before {
   content: '';
@@ -878,7 +879,15 @@ body::after {
   position: fixed; inset: 0; z-index: 9400;
   pointer-events: none;
   background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
+  display: none !important;
 }
+
+/* The Arcade now uses clean game-native presentation instead of applying
+   CRT/scanline glass globally or stacking it over individual games. */
+.gridlock-scan,
+.packing-scan,
+.journey-cache-scan,
+.journey-repair-scan { display:none !important; }
 body.on-lobby::after, body.on-char::after, body.on-whack::after,
 body.on-match::after, body.on-space::after, body.on-snoob::after, body.on-consume::after { display: none; }
 
@@ -1038,8 +1047,8 @@ body.on-match .mobe-face-img {
 .arcade-signin-divider { display:flex; align-items:center; gap:12px; margin:4px 0 14px; color:rgba(242,239,232,.3); font-family:'VCR',monospace; font-size:9px; }
 .arcade-signin-divider::before,.arcade-signin-divider::after { content:''; height:1px; flex:1; background:rgba(242,239,232,.16); }
 #arcade-random-code { width:100%; min-height:54px; display:flex; align-items:center; justify-content:center; gap:12px; border:2px solid #ffe61a; border-radius:7px; background:rgba(255,230,26,.13); color:#ffe61a; font-family:'VCR',monospace; font-size:10px; letter-spacing:2px; cursor:pointer; box-shadow:0 0 18px rgba(255,230,26,.14); }
-#arcade-random-code strong { font-size:17px; color:#fff; text-shadow:0 0 10px #ffe61a; }
-.arcade-signin-note { display:block; margin-top:16px; font-family:'VCR',monospace; font-size:7px; line-height:1.5; letter-spacing:1px; color:rgba(242,239,232,.35); }
+#arcade-random-code strong { font-size:17px; color:#fff; text-shadow:none; }
+.arcade-signin-note { display:block; margin-top:16px; font-family:'VCR',monospace; font-size:9px; line-height:1.5; letter-spacing:1px; color:rgba(242,239,232,.35); }
 .player-login-switch { cursor:pointer; }
 .player-login-switch:hover,.player-login-switch:focus-visible { outline:1px solid currentColor; outline-offset:3px; }
 
@@ -1193,30 +1202,39 @@ body.on-char.arcade-music-prompt-visible #char-select-screen {
 }
 @keyframes gcblink { 0%,100% { opacity:1; } 50% { opacity:0; } }
 
-/* ── Horizontal Game Carousel ── */
+/* ── Horizontal Game Carousel ──
+   Index-driven: a single #game-carousel-track element is positioned with
+   transform:translateX(), animated with a CSS transition, and dragged with
+   Pointer Events (one code path for mouse and touch). The infinite loop keeps
+   one cloned card past each end of the track; wrapping animates onto that
+   clone same as any other step, then a `transitionend` — not a scroll-event
+   guess — instantly swaps to the matching real card once the animation is
+   provably finished. See initCarousel() in arcade.js. */
 #game-carousel {
   --carousel-card-w: min(72vw, 320px);
-  display: flex;
+  position: relative;
+  overflow: hidden;
   opacity: 0;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-behavior: smooth;
-  gap: 12px;
-  padding: 8px max(15vw, calc((100% - var(--carousel-card-w)) / 2));
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-@media (hover: none) and (pointer: coarse) {
-  #game-carousel {
-    touch-action: pan-x;
-    overscroll-behavior-x: contain;
-  }
+  padding: 8px 0;
 }
 #game-carousel.ready {
   opacity: 1;
   transition: opacity 0.16s ease-out;
 }
-#game-carousel::-webkit-scrollbar { display: none; }
+#game-carousel-track {
+  display: flex;
+  gap: 12px;
+  /* none, not pan-y: pan-y lets the browser run its OWN vertical scroll on this
+     element at the same time our pointer JS is dragging it horizontally — any
+     real swipe has some diagonal component, so that meant a horizontal card
+     drag was also bouncing the whole page vertically. We fully own touch
+     interaction here; there's nothing left for the browser to handle. */
+  touch-action: none;
+  cursor: grab;
+}
+#game-carousel-track.dragging { cursor: grabbing; }
+#game-carousel-track.animate { transition: transform 0.36s cubic-bezier(.22,.68,0,1); }
+#game-carousel-track.instant { transition: none; }
 /* Arrows + dots are redundant once you can swipe — shown only when a real pointing
    device (mouse/trackpad) is actually present, regardless of screen size. This is
    the right test for "desktop vs touch," not a width breakpoint — an iPad is wide
@@ -1226,15 +1244,33 @@ body.on-char.arcade-music-prompt-visible #char-select-screen {
   .carousel-nav-row { display: flex; }
 }
 .carousel-item {
-  scroll-snap-align: center;
-  scroll-snap-stop: always;
   flex: 0 0 var(--carousel-card-w);
+  /* Flex items default to min-width:auto, which lets unbreakable content (e.g.
+     a long white-space:nowrap description) force the item wider than its
+     flex-basis despite flex-shrink:0 — some cards' descriptions did exactly
+     that, making them a bit wider than the rest. Every position in this
+     carousel is computed from a single shared step size, so any card that's
+     even a little wider throws off every centered position past it — barely
+     visible on a wide desktop card, glaring on a narrow phone screen where
+     the card is barely wider than its own text. min-width:0 makes the
+     flex-basis authoritative for every card, no exceptions.
+  */
+  min-width: 0;
+  overflow: hidden;
   transition: opacity 0.15s, transform 0.15s;
   opacity: 0.45;
   transform: translateZ(0) scale(0.92);
   backface-visibility: hidden;
   contain: paint;
   will-change: opacity, transform;
+  user-select: none;
+  -webkit-user-select: none;
+}
+/* Suspends the transition above for one frame during the clone->real wraparound
+   teleport, so the destination card doesn't visibly fade/scale up right as it
+   pops into view. */
+#game-carousel-track.instant .carousel-item {
+  transition: none;
 }
 .carousel-item.active-card {
   opacity: 1;
@@ -1354,6 +1390,18 @@ body.on-char.arcade-music-prompt-visible #char-select-screen {
   letter-spacing: 2px; padding: 3px 8px;
   border-radius: 3px; display: inline-block;
   margin-bottom: 8px;
+}
+.game-card-badge.game-card-badge-tab {
+  position: absolute;
+  top: 0; right: 0;
+  z-index: 3;
+  margin-bottom: 0;
+  padding: 11px 22px 11px 24px;
+  border-radius: 0 0 0 16px;
+  border: none;
+  font-size: 11px;
+  font-weight: 700;
+  text-shadow: none;
 }
 .game-card-screen { display: none; }
 .game-card-foot { display: none; }

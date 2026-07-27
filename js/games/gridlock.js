@@ -840,7 +840,10 @@
 
   function updateMeter(frac) {
     const fill = element('gridlock-meter-fill');
-    if (fill) fill.setAttribute('width', `${Math.max(0, Math.min(1, frac)) * 214}`);
+    if (!fill) return;
+    const clamped = Math.max(0, Math.min(1, frac));
+    if (fill.namespaceURI === NS) fill.setAttribute('width', `${clamped * 214}`);
+    else fill.setAttribute('style', `width:${clamped * 100}%`);
   }
 
   function refreshBoltAssignments() {

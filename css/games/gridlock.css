@@ -79,7 +79,8 @@
 .gridlock-cockpit { display:grid; grid-template-rows:auto auto minmax(0,1fr) auto; gap:10px; width:min(100%,680px); height:100%; margin:0 auto; padding:12px; color:#e6eefc; background:linear-gradient(180deg,var(--gl-bg-1,#07101e),var(--gl-bg-3,#02040a)); }
 .gridlock-world-map { display:grid; grid-template-rows:auto minmax(0,1fr) auto; gap:10px; width:min(100%,680px); height:100%; margin:0 auto; padding:12px; color:#e6eefc; background:linear-gradient(180deg,#07101e,#02040a); }
 .gridlock-cockpit-header { display:grid; grid-template-columns:104px minmax(0,1fr) 92px; align-items:center; gap:8px; min-height:52px; text-align:center; }
-.gridlock-cockpit-header button,.gridlock-map-back { border:1px solid rgba(95,208,255,.5); border-radius:5px; padding:9px 10px; background:rgba(8,21,37,.82); color:#8ddcff; font:11px/1 'VCR',monospace; letter-spacing:1px; cursor:pointer; }
+.gridlock-cockpit-header button,.gridlock-map-back { border:1px solid rgba(95,208,255,.5); border-radius:5px; padding:9px 10px; background:rgba(8,21,37,.82); color:#8ddcff; font:11px/1 'VCR',monospace; letter-spacing:1px; cursor:pointer; white-space:nowrap; }
+.gridlock-cockpit-header > button:first-child { box-sizing:border-box; width:104px; min-width:104px; }
 .gridlock-cockpit-header button.arcade-tier-back {
   box-sizing:border-box;
   width:104px;
@@ -118,9 +119,7 @@
 .gridlock-cockpit-footer { text-align:center; color:#9db5cc; }
 .gridlock-world-map-panel {
   position:relative; min-height:0; overflow:auto; display:flex; flex-direction:column; border:1px solid rgba(95,208,255,.3); border-radius:9px; padding:12px 14px;
-  background:
-    repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 3px),
-    radial-gradient(ellipse at 50% 15%,rgba(40,88,130,.22),transparent 46%),#050b14;
+  background:radial-gradient(ellipse at 50% 15%,rgba(40,88,130,.22),transparent 46%),#050b14;
 }
 .gridlock-world-map-panel::before,.gridlock-world-map-panel::after { content:''; position:absolute; width:20px; height:20px; border:2px solid rgba(141,220,255,.55); pointer-events:none; }
 .gridlock-world-map-panel::before { top:7px; left:7px; border-right:0; border-bottom:0; }
@@ -158,7 +157,7 @@
 
 .gridlock-mission-screen {
   display: grid;
-  grid-template-rows: 64px minmax(0, 1fr);
+  grid-template-rows: 64px minmax(0, 1fr) auto;
   box-sizing: border-box;
   width: 100%;
   max-width: 760px;
@@ -229,6 +228,66 @@
 .gl-meter-bolts,.gl-meter-status { font-family:'VCR',monospace; letter-spacing:1.45px; paint-order:stroke; stroke:#02040a; stroke-width:3px; stroke-linejoin:round; }
 .gl-meter-bolts { fill:#eaf6ff; font-size:15px; }.gl-meter-status { fill:#ffe9b0; font-size:14px; }
 .gl-meter-track { fill:#0b1119; stroke:#2b455d; stroke-width:2; }.gl-meter-fill { fill:var(--gl-c1,#5fd0ff); filter:drop-shadow(0 0 5px var(--gl-c1,#4fd4ff)); transition:width .22s ease; }
+
+.gridlock-status-board {
+  position: relative;
+  z-index: 7;
+  display: grid;
+  grid-template-columns: minmax(185px, auto) minmax(120px, 1fr) minmax(210px, auto);
+  align-items: center;
+  gap: 18px;
+  min-height: 82px;
+  box-sizing: border-box;
+  border: 1px solid rgba(60,90,120,.42);
+  border-top-color: color-mix(in srgb, var(--gl-c1,#5fd0ff) 38%, transparent);
+  border-radius: 0 0 8px 8px;
+  padding: 13px 20px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--gl-c1,#5fd0ff) 7%, transparent), transparent 34%),
+    rgba(5,11,20,.98);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+}
+.gridlock-status-summary {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.gridlock-status-summary span {
+  color: var(--gl-c1,#5fd0ff);
+  font: 9px/1 'VCR',monospace;
+  letter-spacing: 2.2px;
+  opacity: .7;
+}
+.gridlock-status-summary strong {
+  color: #eaf6ff;
+  font: 15px/1 'VCR',monospace;
+  letter-spacing: 1.35px;
+  white-space: nowrap;
+}
+.gridlock-status-progress {
+  height: 15px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--gl-c1,#5fd0ff) 42%, #17283a);
+  border-radius: 8px;
+  padding: 2px;
+  background: #070d15;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,.75);
+}
+.gridlock-status-progress i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: 5px;
+  background: var(--gl-c1,#5fd0ff);
+  box-shadow: 0 0 9px color-mix(in srgb, var(--gl-c1,#5fd0ff) 48%, transparent);
+  transition: width .22s ease;
+}
+.gridlock-status-message {
+  color: #ffe9b0;
+  font: 14px/1.25 'VCR',monospace;
+  letter-spacing: 1.3px;
+  text-align: right;
+}
 
 /* conduit tiles: unsealed = warm/loose, sealed = cyan, flooded = bright */
 .gridlock-tile { cursor: pointer; }
@@ -414,4 +473,19 @@
   background: rgba(60,130,180,.16); color: #bfe4ff; font: 14px/1 'VCR', monospace;
   letter-spacing: 1px; cursor: pointer;
 }
-@media (max-width:430px) { .gridlock-cockpit{padding:8px}.gridlock-cockpit-header{grid-template-columns:70px 1fr 58px}.gridlock-cockpit-status{font-size:8px}.gridlock-world-panel{padding:14px}.gridlock-mission-screen{padding:6px}.gridlock-solved-actions{flex-wrap:wrap;justify-content:center}.gridlock-solved-actions button{min-height:42px;padding:10px 12px;font-size:11px;} }
+@media (max-width:600px) {
+  .gridlock-status-board {
+    grid-template-columns: 1fr minmax(105px, .8fr);
+    gap: 8px 12px;
+    min-height: 88px;
+    padding: 10px 13px;
+  }
+  .gridlock-status-summary { gap: 4px; }
+  .gridlock-status-summary strong { font-size: 12px; letter-spacing: .8px; }
+  .gridlock-status-message {
+    grid-column: 1 / -1;
+    font-size: 11px;
+    text-align: center;
+  }
+}
+@media (max-width:430px) { .gridlock-cockpit{padding:8px}.gridlock-cockpit-header{grid-template-columns:104px minmax(0,1fr) 58px}.gridlock-cockpit-status{font-size:8px}.gridlock-world-panel{padding:14px}.gridlock-mission-screen{padding:6px}.gridlock-solved-actions{flex-wrap:wrap;justify-content:center}.gridlock-solved-actions button{min-height:42px;padding:10px 12px;font-size:11px;} }
