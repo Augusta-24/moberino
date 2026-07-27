@@ -139,6 +139,7 @@
     if (!root || !active) return;
     const level = selectedLevel();
     const worldIndex = PackingGameLevels.worlds.findIndex(world => world.id === level.worldId);
+    const showIntro = !debugMode && level.order === 1;
     const anchorHelp = level.generator.anchorCount ? ' · X=PIVOT' : '';
     const linkedHelp = level.generator.anchorGroupCount ? ' · CYAN X=LINKED' : '';
     const zoneHelp = level.generator.overlapZoneSize ? ' · GLOW=DOUBLE' : '';
@@ -151,7 +152,7 @@
             <button type="button" onclick="packingGameReset()">RESET</button>
           </div>
         </header>
-        <div id="packing-stage" class="packing-stage is-paused" aria-label="Pack every piece into the container">
+        <div id="packing-stage" class="packing-stage${showIntro ? ' is-paused' : ''}" aria-label="Pack every piece into the container">
           <svg class="packing-svg" viewBox="0 0 560 1120" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <filter id="packing-piece-shadow"><feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000" flood-opacity=".55"/></filter>
@@ -332,14 +333,15 @@
             <g id="packing-region"></g>
             <rect id="packing-rack-bg" x="18" y="670" width="524" height="425" rx="20" class="packing-rack-bg"/>
             <text id="packing-rack-label" x="36" y="705" class="packing-stage-kicker">DRAG · SPACE ROTATE${anchorHelp}${linkedHelp}${zoneHelp}</text>
+            <text id="packing-rack-mobile-hint" x="36" y="705" class="packing-rack-mobile-hint" aria-hidden="true">HOLD TO MOVE · TAP TO ROTATE</text>
             <g id="packing-tray"></g>
           </svg>
-          <button id="packing-start" class="packing-start" type="button" onclick="packingGameBegin()">
+          ${showIntro ? `<button id="packing-start" class="packing-start" type="button" onclick="packingGameBegin()">
             <span>${level.name.toUpperCase()}</span>
             <strong>FILL THE CONTAINER</strong>
             <small>${level.briefing}</small>
             <b>START PACKING →</b>
-          </button>
+          </button>` : ''}
         </div>
       </main>`;
 
@@ -376,7 +378,7 @@
       anchorCount: level.generator.anchorCount,
       anchorGroupCount: level.generator.anchorGroupCount,
       overlapZoneSize: level.generator.overlapZoneSize,
-      initiallyPaused: true,
+      initiallyPaused: showIntro,
       onComplete: showComplete
     });
     if (!ok) {
@@ -395,8 +397,7 @@
     stage.insertAdjacentHTML('beforeend', `
       <div class="packing-solved">
         <span>${debugMode ? 'DEBUG RUN COMPLETE' : playableNext ? `LEVEL ${next.order} UNLOCKED` : 'WORLD COMPLETE'}</span>
-        <strong>${level.name.toUpperCase()} PACKED</strong>
-        <small>EVERY PIECE FITS · A NEW GENERATED RUN IS READY</small>
+        <strong>PUZZLE COMPLETE</strong>
         <div class="packing-solved-actions">
           <button type="button" onclick="packingGameReturnToMap()">BACK TO MAP</button>
           ${playableNext ? `<button type="button" onclick="${debugMode ? `packingGameDebugLevel('${next.id}')` : `packingGameOpenLevel('${next.id}')`}">NEXT</button>` : ''}

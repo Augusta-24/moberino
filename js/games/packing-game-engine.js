@@ -1173,7 +1173,7 @@
     const position = piecePosition(piece);
     const sourceCellSize = piece.renderCellSize || trayCellSize;
     const liftScale = floatingCellSize / sourceCellSize;
-    const touchLift = event.pointerType === 'touch' ? regionCellSize * 1.15 : 0;
+    const touchLift = event.pointerType === 'touch' ? regionCellSize * 2.3 : 0;
     dragging = {
       piece,
       startedAt: performance.now(),

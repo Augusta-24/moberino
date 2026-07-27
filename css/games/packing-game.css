@@ -468,7 +468,7 @@
 }
 .packing-solved span { color: #ffd98a; font: 13px/1 'VCR', monospace; letter-spacing: 2px; }
 .packing-solved strong { color: #62d990; font: 40px/.95 'Bebas Neue', sans-serif; letter-spacing: 3px; text-shadow: 0 0 22px rgba(80,160,210,.4); }
-.packing-solved small { color:#cdddf0; font:11px/1.4 'VCR',monospace; letter-spacing:1px; }
+.packing-solved small { display:none; }
 .packing-solved-actions { display: flex; gap: 10px; margin-top: 8px; }
 .packing-solved-actions button {
   min-height: 50px; border: 2px solid #287348; border-radius: 7px; padding: 12px 22px;
@@ -487,6 +487,11 @@
   .packing-board-actions button{padding:7px 6px;font-size:8px}
   .packing-solved-actions{flex-wrap:wrap;justify-content:center}
   .packing-solved-actions button{min-height:42px;padding:10px 12px;font-size:11px;}
+}
+
+@media (pointer: coarse) {
+  .packing-stage-kicker { display:none; }
+  .packing-rack-mobile-hint { display:block; }
 }
 
 /* Packing-owned interior. The outer cabinet mirrors Grid Lock; the stage uses
@@ -516,6 +521,7 @@
 .packing-forest-light { fill:#5be78a; opacity:.08; filter:drop-shadow(0 0 22px #5be78a); }
 .packing-rack-bg { fill:color-mix(in srgb,var(--pg-bg-2,#06130b) 88%,transparent); stroke:var(--pg-c1,#286a40); stroke-width:2.5; filter:drop-shadow(0 8px 14px rgba(0,0,0,.45)); }
 .packing-stage-kicker { fill:#bfe8cc; font:11px/1 'VCR',monospace; letter-spacing:1.5px; }
+.packing-rack-mobile-hint { display:none; fill:#d9ffe5; font:16px/1 'VCR',monospace; letter-spacing:1.5px; pointer-events:none; user-select:none; -webkit-user-select:none; }
 .pge-region-bg { stroke:var(--pg-c1,#65e996); stroke-width:3; filter:drop-shadow(0 0 12px var(--pg-c1-glow,rgba(78,203,125,.3))); }
 [data-gl-theme="jungle"] .pge-region-bg { stroke:url(#packing-jungle-border); stroke-width:7; }
 [data-gl-theme="ice"] .pge-region-bg { stroke:url(#packing-ice-border); stroke-width:7; }
