@@ -46,9 +46,11 @@ test('carousel cancels an in-flight transition when a new drag begins', () => {
 });
 
 test('carousel listens for touch drags on mobile', () => {
-  assert.match(source, /track\.addEventListener\('touchstart'/);
+  const touchStartBlock = source.match(/track\.addEventListener\('touchstart'[^]*?\}, \{ passive: true \}\);/);
+  assert.ok(touchStartBlock);
   assert.match(source, /window\.addEventListener\('touchmove'/);
   assert.match(source, /window\.addEventListener\('touchend'/);
+  assert.doesNotMatch(touchStartBlock[0], /preventDefault\(\)/);
 });
 
 test('carousel re-entry refreshes the current slide instead of only restoring ready state', () => {

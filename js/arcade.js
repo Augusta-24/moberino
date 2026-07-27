@@ -1673,8 +1673,7 @@ function initCarousel() {
     if (!e.touches || e.touches.length !== 1) return;
     touchDragActive = true;
     beginDrag(e.touches[0].clientX, 0, 'touch');
-    e.preventDefault();
-  }, { passive: false });
+  }, { passive: true });
   window.addEventListener('pointermove', (e) => {
     if (!dragging || e.pointerId !== dragPointerId || touchDragActive) return;
     const dx = clampDx(e.clientX - dragStartX);
