@@ -1516,14 +1516,17 @@ function initCarousel() {
     // large until that card becomes active.
     cardW = items[0].offsetWidth;
     step = items.length > 1 ? (items[1].offsetLeft - items[0].offsetLeft) : cardW;
-    centerOffset = (carousel.offsetWidth - cardW) / 2;
+    centerOffset = (carousel.clientWidth - cardW) / 2;
   }
 
   function setTransform(vIdx, animate) {
     track.classList.toggle('animate', animate);
-    const baseX = centerOffset - vIdx * step;
-    let x = baseX;
     const activeItem = items[vIdx];
+    let baseX = centerOffset - vIdx * step;
+    if (activeItem) {
+      baseX = centerOffset - activeItem.offsetLeft;
+    }
+    let x = baseX;
     if (activeItem) {
       const carouselRect = carousel.getBoundingClientRect();
       const itemRect = activeItem.getBoundingClientRect();
