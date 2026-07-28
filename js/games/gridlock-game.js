@@ -108,7 +108,7 @@
     if (!spotlight) return { markup: '', active: false };
     const { rect } = spotlight;
     const pad = 6;
-    const canvasHeight = Math.max(728, puzzleLayout.board.y + puzzleLayout.board.height - 92 + 86);
+    const canvasHeight = puzzleLayout.presentation && puzzleLayout.presentation.height ? puzzleLayout.presentation.height : Math.max(728, puzzleLayout.board.y + puzzleLayout.board.height - 92 + 86);
     const markup = `
       <g id="gridlock-intro-spotlight">
         <mask id="gridlock-spotlight-mask">
@@ -339,12 +339,11 @@
     });
     const housing = document.getElementById('gridlock-housing');
     const housingInner = document.getElementById('gridlock-housing-inner');
-    const outerMargin = 8;
     const innerMargin = 3;
-    const housingX = layout.board.x - outerMargin;
-    const housingY = layout.board.y - outerMargin;
-    const housingWidth = layout.board.width + outerMargin * 2;
-    const housingHeight = layout.board.height + outerMargin * 2;
+    const housingX = layout.housing ? layout.housing.x : layout.board.x - 8;
+    const housingY = layout.housing ? layout.housing.y : layout.board.y - 8;
+    const housingWidth = layout.housing ? layout.housing.width : layout.board.width + 16;
+    const housingHeight = layout.housing ? layout.housing.height : layout.board.height + 16;
     if (housing) {
       housing.setAttribute('x', housingX);
       housing.setAttribute('y', housingY);
@@ -464,6 +463,24 @@
 
   // ---- Puzzle mission screen ------------------------------------------------
 
+
+  function stagePresentationFor(root) {
+    const box = root && root.getBoundingClientRect ? root.getBoundingClientRect() : { width: 0, height: 0 };
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 560;
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 820;
+    const cssWidth = Math.max(320, Math.round(box.width || viewportWidth));
+    const cssHeight = Math.max(520, Math.round(box.height || viewportHeight));
+    const compact = window.matchMedia && window.matchMedia('(max-width: 600px)').matches;
+    const headerHeight = compact ? 58 : 64;
+    const statusHeight = compact ? 96 : 84;
+    const verticalPadding = compact ? 12 : 8;
+    const stageHeight = Math.max(420, cssHeight - headerHeight - statusHeight - verticalPadding);
+    return {
+      width: 560,
+      height: Math.max(560, Math.min(840, Math.round(560 * (stageHeight / cssWidth))))
+    };
+  }
+
   function renderPuzzle() {
     const root = host();
     if (!root || !active) return;
@@ -471,9 +488,9 @@
     const worldNumber = GridLockLevels.worlds.findIndex(world => world.id === level.worldId) + 1;
     const theme = themeFor(level.worldId);
     const showWorldIntro = level.order === 1;
-    const puzzleLayout = GridLock.layoutFor(level);
-    const canvasBottom = Math.max(820, puzzleLayout.board.y + puzzleLayout.board.height + 86);
-    const canvasHeight = canvasBottom - 92;
+    const presentation = stagePresentationFor(root);
+    const puzzleLayout = GridLock.layoutFor({ ...level, presentation });
+    const canvasHeight = puzzleLayout.presentation.height;
     const introSpot = showWorldIntro ? introSpotlightMarkup(level, puzzleLayout) : { markup: '', active: false };
     const sourceMarkup = puzzleLayout.sources.map((source, sourceIndex) => `
       <g id="gridlock-source-${sourceIndex}" class="gridlock-source-port ${puzzleLayout.systems[sourceIndex].color === 'green' ? 'is-green' : 'is-cyan'}"
@@ -511,7 +528,7 @@
             <button id="gridlock-reset" type="button" onclick="gridLockReset()" disabled>RESET</button>
           </div>
         </header>
-        <div id="gridlock-stage" class="gridlock-stage is-paused${introSpot.active ? ' has-gl-spotlight' : ''}" aria-label="Route power through the conduit grid to unlock it">
+        <div id="gridlock-stage" class="gridlock-stage is-paused${introSpot.active ? ' has-gl-spotlight' : ''}" style="--gridlock-canvas-height:${canvasHeight}" aria-label="Route power through the conduit grid to unlock it">
           <svg class="gridlock-svg" viewBox="0 92 560 ${canvasHeight}" preserveAspectRatio="xMidYMin meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <defs>
               <linearGradient id="glMetalTop" x1="0" y1="0" x2="0" y2="1">
@@ -779,13 +796,13 @@
 
             ${backdropMarkup(theme, canvasHeight)}
             ${hoodMarkup(theme)}
-            ${puzzleLayout.sinks.filter(sink => sink.side === 'n').map(sink => `<path class="gl-port-wire" d="M280,174 C280,194 ${sink.x},194 ${sink.x},214"/>`).join('')}
+            ${puzzleLayout.sinks.filter(sink => sink.side === 'n').map(sink => `<path class="gl-port-wire" d="M280,174 C280,194 ${sink.x},${Math.max(194, sink.y - 20)} ${sink.x},${sink.y - 4}"/>`).join('')}
             ${crystalMarkup(theme)}
 
             ${boltMarkup}
 
-            <rect id="gridlock-housing" x="68" y="244" width="424" height="410" rx="10" fill="#05090f" stroke="#1a2534" stroke-width="3"/>
-            <rect id="gridlock-housing-inner" x="76" y="252" width="408" height="394" rx="7" fill="none" stroke="#020509" stroke-width="8" opacity=".7"/>
+            <rect id="gridlock-housing" x="${puzzleLayout.housing.x}" y="${puzzleLayout.housing.y}" width="${puzzleLayout.housing.width}" height="${puzzleLayout.housing.height}" rx="10" fill="#05090f" stroke="#1a2534" stroke-width="3"/>
+            <rect id="gridlock-housing-inner" x="${puzzleLayout.housing.x + 3}" y="${puzzleLayout.housing.y + 3}" width="${puzzleLayout.housing.width - 6}" height="${puzzleLayout.housing.height - 6}" rx="7" fill="none" stroke="#020509" stroke-width="8" opacity=".7"/>
 
             ${sourceMarkup}
 
@@ -817,6 +834,7 @@
     alignPuzzleAnchors(puzzleLayout);
     GridLock.start({
       stageId: 'gridlock-stage',
+      presentation,
       size: level.size,
       generationRules: level.generationRules,
       modifiers: level.modifiers,

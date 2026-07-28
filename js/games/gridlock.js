@@ -17,7 +17,7 @@
   let COLS = 6;
   let ROWS = 6;
   let X0 = 82;
-  const Y0 = 250;
+  let Y0 = 250;
   let S = 66;
   let SOURCE = { r: 5, c: 0 };
   let SOURCES = [SOURCE];
@@ -186,40 +186,93 @@
     const size = nextConfig && nextConfig.size || {};
     const rows = Math.max(3, Math.round(size.rows || 6));
     const columns = Math.max(3, Math.round(size.columns || 6));
-    const presentation = { width: 470 };
-    const cellSize = Math.floor(presentation.width / Math.max(columns, 6));
-    const boardX = (560 - columns * cellSize) / 2;
-    const boardY = Y0;
+    const presentationInput = nextConfig && nextConfig.presentation || {};
+    const presentation = {
+      width: Math.max(360, Math.round(Number(presentationInput.width) || 560)),
+      height: Math.max(500, Math.round(Number(presentationInput.height) || 728)),
+      canvasTop: 92
+    };
+    presentation.canvasBottom = presentation.canvasTop + presentation.height;
+
+    const requestedSystems = nextConfig && nextConfig.modifiers && nextConfig.modifiers.powerSystems;
+    const dualSystems = requestedSystems && requestedSystems.enabled && requestedSystems.systems.length === 2;
+    const requestedSinks = dualSystems
+      ? requestedSystems.systems.flatMap(system => system.sinks || [])
+      : [];
+    const hasSideBolts = requestedSinks.some(sink => sink && (sink.side === 'w' || sink.side === 'e'));
+    const hasBottomBolts = requestedSinks.some(sink => sink && sink.side === 's');
+
+    // Dynamic presentation layout:
+    // - keep the hood/crystal band clear at the top,
+    // - reserve side gutters only for levels that actually have side bolts,
+    // - size the board from the generated row/column count and available space,
+    // - let early no-side-bolt levels use more width.
+    const sidePad = hasSideBolts ? 52 : 26;
+    const topClearance = hasBottomBolts ? 214 : 222;
+    const sourceClearance = hasBottomBolts ? 104 : 82;
+    const maxCellSize = Math.max(48, Number(presentationInput.maxCellSize) || (hasSideBolts ? 84 : 96));
+    const availableWidth = Math.max(260, presentation.width - sidePad * 2);
+    const availableHeight = Math.max(240, presentation.canvasBottom - topClearance - sourceClearance);
+    const cellSize = Math.max(42, Math.floor(Math.min(
+      availableWidth / columns,
+      availableHeight / rows,
+      maxCellSize
+    )));
+    const boardX = Math.round((presentation.width - columns * cellSize) / 2);
+    const boardY = topClearance;
+    const boardWidth = columns * cellSize;
+    const boardHeight = rows * cellSize;
+    const contentBottom = boardY + boardHeight + sourceClearance + 18;
+    presentation.height = Math.max(560, Math.min(presentation.height, Math.ceil(contentBottom - presentation.canvasTop)));
+    presentation.canvasBottom = presentation.canvasTop + presentation.height;
+
     const sinkPosition = sink => {
       const side = sink.side || 'n';
       const centerX = boardX + sink.c * cellSize + cellSize / 2;
       const centerY = boardY + sink.r * cellSize + cellSize / 2;
       if (side === 'w') return { x: boardX, y: centerY };
-      if (side === 'e') return { x: boardX + columns * cellSize, y: centerY };
-      if (side === 's') return { x: centerX, y: boardY + rows * cellSize };
+      if (side === 'e') return { x: boardX + boardWidth, y: centerY };
+      if (side === 's') return { x: centerX, y: boardY + boardHeight };
       return { x: centerX, y: boardY };
     };
     const defaultSinks = [1, Math.floor(columns / 2), columns - 1]
       .filter((column, index, values) => values.indexOf(column) === index)
       .map((column, bolt) => ({ r: 0, c: column, side: 'n', programmable: false, bolt, ...sinkPosition({ r: 0, c: column, side: 'n' }) }));
-    const requestedSystems = nextConfig && nextConfig.modifiers && nextConfig.modifiers.powerSystems;
-    const dualSystems = requestedSystems && requestedSystems.enabled && requestedSystems.systems.length === 2;
     const systems = dualSystems
       ? requestedSystems.systems.map((system, systemIndex) => ({
         ...system,
-        source: { ...system.source, r: rows - 1, system: systemIndex, x: boardX + system.source.c * cellSize + cellSize / 2, y: boardY + rows * cellSize },
+        source: {
+          ...system.source,
+          r: rows - 1,
+          system: systemIndex,
+          x: boardX + system.source.c * cellSize + cellSize / 2,
+          y: boardY + boardHeight
+        },
         sinks: system.sinks.map(sink => ({ ...sink, system: systemIndex, ...sinkPosition(sink) }))
       }))
-      : [{ id: 'cyan', color: 'cyan', source: { r: rows - 1, c: 0, x: boardX + cellSize / 2, y: boardY + rows * cellSize }, sinks: defaultSinks }];
+      : [{
+        id: 'cyan',
+        color: 'cyan',
+        source: { r: rows - 1, c: 0, x: boardX + cellSize / 2, y: boardY + boardHeight },
+        sinks: defaultSinks
+      }];
     const sources = systems.map(system => system.source);
     const sinks = systems.flatMap(system => system.sinks).map((sink, bolt) => ({ ...sink, bolt }));
     systems.forEach((system, systemIndex) => {
       system.sinks = sinks.filter(sink => sink.system === systemIndex);
     });
+    const housingMargin = 8;
     return {
       rows,
       columns,
-      board: { x: boardX, y: boardY, width: columns * cellSize, height: rows * cellSize, cellSize },
+      presentation,
+      board: { x: boardX, y: boardY, width: boardWidth, height: boardHeight, cellSize },
+      housing: {
+        x: boardX - housingMargin,
+        y: boardY - housingMargin,
+        width: boardWidth + housingMargin * 2,
+        height: boardHeight + housingMargin * 2
+      },
       source: sources[0], sources, sinks, systems
     };
   }
@@ -420,6 +473,7 @@
     COLS = layout.columns;
     S = layout.board.cellSize;
     X0 = layout.board.x;
+    Y0 = layout.board.y;
     SOURCE = { r: layout.source.r, c: layout.source.c };
     SOURCES = layout.sources.map(source => ({ r: source.r, c: source.c, system: source.system || 0 }));
     SINKS = layout.sinks.map(sink => ({
