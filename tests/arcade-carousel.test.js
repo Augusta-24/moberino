@@ -53,6 +53,10 @@ test('carousel listens for touch drags on mobile', () => {
   assert.doesNotMatch(touchStartBlock[0], /preventDefault\(\)/);
 });
 
+test('carousel trackpad swipes do not advance twice during a drag gesture', () => {
+  assert.match(source, /carousel\.addEventListener\('wheel'[^]*?if \(dragging \|\| animating\) return;/);
+});
+
 test('carousel re-entry refreshes the current slide instead of only restoring ready state', () => {
   assert.match(source, /if \(carousel\.dataset\.carouselReady === '1'\) \{[\s\S]*carousel\._refreshCarouselLayout/);
   assert.match(source, /function syncToCurrentIndex\(\)/);

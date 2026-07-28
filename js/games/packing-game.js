@@ -167,14 +167,17 @@
               <linearGradient id="packing-space-metal" x1="0" y1="0" x2="0" y2="1">
                 <stop stop-color="#202c3d"/><stop offset=".52" stop-color="#111a28"/><stop offset="1" stop-color="#070c14"/>
               </linearGradient>
+              <linearGradient id="packing-space-border" x1="0" y1="0" x2="1" y2="1">
+                <stop stop-color="#dff7ff"/><stop offset=".35" stop-color="#5fd0ff"/><stop offset=".7" stop-color="#71e39a"/><stop offset="1" stop-color="#2d6f9a"/>
+              </linearGradient>
               <linearGradient id="packing-jungle-border" x1="0" y1="0" x2="1" y2="1">
-                <stop stop-color="#c8f79a"/><stop offset=".28" stop-color="#4f8f43"/><stop offset=".58" stop-color="#a4df74"/><stop offset="1" stop-color="#315f2d"/>
+                <stop stop-color="#e8ffd8"/><stop offset=".35" stop-color="#8fe07a"/><stop offset=".7" stop-color="#4f8f43"/><stop offset="1" stop-color="#18381a"/>
               </linearGradient>
               <linearGradient id="packing-ice-border" x1="0" y1="0" x2="1" y2="1">
-                <stop stop-color="#f1fbff"/><stop offset=".24" stop-color="#78afca"/><stop offset=".55" stop-color="#d8f5ff"/><stop offset=".8" stop-color="#5d8da8"/><stop offset="1" stop-color="#eaf9ff"/>
+                <stop stop-color="#f7fdff"/><stop offset=".35" stop-color="#bfe9ff"/><stop offset=".7" stop-color="#6fa8c4"/><stop offset="1" stop-color="#234a5e"/>
               </linearGradient>
               <linearGradient id="packing-ocean-border" x1="0" y1="0" x2="1" y2="1">
-                <stop stop-color="#bffcff"/><stop offset=".25" stop-color="#36b8c7"/><stop offset=".55" stop-color="#7fe4d8"/><stop offset=".78" stop-color="#e0836b"/><stop offset="1" stop-color="#237d91"/>
+                <stop stop-color="#e7fffb"/><stop offset=".35" stop-color="#4fd8c4"/><stop offset=".7" stop-color="#2c7d70"/><stop offset="1" stop-color="#0a2f2b"/>
               </linearGradient>
               <linearGradient id="packing-magic-border" x1="0" y1="0" x2="1" y2="1">
                 <stop stop-color="#fff0a6"/><stop offset=".23" stop-color="#9f73e8"/><stop offset=".52" stop-color="#ffe066"/><stop offset=".78" stop-color="#7450bd"/><stop offset="1" stop-color="#e3c76a"/>

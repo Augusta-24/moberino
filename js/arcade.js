@@ -1775,6 +1775,7 @@ function initCarousel() {
   // Only hijacks genuinely horizontal intent (deltaX > deltaY) so an ordinary
   // vertical scroll over the carousel still scrolls the page.
   carousel.addEventListener('wheel', (e) => {
+    if (dragging || animating) return;
     if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
     e.preventDefault();
     beginTransition(e.deltaX > 0 ? 1 : -1);
