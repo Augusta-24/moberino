@@ -214,13 +214,16 @@
   -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,1), rgba(0,0,0,.86) 62%, rgba(0,0,0,0));
 }
 .packing-svg {
+  /* Center the board and prefer filling width rather than being constrained by
+     the container height. Keeps viewBox-based coordinate math intact while
+     giving the board more horizontal room on narrow screens. */
   position: absolute;
   inset: 0;
-  z-index: 0;
   width: 100%;
   height: 100%;
   display: block;
-  transition: filter .45s ease;
+    z-index: 0;
+transition: filter .45s ease;
 }
 [data-gl-theme="space"] .packing-stage::before {
   background:

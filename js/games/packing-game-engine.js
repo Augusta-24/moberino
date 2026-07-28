@@ -1335,6 +1335,81 @@
     else finish();
   }
 
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function applyDynamicElementLayout(nextConfig, bounds) {
+    const opts = nextConfig.autoLayout;
+    if (!opts || opts.enabled === false || !stage) return null;
+    const logicalWidth = Number(opts.width) || 560;
+    const stageRect = stage.getBoundingClientRect ? stage.getBoundingClientRect() : null;
+    const renderedWidth = stageRect && stageRect.width ? stageRect.width : logicalWidth;
+    const renderedHeight = stageRect && stageRect.height ? stageRect.height : Number(opts.fallbackHeight) || 900;
+    const minHeight = Number(opts.minHeight) || 640;
+    const maxHeight = Number(opts.maxHeight) || 1040;
+    const logicalHeight = Math.round(clamp(logicalWidth * (renderedHeight / Math.max(1, renderedWidth)), minHeight, maxHeight));
+
+    stage.setAttribute('viewBox', `0 0 ${logicalWidth} ${logicalHeight}`);
+    stage.setAttribute('preserveAspectRatio', opts.preserveAspectRatio || 'xMidYMin meet');
+
+    stage.querySelectorAll('.packing-stage-bg, .packing-space-scenery > rect, .packing-jungle-scenery > rect, .packing-ice-scenery > rect, .packing-ocean-scenery > rect, .packing-magic-scenery > rect').forEach(node => {
+      node.setAttribute('width', logicalWidth);
+      node.setAttribute('height', logicalHeight);
+    });
+
+    const columns = bounds.maxC - bounds.minC + 1;
+    const rows = bounds.maxR - bounds.minR + 1;
+    const topPad = Number(opts.topPad) || 24;
+    const sidePad = Number(opts.sidePad) || 24;
+    const rackSidePad = Number(opts.rackSidePad) || 30;
+    const bottomPad = Number(opts.bottomPad) || 22;
+    const rackGap = Number(opts.rackGap) || 24;
+    const rackLabelSpace = Number(opts.rackLabelSpace) || 60;
+    const maxBoardHeight = Math.min(Number(opts.maxBoardHeight) || 520, logicalHeight * (Number(opts.boardHeightRatio) || 0.5));
+    const regionWidth = logicalWidth - sidePad * 2;
+    const cellMax = Number(opts.maxCellSize) || 88;
+    const fittedCellSize = Math.floor(Math.max(12, Math.min(regionWidth / columns, maxBoardHeight / rows, cellMax)));
+    const boardHeight = rows * fittedCellSize;
+
+    const rackY = topPad + boardHeight + rackGap + rackLabelSpace;
+    const rackBottom = Math.max(rackY + (Number(opts.minRackHeight) || 210), logicalHeight - bottomPad);
+    const rackHeight = Math.max(Number(opts.minRackHeight) || 210, rackBottom - rackY);
+    const pieceCount = puzzle && puzzle.pieceIndexList ? puzzle.pieceIndexList.length : 10;
+    const trayCols = nextConfig.trayCols || (pieceCount <= 4 ? 4 : 5);
+    const trayRows = Math.ceil(pieceCount / trayCols);
+    const slotWidth = (logicalWidth - rackSidePad * 2) / trayCols;
+    const slotHeight = rackHeight / trayRows;
+    const minTray = Number(opts.minTrayCellSize) || 21;
+    const maxTray = Number(opts.maxTrayCellSize) || 31;
+    const fittedTrayCell = Math.floor(clamp(Math.min(slotWidth / 3.75, slotHeight / 4.25, fittedCellSize * 0.55), minTray, maxTray));
+    const fittedRowSpacing = Math.floor(Math.min(Number(opts.maxRackRowSpacing) || 118, slotHeight));
+
+    return {
+      regionArea: {
+        x: sidePad,
+        y: topPad,
+        width: regionWidth,
+        height: boardHeight,
+        maxCellSize: fittedCellSize
+      },
+      regionAlignY: 'top',
+      rackArea: {
+        x: rackSidePad,
+        y: rackY,
+        width: logicalWidth - rackSidePad * 2,
+        height: rackHeight
+      },
+      rackGap,
+      rackBottom,
+      trayCols,
+      trayCellSize: fittedTrayCell,
+      rackRowSpacing: fittedRowSpacing,
+      rackTopPadding: nextConfig.rackTopPadding == null ? 4 : nextConfig.rackTopPadding
+    };
+  }
+
   // ---- Lifecycle --------------------------------------------------------------
 
   function start(nextConfig) {
@@ -1382,6 +1457,11 @@
     // draw the empty region outline (per-cell sockets)
     const bounds = regionBounds(puzzle.region);
     const board = puzzle.board || deriveBoard(puzzle.region);
+    const dynamicLayout = applyDynamicElementLayout(nextConfig, bounds);
+    if (dynamicLayout) {
+      nextConfig = { ...nextConfig, ...dynamicLayout };
+      config = nextConfig;
+    }
     const regionArea = nextConfig.regionArea;
     if (regionArea) {
       const columns = bounds.maxC - bounds.minC + 1;

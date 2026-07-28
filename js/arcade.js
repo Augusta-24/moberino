@@ -1522,11 +1522,14 @@ function initCarousel() {
   function setTransform(vIdx, animate) {
     track.classList.toggle('animate', animate);
     const activeItem = items[vIdx];
-    let x = centerOffset - vIdx * step;
     if (activeItem) {
-      x = (carousel.clientWidth - cardW) / 2 - activeItem.offsetLeft;
+      const carouselCenter = carousel.clientWidth / 2;
+      const itemCenter = activeItem.offsetLeft + activeItem.offsetWidth / 2;
+      const x = Math.round(carouselCenter - itemCenter);
+      track.style.transform = `translateX(${x}px)`;
+      return;
     }
-    track.style.transform = `translateX(${x}px)`;
+    track.style.transform = `translateX(${centerOffset - vIdx * step}px)`;
   }
 
   function applyActive(lIdx, vIdx) {

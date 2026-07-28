@@ -143,14 +143,10 @@
     const anchorHelp = level.generator.anchorCount ? ' · X=PIVOT' : '';
     const linkedHelp = level.generator.anchorGroupCount ? ' · CYAN X=LINKED' : '';
     const zoneHelp = level.generator.overlapZoneSize ? ' · GLOW=DOUBLE' : '';
-    // Compute a canvas height that matches Gridlock's approach so the SVG
-    // scales to fill the available width instead of being constrained by a
-    // tall fixed viewBox. Use the same region/rack layout values the engine
-    // will receive so visual alignment stays consistent.
-    const regionArea = { x: 26, y: 30, width: 508, height: 610 };
-    const rackBottom = 1095;
-    const canvasBottom = Math.max(820, regionArea.y + regionArea.height + 86, rackBottom + 20);
-    const canvasHeight = canvasBottom; // gridlock used a similar canvasHeight calc
+    // The engine recalculates the final SVG viewBox after the generated
+    // board is known and the actual stage size has been measured. This
+    // starter height only prevents a flash before PackingGameEngine.start().
+    const canvasHeight = 900;
 
     root.innerHTML = `
       <main class="packing-mission-screen" aria-labelledby="packing-level-title" data-gl-theme="${themeFor(level.worldId)}">
@@ -259,19 +255,19 @@
                 <path d="M8 50q8-7 16 0" fill="none" stroke="#7651ad" stroke-width="2" opacity=".52"/>
               </pattern>
             </defs>
-            <rect class="packing-stage-bg" width="560" height="1120" rx="16"/>
+            <rect class="packing-stage-bg" width="560" height="${canvasHeight}" rx="16"/>
             <g class="packing-space-scenery" aria-hidden="true">
-              <rect width="560" height="1120" fill="url(#packing-space-back)"/>
-              <rect width="560" height="1120" fill="url(#packing-space-stars)"/>
-              <rect width="560" height="1120" fill="url(#packing-space-rocks)"/>
-              <rect width="560" height="1120" fill="url(#packing-space-front)"/>
+              <rect width="560" height="${canvasHeight}" fill="url(#packing-space-back)"/>
+              <rect width="560" height="${canvasHeight}" fill="url(#packing-space-stars)"/>
+              <rect width="560" height="${canvasHeight}" fill="url(#packing-space-rocks)"/>
+              <rect width="560" height="${canvasHeight}" fill="url(#packing-space-front)"/>
               <g transform="translate(68 132) rotate(-10)"><path d="M0-20 16-13 20 4 8 18-12 17-20 0-12-17Z" fill="#465167"/><circle cx="-3" cy="-3" r="3.5" fill="#282f3d"/><circle cx="7" cy="6" r="2.5" fill="#282f3d"/></g>
               <g transform="translate(476 124) rotate(18) scale(.86)"><path d="M0-20 16-13 20 4 8 18-12 17-20 0-12-17Z" fill="#3a4356"/><circle cx="-3" cy="-3" r="3.5" fill="#262c39"/></g>
               <g transform="translate(274 83) rotate(8) scale(.62)"><path d="M0-20 16-13 20 4 8 18-12 17-20 0-12-17Z" fill="#4a5568"/></g>
             </g>
             <g class="packing-jungle-scenery" aria-hidden="true">
-              <rect width="560" height="1120" fill="url(#packing-jungle-back)"/>
-              <rect width="560" height="1120" fill="url(#packing-jungle-front)"/>
+              <rect width="560" height="${canvasHeight}" fill="url(#packing-jungle-back)"/>
+              <rect width="560" height="${canvasHeight}" fill="url(#packing-jungle-front)"/>
               <g fill="url(#packing-leaf)" opacity=".94">
                 <path d="M18 206c-25-18-27-58 0-86 27 28 25 68 0 86Z"/><path d="M542 310c-25-18-27-58 0-86 27 28 25 68 0 86Z"/>
                 <path d="M24 564c-20-14-22-48 0-71 22 23 20 57 0 71Z"/><path d="M536 650c-20-14-22-48 0-71 22 23 20 57 0 71Z"/>
@@ -279,8 +275,8 @@
               <path d="M76 120q-25 80 5 150M474 126q30 78-2 166" fill="none" stroke="#6fae54" stroke-width="6" stroke-linecap="round"/>
             </g>
             <g class="packing-ice-scenery" aria-hidden="true">
-              <rect width="560" height="1120" fill="url(#packing-ice-back)"/>
-              <rect width="560" height="1120" fill="url(#packing-ice-front)"/>
+              <rect width="560" height="${canvasHeight}" fill="url(#packing-ice-back)"/>
+              <rect width="560" height="${canvasHeight}" fill="url(#packing-ice-front)"/>
               <g fill="url(#packing-ice-shard)" stroke="#eaf6ff" stroke-width="1" opacity=".88">
                 <path d="m15 238 18-35 18 21-6 46-24 17Z"/><path d="m545 320-20-42-18 25 8 47 24 14Z"/>
                 <path d="m18 586 15-30 17 18-5 40-22 15Z"/><path d="m542 650-18-38-18 22 7 42 23 14Z"/>
@@ -288,8 +284,8 @@
               <path d="m55 175 12-9 8 5 10-16M478 190l-12-8-8 5-10-16" fill="none" stroke="#eaf6ff" stroke-width="2" opacity=".55"/>
             </g>
             <g class="packing-ocean-scenery" aria-hidden="true">
-              <rect width="560" height="1120" fill="url(#packing-ocean-back)"/>
-              <rect width="560" height="1120" fill="url(#packing-ocean-front)"/>
+              <rect width="560" height="${canvasHeight}" fill="url(#packing-ocean-back)"/>
+              <rect width="560" height="${canvasHeight}" fill="url(#packing-ocean-front)"/>
               <g fill="none" stroke-linecap="round">
                 <path d="M22 310q-24-62 3-112q28 53-2 109q-20 49 2 102" stroke="#2b8a70" stroke-width="12" opacity=".8"/>
                 <path d="M538 252q25-58-2-108q-28 54 2 108q20 48-3 102" stroke="#327c6b" stroke-width="11" opacity=".82"/>
@@ -305,8 +301,8 @@
               </g>
             </g>
             <g class="packing-magic-scenery" aria-hidden="true">
-              <rect width="560" height="1120" fill="url(#packing-magic-back)"/>
-              <rect width="560" height="1120" fill="url(#packing-magic-front)"/>
+              <rect width="560" height="${canvasHeight}" fill="url(#packing-magic-back)"/>
+              <rect width="560" height="${canvasHeight}" fill="url(#packing-magic-front)"/>
               <g fill="#21122f" stroke="#7651ad" stroke-width="2" opacity=".92">
                 <path d="M0 356h38V194h-9v-25h-9v25H9v-25H0Z"/>
                 <path d="M560 420h-38V238h9v-25h9v25h11v-25h9Z"/>
@@ -359,18 +355,36 @@
       stageId: 'packing-stage',
       regionGroupId: 'packing-region',
       trayGroupId: 'packing-tray',
-      regionArea: { x: 26, y: 30, width: 508, height: 610, maxCellSize: 88 },
+      regionArea: { x: 26, y: 26, width: 508, height: 500, maxCellSize: 88 },
       regionAlignY: 'top',
-      rackArea: { x: 30, y: 730, width: 500, height: 344 },
+      rackArea: { x: 30, y: 620, width: 500, height: 260 },
       dynamicRack: true,
-      rackGap: 28,
-      rackBottom: 1095,
+      autoLayout: {
+        enabled: true,
+        width: 560,
+        minHeight: 660,
+        maxHeight: 980,
+        topPad: 24,
+        sidePad: 24,
+        rackSidePad: 30,
+        boardHeightRatio: 0.50,
+        maxBoardHeight: 520,
+        maxCellSize: 88,
+        rackGap: 24,
+        rackLabelSpace: 60,
+        bottomPad: 22,
+        minRackHeight: 210,
+        minTrayCellSize: 21,
+        maxTrayCellSize: 31
+      },
+      rackGap: 24,
+      rackBottom: 900,
       rackBackgroundId: 'packing-rack-bg',
       rackLabelId: 'packing-rack-label',
       rackMobileHintId: 'packing-rack-mobile-hint',
       rackTopPadding: 4,
-      rackRowSpacing: 118,
-      trayCellSize: 29,
+      rackRowSpacing: 112,
+      trayCellSize: 26,
       trayCols: 5,
       regionBackgroundFill: boardFillFor(level.worldId),
       pieceCount: level.generator.pieceCount,
