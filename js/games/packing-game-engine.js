@@ -180,6 +180,7 @@
   function constructRegion(pieceIndexList, options) {
     const opts = options || {};
     const requestedZoneSize = Math.max(0, Number(opts.overlapZoneSize) || 0);
+    if (requestedZoneSize) return constructLayeredRegion(pieceIndexList, opts, requestedZoneSize);
     const requestedOverlaps = Math.max(0, Math.min(Math.floor(pieceIndexList.length / 2), Number(opts.overlapCount) || 0));
     const occupancy = new Map();
     const solution = [];
@@ -354,6 +355,103 @@
     };
   }
 
+  function constructLayeredRegion(pieceIndexList, options, zoneSize) {
+    const slots = pieceIndexList.map((_, slot) => slot);
+    const reserveChoices = [];
+    function chooseReserve(start, total, chosen) {
+      if (total === zoneSize) {
+        if (chosen.length && chosen.length < pieceIndexList.length) reserveChoices.push(chosen.slice());
+        return;
+      }
+      if (total > zoneSize) return;
+      for (let i = start; i < slots.length; i++) {
+        chooseReserve(i + 1, total + PIECE_LIBRARY[pieceIndexList[i]].cells.length, [...chosen, i]);
+      }
+    }
+    chooseReserve(0, 0, []);
+    for (let i = reserveChoices.length - 1; i > 0; i--) {
+      const j = randomInt(i + 1);
+      [reserveChoices[i], reserveChoices[j]] = [reserveChoices[j], reserveChoices[i]];
+    }
+
+    for (const secondLayerSlots of reserveChoices) {
+      const reserveSet = new Set(secondLayerSlots);
+      const firstLayerSlots = slots.filter(slot => !reserveSet.has(slot));
+      const base = constructRegion(firstLayerSlots.map(slot => pieceIndexList[slot]), {
+        ...options,
+        overlapZoneSize: 0,
+        overlapCount: 0
+      });
+      if (!base) continue;
+      const regionSet = new Set(base.region.map(([r, c]) => key(r, c)));
+      const occupied = new Set();
+      const reservedSolution = new Map();
+      const orderedReserve = secondLayerSlots.map(slot => {
+        const placements = [];
+        ORIENTATION_CACHE[pieceIndexList[slot]].forEach((orient, orientIdx) => {
+          base.region.forEach(([targetR, targetC]) => {
+            orient.forEach(([anchorR, anchorC]) => {
+              const origin = [targetR - anchorR, targetC - anchorC];
+              const cells = orient.map(([r, c]) => [r + origin[0], c + origin[1]]);
+              const keys = cells.map(([r, c]) => key(r, c));
+              if (keys.every(k => regionSet.has(k))) placements.push({ cells, keys, orientIdx, origin });
+            });
+          });
+        });
+        return { slot, placements };
+      }).sort((a, b) => a.placements.length - b.placements.length);
+
+      function placeReserve(index) {
+        if (index === orderedReserve.length) {
+          const zoneKeys = [...occupied];
+          if (zoneKeys.length !== zoneSize) return false;
+          const pending = [zoneKeys[0]];
+          const unseen = new Set(zoneKeys.slice(1));
+          while (pending.length) {
+            const [r, c] = pending.pop().split(',').map(Number);
+            neighbours(r, c).forEach(([nr, nc]) => {
+              const next = key(nr, nc);
+              if (unseen.delete(next)) pending.push(next);
+            });
+          }
+          return unseen.size === 0;
+        }
+        const entry = orderedReserve[index];
+        for (const placement of entry.placements) {
+          if (placement.keys.some(k => occupied.has(k))) continue;
+          placement.keys.forEach(k => occupied.add(k));
+          reservedSolution.set(entry.slot, placement);
+          if (placeReserve(index + 1)) return true;
+          reservedSolution.delete(entry.slot);
+          placement.keys.forEach(k => occupied.delete(k));
+        }
+        return false;
+      }
+      if (!placeReserve(0)) continue;
+
+      const solution = new Array(pieceIndexList.length);
+      firstLayerSlots.forEach((slot, index) => { solution[slot] = base.solution[index]; });
+      secondLayerSlots.forEach(slot => {
+        const placement = reservedSolution.get(slot);
+        solution[slot] = {
+          pieceIndex: pieceIndexList[slot],
+          cells: placement.cells,
+          orientIdx: placement.orientIdx,
+          origin: placement.origin
+        };
+      });
+      return {
+        region: base.region,
+        solution,
+        overlapNodes: [],
+        overlapSources: {},
+        overlapZone: [...occupied].map(value => value.split(',').map(Number)),
+        secondLayerSlots: secondLayerSlots.slice()
+      };
+    }
+    return null;
+  }
+
   // constructRegion starts its first piece at an arbitrary (0,0) and grows
   // outward in any direction, so the resulting region can extend to negative
   // row/col values. Every downstream consumer (rendering, drop-position math)
@@ -372,6 +470,7 @@
       })),
       overlapNodes: (built.overlapNodes || []).map(node => ({ ...node, r: node.r - minR, c: node.c - minC, key: key(node.r - minR, node.c - minC) })),
       overlapZone: (built.overlapZone || []).map(([r, c]) => [r - minR, c - minC]),
+      secondLayerSlots: built.secondLayerSlots || [],
       overlapSources: Object.fromEntries(Object.entries(built.overlapSources || {}).map(([slot, marker]) => [
         slot,
         { ...marker, nodeKey: (() => { const [r, c] = marker.nodeKey.split(',').map(Number); return key(r - minR, c - minC); })() }
@@ -498,12 +597,14 @@
     return idx.slice(0, count);
   }
 
-  function deriveAnchors(solution, region, requestedCount) {
+  function deriveAnchors(solution, region, requestedCount, excludedSlots) {
     const count = Math.max(0, Number(requestedCount) || 0);
     if (!count) return [];
     const regionSet = new Set(region.map(([r, c]) => key(r, c)));
+    const excluded = new Set(excludedSlots || []);
     const candidates = [];
     solution.forEach((piece, slot) => {
+      if (excluded.has(slot)) return;
       PIECE_LIBRARY[piece.pieceIndex].cells.forEach((_, source) => {
         const solvedCell = ORIENTATION_DETAIL_CACHE[piece.pieceIndex][piece.orientIdx].find(cell => cell.source === source);
         if (!solvedCell) return;
@@ -633,7 +734,7 @@
       if (board.blocked.length < minHoles || board.blocked.length > maxHoles) continue;
       const links = deriveLinks(built.solution, opts.linkCount, opts.linkSharedCount);
       if (links.length !== Math.max(0, Number(opts.linkCount) || 0)) continue;
-      const anchors = deriveAnchors(built.solution, built.region, opts.anchorCount);
+      const anchors = deriveAnchors(built.solution, built.region, opts.anchorCount, built.secondLayerSlots);
       if (anchors.length !== Math.max(0, Number(opts.anchorCount) || 0)) continue;
       const anchorGroups = deriveAnchorGroups(anchors, built.solution, opts.anchorGroupCount);
       if (anchorGroups.length !== Math.max(0, Number(opts.anchorGroupCount) || 0)) continue;
@@ -643,6 +744,7 @@
         surplusCount: Math.max(0, Number(opts.surplusCount) || 0), solution: built.solution,
         overlapNodes: built.overlapNodes || [], overlapSources: built.overlapSources || {},
         links, anchors, anchorGroups, overlapZone: built.overlapZone || [],
+        secondLayerSlots: built.secondLayerSlots || [],
         solutionCount: null, attempts: attempt + 1
       };
       if (opts.verifySolutions === false) {
@@ -677,6 +779,8 @@
   let selectionGhosts = [];
   let overlapZoneLayer = null;
   let overlapZoneIndicators = new Map();
+  let overlapZoneBanner = null;
+  let layerPhase = 0;
   let regionCellSize = 0;
   let trayCellSize = 0;
   let floatingCellSize = 0;
@@ -782,6 +886,36 @@
           zoneSet.has(key(first.r, first.c)));
       return shareEdge || shareOverlapNode;
     });
+  }
+
+  function layerOneIsFull() {
+    if (layerPhase !== 1) return false;
+    const regionSet = new Set(puzzle.region.map(([r, c]) => key(r, c)));
+    const filled = new Set();
+    for (const piece of trayPieces) {
+      if (!piece.placedAt) continue;
+      for (const [r, c] of currentCells(piece)) {
+        const cellKey = key(r, c);
+        if (!regionSet.has(cellKey) || filled.has(cellKey)) return false;
+        filled.add(cellKey);
+      }
+    }
+    return filled.size === regionSet.size;
+  }
+
+  function unlockLayerTwo() {
+    if (!layerOneIsFull()) return false;
+    layerPhase = 2;
+    trayPieces.forEach(piece => {
+      piece.layerLocked = Boolean(piece.placedAt);
+      piece.g.classList.toggle('is-layer-one-locked', piece.layerLocked);
+    });
+    refreshOverlapTextures();
+    if (stage && stage.classList) stage.classList.add('is-layer-two-open');
+    if (overlapZoneBanner) overlapZoneBanner.textContent = 'LAYER 2 · OPEN';
+    if (typeof config.onLayerChange === 'function') config.onLayerChange(2);
+    playTone(330, 660, .32, .055, 'sine');
+    return true;
   }
 
   function renderPieceShape(g, cells, cellSize, colorId) {
@@ -912,7 +1046,7 @@
         const count = Math.min(2, occupants.length);
         indicator.g.classList.toggle('has-one', count === 1);
         indicator.g.classList.toggle('is-complete', count === 2);
-        indicator.label.textContent = count === 2 ? '✓ 2/2' : count === 1 ? '1/2' : '0/2';
+        indicator.label.textContent = '';
       }
     });
   }
@@ -939,7 +1073,7 @@
         'dominant-baseline': 'middle',
         class: 'pge-overlap-zone-status'
       });
-      label.textContent = '0/2';
+      label.textContent = '';
       g.appendChild(label);
       overlapZoneLayer.appendChild(g);
       overlapZoneIndicators.set(key(r, c), { g, label });
@@ -957,6 +1091,17 @@
       d: boundary.join(''),
       class: 'pge-overlap-zone-boundary'
     }));
+    const zoneRows = puzzle.overlapZone.map(([r]) => r);
+    const zoneCols = puzzle.overlapZone.map(([, c]) => c);
+    overlapZoneBanner = svg('text', {
+      x: regionOrigin.x + ((Math.min(...zoneCols) + Math.max(...zoneCols) + 1) / 2) * regionCellSize,
+      y: regionOrigin.y + ((Math.min(...zoneRows) + Math.max(...zoneRows) + 1) / 2) * regionCellSize,
+      'text-anchor': 'middle',
+      'dominant-baseline': 'middle',
+      class: 'pge-overlap-zone-banner'
+    });
+    overlapZoneBanner.textContent = 'LAYER 2 · SEALED';
+    overlapZoneLayer.appendChild(overlapZoneBanner);
     stage.appendChild(overlapZoneLayer);
   }
 
@@ -1247,7 +1392,7 @@
   }
 
   function startDrag(piece, event) {
-    if (!active || paused || solved) return;
+    if (!active || paused || solved || piece.layerLocked) return;
     if (event.preventDefault) event.preventDefault();
     if (piece.anchor) {
       rotateAnchoredPiece(piece);
@@ -1295,6 +1440,16 @@
     const cells = currentDetailedCells(piece, [r, c]);
     const regionSet = new Set(puzzle.region.map(([rr, cc]) => key(rr, cc)));
     const zoneSet = new Set((puzzle.overlapZone || []).map(([rr, cc]) => key(rr, cc)));
+    if (zoneSet.size && layerPhase === 2) {
+      const fitsSecondLayer = cells.every(cell => {
+        const cellKey = key(cell.r, cell.c);
+        if (!zoneSet.has(cellKey)) return false;
+        const occupants = trayPieces.filter(other => other !== piece && other.placedAt &&
+          currentCells(other).some(([or, oc]) => or === cell.r && oc === cell.c));
+        return occupants.length === 1;
+      });
+      return { r, c, fits: fitsSecondLayer };
+    }
     const collisions = [];
     const fitsCells = cells.every(cell => {
       const k = key(cell.r, cell.c);
@@ -1302,6 +1457,7 @@
       const occupants = trayPieces.filter(other => other !== piece && other.placedAt &&
         currentCells(other).some(([or, oc]) => or === cell.r && oc === cell.c));
       if (!occupants.length) return true;
+      if (zoneSet.size && layerPhase === 1) return false;
       if (occupants.length >= 2) return false;
       const node = (puzzle.overlapNodes || []).find(candidate => candidate.key === k);
       if (!node && !zoneSet.has(k)) return false;
@@ -1372,6 +1528,7 @@
     if (placement.fits) {
       placePieceAt(piece, placement.r, placement.c);
       playTone(300, 460, .14, .035);
+      if (unlockLayerTwo()) return;
       if (checkComplete()) win();
       return;
     }
@@ -1541,6 +1698,8 @@
     if (!puzzle) return false;
 
     active = true; paused = !!nextConfig.initiallyPaused; solved = false;
+    layerPhase = puzzle.overlapZone && puzzle.overlapZone.length ? 1 : 0;
+    if (typeof nextConfig.onLayerChange === 'function') nextConfig.onLayerChange(layerPhase);
 
     while (regionGroup.firstChild) regionGroup.removeChild(regionGroup.firstChild);
     while (trayGroup.firstChild) trayGroup.removeChild(trayGroup.firstChild);
@@ -1759,9 +1918,14 @@
     dragging = null;
     selectedPiece = null;
     solved = false;
+    layerPhase = puzzle.overlapZone && puzzle.overlapZone.length ? 1 : 0;
+    if (stage && stage.classList) stage.classList.remove('is-layer-two-open');
+    if (overlapZoneBanner) overlapZoneBanner.textContent = 'LAYER 2 · SEALED';
+    if (typeof config.onLayerChange === 'function') config.onLayerChange(layerPhase);
     clearSelectionGhost();
     trayPieces.forEach(piece => {
-      piece.g.classList.remove('is-dragging', 'is-anchor-blocked');
+      piece.layerLocked = false;
+      piece.g.classList.remove('is-dragging', 'is-anchor-blocked', 'is-layer-one-locked');
       if (!piece.anchor) {
         returnPieceHome(piece);
         return;
@@ -1790,7 +1954,8 @@
     if (overlapZoneLayer && overlapZoneLayer.parentNode) overlapZoneLayer.parentNode.removeChild(overlapZoneLayer);
     overlapZoneLayer = null;
     overlapZoneIndicators = new Map();
-    active = false; paused = true; solved = false;
+    overlapZoneBanner = null;
+    active = false; paused = true; solved = false; layerPhase = 0;
     clearSelectionGhost();
     config = null; stage = null; puzzle = null; trayPieces = []; dragging = null; selectedPiece = null; rackArea = null; floatingCellSize = 0;
     lastTapPiece = null; lastTapAt = -Infinity;
@@ -1804,10 +1969,11 @@
     // puzzle logic (usable headless, e.g. by tests or a future generator tool)
     PIECE_LIBRARY, PIECE_COLORS, orientations, solveCount, generate,
     // rendering lifecycle
-    start, begin, reset, destroy,
+    start, begin, reset, rebuildLayerOne: reset, destroy,
     isActive() { return active; },
     isSolved() { return solved; },
     getPuzzle, getTrayPieces,
-    checkComplete
+    checkComplete,
+    getLayerPhase() { return layerPhase; }
   });
 })();

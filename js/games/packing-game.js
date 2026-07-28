@@ -142,7 +142,7 @@
     const showIntro = !debugMode && level.order === 1;
     const anchorHelp = level.generator.anchorCount ? ' · X=PIVOT' : '';
     const linkedHelp = level.generator.anchorGroupCount ? ' · CYAN X=LINKED' : '';
-    const zoneHelp = level.generator.overlapZoneSize ? ' · GLOW=DOUBLE' : '';
+    const zoneHelp = level.generator.overlapZoneSize ? ' · SAVE PIECES FOR LAYER 2' : '';
     // The engine recalculates the final SVG viewBox after the generated
     // board is known and the actual stage size has been measured. This
     // starter height only prevents a flash before PackingGameEngine.start().
@@ -154,6 +154,7 @@
           <button type="button" onclick="packingGameReturnToMap()">◀ ${debugMode ? 'DEBUG' : 'MAP'}</button>
           <strong id="packing-level-title">WORLD ${worldIndex + 1} · LEVEL ${level.order}</strong>
           <div class="packing-board-actions">
+            ${level.generator.overlapZoneSize ? '<span id="packing-layer-status">LAYER 1</span><button id="packing-rebuild-layer" type="button" onclick="packingGameRebuildLayer()" hidden>REBUILD LAYER 1</button>' : ''}
             <button type="button" onclick="packingGameReset()">RESET</button>
           </div>
         </header>
@@ -406,11 +407,19 @@
       anchorGroupCount: level.generator.anchorGroupCount,
       overlapZoneSize: level.generator.overlapZoneSize,
       initiallyPaused: showIntro,
+      onLayerChange: updateLayerUI,
       onComplete: showComplete
     });
     if (!ok) {
       document.getElementById('packing-stage').insertAdjacentHTML('beforeend', '<div class="packing-error">COULD NOT GENERATE THIS PUZZLE.<button onclick="packingGameReset()">TRY AGAIN</button></div>');
     }
+  }
+
+  function updateLayerUI(phase) {
+    const status = document.getElementById('packing-layer-status');
+    const rebuild = document.getElementById('packing-rebuild-layer');
+    if (status) status.textContent = phase === 2 ? 'LAYER 2 OPEN' : 'LAYER 1';
+    if (rebuild) rebuild.hidden = phase !== 2;
   }
 
   function showComplete() {
@@ -471,6 +480,12 @@
     const solvedOverlay = document.querySelector('.packing-solved');
     if (solvedOverlay) solvedOverlay.remove();
     PackingGameEngine.reset();
+    startedAt = performance.now();
+  };
+  window.packingGameRebuildLayer = function () {
+    if (!active) return;
+    sound();
+    PackingGameEngine.rebuildLayerOne();
     startedAt = performance.now();
   };
   window.initPackingGame = function () {

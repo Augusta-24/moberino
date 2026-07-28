@@ -566,13 +566,13 @@
       <div class="consume-mode-banner"><div class="cw-title">TILE SWAP</div></div>
       <div class="consume-mode-grid">
         <button class="consume-mode-card" style="--mode-color:#ff7180" data-mode="grid">
-          ${modeArt('grid')}<strong>GRID</strong><span>BUILD WORDS FROM<br>A SHARED GRID</span>
+          ${modeArt('grid')}<strong>WORD GRID</strong><span>BUILD WORDS FROM<br>A SHARED GRID</span>
         </button>
         <button class="consume-mode-card" style="--mode-color:#ff75d5" data-mode="words">
-          ${modeArt('words')}<strong>WORDS</strong><span>REARRANGE TILES<br>INTO WORDS</span>
+          ${modeArt('words')}<strong>LETTER SWAP</strong><span>REARRANGE TILES<br>INTO WORDS</span>
         </button>
         <button class="consume-mode-card" style="--mode-color:#ffb35c" data-mode="numbers">
-          ${modeArt('numbers')}<strong>RUMMY</strong><span>MAKE NUMBER RUNS<br>AND SETS</span>
+          ${modeArt('numbers')}<strong>RUMMY SWAP</strong><span>MAKE NUMBER RUNS<br>AND SETS</span>
         </button>
       </div>
     </div>`;

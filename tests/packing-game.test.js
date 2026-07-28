@@ -188,7 +188,7 @@ test('World 4 generates pinned pieces with legal scrambled orientations', () => 
   });
 });
 
-test('World 5 generates connected double-coverage zones with every piece required', () => {
+test('World 5 generates a full first layer plus an independently tileable connected second layer', () => {
   const engine = loadEngine();
   const { levels } = loadCampaign();
   levels.worlds[4].levels.forEach(level => {
@@ -212,7 +212,29 @@ test('World 5 generates connected double-coverage zones with every piece require
     assert.equal(pieceArea, puzzle.region.length + puzzle.overlapZone.length, level.id);
     assert.equal(puzzle.solution.length, puzzle.pieceIndexList.length, level.id);
     assert.equal(puzzle.anchors.length, level.mechanics.anchors.count, level.id);
+    const secondLayerSlots = new Set(puzzle.secondLayerSlots);
+    const firstLayerCells = new Set();
+    const secondLayerCells = new Set();
+    puzzle.solution.forEach((piece, slot) => {
+      piece.cells.forEach(([r, c]) => {
+        const cellKey = `${r},${c}`;
+        const target = secondLayerSlots.has(slot) ? secondLayerCells : firstLayerCells;
+        assert.equal(target.has(cellKey), false, `${level.id} repeats ${cellKey} within one layer`);
+        target.add(cellKey);
+      });
+    });
+    assert.equal(firstLayerCells.size, puzzle.region.length, level.id);
+    assert.equal(secondLayerCells.size, puzzle.overlapZone.length, level.id);
+    assert.deepEqual([...secondLayerCells].sort(), [...zone].sort(), level.id);
   });
+});
+
+test('World 5 exposes staged layer UI and a rebuild action', () => {
+  assert.match(engineSource, /function unlockLayerTwo\(\)/);
+  assert.match(engineSource, /rebuildLayerOne:\s*reset/);
+  assert.match(uiSource, /LAYER 2 OPEN/);
+  assert.match(uiSource, /REBUILD LAYER 1/);
+  assert.match(levelsSource, /Layered Chambers/);
 });
 
 test('recorded World 3 solution satisfies holes, links, and overlaps cumulatively', () => {

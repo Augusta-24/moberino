@@ -317,8 +317,14 @@
                   <rect x="48" y="13" width="104" height="94" rx="13" fill="#07130f" stroke="#33cc66" stroke-width="2.5" opacity="0.9"/>
                   <line x1="100" y1="13" x2="100" y2="107" stroke="#33cc66" stroke-width="0.5" opacity="0.14"/>
                   <line x1="48" y1="60" x2="152" y2="60" stroke="#33cc66" stroke-width="0.5" opacity="0.14"/>
-                  <text x="108" y="88" font-family="sans-serif" font-size="68" fill="#33cc66" opacity="0.86" text-anchor="middle">✓</text>
-                  <text x="67" y="51" font-family="sans-serif" font-size="27" fill="#ff4444" opacity="0.62" text-anchor="middle">✗</text>
+                  <circle cx="108" cy="72" r="26" fill="#33cc66" opacity=".12" stroke="#33cc66" stroke-width="2"/>
+                  <circle cx="108" cy="72" r="13" fill="#33cc66" opacity=".18" stroke="#33cc66" stroke-width="2"/>
+                  <path d="M108 51v42M87 72h42" stroke="#33cc66" stroke-width="1.5" opacity=".7"/>
+                  <circle cx="67" cy="42" r="13" fill="#ff4444" opacity=".1" stroke="#ff4444" stroke-width="2"/>
+                  <path d="M59 34l16 16M75 34 59 50" stroke="#ff4444" stroke-width="3"/>
+                  <text x="63" y="101" font-family="sans-serif" font-size="17" fill="#ff7180" opacity=".9">♥</text>
+                  <text x="82" y="101" font-family="sans-serif" font-size="17" fill="#ff7180" opacity=".9">♥</text>
+                  <text x="101" y="101" font-family="sans-serif" font-size="17" fill="#ff7180" opacity=".9">♥</text>
                   <text x="75" y="24" font-size="11" fill="#33ff66" opacity="0.68">✦</text>
                   <text x="180" y="16" font-size="10" fill="#33ff66" opacity="0.48">✦</text>
                   <text x="22" y="14" font-size="8" fill="#00e5ff" opacity="0.32">✦</text>
@@ -331,9 +337,9 @@
             </button>
           </div>
           <div class="whack-menu-difficulty" role="group" aria-label="Difficulty">
-            <span>DIFFICULTY</span>
-            <button class="${difficulty === 'easy' ? 'active' : ''}" type="button" onclick="whackSetMenuDifficulty('easy')">NORMAL</button>
-            <button class="${difficulty === 'hard' ? 'active' : ''}" type="button" onclick="whackSetMenuDifficulty('hard')">HARD</button>
+            <span><strong>DIFFICULTY</strong><small>${difficulty === 'hard' ? 'FASTER TARGETS · LESS TIME TO REACT' : 'STEADY TARGETS · FULL REACTION TIME'}</small></span>
+            <button class="${difficulty === 'easy' ? 'active' : ''}" type="button" onclick="whackSetMenuDifficulty('easy')"><b>NORMAL</b><small>STEADY</small></button>
+            <button class="${difficulty === 'hard' ? 'active' : ''}" type="button" onclick="whackSetMenuDifficulty('hard')"><b>HARD</b><small>FAST</small></button>
           </div>
         </div>`;
       return;

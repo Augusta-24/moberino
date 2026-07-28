@@ -45,19 +45,31 @@ body.on-whack.arcade-selection-open #arcade-float {
   grid-template-columns: 1fr auto auto;
   align-items: center;
   gap: 7px;
-  padding: 6px 10px;
-  border: 1px solid rgba(242,239,232,.14);
-  border-radius: 7px;
-  background: rgba(5,2,18,.62);
+  padding: 9px 10px;
+  border: 1px solid rgba(184,132,255,.34);
+  border-radius: 12px;
+  background: linear-gradient(90deg,rgba(184,132,255,.1),rgba(5,2,18,.78));
 }
-.whack-menu-difficulty span {
+.whack-menu-difficulty > span {
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+}
+.whack-menu-difficulty strong {
   font: 10px/1 'VCR',monospace;
   letter-spacing: 1.5px;
-  color: rgba(242,239,232,.58);
+  color: #caa5ff;
+}
+.whack-menu-difficulty small {
+  color:rgba(242,239,232,.55);
+  font:7px/1.25 'VCR',monospace;
+  letter-spacing:.55px;
 }
 .whack-menu-difficulty button {
-  min-height: 34px;
-  padding: 0 12px;
+  min-width:72px;
+  min-height: 46px;
+  padding: 6px 12px;
   border: 1px solid rgba(242,239,232,.2);
   border-radius: 5px;
   background: transparent;
@@ -66,6 +78,10 @@ body.on-whack.arcade-selection-open #arcade-float {
   letter-spacing: 1px;
   cursor: pointer;
 }
+.whack-menu-difficulty button b,
+.whack-menu-difficulty button small { display:block; }
+.whack-menu-difficulty button b { font:10px/1 'VCR',monospace;letter-spacing:1px; }
+.whack-menu-difficulty button small { margin-top:5px;color:inherit;font:7px/1 'VCR',monospace;letter-spacing:.8px;opacity:.72; }
 .whack-menu-difficulty button.active {
   border-color: #caa5ff;
   background: rgba(202,165,255,.2);
@@ -217,6 +233,8 @@ body.on-whack.arcade-selection-open #arcade-float {
   .whack-mode-card.whack-mode-secondary{grid-template-columns:minmax(0,38%) minmax(0,1fr);gap:13px;padding:11px 13px;min-height:158px}
   .whack-mode-card .game-card-marquee{font-size:25px;letter-spacing:1.3px;white-space:nowrap}
   .whack-mode-card.whack-mode-secondary .game-card-marquee{font-size:24px}
+  .whack-menu-difficulty{grid-template-columns:1fr 68px 68px}
+  .whack-menu-difficulty small{font-size:6px}
 }
 /* Face Factory's mobile card frame, with Whack content substituted in. */
 @media(max-width:620px){

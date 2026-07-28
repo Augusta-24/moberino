@@ -119,6 +119,14 @@
     swell: [2, 8],
     fx: [1, 4],
   };
+  const CHORD_ROLES = [
+    { id: 'home', label: 'HOME', degrees: [0, 2, 4], color: '#00e5ff' },
+    { id: 'lift', label: 'LIFT', degrees: [1, 3, 5], color: '#7bffea' },
+    { id: 'dream', label: 'DREAM', degrees: [2, 4, 6], color: '#b66cff' },
+    { id: 'tension', label: 'TENSION', degrees: [3, 5, 7], color: '#ff66c7' },
+    { id: 'dark', label: 'DARK', degrees: [0, 1, 3], color: '#8f73ff' },
+    { id: 'return', label: 'RETURN', degrees: [4, 6, 8], color: '#ffe61a' },
+  ];
   const SIGNAL_PRESETS = {
     style: [
       { id: 'space-funk', label: 'SPACE FUNK' },
@@ -176,7 +184,7 @@
   let score = 0, signal = 0, distortion = 0, health = 3, elapsed = 0;
   let combo = 0, bestCombo = 0, currentSoloLane = 1;
   let currentLayerIndex = 0, additionsThisLayer = 0, totalAdditions = 0;
-  let mode = 'arcade', freeLayerIndex = 0, freeRecording = false;
+  let mode = 'arcade', freeLayerIndex = 0, freeRecording = false, freeStartKeysMode = 'notes';
   let pendingStartMode = 'arcade';
   let setupOpen = false, setupStep = 'palette', guidedStage = 'practice';
   let guidedOverdubBase = null;
@@ -203,6 +211,7 @@
   let loop = [];
   let leftHeld = false, rightHeld = false, pointerActive = false, pointerX = 0, pointerY = 0;
   let pinchActive = false, pinchStartDist = 0, pinchJunk = null, pinchStamped = false;
+  let keysPlayMode = 'notes', chordOctave = 0, chordVoicing = 'tight', lastChordNotes = null;
   let thereminPulse = 0;
   let expressiveVoice = null;
   let expressiveTapSeq = 0;
@@ -253,6 +262,55 @@
     const d = Math.max(0, Math.floor(deg || 0));
     const st = semis[d % semis.length];
     return NOTE_NAMES[(styleDef().rootSemi + st) % 12];
+  }
+  function chordNameForRole(role) {
+    const semis = moodSemis();
+    const pitches = role.degrees.map(degree => {
+      const d = Math.max(0, Math.floor(degree || 0));
+      return (styleDef().rootSemi + semis[d % semis.length] + 12 * Math.floor(d / semis.length)) % 12;
+    });
+    const qualities = [
+      { intervals: '0,4,7', suffix: '' },
+      { intervals: '0,3,7', suffix: 'm' },
+      { intervals: '0,2,7', suffix: 'sus2' },
+      { intervals: '0,5,7', suffix: 'sus4' },
+      { intervals: '0,3,6', suffix: 'dim' },
+      { intervals: '0,4,8', suffix: 'aug' },
+    ];
+    for (const root of pitches) {
+      const intervals = pitches.map(pitch => (pitch - root + 12) % 12).sort((a, b) => a - b).join(',');
+      const quality = qualities.find(item => item.intervals === intervals);
+      if (quality) return `${NOTE_NAMES[root]}${quality.suffix}`;
+    }
+    return `${NOTE_NAMES[pitches[0]]} COLOR`;
+  }
+  function chordDegreeOptions(role) {
+    const scaleLength = moodSemis().length;
+    const base = role.degrees.slice();
+    const inversions = [
+      base,
+      [base[1], base[2], base[0] + scaleLength],
+      [base[2], base[0] + scaleLength, base[1] + scaleLength],
+    ];
+    const voiced = inversions.map(degrees => chordVoicing === 'wide'
+      ? [degrees[0], degrees[1] + scaleLength, degrees[2] + scaleLength]
+      : degrees);
+    if (!lastChordNotes || !lastChordNotes.length) return voiced[0];
+    const cost = degrees => degrees.reduce((sum, degree, index) => {
+      const freq = degreeFreq(degree, activeLayer().mult * Math.pow(2, chordOctave));
+      const prior = lastChordNotes[Math.min(index, lastChordNotes.length - 1)] || freq;
+      return sum + Math.abs(12 * Math.log2(freq / prior));
+    }, 0);
+    return voiced.reduce((best, degrees) => cost(degrees) < cost(best) ? degrees : best, voiced[0]);
+  }
+  function chordForRole(role) {
+    const degrees = chordDegreeOptions(role);
+    return {
+      degrees,
+      notes: degrees.map(degree => degreeFreq(degree, activeLayer().mult * Math.pow(2, chordOctave))),
+      labels: degrees.map(noteNameForDegree),
+      name: chordNameForRole(role),
+    };
   }
   function activeLayer() { return LAYERS[clamp(currentLayerIndex, 0, LAYERS.length - 1)] || LAYERS[0]; }
   function guidedCoachActive() { return isGuidedBuildMode() && state === 'playing' && phase === 'build'; }
@@ -834,7 +892,22 @@
     const voice = createHeldPitchedVoice(inst, note, 1, brightness, 0);
     if (!voice) return;
     expressiveVoice = {
-      inst, note, ...voice,
+      inst, note, ...voice, voices: [voice],
+      startedAt: performance.now(),
+      x: pos.x, y: pos.y, brightness,
+    };
+  }
+
+  function startExpressiveChord(chord, pos) {
+    endExpressiveVoice();
+    const brightness = brightnessAt(pos);
+    const voices = chord.notes.map(note => createHeldPitchedVoice('keys', note, 0.72, brightness, 0)).filter(Boolean);
+    if (!voices.length) return;
+    expressiveVoice = {
+      inst: 'keys',
+      note: chord.notes[chord.notes.length - 1],
+      notes: chord.notes.slice(),
+      voices,
       startedAt: performance.now(),
       x: pos.x, y: pos.y, brightness,
     };
@@ -848,7 +921,9 @@
     v.y = pos.y;
     v.brightness = brightnessAt(pos);
     const cutoff = v.inst === 'bass' ? 480 + v.brightness * 480 : 820 + v.brightness * 1040;
-    v.filter.frequency.setTargetAtTime(cutoff * soundProfile().resonance, c.currentTime, 0.045);
+    (v.voices || [v]).forEach(voice => {
+      voice.filter.frequency.setTargetAtTime(cutoff * soundProfile().resonance, c.currentTime, 0.045);
+    });
   }
 
   function endExpressiveVoice() {
@@ -875,14 +950,16 @@
     const held = performance.now() - v.startedAt;
     const release = held < 180 ? 0.10 : held < 550 ? 0.24 : 0.38;
     const stopAt = c.currentTime + release + 0.04;
-    v.gain.gain.cancelScheduledValues(c.currentTime);
-    v.gain.gain.setTargetAtTime(0.0001, c.currentTime, release / 4);
-    v.osc.stop(stopAt);
-    if (v.harmonic) {
-      v.harmonic.gain.gain.cancelScheduledValues(c.currentTime);
-      v.harmonic.gain.gain.setTargetAtTime(0.0001, c.currentTime, release / 3);
-      v.harmonic.osc.stop(stopAt);
-    }
+    (v.voices || [v]).forEach(voice => {
+      voice.gain.gain.cancelScheduledValues(c.currentTime);
+      voice.gain.gain.setTargetAtTime(0.0001, c.currentTime, release / 4);
+      voice.osc.stop(stopAt);
+      if (voice.harmonic) {
+        voice.harmonic.gain.gain.cancelScheduledValues(c.currentTime);
+        voice.harmonic.gain.gain.setTargetAtTime(0.0001, c.currentTime, release / 3);
+        voice.harmonic.osc.stop(stopAt);
+      }
+    });
   }
 
   function tone(freq, type, delay, dur, vol, endFreq) {
@@ -1859,6 +1936,12 @@
     swellInk = 0;
     pinchActive = false;
     pinchJunk = null;
+    keysPlayMode = isFreeMode() && currentLayerIndex === LAYERS.findIndex(layer => layer.inst === 'keys')
+      ? freeStartKeysMode
+      : 'notes';
+    chordOctave = 0;
+    chordVoicing = 'tight';
+    lastChordNotes = null;
     initPads();
     loop = Array.from({ length: LOOP_STEPS }, () => []);
     initStars();
@@ -2230,11 +2313,33 @@
       return;
     }
 
+    if (keysPlayMode === 'chords') {
+      const controlsH = 76;
+      const usableTop = top + controlsH;
+      const usableH = Math.max(72, bottom - usableTop);
+      const chordR = Math.min(42, Math.max(18, usableH / 8));
+      const travelH = Math.max(0, usableH - chordR * 2);
+      CHORD_ROLES.forEach((role, index) => {
+        const col = index % 2;
+        const row = Math.floor(index / 2);
+        const x = W * (col ? 0.72 : 0.28);
+        const y = usableTop + chordR + travelH * (row / 2);
+        const rock = makeAsteroidRock(layer, { label: role.label, color: role.color }, index % LANES.length, role.degrees[0], x, y, chordR, 'keys-chord');
+        rock.chordRole = role.id;
+        rock.chordName = chordNameForRole(role);
+        rock.label = role.label;
+        rocks.push(rock);
+      });
+      return;
+    }
+
+    const notesTop = top + 70;
+    const notesSpanY = Math.max(100, bottom - notesTop);
     layer.options.forEach((option, lane) => {
       const degLo = option.degLo || 0;
       const degHi = option.degHi == null ? degLo : option.degHi;
       const count = Math.max(3, degHi - degLo + 1);
-      const beltY = top + spanY * (0.18 + lane * 0.31);
+      const beltY = notesTop + notesSpanY * (0.16 + lane * 0.32);
       for (let i = 0; i < count; i++) {
         const deg = degLo + Math.min(degHi - degLo, i);
         const pitchT = count <= 1 ? 0 : i / (count - 1);
@@ -2464,6 +2569,50 @@
     };
   }
 
+  function keysControlRects() {
+    const gap = 7;
+    const y = playFieldTop() + 5;
+    const h = 28;
+    const inset = 12;
+    const modeW = Math.min(154, W * 0.42);
+    const otherW = (W - inset * 2 - modeW - gap * 2) / 2;
+    return {
+      mode: { x: inset, y, w: modeW, h },
+      octave: { x: inset + modeW + gap, y, w: otherW, h },
+      voicing: { x: inset + modeW + gap + otherW + gap, y, w: otherW, h },
+    };
+  }
+
+  function pointInRect(pos, rect) {
+    return pos && pos.x >= rect.x && pos.x <= rect.x + rect.w && pos.y >= rect.y && pos.y <= rect.y + rect.h;
+  }
+
+  function tapKeysControl(pos) {
+    if (activeLayer().inst !== 'keys') return false;
+    const rects = keysControlRects();
+    if (pointInRect(pos, rects.mode)) {
+      keysPlayMode = keysPlayMode === 'notes' ? 'chords' : 'notes';
+      lastChordNotes = null;
+      initAsteroidSurface();
+      addFloatText(keysPlayMode === 'chords' ? 'CHORD MODE' : 'NOTE MODE', W * 0.5, rects.mode.y + 54, '#00e5ff', 650);
+      return true;
+    }
+    if (keysPlayMode !== 'chords') return false;
+    if (pointInRect(pos, rects.octave)) {
+      chordOctave = chordOctave >= 1 ? -1 : chordOctave + 1;
+      lastChordNotes = null;
+      addFloatText(`OCTAVE ${chordOctave < 0 ? 'LOW' : chordOctave > 0 ? 'HIGH' : 'MID'}`, W * 0.5, rects.octave.y + 54, '#b66cff', 650);
+      return true;
+    }
+    if (pointInRect(pos, rects.voicing)) {
+      chordVoicing = chordVoicing === 'tight' ? 'wide' : 'tight';
+      lastChordNotes = null;
+      addFloatText(`${chordVoicing.toUpperCase()} VOICING`, W * 0.5, rects.voicing.y + 54, '#ff66c7', 650);
+      return true;
+    }
+    return false;
+  }
+
   function tapShoot(pos) {
     const t = performance.now();
     if (t < manualFireAt) return;
@@ -2492,6 +2641,10 @@
       return;
     }
     if (rockTapActive()) {
+      if (pos && tapKeysControl(pos)) {
+        manualFireAt = t + 110;
+        return;
+      }
       if (pos) tapRock(pos);
       manualFireAt = t + 78;
       return;
@@ -2727,6 +2880,40 @@
     if (recordedChoices.length > 128) recordedChoices.shift();
     laneFlash[rock.lane] = Math.max(laneFlash[rock.lane], tight ? 1 : 0.6);
     if (loopFlash[target]) loopFlash[target] = { pulse: 1, color: rock.color || COLOR, row: currentLayerIndex };
+    if (isFreeMode() || undoStack.length === 1) updateLoopButton();
+    return choiceId;
+  }
+
+  function stampChord(rock, target, chord, tight, isNextStep) {
+    const layer = activeLayer();
+    if (!shouldRecordStamp()) {
+      laneFlash[rock.lane] = Math.max(laneFlash[rock.lane] || 0, tight ? 0.9 : 0.55);
+      return null;
+    }
+    const bucket = loop[target];
+    const choiceId = ++undoSeq;
+    undoStack.push({ choiceId, step: target, layerIndex: currentLayerIndex, beforeBucket: snapshotBucket(bucket) });
+    if (undoStack.length > 32) undoStack.shift();
+    let slot = bucket.find(v => v.layerId === layer.id);
+    const stamp = {
+      layerId: layer.id, layerIndex: currentLayerIndex, inst: 'keys',
+      note: chord.notes[chord.notes.length - 1], notes: chord.notes.slice(0, MAX_PIANO_STACK),
+      label: rock.label, labels: chord.labels.slice(0, MAX_PIANO_STACK),
+      chordRole: rock.chordRole, color: rock.color, brightness: rock.brightness,
+      tight, vel: 1, skip: isNextStep ? 1 : 0, sustainSteps: 1,
+    };
+    if (slot) Object.assign(slot, stamp);
+    else bucket.push(stamp);
+    while (bucket.length > 5) bucket.shift();
+    additionsThisLayer += 1;
+    totalAdditions += 1;
+    recordedChoices.push({
+      ...stamp, step: target, layerName: layer.name, lane: rock.lane,
+      undoId: choiceId,
+    });
+    if (recordedChoices.length > 128) recordedChoices.shift();
+    laneFlash[rock.lane] = Math.max(laneFlash[rock.lane] || 0, tight ? 1 : 0.6);
+    if (loopFlash[target]) loopFlash[target] = { pulse: 1, color: rock.color, row: currentLayerIndex };
     if (isFreeMode() || undoStack.length === 1) updateLoopButton();
     return choiceId;
   }
@@ -3042,6 +3229,27 @@
     // The note plays NOW; it lands on the loop at the nearest step —
     // the player's timing is the rhythm.
     const { target, tight, isNextStep } = captureTiming(t);
+    if (rock.inst === 'keys' && rock.chordRole) {
+      const role = CHORD_ROLES.find(item => item.id === rock.chordRole) || CHORD_ROLES[0];
+      const chord = chordForRole(role);
+      startExpressiveChord(chord, pos || rock);
+      if (expressiveVoice) rock.brightness = expressiveVoice.brightness;
+      const choiceId = stampChord(rock, target, chord, tight, isNextStep);
+      if (expressiveVoice && choiceId) {
+        expressiveVoice.recordChoiceId = choiceId;
+        expressiveVoice.recordStep = target;
+        expressiveVoice.recordLayerId = activeLayer().id;
+      }
+      lastChordNotes = chord.notes.slice();
+      rock.chordNotes = chord.labels.join(' · ');
+      rock.pulse = 1;
+      burst(rock.x, rock.y, rock.color, tight ? 12 : 7);
+      combo = tight ? combo + 1 : 0;
+      bestCombo = Math.max(bestCombo, combo);
+      signal = clamp(signal + (tight ? 1.3 : 0.3), 0, 100);
+      distortion = clamp(distortion + (tight ? -0.8 : 2.2), 0, 100);
+      return true;
+    }
     const note = rock.inst === 'drums' ? null : degreeFreq(rock.deg, activeLayer().mult);
     if (rock.inst !== 'drums') rock.label = noteNameForDegree(rock.deg);
     if (rock.inst === 'bass' || rock.inst === 'keys') {
@@ -3070,11 +3278,15 @@
     let best = null;
     let bestScore = Infinity;
     rocks.forEach((rock, index) => {
-      const hitR = rock.r + 14;
-      const dist = Math.hypot(rock.x - pos.x, rock.y - pos.y);
-      if (dist <= hitR && dist - hitR < bestScore) {
+      const dx = Math.abs(rock.x - pos.x);
+      const dy = Math.abs(rock.y - pos.y);
+      const hit = rock.chordRole
+        ? dx <= rock.r * 1.42 + 12 && dy <= rock.r * 0.88 + 12
+        : Math.hypot(dx, dy) <= rock.r + 14;
+      const score = Math.hypot(dx, dy);
+      if (hit && score < bestScore) {
         best = { rock, index };
-        bestScore = dist - hitR;
+        bestScore = score;
       }
     });
     if (!best) return false;
@@ -3539,30 +3751,83 @@
   function drawRock(c, r) {
     c.save();
     c.translate(r.x, r.y);
-    c.rotate(r.rot);
+    if (!r.chordRole) c.rotate(r.rot);
     c.shadowColor = r.color;
     c.shadowBlur = 14 + (r.pulse || 0) * 22;
     c.fillStyle = r.inst === 'bass' ? '#2c2608' : r.inst === 'keys' ? '#26061e' : r.inst === 'chimes' ? '#1c0a26' : '#062432';
     c.strokeStyle = r.color;
     c.lineWidth = 2 + (r.pulse || 0) * 1.5;
     c.beginPath();
-    const points = r.inst === 'bass' ? 8 : 7;
-    for (let i = 0; i < points; i++) {
-      const a = i / points * Math.PI * 2;
-      const rr = r.r * (0.78 + ((i * 37) % 10) / 42);
-      const x = Math.cos(a) * rr, y = Math.sin(a) * rr;
-      if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
+    if (r.chordRole) {
+      const halfW = r.r * 1.42;
+      const halfH = r.r * 0.88;
+      const cut = Math.min(12, r.r * 0.32);
+      c.moveTo(-halfW + cut, -halfH);
+      c.lineTo(halfW - cut, -halfH);
+      c.lineTo(halfW, -halfH + cut);
+      c.lineTo(halfW, halfH - cut);
+      c.lineTo(halfW - cut, halfH);
+      c.lineTo(-halfW + cut, halfH);
+      c.lineTo(-halfW, halfH - cut);
+      c.lineTo(-halfW, -halfH + cut);
+    } else {
+      const points = r.inst === 'bass' ? 8 : 7;
+      for (let i = 0; i < points; i++) {
+        const a = i / points * Math.PI * 2;
+        const rr = r.r * (0.78 + ((i * 37) % 10) / 42);
+        const x = Math.cos(a) * rr, y = Math.sin(a) * rr;
+        if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
+      }
     }
     c.closePath();
     c.fill();
     c.stroke();
-    c.rotate(-r.rot);
+    // Keep the object illuminated, but render labels crisply. Inheriting the
+    // border's large shadow blur makes small chord names and note spellings
+    // bloom together on mobile screens.
+    c.shadowBlur = 0;
+    if (!r.chordRole) c.rotate(-r.rot);
     c.fillStyle = r.color;
-    c.font = "10px 'VCR', monospace";
+    c.font = r.chordRole ? "12px 'VCR', monospace" : "10px 'VCR', monospace";
     c.textAlign = 'center';
     c.textBaseline = 'middle';
-    c.fillText(r.inst === 'drums' ? '●' : (r.label || '♪'), 0, 1);
+    c.fillText(r.inst === 'drums' ? '●' : (r.label || '♪'), 0, r.chordRole ? -15 : 1);
+    if (r.chordRole) {
+      const role = CHORD_ROLES.find(item => item.id === r.chordRole);
+      const chord = role ? chordForRole(role) : null;
+      const preview = r.chordNotes || (chord ? chord.labels.join(' · ') : '');
+      c.fillStyle = '#ffffff';
+      c.font = "14px 'VCR', monospace";
+      c.fillText(r.chordName || (chord && chord.name) || 'CHORD', 0, 0);
+      c.globalAlpha = 0.78;
+      c.fillStyle = '#eaffff';
+      c.font = "9px 'VCR', monospace";
+      c.fillText(preview, 0, 16);
+    }
     c.restore();
+  }
+
+  function drawKeysControls(c) {
+    const rects = keysControlRects();
+    const drawControl = (rect, text, active, color) => {
+      c.fillStyle = active ? `${color}28` : 'rgba(4,10,26,0.82)';
+      c.strokeStyle = active ? color : 'rgba(234,255,255,0.22)';
+      c.lineWidth = active ? 1.8 : 1;
+      c.beginPath();
+      c.roundRect(rect.x, rect.y, rect.w, rect.h, 7);
+      c.fill();
+      c.stroke();
+      c.fillStyle = active ? '#eaffff' : 'rgba(234,255,255,0.62)';
+      c.font = `${W < 380 ? 9 : 10}px 'VCR', monospace`;
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText(text, rect.x + rect.w / 2, rect.y + rect.h / 2 + 1);
+    };
+    drawControl(rects.mode, keysPlayMode === 'chords' ? 'CHORDS · TAP FOR NOTES' : 'NOTES · TAP FOR CHORDS', true, '#00e5ff');
+    if (keysPlayMode === 'chords') {
+      drawControl(rects.octave, `OCT ${chordOctave < 0 ? 'LOW' : chordOctave > 0 ? 'HIGH' : 'MID'}`, true, '#b66cff');
+      drawControl(rects.voicing, chordVoicing.toUpperCase(), true, '#ff66c7');
+    }
   }
 
   function drawAsteroidSurface(c) {
@@ -3571,9 +3836,18 @@
     const layer = activeLayer();
     c.save();
     if (layer.inst === 'keys') {
+      drawKeysControls(c);
+      if (keysPlayMode === 'chords') {
+        c.globalAlpha = 0.55;
+        c.fillStyle = '#eaffff';
+        c.font = "8px 'VCR', monospace";
+        c.textAlign = 'center';
+        c.fillText(`${(SIGNAL_PRESETS.mood.find(item => item.id === signalSettings.mood) || {}).label || 'MOOD'} PALETTE · HOLD A FEELING`, W / 2, playFieldTop() + 50);
+      }
       for (let lane = 0; lane < LANES.length; lane++) {
         const laneRocks = rocks.filter(r => r.lane === lane);
         if (!laneRocks.length) continue;
+        if (keysPlayMode === 'chords') continue;
         const y = laneRocks.reduce((sum, r) => sum + r.baseY, 0) / laneRocks.length;
         const color = LANES[lane].color;
         c.strokeStyle = color;
@@ -4077,6 +4351,7 @@
   function drawGuidedCoach(c) {
     if (!isGuidedBuildMode() || state !== 'playing' || phase !== 'build') return;
     const layer = activeLayer();
+    const hideEyebrow = layer.inst === 'keys';
     const name = layer.name;
     const main = guidedStage === 'record' ? `${name} — RECORDING` : guidedStage === 'waiting' ? 'PLAY WHEN READY' : `PRACTICE ${name}`;
     const sub = guidedStage === 'record'
@@ -4095,21 +4370,24 @@
     c.lineWidth = 2;
     const panelW = Math.min(W - 34, 520);
     const panelX = (W - panelW) / 2;
-    const panelH = 98;
+    const panelH = hideEyebrow ? 82 : 98;
     c.fillRect(panelX, y - panelH * 0.5, panelW, panelH);
     c.strokeRect(panelX + 0.5, y - panelH * 0.5 + 0.5, panelW - 1, panelH - 1);
     c.shadowBlur = 0;
-    c.globalAlpha = 0.62;
-    c.fillStyle = '#eaffff';
-    c.font = "10px 'VCR', monospace";
-    const savedCount = layerStatus.filter(status => status === 'done').length;
-    c.fillText(`FREE-FORM · ${savedCount} SAVED · CHOOSE ANY INSTRUMENT`, W * 0.5, y - panelH * 0.5 + 16);
+    if (!hideEyebrow) {
+      c.globalAlpha = 0.62;
+      c.fillStyle = '#eaffff';
+      c.font = "10px 'VCR', monospace";
+      const savedCount = layerStatus.filter(status => status === 'done').length;
+      c.fillText(`FREE-FORM · ${savedCount} SAVED · CHOOSE ANY INSTRUMENT`, W * 0.5, y - panelH * 0.5 + 16);
+    }
     c.globalAlpha = 1;
     c.shadowColor = guidedStage === 'record' || guidedStage === 'waiting' ? '#ffe61a' : COLOR;
     c.shadowBlur = 16;
     c.fillStyle = guidedStage === 'record' || guidedStage === 'waiting' ? '#ffe61a' : COLOR;
     c.font = `${W < 380 ? 21 : 24}px 'VCR', monospace`;
-    c.fillText(main, W * 0.5, y - 8);
+    const mainY = hideEyebrow ? y - 14 : y - 8;
+    c.fillText(main, W * 0.5, mainY);
     if (guidedStage === 'record') {
       const mainWidth = c.measureText(main).width;
       const dotX = W * 0.5 - mainWidth * 0.5 - 18;
@@ -4119,14 +4397,14 @@
       c.globalAlpha = pulse;
       c.fillStyle = '#ff304f';
       c.beginPath();
-      c.arc(dotX, y - 8, 6, 0, Math.PI * 2);
+      c.arc(dotX, mainY, 6, 0, Math.PI * 2);
       c.fill();
       c.globalAlpha = 1;
     }
     c.shadowBlur = 0;
     c.fillStyle = 'rgba(234,255,255,0.94)';
     c.font = `${W < 380 ? 11 : 12}px 'VCR', monospace`;
-    drawWrappedCanvasText(c, sub, W * 0.5, y + 26, panelW - 28, 15, 2);
+    drawWrappedCanvasText(c, sub, W * 0.5, hideEyebrow ? y + 18 : y + 26, panelW - 28, 15, 2);
     c.restore();
   }
 
@@ -4464,23 +4742,56 @@
     overlay.classList.remove('signal-tempo-mode');
     overlay.classList.add('signal-menu-mode');
     overlay.innerHTML = `
-      <div class="signal-panel signal-reference-menu" style="--arcade-accent:#00e5ff">
-        <div class="signal-mode-banner"><div class="signal-title">SPACE AND SOUND</div></div>
-        <div class="signal-choice-stack">
-        <button class="signal-btn secondary signal-mode-hero arcade-hero-card" onclick="signalStartBuildTrack()">
-          <span class="signal-track-art" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
-          <span class="signal-mode-copy"><strong>BUILD A TRACK</strong><span>Make a song one layer at a time.</span></span>
-        </button>
-        <div class="signal-secondary-grid">
-          <button class="signal-btn secondary signal-mode-row signal-mode-explore arcade-mode-row" onclick="signalStartExplore()">
-            <svg class="signal-mode-icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M39 11c-4 7-6 13-5 20 1 8-3 15-10 17-6 2-11-1-11-6 0-4 3-7 8-8 4-1 7 0 10 2"/><path d="M37 13l11 6-5 9-10-6M48 19l4-7M21 42c3-1 6 0 8 3"/></svg>
-            <span class="signal-mode-copy"><strong>EXPLORE</strong><span>Play with sounds.</span></span>
-          </button>
-          <button class="signal-btn secondary signal-mode-row signal-mode-library arcade-mode-row" onclick="signalShowJukebox()">
-            <svg class="signal-mode-icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M24 13v32M24 17l25-5v30"/><ellipse cx="17" cy="47" rx="8" ry="6"/><ellipse cx="42" cy="44" rx="8" ry="6"/></svg>
-            <span class="signal-mode-copy"><strong>JUKEBOX</strong><span>Saved loops.</span></span>
-          </button>
-        </div>
+      <div class="signal-panel signal-reference-menu">
+        <div class="signal-select-shell">
+          <div class="signal-select-banner"><h1>SPACE AND SOUND</h1></div>
+          <div class="signal-select-grid">
+            <button class="signal-select-hero" style="--mode-color:#33ff66" onclick="signalStartBuildTrack()">
+              <span class="signal-select-sequencer" aria-hidden="true">
+                <span class="signal-select-track is-drums"><b>1</b><i></i><i class="on"></i><i></i><i class="on"></i><i></i><i></i></span>
+                <span class="signal-select-track is-bass"><b>2</b><i class="on"></i><i></i><i></i><i class="on"></i><i></i><i class="on"></i></span>
+                <span class="signal-select-track is-keys"><b>3</b><i></i><i class="on"></i><i></i><i></i><i class="on"></i><i></i></span>
+                <span class="signal-select-track is-lead"><b>4</b><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i></i></span>
+                <span class="signal-select-track is-fx"><b>5</b><i></i><i></i><i class="on"></i><i></i><i></i><i class="on"></i></span>
+                <span class="signal-select-track is-swell"><b>6</b><i class="on"></i><i></i><i></i><i></i><i class="on"></i><i></i></span>
+              </span>
+              <span class="signal-select-copy"><strong>BUILD A TRACK</strong></span>
+            </button>
+            <div class="signal-select-secondary">
+              <button class="signal-select-card" style="--mode-color:#ff8a3d" onclick="signalStartExplore()">
+                <svg class="signal-select-scene signal-explore-scene" viewBox="0 0 150 86" aria-hidden="true">
+                  <path class="signal-sound-orbit" d="M17 61c24-42 82-54 119-18"/>
+                  <g class="signal-sound-rock is-drum" transform="translate(35 54)">
+                    <path d="M-18-5-8-18 8-16 19-4 13 13-2 19-17 10z"/>
+                    <circle r="5"/><path d="M-8 0h16"/>
+                  </g>
+                  <g class="signal-sound-rock is-note" transform="translate(77 29)">
+                    <path d="M-17-8-4-19 12-13 18 2 8 17-10 15-19 2z"/>
+                    <text x="0" y="7">♪</text>
+                  </g>
+                  <g class="signal-sound-rock is-wave" transform="translate(116 51)">
+                    <path d="M-18-3-9-17 8-18 19-5 14 12-1 19-16 10z"/>
+                    <path d="M-9 2c4-8 8 8 13 0s9 8 13 0"/>
+                  </g>
+                  <g class="signal-sound-hit" transform="translate(77 29)"><circle r="23"/><path d="M0-29v-7M21-21l5-5M29 0h7"/></g>
+                </svg>
+                <span class="signal-select-copy"><strong>EXPLORE</strong></span>
+              </button>
+              <button class="signal-select-card" style="--mode-color:#8f73ff" onclick="signalShowJukebox()">
+                <svg class="signal-select-scene signal-jukebox-scene" viewBox="0 0 150 86" aria-hidden="true">
+                  <rect x="20" y="14" width="110" height="58" rx="8"/>
+                  <g transform="translate(67 43)">
+                    <g class="signal-vinyl">
+                      <circle r="24"/><circle r="14"/><circle r="5"/><path d="M0-20v8M14-14l-6 6M20 0h-8M14 14l-6-6"/>
+                    </g>
+                  </g>
+                  <g class="signal-tonearm"><circle cx="111" cy="25" r="5"/><path d="M108 29 91 52l7 5"/></g>
+                  <circle class="signal-jukebox-light" cx="119" cy="62" r="3"/>
+                </svg>
+                <span class="signal-select-copy"><strong>JUKEBOX</strong></span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>`;
   }
@@ -4573,16 +4884,19 @@
       return;
     }
     if (setupStep === 'layer' && free) {
+      const keysIndex = LAYERS.findIndex(layer => layer.inst === 'keys');
       const rows = LAYERS.map((layer, index) => {
-        const on = index === freeLayerIndex;
-        return `<button type="button" class="signal-chip ${on ? 'active' : ''}" style="min-height:54px;font-size:14px;letter-spacing:1px;border-width:${on ? '2px' : '1px'};box-shadow:${on ? '0 0 20px rgba(0,229,255,.35)' : 'none'}" onclick="signalSetFreeLayer(${index})">${on ? '✓ ' : ''}${layer.name}</button>`;
+        const on = index === freeLayerIndex && (layer.inst !== 'keys' || freeStartKeysMode === 'notes');
+        return `<button type="button" class="signal-chip ${on ? 'active' : ''}" style="min-height:54px;font-size:14px;letter-spacing:1px;border-width:${on ? '2px' : '1px'};box-shadow:${on ? '0 0 20px rgba(0,229,255,.35)' : 'none'}" onclick="signalSetFreeLayer(${index},'notes')">${on ? '✓ ' : ''}${layer.name}</button>`;
       }).join('');
+      const chordsOn = freeLayerIndex === keysIndex && freeStartKeysMode === 'chords';
+      const chordRow = `<button type="button" class="signal-chip ${chordsOn ? 'active' : ''}" style="min-height:54px;font-size:14px;letter-spacing:1px;border-width:${chordsOn ? '2px' : '1px'};box-shadow:${chordsOn ? '0 0 20px rgba(182,108,255,.38)' : 'none'}" onclick="signalSetFreeLayer(${keysIndex},'chords')">${chordsOn ? '✓ ' : ''}CHORDS</button>`;
       overlay.innerHTML = `
         <div class="signal-panel arcade-setup" style="${panelStyle};--arcade-accent:#00e5ff">
           <div class="signal-subtitle arcade-setup-progress">EXPLORE · STEP 3 OF 3</div>
           <div class="signal-title arcade-setup-question">START ON</div>
           <div class="signal-subtitle" style="margin-bottom:12px">Pick your first instrument — you can switch anytime.</div>
-          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${rows}</div>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${rows}${chordRow}</div>
           ${setupNavButtonsHTML('START ›', 'signalConfirmSetup()', "signalSetupStep('feel')")}
         </div>`;
       return;
@@ -4764,6 +5078,7 @@
           tunes: v.tunes ? v.tunes.slice() : null,
           label: v.label || '',
           labels: v.labels ? v.labels.slice() : null,
+          chordRole: v.chordRole || null,
           color: v.color,
           tight: !!v.tight,
           vel: v.vel || 1,
@@ -5001,6 +5316,7 @@
           tunes: choice.tunes ? choice.tunes.slice() : null,
           label: choice.label || '',
           labels: choice.labels ? choice.labels.slice() : null,
+          chordRole: choice.chordRole || null,
           color: choice.color || COLOR,
           tight: choice.tight !== false,
           vel: choice.vel || 1,
@@ -5232,8 +5548,9 @@
     setupStep = step || 'palette';
     renderBuildSetup();
   };
-  window.signalSetFreeLayer = function(index) {
+  window.signalSetFreeLayer = function(index, keysMode) {
     freeLayerIndex = clamp(Math.floor(Number(index) || 0), 0, LAYERS.length - 1);
+    freeStartKeysMode = keysMode === 'chords' ? 'chords' : 'notes';
     if (setupOpen) renderBuildSetup();
   };
   window.signalSetTempo = function(value, preview) {

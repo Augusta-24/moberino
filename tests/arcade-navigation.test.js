@@ -152,7 +152,8 @@ test('shared arcade UX foundation defines semantic layout and radius rules', () 
 
 test('Space and Sound uses the approved hero and guided setup patterns', () => {
   const signal = read('js/games/signal.js');
-  assert.match(signal, /signal-mode-hero arcade-hero-card/);
+  assert.match(signal, /signal-select-hero/);
+  assert.match(signal, /signal-select-secondary/);
   assert.match(signal, /signal-panel arcade-setup/);
 });
 
@@ -184,6 +185,29 @@ test('Space and Sound records held Bass and Keys notes as sustained playback', (
   assert.match(signal, /createHeldPitchedVoice\(inst, note, vel, brightness, durationSeconds, delaySeconds\)/);
   assert.match(signal, /choice\.brightness = v\.brightness/);
   assert.match(signal, /sustainedSlotAt\(i, row\)/);
+});
+
+test('Space and Sound Keys chord mode stays mood-safe and replays the held chord', () => {
+  const signal = read('js/games/signal.js');
+  assert.match(signal, /const CHORD_ROLES = \[/);
+  for (const label of ['HOME', 'LIFT', 'DREAM', 'TENSION', 'DARK', 'RETURN']) {
+    assert.match(signal, new RegExp(`label: '${label}'`));
+  }
+  assert.match(signal, /keysPlayMode === 'chords'/);
+  assert.match(signal, /chordOctave = chordOctave >= 1 \? -1 : chordOctave \+ 1/);
+  assert.match(signal, /chordVoicing = chordVoicing === 'tight' \? 'wide' : 'tight'/);
+  assert.match(signal, /startExpressiveChord\(chord, pos \|\| rock\)/);
+  assert.match(signal, /function chordNameForRole\(role\)/);
+  assert.match(signal, /suffix: 'sus4'/);
+  assert.match(signal, /r\.chordName \|\| \(chord && chord\.name\)/);
+  assert.match(signal, /const halfW = r\.r \* 1\.42/);
+  assert.match(signal, /function stampChord\(rock, target, chord, tight, isNextStep\)/);
+  assert.match(signal, /notes: chord\.notes\.slice\(0, MAX_PIANO_STACK\)/);
+  assert.match(signal, /chordRole: v\.chordRole \|\| null/);
+  assert.match(signal, /chordRole: choice\.chordRole \|\| null/);
+  assert.match(signal, />\$\{chordsOn \? '✓ ' : ''\}CHORDS<\/button>/);
+  assert.match(signal, /signalSetFreeLayer\(\$\{keysIndex\},'chords'\)/);
+  assert.match(signal, /freeStartKeysMode = keysMode === 'chords' \? 'chords' : 'notes'/);
 });
 
 test('Space and Sound gives Chimes an invisible pull band outside the visible ring', () => {

@@ -10701,12 +10701,21 @@ function nextWave() {
 
   function spaceModeButtonHTML(label, detail, onclick, color, icon) {
     const icons = {
-      weight: `<svg class="space-mode-icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M19 25v14M13 28v8M45 25v14M51 28v8M19 32h26"/></svg>`,
+      weight: `<svg class="space-mode-scene" viewBox="0 0 150 86" aria-hidden="true">
+        <path class="space-lesson-lane" d="M12 63h126M20 29h70"/>
+        <g class="space-lesson-ship" transform="translate(40 47)"><path d="M0-20 17 15 0 9-17 15z"/><circle cy="1" r="4"/></g>
+        <g class="space-lesson-target" transform="translate(108 30)"><circle r="14"/><circle r="5"/><path d="M-20 0h8M12 0h8M0-20v8M0 12v8"/></g>
+        <path class="space-lesson-shot" d="M50 39 91 31"/>
+      </svg>`,
       play: `<svg class="space-mode-icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M23 17l25 15-25 15z"/></svg>`,
-      boss: `<svg class="space-mode-icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M17 29c0-10 6-17 15-17s15 7 15 17c0 7-4 12-9 15v8h-5v-7h-3v7h-5v-8c-5-3-8-8-8-15z"/><circle cx="26" cy="29" r="2.5"/><circle cx="38" cy="29" r="2.5"/><path d="M28 38h8"/></svg>`
+      boss: `<svg class="space-mode-scene" viewBox="0 0 150 86" aria-hidden="true">
+        <g class="space-boss-silhouette" transform="translate(77 41) scale(.9)"><path d="M-35-4c0-22 14-34 35-34S35-26 35-4c0 12-7 23-18 28v13H7V26H-7v11h-10V24c-11-5-18-16-18-28z"/><circle cx="-13" cy="-8" r="4"/><circle cx="13" cy="-8" r="4"/><path d="M-13 9h26"/></g>
+        <g class="space-boss-player" transform="translate(22 67)"><path d="M0-11 8 8 0 5-8 8z"/></g>
+        <path class="space-boss-warning" d="M20 48h4M20 40v-9"/>
+      </svg>`
     };
     return `<button class="space-mode-card" style="--mode-color:${color}" onclick="${onclick}">
-      ${icons[icon] || icons.play}
+      <span class="space-mode-card-art">${icons[icon] || icons.play}</span>
       <span class="space-mode-copy"><strong>${label}</strong><span>${detail}</span></span>
     </button>`;
   }
@@ -10720,6 +10729,12 @@ function nextWave() {
         <path d="M24 68l18-11 17 8 4 19-17 13-21-8z"/>
         <path d="M252 39l22-8 17 15-6 20-25 5-14-16z"/>
         <path d="M261 124l14-9 16 7 1 16-17 9-17-9z"/>
+      </g>
+      <g class="space-campaign-route" fill="none" stroke-linecap="round">
+        <path d="M48 126C82 106 90 63 132 50S217 64 264 93" stroke="#33ff66" stroke-width="2" stroke-dasharray="5 7"/>
+        <circle cx="48" cy="126" r="5" fill="#00e5ff" stroke="#06131f" stroke-width="2"/>
+        <circle cx="264" cy="93" r="7" fill="#ff7180" stroke="#06131f" stroke-width="2"/>
+        <path d="M257 86l14 14M271 86l-14 14" stroke="#fff" stroke-width="2"/>
       </g>
       <svg x="70" y="-4" width="180" height="190" viewBox="0 0 240 220">
         <g class="space-journey-plume">
