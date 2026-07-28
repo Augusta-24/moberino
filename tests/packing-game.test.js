@@ -121,6 +121,20 @@ test('piece library includes the new five-square plus and capital T', () => {
   assert.equal(JSON.stringify(engine.PIECE_LIBRARY[11].cells), JSON.stringify([[0, 0], [0, 1], [0, 2], [1, 1], [2, 1]]));
 });
 
+test('every Shape Mobe piece has a unique silhouette and arcade color', () => {
+  const engine = loadEngine();
+  const silhouetteKeys = engine.PIECE_LIBRARY.map(piece => {
+    const rotations = engine.orientations(piece.cells)
+      .map(cells => JSON.stringify(cells))
+      .sort();
+    return rotations[0];
+  });
+  const colors = engine.PIECE_LIBRARY.map(piece => engine.PIECE_COLORS[piece.id]);
+  assert.equal(new Set(silhouetteKeys).size, engine.PIECE_LIBRARY.length);
+  assert.equal(new Set(colors).size, engine.PIECE_LIBRARY.length);
+  assert.equal(colors.every(Boolean), true);
+});
+
 test('World 2 generates touching-pair constraints on a rectangular board with holes', () => {
   const engine = loadEngine();
   const { levels } = loadCampaign();

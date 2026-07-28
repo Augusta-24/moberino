@@ -30,13 +30,20 @@
     { id: 't-pentomino', cells: [[0, 0], [0, 1], [0, 2], [1, 1], [2, 1]] }
   ];
 
-  const PIECE_COLORS = {
-    'domino': '#d0782f', 'i-tromino': '#5579b8', 'l-tromino': '#d55c36',
-    'square': '#69a84e', 'i-tetromino': '#3e8eaa', 'l-tetromino': '#cda326',
-    's-tetromino': '#3fa27a', 't-tetromino': '#b84e76',
-    'u-pentomino': '#7952b5', 'p-pentomino': '#b94669',
-    'plus-pentomino': '#2f9d93', 't-pentomino': '#d0648b'
-  };
+  const PIECE_COLORS = Object.freeze({
+    'domino': '#ff9d24',       // orange
+    'i-tromino': '#438cff',    // blue
+    'l-tromino': '#ff4d5f',    // crimson
+    'square': '#b7f34a',       // lime
+    'i-tetromino': '#16d9f3',  // cyan
+    'l-tetromino': '#ffe21f',  // yellow
+    's-tetromino': '#19e696',  // emerald
+    't-tetromino': '#bc63ff',  // purple
+    'u-pentomino': '#765cff',  // indigo
+    'p-pentomino': '#ff4fc4',  // magenta
+    'plus-pentomino': '#28ed68', // green
+    't-pentomino': '#ff5c91'   // rose
+  });
 
   // ---- Geometry helpers -------------------------------------------------------
 
@@ -77,8 +84,24 @@
     return out;
   }
 
+  function physicalRotationDetails(cells) {
+    let cur = normalizeDetailed(cells.map(([r, c], source) => ({ r, c, source })));
+    const out = [cur];
+    for (let i = 0; i < 3; i++) {
+      cur = normalizeDetailed(cur.map(p => ({ r: p.c, c: -p.r, source: p.source })));
+      out.push(cur);
+    }
+    return out;
+  }
+
   const ORIENTATION_DETAIL_CACHE = PIECE_LIBRARY.map(p => orientationDetails(p.cells));
   const ORIENTATION_CACHE = ORIENTATION_DETAIL_CACHE.map(list => list.map(detail => detail.map(p => [p.r, p.c])));
+  // Geometry-equivalent rotations stay deduplicated for the solver, while
+  // decorated pieces retain four physical turns so their dots move with them.
+  const PHYSICAL_ROTATION_DETAIL_CACHE = PIECE_LIBRARY.map(p => physicalRotationDetails(p.cells));
+  const PHYSICAL_ROTATION_TO_ORIENT = PHYSICAL_ROTATION_DETAIL_CACHE.map((turns, pieceIndex) =>
+    turns.map(turn => ORIENTATION_CACHE[pieceIndex].findIndex(orient =>
+      sameShape(orient, turn.map(cell => [cell.r, cell.c])))));
 
   function orientations(cells) {
     return orientationDetails(cells).map(detail => detail.map(p => [p.r, p.c]));
@@ -652,6 +675,8 @@
   let dragging = null;
   let selectedPiece = null;
   let selectionGhosts = [];
+  let overlapZoneLayer = null;
+  let overlapZoneIndicators = new Map();
   let regionCellSize = 0;
   let trayCellSize = 0;
   let floatingCellSize = 0;
@@ -692,10 +717,18 @@
     return orient.map(([r, c]) => [r + dr, c + dc]);
   }
 
+  function currentOrientationDetail(piece) {
+    if (piece.physicalTurn != null &&
+        PHYSICAL_ROTATION_TO_ORIENT[piece.pieceIndex][piece.physicalTurn] === piece.orientIdx) {
+      return PHYSICAL_ROTATION_DETAIL_CACHE[piece.pieceIndex][piece.physicalTurn];
+    }
+    return ORIENTATION_DETAIL_CACHE[piece.pieceIndex][piece.orientIdx];
+  }
+
   function currentDetailedCells(piece, placedAt) {
     const origin = placedAt || piece.placedAt;
     if (!origin) return [];
-    const detail = ORIENTATION_DETAIL_CACHE[piece.pieceIndex][piece.orientIdx];
+    const detail = currentOrientationDetail(piece);
     return detail.map(cell => ({ r: cell.r + origin[0], c: cell.c + origin[1], source: cell.source }));
   }
 
@@ -754,6 +787,7 @@
   function renderPieceShape(g, cells, cellSize, colorId) {
     while (g.firstChild) g.removeChild(g.firstChild);
     const color = PIECE_COLORS[colorId] || '#8a9fc9';
+    g.setAttribute('style', `--pge-piece-color:${color}`);
     // A padded, invisible hit-rect sized to the piece's bounding box (not just
     // its painted cells) makes tap-to-rotate forgiving for small/thin pieces
     // (a 2-cell domino is otherwise a tiny, easy-to-miss target) and for taps
@@ -798,9 +832,8 @@
     };
     pieceLinks.forEach(({ link, index }, markerIndex) => {
       const marker = (link.contacts || []).find(contact => contact.slot === piece.slot);
-      const markedCell = marker == null
-        ? null
-        : ORIENTATION_DETAIL_CACHE[piece.pieceIndex][piece.orientIdx].find(cell => cell.source === marker.source);
+      const detail = currentOrientationDetail(piece);
+      const markedCell = marker == null ? null : detail.find(cell => cell.source === marker.source);
       const [r, c] = markedCell ? [markedCell.r, markedCell.c] : cells[markerIndex % cells.length];
       const pipCount = Math.min(5, index + 1);
       pipLayouts[pipCount].forEach(([px, py]) => {
@@ -874,7 +907,57 @@
           cell.classList.add('is-overlap-cell');
         }
       });
+      const indicator = overlapZoneIndicators.get(key(nodeR, nodeC));
+      if (indicator) {
+        const count = Math.min(2, occupants.length);
+        indicator.g.classList.toggle('has-one', count === 1);
+        indicator.g.classList.toggle('is-complete', count === 2);
+        indicator.label.textContent = count === 2 ? '✓ 2/2' : count === 1 ? '1/2' : '0/2';
+      }
     });
+  }
+
+  function mountOverlapZoneIndicators() {
+    overlapZoneIndicators = new Map();
+    if (!stage || !(puzzle && puzzle.overlapZone && puzzle.overlapZone.length)) return;
+    overlapZoneLayer = svg('g', { class: 'pge-overlap-zone-overlay', 'pointer-events': 'none' });
+    const inset = 3;
+    const zoneCells = new Set(puzzle.overlapZone.map(([r, c]) => key(r, c)));
+    const boundary = [];
+    puzzle.overlapZone.forEach(([r, c]) => {
+      const x = regionOrigin.x + c * regionCellSize + inset;
+      const y = regionOrigin.y + r * regionCellSize + inset;
+      const size = regionCellSize - inset * 2;
+      const g = svg('g', { class: 'pge-overlap-zone-indicator' });
+      g.appendChild(svg('rect', {
+        x, y, width: size, height: size, rx: 4, class: 'pge-overlap-zone-veil'
+      }));
+      const label = svg('text', {
+        x: x + size / 2,
+        y: y + size / 2,
+        'text-anchor': 'middle',
+        'dominant-baseline': 'middle',
+        class: 'pge-overlap-zone-status'
+      });
+      label.textContent = '0/2';
+      g.appendChild(label);
+      overlapZoneLayer.appendChild(g);
+      overlapZoneIndicators.set(key(r, c), { g, label });
+
+      const left = regionOrigin.x + c * regionCellSize + 2;
+      const top = regionOrigin.y + r * regionCellSize + 2;
+      const right = left + regionCellSize - 4;
+      const bottom = top + regionCellSize - 4;
+      if (!zoneCells.has(key(r - 1, c))) boundary.push(`M${left},${top}H${right}`);
+      if (!zoneCells.has(key(r, c + 1))) boundary.push(`M${right},${top}V${bottom}`);
+      if (!zoneCells.has(key(r + 1, c))) boundary.push(`M${right},${bottom}H${left}`);
+      if (!zoneCells.has(key(r, c - 1))) boundary.push(`M${left},${bottom}V${top}`);
+    });
+    overlapZoneLayer.appendChild(svg('path', {
+      d: boundary.join(''),
+      class: 'pge-overlap-zone-boundary'
+    }));
+    stage.appendChild(overlapZoneLayer);
   }
 
   function pieceDimensions(piece, cellSize, orientIdx) {
@@ -930,6 +1013,7 @@
     piece.placedAt = [r, c];
     piece.lastValidAt = [r, c];
     piece.lastValidOrientIdx = piece.orientIdx;
+    piece.lastValidPhysicalTurn = piece.physicalTurn;
     piece.floating = false;
     piece.floatPosition = null;
     renderPiece(piece, regionCellSize);
@@ -948,6 +1032,7 @@
     piece.floating = false;
     piece.floatPosition = null;
     piece.orientIdx = piece.homeOrientIdx;
+    piece.physicalTurn = piece.homePhysicalTurn;
     renderPiece(piece, trayCellSize);
     piece.g.setAttribute('transform', `translate(${piece.home.x},${piece.home.y})`);
     piece.g.classList.remove('is-placed', 'is-floating', 'is-valid-drop', 'is-invalid-drop');
@@ -959,6 +1044,7 @@
   function restorePiece(piece) {
     if (piece.lastValidAt) {
       piece.orientIdx = piece.lastValidOrientIdx;
+      piece.physicalTurn = piece.lastValidPhysicalTurn;
       placePieceAt(piece, piece.lastValidAt[0], piece.lastValidAt[1]);
     } else {
       returnPieceHome(piece);
@@ -996,7 +1082,12 @@
     const orients = ORIENTATION_CACHE[piece.pieceIndex];
     const previousDimensions = pieceDimensions(piece, floatingCellSize);
     const previousPosition = piece.floatPosition || { x: 0, y: 0 };
-    piece.orientIdx = (piece.orientIdx + 1) % orients.length;
+    if (piece.physicalTurn == null) {
+      piece.orientIdx = (piece.orientIdx + 1) % orients.length;
+    } else {
+      piece.physicalTurn = (piece.physicalTurn + 1) % 4;
+      piece.orientIdx = PHYSICAL_ROTATION_TO_ORIENT[piece.pieceIndex][piece.physicalTurn];
+    }
     const nextDimensions = pieceDimensions(piece, floatingCellSize);
     renderPiece(piece, floatingCellSize);
     moveFloatingPiece(piece, {
@@ -1515,10 +1606,17 @@
     if (nextConfig.regionBackgroundFill) bgRect.setAttribute('fill', nextConfig.regionBackgroundFill);
     regionGroup.appendChild(bgRect);
     board.blocked.forEach(([r, c]) => {
+      const x = regionOrigin.x + c * regionCellSize + 1;
+      const y = regionOrigin.y + r * regionCellSize + 1;
+      const size = regionCellSize - 2;
       regionGroup.appendChild(svg('rect', {
-        x: regionOrigin.x + c * regionCellSize + 1,
-        y: regionOrigin.y + r * regionCellSize + 1,
-        width: regionCellSize - 2, height: regionCellSize - 2, rx: 3, class: 'pge-blocked'
+        x, y, width: size, height: size, rx: 3, class: 'pge-blocked'
+      }));
+      regionGroup.appendChild(svg('path', {
+        d: `M${x + 6},${y + size - 2}L${x + size - 2},${y + 6}` +
+          `M${x + 2},${y + size - 12}L${x + size - 12},${y + 2}` +
+          `M${x + 12},${y + size - 2}L${x + size - 2},${y + 12}`,
+        class: 'pge-blocked-hatch'
       }));
     });
     (puzzle.overlapZone || []).forEach(([r, c]) => {
@@ -1593,7 +1691,16 @@
       const g = svg('g', { class: 'pge-piece', transform: `translate(${home.x},${home.y})` });
       trayGroup.appendChild(g);
       const anchor = (puzzle.anchors || []).find(candidate => candidate.slot === i) || null;
-      const piece = { slot: i, pieceIndex, orientIdx: startOrientIdx, homeOrientIdx: startOrientIdx, g, home, placedAt: null, lastValidAt: null, lastValidOrientIdx: null, floating: false, floatPosition: null, regionGroup, anchor };
+      const hasLinks = (puzzle.links || []).some(link => link.pieceSlots.includes(i));
+      const physicalTurn = hasLinks
+        ? PHYSICAL_ROTATION_TO_ORIENT[pieceIndex].findIndex(orientIdx => orientIdx === startOrientIdx)
+        : null;
+      const piece = {
+        slot: i, pieceIndex, orientIdx: startOrientIdx, homeOrientIdx: startOrientIdx,
+        physicalTurn, homePhysicalTurn: physicalTurn, lastValidPhysicalTurn: null,
+        g, home, placedAt: null, lastValidAt: null, lastValidOrientIdx: null,
+        floating: false, floatPosition: null, regionGroup, anchor
+      };
       trayPieces.push(piece);
       renderPiece(piece, trayCellSize);
       if (anchor) {
@@ -1608,6 +1715,7 @@
       }
       addListener(g, 'pointerdown', event => startDrag(piece, event), { passive: false });
     });
+    mountOverlapZoneIndicators();
     refreshOverlapTextures();
 
     addListener(stage, 'pointermove', moveDrag, { passive: false });
@@ -1679,6 +1787,9 @@
     victoryTimers = [];
     listeners.forEach(({ node, type, handler }) => node.removeEventListener(type, handler));
     listeners = [];
+    if (overlapZoneLayer && overlapZoneLayer.parentNode) overlapZoneLayer.parentNode.removeChild(overlapZoneLayer);
+    overlapZoneLayer = null;
+    overlapZoneIndicators = new Map();
     active = false; paused = true; solved = false;
     clearSelectionGhost();
     config = null; stage = null; puzzle = null; trayPieces = []; dragging = null; selectedPiece = null; rackArea = null; floatingCellSize = 0;
@@ -1691,7 +1802,7 @@
 
   window.PackingGameEngine = Object.freeze({
     // puzzle logic (usable headless, e.g. by tests or a future generator tool)
-    PIECE_LIBRARY, orientations, solveCount, generate,
+    PIECE_LIBRARY, PIECE_COLORS, orientations, solveCount, generate,
     // rendering lifecycle
     start, begin, reset, destroy,
     isActive() { return active; },

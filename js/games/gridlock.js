@@ -1006,7 +1006,7 @@
     tile.rot = (tile.rot + 1) % 4;
     tile.chan.setAttribute('transform', `rotate(${tile.rot * 90})`);
     rotations += 1;
-    playTone(190, 225, .06, .012, 'sine');
+    playTone(190, 225, .06, .024, 'sine');
     evaluate();
   }
 

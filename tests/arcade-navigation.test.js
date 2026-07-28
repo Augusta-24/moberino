@@ -156,6 +156,82 @@ test('Space and Sound uses the approved hero and guided setup patterns', () => {
   assert.match(signal, /signal-panel arcade-setup/);
 });
 
+test('Space and Sound reserves recording controls without overlapping or resizing pads', () => {
+  const signal = read('js/games/signal.js');
+  assert.match(signal, /if \(guidedCoachActive\(\)\) \{\s*bottomReserve = 190;/);
+  assert.match(signal, /const bottom = Math\.max\(top, playFieldBottom\(0\)\);/);
+  assert.doesNotMatch(signal, /Math\.max\(top \+ 150, playFieldBottom\(0\)\)/);
+});
+
+test('Space and Sound clearly marks the live recording state', () => {
+  const signal = read('js/games/signal.js');
+  assert.match(signal, /`\$\{name\} — RECORDING`/);
+  assert.match(signal, /fillStyle = '#ff304f'/);
+  assert.match(signal, /Math\.sin\(now\(\) \/ 420\)/);
+  assert.match(signal, /guidedStage === 'record' \? 'rgba\(255,48,79,0\.92\)'/);
+  assert.match(signal, /guidedControlButton\('READY TO RECORD', startGuidedRecordPass, true\)/);
+  assert.match(signal, /ready\.style\.borderColor = 'rgba\(255,48,79,\.96\)'/);
+  assert.match(signal, /guidedControlButton\('SAVE LAYER', captureNextLayer, true\)/);
+  assert.match(signal, /saveLayer\.style\.borderColor = 'rgba\(66,255,140,\.96\)'/);
+});
+
+test('Space and Sound records held Bass and Keys notes as sustained playback', () => {
+  const signal = read('js/games/signal.js');
+  assert.match(signal, /\(v\.inst === 'bass' \|\| v\.inst === 'keys'\) && v\.recordChoiceId/);
+  assert.match(signal, /Math\.ceil\(heldMs \/ Math\.max\(1, beatMs\)\)/);
+  assert.match(signal, /slot\.sustainSteps = Math\.max/);
+  assert.match(signal, /durationMs = Math\.max\(1, slot\.sustainSteps \|\| 1\) \* beatMs/);
+  assert.match(signal, /createHeldPitchedVoice\(inst, note, vel, brightness, durationSeconds, delaySeconds\)/);
+  assert.match(signal, /choice\.brightness = v\.brightness/);
+  assert.match(signal, /sustainedSlotAt\(i, row\)/);
+});
+
+test('Space and Sound gives Chimes an invisible pull band outside the visible ring', () => {
+  const signal = read('js/games/signal.js');
+  assert.match(signal, /orbLayerInst\(\) === 'chimes' \? 1\.32 : 1/);
+  assert.match(signal, /Math\.hypot\(dx, dy\) \/ tc\.maxR, 0, maxPull/);
+  assert.doesNotMatch(signal, /\[0\.12, 0\.4, 0\.7, 1, 1\.32\]/);
+  assert.match(signal, /isSwell \? 1 : 1\.35/);
+  assert.match(signal, /active \? 15 : 13/);
+});
+
+test('Space and Sound FX includes distinct Impact and Glitch gestures', () => {
+  const signal = read('js/games/signal.js');
+  assert.match(signal, /\{ label: 'IMPACT', piece: 'impact'/);
+  assert.match(signal, /\{ label: 'GLITCH', piece: 'glitch'/);
+  assert.match(signal, /if \(piece === 'impact'\)/);
+  assert.match(signal, /if \(piece === 'glitch'\)/);
+  assert.match(signal, /const positions = \[\s*\[0\.20, 0\.30\]/);
+  assert.match(signal, /fillText\('TAP OR PINCH THE JUNK', W \* 0\.5, playFieldBottom\(0\) \+ 18\)/);
+});
+
+test('Space and Sound keeps practiced gestures deterministic through saved playback', () => {
+  const signal = read('js/games/signal.js');
+  assert.doesNotMatch(signal, /playRandomSfx\('hit'/);
+  assert.doesNotMatch(signal, /playRandomSfx\('fx', timing/);
+  assert.match(signal, /playPitched\('chimes', note, 1, 0\)/);
+  assert.match(signal, /openness: rock\.openness/);
+  assert.match(signal, /intensity: rock\.intensity/);
+  assert.match(signal, /openness: Number\.isFinite\(v\.openness\)/);
+  assert.match(signal, /intensity: Number\.isFinite\(choice\.intensity\)/);
+});
+
+test('Space and Sound makes free-form layers and the mixer easier to control', () => {
+  const signal = read('js/games/signal.js');
+  const css = read('css/games/signal.css');
+  assert.match(signal, /FREE-FORM · \$\{savedCount\} SAVED · CHOOSE ANY INSTRUMENT/);
+  assert.match(signal, /status === 'RECORDING' \? '#ff304f' : status === 'SAVED' \? '#42ff8c'/);
+  assert.match(signal, /guidedControlButton\('START WITH REST'/);
+  assert.doesNotMatch(signal, /btn\.addEventListener\('pointerdown', activate\)/);
+  assert.doesNotMatch(signal, /btn\.addEventListener\('touchend', activate/);
+  assert.match(signal, /signalToggleLayerMute/);
+  assert.match(signal, /signalToggleLayerSolo/);
+  assert.match(signal, /aria-label="\$\{layer\.name\} mute"/);
+  assert.match(signal, /aria-label="\$\{layer\.name\} solo"/);
+  assert.match(css, /\.signal-panel\.signal-mix-panel \{\s*width: min\(96vw, 920px\)/);
+  assert.match(css, /\.signal-mix-slider \{[\s\S]*height: 30px/);
+});
+
 test('end states share a primary, game-menu, and arcade hierarchy without Snoob stars', () => {
   const arcade = read('js/arcade.js');
   const whack = read('js/games/whack.js');

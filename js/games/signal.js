@@ -101,6 +101,8 @@
       { label: 'ECHO', piece: 'echo', color: '#7bffea' },
       { label: 'RISE', piece: 'rise', color: '#ff66c7' },
       { label: 'WARP', piece: 'warp', color: '#ffe61a' },
+      { label: 'IMPACT', piece: 'impact', color: '#ff704d' },
+      { label: 'GLITCH', piece: 'glitch', color: '#9b7bff' },
     ] },
   ];
   // Legacy v2 recipes only: old rock types stored per-role step masks.
@@ -186,6 +188,8 @@
   let signalSettings = { style: 'space-funk', mood: 'minor', tempo: 'medium', grooveAssist: 'light', recordingStyle: 'guided' };
   let bpmPreviewTimer = null;
   let layerVolumes = { ...DEFAULT_LAYER_VOLUMES };
+  let layerMutes = {};
+  let layerSolos = {};
   let beatMs = DEFAULT_BEAT_MS;
   let randomSfxAt = 0;
   let laneFlash = [0, 0, 0];
@@ -259,11 +263,12 @@
   // less headroom than guided/build.
   function playFieldTop() { return guidedCoachActive() ? 286 : isFreeMode() ? 90 : loopGridBottom() + 18; }
   function playFieldBottom(limit) {
-    // Reserve only the bottom chrome that is currently present. FINISH now
-    // shares the top action slot with UNDO, so it costs no playfield height.
+    // Track Mode keeps the largest guided-control footprint reserved for the
+    // whole take. That prevents the instrument from resizing when RECORD adds
+    // its second coach button, and keeps every surface above those controls.
     let bottomReserve = shellActive() ? 84 : 20;
     if (guidedCoachActive()) {
-      bottomReserve = guidedStage === 'record' ? 190 : 142;
+      bottomReserve = 190;
     }
     const base = H - LOOP_PANEL_H - bottomReserve;
     if (!guidedCoachActive() || !limit) return base;
@@ -273,7 +278,9 @@
   function swellSurfaceBottom() { return playFieldBottom(0); }
   function activeLayerLabel() {
     if (isFreeMode()) return `EXPLORE: ${activeLayer().name}`;
-    if (isGuidedBuildMode()) return `${guidedStage === 'record' ? 'RECORD' : guidedStage === 'done' ? 'SAVED' : 'PRACTICE'} ${activeLayer().name}`;
+    if (isGuidedBuildMode()) return guidedStage === 'record'
+      ? `${activeLayer().name} — RECORDING`
+      : `${guidedStage === 'done' ? 'SAVED' : 'PRACTICE'} ${activeLayer().name}`;
     return `PLAY ${activeLayer().name}`;
   }
   function fallbackStepsForType(type) {
@@ -301,6 +308,11 @@
   function layerVolumeForId(id) {
     return Number.isFinite(layerVolumes[id]) ? clamp(layerVolumes[id], 0, 1.25) : 1;
   }
+  function layerPlaybackVolume(id) {
+    const anySolo = LAYERS.some(layer => !!layerSolos[layer.id]);
+    if (layerMutes[id] || (anySolo && !layerSolos[id])) return 0;
+    return layerVolumeForId(id);
+  }
   function slotLayerId(slot) {
     if (slot && DEFAULT_LAYER_VOLUMES.hasOwnProperty(slot.layerId)) return slot.layerId;
     const byIndex = slot && LAYERS[choiceLayerIndex(slot)];
@@ -314,9 +326,28 @@
     const label = document.getElementById(`signal-mix-value-${id}`);
     if (label) label.textContent = `${Math.round(layerVolumes[id] * 100)}%`;
   }
+  function toggleLayerMute(id) {
+    if (!DEFAULT_LAYER_VOLUMES.hasOwnProperty(id)) return;
+    layerMutes[id] = !layerMutes[id];
+    showMixScreen();
+  }
+  function toggleLayerSolo(id) {
+    if (!DEFAULT_LAYER_VOLUMES.hasOwnProperty(id)) return;
+    layerSolos[id] = !layerSolos[id];
+    showMixScreen();
+  }
   function layerSlotAt(step, layerIndex) {
     const layer = LAYERS[layerIndex];
     return (loop[step] || []).filter(v => (v.layerId || '') === layer.id);
+  }
+  function sustainedSlotAt(step, layerIndex) {
+    for (let start = 0; start < LOOP_STEPS; start++) {
+      const offset = (step - start + LOOP_STEPS) % LOOP_STEPS;
+      if (offset === 0) continue;
+      const slot = layerSlotAt(start, layerIndex).find(item => (item.sustainSteps || 1) > offset);
+      if (slot) return slot;
+    }
+    return null;
   }
   function layerFilledSteps(layerIndex) {
     const filled = [];
@@ -446,7 +477,10 @@
       Object.assign(icon.style, { display: 'flex', lineHeight: '0' });
       const label = document.createElement('span');
       label.textContent = layer.name;
-      tab.append(icon, label);
+      const status = document.createElement('span');
+      status.className = 'signal-shell-tab-status';
+      Object.assign(status.style, { fontSize: '6px', letterSpacing: '0.8px', minHeight: '7px', opacity: '0.78' });
+      tab.append(icon, label, status);
       tab.addEventListener('click', () => selectShellTab(index));
       shellTabsEl.appendChild(tab);
     });
@@ -461,10 +495,16 @@
       const layer = LAYERS[index];
       const active = index === currentLayerIndex;
       const color = layer.options[0].color;
-      tab.style.borderColor = active ? color : 'rgba(234,255,255,0.16)';
-      tab.style.color = active ? color : 'rgba(234,255,255,0.5)';
+      const status = isGuidedBuildMode()
+        ? (active && guidedStage === 'record' ? 'RECORDING' : layerStatus[index] === 'done' ? 'SAVED' : 'EMPTY')
+        : 'PLAY';
+      const statusEl = tab.querySelector('.signal-shell-tab-status');
+      if (statusEl) statusEl.textContent = status;
+      const statusColor = status === 'RECORDING' ? '#ff304f' : status === 'SAVED' ? '#42ff8c' : color;
+      tab.style.borderColor = active ? statusColor : status === 'SAVED' ? 'rgba(66,255,140,0.5)' : 'rgba(234,255,255,0.16)';
+      tab.style.color = active ? statusColor : status === 'SAVED' ? 'rgba(66,255,140,0.72)' : 'rgba(234,255,255,0.5)';
       tab.style.background = active ? `${color}1a` : 'rgba(2,4,14,0.92)';
-      tab.style.boxShadow = active ? `0 0 14px ${color}55` : 'none';
+      tab.style.boxShadow = active ? `0 0 14px ${statusColor}55` : 'none';
     });
   }
 
@@ -735,34 +775,69 @@
     signalLimiter.release.value = 0.28;
   }
 
-  // A gesture owns one live voice and one recorded note. Hold time changes
-  // articulation; movement changes pitch/brightness without flooding the loop.
-  function startExpressiveVoice(inst, note, pos) {
-    endExpressiveVoice();
+  function brightnessAt(pos) {
+    return clamp(1 - ((pos && pos.y) || H * 0.5) / Math.max(1, H), 0, 1);
+  }
+
+  function createHeldPitchedVoice(inst, note, vel, brightness, durationSeconds, delaySeconds) {
     const c = audioCtx();
     const output = signalOutput();
-    if (!c || !output || !note) return;
-    const t = c.currentTime;
+    if (!c || !output || !note || (inst !== 'bass' && inst !== 'keys')) return null;
+    const t = c.currentTime + Math.max(0, delaySeconds || 0);
+    const d = soundProfile();
+    const v = vel == null ? 1 : vel;
     const osc = c.createOscillator();
     const filter = c.createBiquadFilter();
     const gain = c.createGain();
-    const d = soundProfile();
-    expressiveTapSeq += 1;
-    const alternate = expressiveTapSeq % 2 === 0;
-    // Keys always match the recorded/playback waveform (playPitched) so live
-    // preview never sounds different from what lands in the loop.
-    osc.type = inst === 'bass' ? (d.bassWave || 'triangle') : inst === 'keys' ? (d.keysWave || 'triangle') : (alternate ? 'triangle' : 'sine');
+    const harmonic = c.createOscillator();
+    const harmonicGain = c.createGain();
+    const cutoff = inst === 'bass' ? 480 + brightness * 480 : 820 + brightness * 1040;
+    const mainLevel = inst === 'bass' ? 0.085 * v * d.bassWeight : 0.070 * v * d.keyGlow;
+    const harmonicLevel = inst === 'bass' ? 0.020 * v * d.bassWeight : 0.021 * v * d.keyGlow * d.shimmer;
+    osc.type = inst === 'bass' ? (d.bassWave || 'triangle') : (d.keysWave || 'triangle');
     osc.frequency.setValueAtTime(note, t);
+    harmonic.type = 'sine';
+    harmonic.frequency.setValueAtTime(note * 2.01, t);
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(inst === 'bass' ? 720 : 1250, t);
+    filter.frequency.setValueAtTime(cutoff * d.resonance, t);
     filter.Q.setValueAtTime(0.8, t);
     gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.linearRampToValueAtTime(inst === 'bass' ? 0.038 : 0.026, t + 0.018);
+    gain.gain.linearRampToValueAtTime(mainLevel, t + 0.018);
+    harmonicGain.gain.setValueAtTime(0.0001, t);
+    harmonicGain.gain.linearRampToValueAtTime(harmonicLevel, t + 0.018);
     osc.connect(filter);
     filter.connect(gain);
     gain.connect(output);
+    harmonic.connect(harmonicGain);
+    harmonicGain.connect(output);
     osc.start(t);
-    expressiveVoice = { inst, note, osc, filter, gain, harmonic: null, startedAt: performance.now(), startX: pos.x, startY: pos.y, x: pos.x, y: pos.y, morphed: false };
+    harmonic.start(t);
+    if (durationSeconds) {
+      const releaseAt = t + Math.max(0.08, durationSeconds);
+      gain.gain.setValueAtTime(mainLevel, releaseAt);
+      gain.gain.exponentialRampToValueAtTime(0.001, releaseAt + 0.16);
+      harmonicGain.gain.setValueAtTime(harmonicLevel, releaseAt);
+      harmonicGain.gain.exponentialRampToValueAtTime(0.001, releaseAt + 0.16);
+      osc.stop(releaseAt + 0.20);
+      harmonic.stop(releaseAt + 0.20);
+    }
+    return { osc, filter, gain, harmonic: { osc: harmonic, gain: harmonicGain } };
+  }
+
+  // Bass and Keys use one held voice whose duration and brightness can be
+  // serialized. Pitch stays on the selected scale note so practice and loop
+  // playback cannot diverge through an unrecorded finger bend.
+  function startExpressiveVoice(inst, note, pos) {
+    endExpressiveVoice();
+    if (inst !== 'bass' && inst !== 'keys') return;
+    const brightness = brightnessAt(pos);
+    const voice = createHeldPitchedVoice(inst, note, 1, brightness, 0);
+    if (!voice) return;
+    expressiveVoice = {
+      inst, note, ...voice,
+      startedAt: performance.now(),
+      x: pos.x, y: pos.y, brightness,
+    };
   }
 
   function updateExpressiveVoice(pos) {
@@ -771,31 +846,30 @@
     if (!v || !c || !pos) return;
     v.x = pos.x;
     v.y = pos.y;
-    const held = performance.now() - v.startedAt;
-    const dx = clamp((pos.x - v.startX) / Math.max(80, W * 0.22), -1, 1);
-    const brightness = clamp(1 - pos.y / Math.max(1, H), 0, 1);
-    // A restrained continuous bend keeps the selected scale note recognizable.
-    v.osc.frequency.setTargetAtTime(v.note * Math.pow(2, dx * 2 / 12), c.currentTime, 0.035);
-    v.filter.frequency.setTargetAtTime(520 + brightness * 2500 + Math.min(held, 700) * 1.1, c.currentTime, 0.045);
-    if (held >= 550 && !v.morphed) {
-      v.morphed = true;
-      const harmonic = c.createOscillator();
-      const hg = c.createGain();
-      harmonic.type = 'sine';
-      harmonic.frequency.setValueAtTime(v.note * 2.01, c.currentTime);
-      hg.gain.setValueAtTime(0.0001, c.currentTime);
-      hg.gain.linearRampToValueAtTime(0.009, c.currentTime + 0.18);
-      harmonic.connect(hg);
-      hg.connect(signalOutput());
-      harmonic.start();
-      v.harmonic = { osc: harmonic, gain: hg };
-    }
+    v.brightness = brightnessAt(pos);
+    const cutoff = v.inst === 'bass' ? 480 + v.brightness * 480 : 820 + v.brightness * 1040;
+    v.filter.frequency.setTargetAtTime(cutoff * soundProfile().resonance, c.currentTime, 0.045);
   }
 
   function endExpressiveVoice() {
     const v = expressiveVoice;
     if (!v) return;
     expressiveVoice = null;
+    if ((v.inst === 'bass' || v.inst === 'keys') && v.recordChoiceId) {
+      const heldMs = Math.max(1, performance.now() - v.startedAt);
+      const sustainSteps = clamp(Math.ceil(heldMs / Math.max(1, beatMs)), 1, LOOP_STEPS);
+      const choice = recordedChoices.find(item => item.undoId === v.recordChoiceId);
+      const bucket = loop[v.recordStep] || [];
+      const slot = bucket.find(item => item.layerId === v.recordLayerId);
+      if (choice) {
+        choice.sustainSteps = sustainSteps;
+        choice.brightness = v.brightness;
+      }
+      if (slot) {
+        slot.sustainSteps = Math.max(slot.sustainSteps || 1, sustainSteps);
+        slot.brightness = v.brightness;
+      }
+    }
     const c = audioCtx();
     if (!c) return;
     const held = performance.now() - v.startedAt;
@@ -1105,8 +1179,13 @@
 
   function fxChoiceForPull(pull) {
     const angle = ((pull.angle + Math.PI * 2.5) % (Math.PI * 2));
-    const idx = Math.floor(angle / (Math.PI * 2 / 3)) % 3;
-    return activeLayer().options[idx] || activeLayer().options[0];
+    const options = activeLayer().options;
+    const idx = Math.floor(angle / (Math.PI * 2 / options.length)) % options.length;
+    return options[idx] || options[0];
+  }
+
+  function fxDegree(piece) {
+    return piece === 'echo' ? 2 : piece === 'rise' ? 5 : piece === 'impact' ? 0 : piece === 'glitch' ? 7 : 8;
   }
 
   function playFxGesture(piece, note, vel, delay, shape) {
@@ -1142,6 +1221,36 @@
       tone(f * 1.5, 'sine', dl + 0.026, 0.16, 0.010 * v, f * (1.32 - tension * 0.18));
       return;
     }
+    if (piece === 'impact') {
+      // A short debris crack followed by a heavy sub drop.
+      noise(dl, 0.075 + intensity * 0.055, 0.024 + intensity * 0.018, false);
+      synth(f * 0.24, 'sine', dl, 0.34 + intensity * 0.18, 0.105 * v, {
+        filter: 'lowpass',
+        cutoff: (310 + intensity * 180) * d.resonance,
+        endCutoff: 90,
+        q: 0.7,
+        endFreq: Math.max(32, f * (0.075 + tension * 0.025)),
+      });
+      tone(f * 0.72, 'triangle', dl + 0.008, 0.12, 0.032 * v, f * 0.28);
+      return;
+    }
+    if (piece === 'glitch') {
+      // An irregular digital chop: alternating waveforms and pitches keep it
+      // clearly separate from the smooth ECHO and WARP gestures.
+      const chops = 4 + Math.round(intensity * 3);
+      for (let i = 0; i < chops; i++) {
+        const offset = dl + i * (0.026 + (i % 2) * 0.009);
+        const jump = [1, 1.5, 0.75, 2, 1.25][i % 5];
+        synth(f * jump, i % 2 ? 'square' : 'sawtooth', offset, 0.032 + tension * 0.018, 0.014 * v, {
+          filter: 'bandpass',
+          cutoff: (900 + i * 330 + intensity * 850) * d.resonance,
+          q: 5 + tension * 4,
+          endFreq: f * jump * (i % 2 ? 0.82 : 1.16),
+        });
+      }
+      noise(dl + 0.018, 0.045 + intensity * 0.035, 0.008 + intensity * 0.008, false);
+      return;
+    }
     synth(f, d.chimeWave || 'triangle', dl, 0.22 + intensity * 0.10, 0.028 * v, {
       filter: 'bandpass',
       cutoff: (1100 + intensity * 1200) * d.resonance,
@@ -1154,21 +1263,19 @@
     tone(f * 2.01, 'sine', dl + 0.018, 0.14, 0.008 * v, f * 2.04);
   }
 
-  function playPitched(inst, note, vel, delay) {
+  function playPitched(inst, note, vel, delay, durationMs, articulation) {
     const d = soundProfile();
     const v = vel == null ? 1 : vel;
     const dl = delay || 0;
     const f = Math.max(30, note || d.root);
+    const heldSeconds = Math.max(0, Number(durationMs) || 0) / 1000;
+    const brightness = clamp(articulation && Number.isFinite(articulation.brightness) ? articulation.brightness : 0.5, 0, 1);
     if (inst === 'bass') {
-      const wave = d.bassWave || 'triangle';
-      // Same lowpass shaping as the held live voice (startExpressiveVoice) so a
-      // recorded/replayed step matches what the player heard while playing it.
-      synth(f, wave, dl, 0.26, 0.085 * v * d.bassWeight, { cutoff: 720 * d.resonance, q: 0.8, endFreq: f * 0.988 });
-      tone(f * 2.01, 'sine', dl + 0.004, 0.11, 0.020 * v * d.bassWeight, f * 1.98);
+      const duration = Math.max(0.26, heldSeconds);
+      createHeldPitchedVoice('bass', f, v, brightness, duration, dl);
     } else if (inst === 'keys') {
-      // The space.js piano: triangle + sine an octave up, both drifting slightly flat.
-      synth(f, d.keysWave || 'triangle', dl, 0.150, 0.070 * v * d.keyGlow, { cutoff: 1250 * d.resonance, q: 0.8, endFreq: f * 0.992 });
-      tone(f * 2.01, 'sine', dl + 0.003, 0.065, 0.021 * v * d.keyGlow * d.shimmer, f * 1.99);
+      const duration = Math.max(0.150, heldSeconds);
+      createHeldPitchedVoice('keys', f, v, brightness, duration, dl);
     } else {
       // Handpan / music box: soft metallic tap with an overtone stack.
       const sh = d.shimmer || 1;
@@ -1191,11 +1298,11 @@
       return;
     }
     if (inst === 'swell') {
-      playSwellChord(o.note, o.vel, o.delay);
+      playSwellChord(o.note, o.vel, o.delay, { openness: o.openness, tension: o.tension });
       return;
     }
     if (inst === 'fx') {
-      playFxGesture(o.piece || 'echo', o.note, o.vel, o.delay);
+      playFxGesture(o.piece || 'echo', o.note, o.vel, o.delay, { intensity: o.intensity, tension: o.tension });
       return;
     }
     if (Array.isArray(o.notes) && o.notes.length) {
@@ -1205,20 +1312,23 @@
         const repeat = seen[key] || 0;
         seen[key] = repeat + 1;
         const split = i * 0.012 + repeat * 0.018;
-        playPitched(inst, note, (o.vel || 1) * 0.86, (o.delay || 0) + split);
+        playPitched(inst, note, (o.vel || 1) * 0.86, (o.delay || 0) + split, o.durationMs, { brightness: o.brightness });
       });
       return;
     }
-    playPitched(inst, o.note, o.vel, o.delay);
+    playPitched(inst, o.note, o.vel, o.delay, o.durationMs, { brightness: o.brightness });
   }
 
   function playStamp(slot) {
     if (!slot || !slot.inst) return;
-    const vel = (slot.vel || 1) * layerVolumeForId(slotLayerId(slot));
+    const vel = (slot.vel || 1) * layerPlaybackVolume(slotLayerId(slot));
+    if (vel <= 0) return;
+    const durationMs = Math.max(1, slot.sustainSteps || 1) * beatMs;
     if (slot.inst === 'drums') playInstrument('drums', { pieces: slot.pieces, tunes: slot.tunes, vel });
-    else if (slot.inst === 'keys' && slot.notes && slot.notes.length) playInstrument(slot.inst, { notes: slot.notes, vel });
-    else if (slot.inst === 'fx') playInstrument(slot.inst, { note: slot.note, piece: slot.piece, vel });
-    else playInstrument(slot.inst, { note: slot.note, vel });
+    else if (slot.inst === 'keys' && slot.notes && slot.notes.length) playInstrument(slot.inst, { notes: slot.notes, vel, durationMs, brightness: slot.brightness });
+    else if (slot.inst === 'fx') playInstrument(slot.inst, { note: slot.note, piece: slot.piece, vel, intensity: slot.intensity, tension: slot.tension });
+    else if (slot.inst === 'swell') playInstrument(slot.inst, { note: slot.note, vel, openness: slot.openness, tension: slot.tension });
+    else playInstrument(slot.inst, { note: slot.note, vel, durationMs, brightness: slot.brightness });
   }
 
   function hasNonFoundationLoopContent() {
@@ -1226,13 +1336,9 @@
   }
 
   function playPulseBed() {
-    // Once the player has recorded anything, the loop speaks for itself —
-    // no bed underneath in any mode. On an empty loop, one soft kick at the
-    // top keeps the pulse findable without sounding like stray percussion.
-    if (hasNonFoundationLoopContent()) return;
-    if (state !== 'playing' || phase !== 'build') return;
-    if (isGuidedBuildMode() && currentLayerIndex > 0) return;
-    if (stepIndex === 0) playDrumPiece('kick', 0.22, 0);
+    // The moving playhead supplies timing guidance. Do not add an unrecorded
+    // kick underneath practice or capture: every musical sound must come from
+    // the player or from the loop they already built.
   }
 
   function playBossMotif() {
@@ -1304,18 +1410,15 @@
       color: primary ? '#eaffff' : '#eaffff',
       boxShadow: primary ? '0 0 24px rgba(0,229,255,.35)' : '0 0 16px rgba(0,0,0,.35)',
     });
-    let firedAt = 0;
     const activate = e => {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-      const t = performance.now();
-      if (t - firedAt < 180) return;
-      firedAt = t;
       try { if (typeof SFX !== 'undefined' && SFX.menuSelect) SFX.menuSelect(); } catch(err) {}
       handler();
     };
-    btn.addEventListener('pointerdown', activate);
-    btn.addEventListener('touchend', activate, { passive: false });
+    // One semantic click per gesture. Rebuilding the control row during
+    // pointerdown/touchend allowed the trailing synthetic click to activate
+    // the next-stage button occupying the same screen position.
     btn.addEventListener('click', activate);
     return btn;
   }
@@ -1345,7 +1448,11 @@
     // only ever needs to move the CURRENT layer through practice -> record.
     if (guidedStage === 'practice') {
       el.style.gridTemplateColumns = '1fr';
-      el.appendChild(guidedControlButton('READY', startGuidedRecordPass, true));
+      const ready = guidedControlButton('READY TO RECORD', startGuidedRecordPass, true);
+      ready.style.borderColor = 'rgba(255,48,79,.96)';
+      ready.style.background = 'rgba(255,48,79,.18)';
+      ready.style.boxShadow = '0 0 24px rgba(255,48,79,.42)';
+      el.appendChild(ready);
       return;
     }
     if (guidedStage === 'waiting') {
@@ -1355,7 +1462,7 @@
         updateLoopButton();
         showLayerToast();
       }, false));
-      el.appendChild(guidedControlButton('START EMPTY', startGuidedRecordingWithRest, true));
+      el.appendChild(guidedControlButton('START WITH REST', startGuidedRecordingWithRest, true));
       return;
     }
     if (guidedStage === 'record') {
@@ -1363,7 +1470,12 @@
       // full-width buttons only — UNDO NOTE lives across the top bar.
       el.style.gridTemplateColumns = '1fr';
       el.appendChild(guidedControlButton('RESTART LAYER', captureRetryLayer, false));
-      el.appendChild(guidedControlButton('KEEP', captureNextLayer, true));
+      const saveLayer = guidedControlButton('SAVE LAYER', captureNextLayer, true);
+      saveLayer.style.borderColor = 'rgba(66,255,140,.96)';
+      saveLayer.style.background = 'rgba(66,255,140,.18)';
+      saveLayer.style.boxShadow = '0 0 24px rgba(66,255,140,.42)';
+      saveLayer.style.color = '#eafff1';
+      el.appendChild(saveLayer);
       return;
     }
     if (guidedStage === 'done') {
@@ -1723,6 +1835,8 @@
     replaying = false;
     replayUntil = 0;
     layerVolumes = { ...DEFAULT_LAYER_VOLUMES };
+    layerMutes = {};
+    layerSolos = {};
     applyLayerOptions();
     laneFlash = [0, 0, 0];
     loopFlash = Array.from({ length: LOOP_STEPS }, () => ({ pulse: 0, color: COLOR, row: 0 }));
@@ -1763,16 +1877,24 @@
   function initFxJunk() {
     fxJunk = [];
     const top = playFieldTop();
-    const bottom = Math.max(top + 160, playFieldBottom(0));
+    const bottom = Math.max(top, playFieldBottom(0));
+    const positions = [
+      [0.20, 0.30],
+      [0.50, 0.22],
+      [0.80, 0.30],
+      [0.33, 0.67],
+      [0.67, 0.67],
+    ];
     activeLayer().options.forEach((fx, i) => {
+      const position = positions[i] || [0.5, 0.5];
       fxJunk.push({
         ...fx,
         lane: i,
-        x: W * (0.23 + i * 0.27),
-        y: top + (bottom - top) * (0.34 + (i % 2) * 0.24),
-        baseX: W * (0.23 + i * 0.27),
-        baseY: top + (bottom - top) * (0.34 + (i % 2) * 0.24),
-        r: 24 + i * 3,
+        x: W * position[0],
+        y: top + (bottom - top) * position[1],
+        baseX: W * position[0],
+        baseY: top + (bottom - top) * position[1],
+        r: 24 + (i % 3) * 3,
         rot: rand(0, Math.PI * 2),
         spin: rand(-0.45, 0.45),
         pulse: 0,
@@ -2016,7 +2138,12 @@
     const tc = thereminCenter();
     const dx = pointerX - tc.x;
     const dy = pointerY - tc.y;
-    const dist = clamp(Math.hypot(dx, dy) / tc.maxR, 0, 1);
+    // The last Chimes pull band intentionally has no drawn ring. Players can
+    // keep pulling beyond the visible boundary for extra intensity without
+    // adding more circles to the instrument UI. Other orb instruments retain
+    // their existing visible boundary.
+    const maxPull = orbLayerInst() === 'chimes' ? 1.32 : 1;
+    const dist = clamp(Math.hypot(dx, dy) / tc.maxR, 0, maxPull);
     const angle = Math.atan2(dy, dx);
     const noteT = ((angle + Math.PI * 0.5 + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2);
     const deg = Math.round(noteT * 9) % 10;
@@ -2026,13 +2153,15 @@
 
   function padRect(row, col) {
     const left = 38, right = 16, top = playFieldTop();
-    // Guided build now stacks a tab bar, coach buttons, and a FINISH button
-    // at the bottom of the viewport — enough real chrome that pads need to
-    // respect the same shared reserve every other surface uses.
-    const bottom = Math.max(top + 150, playFieldBottom(0));
-    const colGap = 10, rowGap = 12;
+    // Never grow through playFieldBottom to enforce a minimum pad height: on
+    // short screens that would put the bottom row underneath SAVE LAYER. Compress
+    // gaps and pads inside the genuinely available space instead.
+    const bottom = Math.max(top, playFieldBottom(0));
+    const colGap = 10;
+    const availableH = Math.max(0, bottom - top);
+    const rowGap = Math.min(12, availableH / 12);
     const gw = (W - left - right - (PAD_COLS - 1) * colGap) / PAD_COLS;
-    const gh = (bottom - top - 2 * rowGap) / 3;
+    const gh = Math.max(0, (availableH - 2 * rowGap) / 3);
     return { x: left + col * (gw + colGap), y: top + row * (gh + rowGap), w: gw, h: gh };
   }
 
@@ -2240,7 +2369,7 @@
     restartLoopPlayback();
     const pull = orbPullState();
     const note = degreeFreq(pull.deg, activeLayer().mult);
-    startExpressiveVoice('chimes', note, pos);
+    playPitched('chimes', note, 1, 0);
     stampNote({ lane: 1, label: noteNameForDegree(pull.deg), color: '#ff2db8' }, 0, note, true, false);
     thereminPulse = 1;
     updateLoopButton();
@@ -2262,8 +2391,8 @@
     pointerActive = true;
     const pick = swellPickAt(pos || { x: W * 0.5, y: (swellSurfaceTop() + swellSurfaceBottom()) * 0.5 });
     const note = degreeFreq(pick.deg, activeLayer().mult);
-    startExpressiveVoice('swell', note, pos);
-    stampNote({ lane: 1, label: noteNameForDegree(pick.deg), color: '#ffe61a' }, 0, note, true, false);
+    playSwellChord(note, 1, 0, pick);
+    stampNote({ lane: 1, label: noteNameForDegree(pick.deg), color: '#ffe61a', openness: pick.openness, tension: pick.tension }, 0, note, true, false);
     swellInk = Math.max(swellInk, 0.3);
     thereminPulse = 1;
     updateLoopButton();
@@ -2288,9 +2417,9 @@
     const t = performance.now();
     const pick = swellPickAt(pos);
     const note = degreeFreq(pick.deg, activeLayer().mult);
-    startExpressiveVoice('swell', note, pos);
+    playSwellChord(note, 1, 0, pick);
     const timing = captureTiming(t);
-    stampNote({ lane: 1, label: noteNameForDegree(pick.deg), color: '#ffe61a' }, timing.target, note, timing.tight, timing.isNextStep);
+    stampNote({ lane: 1, label: noteNameForDegree(pick.deg), color: '#ffe61a', openness: pick.openness, tension: pick.tension }, timing.target, note, timing.tight, timing.isNextStep);
     pointerActive = true;
     pointerX = pos.x;
     pointerY = pos.y;
@@ -2308,7 +2437,7 @@
     const pull = orbPullState();
     if (pull.dist <= 0.12) return false;
     const note = degreeFreq(pull.deg, activeLayer().mult);
-    startExpressiveVoice('chimes', note, pos);
+    playPitched('chimes', note, 1, 0);
     const timing = captureTiming(t || performance.now());
     stampNote({ lane: 1, label: noteNameForDegree(pull.deg), color: '#ff2db8' }, timing.target, note, timing.tight, timing.isNextStep);
     thereminPulse = 1;
@@ -2395,7 +2524,6 @@
     const tune = pad.col / Math.max(1, PAD_COLS - 1);
     playDrumPiece(pad.piece, 1, 0, tune);
     const timing = captureTiming(t);
-    playRandomSfx('hit', timing.tight ? 0.16 : 0.06);
     stampNote({ ...pad, tune }, timing.target, null, timing.tight, timing.isNextStep);
     const r = padRect(pad.row, pad.col);
     burst(r.x + r.w / 2, r.y + r.h / 2, pad.color, timing.tight ? 8 : 4);
@@ -2503,10 +2631,12 @@
   // Live capture: stamp the note the player just played into the loop grid.
   function stampNote(rock, target, note, tight, isNextStep) {
     const layer = activeLayer();
-    const vel = tight ? 1 : 0.62;
+    // Timing assistance changes placement, not loudness: replay should match
+    // the note the player actually heard while practicing/recording.
+    const vel = 1;
     if (!shouldRecordStamp()) {
       laneFlash[rock.lane] = Math.max(laneFlash[rock.lane] || 0, tight ? 0.9 : 0.55);
-      return;
+      return null;
     }
     const bucket = loop[target];
     const choiceId = ++undoSeq;
@@ -2530,6 +2660,7 @@
           slot.tunes.shift();
         }
         slot.color = rock.color;
+        if (Number.isFinite(rock.brightness)) slot.brightness = rock.brightness;
         slot.label = rock.label;
         slot.tight = slot.tight && tight;
         slot.vel = Math.max(slot.vel, vel);
@@ -2556,11 +2687,19 @@
         slot.vel = Math.max(slot.vel, vel);
         slot.skip = isNextStep ? 1 : 0;
       } else {
-        slot = { layerId: layer.id, layerIndex: currentLayerIndex, inst: layer.inst, note, notes: [note], label, labels: [label], color: rock.color, tight, vel, skip: isNextStep ? 1 : 0 };
+        slot = { layerId: layer.id, layerIndex: currentLayerIndex, inst: layer.inst, note, notes: [note], label, labels: [label], color: rock.color, brightness: rock.brightness, tight, vel, skip: isNextStep ? 1 : 0 };
         bucket.push(slot);
       }
     } else {
-      const stamp = { layerId: layer.id, layerIndex: currentLayerIndex, inst: layer.inst, note, piece: rock.piece || null, color: rock.color, label: rock.label, lane: rock.lane, tight, vel, skip: isNextStep ? 1 : 0 };
+      const stamp = {
+        layerId: layer.id, layerIndex: currentLayerIndex, inst: layer.inst,
+        note, piece: rock.piece || null, color: rock.color, label: rock.label,
+        lane: rock.lane, tight, vel, skip: isNextStep ? 1 : 0,
+        brightness: rock.brightness,
+        openness: rock.openness,
+        tension: rock.tension,
+        intensity: rock.intensity,
+      };
       if (slot) Object.assign(slot, stamp);
       else bucket.push(stamp);
     }
@@ -2580,11 +2719,16 @@
       color: rock.color,
       tight,
       undoId: choiceId,
+      brightness: rock.brightness,
+      openness: rock.openness,
+      tension: rock.tension,
+      intensity: rock.intensity,
     });
     if (recordedChoices.length > 128) recordedChoices.shift();
     laneFlash[rock.lane] = Math.max(laneFlash[rock.lane], tight ? 1 : 0.6);
     if (loopFlash[target]) loopFlash[target] = { pulse: 1, color: rock.color || COLOR, row: currentLayerIndex };
     if (isFreeMode() || undoStack.length === 1) updateLoopButton();
+    return choiceId;
   }
 
   function restartLoopPlayback() {
@@ -2624,7 +2768,7 @@
     playRandomSfx('success', 0.8);
   }
 
-  // KEEP: commit the layer the player has been looping on. Navigation is
+  // SAVE LAYER: commit the layer the player has been looping on. Navigation is
   // free-form now — the player picks the next instrument from the tab bar
   // (or taps FINISH once they're happy with what they've got).
   function captureNextLayer() {
@@ -2812,7 +2956,7 @@
   function layerHintText() {
     if (phase === 'countin') return 'SET TEMPO';
     if (phase === 'countdown') return 'GET READY';
-    if (isGuidedBuildMode() && phase === 'build') return guidedStage === 'record' ? 'KEEP ADDING · KEEP WHEN HAPPY' : guidedStage === 'waiting' ? 'PLAY TO START' : 'NOTHING RECORDS YET';
+    if (isGuidedBuildMode() && phase === 'build') return guidedStage === 'record' ? 'KEEP ADDING · SAVE LAYER WHEN HAPPY' : guidedStage === 'waiting' ? 'PLAY TO START' : 'NOTHING RECORDS YET';
     if (drumsActive()) return 'TAP DRUM PADS';
     if (rockTapActive()) return 'TAP THE ROCKS';
     if (fxActive()) return 'TAP + PINCH JUNK';
@@ -2900,10 +3044,17 @@
     const { target, tight, isNextStep } = captureTiming(t);
     const note = rock.inst === 'drums' ? null : degreeFreq(rock.deg, activeLayer().mult);
     if (rock.inst !== 'drums') rock.label = noteNameForDegree(rock.deg);
-    if (rock.inst === 'bass' || rock.inst === 'keys') startExpressiveVoice(rock.inst, note, pos || rock);
+    if (rock.inst === 'bass' || rock.inst === 'keys') {
+      startExpressiveVoice(rock.inst, note, pos || rock);
+      if (expressiveVoice) rock.brightness = expressiveVoice.brightness;
+    }
     else playInstrument(rock.inst, { note, piece: rock.piece, vel: 0.78 });
-    playRandomSfx(rock.inst === 'fx' ? 'fx' : 'hit', tight ? 0.18 : 0.06);
-    stampNote(rock, target, note, tight, isNextStep);
+    const choiceId = stampNote(rock, target, note, tight, isNextStep);
+    if (expressiveVoice && choiceId && (rock.inst === 'bass' || rock.inst === 'keys')) {
+      expressiveVoice.recordChoiceId = choiceId;
+      expressiveVoice.recordStep = target;
+      expressiveVoice.recordLayerId = activeLayer().id;
+    }
     rock.pulse = 1;
     burst(rock.x, rock.y, rock.color, tight ? 8 : 4);
     combo = tight ? combo + 1 : 0;
@@ -2942,13 +3093,14 @@
   function triggerFxJunk(junk, power, t) {
     t = t || performance.now();
     const timing = captureTiming(t);
-    const deg = junk.piece === 'echo' ? 2 : junk.piece === 'rise' ? 5 : 8;
+    const deg = fxDegree(junk.piece);
     const note = degreeFreq(deg, activeLayer().mult);
     junk.pulse = 1.35;
     junk.armed = 1;
     playFxGesture(junk.piece, note, 0.62 + power * 0.42, 0, { intensity: 0.5 + power * 0.5, tension: power });
-    playRandomSfx('fx', timing.tight ? 0.34 : 0.14);
-    stampNote({ ...junk, lane: junk.lane }, timing.target, note, timing.tight, timing.isNextStep);
+    const intensity = 0.5 + power * 0.5;
+    const tension = power;
+    stampNote({ ...junk, lane: junk.lane, intensity, tension }, timing.target, note, timing.tight, timing.isNextStep);
     burst(junk.x, junk.y, junk.color, timing.tight ? 14 : 8);
     combo = timing.tight ? combo + 1 : 0;
     bestCombo = Math.max(bestCombo, combo);
@@ -2995,46 +3147,55 @@
           const note = degreeFreq(pull.deg, activeLayer().mult);
           if (isFx) {
             const fx = fxChoiceForPull(pull);
-            playFxGesture(fx.piece, note, 0.52 + pull.dist * 0.36, 0, { intensity: pull.dist, tension: pull.shimmer });
+            const intensity = clamp(pull.dist, 0, 1);
+            const tension = pull.shimmer;
+            playFxGesture(fx.piece, note, 1, 0, { intensity, tension });
             const existing = loop[stepIndex].find(v => v.layerId === activeLayer().id);
             if (!existing || existing.note !== note || existing.piece !== fx.piece) {
-              stampNote({ ...fx, lane: activeLayer().options.indexOf(fx) }, stepIndex, note, true, false);
+              stampNote({ ...fx, lane: activeLayer().options.indexOf(fx), intensity, tension }, stepIndex, note, true, false);
             }
             thereminPulse = 0.95 + pull.dist * 0.35;
-          } else if (isSwell) playSwellChord(note, 0.34 + pull.dist * 0.52, 0, { openness: pull.dist, tension: pull.shimmer });
+          } else if (isSwell) {
+            const openness = clamp(pull.dist, 0, 1);
+            const tension = pull.shimmer;
+            playSwellChord(note, 1, 0, { openness, tension });
+          }
           else {
-            playPitched('chimes', note, 0.55 + pull.dist * 0.45, 0);
-            tone(note * (2.01 + pull.shimmer * 0.5), 'sine', 0.018, 0.070, 0.006 + pull.shimmer * 0.009, note * (2.03 + pull.shimmer * 0.5));
-            if (pull.shimmer > 0.72) tone(note * 3.02, 'sine', 0.038, 0.045, 0.0045 * pull.shimmer, note * 3.04);
+            playPitched('chimes', note, 1, 0);
           }
           if (!isFx) {
             // Only re-stamp when the note at this step actually changes,
             // so a held position doesn't flood the capture log.
             const existing = loop[stepIndex].find(v => v.layerId === activeLayer().id);
             if (!existing || existing.note !== note) {
-              stampNote({ lane: 1, label: noteNameForDegree(pull.deg), color: isSwell ? '#ffe61a' : '#ff2db8' }, stepIndex, note, true, false);
+              stampNote({
+                lane: 1,
+                label: noteNameForDegree(pull.deg),
+                color: isSwell ? '#ffe61a' : '#ff2db8',
+                openness: isSwell ? clamp(pull.dist, 0, 1) : undefined,
+                tension: isSwell ? pull.shimmer : undefined,
+              }, stepIndex, note, true, false);
             }
             thereminPulse = isSwell ? 1 : 0.75 + pull.shimmer * 0.35;
           }
         }
       }
     }
-    if (pointerActive && swellActive() && !expressiveVoice) {
-      const top = swellSurfaceTop();
-      const bottom = swellSurfaceBottom();
-      const usableH = Math.max(1, bottom - top);
-      const xT = clamp(pointerX / Math.max(1, W), 0, 1);
-      const yT = clamp((pointerY - top) / usableH, 0, 1);
-      const deg = clamp(Math.round(xT * 9), 0, 9);
-      const openness = 1 - yT;
-      const tension = 0.25 + xT * 0.5 + openness * 0.25;
+    if (pointerActive && swellActive()) {
+      const pick = swellPickAt({ x: pointerX, y: pointerY });
       const every = swellInk > 0.72 ? 2 : swellInk > 0.42 ? 3 : 6;
       if (stepIndex % every === 0) {
-        const note = degreeFreq(deg, activeLayer().mult);
-        playSwellChord(note, 0.34 + swellInk * 0.42, 0, { openness, tension });
+        const note = degreeFreq(pick.deg, activeLayer().mult);
+        playSwellChord(note, 1, 0, pick);
         const existing = loop[stepIndex].find(v => v.layerId === activeLayer().id);
-        if (!existing || existing.note !== note) {
-          stampNote({ lane: 1, label: noteNameForDegree(deg), color: '#ffe61a' }, stepIndex, note, true, false);
+        if (!existing || existing.note !== note || existing.openness !== pick.openness || existing.tension !== pick.tension) {
+          stampNote({
+            lane: 1,
+            label: noteNameForDegree(pick.deg),
+            color: '#ffe61a',
+            openness: pick.openness,
+            tension: pick.tension,
+          }, stepIndex, note, true, false);
         }
       }
     }
@@ -3636,11 +3797,11 @@
         c.stroke();
       }
     });
-    c.globalAlpha = 0.62;
-    c.fillStyle = 'rgba(234,255,255,0.72)';
+    c.globalAlpha = 0.96;
+    c.fillStyle = '#eaffff';
     c.font = "12px 'VCR', monospace";
     c.textAlign = 'center';
-    c.fillText('TAP OR PINCH THE JUNK', W * 0.5, H - LOOP_PANEL_H - 42);
+    c.fillText('TAP OR PINCH THE JUNK', W * 0.5, playFieldBottom(0) + 18);
     c.restore();
   }
 
@@ -3737,8 +3898,8 @@
     c.strokeStyle = col;
     if (isSwell) c.setLineDash([5, 6]);
     [0.12, 0.4, 0.7, 1].forEach((band, i) => {
-      c.globalAlpha = 0.10 + (i === 0 ? 0.06 : 0);
-      c.lineWidth = 1;
+      c.globalAlpha = isSwell ? 0.10 + (i === 0 ? 0.06 : 0) : 0.20 + (i === 0 ? 0.08 : 0);
+      c.lineWidth = isSwell ? 1 : 1.35;
       c.beginPath();
       c.arc(tc.x, tc.y, tc.maxR * band + (isSwell ? breathe : 0), 0, Math.PI * 2);
       c.stroke();
@@ -3753,9 +3914,9 @@
         const a = -Math.PI / 2 + (deg / 10) * Math.PI * 2;
         const label = noteNameForDegree(deg);
         const active = deg === activeDeg;
-        c.globalAlpha = active ? 0.96 : 0.42;
+        c.globalAlpha = active ? 1 : 0.62;
         c.fillStyle = active ? '#eaffff' : col;
-        c.font = `${active ? 13 : 11}px 'VCR', monospace`;
+        c.font = `${active ? 15 : 13}px 'VCR', monospace`;
         c.fillText(label, tc.x + Math.cos(a) * labelR, tc.y + Math.sin(a) * labelR);
       }
     }
@@ -3774,7 +3935,7 @@
     }
     if (isFx) {
       activeLayer().options.forEach((fx, i) => {
-        const a = -Math.PI / 2 + i / 3 * Math.PI * 2;
+        const a = -Math.PI / 2 + i / activeLayer().options.length * Math.PI * 2;
         const chosen = pull && fxChoiceForPull(pull).piece === fx.piece;
         c.globalAlpha = chosen ? 0.82 : 0.34;
         c.fillStyle = chosen ? fx.color : 'rgba(234,255,255,0.55)';
@@ -3917,30 +4078,51 @@
     if (!isGuidedBuildMode() || state !== 'playing' || phase !== 'build') return;
     const layer = activeLayer();
     const name = layer.name;
-    const main = guidedStage === 'record' ? `${name} — LIVE` : guidedStage === 'waiting' ? 'PLAY WHEN READY' : `PRACTICE ${name}`;
-    const sub = guidedStage === 'record' ? 'The loop keeps running. Tap KEEP when you like it.' : guidedStage === 'waiting' ? 'Your first note starts the loop.' : 'Try the sounds. Nothing records yet.';
+    const main = guidedStage === 'record' ? `${name} — RECORDING` : guidedStage === 'waiting' ? 'PLAY WHEN READY' : `PRACTICE ${name}`;
+    const sub = guidedStage === 'record'
+      ? 'The loop keeps running. Tap SAVE LAYER when you like it.'
+      : guidedStage === 'waiting'
+        ? 'Play to begin, or START WITH REST for a silent opening.'
+        : 'Try the sounds. Nothing records yet. Choose any instrument next.';
     const y = 212;
     c.save();
     c.textAlign = 'center';
     c.textBaseline = 'middle';
     c.fillStyle = 'rgba(2,4,14,0.72)';
-    c.strokeStyle = 'rgba(0,229,255,0.45)';
+    c.strokeStyle = guidedStage === 'record' ? 'rgba(255,48,79,0.92)' : 'rgba(0,229,255,0.45)';
+    c.shadowColor = guidedStage === 'record' ? '#ff304f' : 'transparent';
+    c.shadowBlur = guidedStage === 'record' ? 10 : 0;
     c.lineWidth = 2;
     const panelW = Math.min(W - 34, 520);
     const panelX = (W - panelW) / 2;
     const panelH = 98;
     c.fillRect(panelX, y - panelH * 0.5, panelW, panelH);
     c.strokeRect(panelX + 0.5, y - panelH * 0.5 + 0.5, panelW - 1, panelH - 1);
+    c.shadowBlur = 0;
     c.globalAlpha = 0.62;
     c.fillStyle = '#eaffff';
     c.font = "10px 'VCR', monospace";
-    c.fillText(`LAYER ${currentLayerIndex + 1} OF ${LAYERS.length}`, W * 0.5, y - panelH * 0.5 + 16);
+    const savedCount = layerStatus.filter(status => status === 'done').length;
+    c.fillText(`FREE-FORM · ${savedCount} SAVED · CHOOSE ANY INSTRUMENT`, W * 0.5, y - panelH * 0.5 + 16);
     c.globalAlpha = 1;
     c.shadowColor = guidedStage === 'record' || guidedStage === 'waiting' ? '#ffe61a' : COLOR;
     c.shadowBlur = 16;
     c.fillStyle = guidedStage === 'record' || guidedStage === 'waiting' ? '#ffe61a' : COLOR;
     c.font = `${W < 380 ? 21 : 24}px 'VCR', monospace`;
     c.fillText(main, W * 0.5, y - 8);
+    if (guidedStage === 'record') {
+      const mainWidth = c.measureText(main).width;
+      const dotX = W * 0.5 - mainWidth * 0.5 - 18;
+      const pulse = 0.45 + 0.55 * Math.abs(Math.sin(now() / 420));
+      c.shadowColor = '#ff304f';
+      c.shadowBlur = 8 + pulse * 10;
+      c.globalAlpha = pulse;
+      c.fillStyle = '#ff304f';
+      c.beginPath();
+      c.arc(dotX, y - 8, 6, 0, Math.PI * 2);
+      c.fill();
+      c.globalAlpha = 1;
+    }
     c.shadowBlur = 0;
     c.fillStyle = 'rgba(234,255,255,0.94)';
     c.font = `${W < 380 ? 11 : 12}px 'VCR', monospace`;
@@ -3986,6 +4168,7 @@
         c.fillText(String(row + 1), loopX - 6, y + rowH + 1);
         for (let i = 0; i < LOOP_STEPS; i++) {
           const slots = layerSlotAt(i, row);
+          const sustain = slots.length ? null : sustainedSlotAt(i, row);
           const beatStart = i % 4 === 0;
           c.fillStyle = beatStart ? 'rgba(234,255,255,0.18)' : 'rgba(234,255,255,0.10)';
           if (loopEndArmed && i >= LOOP_STEPS - 4 && row === currentLayerIndex) c.fillStyle = 'rgba(255,230,26,0.20)';
@@ -4017,6 +4200,13 @@
               }
               c.globalAlpha = row === currentLayerIndex && state === 'playing' ? 0.95 : 0.58;
             }
+          } else if (sustain) {
+            // Held Bass/Keys notes visibly span the cells they sustain through
+            // without retriggering those cells during playback.
+            c.globalAlpha = row === currentLayerIndex ? 0.56 : 0.34;
+            c.fillStyle = sustain.color || COLOR;
+            c.fillRect(cellX(i), y + 2, cellW, Math.max(2, rowH - 4));
+            c.globalAlpha = row === currentLayerIndex && state === 'playing' ? 0.95 : 0.58;
           }
           const flash = loopFlash[i];
           if (flash && flash.row === row && flash.pulse > 0) {
@@ -4527,11 +4717,21 @@
     return `<div class="signal-mix-controls">
       ${LAYERS.map(layer => {
         const pct = Math.round(layerVolumeForId(layer.id) * 100);
-        return `<label class="signal-mix-row">
-          <span class="signal-mix-name" style="color:${layer.options[0].color}">${layer.name}</span>
-          <input class="signal-mix-slider" type="range" min="0" max="125" value="${pct}" oninput="signalSetLayerVolume('${layer.id}', this.value)">
-          <span id="signal-mix-value-${layer.id}" class="signal-mix-value">${pct}%</span>
-        </label>`;
+        const muted = !!layerMutes[layer.id];
+        const soloed = !!layerSolos[layer.id];
+        return `<div class="signal-mix-row ${muted ? 'is-muted' : ''} ${soloed ? 'is-soloed' : ''}">
+          <div class="signal-mix-row-head">
+            <span class="signal-mix-name" style="color:${layer.options[0].color}">${layer.name}</span>
+            <div class="signal-mix-toggles">
+              <button type="button" class="signal-mix-toggle ${muted ? 'active' : ''}" aria-label="${layer.name} mute" aria-pressed="${muted}" onclick="signalToggleLayerMute('${layer.id}')">MUTE</button>
+              <button type="button" class="signal-mix-toggle solo ${soloed ? 'active' : ''}" aria-label="${layer.name} solo" aria-pressed="${soloed}" onclick="signalToggleLayerSolo('${layer.id}')">SOLO</button>
+            </div>
+            <span id="signal-mix-value-${layer.id}" class="signal-mix-value">${pct}%</span>
+          </div>
+          <label class="signal-mix-slider-wrap">
+            <input class="signal-mix-slider" aria-label="${layer.name} volume" type="range" min="0" max="125" value="${pct}" oninput="signalSetLayerVolume('${layer.id}', this.value)">
+          </label>
+        </div>`;
       }).join('')}
     </div>`;
   }
@@ -4567,6 +4767,11 @@
           color: v.color,
           tight: !!v.tight,
           vel: v.vel || 1,
+          sustainSteps: Math.max(1, v.sustainSteps || 1),
+          brightness: Number.isFinite(v.brightness) ? v.brightness : null,
+          openness: Number.isFinite(v.openness) ? v.openness : null,
+          tension: Number.isFinite(v.tension) ? v.tension : null,
+          intensity: Number.isFinite(v.intensity) ? v.intensity : null,
         });
       });
     }
@@ -4575,7 +4780,7 @@
 
   function currentRecipe() {
     const freeLayer = LAYERS[freeLayerIndex] || activeLayer();
-    const mix = { layerVolumes: normalizeLayerVolumes(layerVolumes) };
+    const mix = { layerVolumes: normalizeLayerVolumes(layerVolumes), layerMutes: { ...layerMutes }, layerSolos: { ...layerSolos } };
     return {
       version: 3,
       settings: { ...signalSettings },
@@ -4799,6 +5004,11 @@
           color: choice.color || COLOR,
           tight: choice.tight !== false,
           vel: choice.vel || 1,
+          sustainSteps: Math.max(1, choice.sustainSteps || 1),
+          brightness: Number.isFinite(choice.brightness) ? choice.brightness : null,
+          openness: Number.isFinite(choice.openness) ? choice.openness : null,
+          tension: Number.isFinite(choice.tension) ? choice.tension : null,
+          intensity: Number.isFinite(choice.intensity) ? choice.intensity : null,
         });
         return;
       }
@@ -4835,6 +5045,8 @@
     signalSettings = { ...signalSettings, ...(recipe.settings || {}) };
     applySettings();
     layerVolumes = normalizeLayerVolumes((recipe.mix && recipe.mix.layerVolumes) || (recipe.meta && recipe.meta.mix && recipe.meta.mix.layerVolumes));
+    layerMutes = { ...((recipe.mix && recipe.mix.layerMutes) || {}) };
+    layerSolos = { ...((recipe.mix && recipe.mix.layerSolos) || {}) };
     // Tapped tempos don't match any preset, so honor the recipe's exact beat.
     if (Number.isFinite(recipe.beatMs)) beatMs = clamp(recipe.beatMs, 170, 420);
     phase = 'build';
@@ -4965,7 +5177,7 @@
       triggerFxJunk(pinchJunk, stretch, performance.now());
       pinchStamped = true;
     } else if (stretch > 0.62) {
-      playFxGesture(pinchJunk.piece, degreeFreq(pinchJunk.piece === 'echo' ? 2 : pinchJunk.piece === 'rise' ? 5 : 8, activeLayer().mult), 0.26 + stretch * 0.22, 0, { intensity: stretch, tension: stretch });
+      playFxGesture(pinchJunk.piece, degreeFreq(fxDegree(pinchJunk.piece), activeLayer().mult), 0.26 + stretch * 0.22, 0, { intensity: stretch, tension: stretch });
     }
     return true;
   }
@@ -5085,6 +5297,8 @@
   window.signalEndRun = endBuiltRun;
   window.signalShowMix = showMixScreen;
   window.signalSetLayerVolume = setLayerVolume;
+  window.signalToggleLayerMute = toggleLayerMute;
+  window.signalToggleLayerSolo = toggleLayerSolo;
   window.signalShowJukebox = showJukebox;
   window.signalJukeboxBack = function() {
     if (jukeboxBackTarget === 'result') showResult(true);

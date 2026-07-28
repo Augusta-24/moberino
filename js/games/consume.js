@@ -483,6 +483,25 @@
     }, 200);
   }
 
+  function bindFastTileTap(container, selector, readId, onTap) {
+    let ignoreClickUntil = 0;
+    container.addEventListener('pointerdown', event => {
+      if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return;
+      if (event.isPrimary === false || event.button > 0) return;
+      const tile = event.target.closest(selector);
+      if (!tile || !container.contains(tile)) return;
+      event.preventDefault();
+      ignoreClickUntil = Date.now() + 700;
+      onTap(readId(tile));
+    });
+    container.addEventListener('click', event => {
+      const tile = event.target.closest(selector);
+      if (!tile || !container.contains(tile)) return;
+      if (event.detail && Date.now() < ignoreClickUntil) return;
+      onTap(readId(tile));
+    });
+  }
+
   function renderPlay() {
     if (!wrap || !S) return;
     wrap.innerHTML =
@@ -498,14 +517,16 @@
       `<div class="cw-goal">BOARD ${S.n}/${LEVELS.length} · <span class="cw-goal-words">${S.data.minWords}` +
       `${S.data.maxWords > S.data.minWords ? '+' : ''}</span> WORDS TO SOLVE` +
       `<span id="cw-progress"></span></div>` +
+      `<div class="cw-board-shell">` +
       `<div class="cw-board" id="cw-board" style="--cw-cols:${S.boardCols}"></div>` +
-      `<div class="cw-tray-shell">` +
       `<div class="cw-flash" id="cw-flash" role="status" aria-live="polite" hidden></div>` +
+      `</div>` +
+      `<div class="cw-tray-shell">` +
       `<div class="cw-tray-pos">` +
       `<div class="cw-tray" id="cw-tray"></div>` +
       `<button class="cw-clear" type="button" data-act="clear" aria-label="Clear selected tiles">CLEAR</button>` +
       `</div>` +
-      `<button class="cw-spell" data-act="submit">SPELL IT</button>` +
+      `<button class="cw-spell" data-act="submit">SUBMIT</button>` +
       `</div>` +
       `<div class="cw-tableau-shell">` +
       `<div class="cw-tableau" id="cw-tableau"></div>` +
@@ -517,14 +538,18 @@
       if (act === 'shuffle') shuffleBoard();
       if (act === 'reset') resetLevel();
     });
-    wrap.querySelector('#cw-board').addEventListener('click', e => {
-      const tile = e.target.closest('[data-board-tile]');
-      if (tile) tapBoard(+tile.getAttribute('data-board-tile'));
-    });
-    wrap.querySelector('#cw-tray').addEventListener('click', e => {
-      const tile = e.target.closest('[data-tray-tile]');
-      if (tile) tapTray(+tile.getAttribute('data-tray-tile'));
-    });
+    bindFastTileTap(
+      wrap.querySelector('#cw-board'),
+      '[data-board-tile]',
+      tile => +tile.getAttribute('data-board-tile'),
+      tapBoard
+    );
+    bindFastTileTap(
+      wrap.querySelector('#cw-tray'),
+      '[data-tray-tile]',
+      tile => +tile.getAttribute('data-tray-tile'),
+      tapTray
+    );
     wrap.querySelector('[data-act="submit"]').addEventListener('click', submitTray);
     wrap.querySelector('[data-act="clear"]').addEventListener('click', () => {
       if (!S || !S.tray.length) return;
@@ -595,7 +620,11 @@
       ? S.tray.map(t => `<button class="cw-tile tray" type="button" data-tray-tile="${t.id}">${esc(t.ch.toUpperCase())}</button>`).join('')
       : '';
     const btn = wrap.querySelector('.cw-spell');
-    if (btn) btn.disabled = false;
+    if (btn) {
+      btn.disabled = false;
+      const boardWidth = wrap.querySelector('#cw-board')?.getBoundingClientRect().width;
+      if (boardWidth) btn.style.width = `${boardWidth}px`;
+    }
     const clear = wrap.querySelector('.cw-clear');
     if (clear) clear.disabled = !S.tray.length;
   }
