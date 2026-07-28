@@ -159,7 +159,7 @@
 
   function start(n) {
     const data = levels()[n - 1]; if (!data) return;
-    setArcadeExitVisible(true);
+    setArcadeExitVisible(false);
     setArcadeModeSelect(false);
     shuffleTheme();
     nextTile = 1;
@@ -485,7 +485,7 @@
 
   function renderPlay() {
     wrap.style.setProperty('--kt', cfg().accent);
-    wrap.innerHTML = `${playSceneryMarkup()}<div class="kt-hud"><button data-modes>TILE SWAP</button><strong>${cfg().title}</strong><button data-reset>RESET</button></div><div class="kt-goal">BOARD ${state.n}/${levels().length}</div><div class="kt-table" id="kt-table"></div><div class="kt-flash" id="kt-flash" role="status" aria-live="polite" hidden></div><button class="kt-check" id="kt-check">CHECK</button><div class="kt-rack" id="kt-rack" data-rack-drop></div>`;
+    wrap.innerHTML = `${playSceneryMarkup()}<div class="kt-hud"><button data-modes>◀ MODES</button><strong>${cfg().title}</strong><button data-reset>RESET</button></div><div class="kt-goal">BOARD ${state.n}/${levels().length}</div><div class="kt-table" id="kt-table"></div><div class="kt-flash" id="kt-flash" role="status" aria-live="polite" hidden></div><button class="kt-check" id="kt-check">CHECK</button><div class="kt-rack" id="kt-rack" data-rack-drop></div>`;
     wrap.querySelector('.kt-hud').addEventListener('click', event => { if (event.target.hasAttribute('data-modes')) window.renderConsumeModes(); if (event.target.hasAttribute('data-reset')) start(state.n); });
     wrap.onpointerdown = pointerDown;
     wrap.onpointermove = dragMove;

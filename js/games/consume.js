@@ -234,7 +234,7 @@
   function startLevel(n) {
     const data = LEVELS[n - 1];
     if (!data) return;
-    setArcadeExitVisible(true);
+    setArcadeExitVisible(false);
     setArcadeModeSelect(false);
     shuffleTheme();
     killTimers();
@@ -507,7 +507,7 @@
     wrap.innerHTML =
       playSceneryMarkup() +
       `<div class="cw-hud">` +
-      `<button class="cw-btn" data-act="modes">TILE SWAP</button>` +
+      `<button class="cw-btn" data-act="modes">◀ MODES</button>` +
       `<strong>GRID</strong>` +
       `<div class="cw-hud-actions">` +
       `<button class="cw-btn" data-act="shuffle">SHUFFLE</button>` +

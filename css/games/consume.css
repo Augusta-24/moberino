@@ -827,3 +827,8 @@ body.arcade-mode-select.on-consume .consume-wrap {
   .cw-level-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); }
   .cw-level-grid .cw-node span { font-size: 22px; }
 }
+
+/* In-game modes own their top navigation, so they do not reserve space for the floating X. */
+body.on-consume:not(.arcade-mode-select) .consume-wrap {
+  padding-top:max(10px,calc(env(safe-area-inset-top,0px) + 8px));
+}

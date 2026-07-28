@@ -379,7 +379,11 @@
         bottomPad: 22,
         minRackHeight: 210,
         minTrayCellSize: 21,
-        maxTrayCellSize: 31
+        maxTrayCellSize: 31,
+        horizontalMinWidth: 900,
+        horizontalMinAspect: 1.2,
+        horizontalWidth: 960,
+        horizontalHeight: 620
       },
       rackGap: 24,
       rackBottom: 900,

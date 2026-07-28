@@ -26,6 +26,7 @@ function node(extra) {
     },
     removeChild(child) { const index = children.indexOf(child); if (index >= 0) children.splice(index, 1); child.parentNode = null; },
     get firstChild() { return children[0] || null; },
+    querySelectorAll() { return []; },
     classList: { add(...names) { names.forEach(name => classes.add(name)); }, remove(...names) { names.forEach(name => classes.delete(name)); }, toggle(name, force) { if (force) classes.add(name); else classes.delete(name); }, contains(name) { return classes.has(name); } },
     addEventListener(type, handler) { if (!listeners.has(type)) listeners.set(type, new Set()); listeners.get(type).add(handler); },
     removeEventListener(type, handler) { if (listeners.has(type)) listeners.get(type).delete(handler); },
@@ -87,6 +88,24 @@ test('packing-game mobile shells keep their padded widths within the viewport', 
   assert.match(css, /\.packing-cockpit\s*\{[^}]*box-sizing:\s*border-box;/s);
   assert.match(css, /\.packing-world-map\s*\{[^}]*box-sizing:\s*border-box;/s);
   assert.match(css, /\.packing-mission-screen\s*\{[^}]*box-sizing:\s*border-box;/s);
+});
+
+test('wide landscape stages place the rack left and board right', () => {
+  const engine = loadEngine();
+  packingStage.getBoundingClientRect = () => ({ left: 0, top: 0, width: 1400, height: 800 });
+  assert.equal(engine.start({
+    stageId: 'stage', regionGroupId: 'region', trayGroupId: 'tray',
+    pieceCount: 6, verifySolutions: false, maxDimension: 8,
+    autoLayout: {
+      enabled: true, width: 560, minHeight: 660, maxHeight: 980,
+      horizontalMinWidth: 900, horizontalMinAspect: 1.2,
+      horizontalWidth: 960, horizontalHeight: 620
+    }
+  }), true);
+  assert.equal(packingStage.getAttribute('viewBox'), '0 0 960 620');
+  assert.equal(packingStage.classList.contains('is-horizontal-layout'), true);
+  const pieces = engine.getTrayPieces();
+  assert.equal(pieces.every(piece => piece.home.x < 440), true);
 });
 
 test('campaign declares five cumulative worlds and a playable ten-level World 1', () => {

@@ -99,6 +99,7 @@
   function deploySocket(type) {
     if (!inventory[type]) return;
     inventory[type] = false;
+    if (academyMode) academyDeployedSockets.add(type);
     applyPowerup(type);
   }
   let mysteryTimer = null;
@@ -165,6 +166,11 @@
   let academyGoalComplete = false;
   let academyRetryNoticeAt = 0;
   let academyCompleting = false; // Keeps the tutorial-complete beat from being mistaken for a finished campaign wave.
+  let academyMoveDistance = 0;
+  let academyLastPlayerX = 0;
+  let academyRocksDestroyed = 0;
+  let academySkippedLessons = 0;
+  const academyDeployedSockets = new Set();
   // 'flip' (not 'reverse') for the wave theme key — the mystery outcome list below
   // already uses 'reverse' for reversed controls, an unrelated effect; same string
   // in both would be confusing to read even though they're different variables.
@@ -2306,6 +2312,7 @@
   function startBlackoutBatteryTestEncounter(options) {
     options = options || {};
     const campaignBlackout = !!options.campaign;
+    const tutorialBlackout = !!options.tutorial;
     clearSpaceCinematicOverlays();
     obstacles = [];
     enemyBullets = [];
@@ -2325,8 +2332,8 @@
         { x: 0.78, y: 0.55, r: 34, phase: 4.35 },
       ],
       bottomLights: [0.10, 0.25, 0.40, 0.55, 0.70, 0.85],
-      batteryGoal: 5,
-      batteryTotal: 10,
+      batteryGoal: tutorialBlackout ? 3 : 5,
+      batteryTotal: tutorialBlackout ? 6 : 10,
       batteriesSpawned: 0,
       batteriesCaught: 0,
       batteriesMissed: 0,
@@ -2336,13 +2343,15 @@
       nextRockAt: now + 3850,
       nextLightKickAt: now + 5200,
       complete: false,
+      rockTotal: tutorialBlackout ? 5 : 11,
       campaignBlackout,
+      tutorialBlackout,
     };
     spawnsRemaining = 1;
     blasterDisabledUntil = now + 1500;
     spawnBlackoutBatteryJunk(authoredCampaignEncounter);
-    addFloatText(campaignBlackout ? 'BLACKOUT' : 'BLACKOUT TEST C', W / 2, H * 0.25, '#ffe61a', 25, { vy: 0, holdMs: 4200, fade: 0.010 });
-    addFloatText('CATCH 5 BATTERIES TO RESTORE THE LIGHT', W / 2, H * 0.25 + 34, '#33ff66', 21, { vy: 0, holdMs: 4200, fade: 0.010, icon: 'battery' });
+    addFloatText(campaignBlackout ? 'BLACKOUT' : (tutorialBlackout ? 'TRAINING BLACKOUT' : 'BLACKOUT TEST C'), W / 2, H * 0.25, '#ffe61a', 25, { vy: 0, holdMs: 4200, fade: 0.010 });
+    addFloatText(`CATCH ${authoredCampaignEncounter.batteryGoal} BATTERIES TO RESTORE THE LIGHT`, W / 2, H * 0.25 + 34, '#33ff66', 21, { vy: 0, holdMs: 4200, fade: 0.010, icon: 'battery' });
   }
 
   function startBlackoutTestEncounter(mode) {
@@ -2361,7 +2370,7 @@
       spawnBlackoutBattery(encounter);
       encounter.nextBatteryAt = now + rand(855, 1140);
     }
-    if (!encounter.complete && now > (encounter.nextRockAt || 0) && encounter.rocksSpawned < 11) {
+    if (!encounter.complete && now > (encounter.nextRockAt || 0) && encounter.rocksSpawned < (encounter.rockTotal || 11)) {
       spawnBlackoutTestRock(encounter);
       encounter.nextRockAt = now + rand(900, 1350);
     }
@@ -2449,6 +2458,10 @@
       } else {
         triggerCampaignWaveFailure();
       }
+      return true;
+    }
+    if (encounter.complete && encounter.tutorialBlackout) {
+      academyGoalComplete = !!encounter.passed;
       return true;
     }
     if (encounter.complete && !encounter.campaignBlackout && !encounter.resultScreenShown && now - (encounter.finishedAt || now) > 1200) {
@@ -3804,14 +3817,11 @@
   }
 
   const SPACE_ACADEMY_LESSONS = [
-    { title: 'DRAG TO MOVE', detail: 'DODGE ROCKS, DODGE JUNK, KEEP YOUR SHIP CLEAR', confirm: 'GOOD DODGING!' },
-    { title: 'NORMAL ENEMIES', detail: 'THEY HOLD, DRIFT, AND SHOOT', confirm: 'ENEMY CLEARED!' },
-    { title: 'RED SWARMERS', detail: 'FLASHING RED ENEMIES RUSH YOUR SPACE', confirm: 'SWARMER STOPPED!' },
-    { title: 'CATCH POWERUPS', detail: 'LEFT SOCKETS STORE GUN / SHIELD / BOMB', confirm: 'SOCKETS STOCKED!' },
-    { title: 'TAP A SOCKET', detail: 'BOMB SOCKET CLEARS DANGER', confirm: 'BOMB DEPLOYED!' },
-    { title: 'SHOOT THE ? CRATE', detail: 'IT CAN HELP OR HURT', confirm: 'MYSTERY LEARNED!' },
-    { title: 'BREAK THE BLUE LOCK', detail: 'SHOOT THE RING, NOT THE MOBE', confirm: 'RESCUE UNLOCKED!' },
-    { title: 'BLACKOUT', detail: 'SLOW DOWN. WATCH FOR OPEN SPACE.', confirm: 'TRAINING COMPLETE!' },
+    { title: 'MOVE + AIM', detail: 'DRAG. AUTO-FIRE BREAKS ROCKS.', confirm: 'ROCKS CLEARED!' },
+    { title: 'DODGE + SWARM', detail: 'DODGE SHOTS. STOP RED RUSHERS.', confirm: 'THREATS CLEARED!' },
+    { title: 'USE SOCKETS', detail: 'CATCH, THEN TAP GUN / SHIELD / BOMB.', confirm: 'SOCKETS READY!' },
+    { title: 'RESCUE', detail: 'BREAK THE BLUE RING.', confirm: 'MOBE RESCUED!' },
+    { title: 'BLACKOUT', detail: 'BLASTER OFF. CATCH 3 BATTERIES.', confirm: 'POWER RESTORED!' },
   ];
 
   function academyTimer(fn, delay) {
@@ -3828,7 +3838,7 @@
   // (or one title+detail pair) is ever visible — never stacked, never racing.
   let academyMsgPanel = null; // {title, detail, kind, x, y, startedAt, holdMs}
   const ACADEMY_MSG_FADE_IN = 180, ACADEMY_MSG_FADE_OUT = 260;
-  const ACADEMY_INTRO_HOLD_MS = 3600;
+  const ACADEMY_INTRO_HOLD_MS = 1450;
   function academyMsgDuration(holdMs) {
     return ACADEMY_MSG_FADE_IN + holdMs + ACADEMY_MSG_FADE_OUT;
   }
@@ -3842,8 +3852,8 @@
       kind: opts.kind || 'good',
       x: opts.x != null ? opts.x : W / 2,
       y: opts.y != null ? opts.y : H * 0.26,
-      titleSize: opts.titleSize || 32,
-      detailSize: opts.detailSize || 21,
+      titleSize: opts.titleSize || (title.length > 28 ? 21 : title.length > 20 ? 27 : 32),
+      detailSize: opts.detailSize || ((detail || '').length > 46 ? 16 : (detail || '').length > 38 ? 18 : 21),
       startedAt: Date.now(),
       holdMs: opts.holdMs != null ? opts.holdMs : 1500,
     };
@@ -3895,7 +3905,7 @@
 
   function academyConfirm(text) {
     if (!academyMode || state !== 'playing') return;
-    academyShowMsg(text || 'NICE!', '', { kind: 'good', holdMs: 1700, titleSize: 32 });
+    academyShowMsg(text || 'NICE!', '', { kind: 'good', holdMs: 500 });
   }
 
   function academyTryAgain(text, onDone) {
@@ -3916,18 +3926,18 @@
     // Checkpoint E: every Academy lesson has a deterministic escape hatch. The
     // player can finish by doing the mechanic, but missed pickups/crates/targets
     // never strand the tutorial or bleed into campaign state.
-    const lessonTimeouts = [12500, 16000, 16000, 20000, 17000, 20000, 20000, 13200];
+    const lessonTimeouts = [15000, 18000, 26000, 21000, 26000];
     return lessonTimeouts[index] || 10000;
   }
 
-  function spawnAcademyAsteroid(x, y, speed) {
+  function spawnAcademyAsteroid(x, y, speed, hp) {
     const r = 20;
     const verts = Array.from({ length: 8 }, (_, i) => {
       const a = (i / 8) * Math.PI * 2;
       const rr = r * (0.74 + (i % 3) * 0.08);
       return [Math.cos(a) * rr, Math.sin(a) * rr];
     });
-    obstacles.push({ type: 'asteroid', x, y, vx: 0, vy: speed, r, verts, rot: 0, rotSpeed: 0.01, hp: 1, shadeSeed: 0, rockStyle: 1, academyObstacle: true });
+    obstacles.push({ type: 'asteroid', x, y, vx: 0, vy: speed, r, verts, rot: 0, rotSpeed: 0.01, hp: hp || 1, shadeSeed: 0, rockStyle: 1, academyObstacle: true });
   }
 
   function spawnAcademyEnemy(x, y, hp, behavior) {
@@ -3967,13 +3977,17 @@
     academyStepStarted = Date.now();
     academyStepArmed = false;
     academyGoalComplete = false;
+    academyMoveDistance = 0;
+    academyLastPlayerX = player ? player.x : 0;
+    academyRocksDestroyed = 0;
     academyRetryNoticeAt = 0;
-    if (index === 5) academyMysteryIndex = 0;
+    academyDeployedSockets.clear();
     bullets = [];
     enemyBullets = [];
     obstacles = [];
     powerups = [];
     blackoutHitFlashes = [];
+    authoredCampaignEncounter = null;
     waveTheme = null;
     themeEffectsAt = 0;
     academyClearMsg();
@@ -3985,39 +3999,39 @@
     // Success/retry cards happen only after the active lesson objects are gone.
     if (index === 0) {
       academyAfterIntro(() => {
-        [0.28, 0.5, 0.72].forEach((xp, i) => spawnAcademyAsteroid(W * xp, -40 - i * 130, 1.0));
+        [0.28, 0.72].forEach((xp, i) => spawnAcademyAsteroid(W * xp, -40 - i * 150, 0.82, 3));
       });
     } else if (index === 1) {
       academyAfterIntro(() => {
-        [0.20, 0.40, 0.60, 0.80].forEach((xp, i) => {
-          spawnAcademyEnemy(W * xp, H * (0.31 + (i % 2) * 0.12), 1, 'holdDrift');
-        });
+        spawnAcademyEnemy(W * 0.32, H * 0.34, 3, 'holdDrift');
+        const shooter = obstacles[obstacles.length - 1];
+        if (shooter) shooter.academyAwaitingShot = true;
+        academyTimer(() => {
+          if (academyMode && academyStep === 1) spawnAcademyEnemy(W * 0.70, -40, 2, 'swarmer');
+        }, 3600);
       });
     } else if (index === 2) {
-      academyAfterIntro(() => spawnAcademyEnemy(W * 0.5, -40, 1, 'swarmer'));
-    } else if (index === 3) {
       academyAfterIntro(() => {
         spawnAcademyPowerup('gun', W * 0.28, 0);
         spawnAcademyPowerup('shield', W * 0.5, 1150);
         spawnAcademyPowerup('bomb', W * 0.72, 2300);
+        academyTimer(() => {
+          if (!academyMode || academyStep !== 2) return;
+          for (let i = 0; i < 5; i++) spawnAcademyEnemy(W * (0.2 + i * 0.15), -35 - i * 42, 1, 'swarmer');
+        }, 6200);
+      });
+    } else if (index === 3) {
+      academyAfterIntro(() => {
+        spawnAcademyRescueLock();
+        academyTimer(() => {
+          if (academyMode && academyStep === 3) spawnAcademyEnemy(W * 0.22, H * 0.34, 3, 'holdDrift');
+        }, 850);
       });
     } else if (index === 4) {
-      inventory.bomb = true;
-      academyAfterIntro(() => {
-        for (let i = 0; i < 5; i++) academyTimer(() => academyMode && spawnAcademyEnemy(W * (0.2 + i * 0.15), -35, 1, 'swarmer'), i * 260);
-      });
-    } else if (index === 5) {
-      academyAfterIntro(() => {
-        spawnAcademyMystery(W * 0.38, 0);
-        spawnAcademyMystery(W * 0.62, 2600);
-      });
-    } else if (index === 6) {
-      academyAfterIntro(() => spawnAcademyRescueLock());
-    } else if (index === 7) {
       academyAfterIntro(() => {
         waveTheme = 'blackout';
         themeEffectsAt = Date.now();
-        [0.34, 0.66].forEach((xp, i) => spawnAcademyAsteroid(W * xp, -35 - i * 160, 0.86));
+        startBlackoutBatteryTestEncounter({ tutorial: true });
       });
     }
   }
@@ -4036,7 +4050,7 @@
     el.innerHTML = `
       <div style="text-align:center">
         <div style="font-family:'Bebas Neue',cursive;font-size:clamp(32px,7.5vw,52px);letter-spacing:4px;line-height:1;color:#33ff66;text-shadow:0 0 22px #33ff6688,0 0 44px #33ff6644;transform:scale(0.85);transition:transform 0.35s cubic-bezier(.2,1.15,.35,1)">SPACE TUTORIAL COMPLETE</div>
-        <div style="margin-top:14px;font-family:'VCR',monospace;font-size:13px;letter-spacing:2px;color:rgba(242,239,232,0.75)">YOU ARE READY FOR THE CAMPAIGN</div>
+        <div style="margin-top:14px;font-family:'VCR',monospace;font-size:13px;letter-spacing:2px;color:rgba(242,239,232,0.75)">${academySkippedLessons ? `${academySkippedLessons} LESSON${academySkippedLessons === 1 ? '' : 'S'} SKIPPED — PRACTICE AGAIN ANY TIME` : 'ALL SYSTEMS MASTERED — CAMPAIGN READY'}</div>
       </div>`;
     document.body.appendChild(el);
     requestAnimationFrame(() => {
@@ -4082,44 +4096,45 @@
     if (!academyMode || state !== 'playing' || academyStepArmed) return;
     const activeAcademyObstacles = obstacles.filter(o => o.academyObstacle && o.alive !== false && !o._crossed);
     const activeAcademyPowerups = powerups.filter(p => p.academyPowerup || p.academyMystery);
-    if (academyStep === 1) {
+    if (academyStep === 0) {
+      if (elapsed > 6500 && (academyMoveDistance < W * 0.38 || academyRocksDestroyed < 2) && activeAcademyObstacles.length === 0) {
+        academyTryAgain('DRAG SIDE TO SIDE TO AIM', () => {
+          [0.28, 0.72].forEach((xp, i) => spawnAcademyAsteroid(W * xp, -40 - i * 145, 0.82, 3));
+        });
+      }
+    } else if (academyStep === 1) {
       if (elapsed > 5200 && !academyGoalComplete && activeAcademyObstacles.length === 0) {
-        academyTryAgain('TRY AGAIN: CLEAR THE DRIFTERS', () => {
-          [0.24, 0.42, 0.58, 0.76].forEach((xp, i) => spawnAcademyEnemy(W * xp, H * (0.32 + (i % 2) * 0.12), 1, 'holdDrift'));
+        academyTryAgain('DODGE, THEN STOP THE RUSHER', () => {
+          spawnAcademyEnemy(W * 0.32, H * 0.34, 3, 'holdDrift');
+          const shooter = obstacles[obstacles.length - 1];
+          if (shooter) shooter.academyAwaitingShot = true;
+          academyTimer(() => {
+            if (academyMode && academyStep === 1) spawnAcademyEnemy(W * 0.70, -40, 2, 'swarmer');
+          }, 2200);
         });
       }
       if (elapsed > 3600 && Date.now() - lastEnemyFire > 1150) {
         const shooters = obstacles.filter(o => o.academyObstacle && o.behavior === 'holdDrift' && o.y > 0);
         if (shooters.length) {
-          enemyFireAt(shooters[Math.floor(Math.random() * shooters.length)], 0.70, 'TRAINING SHOT');
+          const shooter = shooters[Math.floor(Math.random() * shooters.length)];
+          enemyFireAt(shooter, 0.70, 'TRAINING SHOT');
+          shooter.academyAwaitingShot = false;
           lastEnemyFire = Date.now();
         }
       }
     } else if (academyStep === 2) {
-      if (elapsed > 4300 && !academyGoalComplete && !obstacles.some(o => o.academyObstacle && o.behavior === 'swarmer')) {
-        academyTryAgain('TRY AGAIN: STOP THE RED SWARMER', () => spawnAcademyEnemy(W * rand(0.35, 0.65), -40, 1, 'swarmer'));
+      const stockedOrUsed = type => inventory[type] || academyDeployedSockets.has(type);
+      if (elapsed > 6500 && !SOCKET_TYPES.every(stockedOrUsed) && activeAcademyPowerups.length === 0) {
+        academyTryAgain('MISSED ONE - NEW POWERUPS', () => {
+          if (!stockedOrUsed('gun')) spawnAcademyPowerup('gun', W * 0.30, 0);
+          if (!stockedOrUsed('shield')) spawnAcademyPowerup('shield', W * 0.50, stockedOrUsed('gun') ? 0 : 900);
+          if (!stockedOrUsed('bomb')) spawnAcademyPowerup('bomb', W * 0.70, (stockedOrUsed('gun') && stockedOrUsed('shield')) ? 0 : 1800);
+        });
       }
     } else if (academyStep === 3) {
-      if (elapsed > 5600 && !(inventory.gun && inventory.shield && inventory.bomb) && activeAcademyPowerups.length === 0) {
-        academyTryAgain('MISSED ONE - NEW POWERUPS', () => {
-          if (!inventory.gun) spawnAcademyPowerup('gun', W * 0.30, 0);
-          if (!inventory.shield) spawnAcademyPowerup('shield', W * 0.50, inventory.gun ? 0 : 900);
-          if (!inventory.bomb) spawnAcademyPowerup('bomb', W * 0.70, (inventory.gun && inventory.shield) ? 0 : 1800);
-        });
-      }
-    } else if (academyStep === 4) {
-      if (elapsed > 5200 && inventory.bomb && activeAcademyObstacles.length === 0) {
-        academyTryAgain('TRY AGAIN: TAP THE BOMB SOCKET', () => {
-          for (let i = 0; i < 4; i++) spawnAcademyEnemy(W * (0.24 + i * 0.17), -35 - i * 38, 1, 'swarmer');
-        });
-      }
-    } else if (academyStep === 5) {
-      if (elapsed > 6200 && academyMysteryIndex < 2 && activeAcademyPowerups.length === 0) {
-        academyTryAgain('TRY AGAIN: SHOOT THE ? CRATE', () => spawnAcademyMystery(W * 0.5, 0));
-      }
-    } else if (academyStep === 6) {
-      if (elapsed > 5200 && !academyGoalComplete && activeAcademyObstacles.length === 0) {
-        academyTryAgain('TRY AGAIN: BREAK THE BLUE LOCK', () => spawnAcademyRescueLock());
+      const rescueAlive = obstacles.some(o => o.academyGoal === 'rescueLock' && o.alive !== false);
+      if (elapsed > 6200 && !academyGoalComplete && !rescueAlive) {
+        academyTryAgain('BREAK THE BLUE RING', () => spawnAcademyRescueLock());
       }
     }
   }
@@ -4129,12 +4144,11 @@
     const elapsed = Date.now() - academyStepStarted;
     academyRespawnLessonObjects(elapsed);
     let done = false;
-    if (academyStep === 0) done = elapsed > 3000 && obstacles.length === 0;
-    else if (academyStep === 1 || academyStep === 2 || academyStep === 6) done = elapsed > 2600 && academyGoalComplete && obstacles.length === 0;
-    else if (academyStep === 3) done = elapsed > 4200 && inventory.gun && inventory.shield && inventory.bomb;
-    else if (academyStep === 4) done = elapsed > 3200 && !inventory.bomb && obstacles.length === 0;
-    else if (academyStep === 5) done = elapsed > 5200 && academyMysteryIndex >= 2 && powerups.length === 0;
-    else if (academyStep === 7) done = elapsed > 12200 && obstacles.length === 0;
+    if (academyStep === 0) done = elapsed > 3000 && academyMoveDistance >= W * 0.38 && academyRocksDestroyed >= 2 && obstacles.length === 0;
+    else if (academyStep === 1) done = elapsed > 3000 && academyGoalComplete && obstacles.length === 0;
+    else if (academyStep === 2) done = elapsed > 5200 && SOCKET_TYPES.every(type => academyDeployedSockets.has(type));
+    else if (academyStep === 3) done = elapsed > 3000 && academyGoalComplete;
+    else if (academyStep === 4) done = elapsed > 5000 && academyGoalComplete;
     // Every lesson gets the same deterministic escape hatch, not just the three
     // read-only ones — interactive lessons (1-6) previously had no fallback at
     // all, so a player who couldn't land the required hit/catch/tap could be
@@ -4146,16 +4160,19 @@
     bullets = [];
     enemyBullets = [];
     if (timedOut) {
+      academySkippedLessons++;
       obstacles = [];
       powerups = [];
+      authoredCampaignEncounter = null;
+      waveTheme = null;
     }
     const lesson = SPACE_ACADEMY_LESSONS[academyStep];
-    academyConfirm(lesson && lesson.confirm ? lesson.confirm : 'NICE!');
+    academyConfirm(timedOut ? 'LESSON SKIPPED — KEEP PRACTICING' : (lesson && lesson.confirm ? lesson.confirm : 'NICE!'));
     academyTimer(() => {
       if (!academyMode || state !== 'playing') return;
       if (academyStep >= SPACE_ACADEMY_LESSONS.length - 1) completeSpaceAcademy();
       else enterSpaceAcademyLesson(academyStep + 1);
-    }, academyStep >= SPACE_ACADEMY_LESSONS.length - 1 ? 1850 : 1650);
+    }, academyStep >= SPACE_ACADEMY_LESSONS.length - 1 ? 1050 : 900);
   }
 
 
@@ -5677,8 +5694,57 @@ function nextWave() {
     ctx.restore();
   }
 
+  // Keep Space Mobe's runtime and collision model independent, but use Journey's
+  // canonical Wayfarer silhouette everywhere the playable ship is depicted.
+  // Coordinates are shared with shipIllustration() in journey.js (240 × 220).
+  function drawSpaceWayfarer(radius, options) {
+    options = options || {};
+    const scale = radius / 90;
+    const hitFlash = options.hitFlash || 0;
+    const hull = hitFlash > 0 ? `rgba(255,80,80,${0.78 + hitFlash * 0.18})` : '#dcecf1';
+    const hullShade = hitFlash > 0 ? `rgba(255,92,92,${0.82 + hitFlash * 0.14})` : '#a9c6d2';
+    ctx.save();
+    ctx.scale(scale, scale);
+    ctx.translate(-120, -110);
+    ctx.globalAlpha *= options.alpha == null ? 1 : options.alpha;
+    if (options.glowColor) {
+      ctx.shadowColor = options.glowColor;
+      ctx.shadowBlur = options.glowBlur || 18;
+    }
+    ctx.fillStyle = 'rgba(105,215,255,.28)';
+    ctx.beginPath(); ctx.moveTo(91,157); ctx.lineTo(106,207); ctx.lineTo(119,165); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(121,165); ctx.lineTo(136,207); ctx.lineTo(149,157); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,241,166,.8)';
+    ctx.beginPath(); ctx.moveTo(105,158); ctx.lineTo(120,214); ctx.lineTo(135,158); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#3d5872'; ctx.strokeStyle = '#69d7ff'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(93,77); ctx.lineTo(27,154); ctx.lineTo(92,137); ctx.lineTo(106,105); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(147,77); ctx.lineTo(213,154); ctx.lineTo(148,137); ctx.lineTo(134,105); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = hull; ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(120,14);
+    ctx.bezierCurveTo(146,40,157,91,150,145);
+    ctx.lineTo(136,174); ctx.lineTo(120,165); ctx.lineTo(104,174); ctx.lineTo(90,145);
+    ctx.bezierCurveTo(83,91,94,40,120,14);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = hullShade;
+    ctx.beginPath(); ctx.moveTo(120,25); ctx.lineTo(120,160); ctx.lineTo(104,169); ctx.lineTo(91,142);
+    ctx.bezierCurveTo(87,99,96,52,120,25); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#102c4b'; ctx.strokeStyle = '#fff1a6'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(120,42); ctx.bezierCurveTo(134,54,139,72,137,91);
+    ctx.bezierCurveTo(132,98,108,98,103,91); ctx.bezierCurveTo(101,72,106,54,120,42);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,241,166,.72)'; ctx.strokeStyle = '#5f6d79'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(107,113); ctx.lineTo(132,104); ctx.lineTo(137,123); ctx.lineTo(112,132); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(106,115); ctx.lineTo(132,107); ctx.moveTo(110,124); ctx.lineTo(136,115); ctx.stroke();
+    ctx.fillStyle = '#ff7c8f'; ctx.fillRect(55,132,23,9);
+    ctx.fillStyle = '#b79cff'; ctx.fillRect(161,132,23,9);
+    ctx.fillStyle = '#69d7ff'; ctx.strokeStyle = '#0b213b';
+    ctx.beginPath(); ctx.arc(120,148,6,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+
   function drawPlayer() {
-    const p = player, gc = GAME_CHARS[activeChar];
+    const p = player;
     const hitFlash = Math.max(0, (playerHitFlashUntil - Date.now()) / 150);
     ctx.save(); ctx.translate(p.x, p.y);
     if (Date.now() < buffShieldUntil) {
@@ -5711,30 +5777,11 @@ function nextWave() {
       }
       ctx.restore();
     }
-    // thruster glow — no shadowBlur for perf; use a larger semi-transparent fill instead
-    ctx.beginPath(); ctx.moveTo(-10,10); ctx.lineTo(0,28); ctx.lineTo(10,10); ctx.closePath();
-    ctx.fillStyle='rgba(0,229,255,0.5)'; ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(0,-p.r*1.1);
-    ctx.lineTo(p.r*0.75, p.r*0.5);
-    ctx.lineTo(p.r*0.4,  p.r*0.8);
-    ctx.lineTo(-p.r*0.4, p.r*0.8);
-    ctx.lineTo(-p.r*0.75,p.r*0.5);
-    ctx.closePath();
-    ctx.fillStyle = hitFlash > 0 ? `rgba(255,80,80,${0.78 + hitFlash * 0.18})` : gc.color;
-    ctx.fill();
-    ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
-    const fr = p.r*0.52;
-    ctx.beginPath(); ctx.arc(0,-fr*0.3,fr+2,0,Math.PI*2);
-    ctx.fillStyle='#fff'; ctx.fill();
-    ctx.beginPath(); ctx.arc(0,-fr*0.3,fr,0,Math.PI*2);
-    ctx.fillStyle = hitFlash > 0 ? `rgba(255,92,92,${0.82 + hitFlash * 0.14})` : gc.color;
-    ctx.fill();
+    drawSpaceWayfarer(p.r, { hitFlash });
     if (hitFlash > 0) {
       ctx.fillStyle = `rgba(255,70,70,${0.18 + hitFlash * 0.16})`;
       ctx.beginPath(); ctx.arc(0, 0, p.r * (1.55 + hitFlash * 0.22), 0, Math.PI * 2); ctx.fill();
     }
-    drawCanvasMobe(gc, 'normal', -fr, -fr * 1.3, fr * 2, fr * 2);
     ctx.restore();
   }
 
@@ -6329,46 +6376,93 @@ function nextWave() {
   }
 
   function drawHUD() {
-    // Score (top left) — hidden while the top banner is showing (appears through
-    // its full fade-in/hold/fade-out) rather than competing with it; nobody reads
-    // it that closely mid-action anyway.
-    if (!topBanner) {
-      ctx.fillStyle = 'rgba(242,239,232,0.92)';
-      ctx.font = `bold 23px 'Bebas Neue', cursive`;
-      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-      ctx.fillText(`SCORE ${score}`, 10, 6);
+    // One compact pilot-health medallion replaces score, the full-width health bar,
+    // and rescued count. The portrait carries the emotional state while the ring
+    // carries the exact remaining-health shape.
+    const pilot = GAME_CHARS[activeChar];
+    const hp = Math.max(0, Math.min(100, health)) / 100;
+    const pilotMood = health > 80 ? 'happy' : health >= 40 ? 'normal' : 'sad';
+    const pilotSrc = pilotMood === 'happy' ? (pilot.imgHappy || pilot.img)
+      : pilotMood === 'sad' ? (pilot.imgSad || pilot.img)
+      : pilot.img;
+    const pilotImg = pilotSrc ? _getImg(pilotSrc) : null;
+    const medallionX = 43;
+    const medallionY = 43;
+    const portraitR = 27;
+    const ringR = 34;
+    ctx.save();
+    const aura = ctx.createRadialGradient(medallionX, medallionY, 4, medallionX, medallionY, ringR + 9);
+    aura.addColorStop(0, 'rgba(51,255,102,0.13)');
+    aura.addColorStop(0.68, 'rgba(0,229,255,0.07)');
+    aura.addColorStop(1, 'rgba(0,229,255,0)');
+    ctx.fillStyle = aura;
+    ctx.beginPath(); ctx.arc(medallionX, medallionY, ringR + 9, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(7,12,22,0.82)';
+    ctx.beginPath(); ctx.arc(medallionX, medallionY, portraitR + 1, 0, Math.PI * 2); ctx.fill();
+    ctx.save();
+    ctx.beginPath(); ctx.arc(medallionX, medallionY, portraitR, 0, Math.PI * 2); ctx.clip();
+    const portraitSpace = ctx.createLinearGradient(
+      medallionX - portraitR,
+      medallionY - portraitR,
+      medallionX + portraitR,
+      medallionY + portraitR
+    );
+    portraitSpace.addColorStop(0, '#07152c');
+    portraitSpace.addColorStop(0.48, '#18245a');
+    portraitSpace.addColorStop(0.78, '#34205f');
+    portraitSpace.addColorStop(1, '#073a4d');
+    ctx.fillStyle = portraitSpace;
+    ctx.fillRect(medallionX - portraitR, medallionY - portraitR, portraitR * 2, portraitR * 2);
+    const nebula = ctx.createRadialGradient(
+      medallionX + portraitR * 0.30,
+      medallionY - portraitR * 0.28,
+      1,
+      medallionX + portraitR * 0.16,
+      medallionY - portraitR * 0.12,
+      portraitR * 1.15
+    );
+    nebula.addColorStop(0, 'rgba(105,215,255,0.48)');
+    nebula.addColorStop(0.42, 'rgba(183,156,255,0.18)');
+    nebula.addColorStop(1, 'rgba(3,1,16,0)');
+    ctx.fillStyle = nebula;
+    ctx.fillRect(medallionX - portraitR, medallionY - portraitR, portraitR * 2, portraitR * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.72)';
+    for (const star of [[-0.55,-0.42,1.1],[0.48,-0.58,0.8],[0.62,0.12,0.65],[-0.66,0.30,0.7]]) {
+      ctx.beginPath();
+      ctx.arc(medallionX + star[0] * portraitR, medallionY + star[1] * portraitR, star[2], 0, Math.PI * 2);
+      ctx.fill();
     }
-
-    if (isBlackoutBatteryTestActive()) {
-      // BLACKOUT C is pass/fail by batteries only; rocks slow you down but HP is irrelevant.
-      return;
+    if (pilotImg && pilotImg.complete && pilotImg.naturalWidth) {
+      ctx.drawImage(pilotImg, medallionX - portraitR, medallionY - portraitR, portraitR * 2, portraitR * 2);
+    } else {
+      ctx.fillStyle = pilot.color || '#33ff66';
+      ctx.fillRect(medallionX - portraitR, medallionY - portraitR, portraitR * 2, portraitR * 2);
+      ctx.font = '28px serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(pilotMood === 'happy' ? pilot.happy : pilotMood === 'sad' ? pilot.sad : pilot.emoji, medallionX, medallionY + 1);
     }
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(234,255,255,0.18)';
+    ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.arc(medallionX, medallionY, ringR, 0, Math.PI * 2); ctx.stroke();
+    if (hp > 0) {
+      ctx.strokeStyle = '#33ff66';
+      ctx.shadowColor = 'rgba(51,255,102,0.68)';
+      ctx.shadowBlur = 7;
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(medallionX, medallionY, ringR, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * hp);
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(0,229,255,0.34)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(medallionX, medallionY, portraitR + 2, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
 
-    // Wave number / HP percent text both removed — the health bar fill is already
-    // the at-a-glance signal, and wave number isn't something players read mid-action.
     const barY = SPACE_HP_BAR_Y;
-    const barW = W; // spans the full screen edge-to-edge, not inset
-    const barX = 0;
     const barH = SPACE_HP_BAR_H;
-    const hp = Math.max(0, health) / 100;
-
-    // Background track
-    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    ctx.fillRect(barX, barY, barW, barH);
-
-    // Health fill — no shadowBlur; use a brighter overlay strip for effect
-    ctx.fillStyle = hp > 0.6 ? '#33ff66' : hp > 0.3 ? '#ffe61a' : '#ff4444';
-    ctx.fillRect(barX, barY, barW * hp, barH);
-    ctx.fillStyle = hp > 0.6 ? 'rgba(51,255,102,0.3)' : hp > 0.3 ? 'rgba(255,230,26,0.3)' : 'rgba(255,68,68,0.3)';
-    ctx.fillRect(barX, barY, barW * hp, barH * 0.4);
-
-    // Section dividers (10 segments = 10 HP each)
-    ctx.strokeStyle = 'rgba(0,0,0,0.55)';
-    ctx.lineWidth = 1.5;
-    for (let i = 1; i < 10; i++) {
-      const sx = barX + barW * (i / 10);
-      ctx.beginPath(); ctx.moveTo(sx, barY); ctx.lineTo(sx, barY + barH); ctx.stroke();
-    }
 
     if (earlyEncounter && earlyEncounter.wave === 1 && !earlyEncounter.finished && earlyEncounter.endsAt) {
       const secondsLeft = Math.max(0, Math.ceil((earlyEncounter.endsAt - Date.now()) / 1000));
@@ -6490,19 +6584,6 @@ function nextWave() {
         ctx.fillText(`BOSS ${Math.min(bossRunIndex + 1, total)}/${total}`, W / 2, barY + barH + 48);
         ctx.restore();
       }
-      ctx.textBaseline = 'alphabetic';
-    } else if (missionTrappedChars.length) {
-      const total = missionTrappedChars.length;
-      const rescued = Math.min(rescuedChars.size, total);
-      const done = rescued >= total;
-      ctx.textAlign = 'left';
-      ctx.font = `bold 13px 'Bebas Neue', cursive`;
-      ctx.fillStyle = done ? '#33ff66' : '#00e5ff';
-      ctx.fillText(`RESCUED ${rescued}/${total}`, 10, barY + barH + 16);
-      ctx.fillStyle = 'rgba(255,255,255,0.28)';
-      ctx.fillRect(10, barY + barH + 23, 92, 4);
-      ctx.fillStyle = done ? '#33ff66' : '#00e5ff';
-      ctx.fillRect(10, barY + barH + 23, 92 * (rescued / total), 4);
       ctx.textBaseline = 'alphabetic';
     }
   }
@@ -6722,6 +6803,10 @@ function nextWave() {
     const goLeft = reversed ? rightHeld : leftHeld, goRight = reversed ? leftHeld : rightHeld;
     if(goLeft)  player.x=Math.max(player.r,     player.x-curSpeed);
     if(goRight) player.x=Math.min(W-player.r,   player.x+curSpeed);
+    if (academyMode && player) {
+      academyMoveDistance += Math.abs(player.x - academyLastPlayerX);
+      academyLastPlayerX = player.x;
+    }
 
     // Hero escort: appears at the player's side, follows and auto-fires while active,
     // then flies off with a "thanks" instead of just vanishing once its time is up.
@@ -7839,6 +7924,15 @@ function nextWave() {
               if(state==='over') return;
             } else {
               // Normal enemy face — takes 3 hits to clear
+              if (academyMode && o.academyAwaitingShot) {
+                b.vy = 999;
+                if (nowHit - (o.traitorShieldNoticeAt || 0) > 500) {
+                  o.traitorShieldNoticeAt = nowHit;
+                  addFloatText('WATCH ITS SHOT', o.x, o.y - 18, '#ffe61a', 13);
+                  playShieldBellPing();
+                }
+                break;
+              }
               const blackoutShielded = o.authoredBlackout && (o.blackoutRelocatingUntil || nowHit >= (o.blackoutVulnerableUntil || 0));
               if (traitorShieldActive(o, nowHit) || blackoutShielded) {
                 b.vy = 999;
@@ -7891,6 +7985,7 @@ function nextWave() {
             } else {
               const pts = o.type === 'junk' ? 8 + wave * 2 : 10 + (wave * 2);
               score+=pts;
+              if (academyMode && academyStep === 0 && o.academyObstacle && o.type === 'asteroid') academyRocksDestroyed++;
               if (o.type === 'junk') playTargetBreakSfx('junk');
               miniExplosion(o.x,o.y,o.type === 'junk' ? '#8796b6' : '#7a6a90');
               if(o.type === 'asteroid' && o.r > 22 && currentCfg){
@@ -8837,13 +8932,9 @@ function nextWave() {
     if (academyMode) drawAcademyMsgPanel();
   }
 
-  // Unified callout for every power/advantage/HP event — one consistent place to
-  // look instead of scattered popups (ship-position float text, socket flashes,
-  // full-screen banners), which is exactly the "everything flying at me" chaos this
-  // is meant to cut down on. Drawn last so it visually covers the score/wave row
-  // for its duration. Same cyan/red as the hero ring / enemy reticle, same glowing
-  // Bebas Neue language as the intro objective text. Fades in and out rather than
-  // snapping on/off — reads as "appearing," not a flash.
+  // Unified callout for every power/advantage/HP event. It hangs directly below
+  // the pilot-health medallion so health changes have one visual home instead of
+  // taking over the entire top edge of the playfield.
   let topBanner = null;
   const TOP_BANNER_FADE_IN = 220, TOP_BANNER_HOLD = 700, TOP_BANNER_FADE_OUT = 380;
   function showTopBanner(text, kind, opts) {
@@ -8868,18 +8959,32 @@ function nextWave() {
     const c = topBanner.color;
     ctx.save();
     ctx.globalAlpha = a;
-    // Solid enough to actually obscure what's happening underneath, on purpose —
-    // half-visible motion through a translucent banner read as more confusing than
-    // just hiding it for the brief moment the banner is up.
-    ctx.fillStyle = '#0a0418';
-    ctx.fillRect(0, 0, W, 54);
-    ctx.fillStyle = c + '33';
-    ctx.fillRect(0, 0, W, 54);
-    ctx.shadowColor = c; ctx.shadowBlur = 20;
+    const bannerY = 84;
+    const bannerH = 32;
+    let fontSize = 22;
+    ctx.font = `${fontSize}px 'Bebas Neue', cursive`;
+    while (ctx.measureText(topBanner.text).width > W - 38 && fontSize > 14) {
+      fontSize--;
+      ctx.font = `${fontSize}px 'Bebas Neue', cursive`;
+    }
+    const bannerW = Math.min(W - 16, Math.max(70, ctx.measureText(topBanner.text).width + 28));
+    const bannerX = 8;
+    ctx.strokeStyle = c + '66';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(43, 77); ctx.lineTo(43, bannerY); ctx.stroke();
+    ctx.shadowColor = c; ctx.shadowBlur = 12;
+    ctx.fillStyle = 'rgba(10,4,24,0.92)';
+    ctx.beginPath(); ctx.roundRect(bannerX, bannerY, bannerW, bannerH, 9); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = c + '24';
+    ctx.beginPath(); ctx.roundRect(bannerX, bannerY, bannerW, bannerH, 9); ctx.fill();
+    ctx.strokeStyle = c + '88';
+    ctx.beginPath(); ctx.roundRect(bannerX, bannerY, bannerW, bannerH, 9); ctx.stroke();
+    ctx.shadowColor = c; ctx.shadowBlur = 10;
     ctx.fillStyle = c;
-    ctx.font = `38px 'Bebas Neue', cursive`;
+    ctx.font = `${fontSize}px 'Bebas Neue', cursive`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(topBanner.text, W / 2, 28);
+    ctx.fillText(topBanner.text, bannerX + bannerW / 2, bannerY + bannerH / 2 + 1);
     ctx.restore();
   }
 
@@ -10478,13 +10583,12 @@ function nextWave() {
   }
 
   function drawTwin() {
-    const gc = GAME_CHARS[activeChar];
     ctx.save();
     ctx.translate(twin.x, twin.y);
-    ctx.globalAlpha = 0.85;
-    drawCanvasMobe(gc, 'normal', -player.r, -player.r, player.r * 2, player.r * 2, {
+    drawSpaceWayfarer(player.r, {
+      alpha: 0.85,
       glowColor: 'rgba(255,230,26,0.35)',
-      glowBlur: player.r * 0.22,
+      glowBlur: 18,
     });
     ctx.restore();
   }
@@ -10703,14 +10807,14 @@ function nextWave() {
     const icons = {
       weight: `<svg class="space-mode-scene" viewBox="0 0 150 86" aria-hidden="true">
         <path class="space-lesson-lane" d="M12 63h126M20 29h70"/>
-        <g class="space-lesson-ship" transform="translate(40 47)"><path d="M0-20 17 15 0 9-17 15z"/><circle cy="1" r="4"/></g>
+        <g class="space-lesson-ship" transform="translate(40 47)"><path d="M0-20C7-13 9-1 7 12L17 15 10 3 7-2 0 11-7-2-10 3-17 15-7 12C-9-1-7-13 0-20Z"/><path d="M-4-7C-2-11 2-11 4-7L3-1H-3Z"/><circle cy="7" r="2"/></g>
         <g class="space-lesson-target" transform="translate(108 30)"><circle r="14"/><circle r="5"/><path d="M-20 0h8M12 0h8M0-20v8M0 12v8"/></g>
         <path class="space-lesson-shot" d="M50 39 91 31"/>
       </svg>`,
       play: `<svg class="space-mode-icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M23 17l25 15-25 15z"/></svg>`,
       boss: `<svg class="space-mode-scene" viewBox="0 0 150 86" aria-hidden="true">
         <g class="space-boss-silhouette" transform="translate(77 41) scale(.9)"><path d="M-35-4c0-22 14-34 35-34S35-26 35-4c0 12-7 23-18 28v13H7V26H-7v11h-10V24c-11-5-18-16-18-28z"/><circle cx="-13" cy="-8" r="4"/><circle cx="13" cy="-8" r="4"/><path d="M-13 9h26"/></g>
-        <g class="space-boss-player" transform="translate(22 67)"><path d="M0-11 8 8 0 5-8 8z"/></g>
+        <g class="space-boss-player" transform="translate(22 67) scale(.58)"><path d="M0-20C7-13 9-1 7 12L17 15 10 3 7-2 0 11-7-2-10 3-17 15-7 12C-9-1-7-13 0-20Z"/></g>
         <path class="space-boss-warning" d="M20 48h4M20 40v-9"/>
       </svg>`
     };
@@ -10848,12 +10952,10 @@ function nextWave() {
     const wavesCleared = Math.min(SPACE_CAMPAIGN_FINAL_WAVE, campaignClearedWaves.size);
     const wavesFailed = campaignFailedWaves.size;
     const perfectRun = wavesCleared === SPACE_CAMPAIGN_FINAL_WAVE && wavesFailed === 0;
-    const finalCleared = campaignClearedWaves.has(SPACE_CAMPAIGN_FINAL_WAVE);
     ov.innerHTML = `
       <div class="whack-mode-shell" style="max-width:430px;margin-top:22px;text-align:center">
         <div class="whack-mode-title" style="color:${perfectRun ? '#ffe61a' : '#33ff66'};text-shadow:0 0 18px ${perfectRun ? '#ffe61a88' : '#33ff6688'}">${perfectRun ? 'PERFECT RUN!' : 'MISSION COMPLETE!'}</div>
-        <div class="game-card whack-mode-card" style="border-color:#33ff6677;cursor:default;min-height:0;padding:20px 18px;background:rgba(5,2,18,0.92)">
-          <div style="font-family:'Bebas Neue',cursive;font-size:40px;letter-spacing:5px;line-height:1;color:#f2efe8;margin-bottom:16px">${perfectRun ? `ALL ${SPACE_CAMPAIGN_FINAL_WAVE} WAVES CLEARED` : finalCleared ? 'GIZMO DEFEATED' : `ALL ${SPACE_CAMPAIGN_FINAL_WAVE} WAVES PLAYED`}</div>
+        <div class="game-card whack-mode-card" style="display:block;border-color:#33ff6677;cursor:default;min-height:0;padding:20px 18px;background:rgba(5,2,18,0.92)">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
             <div style="padding:13px 8px;border:1px solid rgba(51,255,102,0.35);border-radius:12px;background:rgba(51,255,102,0.08)">
               <div style="font-family:'VCR',monospace;font-size:9px;letter-spacing:1.7px;color:rgba(242,239,232,0.58);margin-bottom:5px">WAVES CLEARED</div>
@@ -10864,7 +10966,6 @@ function nextWave() {
               <div style="font-family:'Bebas Neue',cursive;font-size:42px;letter-spacing:4px;line-height:1;color:#00e5ff;text-shadow:0 0 14px #00e5ff88">${rescued}/${total}</div>
             </div>
           </div>
-          <div style="font-family:'VCR',monospace;font-size:10px;letter-spacing:1.8px;color:rgba(242,239,232,0.48);margin-bottom:18px">${perfectRun ? 'NO DEATHS' : `${wavesFailed} WAVE${wavesFailed === 1 ? '' : 'S'} FAILED`} · SCORE ${score}</div>
           <div style="display:flex;flex-direction:column;gap:10px">
             <button class="whack-btn" style="border-color:#33ff66;background:rgba(51,255,102,0.30)" onclick="spaceStart()">PLAY CAMPAIGN AGAIN</button>
             <button class="whack-btn" style="border-color:#00e5ff;background:rgba(0,229,255,0.22)" onclick="spaceAcademyStart()">SPACE TUTORIAL</button>
@@ -11371,13 +11472,31 @@ function nextWave() {
     </div>`;
   }
 
+  function spaceWayfarerSVG(className) {
+    return `<svg class="${className || ''}" viewBox="0 0 240 220" aria-hidden="true">
+      <g>
+        <path d="M91 157 L106 207 L119 165 Z" fill="#69d7ff" opacity=".28"/>
+        <path d="M121 165 L136 207 L149 157 Z" fill="#69d7ff" opacity=".28"/>
+        <path d="M105 158 L120 214 L135 158 Z" fill="#fff1a6" opacity=".8"/>
+      </g>
+      <path d="M93 77 L27 154 L92 137 L106 105 Z" fill="#3d5872" stroke="#69d7ff" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M147 77 L213 154 L148 137 L134 105 Z" fill="#3d5872" stroke="#69d7ff" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M120 14 C146 40 157 91 150 145 L136 174 L120 165 L104 174 L90 145 C83 91 94 40 120 14 Z" fill="#dcecf1" stroke="#69d7ff" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M120 25 L120 160 L104 169 L91 142 C87 99 96 52 120 25 Z" fill="#a9c6d2" opacity=".72"/>
+      <path d="M120 42 C134 54 139 72 137 91 C132 98 108 98 103 91 C101 72 106 54 120 42 Z" fill="#102c4b" stroke="#fff1a6" stroke-width="3"/>
+      <path d="M107 113 L132 104 L137 123 L112 132 Z" fill="#fff1a6" opacity=".72" stroke="#5f6d79" stroke-width="2"/>
+      <path d="M106 115 L132 107 M110 124 L136 115" stroke="#5f6d79" stroke-width="2" opacity=".8"/>
+      <rect x="55" y="132" width="23" height="9" rx="3" fill="#ff7c8f" transform="rotate(-14 55 132)"/>
+      <rect x="161" y="132" width="23" height="9" rx="3" fill="#b79cff" transform="rotate(14 161 132)"/>
+      <circle cx="120" cy="148" r="6" fill="#69d7ff" stroke="#0b213b" stroke-width="2"/>
+    </svg>`;
+  }
+
   function spaceBriefingPilot() {
     const gc = GAME_CHARS[activeChar];
-    // Small ship glyph riding just above the pilot's face — same hull color and nose
-    // shape as the actual in-game ship (drawPlayer()), so it reads as "this is who
-    // you're about to fly," not just a generic decoration. It shares the parent's
-    // sp-brief-pilot-ship animation, so it flies in and back out together with the rest.
-    const shipGlyph = `<div style="width:0;height:0;margin:0 auto 6px;border-left:11px solid transparent;border-right:11px solid transparent;border-bottom:19px solid ${gc.color};filter:drop-shadow(0 0 8px ${gc.color}99)"></div>`;
+    // The briefing uses the same Wayfarer as the live canvas, so the ship introduced
+    // in the story is exactly the one the player flies.
+    const shipGlyph = spaceWayfarerSVG('space-brief-wayfarer');
     return `<div style="width:min(92vw,360px);height:268px;position:relative;text-align:center">
       <div style="position:absolute;left:50%;top:0;width:100%;animation:sp-brief-pilot-ship 5.05s cubic-bezier(.2,1.02,.28,1) both">
         ${shipGlyph}
@@ -11693,6 +11812,10 @@ function nextWave() {
     academyGoalComplete = false;
     academyRetryNoticeAt = 0;
     academyMysteryIndex = 0;
+    academyMoveDistance = 0;
+    academyLastPlayerX = player.x;
+    academySkippedLessons = 0;
+    academyDeployedSockets.clear();
     state = 'playing';
     enterSpaceAcademyLesson(0);
     raf=requestAnimationFrame(loop);
@@ -11873,6 +11996,27 @@ function nextWave() {
         const hitType=hitSocket(cx,cy);
         if(hitType) deploySocket(hitType);
       });
+      // Mouse and trackpad players get the same drag-to-steer contract as touch.
+      // Starting in the socket column remains a deployment action, never steering.
+      let _mouseSteering = false;
+      const steerFromMouse = e => {
+        const rect=canvas.getBoundingClientRect();
+        const cx=(e.clientX-rect.left)*(W/rect.width);
+        player.x=Math.max(player.r,Math.min(W-player.r,cx));
+      };
+      canvas.addEventListener('mousedown',e=>{
+        if(state!=='playing' || e.button!==0) return;
+        const rect=canvas.getBoundingClientRect();
+        const cx=(e.clientX-rect.left)*(W/rect.width);
+        const cy=(e.clientY-rect.top)*(H/rect.height);
+        if(hitSocket(cx,cy)) return;
+        _mouseSteering=true;
+        steerFromMouse(e);
+      });
+      canvas.addEventListener('mousemove',e=>{
+        if(_mouseSteering && state==='playing') steerFromMouse(e);
+      });
+      window.addEventListener('mouseup',()=>{ _mouseSteering=false; });
       document.addEventListener('keydown',e=>{
         if(state!=='playing' || !document.body.classList.contains('on-space')) return;
         const idx={'1':0,'2':1,'3':2}[e.key];

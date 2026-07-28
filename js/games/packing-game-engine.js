@@ -1591,10 +1591,69 @@
   function applyDynamicElementLayout(nextConfig, bounds) {
     const opts = nextConfig.autoLayout;
     if (!opts || opts.enabled === false || !stage) return null;
-    const logicalWidth = Number(opts.width) || 560;
     const stageRect = stage.getBoundingClientRect ? stage.getBoundingClientRect() : null;
-    const renderedWidth = stageRect && stageRect.width ? stageRect.width : logicalWidth;
+    const renderedWidth = stageRect && stageRect.width ? stageRect.width : Number(opts.width) || 560;
     const renderedHeight = stageRect && stageRect.height ? stageRect.height : Number(opts.fallbackHeight) || 900;
+    const useHorizontal = renderedWidth >= (Number(opts.horizontalMinWidth) || 900) &&
+      renderedWidth / Math.max(1, renderedHeight) >= (Number(opts.horizontalMinAspect) || 1.2);
+    const logicalWidth = useHorizontal ? Number(opts.horizontalWidth) || 960 : Number(opts.width) || 560;
+    if (stage.classList) stage.classList.toggle('is-horizontal-layout', useHorizontal);
+
+    if (useHorizontal) {
+      const logicalHeight = Number(opts.horizontalHeight) || 620;
+      stage.setAttribute('viewBox', `0 0 ${logicalWidth} ${logicalHeight}`);
+      stage.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      stage.querySelectorAll('.packing-stage-bg, .packing-space-scenery > rect, .packing-jungle-scenery > rect, .packing-ice-scenery > rect, .packing-ocean-scenery > rect, .packing-magic-scenery > rect').forEach(node => {
+        node.setAttribute('width', logicalWidth);
+        node.setAttribute('height', logicalHeight);
+      });
+
+      const columns = bounds.maxC - bounds.minC + 1;
+      const rows = bounds.maxR - bounds.minR + 1;
+      const boardArea = { x: 470, y: 24, width: 466, height: 572, maxCellSize: 82 };
+      const fittedCellSize = Math.floor(Math.min(
+        boardArea.width / columns,
+        boardArea.height / rows,
+        boardArea.maxCellSize
+      ));
+      const rackArea = { x: 30, y: 76, width: 380, height: 518 };
+      const trayCols = puzzle && puzzle.pieceIndexList && puzzle.pieceIndexList.length <= 6 ? 3 : 4;
+      const trayRows = Math.ceil((puzzle && puzzle.pieceIndexList ? puzzle.pieceIndexList.length : 10) / trayCols);
+      const slotWidth = rackArea.width / trayCols;
+      const slotHeight = rackArea.height / trayRows;
+      const trayCellSize = Math.floor(clamp(Math.min(slotWidth / 3.75, slotHeight / 4.25, fittedCellSize * .55), 20, 30));
+      const rackBackground = element(nextConfig.rackBackgroundId);
+      if (rackBackground) {
+        rackBackground.setAttribute('x', 18);
+        rackBackground.setAttribute('y', 16);
+        rackBackground.setAttribute('width', 404);
+        rackBackground.setAttribute('height', 588);
+      }
+      const rackLabel = element(nextConfig.rackLabelId);
+      if (rackLabel) {
+        rackLabel.setAttribute('x', 42);
+        rackLabel.setAttribute('y', 52);
+      }
+      const rackMobileHint = element(nextConfig.rackMobileHintId);
+      if (rackMobileHint) {
+        rackMobileHint.setAttribute('x', 42);
+        rackMobileHint.setAttribute('y', 52);
+      }
+      return {
+        regionArea: boardArea,
+        regionAlignY: 'center',
+        rackArea,
+        dynamicRack: false,
+        rackGap: 0,
+        rackBottom: logicalHeight - 20,
+        trayCols,
+        trayCellSize,
+        rackRowSpacing: Math.floor(slotHeight),
+        rackTopPadding: 8,
+        layoutMode: 'horizontal'
+      };
+    }
+
     const minHeight = Number(opts.minHeight) || 640;
     const maxHeight = Number(opts.maxHeight) || 1040;
     const logicalHeight = Math.round(clamp(logicalWidth * (renderedHeight / Math.max(1, renderedWidth)), minHeight, maxHeight));

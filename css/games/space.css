@@ -310,6 +310,7 @@
 .space-mode-scene path,.space-mode-scene circle { vector-effect:non-scaling-stroke; }
 .space-lesson-lane { fill:none;stroke:currentColor;stroke-width:1;opacity:.22;stroke-dasharray:4 5; }
 .space-lesson-ship path,.space-boss-player path { fill:rgba(105,215,255,.2);stroke:#69d7ff;stroke-width:2; }
+.space-lesson-ship path:nth-child(2) { fill:#102c4b;stroke:#fff1a6;stroke-width:1.5; }
 .space-lesson-ship circle { fill:#fff1a6;stroke:#69d7ff;stroke-width:1.5; }
 .space-lesson-target { fill:none;stroke:currentColor;stroke-width:2;filter:drop-shadow(0 0 5px currentColor); }
 .space-lesson-shot { fill:none;stroke:#ffe61a;stroke-width:2;stroke-dasharray:5 5;animation:space-lesson-shot 1.1s linear infinite; }
@@ -645,6 +646,14 @@ body.on-space.arcade-selection-open #arcade-float {
   22%  { transform: translate(-50%, -8px) rotate(-3deg) scale(1.06); opacity: 1; }
   32%,72% { transform: translate(-50%, 0) rotate(0deg) scale(1); opacity: 1; }
   100% { transform: translate(160vw, -38vh) rotate(18deg) scale(0.68); opacity: 0; }
+}
+.space-brief-wayfarer {
+  display:block;
+  width:44px;
+  height:40px;
+  margin:0 auto 6px;
+  overflow:visible;
+  filter:drop-shadow(0 0 8px rgba(105,215,255,.6));
 }
 @keyframes sp-brief-star-drift {
   0%   { transform: translateY(-8px); opacity: 0.15; }
