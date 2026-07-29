@@ -777,6 +777,7 @@
   let dragging = null;
   let selectedPiece = null;
   let selectionGhosts = [];
+  let landingGhosts = [];
   let overlapZoneLayer = null;
   let overlapZoneIndicators = new Map();
   let overlapZoneBanner = null;
@@ -788,6 +789,10 @@
   let lastTapAt = -Infinity;
   let regionOrigin = { x: 0, y: 0 };
   let rackArea = null;
+  let regionCellKeys = new Set();
+  let overlapZoneKeys = new Set();
+  let overlapNodeKeys = new Set();
+  let occupancyByCell = new Map();
 
   function element(id) { return document.getElementById(id); }
   function svg(tag, attrs) { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; }
@@ -801,6 +806,13 @@
       g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
       o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur + .02);
     } catch (e) { /* playable without audio */ }
+  }
+
+  function haptic(pattern) {
+    try {
+      const navigatorRef = typeof window !== 'undefined' ? window.navigator : null;
+      if (navigatorRef && typeof navigatorRef.vibrate === 'function') navigatorRef.vibrate(pattern);
+    } catch (error) { /* tactile feedback is optional */ }
   }
 
   function addListener(node, type, handler, options) { if (!node) return; node.addEventListener(type, handler, options); listeners.push({ node, type, handler }); }
@@ -834,6 +846,19 @@
     if (!origin) return [];
     const detail = currentOrientationDetail(piece);
     return detail.map(cell => ({ r: cell.r + origin[0], c: cell.c + origin[1], source: cell.source }));
+  }
+
+  function rebuildOccupancy() {
+    occupancyByCell = new Map();
+    trayPieces.forEach(piece => {
+      if (!piece.placedAt) return;
+      currentCells(piece).forEach(([r, c]) => {
+        const cellKey = key(r, c);
+        const occupants = occupancyByCell.get(cellKey) || [];
+        occupants.push(piece);
+        occupancyByCell.set(cellKey, occupants);
+      });
+    });
   }
 
   function piecesShareBorder(a, b) {
@@ -1139,6 +1164,33 @@
     selectionGhosts = [];
   }
 
+  function clearLandingGhost() {
+    landingGhosts.forEach(node => {
+      if (node.parentNode) node.parentNode.removeChild(node);
+    });
+    landingGhosts = [];
+  }
+
+  function showLandingGhost(piece, placement) {
+    clearLandingGhost();
+    if (!piece || !placement || !piece.regionGroup) return;
+    const className = `pge-landing-ghost ${placement.fits ? 'is-valid' : 'is-invalid'}`;
+    currentDetailedCells(piece, [placement.r, placement.c]).forEach(cell => {
+      const cellKey = key(cell.r, cell.c);
+      if (!regionCellKeys.has(cellKey)) return;
+      const node = svg('rect', {
+        x: regionOrigin.x + cell.c * regionCellSize + 3,
+        y: regionOrigin.y + cell.r * regionCellSize + 3,
+        width: regionCellSize - 6,
+        height: regionCellSize - 6,
+        rx: 5,
+        class: className
+      });
+      piece.regionGroup.appendChild(node);
+      landingGhosts.push(node);
+    });
+  }
+
   function showSelectionGhost(piece) {
     clearSelectionGhost();
     if (!piece.lastValidAt || !piece.regionGroup) return;
@@ -1167,22 +1219,33 @@
     piece.g.classList.remove('is-floating', 'is-valid-drop', 'is-invalid-drop');
     if (selectedPiece === piece) selectedPiece = null;
     clearSelectionGhost();
+    clearLandingGhost();
+    rebuildOccupancy();
     refreshOverlapTextures();
+    piece.g.classList.add('is-just-placed');
+    if (typeof setTimeout === 'function') setTimeout(() => piece.g.classList.remove('is-just-placed'), 180);
   }
 
-  function returnPieceHome(piece) {
+  function returnPieceHome(piece, preserveOrientation) {
     piece.placedAt = null;
     piece.lastValidAt = null;
     piece.lastValidOrientIdx = null;
     piece.floating = false;
     piece.floatPosition = null;
-    piece.orientIdx = piece.homeOrientIdx;
-    piece.physicalTurn = piece.homePhysicalTurn;
+    if (preserveOrientation) {
+      piece.homeOrientIdx = piece.orientIdx;
+      piece.homePhysicalTurn = piece.physicalTurn;
+    } else {
+      piece.orientIdx = piece.homeOrientIdx;
+      piece.physicalTurn = piece.homePhysicalTurn;
+    }
     renderPiece(piece, trayCellSize);
     piece.g.setAttribute('transform', `translate(${piece.home.x},${piece.home.y})`);
     piece.g.classList.remove('is-placed', 'is-floating', 'is-valid-drop', 'is-invalid-drop');
     if (selectedPiece === piece) selectedPiece = null;
     clearSelectionGhost();
+    clearLandingGhost();
+    rebuildOccupancy();
     refreshOverlapTextures();
   }
 
@@ -1205,8 +1268,9 @@
       if (piece.placedAt) {
         piece.lastValidAt = [...piece.placedAt];
         piece.lastValidOrientIdx = piece.orientIdx;
-      piece.placedAt = null;
-      refreshOverlapTextures();
+        piece.placedAt = null;
+        rebuildOccupancy();
+        refreshOverlapTextures();
       }
       piece.floating = true;
       selectedPiece = piece;
@@ -1240,10 +1304,19 @@
       y: previousPosition.y + (previousDimensions.height - nextDimensions.height) / 2
     });
     if (dragging && dragging.piece === piece && dragging.currentPoint) {
+      dragging.rotated = true;
       dragging.grabOffset = {
         x: dragging.currentPoint.x - piece.floatPosition.x,
         y: dragging.currentPoint.y - piece.floatPosition.y
       };
+      dragging.previewPlacement = null;
+      dragging.previewFits = false;
+      const placement = magneticPlacement(piece, piece.floatPosition, null);
+      dragging.previewPlacement = placement;
+      dragging.previewFits = placement.fits;
+      piece.g.classList.toggle('is-valid-drop', placement.fits);
+      piece.g.classList.toggle('is-invalid-drop', !placement.fits);
+      showLandingGhost(piece, placement);
     }
     playTone(260 + Math.random() * 30, 320, .06, .02);
   }
@@ -1288,6 +1361,7 @@
       renderAnchorPin(piece);
       piece.g.setAttribute('transform', `translate(${regionOrigin.x + accepted.origin[1] * regionCellSize},${regionOrigin.y + accepted.origin[0] * regionCellSize})`);
       piece.g.classList.add('is-placed', 'is-anchored');
+      rebuildOccupancy();
       refreshOverlapTextures();
       playTone(240, 380, .1, .025);
       if (checkComplete()) win();
@@ -1308,6 +1382,7 @@
         state.piece.orientIdx = state.orientIdx;
         state.piece.placedAt = null;
       });
+      rebuildOccupancy();
       const attempt = [];
       let fits = true;
       group.forEach(candidate => {
@@ -1325,6 +1400,7 @@
         if (fits) {
           candidate.placedAt = origin;
           attempt.push({ piece: candidate, orientIdx, origin });
+          rebuildOccupancy();
         }
       });
       if (fits && attempt.every(({ piece: candidate, orientIdx }) =>
@@ -1342,6 +1418,7 @@
         state.piece.g.classList.add('is-anchor-blocked');
         if (typeof setTimeout === 'function') setTimeout(() => state.piece.g.classList.remove('is-anchor-blocked'), 180);
       });
+      rebuildOccupancy();
       playTone(170, 120, .09, .02);
       return;
     }
@@ -1353,24 +1430,56 @@
       candidate.g.setAttribute('transform', `translate(${regionOrigin.x + origin[1] * regionCellSize},${regionOrigin.y + origin[0] * regionCellSize})`);
       candidate.g.classList.add('is-placed', 'is-anchored');
     });
+    rebuildOccupancy();
     refreshOverlapTextures();
     playTone(240, 380, .1, .025);
     if (checkComplete()) win();
   }
 
-  function pointFromEvent(event) {
-    // Width and height must be scaled independently: the host SVG is CSS-
-    // stretched to its container (width:100%; height:100%), which does not
-    // preserve the viewBox's aspect ratio. Using a single width-derived scale
-    // for both axes (the original bug here) silently corrupts the y-coordinate
-    // whenever the rendered box's aspect ratio differs from the viewBox's — the
-    // error grows with distance from the top, which is exactly why pieces
-    // targeting lower rows failed while upper-row pieces placed correctly.
-    const stageRect = stage.getBoundingClientRect();
+  function stageMetrics() {
+    const rect = stage.getBoundingClientRect();
     const viewBox = stage.viewBox && stage.viewBox.baseVal;
-    const scaleX = (viewBox && stageRect.width) ? viewBox.width / stageRect.width : 1;
-    const scaleY = (viewBox && stageRect.height) ? viewBox.height / stageRect.height : 1;
-    return { x: ((event.clientX || 0) - stageRect.left) * scaleX, y: ((event.clientY || 0) - stageRect.top) * scaleY };
+    const viewWidth = viewBox && viewBox.width ? viewBox.width : rect.width;
+    const viewHeight = viewBox && viewBox.height ? viewBox.height : rect.height;
+    const preserve = String(stage.getAttribute && stage.getAttribute('preserveAspectRatio') || 'xMidYMid meet');
+    if (preserve.includes('none')) {
+      return {
+        left: rect.left,
+        top: rect.top,
+        scaleX: rect.width ? viewWidth / rect.width : 1,
+        scaleY: rect.height ? viewHeight / rect.height : 1
+      };
+    }
+    const mode = preserve.includes('slice') ? 'slice' : 'meet';
+    const renderedScale = mode === 'slice'
+      ? Math.max(rect.width / viewWidth, rect.height / viewHeight)
+      : Math.min(rect.width / viewWidth, rect.height / viewHeight);
+    const contentWidth = viewWidth * renderedScale;
+    const contentHeight = viewHeight * renderedScale;
+    const offsetX = preserve.includes('xMax') ? rect.width - contentWidth
+      : preserve.includes('xMid') ? (rect.width - contentWidth) / 2
+        : 0;
+    const offsetY = preserve.includes('YMax') ? rect.height - contentHeight
+      : preserve.includes('YMid') ? (rect.height - contentHeight) / 2
+        : 0;
+    return {
+      left: rect.left + offsetX,
+      top: rect.top + offsetY,
+      scaleX: renderedScale ? 1 / renderedScale : 1,
+      scaleY: renderedScale ? 1 / renderedScale : 1
+    };
+  }
+
+  function pointFromEvent(event, metrics) {
+    // Account for the SVG's preserveAspectRatio alignment as well as its scale.
+    // Wide layouts letterbox a 960×620 logical stage inside the rendered box;
+    // treating that box as stretched edge-to-edge introduces large horizontal
+    // aim drift between the rack and board.
+    const projection = metrics || stageMetrics();
+    return {
+      x: ((event.clientX || 0) - projection.left) * projection.scaleX,
+      y: ((event.clientY || 0) - projection.top) * projection.scaleY
+    };
   }
 
   function piecePosition(piece) {
@@ -1405,20 +1514,28 @@
       }
       return;
     }
-    const point = pointFromEvent(event);
+    const metrics = stageMetrics();
+    const point = pointFromEvent(event, metrics);
     const position = piecePosition(piece);
     const sourceCellSize = piece.renderCellSize || trayCellSize;
     const liftScale = floatingCellSize / sourceCellSize;
-    const touchLift = event.pointerType === 'touch' ? regionCellSize * 2.3 : 0;
+    const touchLift = event.pointerType === 'touch' ? regionCellSize * 1.7 : 0;
     dragging = {
       piece,
       startedAt: performance.now(),
       moved: false,
+      rotated: false,
       startedFloating: piece.floating,
       startedPlaced: Boolean(piece.placedAt),
       pointerId: event.pointerId,
       point,
       currentPoint: point,
+      clientPoint: { x: event.clientX || 0, y: event.clientY || 0 },
+      stageMetrics: metrics,
+      pendingEvent: null,
+      frameRequest: null,
+      previewPlacement: null,
+      previewFits: false,
       // Preserve the exact point the player grabbed as a piece changes from
       // rack-preview scale to board scale. Re-centering on the pointer caused
       // the piece to visibly jump sideways on the first movement.
@@ -1430,60 +1547,114 @@
     if (piece.g.setPointerCapture && event.pointerId != null) {
       try { piece.g.setPointerCapture(event.pointerId); } catch (error) {}
     }
-    selectPiece(piece, dragPosition(point, dragging));
+    // Disable the resting snap transition before the first enlarged transform.
+    // Otherwise pickup inherits the 120ms ease and feels like it trails the finger.
     piece.g.classList.add('is-dragging');
+    selectPiece(piece, dragPosition(point, dragging));
+    playTone(210, 275, .045, .012);
+    haptic(5);
   }
 
-  function placementAtPosition(piece, position) {
-    const r = Math.round((position.y - regionOrigin.y) / regionCellSize);
-    const c = Math.round((position.x - regionOrigin.x) / regionCellSize);
+  function placementAtGrid(piece, r, c) {
     const cells = currentDetailedCells(piece, [r, c]);
-    const regionSet = new Set(puzzle.region.map(([rr, cc]) => key(rr, cc)));
-    const zoneSet = new Set((puzzle.overlapZone || []).map(([rr, cc]) => key(rr, cc)));
-    if (zoneSet.size && layerPhase === 2) {
+    if (overlapZoneKeys.size && layerPhase === 2) {
       const fitsSecondLayer = cells.every(cell => {
         const cellKey = key(cell.r, cell.c);
-        if (!zoneSet.has(cellKey)) return false;
-        const occupants = trayPieces.filter(other => other !== piece && other.placedAt &&
-          currentCells(other).some(([or, oc]) => or === cell.r && oc === cell.c));
+        if (!overlapZoneKeys.has(cellKey)) return false;
+        const occupants = (occupancyByCell.get(cellKey) || []).filter(other => other !== piece);
         return occupants.length === 1;
       });
       return { r, c, fits: fitsSecondLayer };
     }
     const collisions = [];
     const fitsCells = cells.every(cell => {
-      const k = key(cell.r, cell.c);
-      if (!regionSet.has(k)) return false;
-      const occupants = trayPieces.filter(other => other !== piece && other.placedAt &&
-        currentCells(other).some(([or, oc]) => or === cell.r && oc === cell.c));
+      const cellKey = key(cell.r, cell.c);
+      if (!regionCellKeys.has(cellKey)) return false;
+      const occupants = (occupancyByCell.get(cellKey) || []).filter(other => other !== piece);
       if (!occupants.length) return true;
-      if (zoneSet.size && layerPhase === 1) return false;
+      if (overlapZoneKeys.size && layerPhase === 1) return false;
       if (occupants.length >= 2) return false;
-      const node = (puzzle.overlapNodes || []).find(candidate => candidate.key === k);
-      if (!node && !zoneSet.has(k)) return false;
-      collisions.push({ key: k, other: occupants[0] });
+      if (!overlapNodeKeys.has(cellKey) && !overlapZoneKeys.has(cellKey)) return false;
+      collisions.push({ key: cellKey, other: occupants[0] });
       return true;
     });
-    const otherAlreadyOverlaps = collisions.some(({ other }) => trayPieces.some(candidate =>
-      candidate !== piece && candidate !== other && candidate.placedAt &&
-      currentCells(candidate).some(([cr, cc]) => currentCells(other).some(([or, oc]) => or === cr && oc === cc))
-    ));
-    const fits = fitsCells && (zoneSet.size ? true : collisions.length <= 1 && !otherAlreadyOverlaps);
+    const otherAlreadyOverlaps = collisions.some(({ other }) =>
+      Array.from(occupancyByCell.values()).some(occupants => occupants.length >= 2 && occupants.includes(other))
+    );
+    const fits = fitsCells && (overlapZoneKeys.size ? true : collisions.length <= 1 && !otherAlreadyOverlaps);
     return { r, c, fits };
+  }
+
+  function placementAtPosition(piece, position) {
+    return placementAtGrid(
+      piece,
+      Math.round((position.y - regionOrigin.y) / regionCellSize),
+      Math.round((position.x - regionOrigin.x) / regionCellSize)
+    );
+  }
+
+  function magneticPlacement(piece, position, previous) {
+    const rawR = (position.y - regionOrigin.y) / regionCellSize;
+    const rawC = (position.x - regionOrigin.x) / regionCellSize;
+    if (previous && previous.fits) {
+      const stickyDistance = Math.hypot(rawR - previous.r, rawC - previous.c);
+      if (stickyDistance <= .92) return { ...previous, distance: stickyDistance };
+    }
+    const centerR = Math.round(rawR);
+    const centerC = Math.round(rawC);
+    let nearest = null;
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        const candidate = placementAtGrid(piece, centerR + dr, centerC + dc);
+        const distance = Math.hypot(rawR - candidate.r, rawC - candidate.c);
+        if (!candidate.fits || distance > .78) continue;
+        if (!nearest || distance < nearest.distance) nearest = { ...candidate, distance };
+      }
+    }
+    return nearest || { ...placementAtGrid(piece, centerR, centerC), distance: Math.hypot(rawR - centerR, rawC - centerC) };
+  }
+
+  function applyDragEvent(drag, event) {
+    if (!dragging || dragging !== drag) return;
+    const point = pointFromEvent(event, drag.stageMetrics);
+    drag.currentPoint = point;
+    const position = dragPosition(point, drag);
+    const clientX = event.clientX || 0;
+    const clientY = event.clientY || 0;
+    if (Math.hypot(clientX - drag.clientPoint.x, clientY - drag.clientPoint.y) >= 6) drag.moved = true;
+    moveFloatingPiece(drag.piece, position);
+    const previousPlacement = drag.previewPlacement;
+    const placement = magneticPlacement(drag.piece, drag.piece.floatPosition, previousPlacement);
+    const acquiredValidTarget = placement.fits && !drag.previewFits;
+    drag.previewPlacement = placement;
+    drag.previewFits = placement.fits;
+    drag.piece.g.classList.toggle('is-valid-drop', placement.fits);
+    drag.piece.g.classList.toggle('is-invalid-drop', !placement.fits);
+    showLandingGhost(drag.piece, placement);
+    if (acquiredValidTarget) haptic(4);
   }
 
   function moveDrag(event) {
     if (!dragging) return;
     if (dragging.pointerId != null && event.pointerId != null && event.pointerId !== dragging.pointerId) return;
     if (event.preventDefault) event.preventDefault();
-    const point = pointFromEvent(event);
-    dragging.currentPoint = point;
-    const position = dragPosition(point, dragging);
-    if (Math.hypot(point.x - dragging.point.x, point.y - dragging.point.y) >= 3) dragging.moved = true;
-    moveFloatingPiece(dragging.piece, position);
-    const placement = placementAtPosition(dragging.piece, dragging.piece.floatPosition);
-    dragging.piece.g.classList.toggle('is-valid-drop', placement.fits);
-    dragging.piece.g.classList.toggle('is-invalid-drop', !placement.fits);
+    const drag = dragging;
+    drag.pendingEvent = event;
+    const requestFrame = typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function'
+      ? window.requestAnimationFrame.bind(window)
+      : null;
+    if (!requestFrame) {
+      drag.pendingEvent = null;
+      applyDragEvent(drag, event);
+      return;
+    }
+    if (drag.frameRequest != null) return;
+    drag.frameRequest = requestFrame(() => {
+      drag.frameRequest = null;
+      const latest = drag.pendingEvent;
+      drag.pendingEvent = null;
+      if (latest) applyDragEvent(drag, latest);
+    });
   }
 
   function pointInRack(point) {
@@ -1497,13 +1668,32 @@
     if (dragging.pointerId != null && event.pointerId != null && event.pointerId !== dragging.pointerId) return;
     if (event.preventDefault) event.preventDefault();
     const drag = dragging;
-    const { piece, moved } = drag;
+    if (drag.pendingEvent) {
+      const latest = drag.pendingEvent;
+      drag.pendingEvent = null;
+      applyDragEvent(drag, latest);
+    }
+    if (drag.frameRequest != null && typeof window !== 'undefined' && typeof window.cancelAnimationFrame === 'function') {
+      window.cancelAnimationFrame(drag.frameRequest);
+      drag.frameRequest = null;
+    }
+    const { piece, moved, rotated } = drag;
     if (piece.g.releasePointerCapture && event.pointerId != null) {
       try { piece.g.releasePointerCapture(event.pointerId); } catch (error) {}
     }
     piece.g.classList.remove('is-dragging');
     dragging = null;
     if (!moved) {
+      if (!drag.startedPlaced && !rotated) {
+        // A simple rack tap is the discoverable mobile rotation gesture.
+        // The rotated orientation remains in the rack for the next drag.
+        selectedPiece = piece;
+        piece.floating = true;
+        rotatePiece(piece);
+        returnPieceHome(piece, true);
+        haptic(7);
+        return;
+      }
       const now = performance.now();
       if (drag.startedPlaced && lastTapPiece === piece && now - lastTapAt <= 350) {
         lastTapPiece = null;
@@ -1524,24 +1714,31 @@
     // lifted above the finger, so a valid-looking board drop can still have the
     // finger down in the rack area. Using the visual/floating piece position
     // first makes the drop behavior match what the player sees.
-    const placement = placementAtPosition(piece, piece.floatPosition);
+    const placement = drag.previewPlacement && drag.previewPlacement.fits
+      ? drag.previewPlacement
+      : magneticPlacement(piece, piece.floatPosition, null);
     if (placement.fits) {
       placePieceAt(piece, placement.r, placement.c);
       playTone(300, 460, .14, .035);
+      haptic(12);
       if (unlockLayerTwo()) return;
       if (checkComplete()) win();
       return;
     }
 
-    const point = pointFromEvent(event);
+    const point = pointFromEvent(event, drag.stageMetrics);
     if (pointInRack(point)) {
       returnPieceHome(piece);
       playTone(220, 150, .1, .02);
+      haptic(5);
       return;
     }
 
+    piece.g.classList.add('is-returning-invalid');
     restorePiece(piece);
+    if (typeof setTimeout === 'function') setTimeout(() => piece.g.classList.remove('is-returning-invalid'), 190);
     playTone(200, 150, .12, .025);
+    haptic([8, 22, 8]);
   }
 
 
@@ -1561,7 +1758,7 @@
       })))
       .sort((a, b) => a.r - b.r || a.c - b.c);
     const reducedMotion = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    const cellDelay = reducedMotion ? 8 : 90;
+    const cellDelay = reducedMotion ? 8 : 32;
     celebrateCells.forEach((entry, index) => {
       if (typeof setTimeout !== 'function') entry.node.classList.add('is-victory-lit');
       else victoryTimers.push(setTimeout(() => entry.node.classList.add('is-victory-lit'), index * cellDelay));
@@ -1578,7 +1775,7 @@
       if (stageHost && stageHost.classList) stageHost.classList.add('is-solved');
       if (typeof config.onComplete === 'function') config.onComplete({ solution: puzzle.solution, pieceIndexList: puzzle.pieceIndexList });
     };
-    const totalDuration = reducedMotion ? 120 : Math.max(2200, celebrateCells.length * cellDelay + 900);
+    const totalDuration = reducedMotion ? 120 : Math.max(950, Math.min(1400, celebrateCells.length * cellDelay + 450));
     if (typeof setTimeout === 'function') victoryTimers.push(setTimeout(finish, totalDuration));
     else finish();
   }
@@ -1757,6 +1954,10 @@
     if (!puzzle) return false;
 
     active = true; paused = !!nextConfig.initiallyPaused; solved = false;
+    regionCellKeys = new Set(puzzle.region.map(([r, c]) => key(r, c)));
+    overlapZoneKeys = new Set((puzzle.overlapZone || []).map(([r, c]) => key(r, c)));
+    overlapNodeKeys = new Set((puzzle.overlapNodes || []).map(node => node.key || key(node.r, node.c)));
+    occupancyByCell = new Map();
     layerPhase = puzzle.overlapZone && puzzle.overlapZone.length ? 1 : 0;
     if (typeof nextConfig.onLayerChange === 'function') nextConfig.onLayerChange(layerPhase);
 
@@ -1915,7 +2116,9 @@
         : null;
       const piece = {
         slot: i, pieceIndex, orientIdx: startOrientIdx, homeOrientIdx: startOrientIdx,
+        initialHomeOrientIdx: startOrientIdx,
         physicalTurn, homePhysicalTurn: physicalTurn, lastValidPhysicalTurn: null,
+        initialHomePhysicalTurn: physicalTurn,
         g, home, placedAt: null, lastValidAt: null, lastValidOrientIdx: null,
         floating: false, floatPosition: null, regionGroup, anchor
       };
@@ -1934,6 +2137,7 @@
       addListener(g, 'pointerdown', event => startDrag(piece, event), { passive: false });
     });
     mountOverlapZoneIndicators();
+    rebuildOccupancy();
     refreshOverlapTextures();
 
     addListener(stage, 'pointermove', moveDrag, { passive: false });
@@ -1990,10 +2194,13 @@
     if (overlapZoneBanner) overlapZoneBanner.textContent = 'LAYER 2 · SEALED';
     if (typeof config.onLayerChange === 'function') config.onLayerChange(layerPhase);
     clearSelectionGhost();
+    clearLandingGhost();
     trayPieces.forEach(piece => {
       piece.layerLocked = false;
       piece.g.classList.remove('is-dragging', 'is-anchor-blocked', 'is-layer-one-locked');
       if (!piece.anchor) {
+        piece.homeOrientIdx = piece.initialHomeOrientIdx;
+        piece.homePhysicalTurn = piece.initialHomePhysicalTurn;
         returnPieceHome(piece);
         return;
       }
@@ -2010,12 +2217,16 @@
       piece.g.classList.remove('is-floating', 'is-valid-drop', 'is-invalid-drop');
     });
     refreshOverlapTextures();
+    rebuildOccupancy();
     return true;
   }
 
   function destroy() {
     if (typeof clearTimeout === 'function') victoryTimers.forEach(timer => clearTimeout(timer));
     victoryTimers = [];
+    if (dragging && dragging.frameRequest != null && typeof window !== 'undefined' && typeof window.cancelAnimationFrame === 'function') {
+      window.cancelAnimationFrame(dragging.frameRequest);
+    }
     listeners.forEach(({ node, type, handler }) => node.removeEventListener(type, handler));
     listeners = [];
     if (overlapZoneLayer && overlapZoneLayer.parentNode) overlapZoneLayer.parentNode.removeChild(overlapZoneLayer);
@@ -2024,7 +2235,9 @@
     overlapZoneBanner = null;
     active = false; paused = true; solved = false; layerPhase = 0;
     clearSelectionGhost();
+    clearLandingGhost();
     config = null; stage = null; puzzle = null; trayPieces = []; dragging = null; selectedPiece = null; rackArea = null; floatingCellSize = 0;
+    regionCellKeys = new Set(); overlapZoneKeys = new Set(); overlapNodeKeys = new Set(); occupancyByCell = new Map();
     lastTapPiece = null; lastTapAt = -Infinity;
   }
 

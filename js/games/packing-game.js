@@ -342,7 +342,7 @@
             <g id="packing-region"></g>
             <rect id="packing-rack-bg" x="18" y="670" width="524" height="425" rx="20" class="packing-rack-bg"/>
             <text id="packing-rack-label" x="36" y="705" class="packing-stage-kicker">DRAG · SPACE ROTATE${anchorHelp}${linkedHelp}${zoneHelp}</text>
-            <text id="packing-rack-mobile-hint" x="36" y="705" class="packing-rack-mobile-hint" aria-hidden="true">HOLD TO MOVE · TAP TO ROTATE</text>
+            <text id="packing-rack-mobile-hint" x="36" y="705" class="packing-rack-mobile-hint" aria-hidden="true">DRAG TO MOVE · TAP PIECE TO ROTATE</text>
             <g id="packing-tray"></g>
           </svg>
           ${showIntro ? `<button id="packing-start" class="packing-start" type="button" onclick="packingGameBegin()">

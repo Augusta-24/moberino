@@ -77,7 +77,7 @@ test('Shape Mobe celebrates the solved board before opening its completion panel
   assert.match(engineSource, /stageHost\.classList\.add\('is-completing'\)/);
   assert.match(engineSource, /node\.classList\.add\('is-victory-lit'\)/);
   assert.match(engineSource, /piece\.g\.classList\.add\('is-victory-locked'\)/);
-  assert.match(engineSource, /Math\.max\(2200, celebrateCells\.length \* cellDelay \+ 900\)/);
+  assert.match(engineSource, /Math\.max\(950, Math\.min\(1400, celebrateCells\.length \* cellDelay \+ 450\)\)/);
   const css = fs.readFileSync(path.join(root, 'css/games/packing-game.css'), 'utf8');
   assert.match(css, /\.pge-cell\.is-victory-lit/);
   assert.match(css, /\.pge-piece\.is-victory-locked \.pge-cell/);
@@ -388,6 +388,143 @@ test('a held piece lifts immediately, rotates from a second tap, and restores on
   packingStage.emit('pointerup', { clientX: 100, clientY: 100, pointerId: 3 });
   assert.equal(piece.floating, false);
   assert.equal(Array.from(piece.placedAt).join(','), '0,0');
+});
+
+test('a simple rack tap rotates the piece and keeps the new orientation ready to drag', () => {
+  const engine = loadEngine();
+  assert.equal(engine.start({
+    stageId: 'stage', regionGroupId: 'region', trayGroupId: 'tray',
+    pieceCount: 4, verifySolutions: false, maxDimension: 7,
+    regionArea: { x: 20, y: 20, width: 500, height: 500, maxCellSize: 80 },
+    rackArea: { x: 20, y: 600, width: 500, height: 260 },
+    trayCellSize: 24, trayCols: 4
+  }), true);
+  engine.begin();
+  const piece = engine.getTrayPieces().find(candidate =>
+    engine.orientations(engine.PIECE_LIBRARY[candidate.pieceIndex].cells).length > 1
+  );
+  const before = piece.orientIdx;
+
+  piece.g.emit('pointerdown', { clientX: piece.home.x, clientY: piece.home.y, pointerId: 1, pointerType: 'touch' });
+  packingStage.emit('pointerup', { clientX: piece.home.x, clientY: piece.home.y, pointerId: 1, pointerType: 'touch' });
+
+  assert.notEqual(piece.orientIdx, before);
+  assert.equal(piece.homeOrientIdx, piece.orientIdx);
+  assert.equal(piece.floating, false);
+  assert.equal(piece.g.getAttribute('transform'), `translate(${piece.home.x},${piece.home.y})`);
+});
+
+test('drag motion reuses pickup geometry and does not remeasure the stage every frame', () => {
+  const engine = loadEngine();
+  assert.equal(engine.start({
+    stageId: 'stage', regionGroupId: 'region', trayGroupId: 'tray',
+    pieceCount: 4, verifySolutions: false, maxDimension: 7,
+    regionArea: { x: 20, y: 20, width: 500, height: 500, maxCellSize: 80 },
+    rackArea: { x: 20, y: 600, width: 500, height: 260 },
+    trayCellSize: 24, trayCols: 4
+  }), true);
+  engine.begin();
+  let measurements = 0;
+  packingStage.getBoundingClientRect = () => {
+    measurements += 1;
+    return { left: 0, top: 0, width: 560, height: 900 };
+  };
+  const piece = engine.getTrayPieces()[0];
+  piece.g.emit('pointerdown', { clientX: piece.home.x, clientY: piece.home.y, pointerId: 1 });
+  packingStage.emit('pointermove', { clientX: 160, clientY: 200, pointerId: 1 });
+  packingStage.emit('pointermove', { clientX: 180, clientY: 220, pointerId: 1 });
+  packingStage.emit('pointermove', { clientX: 200, clientY: 240, pointerId: 1 });
+
+  assert.equal(measurements, 1);
+});
+
+test('drag coordinates account for letterboxing in the wide horizontal stage', () => {
+  const engine = loadEngine();
+  packingStage.viewBox.baseVal.width = 960;
+  packingStage.viewBox.baseVal.height = 620;
+  packingStage.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  packingStage.getBoundingClientRect = () => ({ left: 5, top: 56, width: 1270, height: 659 });
+  assert.equal(engine.start({
+    stageId: 'stage', regionGroupId: 'region', trayGroupId: 'tray',
+    pieceCount: 4, verifySolutions: false, maxDimension: 7,
+    regionArea: { x: 470, y: 24, width: 466, height: 572, maxCellSize: 82 },
+    rackArea: { x: 30, y: 76, width: 380, height: 500 },
+    trayCellSize: 24, trayCols: 3
+  }), true);
+  engine.begin();
+  const scale = 659 / 620;
+  const offsetX = (1270 - 960 * scale) / 2;
+  const toScreen = point => ({
+    clientX: 5 + offsetX + point.x * scale,
+    clientY: 56 + point.y * scale
+  });
+  const piece = engine.getTrayPieces()[0];
+  const down = toScreen(piece.home);
+  const target = { x: 300, y: 200 };
+  const moved = toScreen(target);
+  piece.g.emit('pointerdown', { ...down, pointerId: 1 });
+  packingStage.emit('pointermove', { ...moved, pointerId: 1 });
+
+  const translated = piece.g.getAttribute('transform').match(/translate\(([-\d.]+),([-\d.]+)\)/).slice(1).map(Number);
+  assert.ok(Math.abs(translated[0] - target.x) < .001);
+  assert.ok(Math.abs(translated[1] - target.y) < .001);
+});
+
+test('a nearby invalid grid origin magnetically resolves to a valid preview and drop', () => {
+  const engine = loadEngine();
+  const regionArea = { x: 20, y: 20, width: 500, height: 500, maxCellSize: 80 };
+  assert.equal(engine.start({
+    stageId: 'stage', regionGroupId: 'region', trayGroupId: 'tray',
+    pieceCount: 4, verifySolutions: false, maxDimension: 7,
+    regionArea,
+    rackArea: { x: 20, y: 600, width: 500, height: 260 },
+    trayCellSize: 24, trayCols: 4
+  }), true);
+  engine.begin();
+  const puzzle = engine.getPuzzle();
+  const region = new Set(puzzle.region.map(([r, c]) => `${r},${c}`));
+  let scenario = null;
+  puzzle.solution.some((solution, slot) => {
+    const piece = engine.getTrayPieces()[slot];
+    const cells = engine.orientations(engine.PIECE_LIBRARY[piece.pieceIndex].cells)[solution.orientIdx];
+    return [[-1, 0], [1, 0], [0, -1], [0, 1]].some(direction => {
+      const shiftedFits = cells.every(([r, c]) =>
+        region.has(`${solution.origin[0] + direction[0] + r},${solution.origin[1] + direction[1] + c}`));
+      if (shiftedFits) return false;
+      scenario = { piece, solution, direction };
+      return true;
+    });
+  });
+  assert.ok(scenario);
+
+  const rows = puzzle.region.map(([r]) => r);
+  const cols = puzzle.region.map(([, c]) => c);
+  const minR = Math.min(...rows), maxR = Math.max(...rows);
+  const minC = Math.min(...cols), maxC = Math.max(...cols);
+  const cellSize = Math.floor(Math.min(
+    regionArea.width / (maxC - minC + 1),
+    regionArea.height / (maxR - minR + 1),
+    regionArea.maxCellSize
+  ));
+  const origin = {
+    x: regionArea.x + (regionArea.width - (maxC - minC + 1) * cellSize) / 2 - minC * cellSize,
+    y: regionArea.y + (regionArea.height - (maxR - minR + 1) * cellSize) / 2 - minR * cellSize
+  };
+  scenario.piece.orientIdx = scenario.solution.orientIdx;
+  scenario.piece.g.emit('pointerdown', {
+    clientX: scenario.piece.home.x,
+    clientY: scenario.piece.home.y,
+    pointerId: 1
+  });
+  const rawR = scenario.solution.origin[0] + scenario.direction[0] * .7;
+  const rawC = scenario.solution.origin[1] + scenario.direction[1] * .7;
+  const dragPoint = { clientX: origin.x + rawC * cellSize, clientY: origin.y + rawR * cellSize, pointerId: 1 };
+  packingStage.emit('pointermove', dragPoint);
+  assert.equal(scenario.piece.regionGroup.children.some(child =>
+    String(child.getAttribute('class') || '').includes('pge-landing-ghost is-valid')), true);
+  packingStage.emit('pointerup', dragPoint);
+
+  assert.equal(Array.from(scenario.piece.placedAt).join(','), scenario.solution.origin.join(','));
 });
 
 test('dragging preserves the grabbed point when a rack preview enlarges to board scale', () => {
