@@ -1319,9 +1319,9 @@ body.on-char.arcade-music-prompt-visible #char-select-screen {
   #pg-lobby .lobby-wrap {
     height: calc(100% - 56px);
     min-height: 0;
-    padding: 4px 0 max(6px, env(safe-area-inset-bottom, 0px));
-    justify-content: center;
-    gap: 5px;
+    padding: 28px 0 max(6px, env(safe-area-inset-bottom, 0px));
+    justify-content: flex-start;
+    gap: 9px;
     overflow: hidden;
   }
   #pg-lobby #arcade-player-status {
@@ -1332,6 +1332,7 @@ body.on-char.arcade-music-prompt-visible #char-select-screen {
   #pg-lobby .arcade-lobby-logo {
     flex: 0 0 auto;
     padding: 0;
+    margin-bottom: 10px;
   }
   #pg-lobby .arcade-lobby-logo img {
     width: min(32vw, 300px);

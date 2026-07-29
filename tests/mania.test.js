@@ -308,11 +308,11 @@ test('Booths teach persistent stacking, priority, chains, and reveals', () => {
 
 test('Orbit uses authored booth art and resolves rings after a physical flight', () => {
   const source = read('js/games/mania.js');
-  assert.ok(fs.existsSync(path.join(root, 'assets/mania/orbit-backdrop-v1.png')));
+  assert.ok(fs.existsSync(path.join(root, 'assets/mania/orbit-backdrop-v2.png')));
   for (const sprite of ['moon-mobe', 'ghost-mobe', 'comet-mobe']) {
     assert.ok(fs.existsSync(path.join(root, `assets/mania/characters/${sprite}-sprite-v2.png`)));
   }
-  assert.match(source, /assets\/mania\/orbit-backdrop-v1\.png/);
+  assert.match(source, /assets\/mania\/orbit-backdrop-v2\.png/);
   assert.match(source, /function launchRing\(/);
   assert.match(source, /function processRingFlights\(/);
   assert.match(source, /landsAt: state\.elapsed \+ flightDuration/);
@@ -344,6 +344,9 @@ test('Moberino Mania provides touch-safe responsive play, transitions, and resul
   assert.match(css, /body\.on-mania \{[\s\S]*padding-bottom: 0 !important/);
   assert.match(css, /@media \(orientation: landscape\) and \(max-height: 700px\)/);
   assert.match(css, /#pg-mania\.active \{[\s\S]*position: fixed/);
+  assert.match(css, /body\.mania-compact-landscape \.mania-game/);
+  assert.match(source, /window\.visualViewport\?\.addEventListener\('resize', syncManiaViewportHeight\)/);
+  assert.match(source, /--mania-vh/);
   assert.match(css, /finale\/finale-backdrop-v1\.png/);
   assert.match(css, /\.mania-menu \.mania-btn/);
   assert.doesNotMatch(source, /START THE CIRCUIT/);

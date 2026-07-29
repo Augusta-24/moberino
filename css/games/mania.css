@@ -1,6 +1,6 @@
 /* Moberino Mania — shared scrolling-booth shell and Farm Frenzy booth. */
 #pg-mania {
-  height: var(--app-vh, 100dvh);
+  height: var(--mania-vh, var(--app-vh, 100dvh));
   overflow: hidden;
   background:
     radial-gradient(circle at 50% 0, rgba(255,207,74,.13), transparent 42%),
@@ -8,12 +8,13 @@
 }
 #pg-mania.active {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
   width: 100%;
   display: block;
 }
 body.on-mania {
-  height: var(--app-vh, 100dvh);
+  height: var(--mania-vh, var(--app-vh, 100dvh));
   min-height: 0;
   overflow: hidden;
   padding-bottom: 0 !important;
@@ -481,7 +482,7 @@ body.on-mania button { touch-action: manipulation; }
   z-index: 2;
 }
 .mania-theme-farm { --mania-curtain-art: url("../../assets/mania/farm/farm-backdrop-v1.png"); }
-.mania-theme-orbit { --mania-curtain-art: url("../../assets/mania/orbit-backdrop-v1.png"); }
+.mania-theme-orbit { --mania-curtain-art: url("../../assets/mania/orbit-backdrop-v2.png"); }
 .mania-theme-plates { --mania-curtain-art: url("../../assets/mania/tank/tank-backdrop-v1.png"); }
 .mania-theme-volcano { --mania-curtain-art: url("../../assets/mania/volcano/volcano-backdrop-v1.png"); }
 .mania-theme-finale { --mania-curtain-art: url("../../assets/mania/finale/finale-backdrop-v1.png"); }
@@ -730,6 +731,32 @@ body.on-mania button { touch-action: manipulation; }
     height: 40px;
     font-size: 23px;
   }
+}
+
+/* iPad Safari can keep its CSS layout viewport tall behind visible browser
+   chrome, so the media query alone is insufficient. JS applies this class from
+   visualViewport—the portion the player can actually see. */
+body.mania-compact-landscape .mania-wrap {
+  padding:
+    max(7px, env(safe-area-inset-top, 0px))
+    max(8px, env(safe-area-inset-right, 0px))
+    max(7px, env(safe-area-inset-bottom, 0px))
+    max(8px, env(safe-area-inset-left, 0px));
+}
+body.mania-compact-landscape .mania-game {
+  height: 100%;
+  max-height: 100%;
+  gap: 5px;
+}
+body.mania-compact-landscape .mania-hud {
+  min-height: 48px;
+  padding-block: 4px;
+}
+body.mania-compact-landscape .mania-hud-label { margin-bottom: 3px; }
+body.mania-compact-landscape .mania-time-ring {
+  width: 40px;
+  height: 40px;
+  font-size: 23px;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -82,6 +82,26 @@
   let resizeObserver = null;
   let state = null;
 
+  function syncManiaViewportHeight() {
+    const active = document.body?.classList.contains('on-mania');
+    if (!active) {
+      document.body?.classList.remove('mania-compact-landscape');
+      return;
+    }
+    const viewport = window.visualViewport;
+    const visibleHeight = Math.max(1, Math.floor(viewport?.height || window.innerHeight || 1));
+    const visibleWidth = Math.max(1, Math.floor(viewport?.width || window.innerWidth || 1));
+    document.documentElement.style.setProperty('--mania-vh', `${visibleHeight}px`);
+    document.body.classList.toggle(
+      'mania-compact-landscape',
+      visibleWidth > visibleHeight && visibleHeight <= 700
+    );
+  }
+
+  window.addEventListener('resize', syncManiaViewportHeight);
+  window.addEventListener('orientationchange', syncManiaViewportHeight);
+  window.visualViewport?.addEventListener('resize', syncManiaViewportHeight);
+
   const ManiaMusic = (() => {
     const VOLUME = 0.018;
     let wanted = false;
@@ -250,6 +270,7 @@
     cancelAnimationFrame(frame);
     frame = 0;
     state = initialState();
+    syncManiaViewportHeight();
     setArcadeExitVisible(false);
     ManiaMusic.start();
     const wrap = document.getElementById('mania-wrap');
@@ -266,6 +287,8 @@
     canvas = null;
     ctx = null;
     stage = null;
+    document.body?.classList.remove('mania-compact-landscape');
+    document.documentElement.style.removeProperty('--mania-vh');
   };
 
   window.maniaStart = function maniaStart() {
@@ -296,6 +319,7 @@
     state.countdownAt = performance.now();
     state.startAt = state.countdownAt + 2800;
     setArcadeExitVisible(true);
+    syncManiaViewportHeight();
 
     const wrap = document.getElementById('mania-wrap');
     if (!wrap) return;
@@ -2072,7 +2096,7 @@
   }
 
   function drawOrbitScene(w, h) {
-    const backdrop = typeof _getImg === 'function' ? _getImg('assets/mania/orbit-backdrop-v1.png') : null;
+    const backdrop = typeof _getImg === 'function' ? _getImg('assets/mania/orbit-backdrop-v2.png') : null;
     if (backdrop?.complete && backdrop.naturalWidth) {
       drawImageCover(backdrop, w, h);
       const glaze = ctx.createLinearGradient(0, 0, 0, h);
