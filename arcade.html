@@ -17,17 +17,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Russo+One&family=Permanent+Marker&display=swap" rel="stylesheet">
 <link rel="preload" as="fetch" href="arcademusic.mp3" type="audio/mpeg" crossorigin="anonymous">
-<link rel="stylesheet" href="css/arcade.css?v=20260727-19">
-<link rel="stylesheet" href="css/games/face-factory.css?v=20260726-8">
+<link rel="stylesheet" href="css/arcade.css?v=20260729-20">
+<link rel="stylesheet" href="css/games/face-factory.css?v=20260729-9">
     <link rel="stylesheet" href="css/games/whack.css?v=20260726-13">
+  <link rel="stylesheet" href="css/games/mania.css?v=20260729-15">
 <link rel="stylesheet" href="css/games/space.css?v=20260726-10">
 <link rel="stylesheet" href="css/games/journey.css?v=20260724-63">
-    <link rel="stylesheet" href="css/games/gridlock.css?v=20260729-68">
-    <link rel="stylesheet" href="css/games/packing-game.css?v=20260728-25">
-  <link rel="stylesheet" href="css/games/signal.css?v=20260728-11">
-<link rel="stylesheet" href="css/games/match.css?v=20260726-5">
-    <link rel="stylesheet" href="css/games/snoob.css?v=20260726-9">
-<link rel="stylesheet" href="css/games/consume.css?v=20260729-1">
+    <link rel="stylesheet" href="css/games/gridlock.css?v=20260729-71">
+    <link rel="stylesheet" href="css/games/packing-game.css?v=20260729-26">
+  <link rel="stylesheet" href="css/games/signal.css?v=20260729-14">
+<link rel="stylesheet" href="css/games/match.css?v=20260729-6">
+    <link rel="stylesheet" href="css/games/snoob.css?v=20260729-10">
+<link rel="stylesheet" href="css/games/consume.css?v=20260729-2">
 <link rel="stylesheet" href="css/games/consume-rack.css?v=20260726-8">
 <link rel="stylesheet" href="css/games/pet.css?v=20260726-1">
 <script>
@@ -333,13 +334,23 @@
 <ellipse cx="155" cy="52" fill="#330022" opacity="0.8" rx="9" ry="6" stroke="#ff00cc" stroke-width="1"></ellipse>
 <circle cx="140" cy="57" fill="#ff00cc" opacity="0.8" r="2"></circle>
 <circle cx="170" cy="57" fill="#ff00cc" opacity="0.8" r="2"></circle>
-<polygon fill="#00223a" points="100,200 115,225 85,225" stroke="#00e5ff" stroke-width="2"></polygon>
-<ellipse cx="100" cy="204" fill="#00334d" rx="8" ry="5" stroke="#00e5ff" stroke-width="1.5"></ellipse>
-<ellipse cx="100" cy="226" fill="#33ff66" opacity="0.6" rx="8" ry="4"></ellipse>
-<ellipse cx="100" cy="230" fill="#33ff66" opacity="0.3" rx="5" ry="6"></ellipse>
-<line opacity="0.7" stroke="#00e5ff" stroke-width="2" x1="100" x2="100" y1="200" y2="120"></line>
-<line opacity="0.5" stroke="white" stroke-width="0.5" x1="100" x2="100" y1="200" y2="120"></line>
-<circle cx="100" cy="215" fill="none" opacity="0.35" r="22" stroke="#00e5ff" stroke-dasharray="4,3" stroke-width="1"></circle>
+<g transform="translate(64 75) scale(.3)" aria-label="The Wayfarer">
+<g>
+<path d="M91 157 L106 207 L119 165 Z" fill="#69d7ff" opacity=".28"></path>
+<path d="M121 165 L136 207 L149 157 Z" fill="#69d7ff" opacity=".28"></path>
+<path d="M105 158 L120 214 L135 158 Z" fill="#fff1a6" opacity=".8"></path>
+</g>
+<path d="M93 77 L27 154 L92 137 L106 105 Z" fill="#3d5872" stroke="#69d7ff" stroke-width="3" stroke-linejoin="round"></path>
+<path d="M147 77 L213 154 L148 137 L134 105 Z" fill="#3d5872" stroke="#69d7ff" stroke-width="3" stroke-linejoin="round"></path>
+<path d="M120 14 C146 40 157 91 150 145 L136 174 L120 165 L104 174 L90 145 C83 91 94 40 120 14 Z" fill="#dcecf1" stroke="#69d7ff" stroke-width="4" stroke-linejoin="round"></path>
+<path d="M120 25 L120 160 L104 169 L91 142 C87 99 96 52 120 25 Z" fill="#a9c6d2" opacity=".72"></path>
+<path d="M120 42 C134 54 139 72 137 91 C132 98 108 98 103 91 C101 72 106 54 120 42 Z" fill="#102c4b" stroke="#fff1a6" stroke-width="3"></path>
+<path d="M107 113 L132 104 L137 123 L112 132 Z" fill="#fff1a6" opacity=".72" stroke="#5f6d79" stroke-width="2"></path>
+<path d="M106 115 L132 107 M110 124 L136 115" fill="none" stroke="#5f6d79" stroke-width="2" opacity=".8"></path>
+<rect x="55" y="132" width="23" height="9" rx="3" fill="#ff7c8f" transform="rotate(-14 55 132)"></rect>
+<rect x="161" y="132" width="23" height="9" rx="3" fill="#b79cff" transform="rotate(14 161 132)"></rect>
+<circle cx="120" cy="148" r="6" fill="#69d7ff" stroke="#0b213b" stroke-width="2"></circle>
+</g>
 </svg>
 </div>
 <div class="game-card-badge game-card-badge-tab" style="background:#33ff66;color:#04070c">ARCADE</div>
@@ -561,6 +572,26 @@
 <div class="game-card-desc">PACK THE GRID</div>
 <div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#4ecb7d22;border:1.5px solid #4ecb7d;border-radius:5px;padding:10px 24px;color:#75e69b;width:100%;text-shadow:0 0 8px #4ecb7d66;text-align:center">▶ PLAY</div>
 </div></div></div>
+<div class="carousel-item" id="ci-mania">
+<div class="game-card" onclick="SFX.menuSelect();nav('mania')" style="border-color:#ff5b6866;cursor:pointer">
+<div class="game-card-art mania-card-art">
+<div class="mania-lobby-scene" aria-hidden="true">
+  <div class="mania-lobby-stars"></div>
+  <div class="mania-lobby-target mania-lobby-target--large"></div>
+  <div class="mania-lobby-target mania-lobby-target--small"></div>
+  <div class="mania-lobby-target mania-lobby-target--mini"></div>
+  <div class="mania-lobby-ship"><i></i></div>
+  <div class="mania-lobby-tank"><i></i></div>
+</div>
+</div>
+<div class="game-card-badge game-card-badge-tab" style="background:#ff5b68;color:#17060a">ARCADE</div>
+<div class="game-card-info">
+<div class="game-card-marquee" style="color:#ff5b68;text-shadow:0 0 20px #ff5b6888">MOBERINO MANIA</div>
+<div class="game-card-desc">5 BOOTH TARGET RIDE</div>
+<div style="margin-top:14px;font-family:'VCR',monospace;font-size:11px;letter-spacing:3px;background:#ff5b6822;border:1.5px solid #ff5b68;border-radius:5px;padding:10px 24px;color:#ff7b84;width:100%;text-shadow:0 0 8px #ff5b6866;text-align:center">▶ PLAY</div>
+</div>
+</div>
+</div>
 </div>
 <div class="carousel-nav-row" style="justify-content:space-between;align-items:center;padding:6px 14px 0">
 <button onclick="scrollCarousel(-1)" style="font-size:22px;background:none;border:none;color:rgba(242,239,232,0.4);cursor:pointer;padding:8px">◀</button>
@@ -606,6 +637,12 @@
 </div>
 <div class="match-wrap" id="match-wrap">
 <!-- Filled by JS -->
+</div>
+</div>
+
+<div class="page" id="pg-mania">
+<div class="mania-wrap" id="mania-wrap">
+<!-- Filled by Moberino Mania JS -->
 </div>
 </div>
 
@@ -730,12 +767,13 @@
   </div>
   <button class="arcade-install-btn" id="arcade-music-btn" type="button">START MUSIC</button>
 </div>
-<script src="js/arcade.js?v=20260729-1"></script>
+<script src="js/arcade.js?v=20260729-4"></script>
 <script src="js/arcade-profiles.js?v=20260729-2"></script>
 <script src="js/games/face-factory-calibration.js"></script>
 <script src="js/games/face-factory.js?v=20260726-4"></script>
 <script src="js/games/whack.js?v=20260726-7"></script>
-<script src="js/games/match.js?v=20260726-5"></script>
+  <script src="js/games/mania.js?v=20260729-40"></script>
+<script src="js/games/match.js?v=20260729-6"></script>
 <script src="js/games/space.js?v=20260728-8"></script>
 <script src="js/games/journey-data.js?v=20260724-56"></script>
 <script src="js/games/journey-state.js?v=20260724-56"></script>
@@ -755,9 +793,9 @@
 <script src="js/games/packing-game-mechanics.js?v=20260726-5"></script>
 <script src="js/games/packing-game-levels.js?v=20260728-11"></script>
 <script src="js/games/packing-game-progression.js?v=20260726-3"></script>
-<script src="js/games/packing-game-engine.js?v=20260728-27"></script>
+    <script src="js/games/packing-game-engine.js?v=20260729-28"></script>
 <script src="js/games/packing-game.js?v=20260728-23"></script>
-<script src="js/games/signal.js?v=20260728-11"></script>
+  <script src="js/games/signal.js?v=20260729-12"></script>
 <script src="js/games/snoob.js?v=20260726-7"></script>
 <script src="js/games/consume-boards.js?v=20260727-2"></script>
 <script src="js/games/consume.js?v=20260729-1"></script>

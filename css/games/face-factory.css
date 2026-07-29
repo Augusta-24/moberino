@@ -394,11 +394,35 @@ body.on-facefactory button { touch-action: manipulation; }
 @media (max-height: 700px) and (orientation: landscape) {
   .ff-screen { padding-top:7px; }
   .ff-mode-grid { grid-template-columns:repeat(3,1fr);margin:5px 0;padding:4px 0; }
-  .ff-mode-card { min-height:175px;display:flex;text-align:center; }
-  .ff-mode-preview { width:94px;height:72px; }
+  .ff-mode-card {
+    min-height:214px;
+    display:grid;
+    grid-template-columns:1fr;
+    grid-template-rows:118px auto auto;
+    gap:5px;
+    text-align:center;
+  }
+  .ff-mode-preview {
+    width:100%;
+    height:118px;
+    align-self:stretch;
+    justify-self:stretch;
+  }
+  .ff-mode-card strong { padding-top:5px; }
+  .ff-mode-card > span { padding-bottom:12px; }
   .ff-reels { max-width:430px; }
   .ff-big-button { min-height:62px;font-size:34px; }
   .ff-crazy-face { width:min(42vh,310px); }
+}
+
+@media (min-width:700px) and (max-width:1100px) and (orientation:portrait) {
+  .ff-shell { width:min(94vw,900px); }
+  .ff-mode-grid { width:min(100%,780px); }
+  .ff-mode-card {
+    min-height:270px;
+    grid-template-rows:162px auto auto;
+  }
+  .ff-mode-preview { height:162px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

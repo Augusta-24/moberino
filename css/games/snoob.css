@@ -337,6 +337,22 @@
   }
 }
 
+/* Tablet geometry: keep Snoob a portrait aiming cabinet, but do not force the
+   phone-narrow 0.6 ratio when an iPad has room for larger targets. */
+@media (min-width:700px) and (max-width:1100px) and (orientation:portrait) {
+  .snoob-shell {
+    width:min(88vw,620px,calc((var(--app-vh,100dvh) - 16px) * .68));
+    aspect-ratio:.68;
+  }
+}
+@media (min-width:900px) and (max-height:900px) and (orientation:landscape) {
+  .snoob-shell {
+    width:min(72vw,620px,calc((var(--app-vh,100dvh) - 16px) * .74));
+    aspect-ratio:.74;
+  }
+  .snoob-canvas-wrap { min-height:0; }
+}
+
 @media (max-width: 860px) {
   .snoob-mode-card {
     min-height: 300px;

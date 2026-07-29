@@ -826,6 +826,14 @@ body.arcade-mode-select.on-consume .consume-wrap {
   .cw-levels { width: min(100%, 620px); }
   .cw-level-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); }
   .cw-level-grid .cw-node span { font-size: 22px; }
+  .cw-board-shell,
+  .cw-board { max-width:min(100%,680px); }
+  .cw-board { --cw-tile:66px; gap:10px; padding:16px; }
+  .cw-tile { font-size:22px; }
+  .cw-hud { max-width:680px; }
+}
+@media (min-width:1100px) and (min-height:820px) {
+  .cw-board { --cw-tile:72px; }
 }
 
 /* In-game modes own their top navigation, so they do not reserve space for the floating X. */

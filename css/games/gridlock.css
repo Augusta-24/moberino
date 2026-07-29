@@ -171,13 +171,25 @@
   padding: max(4px, env(safe-area-inset-top)) 4px max(4px, env(safe-area-inset-bottom));
   overflow: hidden;
   background: #02040a;
+  container-type: inline-size;
+  container-name: gridlock-mission;
 }
 .gridlock-mission-screen > header {
   position: relative; z-index: 8; display: grid; align-content: center;
   border: 1px solid rgba(60,90,120,.34); border-radius: 8px 8px 0 0;
   padding: 8px 14px; background: rgba(6,11,22,.98);
 }
-.gridlock-mission-screen > header { grid-template-columns:auto 1fr auto; gap:12px; align-items:center; }.gridlock-mission-screen > header strong { color:#e8d79a; font:21px/1 'Bebas Neue',sans-serif; letter-spacing:2px; }
+.gridlock-mission-screen > header { grid-template-columns:auto minmax(0,1fr) auto; gap:12px; align-items:center; }
+.gridlock-mission-screen > header > * { min-width:0; }
+.gridlock-mission-screen > header strong {
+  overflow:hidden;
+  color:#e8d79a;
+  font:21px/1 'Bebas Neue',sans-serif;
+  letter-spacing:2px;
+  text-align:center;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
 .gridlock-board-actions { display:flex; gap:6px; }
 .gridlock-board-actions button { border:1px solid rgba(95,208,255,.48); border-radius:5px; padding:8px 9px; background:rgba(8,21,37,.82); color:#8ddcff; font:10px/1 'VCR',monospace; letter-spacing:1px; cursor:pointer; }
 .gridlock-board-actions button:disabled { opacity:.3; cursor:default; }
@@ -293,6 +305,108 @@
   font: 14px/1.25 'VCR',monospace;
   letter-spacing: 1.3px;
   text-align: right;
+}
+
+/* The cabinet width is derived from available height, so an iPad in landscape
+   can produce a ~400px cabinet inside a 1000px+ viewport. Container queries
+   respond to the cabinet that actually needs to fit instead of the viewport. */
+@container gridlock-mission (max-width: 500px) {
+  .gridlock-mission-screen > header {
+    grid-template-columns: 78px minmax(0,1fr) auto;
+    gap:6px;
+    padding-inline:8px;
+  }
+  .gridlock-mission-screen > header strong {
+    font-size:clamp(16px,5.2cqw,19px);
+    letter-spacing:1px;
+  }
+  .gridlock-map-back {
+    padding-inline:7px !important;
+    font-size:9px !important;
+  }
+  .gridlock-board-actions { gap:4px; }
+  .gridlock-board-actions button {
+    padding:7px 6px;
+    font-size:8px;
+    letter-spacing:.5px;
+  }
+  .gridlock-status-board {
+    grid-template-columns:minmax(0,1fr) minmax(88px,.72fr);
+    gap:7px 10px;
+    min-height:88px;
+    padding:9px 11px;
+  }
+  .gridlock-status-summary { gap:4px; }
+  .gridlock-status-summary span { font-size:8px; letter-spacing:1.5px; }
+  .gridlock-status-summary strong {
+    overflow:hidden;
+    font-size:11px;
+    letter-spacing:.65px;
+    text-overflow:ellipsis;
+  }
+  .gridlock-status-message {
+    grid-column:1 / -1;
+    overflow:hidden;
+    font-size:10px;
+    letter-spacing:.8px;
+    text-align:center;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+}
+
+/* A wide tablet gets a landscape console instead of a portrait cabinet floating
+   in the middle of the screen. The puzzle keeps its authored proportions while
+   the status hardware moves into a dedicated side bay. */
+@media (min-width: 900px) and (min-height: 650px) and (orientation: landscape) {
+  .gridlock-mission-screen {
+    grid-template-columns: minmax(0, 680px) minmax(220px, 240px);
+    grid-template-rows: 64px minmax(0, 1fr);
+    align-content: stretch;
+    width: min(calc(100% - 40px), 920px);
+    max-width: 920px;
+    height: min(100%, 812px);
+  }
+  .gridlock-mission-screen > header {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+  .gridlock-stage {
+    grid-column: 1;
+    grid-row: 2;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+  }
+  .gridlock-status-board {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: stretch;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    align-items: start;
+    gap: 18px;
+    min-height: 0;
+    border-top-color: rgba(60,90,120,.42);
+    border-left-color: color-mix(in srgb, var(--gl-c1,#5fd0ff) 38%, transparent);
+    border-radius: 0 0 8px 0;
+    padding: 28px 18px 24px;
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--gl-c1,#5fd0ff) 9%, transparent), transparent 38%),
+      rgba(5,11,20,.98);
+  }
+  .gridlock-status-summary {
+    gap: 10px;
+  }
+  .gridlock-status-summary strong {
+    white-space: normal;
+    line-height: 1.35;
+  }
+  .gridlock-status-message {
+    align-self: end;
+    text-align: left;
+    line-height: 1.5;
+  }
 }
 
 /* conduit tiles: unsealed = warm/loose, sealed = cyan, flooded = bright */

@@ -780,3 +780,89 @@ body.on-signal.arcade-mode-select::after,
 body.on-signal.arcade-selection-open::after {
   display:none !important;
 }
+
+/* Tablet portrait keeps the touch-first bottom instrument row, but receives a
+   full-width menu and canvas instead of phone-sized setup cards. */
+@media (min-width:700px) and (max-width:1100px) and (orientation:portrait) {
+  #signal-overlay.signal-menu-mode {
+    justify-content:center;
+  }
+  .signal-reference-menu .signal-select-grid {
+    width:min(calc(100% - 48px),760px);
+  }
+}
+
+/* Tablet/desktop landscape becomes a workspace: the canvas owns the left side
+   and instrument navigation becomes a stable right rail. This avoids stretching
+   six instrument buttons across the entire bottom edge. */
+@media (min-width:900px) and (orientation:landscape) {
+  #signal-overlay.signal-menu-mode {
+    justify-content:flex-start;
+    padding-top:clamp(72px,12vh,104px);
+  }
+  #signal-overlay.signal-menu-mode .signal-panel.signal-reference-menu {
+    max-height:calc(100dvh - clamp(84px,14vh,116px));
+  }
+  .signal-loop-row {
+    left:auto !important;
+    width:196px !important;
+  }
+  #signal-shell-drawer {
+    z-index:1000001 !important;
+  }
+  .signal-reference-menu .signal-select-banner {
+    padding:8px 10px 10px;
+  }
+  .signal-reference-menu .signal-select-banner h1 {
+    font-size:44px;
+    letter-spacing:5px;
+  }
+  .signal-reference-menu .signal-select-grid {
+    width:min(calc(100% - 64px),760px);
+  }
+  .signal-reference-menu .signal-select-hero {
+    min-height:132px;
+    border-radius:14px;
+  }
+  .signal-reference-menu .signal-select-sequencer {
+    padding-block:10px;
+  }
+  .signal-reference-menu .signal-select-track {
+    height:13px;
+  }
+  .signal-reference-menu .signal-select-copy strong {
+    font-size:28px;
+  }
+  .signal-reference-menu .signal-select-card {
+    min-height:84px;
+    border-radius:14px;
+  }
+  .signal-reference-menu .signal-select-scene {
+    min-height:80px;
+  }
+  .signal-reference-menu .signal-select-card .signal-select-copy strong {
+    font-size:24px;
+  }
+  body.on-signal:not(.arcade-mode-select):not(.arcade-selection-open) #signal-canvas {
+    margin-right:220px;
+  }
+  #signal-shell-tabs {
+    left:auto !important;
+    right:12px !important;
+    top:max(94px,calc(env(safe-area-inset-top,0px) + 76px)) !important;
+    bottom:auto !important;
+    width:196px !important;
+    display:flex;
+    flex-direction:column;
+    gap:7px !important;
+  }
+  #signal-shell-tabs > button {
+    flex:0 0 62px !important;
+    min-height:62px !important;
+  }
+  #signal-guided-controls {
+    left:12px !important;
+    right:232px !important;
+    bottom:max(10px,env(safe-area-inset-bottom,0px)) !important;
+  }
+}

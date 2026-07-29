@@ -1856,7 +1856,10 @@
     // The bottom controls are viewport-fixed, so the drawing surface must use
     // the same full viewport height. A fixed 9:16 canvas stranded the extra
     // height on tall phones as an unusable black band.
-    const cssW = Math.floor(Math.min(availW, 760));
+    const sideRail = window.matchMedia &&
+      window.matchMedia('(min-width: 900px) and (orientation: landscape)').matches;
+    const railWidth = sideRail ? 228 : 0;
+    const cssW = Math.floor(Math.min(Math.max(320, availW - railWidth), sideRail ? 960 : 760));
     const cssH = Math.floor(Math.max(320, availH));
     dpr = Math.min(2, window.devicePixelRatio || 1);
     canvas.style.width = cssW + 'px';

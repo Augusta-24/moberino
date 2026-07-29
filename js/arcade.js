@@ -99,7 +99,7 @@
 
   let arcadeEdgeSwipe = null;
   function arcadeSwipeGuardActive() {
-    return document.body.matches('.on-lobby,.on-char,.on-signin,.on-facefactory,.on-whack,.on-match,.on-space,.on-journey,.on-gridlock,.on-packing,.on-signal,.on-snoob,.on-consume');
+    return document.body.matches('.on-lobby,.on-char,.on-signin,.on-facefactory,.on-whack,.on-mania,.on-match,.on-space,.on-journey,.on-gridlock,.on-packing,.on-signal,.on-snoob,.on-consume');
   }
 
   document.addEventListener('touchstart', e => {
@@ -227,6 +227,7 @@
     const onSignIn = p === 'signin';
     const onFaceFactory = p === 'facefactory';
     const onWhack = p === 'whack';
+    const onMania = p === 'mania';
     const onMatch = p === 'match';
     const onSpace = p === 'space';
     const onJourney = p === 'journey';
@@ -241,6 +242,7 @@
     document.body.classList.toggle('on-signin', onSignIn);
     document.body.classList.toggle('on-facefactory', onFaceFactory);
     document.body.classList.toggle('on-whack', onWhack);
+    document.body.classList.toggle('on-mania', onMania);
     document.body.classList.toggle('on-match', onMatch);
     document.body.classList.toggle('on-space', onSpace);
     document.body.classList.toggle('on-journey', onJourney);
@@ -253,10 +255,10 @@
     document.documentElement.classList.add('arcade-root');
 
     try {
-      if ((onLobby || onCharSelect || onSignIn || onFaceFactory || onWhack || onMatch || onSpace || onJourney || onGridLock || onPacking || onSignal || onSnoob || onConsume || onPet) && typeof ArcadeMusic !== 'undefined' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
+      if ((onLobby || onCharSelect || onSignIn || onFaceFactory || onWhack || onMania || onMatch || onSpace || onJourney || onGridLock || onPacking || onSignal || onSnoob || onConsume || onPet) && typeof ArcadeMusic !== 'undefined' && !ArcadeMusic.playing && !ArcadeMusic.muted) ArcadeMusic.start();
       if (typeof ArcadeMusic !== 'undefined') {
         if (onLobby || onCharSelect || onSignIn) ArcadeMusic.unduck();
-        if (onFaceFactory || onWhack || onMatch || onSpace || onJourney || onGridLock || onPacking || onSignal || onSnoob || onConsume || onPet) ArcadeMusic.duck();
+        if (onFaceFactory || onWhack || onMania || onMatch || onSpace || onJourney || onGridLock || onPacking || onSignal || onSnoob || onConsume || onPet) ArcadeMusic.duck();
       }
     } catch(e) {}
 
@@ -279,6 +281,7 @@
     updateArcadeMusicPrompt();
     if (onFaceFactory && typeof initFaceFactory === 'function') initFaceFactory();
     if (onWhack && typeof initWhack === 'function') initWhack();
+    if (onMania && typeof initMania === 'function') initMania();
     if (onMatch && typeof initMatch === 'function') initMatch();
     if (onSpace && typeof initSpace === 'function') initSpace();
     if (onJourney && typeof initJourney === 'function') initJourney();
@@ -295,6 +298,7 @@
     if (!onSignal && typeof signalBack === 'function') signalBack();
     if (!onFaceFactory && typeof faceFactoryBack === 'function') faceFactoryBack();
     if (!onWhack && typeof whackBack === 'function') whackBack();
+    if (!onMania && typeof maniaBack === 'function') maniaBack();
     if (!onMatch && typeof matchBack === 'function') matchBack();
     if (!onSnoob && typeof snoobBack === 'function') snoobBack();
     if (!onConsume && typeof consumeBack === 'function') consumeBack();
@@ -350,6 +354,14 @@ document.addEventListener('click', _unlockSfx, { passive: true, once: true });
 //  SFX — Web Audio chiptune sounds
 // ══════════════════════════════════════
 const SFX = (() => {
+  const goodHitPool = Array.from({ length: 8 }, () => {
+    const audio = new Audio('assets/space/sfx/powerup_hp.mp3');
+    audio.preload = 'auto';
+    audio.volume = 0.64;
+    return audio;
+  });
+  let goodHitIndex = 0;
+
   function tone(freq, type, start, dur, vol, endFreq) {
     const c = getAudioCtx(), o = c.createOscillator(), g = c.createGain();
     const t0 = c.currentTime + Math.max(start, 0.05);
@@ -362,11 +374,13 @@ const SFX = (() => {
   }
   return {
     hit() {
-      // Shared "good hit" language: tuned bars with a tiny sparkle, not a thud.
-      tone(196, 'triangle', 0, 0.11, 0.11, 220);
-      tone(294, 'triangle', 0.02, 0.09, 0.08, 330);
-      tone(392, 'sine', 0.05, 0.10, 0.04, 440);
-      tone(784, 'triangle', 0.08, 0.045, 0.016);
+      // A short pool lets rapid target hits overlap without clipping off the
+      // previous confirmation sound.
+      const audio = goodHitPool[goodHitIndex];
+      goodHitIndex = (goodHitIndex + 1) % goodHitPool.length;
+      audio.currentTime = 0;
+      const playback = audio.play();
+      if (playback?.catch) playback.catch(() => {});
     },
         miss()     { tone(220,'sawtooth',0,0.14,0.07,100); },
     match()    { tone(523,'triangle',0,0.10,0.06); tone(659,'triangle',0.08,0.10,0.06); tone(784,'sine',0.16,0.14,0.06); },
@@ -1907,6 +1921,7 @@ function renderLbTabs(activeGame) {
 
 window.toggleArcadeMute = function() {
   const muted = ArcadeMusic.toggleMute();
+  if (typeof maniaSyncMusicMute === 'function') maniaSyncMusicMute();
   const label = muted ? '♪ OFF' : '♪ ON';
   document.querySelectorAll('.arcade-mute-btn').forEach(btn => {
     const action = btn.getAttribute('onclick') || '';

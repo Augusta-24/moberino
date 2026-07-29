@@ -46,6 +46,11 @@
   --arcade-content-wide: 560px;
   --arcade-control-height: 44px;
   --arcade-top-rail-height: 56px;
+  /* Responsive tier values. Phone rules remain game-owned below ~620px;
+     these values give iPad-sized viewports an explicit middle tier instead
+     of letting them fall through to whichever desktop default happens to fit. */
+  --arcade-tablet-content: 720px;
+  --arcade-tablet-gutter: 24px;
   --desktop-nav-width: min(calc(100vw - 32px), 920px);
   --desktop-nav-pad: 10px 16px 8px;
   --desktop-nav-slot: 96px;
@@ -1006,7 +1011,7 @@ body.on-match .mobe-face-img {
     drop-shadow(-1px -1px 0 #fff)
     drop-shadow(0 3px 5px rgba(0,0,0,0.28));
 }
-#pg-lobby { height: var(--app-vh, 100dvh); overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; z-index: 1; }
+#pg-lobby { height: var(--app-vh, 100dvh); overflow: hidden; position: relative; z-index: 1; }
 .lobby-wrap { padding: 10px 0 max(28px, env(safe-area-inset-bottom, 0px) + 18px); display: flex; flex-direction: column; gap: 12px; position: relative; }
 .arcade-lobby-logo {
   position:relative;
@@ -1288,6 +1293,89 @@ body.on-char.arcade-music-prompt-visible #char-select-screen {
 }
 .carousel-item .game-card-marquee { font-size: 28px; letter-spacing: 5px; }
 .carousel-item .game-card-desc { font-size: 13px; letter-spacing: 0.5px; line-height: 1.5; }
+
+/* Tablet portrait: a deliberate large-touch tier rather than a narrow desktop.
+   The lobby still shows one authored cabinet at a time, just at an iPad-appropriate
+   scale with enough breathing room for Safari's persistent browser chrome. */
+@media (min-width: 700px) and (max-width: 1100px) and (orientation: portrait) {
+  :root {
+    --arcade-content-wide: var(--arcade-tablet-content);
+  }
+  #game-carousel {
+    --carousel-card-w: min(58vw, 380px);
+  }
+  .arcade-lobby-logo img {
+    width: min(58%, 420px);
+  }
+}
+
+/* Short tablet/desktop landscape: the arcade lobby is a fixed composition.
+   Shrink its decorative vertical rhythm instead of turning the entire page into
+   a scroll container when Safari's toolbars reduce the visible height. */
+@media (min-width: 700px) and (max-height: 820px) and (orientation: landscape) {
+  #pg-lobby {
+    overflow: hidden;
+  }
+  #pg-lobby .lobby-wrap {
+    height: calc(100% - 56px);
+    min-height: 0;
+    padding: 4px 0 max(6px, env(safe-area-inset-bottom, 0px));
+    justify-content: center;
+    gap: 5px;
+    overflow: hidden;
+  }
+  #pg-lobby #arcade-player-status {
+    flex: 0 0 auto;
+    padding: 5px 10px;
+    font-size: 8px;
+  }
+  #pg-lobby .arcade-lobby-logo {
+    flex: 0 0 auto;
+    padding: 0;
+  }
+  #pg-lobby .arcade-lobby-logo img {
+    width: min(32vw, 300px);
+    max-height: 58px;
+  }
+  #pg-lobby #game-carousel {
+    --carousel-card-w: min(38vw, 286px);
+    flex: 1 1 0;
+    width: 100%;
+    min-height: 260px;
+    max-height: 330px;
+    padding: 3px 0;
+  }
+  #pg-lobby #game-carousel-track,
+  #pg-lobby .carousel-item {
+    height: 100%;
+  }
+  #pg-lobby .carousel-item .game-card {
+    height: 100%;
+    min-height: 0;
+  }
+  #pg-lobby .carousel-item .game-card-info {
+    padding: 12px 14px 14px;
+  }
+  #pg-lobby .carousel-item .game-card-marquee {
+    font-size: 25px;
+    letter-spacing: 4px;
+  }
+  #pg-lobby .carousel-item .game-card-desc {
+    font-size: 11px;
+  }
+  #pg-lobby .carousel-item .game-card-info > div[style*="margin-top:14px"] {
+    margin-top: 8px !important;
+    padding-block: 8px !important;
+  }
+  #pg-lobby .carousel-nav-row {
+    flex: 0 0 auto;
+    padding-top: 0 !important;
+  }
+  #pg-lobby .arcade-install-card {
+    flex: 0 0 auto;
+    padding-block: 6px;
+  }
+}
 
 .arcade-install-card {
   width: min(92vw, 420px);

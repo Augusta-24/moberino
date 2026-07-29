@@ -1952,9 +1952,17 @@
       if (!targetPiece) restorePiece(selectedPiece);
     });
     addListener(stage, 'contextmenu', event => {
-      if (!dragging) return;
       if (event.preventDefault) event.preventDefault();
-      rotatePiece(dragging.piece);
+      if (dragging) rotatePiece(dragging.piece);
+    });
+    // Safari can promote a long press or slightly delayed SVG drag into its
+    // native selection/callout tool even when pointer dragging has started.
+    // The puzzle stage owns these gestures completely.
+    addListener(stage, 'dragstart', event => {
+      if (event.preventDefault) event.preventDefault();
+    });
+    addListener(stage, 'selectstart', event => {
+      if (event.preventDefault) event.preventDefault();
     });
     if (window && typeof window.addEventListener === 'function') {
       addListener(window, 'keydown', event => {

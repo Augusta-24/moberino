@@ -1,0 +1,699 @@
+/* Moberino Mania — shared scrolling-booth shell and Farm Frenzy booth. */
+#pg-mania {
+  height: var(--app-vh, 100dvh);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 0, rgba(255,207,74,.13), transparent 42%),
+    linear-gradient(180deg, #152415, #070d0a 72%);
+}
+#pg-mania.active { display: block; }
+body.on-mania #arcade-game-exit { display: inline-flex; }
+body.on-mania button { touch-action: manipulation; }
+
+.mania-wrap {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding:
+    max(12px, env(safe-area-inset-top, 0px))
+    max(12px, env(safe-area-inset-right, 0px))
+    max(12px, env(safe-area-inset-bottom, 0px))
+    max(12px, env(safe-area-inset-left, 0px));
+  box-sizing: border-box;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.mania-card-art {
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255,91,104,.18), transparent 43%),
+    linear-gradient(160deg,#03050f,#080b1c 58%,#02030a);
+}
+.mania-lobby-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.mania-lobby-scene::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: .22;
+  background:
+    linear-gradient(rgba(109,232,255,.22) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(109,232,255,.18) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 62%, transparent 82%);
+}
+.mania-lobby-stars {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  top: 18px;
+  left: 20px;
+  border-radius: 50%;
+  background: #fff6d6;
+  opacity: .65;
+  box-shadow:
+    42px 18px 0 #6de8ff,
+    100px -7px 0 #fff6d6,
+    148px 24px 0 #b991ff,
+    178px 68px 0 #ffcf4a,
+    18px 98px 0 #ff8c68,
+    88px 116px 0 #fff6d6;
+}
+.mania-lobby-target {
+  position: absolute;
+  width: 50px;
+  aspect-ratio: 1;
+  border: 3px solid #ff5b68;
+  border-radius: 50%;
+  box-sizing: border-box;
+  opacity: .84;
+  background: rgba(255,93,157,.08);
+  box-shadow:
+    inset 0 0 0 .17em rgba(22,22,43,.78),
+    inset 0 0 0 .23em rgba(255,93,157,.82);
+}
+.mania-lobby-target--large {
+  left: 8%;
+  top: 12%;
+  width: 54px;
+}
+.mania-lobby-target--small {
+  right: 9%;
+  top: 18%;
+  width: 35px;
+  border-width: 2px;
+  transform: rotate(18deg);
+}
+.mania-lobby-target--mini {
+  left: 20%;
+  top: 51%;
+  width: 27px;
+  border-width: 2px;
+  transform: rotate(-14deg);
+}
+.mania-lobby-target::before,
+.mania-lobby-target::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  inset: 30%;
+  background: #ffcf4a;
+}
+.mania-lobby-target::before { z-index: 1; }
+.mania-lobby-target::after {
+  inset: -16% 42%;
+  border-radius: 3px;
+  background: #6de8ff;
+  transform: rotate(45deg);
+  z-index: 0;
+}
+.mania-lobby-ship {
+  position: absolute;
+  left: 50%;
+  top: calc(9% + 54px);
+  width: 58px;
+  height: 86px;
+  transform: translateX(-50%);
+  clip-path: polygon(50% 0,68% 20%,76% 54%,100% 76%,68% 69%,59% 91%,50% 79%,41% 91%,32% 69%,0 76%,24% 54%,32% 20%);
+  background: linear-gradient(90deg, rgba(169,198,210,.72), rgba(220,236,241,.88) 52%, rgba(105,215,255,.62));
+  filter: drop-shadow(0 0 0 #69d7ff) drop-shadow(0 0 7px rgba(105,215,255,.28));
+}
+.mania-lobby-ship::before {
+  content: "";
+  position: absolute;
+  left: 21px;
+  top: 17px;
+  width: 16px;
+  height: 25px;
+  border: 2px solid #fff1a6;
+  border-radius: 50% 50% 40% 40%;
+  background: #102c4b;
+}
+.mania-lobby-ship::after {
+  content: "";
+  position: absolute;
+  left: 25px;
+  bottom: 0;
+  width: 9px;
+  height: 18px;
+  background: #ffcf4a;
+  clip-path: polygon(0 0,100% 0,50% 100%);
+}
+.mania-lobby-ship i {
+  position: absolute;
+  left: 27px;
+  top: 49px;
+  width: 7px;
+  height: 7px;
+  border: 2px solid #0b213b;
+  border-radius: 50%;
+  background: #6de8ff;
+}
+.mania-lobby-tank {
+  position: absolute;
+  right: 10%;
+  top: 49%;
+  width: 60px;
+  height: 27px;
+  border: 3px solid #162337;
+  border-radius: 10px;
+  background: rgba(70,108,116,.74);
+  box-shadow: inset 0 -8px 0 rgba(37,60,81,.82);
+}
+.mania-lobby-tank::before {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: -20px;
+  width: 31px;
+  height: 18px;
+  border: 3px solid #162337;
+  border-radius: 10px 10px 3px 3px;
+  background: rgba(255,140,104,.72);
+}
+.mania-lobby-tank::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 3px;
+  height: 8px;
+  border-radius: 6px;
+  background: repeating-linear-gradient(90deg,#ffcf4a 0 5px,#253c51 5px 9px);
+}
+.mania-lobby-tank i {
+  position: absolute;
+  z-index: 2;
+  left: 38px;
+  top: -14px;
+  width: 33px;
+  height: 6px;
+  border: 2px solid #162337;
+  border-radius: 4px;
+  background: rgba(217,241,232,.72);
+  transform: rotate(-16deg);
+  transform-origin: left center;
+}
+
+.mania-menu {
+  position: relative;
+  isolation: isolate;
+  width: min(100%, 960px);
+  height: min(100%, 760px);
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(24px, 5vh, 46px);
+  padding: clamp(26px, 6vw, 70px);
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 2px solid rgba(221,169,77,.72);
+  border-radius: clamp(14px, 3vw, 28px);
+  background:
+    linear-gradient(180deg, rgba(12,5,28,.15), rgba(10,4,24,.32) 56%, rgba(8,3,18,.8)),
+    url("../../assets/mania/finale/finale-backdrop-v1.png") center / cover no-repeat;
+  box-shadow:
+    0 24px 70px rgba(0,0,0,.52),
+    inset 0 0 0 4px rgba(89,52,86,.5),
+    inset 0 0 46px rgba(0,0,0,.42);
+  text-align: center;
+}
+.mania-menu::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(255,207,74,.15), transparent 29%),
+    linear-gradient(90deg, rgba(8,3,18,.44), transparent 28% 72%, rgba(8,3,18,.44));
+  pointer-events: none;
+}
+.mania-result-kicker {
+  color: rgba(255,255,255,.55);
+  font: 10px/1.2 'VCR', monospace;
+  letter-spacing: 4px;
+}
+.mania-menu-title,
+.mania-result-title {
+  margin: 0;
+  color: #ffcf4a;
+  font: clamp(52px, 12vw, 92px)/.83 'Bebas Neue', sans-serif;
+  letter-spacing: 5px;
+  text-shadow: 0 5px 0 #6b331d, 0 0 28px rgba(255,207,74,.4);
+}
+.mania-menu-title span {
+  display: block;
+  color: #fff7da;
+  font-size: .56em;
+  letter-spacing: 8px;
+  text-shadow: 0 4px 0 #276c38, 0 0 24px rgba(255,255,255,.18);
+}
+.mania-menu-title,
+.mania-menu-title span {
+  text-shadow: none;
+}
+.mania-btn {
+  width: min(100%, 360px);
+  min-height: 54px;
+  border: 2px solid #ffcf4a;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #ffda64, #efad2e);
+  color: #1b2614;
+  font: 18px/1 'Bebas Neue', sans-serif;
+  letter-spacing: 4px;
+  cursor: pointer;
+  box-shadow: 0 7px 0 #81501c, 0 12px 28px rgba(0,0,0,.3);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.mania-menu .mania-btn {
+  width: min(78%, 360px);
+  min-height: 68px;
+  border-color: #f6d77c;
+  border-radius: 10px;
+  font-size: clamp(24px, 5vw, 34px);
+  letter-spacing: 7px;
+  box-shadow:
+    0 8px 0 #81501c,
+    0 18px 42px rgba(0,0,0,.42),
+    0 0 28px rgba(255,207,74,.18);
+}
+.mania-practice {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: max(14px, env(safe-area-inset-bottom, 0px));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 10px;
+  color: rgba(255,255,255,.42);
+  font: 14px/1 'VCR', monospace;
+  letter-spacing: 1px;
+}
+.mania-practice span { color: rgba(255,255,255,.58); }
+.mania-practice button {
+  appearance: none;
+  border: 0;
+  border-bottom: 1px solid rgba(255,255,255,.24);
+  padding: 4px 1px;
+  background: transparent;
+  color: rgba(255,255,255,.58);
+  font: inherit;
+  letter-spacing: .5px;
+  cursor: pointer;
+}
+.mania-practice button:hover,
+.mania-practice button:focus-visible {
+  color: #ffcf4a;
+  border-color: #ffcf4a;
+  outline: none;
+}
+.mania-btn:active {
+  transform: translateY(5px);
+  box-shadow: 0 2px 0 #81501c, 0 6px 16px rgba(0,0,0,.3);
+}
+.mania-menu-back,
+.mania-result-back {
+  border: 0;
+  background: transparent;
+  color: rgba(255,255,255,.56);
+  font: 10px/1 'VCR', monospace;
+  letter-spacing: 2px;
+  padding: 12px;
+  cursor: pointer;
+}
+
+.mania-game {
+  position: relative;
+  width: min(100%, 1120px);
+  height: min(100%, 760px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+}
+.mania-hud {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 8px 52px;
+  border: 1px solid rgba(255,207,74,.35);
+  border-radius: 10px;
+  background: rgba(5,13,8,.86);
+  box-shadow: 0 8px 24px rgba(0,0,0,.28);
+}
+.mania-hud-block { min-width: 0; }
+.mania-hud-label {
+  display: block;
+  margin-bottom: 5px;
+  color: rgba(255,255,255,.46);
+  font: 8px/1 'VCR', monospace;
+  letter-spacing: 2px;
+}
+.mania-hud strong {
+  display: block;
+  overflow: hidden;
+  color: #fff7d9;
+  font: clamp(25px, 5vw, 38px)/.8 'Bebas Neue', sans-serif;
+  letter-spacing: 2px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mania-hud-center {
+  grid-column: 2;
+  min-width: 104px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.mania-booth-count {
+  display: block;
+  margin: 0 0 2px;
+  color: rgba(255,255,255,.4);
+  font: 7px/1 'VCR',monospace;
+  letter-spacing: 1px;
+}
+.mania-time-ring {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--mania-accent,#ffcf4a);
+  border-radius: 50%;
+  color: var(--mania-accent,#ffcf4a);
+  font: 26px/1 'Bebas Neue', sans-serif;
+  box-shadow: 0 0 14px rgba(255,207,74,.22);
+}
+.mania-time-ring.danger {
+  border-color: #ff625f;
+  color: #ff625f;
+  animation: mania-pulse .48s ease-in-out infinite alternate;
+}
+.mania-special { color: var(--mania-accent,#f2b267) !important; font-size: clamp(17px,3.2vw,25px) !important; }
+
+.mania-stage {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  border: 2px solid var(--mania-accent,#f5dfab);
+  border-radius: 14px;
+  background: #7fd1ee;
+  box-shadow: 0 18px 46px rgba(0,0,0,.42), inset 0 0 0 2px rgba(80,43,23,.4);
+  touch-action: none;
+  cursor: crosshair;
+}
+.mania-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+.mania-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  border-radius: 12px;
+  box-shadow: inset 0 0 40px rgba(55,31,15,.2);
+}
+.mania-booth-curtain {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  padding: 20px;
+  overflow: hidden;
+  background: #111019;
+  color: #fff7d9;
+  text-align: center;
+  pointer-events: none;
+  animation: mania-curtain-open 2.8s cubic-bezier(.7,0,.2,1) forwards;
+}
+.mania-booth-curtain::before,
+.mania-booth-curtain::after {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  pointer-events: none;
+}
+.mania-booth-curtain::before {
+  z-index: 0;
+  background: var(--mania-curtain-art) center / cover no-repeat;
+  filter: blur(5px) saturate(.72) brightness(.58);
+  transform: scale(1.045);
+}
+.mania-booth-curtain::after {
+  z-index: 1;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(9,7,16,.38), rgba(9,7,16,.66)),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.025) 0 2px, transparent 2px 30px);
+  backdrop-filter: blur(2px);
+}
+.mania-booth-curtain > * {
+  position: relative;
+  z-index: 2;
+}
+.mania-theme-farm { --mania-curtain-art: url("../../assets/mania/farm/farm-backdrop-v1.png"); }
+.mania-theme-orbit { --mania-curtain-art: url("../../assets/mania/orbit-backdrop-v1.png"); }
+.mania-theme-plates { --mania-curtain-art: url("../../assets/mania/tank/tank-backdrop-v1.png"); }
+.mania-theme-volcano { --mania-curtain-art: url("../../assets/mania/volcano/volcano-backdrop-v1.png"); }
+.mania-theme-finale { --mania-curtain-art: url("../../assets/mania/finale/finale-backdrop-v1.png"); }
+.mania-booth-curtain span,
+.mania-booth-curtain small {
+  font: 9px/1.4 'VCR', monospace;
+  letter-spacing: 3px;
+}
+.mania-booth-curtain span { color: var(--mania-accent); }
+.mania-booth-curtain b {
+  font: clamp(44px,10vw,84px)/.9 'Bebas Neue',sans-serif;
+  letter-spacing: 5px;
+  text-shadow: 0 5px 0 rgba(0,0,0,.35);
+}
+.mania-booth-curtain small {
+  color: rgba(255,255,255,.65);
+  letter-spacing: 1.5px;
+}
+.mania-toast {
+  position: absolute;
+  z-index: 7;
+  left: 50%;
+  top: 16px;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  transform: translate(-50%, -10px);
+  opacity: 0;
+  padding: 9px 13px 8px;
+  border: 1px solid rgba(255,255,255,.6);
+  border-radius: 4px;
+  background: rgba(22,35,17,.88);
+  color: #fff7da;
+  font: 12px/1.25 'VCR', monospace;
+  letter-spacing: 1.5px;
+  text-align: center;
+  pointer-events: none;
+  transition: opacity .15s ease, transform .15s ease;
+  text-shadow: 0 2px 0 rgba(0,0,0,.35);
+}
+.mania-toast.show { opacity: 1; transform: translate(-50%, 0); }
+.mania-toast.bonus {
+  border-color: #ffcf4a;
+  color: #ffcf4a;
+  box-shadow: 0 0 20px rgba(255,207,74,.3);
+}
+.mania-countdown {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: end center;
+  padding-bottom: 7%;
+  box-sizing: border-box;
+  background: transparent;
+  color: #fff7da;
+  font: clamp(58px,12vw,104px)/1 'Bebas Neue', sans-serif;
+  text-shadow: 0 7px 0 #6b331d, 0 0 30px rgba(255,207,74,.65);
+  pointer-events: none;
+}
+.mania-progress {
+  position: absolute;
+  z-index: 6;
+  left: 10px;
+  right: 10px;
+  bottom: 9px;
+  height: 5px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.5);
+  border-radius: 999px;
+  background: rgba(17,35,21,.45);
+  pointer-events: none;
+}
+.mania-progress span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--mania-accent,#ffcf4a), #fff4b1);
+  box-shadow: 0 0 10px rgba(255,207,74,.65);
+}
+
+.mania-results {
+  width: min(92vw, 480px);
+  max-height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 22px 18px;
+  box-sizing: border-box;
+  border: 2px solid rgba(255,207,74,.68);
+  border-radius: 18px;
+  background:
+    linear-gradient(rgba(10,21,12,.93), rgba(5,10,7,.97)),
+    linear-gradient(135deg, #467c37, #1b3b25);
+  box-shadow: 0 22px 58px rgba(0,0,0,.5);
+  text-align: center;
+}
+.mania-results[style*="--mania-accent"] {
+  border-color: color-mix(in srgb,var(--mania-accent) 70%,transparent);
+}
+.mania-result-title { font-size: clamp(44px,10vw,68px); }
+.mania-result-score {
+  color: #fff7da;
+  font: clamp(62px,16vw,92px)/.8 'Bebas Neue', sans-serif;
+  letter-spacing: 5px;
+  text-shadow: 0 5px 0 #6b331d;
+}
+.mania-result-score small {
+  display: block;
+  margin-top: 12px;
+  color: rgba(255,255,255,.48);
+  font: 9px/1 'VCR', monospace;
+  letter-spacing: 3px;
+  text-shadow: none;
+}
+.mania-result-stats {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+.mania-result-stat {
+  padding: 10px 5px;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 7px;
+  background: rgba(255,255,255,.045);
+}
+.mania-result-stat b {
+  display: block;
+  color: #ffcf4a;
+  font: 28px/1 'Bebas Neue', sans-serif;
+}
+.mania-result-stat span {
+  display: block;
+  margin-top: 5px;
+  color: rgba(255,255,255,.48);
+  font: 7px/1.2 'VCR', monospace;
+  letter-spacing: 1px;
+}
+.mania-result-best {
+  color: #8de37f;
+  font: 10px/1.4 'VCR', monospace;
+  letter-spacing: 2px;
+}
+
+.mania-hidden-result {
+  margin: 10px 0 14px;
+  color: #fff4d5;
+  font: 11px/1.2 "Press Start 2P", monospace;
+  letter-spacing: .09em;
+  text-align: center;
+}
+
+.mania-hidden-result b {
+  color: var(--mania-accent, #ffcf4a);
+  font-size: 14px;
+}
+.mania-round-strip {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(5,minmax(0,1fr));
+  gap: 4px;
+}
+.mania-round-strip > div {
+  min-width: 0;
+  padding: 8px 2px;
+  border: 1px solid color-mix(in srgb,var(--round-color) 42%,transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb,var(--round-color) 8%,transparent);
+}
+.mania-round-strip span,
+.mania-round-strip b,
+.mania-round-strip small { display:block; }
+.mania-round-strip span {
+  width:18px;height:18px;margin:0 auto 5px;border-radius:50%;
+  background:var(--round-color);color:#0b0b0b;font:8px/18px 'VCR',monospace;
+}
+.mania-round-strip b {
+  color:#fff6d8;font:14px/1 'Bebas Neue',sans-serif;letter-spacing:.5px;
+}
+.mania-round-strip small {
+  margin-top:4px;color:rgba(255,255,255,.38);font:5px/1.2 'VCR',monospace;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+@keyframes mania-pulse {
+  to { transform: scale(1.08); box-shadow: 0 0 24px rgba(255,98,95,.58); }
+}
+@keyframes mania-curtain-open {
+  0%, 54% { clip-path: inset(0 0 0 0); opacity:1; }
+  78% { clip-path: inset(0 0 0 0); opacity:1; }
+  100% { clip-path: inset(50% 0 50% 0); opacity:.15; }
+}
+
+@media (max-width: 620px) {
+  .mania-wrap { padding: max(8px,env(safe-area-inset-top,0px)) 8px max(8px,env(safe-area-inset-bottom,0px)); }
+  .mania-game { gap: 5px; }
+  .mania-hud { min-height: 50px; padding: 5px 46px; border-radius: 7px; }
+  .mania-hud-label { font-size: 6px; letter-spacing: 1px; }
+  .mania-time-ring { width: 42px; height: 42px; font-size: 23px; }
+  .mania-hud-center { min-width: 82px; }
+  .mania-stage { border-radius: 9px; }
+  .mania-toast { top: 9px; font-size: 9px; }
+  .mania-result-stats { gap: 4px; }
+  .mania-menu { min-height: 0; padding: 24px 18px; }
+  .mania-menu-title { font-size: clamp(58px, 18vw, 86px); }
+  .mania-menu .mania-btn { width: min(88%, 360px); }
+  .mania-practice { gap: 6px 9px; font-size: 10px; }
+  .mania-results { padding:16px 12px;gap:9px; }
+  .mania-round-strip b { font-size:12px; }
+}
+
+@media (orientation: portrait) and (max-width: 620px) {
+  .mania-game { height: 100%; }
+  .mania-stage { min-height: 0; }
+}
+
+@media (orientation: portrait) and (min-width: 621px) {
+  .mania-game { height: min(100%, 900px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mania-time-ring.danger { animation: none; }
+  .mania-booth-curtain { animation-duration: 1.8s; }
+}

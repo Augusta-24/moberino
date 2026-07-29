@@ -143,7 +143,7 @@
       const _sideBarReserve = (window.innerWidth <= 600 && (matchMode === 'hard' || matchMode === 'challenge')) ? 30 : 0;
       const _ghp = (_gl.cols - 1) * _gap + 24 + _sideBarReserve;
       const _vPad = window.innerWidth <= 600 ? (matchMode === 'challenge' ? 104 : 82) : 180;
-      const _gStyle = `--card:min(calc((min(100vw,520px) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - ${_vPad}px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card));gap:${_gap}px`;
+      const _gStyle = `--card:min(calc((min(100vw,var(--match-board-cap,520px)) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - ${_vPad}px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card));gap:${_gap}px`;
       wrap.innerHTML = `
         <div class="match-hud" style="padding:6px 16px">
           <div style="font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:5px;color:#ffe61a;text-shadow:0 0 14px #ffe61a88" id="match-preview-cd">MEMORIZE!  ${matchMode === 'impossible' ? 13 : matchMode === 'challenge' ? 7 : 3}</div>
@@ -171,7 +171,7 @@
       const _sideBarReserve = (window.innerWidth <= 600 && (matchMode === 'hard' || matchMode === 'challenge')) ? 30 : 0;
       const _ghp = (_gl.cols - 1) * _gap + 24 + _sideBarReserve;
       const _vPad = window.innerWidth <= 600 ? (matchMode === 'challenge' ? 104 : 82) : 180;
-      const _gStyle = `--card:min(calc((min(100vw,520px) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - ${_vPad}px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card));gap:${_gap}px`;
+      const _gStyle = `--card:min(calc((min(100vw,var(--match-board-cap,520px)) - ${_ghp}px) / ${_gl.cols}),calc((var(--app-vh, 100dvh) - ${_vPad}px) / ${_gl.rows}));grid-template-columns:repeat(${_gl.cols},var(--card));grid-template-rows:repeat(${_gl.rows},var(--card));gap:${_gap}px`;
       wrap.innerHTML = `
         <div class="match-hud" style="padding:6px 16px">
           <div><div class="whack-stat-label">TIME</div><div class="whack-stat-val" id="mt" style="font-size:${(matchMode === 'free' || matchMode === 'impossible') ? 22 : 32}px;line-height:1">${(matchMode === 'free' || matchMode === 'impossible') ? 'NONE' : Math.max(0, timeLimit - matchTimer) + 's'}</div></div>
