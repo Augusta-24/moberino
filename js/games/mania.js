@@ -91,10 +91,16 @@
     const viewport = window.visualViewport;
     const visibleHeight = Math.max(1, Math.floor(viewport?.height || window.innerHeight || 1));
     const visibleWidth = Math.max(1, Math.floor(viewport?.width || window.innerWidth || 1));
+    const landscape = visibleWidth > visibleHeight;
     document.documentElement.style.setProperty('--mania-vh', `${visibleHeight}px`);
+    document.documentElement.style.setProperty(
+      '--mania-game-height',
+      `${Math.max(320, Math.min(760, visibleHeight - (landscape ? 28 : 24)))}px`
+    );
+    document.body.classList.toggle('mania-landscape', landscape);
     document.body.classList.toggle(
       'mania-compact-landscape',
-      visibleWidth > visibleHeight && visibleHeight <= 700
+      landscape && visibleHeight <= 700
     );
   }
 
@@ -288,7 +294,9 @@
     ctx = null;
     stage = null;
     document.body?.classList.remove('mania-compact-landscape');
+    document.body?.classList.remove('mania-landscape');
     document.documentElement.style.removeProperty('--mania-vh');
+    document.documentElement.style.removeProperty('--mania-game-height');
   };
 
   window.maniaStart = function maniaStart() {

@@ -345,8 +345,10 @@ test('Moberino Mania provides touch-safe responsive play, transitions, and resul
   assert.match(css, /@media \(orientation: landscape\) and \(max-height: 700px\)/);
   assert.match(css, /#pg-mania\.active \{[\s\S]*position: fixed/);
   assert.match(css, /body\.mania-compact-landscape \.mania-game/);
+  assert.match(css, /body\.mania-landscape \.mania-wrap \{[\s\S]*place-items: start center/);
   assert.match(source, /window\.visualViewport\?\.addEventListener\('resize', syncManiaViewportHeight\)/);
   assert.match(source, /--mania-vh/);
+  assert.match(source, /--mania-game-height/);
   assert.match(css, /finale\/finale-backdrop-v1\.png/);
   assert.match(css, /\.mania-menu \.mania-btn/);
   assert.doesNotMatch(source, /START THE CIRCUIT/);
