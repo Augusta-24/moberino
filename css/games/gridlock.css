@@ -158,12 +158,16 @@
 .gridlock-mission-screen {
   display: grid;
   grid-template-rows: 64px auto auto;
-  align-content: start;
+  align-content: center;
   box-sizing: border-box;
-  width: 100%;
-  max-width: none;
+  width: min(
+    100%,
+    680px,
+    max(320px, calc(73.684dvh - 116.42px))
+  );
+  max-width: 680px;
   height: 100%;
-  margin: 0;
+  margin: 0 auto;
   padding: max(4px, env(safe-area-inset-top)) 4px max(4px, env(safe-area-inset-bottom));
   overflow: hidden;
   background: #02040a;
