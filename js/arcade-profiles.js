@@ -196,6 +196,7 @@
     };
     const response = await fetch(TABLE_URL, {
       method: 'POST',
+      keepalive: true,
       headers: {
         ...HEADERS,
         'Content-Type': 'application/json',
@@ -225,6 +226,16 @@
     cacheSnapshot(code, capture());
     clearTimeout(syncTimer);
     syncTimer = setTimeout(() => syncNow(code), 700);
+  }
+
+  function flushNow() {
+    const code = normalize(activeTag || (window.PlayerID && PlayerID.get && PlayerID.get()));
+    if (!code || applying) return;
+    const progress = capture();
+    cacheSnapshot(code, progress);
+    upsert(code, progress).catch(error => {
+      console.warn('[ArcadeProfiles] final sync failed:', error);
+    });
   }
 
   async function activate(rawTag, options) {
@@ -327,10 +338,12 @@
     if (this === localStorage && isManagedKey(String(key))) queueSync();
   };
 
-  window.addEventListener('pagehide', () => {
-    const code = normalize(activeTag || (window.PlayerID && PlayerID.get && PlayerID.get()));
-    if (code) cacheSnapshot(code, capture());
-  });
+  window.addEventListener('pagehide', flushNow);
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') flushNow();
+    });
+  }
 
   window.ArcadeProfiles = Object.freeze({
     activate,

@@ -25,6 +25,7 @@ function harness() {
     addEventListener() {},
     PlayerID: { get: () => playerTag, set: tag => { playerTag = tag; } },
   };
+  const document = { visibilityState: 'visible', addEventListener() {} };
   const fetch = async (url, options = {}) => {
     if (options.method === 'POST') {
       const body = JSON.parse(options.body);
@@ -36,7 +37,7 @@ function harness() {
     return { ok: true, json: async () => rows.has(tag) ? [rows.get(tag)] : [], text: async () => '' };
   };
   const context = {
-    window, PlayerID: window.PlayerID, Storage, localStorage, fetch, URL,
+    window, document, PlayerID: window.PlayerID, Storage, localStorage, fetch, URL,
     Date, JSON, Object, String, Set, console,
     setTimeout, clearTimeout,
   };
@@ -186,4 +187,11 @@ test('schema supports public username upserts with versioned JSON saves', () => 
   assert.match(sql, /for update/);
   assert.match(sql, /grant select, insert, update/);
   assert.ok(sql.includes('^[A-Z]{5}[0-9]{2}$'));
+});
+
+test('mobile background and page exit flush the latest snapshot with keepalive', () => {
+  assert.match(source, /method: 'POST',\s*keepalive: true/);
+  assert.match(source, /window\.addEventListener\('pagehide', flushNow\)/);
+  assert.match(source, /document\.addEventListener\('visibilitychange'/);
+  assert.match(source, /document\.visibilityState === 'hidden'/);
 });
