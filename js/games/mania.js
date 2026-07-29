@@ -591,29 +591,25 @@
       });
     }
 
-    // Bonus aliens materialize in the open upper sky, hold long enough for a
-    // deliberate ring throw, warn with a brief shake, then blast straight off.
-    // They never cross the main formation or behave like random traffic.
-    const launchAppearances = [
-      [1.05, .18, .17],
-      [4.15, .5, .23],
-      [7.25, .82, .16],
-      [10.35, .3, .25],
-      [13.45, .7, .2],
-      [16.55, .5, .14],
-    ];
-    launchAppearances.forEach((appearance, i) => {
-      state.targets.push({
-        kind: 'phaseFlyer',
-        type: i % 4 === 0 ? 'cometMobe' : 'ghostMobe',
-        at: appearance[0],
-        duration: 2.75,
-        anchorX: appearance[1],
-        lane: appearance[2],
-        wave: i % 4,
-        base: i % 4 === 0 ? 700 : 350,
-        golden: i % 4 === 0,
-        hit: false,
+    // Small, valuable corner aliens create a controlled peripheral choice.
+    // Each pair enters, holds in the safe upper sky, warns, then launches away;
+    // they never travel across the formation or the robot's mouth.
+    const cornerLaunches = [1, 5.8, 10.6, 15.4];
+    cornerLaunches.forEach((at, wave) => {
+      ['left', 'right'].forEach((corner, sideIndex) => {
+        state.targets.push({
+          kind: 'phaseFlyer',
+          type: (wave + sideIndex) % 3 === 0 ? 'cometMobe' : 'ghostMobe',
+          at: at + sideIndex * .12,
+          duration: 4.15,
+          corner,
+          cornerTease: true,
+          wave,
+          base: 2500,
+          golden: true,
+          drawLayer: 5,
+          hit: false,
+        });
       });
     });
   }
@@ -1286,7 +1282,6 @@
     formation.forEach((target, index) => {
       target.bossLaunchAt = state.elapsed + index * .08;
     });
-    state.targets = state.targets.filter(target => target.kind !== 'phaseFlyer');
     state.targets.push({
       kind: 'orbitBoss',
       type: 'ringmasterRobot',
@@ -1296,6 +1291,7 @@
       repeatable: true,
       mouthStage: 0,
       mouthOpen: 0,
+      drawLayer: 3,
       hit: false,
     });
     setTimeout(() => {
@@ -1626,6 +1622,7 @@
       currentBooth().id === 'orbit' &&
       state.orbitBossActive &&
       target.kind !== 'orbitBoss' &&
+      target.kind !== 'phaseFlyer' &&
       target.kind !== 'ringPost'
     ) return null;
     if (target.hit && !target.formation && local - (target.hitAt - target.at) > .42) return null;
@@ -1747,26 +1744,29 @@
       scale *= .98;
     } else if (target.kind === 'phaseFlyer') {
       const p = clamp(local / target.duration, 0, 1);
-      const appear = easeOut(clamp(p / .18, 0, 1));
+      const appear = easeOut(clamp(p / .2, 0, 1));
       const blast = easeInOut(clamp((p - .74) / .26, 0, 1));
-      const warning = clamp(1 - Math.abs(p - .7) / .06, 0, 1);
-      x = w * target.anchorX + Math.sin(local * 38) * warning * 7;
-      y = h * target.lane;
-      if (p < .18) y += (1 - appear) * h * .09;
+      const warning = clamp(1 - Math.abs(p - .7) / .065, 0, 1);
+      const edgeInset = clamp(w * .105, 50, 106);
+      const skyY = clamp(h * .145, 54, 102);
+      x = target.corner === 'left' ? edgeInset : w - edgeInset;
+      x += Math.sin(local * 38) * warning * clamp(w * .007, 3, 8);
+      y = skyY;
+      if (p < .2) y -= (1 - appear) * clamp(h * .08, 30, 70);
       if (blast > 0) y = lerp(y, -h * .18, blast);
-      visibility = p < .18 ? appear : p > .94 ? (1 - p) / .06 : 1;
+      visibility = p < .2 ? appear : p > .94 ? (1 - p) / .06 : 1;
       growth = .78 + appear * .22 + warning * .05;
-      scale *= (target.type === 'cometMobe' ? .82 : 1) * growth;
+      scale *= .72 * (target.type === 'cometMobe' ? .82 : 1) * growth;
       target.blastProgress = blast;
       hittable = appear > .72 && blast < .34;
     } else if (target.kind === 'orbitBoss') {
       const arrival = easeOut(clamp(local / .72, 0, 1));
       const activeAge = Math.max(0, local - .72);
-      const cycleDuration = 3.3;
+      const cycleDuration = 4.25;
       const cycleAge = mod(activeAge, cycleDuration);
       const mouthStage = Math.floor(activeAge / cycleDuration);
-      const opening = easeOut(clamp(cycleAge / .32, 0, 1));
-      const closing = easeInOut(clamp((cycleAge - 2.62) / .68, 0, 1));
+      const opening = easeOut(clamp((cycleAge - .85) / .42, 0, 1));
+      const closing = easeInOut(clamp((cycleAge - 3.28) / .48, 0, 1));
       const mouthOpen = opening * (1 - closing);
       x = w * .5;
       y = lerp(h * 1.14, h * .52, arrival);
@@ -1775,6 +1775,7 @@
       growth = .9 + arrival * .1;
       target.mouthStage = mouthStage;
       target.mouthOpen = mouthOpen;
+      target.mouthCycleAge = cycleAge;
       target.base = orbitBossValue(mouthStage);
       hittable = arrival > .92 && mouthOpen > .72;
       return {
@@ -2023,7 +2024,7 @@
     // animal remain readable while the rising motion still explains "hidden."
     if (boothId === 'farm') for (const barn of state.barns) drawBarn(barn);
 
-    const targetsToDraw = boothId === 'farm'
+    const targetsToDraw = boothId === 'farm' || boothId === 'orbit'
       ? [...state.targets].sort((a, b) => (a.drawLayer || 3) - (b.drawLayer || 3))
       : state.targets;
     for (const target of targetsToDraw) {
@@ -3726,18 +3727,21 @@
   function drawOrbitBoss(target) {
     const w = state.width;
     const h = state.height;
-    const sprite = typeof _getImg === 'function'
+    const openSprite = typeof _getImg === 'function'
       ? _getImg('assets/mania/orbit-robot-boss-v1.png')
+      : null;
+    const closedSprite = typeof _getImg === 'function'
+      ? _getImg('assets/mania/orbit-robot-boss-closed-v2.png')
       : null;
     const pulse = target.pulseAt && state.elapsed - target.pulseAt < .12
       ? 1 + (1 - (state.elapsed - target.pulseAt) / .12) * .035
       : 1;
     ctx.save();
     ctx.scale(pulse, pulse);
-    if (sprite?.complete && sprite.naturalWidth) {
+    if (openSprite?.complete && openSprite.naturalWidth) {
       ctx.shadowColor = 'rgba(109,232,255,.38)';
       ctx.shadowBlur = 22;
-      ctx.drawImage(sprite, -w * .42, -h * .525, w * .84, h);
+      ctx.drawImage(openSprite, -w * .42, -h * .525, w * .84, h);
       ctx.shadowBlur = 0;
     } else {
       ctx.fillStyle = '#167b82';
@@ -3748,39 +3752,35 @@
       ctx.stroke();
     }
 
-    // The generated prop is authored with an open black mouth. Sliding enamel
-    // shutters cover it during the short value-change beat.
+    // The closed state is a second authored painting of this exact prop.
+    // Reveal its textured jaw plates from the top and bottom so the animation
+    // retains the same worn enamel, brass, rivets, and lighting as the robot.
     const closed = 1 - (target.mouthOpen || 0);
-    if (closed > .015) {
-      const mouthW = w * .355;
-      const mouthH = h * .275;
+    if (closed > .015 && closedSprite?.complete && closedSprite.naturalWidth) {
+      const mouthW = w * .38;
+      const mouthH = h * .31;
+      const mouthTop = -h * .14;
       const panelH = mouthH * .5 * closed;
-      ctx.fillStyle = '#207f83';
-      ctx.strokeStyle = '#d6a052';
-      ctx.lineWidth = 5;
-      ctx.shadowColor = 'rgba(255,207,74,.35)';
-      ctx.shadowBlur = 10;
-      roundRect(-mouthW / 2, -mouthH / 2, mouthW, panelH + 3, 8);
-      ctx.fill();
-      ctx.stroke();
-      roundRect(-mouthW / 2, mouthH / 2 - panelH - 3, mouthW, panelH + 3, 8);
-      ctx.fill();
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-      ctx.strokeStyle = 'rgba(255,244,213,.32)';
-      ctx.lineWidth = 2;
-      for (let x = -mouthW * .38; x <= mouthW * .38; x += mouthW * .19) {
-        ctx.beginPath();
-        ctx.moveTo(x, -mouthH / 2 + 7);
-        ctx.lineTo(x, -mouthH / 2 + panelH - 5);
-        ctx.moveTo(x, mouthH / 2 - 7);
-        ctx.lineTo(x, mouthH / 2 - panelH + 5);
-        ctx.stroke();
-      }
+      const drawClosedState = () => {
+        ctx.drawImage(closedSprite, -w * .42, -h * .525, w * .84, h);
+      };
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(-mouthW / 2, mouthTop, mouthW, panelH + 2);
+      ctx.clip();
+      drawClosedState();
+      ctx.restore();
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(-mouthW / 2, mouthTop + mouthH - panelH - 2, mouthW, panelH + 2);
+      ctx.clip();
+      drawClosedState();
+      ctx.restore();
     }
 
     const open = (target.mouthOpen || 0) > .72;
     const nextValue = orbitBossValue((target.mouthStage || 0) + 1);
+    const upcomingValue = (target.mouthCycleAge || 0) < .85 ? target.base : nextValue;
     ctx.fillStyle = 'rgba(7,7,20,.9)';
     ctx.strokeStyle = open ? '#6de8ff' : '#ffcf4a';
     ctx.lineWidth = 3;
@@ -3791,7 +3791,7 @@
     ctx.font = '18px "VCR", monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(open ? `${target.base} EACH` : `NEXT ${nextValue}`, 0, h * .175 + 21);
+    ctx.fillText(open ? `${target.base} EACH` : `NEXT ${upcomingValue}`, 0, h * .175 + 21);
     ctx.restore();
   }
 

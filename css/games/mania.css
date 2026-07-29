@@ -376,11 +376,10 @@ body.on-mania button { touch-action: manipulation; }
 }
 .mania-hud strong {
   display: block;
-  overflow: hidden;
+  overflow: visible;
   color: #fff7d9;
-  font: clamp(25px, 5vw, 38px)/.8 'Bebas Neue', sans-serif;
-  letter-spacing: 2px;
-  text-overflow: ellipsis;
+  font: clamp(23px, 4.5vw, 36px)/1 'Bebas Neue', sans-serif;
+  letter-spacing: 1px;
   white-space: nowrap;
 }
 .mania-hud-center {

@@ -310,6 +310,7 @@ test('Orbit uses authored booth art and resolves rings after a physical flight',
   const source = read('js/games/mania.js');
   assert.ok(fs.existsSync(path.join(root, 'assets/mania/orbit-backdrop-v2.png')));
   assert.ok(fs.existsSync(path.join(root, 'assets/mania/orbit-robot-boss-v1.png')));
+  assert.ok(fs.existsSync(path.join(root, 'assets/mania/orbit-robot-boss-closed-v2.png')));
   for (const sprite of ['moon-mobe', 'ghost-mobe', 'comet-mobe']) {
     assert.ok(fs.existsSync(path.join(root, `assets/mania/characters/${sprite}-sprite-v2.png`)));
   }
@@ -325,18 +326,27 @@ test('Orbit uses authored booth art and resolves rings after a physical flight',
   assert.match(source, /function orbitBossValue\(/);
   assert.match(source, /\[100, 500, 1000, 2000, 3000\]/);
   assert.match(source, /function hitOrbitBoss\(/);
-  assert.match(source, /const cycleDuration = 3\.3/);
+  assert.match(source, /const cycleDuration = 4\.25/);
+  assert.match(source, /\(cycleAge - \.85\) \/ \.42/);
   assert.match(source, /pos\.hittable === false/);
   assert.match(source, /function drawOrbitBoss\(/);
   assert.match(source, /assets\/mania\/orbit-robot-boss-v1\.png/);
+  assert.match(source, /assets\/mania\/orbit-robot-boss-closed-v2\.png/);
+  assert.match(source, /const upcomingValue = \(target\.mouthCycleAge \|\| 0\) < \.85/);
   assert.match(source, /target\.bossLaunchAt/);
   assert.match(source, /const ghost = target\.type === 'ghostMobe'/);
   assert.match(source, /moon-mobe-sprite-v2\.png/);
   assert.match(source, /ghost-mobe-sprite-v2\.png/);
   assert.match(source, /comet-mobe-sprite-v2\.png/);
   assert.match(source, /const formation = \[\s*\[\.34, \.51\], \[\.66, \.51\]/);
-  assert.match(source, /const launchAppearances = \[/);
-  assert.match(source, /duration: 2\.75/);
+  assert.match(source, /const cornerLaunches = \[1, 5\.8, 10\.6, 15\.4\]/);
+  assert.match(source, /\['left', 'right'\]\.forEach/);
+  assert.match(source, /duration: 4\.15/);
+  assert.match(source, /cornerTease: true/);
+  assert.match(source, /base: 2500/);
+  assert.match(source, /const edgeInset = clamp\(w \* \.105, 50, 106\)/);
+  assert.match(source, /const skyY = clamp\(h \* \.145, 54, 102\)/);
+  assert.match(source, /target\.kind !== 'phaseFlyer'/);
   assert.match(source, /function drawAlienLaunchExhaust\(/);
   assert.match(source, /target\.blastProgress = blast/);
   assert.doesNotMatch(source, /kind: 'orbiter'/);
