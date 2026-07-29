@@ -30,9 +30,9 @@
       short: 'RINGS',
       accent: '#6de8ff',
       hudLabel: 'FORMATIONS',
-      goal: 3,
-      intro: 'Three rings freezes a Moon Mobe. Freeze all 5 at once before one pops back up. Bonus aliens appear, hold, then blast off.',
-      prompt: '3 RINGS FREEZES · GET ALL 5 AT ONCE!',
+      goal: 1,
+      intro: 'Three rings freezes a Moon Mobe. Freeze all 5 at once to summon the Ringmaster Robot, then rapid-fire rings into its mouth.',
+      prompt: 'CLEAR THE 5 · THEN FEED THE ROBOT!',
     },
     {
       id: 'plates',
@@ -238,6 +238,8 @@
       ringFlights: [],
       formationWave: 0,
       formationRespawnAt: 0,
+      orbitBossActive: false,
+      orbitBossAt: 0,
       finalePhase: -1,
       finaleWave: 0,
       finaleRespawnAt: 0,
@@ -1027,6 +1029,7 @@
       for (const target of state.targets) {
         const pos = targetPosition(target, state.elapsed);
         if (!pos || (target.hit && !target.repeatable)) continue;
+        if (pos.hittable === false) continue;
         const distance = Math.hypot(flight.x - pos.x, flight.y - pos.y);
         if (distance <= pos.r * 1.18 && distance < bestDistance) {
           best = { target, pos };
@@ -1068,6 +1071,10 @@
     }
     if (target.kind === 'ringPost') {
       hitRingPost(target, pos);
+      return;
+    }
+    if (target.kind === 'orbitBoss') {
+      hitOrbitBoss(target, pos);
       return;
     }
     if (target.kind === 'plateRack') {
@@ -1258,20 +1265,62 @@
 
   function checkOrbitFormation() {
     const formation = orbitFormationTargets();
-    if (formation.length !== 5 || formation.some(target => !target.completed) || state.formationRespawnAt) return;
+    if (
+      state.orbitBossActive ||
+      formation.length !== 5 ||
+      formation.some(target => !target.completed)
+    ) return;
     state.special += 1;
     state.score += 5000;
-    state.formationRespawnAt = state.elapsed + .8;
     addLabel(state.width * .5, state.height * .43, 'FORMATION CLEAR! +5000', '#fff1a3', 34);
     burst(state.width * .5, state.height * .45, '#6de8ff', 36, 1.45);
-    showToast(`★ FORMATION ${state.special} CLEARED! ★`, true, 1500);
-    if (state.special === currentBooth().goal && !state.bonusTriggered) {
-      state.bonusTriggered = true;
-      state.score += 7500;
-      addLabel(state.width * .5, state.height * .38, 'FORMATION MASTERY +7500', '#ffcf4a', 32);
-      showToast('★ FORMATION MASTERY! ★', true, 1700);
-    }
+    showToast('★ FORMATION CLEAR · THEY’RE BLASTING OFF! ★', true, 1550);
+    triggerOrbitBoss(formation);
     try { SFX.mysteryGood(); } catch (e) {}
+  }
+
+  function triggerOrbitBoss(formation) {
+    state.bonusTriggered = true;
+    state.orbitBossActive = true;
+    state.orbitBossAt = state.elapsed + 1.05;
+    formation.forEach((target, index) => {
+      target.bossLaunchAt = state.elapsed + index * .08;
+    });
+    state.targets = state.targets.filter(target => target.kind !== 'phaseFlyer');
+    state.targets.push({
+      kind: 'orbitBoss',
+      type: 'ringmasterRobot',
+      at: state.orbitBossAt,
+      duration: Math.max(.5, ROUND_SECONDS - state.orbitBossAt),
+      base: 100,
+      repeatable: true,
+      mouthStage: 0,
+      mouthOpen: 0,
+      hit: false,
+    });
+    setTimeout(() => {
+      if (!state?.orbitBossActive || state.phase !== 'playing') return;
+      showToast('RINGMASTER ROBOT · FIRE INTO THE OPEN MOUTH!', true, 1800);
+    }, 900);
+  }
+
+  function orbitBossValue(stageIndex) {
+    return [100, 500, 1000, 2000, 3000][Math.min(4, stageIndex)];
+  }
+
+  function hitOrbitBoss(target, pos) {
+    const nowSeconds = state.elapsed;
+    state.hits += 1;
+    state.combo = nowSeconds - state.lastHitAt <= .9 ? Math.min(12, state.combo + 1) : 1;
+    state.bestCombo = Math.max(state.bestCombo, state.combo);
+    state.lastHitAt = nowSeconds;
+    state.score += target.base;
+    target.hits = (target.hits || 0) + 1;
+    target.pulseAt = nowSeconds;
+    addLabel(pos.x, pos.y + pos.r * .55, `MOUTH +${target.base}`, '#fff1a3', 26);
+    burst(pos.x, pos.y, target.base >= 1000 ? '#ffcf4a' : '#6de8ff', 16, 1.05);
+    try { target.base >= 1000 ? SFX.score() : SFX.hit(); } catch (e) {}
+    updateHud();
   }
 
   function hitPlateRack(target, pos) {
@@ -1502,6 +1551,7 @@
   }
 
   function processOrbitFormation() {
+    if (state.orbitBossActive) return;
     const formation = orbitFormationTargets();
     if (state.formationRespawnAt && state.elapsed >= state.formationRespawnAt) {
       state.formationWave += 1;
@@ -1572,6 +1622,12 @@
   function targetPosition(target, elapsed) {
     const local = elapsed - target.at;
     if (local < 0 || local > target.duration) return null;
+    if (
+      currentBooth().id === 'orbit' &&
+      state.orbitBossActive &&
+      target.kind !== 'orbitBoss' &&
+      target.kind !== 'ringPost'
+    ) return null;
     if (target.hit && !target.formation && local - (target.hitAt - target.at) > .42) return null;
     const w = state.width;
     const h = state.height;
@@ -1681,6 +1737,13 @@
         y += (1 - easeOut(resetProgress)) * clamp(h * .08, 32, 64);
         visibility = .55 + resetProgress * .45;
       }
+      if (target.bossLaunchAt && elapsed >= target.bossLaunchAt) {
+        const launchAge = elapsed - target.bossLaunchAt;
+        y -= easeInOut(clamp(launchAge / .78, 0, 1)) * h * 1.18;
+        x += Math.sin(launchAge * 19 + target.formationIndex) * 10;
+        visibility = clamp(1 - launchAge / .82, 0, 1);
+        if (launchAge > .84) return null;
+      }
       scale *= .98;
     } else if (target.kind === 'phaseFlyer') {
       const p = clamp(local / target.duration, 0, 1);
@@ -1696,7 +1759,34 @@
       scale *= (target.type === 'cometMobe' ? .82 : 1) * growth;
       target.blastProgress = blast;
       hittable = appear > .72 && blast < .34;
-      scale *= target.type === 'cometMobe' ? .82 : 1;
+    } else if (target.kind === 'orbitBoss') {
+      const arrival = easeOut(clamp(local / .72, 0, 1));
+      const activeAge = Math.max(0, local - .72);
+      const cycleDuration = 3.3;
+      const cycleAge = mod(activeAge, cycleDuration);
+      const mouthStage = Math.floor(activeAge / cycleDuration);
+      const opening = easeOut(clamp(cycleAge / .32, 0, 1));
+      const closing = easeInOut(clamp((cycleAge - 2.62) / .68, 0, 1));
+      const mouthOpen = opening * (1 - closing);
+      x = w * .5;
+      y = lerp(h * 1.14, h * .52, arrival);
+      scale = 1;
+      visibility = arrival;
+      growth = .9 + arrival * .1;
+      target.mouthStage = mouthStage;
+      target.mouthOpen = mouthOpen;
+      target.base = orbitBossValue(mouthStage);
+      hittable = arrival > .92 && mouthOpen > .72;
+      return {
+        x,
+        y,
+        r: Math.min(w * .19, h * .18),
+        scale,
+        visibility,
+        growth,
+        hittable,
+        mouthOpen,
+      };
     } else if (target.kind === 'shieldBeaver') {
       if (target.spent && elapsed >= target.spentUntil) {
         target.spent = false;
@@ -2904,7 +2994,9 @@
       ctx.fill();
     }
 
-    const bob = target.kind === 'shieldBeaver' ? 0 : Math.sin((now + target.at * 1000) / 115) * 1.6;
+    const bob = target.kind === 'shieldBeaver' || target.kind === 'orbitBoss'
+      ? 0
+      : Math.sin((now + target.at * 1000) / 115) * 1.6;
     ctx.translate(0, bob);
     if (['farmPop', 'farmSlide', 'farmHill', 'farmBarnDoor', 'farmBarnBonus', 'runner', 'peek'].includes(target.kind)) {
       const animalKind = target.kind === 'farmBarnDoor' || target.kind === 'farmBarnBonus' ? 'peek' : target.kind;
@@ -2916,6 +3008,7 @@
       drawAlienLaunchExhaust(target);
       drawMoonMobe(target);
     }
+    else if (target.kind === 'orbitBoss') drawOrbitBoss(target);
     else if (target.kind === 'shieldBeaver') drawShieldBeaver(target, pos, now);
     else if (target.kind === 'beaverPeek') drawEdgeBeaver(target);
     else if (target.kind === 'plateRack') drawPlateRackTarget(target);
@@ -2940,6 +3033,7 @@
       target.kind === 'hiddenMobe' ||
       target.kind === 'finalePopup' ||
       target.kind === 'finaleGate' ||
+      target.kind === 'orbitBoss' ||
       (target.kind === 'shieldBeaver' && target.visualOpen < .72) ||
       (target.kind === 'beaverPeek' && target.visualReveal < .62) ||
       !Number.isFinite(target.base)
@@ -3626,6 +3720,78 @@
       ctx.fillStyle = '#f0b74b';
       ctx.fillRect(-6, 28, 12, 3);
     }
+    ctx.restore();
+  }
+
+  function drawOrbitBoss(target) {
+    const w = state.width;
+    const h = state.height;
+    const sprite = typeof _getImg === 'function'
+      ? _getImg('assets/mania/orbit-robot-boss-v1.png')
+      : null;
+    const pulse = target.pulseAt && state.elapsed - target.pulseAt < .12
+      ? 1 + (1 - (state.elapsed - target.pulseAt) / .12) * .035
+      : 1;
+    ctx.save();
+    ctx.scale(pulse, pulse);
+    if (sprite?.complete && sprite.naturalWidth) {
+      ctx.shadowColor = 'rgba(109,232,255,.38)';
+      ctx.shadowBlur = 22;
+      ctx.drawImage(sprite, -w * .42, -h * .525, w * .84, h);
+      ctx.shadowBlur = 0;
+    } else {
+      ctx.fillStyle = '#167b82';
+      ctx.strokeStyle = '#d39a50';
+      ctx.lineWidth = 8;
+      roundRect(-w * .34, -h * .4, w * .68, h * .82, 36);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // The generated prop is authored with an open black mouth. Sliding enamel
+    // shutters cover it during the short value-change beat.
+    const closed = 1 - (target.mouthOpen || 0);
+    if (closed > .015) {
+      const mouthW = w * .355;
+      const mouthH = h * .275;
+      const panelH = mouthH * .5 * closed;
+      ctx.fillStyle = '#207f83';
+      ctx.strokeStyle = '#d6a052';
+      ctx.lineWidth = 5;
+      ctx.shadowColor = 'rgba(255,207,74,.35)';
+      ctx.shadowBlur = 10;
+      roundRect(-mouthW / 2, -mouthH / 2, mouthW, panelH + 3, 8);
+      ctx.fill();
+      ctx.stroke();
+      roundRect(-mouthW / 2, mouthH / 2 - panelH - 3, mouthW, panelH + 3, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(255,244,213,.32)';
+      ctx.lineWidth = 2;
+      for (let x = -mouthW * .38; x <= mouthW * .38; x += mouthW * .19) {
+        ctx.beginPath();
+        ctx.moveTo(x, -mouthH / 2 + 7);
+        ctx.lineTo(x, -mouthH / 2 + panelH - 5);
+        ctx.moveTo(x, mouthH / 2 - 7);
+        ctx.lineTo(x, mouthH / 2 - panelH + 5);
+        ctx.stroke();
+      }
+    }
+
+    const open = (target.mouthOpen || 0) > .72;
+    const nextValue = orbitBossValue((target.mouthStage || 0) + 1);
+    ctx.fillStyle = 'rgba(7,7,20,.9)';
+    ctx.strokeStyle = open ? '#6de8ff' : '#ffcf4a';
+    ctx.lineWidth = 3;
+    roundRect(-82, h * .175, 164, 42, 9);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = open ? '#fff4d5' : '#ffcf4a';
+    ctx.font = '18px "VCR", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(open ? `${target.base} EACH` : `NEXT ${nextValue}`, 0, h * .175 + 21);
     ctx.restore();
   }
 

@@ -309,6 +309,7 @@ test('Booths teach persistent stacking, priority, chains, and reveals', () => {
 test('Orbit uses authored booth art and resolves rings after a physical flight', () => {
   const source = read('js/games/mania.js');
   assert.ok(fs.existsSync(path.join(root, 'assets/mania/orbit-backdrop-v2.png')));
+  assert.ok(fs.existsSync(path.join(root, 'assets/mania/orbit-robot-boss-v1.png')));
   for (const sprite of ['moon-mobe', 'ghost-mobe', 'comet-mobe']) {
     assert.ok(fs.existsSync(path.join(root, `assets/mania/characters/${sprite}-sprite-v2.png`)));
   }
@@ -318,7 +319,17 @@ test('Orbit uses authored booth art and resolves rings after a physical flight',
   assert.match(source, /landsAt: state\.elapsed \+ flightDuration/);
   assert.match(source, /Math\.sin\(p \* Math\.PI\) \* shot\.arcHeight/);
   assert.match(source, /'BOUNCE!'/);
-  assert.match(source, /FORMATION MASTERY \+7500/);
+  assert.match(source, /FORMATION CLEAR! \+5000/);
+  assert.match(source, /function triggerOrbitBoss\(/);
+  assert.match(source, /kind: 'orbitBoss'/);
+  assert.match(source, /function orbitBossValue\(/);
+  assert.match(source, /\[100, 500, 1000, 2000, 3000\]/);
+  assert.match(source, /function hitOrbitBoss\(/);
+  assert.match(source, /const cycleDuration = 3\.3/);
+  assert.match(source, /pos\.hittable === false/);
+  assert.match(source, /function drawOrbitBoss\(/);
+  assert.match(source, /assets\/mania\/orbit-robot-boss-v1\.png/);
+  assert.match(source, /target\.bossLaunchAt/);
   assert.match(source, /const ghost = target\.type === 'ghostMobe'/);
   assert.match(source, /moon-mobe-sprite-v2\.png/);
   assert.match(source, /ghost-mobe-sprite-v2\.png/);
@@ -345,7 +356,8 @@ test('Moberino Mania provides touch-safe responsive play, transitions, and resul
   assert.match(css, /@media \(orientation: landscape\) and \(max-height: 700px\)/);
   assert.match(css, /#pg-mania\.active \{[\s\S]*position: fixed/);
   assert.match(css, /body\.mania-compact-landscape \.mania-game/);
-  assert.match(css, /body\.mania-landscape \.mania-wrap \{[\s\S]*place-items: start center/);
+  assert.match(css, /body\.mania-landscape \.mania-game \{[\s\S]*align-self: start/);
+  assert.doesNotMatch(css, /body\.mania-landscape \.mania-wrap \{[\s\S]*place-items: start center/);
   assert.match(source, /window\.visualViewport\?\.addEventListener\('resize', syncManiaViewportHeight\)/);
   assert.match(source, /--mania-vh/);
   assert.match(source, /--mania-game-height/);

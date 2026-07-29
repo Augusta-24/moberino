@@ -734,13 +734,11 @@ body.on-mania button { touch-action: manipulation; }
   }
 }
 
-/* Never center the live game inside Safari's occasionally over-reported
-   landscape viewport. Top anchoring prevents hidden toolbar space from pushing
-   the stage and progress rail below the physical screen. */
-body.mania-landscape .mania-wrap {
-  place-items: start center;
-}
+/* Never center only the live game inside Safari's occasionally over-reported
+   landscape viewport. Menus and results keep the wrapper's normal centering. */
 body.mania-landscape .mania-game {
+  align-self: start;
+  justify-self: center;
   height: min(100%, var(--mania-game-height, 760px));
 }
 
