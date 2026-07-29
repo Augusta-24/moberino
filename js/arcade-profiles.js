@@ -14,12 +14,20 @@
     'moberino-gridlock-progression-v1',
     'moberino-packing-game-progression-v1',
     'moberino-consume-v1',
+    'moberino-consume-v2',
     'moberino-knot-swap-words-v2',
+    'moberino-knot-swap-words-v3',
     'moberino-knot-swap-numbers-v2',
+    'moberino-knot-swap-numbers-v3',
     'moberino-snoob-v1',
     'moberino-word-v1',
     'moberino-pet-v1',
     'signal-recipes-v1',
+  ]);
+  const CURRENT_TILE_SWAP_KEYS = new Set([
+    'moberino-consume-v2',
+    'moberino-knot-swap-words-v3',
+    'moberino-knot-swap-numbers-v3',
   ]);
   const KEY_PREFIXES = ['whack-best-', 'match-best-', 'space-best-'];
   const nativeSetItem = Storage.prototype.setItem;
@@ -60,6 +68,56 @@
       if (key && isManagedKey(key)) progress[key] = localStorage.getItem(key);
     }
     return progress;
+  }
+
+  function captureOwnedCurrentSaves(tag) {
+    const progress = {};
+    CURRENT_TILE_SWAP_KEYS.forEach(key => {
+      const value = localStorage.getItem(key);
+      if (!value) return;
+      try {
+        const parsed = JSON.parse(value);
+        const active = normalize(parsed && parsed.active);
+        const profiles = parsed && parsed.profiles;
+        if (active === tag || (profiles && Object.prototype.hasOwnProperty.call(profiles, tag))) {
+          progress[key] = value;
+        }
+      } catch (error) {}
+    });
+    return progress;
+  }
+
+  function mergeTileSwapSave(primaryValue, fallbackValue) {
+    if (!primaryValue) return fallbackValue;
+    if (!fallbackValue) return primaryValue;
+    try {
+      const primary = JSON.parse(primaryValue);
+      const fallback = JSON.parse(fallbackValue);
+      const merged = { ...fallback, ...primary, profiles: { ...(fallback.profiles || {}) } };
+      Object.entries(primary.profiles || {}).forEach(([tag, profile]) => {
+        const older = merged.profiles[tag] || {};
+        const completed = { ...(older.completed || {}), ...(profile.completed || {}) };
+        const stars = { ...(older.stars || {}) };
+        Object.entries(profile.stars || {}).forEach(([level, value]) => {
+          stars[level] = Math.max(Number(stars[level]) || 0, Number(value) || 0);
+        });
+        merged.profiles[tag] = { ...older, ...profile, completed };
+        if (older.stars || profile.stars) merged.profiles[tag].stars = stars;
+      });
+      return JSON.stringify(merged);
+    } catch (error) {
+      return primaryValue;
+    }
+  }
+
+  function mergeMissingProgress(progress, fallback) {
+    const merged = { ...(fallback || {}), ...(progress || {}) };
+    CURRENT_TILE_SWAP_KEYS.forEach(key => {
+      if ((progress && progress[key]) || (fallback && fallback[key])) {
+        merged[key] = mergeTileSwapSave(progress && progress[key], fallback && fallback[key]);
+      }
+    });
+    return merged;
   }
 
   function cacheSnapshot(tag, progress) {
@@ -175,6 +233,9 @@
     if (!valid(tag)) return { ok: false, reason: 'invalid' };
 
     const outgoing = normalize(activeTag || (window.PlayerID && PlayerID.get && PlayerID.get()));
+    // These keys were briefly omitted from the managed-key registry. Preserve
+    // same-player local copies before an older cache or remote snapshot is applied.
+    const ownedCurrentSaves = captureOwnedCurrentSaves(tag);
     const outgoingProgress = outgoing && outgoing !== tag ? capture() : null;
     if (outgoingProgress) {
       cacheSnapshot(outgoing, outgoingProgress);
@@ -183,7 +244,7 @@
 
     const cache = loadCache();
     const cached = cachedSnapshot(cache, tag);
-    if (cached) applySnapshot(cached.progress);
+    if (cached) applySnapshot(mergeMissingProgress(cached.progress, ownedCurrentSaves));
     else if (outgoing && outgoing !== tag) applySnapshot({});
 
     let remote = null;
@@ -193,11 +254,19 @@
         setLocalCharacter(tag, remote.character);
         const remoteUpdatedAt = Date.parse(remote.updated_at || '') || 0;
         if (cached && cached.updatedAt > remoteUpdatedAt) {
-          applySnapshot(cached.progress);
-          await upsert(tag, cached.progress);
+          const remoteProgress = remote.progress && typeof remote.progress === 'object' ? remote.progress : {};
+          const fallback = mergeMissingProgress(remoteProgress, ownedCurrentSaves);
+          const progress = mergeMissingProgress(cached.progress, fallback);
+          applySnapshot(progress);
+          await upsert(tag, progress);
         } else {
-          applySnapshot(remote.progress && typeof remote.progress === 'object' ? remote.progress : {});
+          const remoteProgress = remote.progress && typeof remote.progress === 'object' ? remote.progress : {};
+          const progress = mergeMissingProgress(remoteProgress, ownedCurrentSaves);
+          applySnapshot(progress);
           cacheSnapshot(tag, capture());
+          if (Object.keys(ownedCurrentSaves).some(key => !(key in remoteProgress))) {
+            await upsert(tag, capture());
+          }
         }
       } else if (config.create !== false) {
         await upsert(tag, cached ? cached.progress : capture());

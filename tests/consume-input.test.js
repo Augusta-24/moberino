@@ -81,7 +81,11 @@ test('Tile Swap gives Clear a compact shaded, right-aligned, always-white action
   assert.match(styles, /\.cw-clear \{[^}]*background: linear-gradient[^}]*color: #fff/s);
   assert.match(styles, /\.cw-clear \{[^}]*text-align: center/s);
   assert.match(styles, /\.cw-clear:disabled \{[^}]*opacity: 1[^}]*color: #fff/s);
-  assert.match(styles, /\.cw-tray \{[^}]*padding: 6px 64px 6px 10px/s);
+  assert.match(styles, /\.cw-tray \{[^}]*padding: 6px 64px/s);
+});
+
+test('Tile Swap centers the active spelled word despite the right-side Clear control', () => {
+  assert.match(styles, /\.cw-tray \{[^}]*justify-content: center[^}]*padding: 6px 64px/s);
 });
 
 test('Tile Swap spaces the tray, Submit, and returned words with one vertical rhythm', () => {

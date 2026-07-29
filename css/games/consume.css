@@ -566,7 +566,7 @@ body.arcade-mode-select.on-consume .consume-wrap {
   align-items: center;
   justify-content: center;
   gap: 7px;
-  padding: 6px 64px 6px 10px;
+  padding: 6px 64px;
   overflow: hidden;
   border-radius: 8px;
   border: 1px dashed rgba(242,239,232,0.22);

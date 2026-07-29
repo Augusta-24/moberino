@@ -80,6 +80,65 @@ test('managed saves switch as one complete player snapshot', async () => {
   assert.equal(rows.get('ALPHA22').progress.moberinoJourneySave, '{"currentNodeId":"home-orbit"}');
 });
 
+test('current Tile Swap saves are captured and synced', async () => {
+  const { api, localStorage, rows } = harness();
+  const wordGrid = '{"active":"ALPHA22","profiles":{"ALPHA22":{"completed":{"1":true}}}}';
+  const wordRack = '{"active":"ALPHA22","profiles":{"ALPHA22":{"completed":{"1":true}}}}';
+  localStorage.setItem('moberino-consume-v2', wordGrid);
+  localStorage.setItem('moberino-knot-swap-words-v3', wordRack);
+  localStorage.setItem('moberino-knot-swap-numbers-v3', wordRack);
+
+  await api.activate('ALPHA22', { create: true });
+  await api.syncNow('ALPHA22');
+
+  assert.equal(rows.get('ALPHA22').progress['moberino-consume-v2'], wordGrid);
+  assert.equal(rows.get('ALPHA22').progress['moberino-knot-swap-words-v3'], wordRack);
+  assert.equal(rows.get('ALPHA22').progress['moberino-knot-swap-numbers-v3'], wordRack);
+});
+
+test('an older remote snapshot cannot erase an unregistered local Word Grid save', async () => {
+  const { api, localStorage, rows } = harness();
+  const wordGrid = '{"active":"ALPHA22","profiles":{"ALPHA22":{"completed":{"1":true,"2":true}}}}';
+  localStorage.setItem('moberino-consume-v2', wordGrid);
+  rows.set('ALPHA22', {
+    username: 'ALPHA22',
+    updated_at: new Date().toISOString(),
+    progress: { 'moberino-packing-game-progression-v1': '{"unlocked":["pack-02"]}' },
+  });
+
+  await api.activate('ALPHA22', { create: true });
+
+  assert.equal(localStorage.getItem('moberino-consume-v2'), wordGrid);
+  assert.equal(rows.get('ALPHA22').progress['moberino-consume-v2'], wordGrid);
+});
+
+test('a newer cache unions completed Tile Swap levels instead of rolling progress back', async () => {
+  const { api, localStorage, rows } = harness();
+  const localWordGrid = '{"active":"ALPHA22","profiles":{"ALPHA22":{"completed":{"1":true}}}}';
+  const remoteWordGrid = '{"active":"ALPHA22","profiles":{"ALPHA22":{"completed":{"1":true,"2":true,"3":true,"4":true}}}}';
+  localStorage.setItem('moberino-consume-v2', localWordGrid);
+  localStorage.setItem('moberino-player-snapshots-v1', JSON.stringify({
+    ALPHA22: {
+      updatedAt: '2026-07-29T06:00:00.000Z',
+      progress: { 'moberino-consume-v2': localWordGrid },
+    },
+  }));
+  rows.set('ALPHA22', {
+    username: 'ALPHA22',
+    updated_at: '2026-07-29T05:00:00.000Z',
+    progress: { 'moberino-consume-v2': remoteWordGrid },
+  });
+
+  await api.activate('ALPHA22', { create: true });
+
+  const restored = JSON.parse(localStorage.getItem('moberino-consume-v2'));
+  assert.deepEqual(Object.keys(restored.profiles.ALPHA22.completed), ['1', '2', '3', '4']);
+  assert.deepEqual(
+    Object.keys(JSON.parse(rows.get('ALPHA22').progress['moberino-consume-v2']).profiles.ALPHA22.completed),
+    ['1', '2', '3', '4']
+  );
+});
+
 test('a newer local snapshot wins over stale remote progress', async () => {
   const { api, localStorage, rows } = harness();
   localStorage.setItem('moberino-player-snapshots-v1', JSON.stringify({

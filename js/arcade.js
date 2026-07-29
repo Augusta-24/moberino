@@ -310,7 +310,11 @@
       PlayerID.clear();
       playerTag = null;
     } else if (playerTag && typeof ArcadeProfiles !== 'undefined') {
-      await ArcadeProfiles.activate(playerTag, { create: true });
+      const profile = await ArcadeProfiles.activate(playerTag, { create: true });
+      if (profile.ok) {
+        await restorePlayerProgress(playerTag);
+        await ArcadeProfiles.syncNow(playerTag);
+      }
     }
     nav('lobby');
     updateArcadeInstallPrompt();
@@ -1026,9 +1030,9 @@ function seedJourneyStore(storageKey, tag, highestLevel) {
 async function restorePlayerProgress(tag) {
   if (typeof RemoteLB === 'undefined' || !RemoteLB.lookup) return;
   const journeys = [
-    ['consume', 'moberino-consume-v1'],
-    ['consume-words', 'moberino-knot-swap-words-v2'],
-    ['consume-numbers', 'moberino-knot-swap-numbers-v2'],
+    ['consume', 'moberino-consume-v2'],
+    ['consume-words', 'moberino-knot-swap-words-v3'],
+    ['consume-numbers', 'moberino-knot-swap-numbers-v3'],
     ['snoob-journey', 'moberino-snoob-v1'],
     ['word', 'moberino-word-v1'],
   ];
@@ -1044,7 +1048,7 @@ async function finishPlayerSignIn(tag, restore) {
     if (!profile.ok) throw new Error('PROFILE_UNAVAILABLE');
   }
   PlayerID.set(tag);
-  if (restore && !profile.existed && !profile.cached) {
+  if (restore) {
     await restorePlayerProgress(tag);
     if (typeof ArcadeProfiles !== 'undefined') await ArcadeProfiles.syncNow(tag);
   }
