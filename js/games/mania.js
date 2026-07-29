@@ -108,7 +108,10 @@
           if (!response.ok) throw new Error(`fetch failed: ${response.status}`);
           return response.arrayBuffer();
         })
-        .then(data => audioContext.decodeAudioData(data))
+        .then(data => {
+          if (!data.byteLength) throw new Error('mania.mp3 is empty');
+          return audioContext.decodeAudioData(data);
+        })
         .then(buffer => {
           audioBuffer = buffer;
           loadStarted = false;
@@ -117,6 +120,10 @@
         .catch(error => {
           console.warn('[ManiaMusic] failed to load mania.mp3:', error);
           loadStarted = false;
+          if (wanted && !ArcadeMusic?.muted) {
+            ArcadeMusic?.start();
+            ArcadeMusic?.duck();
+          }
         });
     }
 
@@ -136,6 +143,10 @@
       sourceNode.buffer = audioBuffer;
       sourceNode.loop = true;
       sourceNode.connect(gainNode);
+      // Do not silence the lobby until the replacement soundtrack is decoded
+      // and ready. A missing/corrupt Mania file should fall back to ducked lobby
+      // music instead of leaving the entire game silent.
+      ArcadeMusic?.stop();
       sourceNode.start(0);
     }
 
@@ -149,7 +160,6 @@
     return {
       start() {
         wanted = true;
-        ArcadeMusic?.stop();
         loadBuffer();
         playSource();
       },
@@ -162,7 +172,6 @@
         if (ArcadeMusic?.muted) {
           stopSource();
         } else if (wanted) {
-          ArcadeMusic?.stop();
           loadBuffer();
           playSource();
         }
@@ -573,7 +582,6 @@
         hit: false,
       });
     });
-    state.props = Array.from({ length: 6 }, (_, i) => ({ type: 'planet', x: 650 + i * 930, hue: i }));
   }
 
   function buildPlateRound() {
@@ -2081,33 +2089,6 @@
       ctx.fillStyle = sky;
       ctx.fillRect(0, 0, w, h);
     }
-    const cam = cameraX();
-    for (let i = 0; i < 52; i += 1) {
-      const x = mod(i * 97 - cam * (i % 3 ? .18 : .31), w + 20);
-      const y = mod(i * 67, h * .72);
-      ctx.fillStyle = i % 11 === 0 ? '#6de8ff' : '#fff9dc';
-      ctx.globalAlpha = .14 + (i % 5) * .07;
-      circle(x, y, i % 7 === 0 ? 2.2 : 1.1, false);
-    }
-    ctx.globalAlpha = 1;
-    for (const prop of state.props) {
-      const x = prop.x - cam * .48;
-      if (x < -180 || x > w + 180) continue;
-      const colors = [['#ff7aa7','#8b285e'],['#6de8ff','#2754a5'],['#ffc95a','#b64f42'],['#9b8cff','#412d91']];
-      const pair = colors[prop.hue % colors.length];
-      const r = Math.min(w, h) * (.075 + (prop.hue % 3) * .018);
-      const grad = ctx.createRadialGradient(x - r * .25, h * .25 - r * .2, 2, x, h * .25, r);
-      grad.addColorStop(0, `${pair[0]}a8`);
-      grad.addColorStop(1, `${pair[1]}80`);
-      ctx.fillStyle = grad;
-      circle(x, h * (.18 + (prop.hue % 3) * .17), r, false);
-      ctx.strokeStyle = 'rgba(255,221,142,.42)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(x, h * (.18 + (prop.hue % 3) * .17), r, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-
   }
 
   function drawCometGate(w, h) {

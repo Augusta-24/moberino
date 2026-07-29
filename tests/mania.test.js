@@ -33,7 +33,9 @@ test('Moberino Mania is registered as an isolated arcade page', () => {
   assert.match(source, /const ManiaMusic =/);
   assert.match(source, /const VOLUME = 0\.018/);
   assert.match(source, /fetch\('mania\.mp3'\)/);
+  assert.match(source, /if \(!data\.byteLength\) throw new Error\('mania\.mp3 is empty'\)/);
   assert.match(source, /sourceNode\.loop = true/);
+  assert.match(source, /A missing\/corrupt Mania file should fall back/);
   assert.match(source, /ArcadeMusic\?\.stop\(\)/);
   assert.match(source, /ManiaMusic\.start\(\)/);
   assert.match(source, /ManiaMusic\.stop\(\)/);
@@ -327,6 +329,8 @@ test('Orbit uses authored booth art and resolves rings after a physical flight',
   assert.match(source, /function drawAlienLaunchExhaust\(/);
   assert.match(source, /target\.blastProgress = blast/);
   assert.doesNotMatch(source, /kind: 'orbiter'/);
+  assert.doesNotMatch(source, /type: 'planet'/);
+  assert.doesNotMatch(source, /for \(let i = 0; i < 52; i \+= 1\)/);
   assert.match(source, /Crop the decorative red antenna bulb out/);
   assert.match(source, /const cropTop = Math\.min\(31, sprite\.naturalHeight \* \.07\)/);
 });
@@ -337,6 +341,9 @@ test('Moberino Mania provides touch-safe responsive play, transitions, and resul
   assert.match(css, /\.mania-stage \{[\s\S]*touch-action: none/);
   assert.match(css, /@media \(orientation: portrait\)/);
   assert.match(css, /@media \(orientation: portrait\) and \(min-width: 621px\)/);
+  assert.match(css, /body\.on-mania \{[\s\S]*padding-bottom: 0 !important/);
+  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 700px\)/);
+  assert.match(css, /#pg-mania\.active \{[\s\S]*position: fixed/);
   assert.match(css, /finale\/finale-backdrop-v1\.png/);
   assert.match(css, /\.mania-menu \.mania-btn/);
   assert.doesNotMatch(source, /START THE CIRCUIT/);

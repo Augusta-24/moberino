@@ -6,7 +6,18 @@
     radial-gradient(circle at 50% 0, rgba(255,207,74,.13), transparent 42%),
     linear-gradient(180deg, #152415, #070d0a 72%);
 }
-#pg-mania.active { display: block; }
+#pg-mania.active {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  display: block;
+}
+body.on-mania {
+  height: var(--app-vh, 100dvh);
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: 0 !important;
+}
 body.on-mania #arcade-game-exit { display: inline-flex; }
 body.on-mania button { touch-action: manipulation; }
 
@@ -691,6 +702,34 @@ body.on-mania button { touch-action: manipulation; }
 
 @media (orientation: portrait) and (min-width: 621px) {
   .mania-game { height: min(100%, 900px); }
+}
+
+/* iPad/Safari landscape has a short usable viewport while both browser bars
+   are visible. Fit against that height—not only the generous tablet width. */
+@media (orientation: landscape) and (max-height: 700px) {
+  .mania-wrap {
+    padding:
+      max(7px, env(safe-area-inset-top, 0px))
+      max(8px, env(safe-area-inset-right, 0px))
+      max(7px, env(safe-area-inset-bottom, 0px))
+      max(8px, env(safe-area-inset-left, 0px));
+  }
+  .mania-game {
+    width: min(100%, 1120px);
+    height: 100%;
+    max-height: 100%;
+    gap: 5px;
+  }
+  .mania-hud {
+    min-height: 48px;
+    padding: 4px 52px;
+  }
+  .mania-hud-label { margin-bottom: 3px; }
+  .mania-time-ring {
+    width: 40px;
+    height: 40px;
+    font-size: 23px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
