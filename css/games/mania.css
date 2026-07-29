@@ -168,50 +168,51 @@ body.on-mania button { touch-action: manipulation; }
   border-radius: 50%;
   background: #6de8ff;
 }
-.mania-lobby-tank {
+.mania-lobby-volcano {
   position: absolute;
-  right: 10%;
-  top: 49%;
-  width: 60px;
-  height: 27px;
-  border: 3px solid #162337;
-  border-radius: 10px;
-  background: rgba(70,108,116,.74);
-  box-shadow: inset 0 -8px 0 rgba(37,60,81,.82);
+  right: 11%;
+  top: 45%;
+  width: 68px;
+  height: 52px;
 }
-.mania-lobby-tank::before {
+.mania-lobby-volcano::before {
   content: "";
   position: absolute;
-  left: 13px;
-  top: -20px;
-  width: 31px;
-  height: 18px;
-  border: 3px solid #162337;
-  border-radius: 10px 10px 3px 3px;
-  background: rgba(255,140,104,.72);
+  inset: 0;
+  clip-path: polygon(0 100%,25% 54%,38% 25%,62% 25%,75% 54%,100% 100%);
+  background:
+    linear-gradient(101deg, transparent 0 48%, rgba(255,207,74,.92) 49% 52%, transparent 53%),
+    linear-gradient(145deg, rgba(255,140,104,.42), rgba(43,24,62,.88) 56%, rgba(109,232,255,.16));
+  filter:
+    drop-shadow(0 0 1px #ff8c68)
+    drop-shadow(0 0 5px rgba(255,91,104,.26));
 }
-.mania-lobby-tank::after {
+.mania-lobby-volcano::after {
   content: "";
   position: absolute;
-  left: 8px;
-  right: 8px;
-  bottom: 3px;
-  height: 8px;
-  border-radius: 6px;
-  background: repeating-linear-gradient(90deg,#ffcf4a 0 5px,#253c51 5px 9px);
+  left: 23px;
+  top: 10px;
+  width: 22px;
+  height: 10px;
+  border: 3px solid #ffcf4a;
+  border-radius: 50%;
+  background: #25142f;
+  box-sizing: border-box;
+  box-shadow: 0 0 6px rgba(255,207,74,.22);
 }
-.mania-lobby-tank i {
+.mania-lobby-volcano i {
   position: absolute;
   z-index: 2;
-  left: 38px;
-  top: -14px;
-  width: 33px;
-  height: 6px;
-  border: 2px solid #162337;
-  border-radius: 4px;
-  background: rgba(217,241,232,.72);
-  transform: rotate(-16deg);
-  transform-origin: left center;
+  left: 31px;
+  top: 1px;
+  width: 7px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255,207,74,.82);
+  box-shadow:
+    -8px -5px 0 -2px rgba(255,91,104,.62),
+    8px -8px 0 -2px rgba(255,140,104,.58),
+    -1px -14px 0 -2px rgba(109,232,255,.48);
 }
 
 .mania-menu {
@@ -483,7 +484,7 @@ body.on-mania button { touch-action: manipulation; }
 }
 .mania-theme-farm { --mania-curtain-art: url("../../assets/mania/farm/farm-backdrop-v1.png"); }
 .mania-theme-orbit { --mania-curtain-art: url("../../assets/mania/orbit-backdrop-v2.png"); }
-.mania-theme-plates { --mania-curtain-art: url("../../assets/mania/tank/tank-backdrop-v1.png"); }
+.mania-theme-plates { --mania-curtain-art: url("../../assets/mania/dam/dam-backdrop-v2.png"); }
 .mania-theme-volcano { --mania-curtain-art: url("../../assets/mania/volcano/volcano-backdrop-v1.png"); }
 .mania-theme-finale { --mania-curtain-art: url("../../assets/mania/finale/finale-backdrop-v1.png"); }
 .mania-booth-curtain span,

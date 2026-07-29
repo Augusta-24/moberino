@@ -8,7 +8,8 @@
 
   const ROUND_SECONDS = 20;
   const FINALE_PHASE_SECONDS = 20;
-  const FINALE_SECONDS = FINALE_PHASE_SECONDS * 3;
+  const FINALE_RAPID_SECONDS = 16;
+  const FINALE_SECONDS = FINALE_PHASE_SECONDS * 2 + FINALE_RAPID_SECONDS;
   const WORLD_LENGTH = 5600;
   const FINALE_WORLD_LENGTH = 2400;
   const ORBIT_FREEZE_SECONDS = 5.25;
@@ -31,18 +32,18 @@
       accent: '#6de8ff',
       hudLabel: 'FORMATIONS',
       goal: 1,
-      intro: 'Three rings freezes a Moon Mobe. Freeze all 5 at once to summon the Ringmaster Robot, then rapid-fire rings into its mouth.',
+      intro: 'Four rings freezes a Moon Mobe. Freeze all 5 at once to summon the Ringmaster Robot, then rapid-fire rings into its mouth.',
       prompt: 'CLEAR THE 5 · THEN FEED THE ROBOT!',
     },
     {
       id: 'plates',
-      title: 'TANK BLAST',
-      short: 'TANK',
+      title: 'BEAVER BONANZA',
+      short: 'BEAVERS',
       accent: '#ff8c68',
-      hudLabel: 'SHIELD HITS',
+      hudLabel: 'BONANZA HITS',
       goal: 5,
-      intro: 'Green front doors are large, slow, and frequent. Amber middle doors are quicker. Red back doors are small, rare, and worth the most. Edge beavers tease, hold, then retreat.',
-      prompt: 'GREEN SLOW · AMBER QUICK · RED FLASH!',
+      intro: 'Large foreground beavers rise slowly from the log bank. Lodge beavers are quicker. Tiny spillway beavers appear briefly for the highest score. Riverbank beavers tease, hold, then retreat.',
+      prompt: 'LOG BANK SLOW · LODGE QUICK · SPILLWAY FLASH!',
     },
     {
       id: 'volcano',
@@ -390,7 +391,7 @@
     const id = currentBooth().id;
     if (id === 'farm') buildFarmRound();
     if (id === 'orbit') buildOrbitRound();
-    if (id === 'plates') buildPlateRound();
+    if (id === 'plates') buildDamRound();
     if (id === 'volcano') buildVolcanoRound();
     if (id === 'finale') buildFinaleRound();
     buildHiddenMobes(id);
@@ -412,8 +413,8 @@
         { progress: .73, lane: .61, cover: 'satellite' },
       ],
       plates: [
-        { anchorX: .08, lane: .57, cover: 'crate' },
-        { anchorX: .91, lane: .29, cover: 'barrel' },
+        { anchorX: .18, lane: .28, cover: 'canoe' },
+        { anchorX: .82, lane: .28, cover: 'cattails' },
       ],
       volcano: [
         { anchorX: .13, lane: .59, cover: 'lavaRock' },
@@ -582,7 +583,7 @@
         formationIndex: i,
         anchorX: formation[i][0],
         anchorY: formation[i][1],
-        requiredRings: 3,
+        requiredRings: 4,
         rings: 0,
         ringWindow: 2.35,
         freezeWindow: ORBIT_FREEZE_SECONDS,
@@ -596,48 +597,53 @@
     // they never travel across the formation or the robot's mouth.
     const cornerLaunches = [1, 5.8, 10.6, 15.4];
     cornerLaunches.forEach((at, wave) => {
-      ['left', 'right'].forEach((corner, sideIndex) => {
-        state.targets.push({
-          kind: 'phaseFlyer',
-          type: (wave + sideIndex) % 3 === 0 ? 'cometMobe' : 'ghostMobe',
-          at: at + sideIndex * .12,
-          duration: 4.15,
-          corner,
-          cornerTease: true,
-          wave,
-          base: 2500,
-          golden: true,
-          drawLayer: 5,
-          hit: false,
-        });
+      addOrbitCornerPair(at, wave);
+    });
+  }
+
+  function addOrbitCornerPair(at, wave, bossSide = false) {
+    ['left', 'right'].forEach((corner, sideIndex) => {
+      state.targets.push({
+        kind: 'phaseFlyer',
+        type: (wave + sideIndex) % 3 === 0 ? 'cometMobe' : 'ghostMobe',
+        at: at + sideIndex * .12,
+        duration: Math.min(4.15, Math.max(.6, ROUND_SECONDS - at)),
+        corner,
+        cornerTease: true,
+        bossSide,
+        wave,
+        base: 2500,
+        golden: true,
+        drawLayer: 5,
+        hit: false,
       });
     });
   }
 
-  function buildPlateRound() {
+  function buildDamRound() {
     const tiers = [
-      { type: 'standard', base: 250, openWindow: 1.15, period: 2.6, size: 1.04, transition: .22, warning: .52 },
-      { type: 'foreman', base: 700, openWindow: .68, period: 3.25, size: .8, transition: .15, warning: .44 },
-      { type: 'expert', base: 1600, openWindow: .34, period: 4.4, size: .56, transition: .09, warning: .38 },
+      { type: 'standard', base: 250, openWindow: 1.8, period: 4.2, size: 1.04, transition: .38, warning: .72 },
+      { type: 'foreman', base: 700, openWindow: 1.15, period: 4.8, size: .8, transition: .3, warning: .62 },
+      { type: 'expert', base: 1600, openWindow: .65, period: 5.6, size: .56, transition: .18, warning: .52 },
     ];
 
     const stations = [
-      // Back row: two rare, tiny red flash doors.
-      [.28, .23, 2], [.72, .23, 2],
-      // Middle row: two amber timing doors.
-      [.27, .44, 1], [.73, .44, 1],
-      // Front row: three large, frequent green doors.
-      [.18, .66, 0], [.5, .64, 0], [.82, .66, 0],
+      // Back spillway: two rare, tiny, high-value appearances.
+      [.38, .29, 2], [.64, .29, 2],
+      // Middle lodge: three quicker natural openings.
+      [.25, .51, 1], [.5, .48, 1], [.75, .51, 1],
+      // Foreground log bank: two large, slow, readable targets.
+      [.32, .73, 0], [.68, .73, 0],
     ];
 
-    // The shield gallery is stationary. Perspective, scale, and row placement
-    // create depth while simultaneous opening windows preserve player choice.
+    // Beavers physically rise from scenery, hold, then duck away. Perspective,
+    // scale, and exposure time create the economy without permanent door slabs.
     stations.forEach((station, i) => {
       const tierIndex = station[2];
       const tier = tiers[tierIndex];
       const depthScale = station[1] < .3 ? .82 : station[1] < .5 ? .9 : 1;
       state.targets.push({
-        kind: 'shieldBeaver',
+        kind: 'damBeaver',
         type: tier.type,
         at: 0,
         duration: ROUND_SECONDS,
@@ -645,7 +651,7 @@
         anchorY: station[1],
         base: tier.base,
         openWindow: tier.openWindow,
-        shieldPeriod: tier.period,
+        popPeriod: tier.period,
         doorTransition: tier.transition,
         warningWindow: tier.warning,
         cycleOffset: (i * .73) % tier.period,
@@ -670,7 +676,7 @@
         kind: 'beaverPeek',
         type: i % 4 === 3 ? 'foreman' : 'standard',
         at: peek[0],
-        duration: i % 4 === 3 ? 2.25 : 2.55,
+        duration: i % 4 === 3 ? 3.05 : 3.35,
         side: peek[1],
         lane: peek[2],
         base: i % 4 === 3 ? 850 : 400,
@@ -738,8 +744,8 @@
   }
 
   function buildFinaleRound() {
-    // Phase 1: one central opener unfolds a roomy seven-target horseshoe.
-    // Clearing the full display brings up a fresh bank until the phase ends.
+    // Phase 1 starts with one central decision. Its unfolded bank adapts to
+    // phone space while larger stages keep the broad scattered arrangement.
     spawnFinaleStaticWave(0, 0);
 
     // Phase 2: a deliberately paced left-to-right pass. Targets are smaller,
@@ -760,23 +766,23 @@
       });
     }
 
-    // Phase 3: one fixed lock bank must be cleared before the escalating
-    // rapid-fire target appears. Faster clearing buys more tapping time.
+    // Phase 3 is shorter and requires an eight-target precision bank before
+    // the escalating rapid-fire target appears.
     const finalLocks = [
-      [.18,.29,750], [.4,.25,1500], [.62,.25,1500], [.84,.29,750],
-      [.29,.55,2500], [.5,.49,4000], [.71,.55,2500],
+      [.16,.29,750], [.37,.24,1500], [.63,.24,1500], [.84,.29,750],
+      [.22,.57,2500], [.42,.5,4000], [.58,.5,4000], [.78,.57,2500],
     ];
     finalLocks.forEach((lock, i) => {
       state.targets.push({
         kind: 'finaleGate',
         type: lock[2] >= 4000 ? 'jewelTarget' : lock[2] >= 2000 ? 'starTarget' : 'neonTarget',
         at: FINALE_PHASE_SECONDS * 2 + .25,
-        duration: FINALE_PHASE_SECONDS - .25,
+        duration: FINALE_RAPID_SECONDS - .25,
         anchorX: lock[0],
         anchorY: lock[1],
         finalePhase: 2,
         base: lock[2],
-        precision: lock[2] >= 4000 ? .72 : lock[2] >= 2000 ? .84 : .96,
+        precision: lock[2] >= 4000 ? .66 : lock[2] >= 2000 ? .78 : .9,
         golden: lock[2] >= 4000,
         finalLock: true,
         lockIndex: i,
@@ -805,18 +811,23 @@
   }
 
   function unfoldFinaleBank(target) {
-    // A broad horseshoe keeps the middle of the stage open and makes every
-    // scoring choice readable. The outer/lower targets are the safer 500s;
-    // the smaller, higher targets carry the premium values.
-    const unfoldedTargets = [
-      [.13, .43, 750],
-      [.27, .25, 1250],
-      [.43, .17, 1750],
-      [.57, .17, 1750],
-      [.73, .25, 1250],
-      [.87, .43, 750],
-      [.5, .58, 500],
-    ];
+    const phoneLayout = state.width <= 520;
+    // Phones get one high premium choice and one lower, safer choice. Larger
+    // stages retain the scattered bank that rewards scanning and precision.
+    const unfoldedTargets = phoneLayout
+      ? [
+          [.5, .25, 1750],
+          [.5, .64, 750],
+        ]
+      : [
+          [.13, .43, 750],
+          [.27, .25, 1250],
+          [.43, .17, 1750],
+          [.57, .17, 1750],
+          [.73, .25, 1250],
+          [.87, .43, 750],
+          [.5, .58, 500],
+        ];
     unfoldedTargets.forEach((option, i) => {
       const targetValue = option[2] + target.wave * 100;
       state.targets.push({
@@ -840,7 +851,13 @@
         hit: false,
       });
     });
-    showToast('TARGET BANK UNFOLDS · CLEAR ALL 7!', true, 1050);
+    showToast(
+      phoneLayout
+        ? 'TARGET BANK UNFOLDS · CLEAR HIGH + LOW!'
+        : 'TARGET BANK UNFOLDS · CLEAR THE SCATTERED BANK!',
+      true,
+      1050
+    );
     burst(state.width * .5, state.height * .43, '#b991ff', 24, 1.12);
   }
 
@@ -968,13 +985,13 @@
 
     let best = null;
     let bestDistance = Infinity;
-    let blockedShield = null;
+    let hiddenBeaver = null;
     for (const target of state.targets) {
       const pos = targetPosition(target, state.elapsed);
       if (!pos || (target.hit && !target.repeatable)) continue;
       const distance = Math.hypot(x - pos.x, y - pos.y);
-      if (target.kind === 'shieldBeaver' && pos.hittable === false && distance <= pos.r * 1.14) {
-        blockedShield = { target, pos };
+      if (target.kind === 'damBeaver' && pos.hittable === false && distance <= pos.r * 1.14) {
+        hiddenBeaver = { target, pos };
         continue;
       }
       if (pos.hittable === false) continue;
@@ -986,9 +1003,9 @@
 
     if (!best) {
       state.combo = 0;
-      const blocked = !!blockedShield;
-      addLabel(x, y, blocked ? 'SHIELDED!' : 'MISS', blocked ? '#ffcf4a' : '#fff4d5', blocked ? 18 : 15);
-      burst(x, y, blocked ? '#ff8c68' : '#e7d8b1', blocked ? 8 : 5, .75);
+      const hiding = !!hiddenBeaver;
+      addLabel(x, y, hiding ? 'HIDING!' : 'MISS', hiding ? '#b8f3ef' : '#fff4d5', hiding ? 18 : 15);
+      burst(x, y, hiding ? '#65d6d1' : '#e7d8b1', hiding ? 8 : 5, .75);
       try { SFX.miss(); } catch (e) {}
       return;
     }
@@ -1049,8 +1066,8 @@
   }
 
   function hitTarget(target, pos) {
-    if (target.kind === 'shieldBeaver') {
-      hitShieldBeaver(target, pos);
+    if (target.kind === 'damBeaver') {
+      hitDamBeaver(target, pos);
       return;
     }
     if (target.kind === 'farmBarnDoor') {
@@ -1099,7 +1116,6 @@
       burst(pos.x, pos.y, '#ffcf4a', 28, 1.35);
       const foundName = target.character?.name ? ` · ${target.character.name}` : '';
       showToast(`WHACK!${foundName} ${state.hiddenMobesFound}/${state.hiddenMobeTotal}`, true, 1700);
-      try { SFX.mysteryGood(); } catch (e) {}
     }
     if (target.gold && currentBooth().id === 'plates') collectBoothSpecial('GOLD PLATE', triggerPlatterBlimp);
     if (currentBooth().id === 'volcano' && (target.stageTarget || target.kind === 'volcanoComet')) {
@@ -1115,17 +1131,17 @@
     updateHud();
   }
 
-  function hitShieldBeaver(target, pos) {
+  function hitDamBeaver(target, pos) {
     target.spent = true;
     target.spentUntil = state.elapsed + 1.05 + target.tier * .18;
     target.hitAt = state.elapsed;
     state.special += 1;
     const specialHit = target.tier >= 1;
     awardTargetHit(target, pos, target.base, specialHit);
-    const labels = ['STANDARD', 'FOREMAN', 'EXPERT'];
+    const labels = ['LOG BANK', 'LODGE', 'SPILLWAY'];
     addLabel(pos.x, pos.y - pos.r * 1.15, `${labels[target.tier]} HIT!`, specialHit ? '#ffcf4a' : '#fff7d9', 20);
     if (target.tier === 2) {
-      showToast(`EXPERT WINDOW! +${target.base}`, true, 760);
+      showToast(`SPILLWAY SNAP! +${target.base}`, true, 760);
       try { SFX.score(); } catch (e) {}
     }
     updateHud();
@@ -1232,7 +1248,10 @@
     state.score += gained;
     addLabel(pos.x, pos.y - pos.r, `+${gained}${state.combo > 1 ? `  x${state.combo}` : ''}`, specialHit ? currentBooth().accent : '#fff7d9', specialHit ? 25 : 20);
     burst(pos.x, pos.y, specialHit ? currentBooth().accent : targetColor(target), specialHit ? 18 : 11, 1);
-    try { specialHit ? SFX.score() : SFX.hit(); } catch (e) {}
+    // Every direct target impact uses the same warm confirmation sample. Booth
+    // bonuses may still play a flourish after their larger state change, but a
+    // glowing lava balloon or secret Moberino no longer gets a metallic ping.
+    try { SFX.hit(); } catch (e) {}
     return gained;
   }
 
@@ -1281,6 +1300,13 @@
     state.orbitBossAt = state.elapsed + 1.05;
     formation.forEach((target, index) => {
       target.bossLaunchAt = state.elapsed + index * .08;
+    });
+    // Clear the old schedule and stage fresh, predictable side temptations
+    // around the boss based on however much round time the player earned.
+    state.targets = state.targets.filter(target => target.kind !== 'phaseFlyer');
+    [.45, 4.8, 9.15].forEach((offset, wave) => {
+      const at = state.orbitBossAt + offset;
+      if (at < ROUND_SECONDS - 1.1) addOrbitCornerPair(at, 10 + wave, true);
     });
     state.targets.push({
       kind: 'orbitBoss',
@@ -1458,7 +1484,7 @@
       const messages = [
         'PHASE 1 · OPEN & CLEAR THE BANK',
         'PHASE 2 · PRECISION SCROLL',
-        'PHASE 3 · CLEAR 7 LOCKS TO UNLOCK RAPID FIRE',
+        'PHASE 3 · CLEAR 8 LOCKS TO UNLOCK RAPID FIRE',
       ];
       showToast(messages[phase], true, 1700);
       if (phase > 0) {
@@ -1473,7 +1499,7 @@
   function processFinaleRapidFire() {
     if (state.rapidUnlocked) return;
     const locks = state.targets.filter(target => target.finalLock);
-    if (locks.length !== 7 || locks.some(target => !target.hit)) return;
+    if (locks.length !== 8 || locks.some(target => !target.hit)) return;
     state.rapidUnlocked = true;
     const at = state.elapsed + .12;
     state.targets.push({
@@ -1615,6 +1641,21 @@
     toastTimer = setTimeout(() => toast.classList.remove('show'), duration || 1500);
   }
 
+  function orbitRobotMetrics(w, h) {
+    const sourceAspect = 1198 / 1313;
+    const robotHeight = Math.min(w * .92 / sourceAspect, h * 1.12);
+    const robotWidth = robotHeight * sourceAspect;
+    const mouthSourceY = .56;
+    const top = h - robotHeight;
+    return {
+      width: robotWidth,
+      height: robotHeight,
+      mouthY: top + robotHeight * mouthSourceY,
+      drawX: -robotWidth / 2,
+      drawY: -robotHeight * mouthSourceY,
+    };
+  }
+
   function targetPosition(target, elapsed) {
     const local = elapsed - target.at;
     if (local < 0 || local > target.duration) return null;
@@ -1725,9 +1766,9 @@
       x = w * (target.anchorX + waveShift);
       y = h * target.anchorY;
       if (target.completed) {
-        y += clamp(h * .025, 10, 20);
-        scale *= .9;
-        visibility = .84;
+        y += clamp(h * .035, 12, 26);
+        scale *= .78;
+        visibility = .66;
       }
       if (target.resetAt && elapsed - target.resetAt < .55) {
         const resetProgress = (elapsed - target.resetAt) / .55;
@@ -1768,8 +1809,9 @@
       const opening = easeOut(clamp((cycleAge - .85) / .42, 0, 1));
       const closing = easeInOut(clamp((cycleAge - 3.28) / .48, 0, 1));
       const mouthOpen = opening * (1 - closing);
+      const robot = orbitRobotMetrics(w, h);
       x = w * .5;
-      y = lerp(h * 1.14, h * .52, arrival);
+      y = lerp(h * 1.14, robot.mouthY, arrival);
       scale = 1;
       visibility = arrival;
       growth = .9 + arrival * .1;
@@ -1781,23 +1823,23 @@
       return {
         x,
         y,
-        r: Math.min(w * .19, h * .18),
+        r: Math.min(robot.width * .21, robot.height * .17),
         scale,
         visibility,
         growth,
         hittable,
         mouthOpen,
       };
-    } else if (target.kind === 'shieldBeaver') {
+    } else if (target.kind === 'damBeaver') {
       if (target.spent && elapsed >= target.spentUntil) {
         target.spent = false;
-        target.cycleOffset = mod(.18 - elapsed, target.shieldPeriod);
+        target.cycleOffset = mod(.18 - elapsed, target.popPeriod);
       }
       x = w * target.anchorX;
-      y = h * target.anchorY;
-      const phase = mod(elapsed + target.cycleOffset, target.shieldPeriod);
-      const warningStart = target.shieldPeriod - target.openWindow - target.warningWindow;
-      const openStart = target.shieldPeriod - target.openWindow;
+      const homeY = h * target.anchorY;
+      const phase = mod(elapsed + target.cycleOffset, target.popPeriod);
+      const warningStart = target.popPeriod - target.openWindow - target.warningWindow;
+      const openStart = target.popPeriod - target.openWindow;
       const openAge = phase - openStart;
       const opening = openAge < target.doorTransition
         ? easeOut(clamp(openAge / target.doorTransition, 0, 1))
@@ -1806,9 +1848,12 @@
           : 1;
       const openAmount = target.spent || phase < openStart ? 0 : clamp(opening, 0, 1);
       target.visualOpen = openAmount;
-      target.shieldWarning = !target.spent && phase >= warningStart && phase < openStart;
+      target.popWarning = !target.spent && phase >= warningStart && phase < openStart;
       scale *= target.targetScale;
       growth = openAmount;
+      const revealTravel = clamp(h * (.11 - target.tier * .018), 42, 82);
+      const coverY = homeY + 30 * scale;
+      y = homeY + (1 - openAmount) * revealTravel;
       return {
         x,
         y,
@@ -1817,6 +1862,7 @@
         visibility,
         growth,
         openAmount,
+        coverY,
         hittable: !target.spent && openAmount > .72,
       };
     } else if (target.kind === 'beaverPeek') {
@@ -1962,6 +2008,21 @@
       scale *= .78;
       visibility = .92;
     }
+    const phoneStage = w <= 520;
+    if (
+      phoneStage &&
+      ['farmPop', 'farmSlide', 'farmHill', 'farmBarnDoor', 'farmBarnBonus', 'runner', 'peek'].includes(target.kind)
+    ) {
+      scale *= 1.2;
+    }
+    if (
+      phoneStage &&
+      ['balloonTree', 'lavaBalloon', 'volcanoDecoy'].includes(target.kind)
+    ) {
+      scale *= 1.3;
+      const balloonInset = clamp(w * .12, 40, 58);
+      x = clamp(x, balloonInset, w - balloonInset);
+    }
     if (x < -100 || x > w + 100) return null;
     const small = ['chicken', 'duck', 'bird', 'bluebird'].includes(target.type);
     const farmAnimal = ['farmPop', 'farmSlide', 'farmHill', 'farmBarnDoor', 'farmBarnBonus', 'runner', 'peek'].includes(target.kind);
@@ -1982,7 +2043,7 @@
         ? 58
       : target.kind === 'jackpot'
         ? 50
-      : target.kind === 'shieldBeaver'
+      : target.kind === 'damBeaver'
         ? 48
       : target.kind === 'beaverPeek'
         ? 39
@@ -2013,7 +2074,7 @@
     } else if (boothId === 'orbit') {
       drawOrbitScene(w, h);
     } else if (boothId === 'plates') {
-      drawPlateScene(w, h);
+      drawDamScene(w, h);
     } else if (boothId === 'volcano') {
       drawVolcanoScene(w, h);
     } else {
@@ -2046,7 +2107,6 @@
       drawForeground(w, h);
       drawFarmPointOverlays(now);
     }
-    if (boothId === 'plates') drawToyTank(w, h);
     drawStageFrame(w, h, boothId);
     drawShots(now);
     drawParticles(now);
@@ -2153,7 +2213,12 @@
       ? _getImg('assets/mania/farm/farm-backdrop-v1.png')
       : null;
     if (backdrop?.complete && backdrop.naturalWidth) {
+      ctx.save();
+      ctx.filter = 'saturate(.66) brightness(.92) contrast(.9)';
       drawImageCover(backdrop, w, h);
+      ctx.restore();
+      ctx.fillStyle = 'rgba(245,239,216,.08)';
+      ctx.fillRect(0, 0, w, h);
       const glaze = ctx.createLinearGradient(0, 0, 0, h);
       glaze.addColorStop(0, 'rgba(10,70,72,.03)');
       glaze.addColorStop(.62, 'rgba(255,218,102,.025)');
@@ -2300,124 +2365,52 @@
     ctx.drawImage(image, sourceX, sourceY, sourceW, sourceH, 0, 0, w, h);
   }
 
-  function drawPlateScene(w, h) {
+  function drawDamScene(w, h) {
     const backdrop = typeof _getImg === 'function'
-      ? _getImg('assets/mania/tank/tank-backdrop-v1.png')
+      ? _getImg('assets/mania/dam/dam-backdrop-v2.png')
       : null;
     if (backdrop?.complete && backdrop.naturalWidth) {
+      ctx.save();
+      ctx.filter = 'saturate(.76) brightness(.94) contrast(.9)';
       drawImageCover(backdrop, w, h);
+      ctx.restore();
       const glaze = ctx.createLinearGradient(0, 0, 0, h);
-      glaze.addColorStop(0, 'rgba(12,55,62,.04)');
-      glaze.addColorStop(.58, 'rgba(242,164,112,.025)');
-      glaze.addColorStop(1, 'rgba(9,13,18,.18)');
+      glaze.addColorStop(0, 'rgba(247,239,210,.08)');
+      glaze.addColorStop(.58, 'rgba(72,128,112,.025)');
+      glaze.addColorStop(1, 'rgba(22,65,69,.1)');
       ctx.fillStyle = glaze;
       ctx.fillRect(0, 0, w, h);
-      drawTankRails(w, h);
+      drawDamWater(w, h);
       return;
     }
     const sky = ctx.createLinearGradient(0, 0, 0, h);
-    sky.addColorStop(0, '#f4bf7b');
-    sky.addColorStop(.5, '#d36f58');
-    sky.addColorStop(1, '#3b3544');
+    sky.addColorStop(0, '#dcebcf');
+    sky.addColorStop(.48, '#91c9b5');
+    sky.addColorStop(1, '#4ba8a4');
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, h);
-    const cam = cameraX();
-    ctx.fillStyle = '#6b4f47';
-    ctx.beginPath();
-    ctx.moveTo(0, h * .56);
-    for (let x = 0; x <= w + 50; x += 55) {
-      ctx.lineTo(x, h * (.4 + .1 * Math.sin((x + cam * .2) / 100)));
+    ctx.fillStyle = '#786044';
+    for (const y of [h * .34, h * .56, h * .75]) {
+      ctx.fillRect(0, y, w, clamp(h * .07, 24, 54));
     }
-    ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#282a31';
-    ctx.fillRect(0, h * .66, w, h * .34);
-    ctx.strokeStyle = '#8a765e';
-    ctx.lineWidth = 5;
-    for (let row = 0; row < 3; row += 1) {
-      const y = h * (.31 + row * .16);
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-      for (let i = -1; i < Math.ceil(w / 90) + 2; i += 1) {
-        const x = i * 90 - mod(cam * (.4 + row * .12), 90);
-        ctx.fillStyle = '#4c3d39';
-        ctx.fillRect(x - 4, y - 12, 8, 30);
-      }
-    }
-    // Tiny cloth pennants make this a playful Moberino toy camp rather than a
-    // military scene while preserving the physical target-range read.
-    const pennants = ['#6de8ff','#ffcf4a','#ff8c68','#b991ff'];
-    for (let i = 0; i < Math.ceil(w / 55) + 1; i += 1) {
-      const x = i * 55 - mod(cam * .16, 55);
-      ctx.fillStyle = pennants[i % pennants.length];
-      triangle(x, h * .11, x + 24, h * .11, x + 12, h * .16, false);
-    }
+    drawDamWater(w, h);
   }
 
-  function drawTankRails(w, h) {
-    const cam = cameraX();
+  function drawDamWater(w, h) {
     ctx.save();
-    for (let row = 0; row < 3; row += 1) {
-      const y = h * (.31 + row * .17);
-      const depth = .68 + row * .16;
-      ctx.fillStyle = `rgba(19,26,31,${.12 + row * .055})`;
-      ctx.fillRect(0, y - 12 * depth, w, 25 * depth);
-      ctx.strokeStyle = 'rgba(35,40,42,.7)';
-      ctx.lineWidth = 5 + row * 2;
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-      ctx.strokeStyle = 'rgba(218,173,103,.48)';
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(0, y - 2); ctx.lineTo(w, y - 2); ctx.stroke();
-      const spacing = 122 - row * 12;
-      for (let i = -1; i < Math.ceil(w / spacing) + 2; i += 1) {
-        const x = i * spacing - mod(cam * (.38 + row * .13), spacing);
-        ctx.fillStyle = '#263e45';
-        ctx.strokeStyle = '#b77b45';
-        ctx.lineWidth = 2;
-        roundRect(x - 7, y - 13, 14, 28, 3);
-        ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#f0b85b';
-        circle(x, y - 4, 2.2, true);
-        circle(x, y + 7, 2.2, true);
+    ctx.globalAlpha = .26;
+    ctx.strokeStyle = '#e9fff3';
+    ctx.lineWidth = 2;
+    const drift = mod(state.elapsed * 18, 64);
+    for (const y of [h * .39, h * .61, h * .86]) {
+      for (let x = -64 + drift; x < w + 64; x += 64) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x + 16, y - 4, x + 32, y);
+        ctx.quadraticCurveTo(x + 48, y + 4, x + 64, y);
+        ctx.stroke();
       }
     }
-    ctx.restore();
-  }
-
-  function drawToyTank(w, h) {
-    const s = clamp(Math.min(w, h) / 520, .72, 1.3);
-    const tankImage = typeof _getImg === 'function'
-      ? _getImg('assets/mania/tank/toy-tank-v1.png')
-      : null;
-    if (tankImage?.complete && tankImage.naturalWidth) {
-      const width = 225 * s;
-      const height = 177 * s;
-      ctx.save();
-      ctx.fillStyle = 'rgba(0,0,0,.28)';
-      ctx.beginPath();
-      ctx.ellipse(w * .5, h - 21 * s, width * .43, 13 * s, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.drawImage(tankImage, w * .5 - width / 2, h - height + 10 * s, width, height);
-      ctx.restore();
-      return;
-    }
-    ctx.save();
-    // Keep the whole toy vehicle inside shorter phone/tablet stages.
-    ctx.translate(w * .5, h - 54 * s);
-    ctx.scale(s, s);
-    ctx.fillStyle = 'rgba(0,0,0,.3)';
-    ellipse(0, 7, 66, 13, false);
-    ctx.fillStyle = '#253c51';
-    ctx.strokeStyle = '#15202c';
-    ctx.lineWidth = 4;
-    roundRect(-58, -30, 116, 36, 14); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#ff8c68';
-    for (let x = -40; x <= 40; x += 20) circle(x, -10, 8, true);
-    ctx.fillStyle = '#466c74';
-    roundRect(-29, -54, 58, 29, 10); ctx.fill(); ctx.stroke();
-    ctx.strokeStyle = '#d9f1e8';
-    ctx.lineWidth = 8;
-    ctx.beginPath(); ctx.moveTo(14, -48); ctx.lineTo(72, -72); ctx.stroke();
-    ctx.fillStyle = '#6de8ff';
-    circle(0, -43, 7, false);
     ctx.restore();
   }
 
@@ -2426,7 +2419,12 @@
       ? _getImg('assets/mania/volcano/volcano-backdrop-v1.png')
       : null;
     if (backdrop?.complete && backdrop.naturalWidth) {
+      ctx.save();
+      ctx.filter = 'saturate(.58) brightness(.9) contrast(.88)';
       drawImageCover(backdrop, w, h);
+      ctx.restore();
+      ctx.fillStyle = 'rgba(245,232,214,.07)';
+      ctx.fillRect(0, 0, w, h);
       const glaze = ctx.createLinearGradient(0, 0, 0, h);
       glaze.addColorStop(0, 'rgba(31,8,52,.06)');
       glaze.addColorStop(.55, 'rgba(255,93,120,.025)');
@@ -2593,7 +2591,12 @@
       ? _getImg('assets/mania/finale/finale-backdrop-v1.png')
       : null;
     if (backdrop?.complete && backdrop.naturalWidth) {
+      ctx.save();
+      ctx.filter = 'saturate(.6) brightness(.9) contrast(.88)';
       drawImageCover(backdrop, w, h);
+      ctx.restore();
+      ctx.fillStyle = 'rgba(238,232,218,.055)';
+      ctx.fillRect(0, 0, w, h);
       const glaze = ctx.createLinearGradient(0, 0, 0, h);
       glaze.addColorStop(0, 'rgba(14,5,34,.04)');
       glaze.addColorStop(.62, 'rgba(78,28,98,.02)');
@@ -2625,7 +2628,7 @@
 
     // The final choice phase gets a warm theatrical center spotlight.
     if (state.elapsed >= FINALE_PHASE_SECONDS * 2) {
-      const pulse = .25 + Math.abs(Math.sin(state.elapsed * 3.2)) * .18;
+      const pulse = .12 + Math.abs(Math.sin(state.elapsed * 3.2)) * .09;
       const spot = ctx.createRadialGradient(w * .5, h * .46, 10, w * .5, h * .46, Math.min(w, h) * .33);
       spot.addColorStop(0, `rgba(255,220,116,${pulse})`);
       spot.addColorStop(1, 'rgba(255,207,74,0)');
@@ -2995,7 +2998,7 @@
       ctx.fill();
     }
 
-    const bob = target.kind === 'shieldBeaver' || target.kind === 'orbitBoss'
+    const bob = target.kind === 'damBeaver' || target.kind === 'orbitBoss'
       ? 0
       : Math.sin((now + target.at * 1000) / 115) * 1.6;
     ctx.translate(0, bob);
@@ -3010,7 +3013,7 @@
       drawMoonMobe(target);
     }
     else if (target.kind === 'orbitBoss') drawOrbitBoss(target);
-    else if (target.kind === 'shieldBeaver') drawShieldBeaver(target, pos, now);
+    else if (target.kind === 'damBeaver') drawDamBeaver(target, pos, now);
     else if (target.kind === 'beaverPeek') drawEdgeBeaver(target);
     else if (target.kind === 'plateRack') drawPlateRackTarget(target);
     else if (target.kind === 'platePop' || target.kind === 'plateFlyby') drawHighPlateTarget(target);
@@ -3035,13 +3038,13 @@
       target.kind === 'finalePopup' ||
       target.kind === 'finaleGate' ||
       target.kind === 'orbitBoss' ||
-      (target.kind === 'shieldBeaver' && target.visualOpen < .72) ||
+      (target.kind === 'damBeaver' && target.visualOpen < .72) ||
       (target.kind === 'beaverPeek' && target.visualReveal < .62) ||
       !Number.isFinite(target.base)
     ) return;
     const balloon = ['balloonTree', 'lavaBalloon', 'volcanoDecoy'].includes(target.kind);
     const farmBadge = ['farmPop', 'farmSlide', 'farmHill', 'farmBarnDoor', 'farmBarnBonus'].includes(target.kind);
-    const animalScoreBadge = farmBadge || target.kind === 'shieldBeaver' || target.kind === 'beaverPeek';
+    const animalScoreBadge = farmBadge || target.kind === 'damBeaver' || target.kind === 'beaverPeek';
     const positions = {
       farmPop: -50,
       farmSlide: -50,
@@ -3054,7 +3057,7 @@
       ringPost: 37,
       phaseFlyer: 35,
       orbiter: 35,
-      shieldBeaver: 47,
+      damBeaver: 47,
       beaverPeek: 36,
       plateRack: 34,
       platePop: 35,
@@ -3080,8 +3083,8 @@
     if (target.direction === 'right') ctx.scale(-1, 1);
     ctx.translate(0, y);
     if (target.kind === 'farmHill') ctx.scale(1.7, 1.7);
-    if (target.kind === 'shieldBeaver' && target.tier === 2) ctx.scale(1.42, 1.42);
-    else if (target.kind === 'shieldBeaver' && target.tier === 1) ctx.scale(1.16, 1.16);
+    if (target.kind === 'damBeaver' && target.tier === 2) ctx.scale(1.42, 1.42);
+    else if (target.kind === 'damBeaver' && target.tier === 1) ctx.scale(1.16, 1.16);
     if (farmBadge) {
       ctx.strokeStyle = '#e5b35d';
       ctx.lineWidth = 2.5;
@@ -3193,7 +3196,7 @@
       : target.type === 'foreman'
         ? 'beaver-foreman-target-v1.png'
         : 'beaver-standard-target-v1.png';
-    return typeof _getImg === 'function' ? _getImg(`assets/mania/tank/${name}`) : null;
+    return typeof _getImg === 'function' ? _getImg(`assets/mania/dam/${name}`) : null;
   }
 
   function drawBeaverTarget(target, headOnly = false) {
@@ -3230,80 +3233,100 @@
     circle(12, -10, 3, false);
   }
 
-  function drawShieldBeaver(target, pos, now) {
+  function drawDamBeaver(target, pos, now) {
     const open = pos.openAmount || 0;
+    const coverY = (pos.coverY || pos.y + 28) - pos.y;
+    const tierColors = ['#76d9a6', '#f2b94e', '#e76791'];
+    const accent = tierColors[target.tier] || tierColors[0];
     ctx.save();
-    ctx.fillStyle = 'rgba(0,0,0,.28)';
+    ctx.save();
     ctx.beginPath();
-    ctx.ellipse(0, 48, 58, 10, 0, 0, Math.PI * 2);
-    ctx.fill();
-
+    ctx.rect(-72, -104, 144, coverY + 108);
+    ctx.clip();
+    ctx.globalAlpha *= clamp(open * 1.65, 0, 1);
     drawBeaverTarget(target, false);
+    ctx.restore();
 
-    const panelW = 62;
-    const panelH = 108;
-    const travel = open * 67;
-    const speedStyles = [
-      { panel: '#34745d', edge: '#8ee0b8', lamp: '#76f0ad' },
-      { panel: '#a9632c', edge: '#ffd06a', lamp: '#ffbf4d' },
-      { panel: '#96334e', edge: '#ff8ca5', lamp: '#ff647f' },
-    ];
-    const speedStyle = speedStyles[target.tier] || speedStyles[0];
-    const panelColor = speedStyle.panel;
-    const edgeColor = speedStyle.edge;
-    for (const side of [-1, 1]) {
-      const panelX = side < 0 ? -panelW - travel : travel;
-      ctx.save();
-      ctx.translate(panelX, -54);
-      ctx.fillStyle = panelColor;
-      ctx.strokeStyle = '#23282c';
-      ctx.lineWidth = 4;
-      roundRect(0, 0, panelW, panelH, 10);
-      ctx.fill();
-      ctx.stroke();
-      ctx.strokeStyle = edgeColor;
-      ctx.lineWidth = 2;
-      roundRect(5, 5, panelW - 10, panelH - 10, 7);
-      ctx.stroke();
-      ctx.fillStyle = '#f0b85b';
-      for (const point of [[12,13],[panelW-12,13],[12,panelH-13],[panelW-12,panelH-13]]) {
-        circle(point[0], point[1], 3, true);
-      }
-      ctx.restore();
-    }
-
-    if (open < .08) {
-      ctx.strokeStyle = '#171d22';
+    // Each depth tier uses a quiet physical hiding edge instead of a door:
+    // foreground logs, a lodge opening, or a foamy spillway lip.
+    ctx.save();
+    ctx.translate(0, coverY);
+    if (target.tier === 0) {
+      ctx.fillStyle = '#755238';
+      ctx.strokeStyle = '#3c2b23';
       ctx.lineWidth = 3;
+      for (const log of [[-54,-1,108,18],[-48,13,96,17]]) {
+        roundRect(log[0], log[1], log[2], log[3], 9);
+        ctx.fill(); ctx.stroke();
+      }
+      ctx.strokeStyle = 'rgba(242,210,151,.32)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-42, 6); ctx.lineTo(38, 6); ctx.stroke();
+    } else if (target.tier === 1) {
+      ctx.fillStyle = '#32291f';
+      ctx.strokeStyle = '#8a633e';
+      ctx.lineWidth = 7;
       ctx.beginPath();
-      ctx.moveTo(0, -45);
-      ctx.lineTo(0, 45);
+      ctx.arc(0, 9, 46, Math.PI, 0);
+      ctx.lineTo(46, 24);
+      ctx.lineTo(-46, 24);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = '#c49b60';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(0, 9, 35, Math.PI, 0); ctx.stroke();
+    } else {
+      ctx.fillStyle = '#7e7669';
+      ctx.strokeStyle = '#433f39';
+      ctx.lineWidth = 3;
+      for (const rock of [[-43,5,23],[-18,1,25],[9,3,27],[37,7,21]]) {
+        ctx.beginPath();
+        ctx.ellipse(rock[0], rock[1], rock[2], 13, 0, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+      }
+      ctx.strokeStyle = '#efffe9';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(-53, 16);
+      ctx.quadraticCurveTo(-28, 8, -6, 16);
+      ctx.quadraticCurveTo(20, 23, 52, 14);
       ctx.stroke();
-      ctx.fillStyle = target.shieldWarning
-        ? (Math.floor(now / 110) % 2 ? '#fff4d5' : speedStyle.lamp)
-        : target.spent ? '#27343a' : '#6de8ff';
-      ctx.shadowColor = ctx.fillStyle;
-      ctx.shadowBlur = target.shieldWarning ? 12 : 5;
-      circle(0, -34, 6, true);
+    }
+    ctx.fillStyle = target.spent ? '#576761' : accent;
+    ctx.strokeStyle = '#fff0c9';
+    ctx.lineWidth = 2;
+    circle(0, target.tier === 1 ? 25 : 22, 4.5, true);
+    if (target.popWarning) {
+      ctx.fillStyle = Math.floor(now / 120) % 2 ? '#fff7d8' : accent;
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 12;
+      circle(-13, -8, 4, true);
+      circle(10, -15, 5, true);
+      circle(20, -28, 3, true);
       ctx.shadowBlur = 0;
     }
+    ctx.restore();
     ctx.restore();
   }
 
   function drawEdgeBeaver(target) {
     ctx.save();
     ctx.rotate(target.side === 'left' ? Math.PI / 2 : -Math.PI / 2);
-    ctx.fillStyle = 'rgba(0,0,0,.3)';
+    ctx.fillStyle = 'rgba(20,54,53,.26)';
     ctx.beginPath();
     ctx.ellipse(0, 36, 42, 8, 0, 0, Math.PI * 2);
     ctx.fill();
     drawBeaverTarget(target, true);
-    ctx.strokeStyle = '#c48b4d';
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(-18, -54);
-    ctx.lineTo(-18, 45);
-    ctx.stroke();
+    ctx.fillStyle = '#765238';
+    ctx.strokeStyle = '#3d2d25';
+    ctx.lineWidth = 3;
+    roundRect(-48, 30, 96, 18, 9);
+    ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#6f9252';
+    ctx.lineWidth = 4;
+    for (const x of [-33, -18, 26, 39]) {
+      ctx.beginPath(); ctx.moveTo(x, 43); ctx.quadraticCurveTo(x + 7, 6, x + 3, -12); ctx.stroke();
+    }
     ctx.restore();
   }
 
@@ -3474,6 +3497,41 @@
       ctx.beginPath(); ctx.arc(0, 7, 18, Math.PI, 0); ctx.lineTo(0, 7); ctx.closePath(); ctx.fill(); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(0, 7); ctx.lineTo(0, -9); ctx.stroke();
       ctx.fillStyle = '#ff5d9d'; circle(0, -11, 4, true);
+    } else if (cover === 'canoe') {
+      ctx.fillStyle = '#a95d3f';
+      ctx.strokeStyle = '#4b3027';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-48, 18);
+      ctx.quadraticCurveTo(0, 54, 48, 18);
+      ctx.quadraticCurveTo(0, 39, -48, 18);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = '#f0c67b';
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(-36, 21); ctx.quadraticCurveTo(0, 43, 36, 21); ctx.stroke();
+      ctx.strokeStyle = '#795337';
+      ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.moveTo(-31, 45); ctx.lineTo(31, 2); ctx.stroke();
+      ctx.fillStyle = '#d5ad6b';
+      ctx.beginPath(); ctx.ellipse(37, -2, 15, 6, -.65, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    } else if (cover === 'cattails') {
+      ctx.strokeStyle = '#517347';
+      ctx.lineWidth = 5;
+      for (const reed of [[-27,45,-23,-15],[-8,48,-4,-29],[13,47,18,-10],[31,49,33,-24]]) {
+        ctx.beginPath(); ctx.moveTo(reed[0], reed[1]); ctx.quadraticCurveTo(reed[0] + 5, 12, reed[2], reed[3]); ctx.stroke();
+      }
+      ctx.fillStyle = '#745238';
+      for (const pod of [[-23,-17],[-4,-31],[18,-12],[33,-26]]) {
+        roundRect(pod[0] - 5, pod[1] - 9, 10, 20, 5); ctx.fill(); ctx.stroke();
+      }
+      ctx.fillStyle = '#6c9a58';
+      for (const leaf of [[-35,32,-18,5],[-2,42,9,14],[18,38,39,11]]) {
+        ctx.beginPath();
+        ctx.moveTo(leaf[0], leaf[1]);
+        ctx.quadraticCurveTo(leaf[2], leaf[3], leaf[2] + 4, leaf[3] - 4);
+        ctx.stroke();
+      }
     } else if (cover === 'crate') {
       ctx.fillStyle = '#bd7546';
       roundRect(-38, 10, 76, 39, 4); ctx.fill(); ctx.stroke();
@@ -3727,6 +3785,7 @@
   function drawOrbitBoss(target) {
     const w = state.width;
     const h = state.height;
+    const robot = orbitRobotMetrics(w, h);
     const openSprite = typeof _getImg === 'function'
       ? _getImg('assets/mania/orbit-robot-boss-v1.png')
       : null;
@@ -3741,7 +3800,7 @@
     if (openSprite?.complete && openSprite.naturalWidth) {
       ctx.shadowColor = 'rgba(109,232,255,.38)';
       ctx.shadowBlur = 22;
-      ctx.drawImage(openSprite, -w * .42, -h * .525, w * .84, h);
+      ctx.drawImage(openSprite, robot.drawX, robot.drawY, robot.width, robot.height);
       ctx.shadowBlur = 0;
     } else {
       ctx.fillStyle = '#167b82';
@@ -3757,12 +3816,12 @@
     // retains the same worn enamel, brass, rivets, and lighting as the robot.
     const closed = 1 - (target.mouthOpen || 0);
     if (closed > .015 && closedSprite?.complete && closedSprite.naturalWidth) {
-      const mouthW = w * .38;
-      const mouthH = h * .31;
-      const mouthTop = -h * .14;
+      const mouthW = robot.width * .42;
+      const mouthH = robot.height * .3;
+      const mouthTop = -robot.height * .145;
       const panelH = mouthH * .5 * closed;
       const drawClosedState = () => {
-        ctx.drawImage(closedSprite, -w * .42, -h * .525, w * .84, h);
+        ctx.drawImage(closedSprite, robot.drawX, robot.drawY, robot.width, robot.height);
       };
       ctx.save();
       ctx.beginPath();
@@ -3784,14 +3843,15 @@
     ctx.fillStyle = 'rgba(7,7,20,.9)';
     ctx.strokeStyle = open ? '#6de8ff' : '#ffcf4a';
     ctx.lineWidth = 3;
-    roundRect(-82, h * .175, 164, 42, 9);
+    const valueY = robot.height * .215;
+    roundRect(-82, valueY, 164, 42, 9);
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = open ? '#fff4d5' : '#ffcf4a';
     ctx.font = '18px "VCR", monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(open ? `${target.base} EACH` : `NEXT ${upcomingValue}`, 0, h * .175 + 21);
+    ctx.fillText(open ? `${target.base} EACH` : `NEXT ${upcomingValue}`, 0, valueY + 21);
     ctx.restore();
   }
 
@@ -3845,11 +3905,14 @@
         ? clamp(naturalWidth * .58, 28, 36)
         : naturalWidth;
       const objectiveBalloon = !!target.stageTarget;
+      const phonePop = state.width <= 520
+        ? ' drop-shadow(0 1px 2px #201329) drop-shadow(0 0 5px rgba(255,248,220,.9))'
+        : '';
       ctx.filter = objectiveBalloon
-        ? 'drop-shadow(0 0 3px #fff8dc) drop-shadow(0 0 13px #6de8ff)'
+        ? `drop-shadow(0 0 3px #fff8dc) drop-shadow(0 0 13px #6de8ff)${phonePop}`
         : target.kind === 'volcanoDecoy'
-          ? 'drop-shadow(0 0 3px rgba(255,244,213,.72)) drop-shadow(0 5px 7px rgba(8,4,20,.7))'
-          : 'none';
+          ? `drop-shadow(0 0 3px rgba(255,244,213,.72)) drop-shadow(0 5px 7px rgba(8,4,20,.7))${phonePop}`
+          : phonePop || 'none';
       if (target.vent || target.golden) {
         ctx.shadowColor = target.golden ? '#ffcf4a' : '#fff1a3';
         ctx.shadowBlur = target.golden ? 20 : 14;
@@ -4219,7 +4282,7 @@
   function targetColor(target) {
     if (target.kind === 'hiddenMobe') return '#ffcf4a';
     if (['runner', 'peek', 'flyer'].includes(target.kind)) return animalColor(target.type);
-    if (target.kind === 'shieldBeaver' || target.kind === 'beaverPeek') {
+    if (target.kind === 'damBeaver' || target.kind === 'beaverPeek') {
       return target.type === 'expert' ? '#ff647f' : target.type === 'foreman' ? '#ffbf4d' : '#76f0ad';
     }
     if (target.kind === 'orbiter') return '#6de8ff';
@@ -4376,8 +4439,13 @@
         ctx.stroke();
       } else if (shot.kind === 'plates') {
         ctx.globalAlpha = 1 - p;
-        ctx.fillStyle = '#fff2dd';
-        circle(endX, endY, 9 + p * 2, true);
+        ctx.strokeStyle = '#dffbf2';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(endX, endY, 8 + p * 14, 4 + p * 7, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = '#65d6d1';
+        circle(endX, endY, 5 + p, false);
       } else if (shot.kind === 'volcano') {
         ctx.globalAlpha = 1 - p;
         ctx.strokeStyle = '#fff0d8';
