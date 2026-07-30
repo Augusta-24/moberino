@@ -49,7 +49,7 @@ test('Moberino Mania runs four 20-second booths and a shortened three-phase show
   const source = read('js/games/mania.js');
   assert.match(source, /const ROUND_SECONDS = 20/);
   assert.match(source, /const FINALE_PHASE_SECONDS = 20/);
-  assert.match(source, /const FINALE_RAPID_SECONDS = 16/);
+  assert.match(source, /const FINALE_RAPID_SECONDS = 10/);
   assert.match(source, /const FINALE_SECONDS = FINALE_PHASE_SECONDS \* 2 \+ FINALE_RAPID_SECONDS/);
   assert.match(source, /return boothId === 'finale' \? FINALE_SECONDS : ROUND_SECONDS/);
   assert.match(source, /const WORLD_LENGTH = 5600/);
@@ -211,8 +211,10 @@ test('Volcano runs a two-lane dinosaur balloon parade with comet-triggered erupt
   assert.match(source, /function drawVolcanoStageLights\(/);
   assert.match(source, /function drawVolcanoObjective\(/);
   assert.match(source, /CLEAR COMETS · WAVE/);
-  assert.match(source, /COMET WAVE \$\{state\.volcanoStage \+ 1\}\/3/);
-  assert.match(source, /ERUPTION \$\{state\.special\}\/3/);
+  assert.match(source, /\[0, 6, 12\]\.forEach/);
+  assert.match(source, /COMET WAVE \$\{stageIndex \+ 1\}\/3/);
+  assert.match(source, /wave\.forEach\(target => \{ target\.stageClearAwarded = true; \}\)/);
+  assert.match(source, /if \(state\.special >= 3\) triggerEruption\(\)/);
 });
 
 test('Every visible Mania target carries a consistent base-point badge', () => {
@@ -301,8 +303,13 @@ test('Target Showdown uses authored artwork across static, scrolling, and precis
   assert.match(source, /VALUE RISES AT 6, 13, 21 & 31/);
   assert.match(source, /function processFinalePhases\(/);
   assert.match(source, /PHASE 1 · OPEN & CLEAR THE BANK/);
-  assert.match(source, /PHASE 2 · PRECISION SCROLL/);
-  assert.match(source, /PHASE 3 · CLEAR 8 LOCKS TO UNLOCK RAPID FIRE/);
+  assert.match(source, /PHASE 2 · BREAK THE PLATE · HIT THE CENTER/);
+  assert.match(source, /PHASE 3 · CLEAR LOCKS · WATCH FOR BONUS BATS/);
+  assert.match(source, /function hitFinalePrecisionTarget\(/);
+  assert.match(source, /armorStage: 0/);
+  assert.match(source, /exposedAge >= \.18 && exposedAge <= 1\.05/);
+  assert.match(source, /kind: 'finaleBat'/);
+  assert.match(source, /assets\/mania\/finale\/bonus-bat-v1\.png/);
   assert.match(source, /function drawFinalePopup\(/);
   assert.match(source, /function drawFinaleRingStructure\(/);
   assert.match(source, /drawFinaleRingStructure\(47 - target\.tier \* 5/);

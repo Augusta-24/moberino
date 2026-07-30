@@ -8,7 +8,7 @@
 
   const ROUND_SECONDS = 20;
   const FINALE_PHASE_SECONDS = 20;
-  const FINALE_RAPID_SECONDS = 16;
+  const FINALE_RAPID_SECONDS = 10;
   const FINALE_SECONDS = FINALE_PHASE_SECONDS * 2 + FINALE_RAPID_SECONDS;
   const WORLD_LENGTH = 5600;
   const FINALE_WORLD_LENGTH = 2400;
@@ -257,6 +257,8 @@
       barnDoorCooldown: 0,
       barnBonusActive: false,
       barnBonusTarget: null,
+      farmActivityWave: 0,
+      farmNextFillAt: 0,
       damBankWave: 0,
       damBankRespawnAt: 0,
       damGoldActive: false,
@@ -586,6 +588,32 @@
       });
   }
 
+  function spawnFarmActivityFill(at) {
+    const wave = 100 + state.farmActivityWave;
+    state.farmActivityWave += 1;
+    const animals = ['pig', 'cow', 'sheep', 'duck', 'chicken'];
+    const leftSide = wave % 2 === 0;
+    [
+      ['farmPop', leftSide ? .24 : .76, .81, 150, 4],
+      ['farmSlide', leftSide ? .63 : .37, .59, 350, 3],
+    ].forEach((slot, index) => {
+      state.targets.push({
+        kind: slot[0],
+        type: animals[(wave + index) % animals.length],
+        at: at + index * .1,
+        duration: Math.max(.5, ROUND_SECONDS - at),
+        anchorX: slot[1],
+        lane: slot[2],
+        slideFrom: index ? (leftSide ? .05 : -.05) : undefined,
+        base: slot[3],
+        drawLayer: slot[4],
+        wave,
+        activityFill: true,
+        hit: false,
+      });
+    });
+  }
+
   function buildOrbitRound() {
     // Five large targets remain together as one readable formation. Three
     // landed rings freezes one target; all five must be frozen simultaneously.
@@ -748,7 +776,7 @@
       pass[2],
       pass[3]
     ));
-    spawnVolcanoStage(0, .55);
+    [0, 6, 12].forEach((at, stageIndex) => spawnVolcanoStage(stageIndex, at + .18));
   }
 
   function spawnVolcanoDinosaur(index, at, direction, lane, balloonCount) {
@@ -792,6 +820,7 @@
         anchorY: .23 + (index % 2) * .035,
         stageIndex,
         stageTarget: true,
+        stageClearAwarded: false,
         base: 750 + stageIndex * 250,
         hit: false,
       });
@@ -807,18 +836,20 @@
 
     // Phase 2: a deliberately paced left-to-right pass. Targets are smaller,
     // staggered across lanes, and still unfold for players who track a bank.
-    for (let i = 0; i < 11; i += 1) {
+    for (let i = 0; i < 9; i += 1) {
       state.targets.push({
         kind: 'revealPanel',
-        type: i % 3 ? 'starTarget' : 'neonTarget',
+        type: 'neonTarget',
         at: FINALE_PHASE_SECONDS,
         duration: FINALE_PHASE_SECONDS,
-        worldX: 120 + i * ((FINALE_WORLD_LENGTH - 240) / 10),
-        lane: .2 + (i % 4) * .145,
+        worldX: 140 + i * ((FINALE_WORLD_LENGTH - 280) / 8),
+        lane: .22 + (i % 3) * .18,
         finalePhase: 1,
-        tier: i % 4 === 0 ? 1 : 0,
+        tier: 0,
         branch: 10 + i,
-        base: i % 4 === 0 ? 650 : 350,
+        base: 300,
+        precisionMoving: true,
+        armorStage: 0,
         hit: false,
       });
     }
@@ -843,6 +874,25 @@
         golden: lock[2] >= 4000,
         finalLock: true,
         lockIndex: i,
+        hit: false,
+      });
+    });
+    [
+      [.55, 'right', .12, 3000],
+      [3.25, 'left', .17, 4000],
+      [6.05, 'right', .1, 5000],
+    ].forEach((bat, index) => {
+      state.targets.push({
+        kind: 'finaleBat',
+        type: 'bonusBat',
+        at: FINALE_PHASE_SECONDS * 2 + bat[0],
+        duration: 3.35,
+        direction: bat[1],
+        lane: bat[2],
+        finalePhase: 2,
+        batIndex: index,
+        base: bat[3],
+        golden: true,
         hit: false,
       });
     });
@@ -1213,6 +1263,10 @@
       hitFarmBarnBonus(target, pos);
       return;
     }
+    if (target.kind === 'revealPanel' && target.precisionMoving) {
+      hitFinalePrecisionTarget(target, pos);
+      return;
+    }
     if (target.kind === 'rapidTarget') {
       hitRapidTarget(target, pos);
       return;
@@ -1299,6 +1353,23 @@
     updateHud();
   }
 
+  function hitFinalePrecisionTarget(target, pos) {
+    if (target.armorStage === 0) {
+      target.armorStage = 1;
+      target.exposedAt = state.elapsed;
+      target.tier = 2;
+      awardTargetHit(target, pos, 300, false);
+      addLabel(pos.x, pos.y - pos.r * 1.2, 'CENTER EXPOSED!', '#6de8ff', 18);
+      burst(pos.x, pos.y, '#6de8ff', 16, 1.05);
+      return;
+    }
+    target.hit = true;
+    target.hitAt = state.elapsed;
+    awardTargetHit(target, pos, 1200, true);
+    addLabel(pos.x, pos.y - pos.r * 1.25, 'PRECISION CLEAR!', '#ffcf4a', 20);
+    updateHud();
+  }
+
   function checkDamBankClear(wave) {
     const bank = state.targets.filter(target => target.kind === 'damBank' && target.bankWave === wave);
     if (bank.length !== 5 || bank.some(target => !target.hit) || state.damBankRespawnAt) return;
@@ -1308,10 +1379,10 @@
     addLabel(state.width * .5, state.height * .48, `BANK ${wave + 1} CLEAR +${clearBonus}`, '#fff1a3', 30);
     burst(state.width * .5, state.height * .5, '#ff8c68', 28, 1.2);
     if (wave < 2) {
-      state.damBankRespawnAt = state.elapsed + .45;
+      state.damBankRespawnAt = state.elapsed + .12;
       showToast(`BANK ${wave + 1}/3 CLEAR · NEXT FIVE!`, true, 900);
     } else {
-      state.damBankRespawnAt = state.elapsed + .5;
+      state.damBankRespawnAt = state.elapsed + .15;
       showToast('THREE BANKS CLEAR · GOLD BEAVERS INBOUND!', true, 1200);
     }
     try { SFX.mysteryGood(); } catch (e) {}
@@ -1643,6 +1714,7 @@
   function processTimedMechanics() {
     if (currentBooth().id === 'farm') {
       processFarmBarn();
+      processFarmActivity();
       return;
     }
     if (currentBooth().id === 'orbit') {
@@ -1687,6 +1759,27 @@
     showToast(`BANK ${state.damBankWave + 1}/3 · CLEAR ALL FIVE!`, true, 950);
   }
 
+  function processFarmActivity() {
+    if (state.elapsed >= ROUND_SECONDS - .6 || state.elapsed < state.farmNextFillAt) return;
+    const activeKinds = new Set(['farmPop', 'farmSlide', 'farmHill', 'flyer']);
+    const active = state.targets.filter(target =>
+      activeKinds.has(target.kind) &&
+      !target.hit &&
+      target.at <= state.elapsed + .05 &&
+      state.elapsed <= target.at + target.duration
+    );
+    const arrivingSoon = state.targets.some(target =>
+      activeKinds.has(target.kind) &&
+      !target.hit &&
+      target.at > state.elapsed &&
+      target.at <= state.elapsed + .4
+    );
+    if (active.length >= 2 || arrivingSoon) return;
+    spawnFarmActivityFill(state.elapsed + .08);
+    state.farmNextFillAt = state.elapsed + .45;
+    state.targets.sort((a, b) => a.at - b.at);
+  }
+
   function processFarmBarn() {
     if (!state.barnBonusActive || !state.barnBonusTarget) return;
     const target = state.barnBonusTarget;
@@ -1703,8 +1796,8 @@
       state.finaleRespawnAt = 0;
       const messages = [
         'PHASE 1 · OPEN & CLEAR THE BANK',
-        'PHASE 2 · PRECISION SCROLL',
-        'PHASE 3 · CLEAR 8 LOCKS TO UNLOCK RAPID FIRE',
+        'PHASE 2 · BREAK THE PLATE · HIT THE CENTER',
+        'PHASE 3 · CLEAR LOCKS · WATCH FOR BONUS BATS',
       ];
       showToast(messages[phase], true, 1700);
       if (phase > 0) {
@@ -1774,31 +1867,25 @@
 
   function processVolcanoStages() {
     if (state.bonusTriggered) return;
-    if (state.volcanoStageReadyAt) {
-      if (state.elapsed < state.volcanoStageReadyAt) return;
-      state.volcanoStageReadyAt = 0;
-      if (state.special >= currentBooth().goal) {
-        triggerEruption();
-        return;
-      }
-      state.volcanoStage = state.special;
-      spawnVolcanoStage(state.volcanoStage, state.elapsed + .08);
-      showToast(`COMET WAVE ${state.volcanoStage + 1}/3`, true, 1100);
-      return;
+    for (let stageIndex = 0; stageIndex < 3; stageIndex += 1) {
+      const wave = state.targets.filter(target =>
+        target.stageTarget && target.stageIndex === stageIndex
+      );
+      if (
+        !wave.length ||
+        wave.some(target => !target.hit) ||
+        wave.some(target => target.stageClearAwarded)
+      ) continue;
+      wave.forEach(target => { target.stageClearAwarded = true; });
+      state.special += 1;
+      state.eruptionAt = state.elapsed;
+      const clearBonus = 750 * (stageIndex + 1);
+      state.score += clearBonus;
+      showToast(`★ COMET WAVE ${stageIndex + 1}/3 · +${clearBonus} ★`, true, 1200);
+      try { SFX.score(); } catch (e) {}
+      updateHud();
     }
-    const active = state.targets.filter(target =>
-      target.stageTarget &&
-      target.stageIndex === state.volcanoStage
-    );
-    if (!active.length || active.some(target => !target.hit)) return;
-    state.special = state.volcanoStage + 1;
-    state.eruptionAt = state.elapsed;
-    const clearBonus = 750 * state.special;
-    state.score += clearBonus;
-    state.volcanoStageReadyAt = state.elapsed + .72;
-    showToast(`★ ERUPTION ${state.special}/3 · +${clearBonus} ★`, true, 1200);
-    try { SFX.score(); } catch (e) {}
-    updateHud();
+    if (state.special >= 3) triggerEruption();
   }
 
   function processOrbitFormation() {
@@ -2236,6 +2323,23 @@
       y = lerp(-70, h * target.anchorY, settle) + Math.sin(local * 2.8 + target.stageIndex) * 3;
       scale *= .54;
       visibility = settle;
+    } else if (target.kind === 'finaleBat') {
+      const p = easeInOut(clamp(local / target.duration, 0, 1));
+      x = target.direction === 'left'
+        ? w + 54 - p * (w + 108)
+        : -54 + p * (w + 108);
+      y = h * target.lane + Math.sin(local * 7.5 + target.batIndex) * h * .025;
+      scale *= .56;
+      visibility = clamp(Math.sin(p * Math.PI) * 2.2, 0, 1);
+      return {
+        x,
+        y,
+        r: clamp(34 * scale, 28, 42),
+        scale,
+        visibility,
+        growth: 1,
+        hittable: visibility > .55,
+      };
     } else if (target.kind === 'revealPanel') {
       x = Number.isFinite(target.anchorX)
         ? w * target.anchorX
@@ -2257,6 +2361,22 @@
         y = lerp(parentY, y, opening);
         x += Math.sin(opening * Math.PI) * (target.openingSide || 0) * 24;
         growth *= opening;
+      }
+      if (target.precisionMoving) {
+        if (
+          target.armorStage === 1 &&
+          elapsed - target.exposedAt > 1.05
+        ) {
+          target.armorStage = 0;
+          target.tier = 0;
+          target.exposedAt = 0;
+        }
+        if (target.armorStage === 1) {
+          const exposedAge = elapsed - target.exposedAt;
+          growth *= .68;
+          hittable = exposedAge >= .18 && exposedAge <= 1.05;
+        }
+        scale *= .72;
       }
       scale *= growth * (target.targetScale || 1);
     } else if (target.kind === 'finalePopup') {
@@ -2319,6 +2439,8 @@
       : balloonTarget
         ? target.type === 'lavaStream' ? 38 : target.vent || target.golden ? 45 : target.kind === 'volcanoDecoy' ? 31 : 42
       : target.kind === 'volcanoComet'
+        ? 42
+      : target.kind === 'finaleBat'
         ? 42
       : target.kind === 'dinosaur'
         ? 54
@@ -3344,6 +3466,7 @@
     else if (target.kind === 'plate') drawPlate(target);
     else if (target.kind === 'balloonTree' || target.kind === 'lavaBalloon' || target.kind === 'volcanoDecoy' || target.kind === 'dinoBalloon') drawBalloonTarget(target);
     else if (target.kind === 'volcanoComet') drawVolcanoComet(target, now);
+    else if (target.kind === 'finaleBat') drawFinaleBonusBat(target, now);
     else if (target.kind === 'revealPanel') drawFinalePanel(target);
     else if (target.kind === 'finalePopup') drawFinalePopup(target);
     else if (target.kind === 'finaleGate') drawFinalePopup(target);
@@ -3358,6 +3481,7 @@
     // value plate. Every other hittable target shows its base point value.
     if (
       target.hiddenMobe ||
+      target.kind === 'finaleBat' ||
       target.kind === 'finalePopup' ||
       target.kind === 'finaleGate' ||
       target.kind === 'orbitBoss' ||
@@ -4563,6 +4687,25 @@
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(`${target.tier + 1}`, 0, panelH * .34);
+  }
+
+  function drawFinaleBonusBat(target, now) {
+    const sprite = typeof _getImg === 'function'
+      ? _getImg('assets/mania/finale/bonus-bat-v1.png')
+      : null;
+    const flap = .9 + Math.sin(now / 75 + target.batIndex) * .08;
+    ctx.save();
+    ctx.scale(1, flap);
+    ctx.shadowColor = '#ffcf4a';
+    ctx.shadowBlur = 10;
+    if (!sprite?.complete || !sprite.naturalWidth) {
+      ctx.restore();
+      return;
+    }
+    const width = 94;
+    const height = width * (sprite.naturalHeight / sprite.naturalWidth);
+    ctx.drawImage(sprite, -width / 2, -height / 2, width, height);
+    ctx.restore();
   }
 
   function drawFinaleRingStructure(radius, color, tier = 0, bullseye = true) {
