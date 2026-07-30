@@ -255,7 +255,9 @@ test('Target Showdown uses authored artwork across static, scrolling, and precis
   assert.match(source, /x = lerp\(parentX, x, opening\)/);
   assert.match(source, /function spawnFinaleStaticWave\(/);
   assert.match(source, /unfoldHub: true/);
-  assert.match(source, /\[0, 3\.8, 7\.6, 11\.4, 15\.2\]/);
+  assert.match(source, /spawnFinaleStaticWave\(0, 0\)/);
+  assert.match(source, /spawnFinaleStaticWave\(1, 0\)/);
+  assert.match(source, /state\.finaleWave = 2/);
   assert.match(source, /wave % 2 \? \.7 : \.3/);
   assert.match(source, /targetScale: \.72/);
   assert.match(source, /function unfoldFinaleBank\(/);
@@ -276,7 +278,9 @@ test('Target Showdown uses authored artwork across static, scrolling, and precis
   assert.match(source, /growth = \.86 \+ Math\.abs/);
   assert.match(source, /scale \*= growth \* \(target\.targetScale \|\| 1\)/);
   assert.match(source, /function processFinaleStaticWaves\(/);
-  assert.match(source, /for \(let wave = 0; wave < 5; wave \+= 1\)/);
+  assert.match(source, /const liveWaves = \[\.\.\.new Set/);
+  assert.match(source, /spawnFinaleStaticWave\(replacementWave, state\.elapsed \+ \.08\)/);
+  assert.match(source, /BANK CLEAR · NEW BLUE TARGET!/);
   assert.match(source, /target\.bankClearAwarded/);
   assert.match(source, /BANK \$\{wave \+ 1\} CLEAR \+\$\{clearBonus\}/);
   assert.match(source, /finalePhase: 0/);

@@ -799,11 +799,11 @@
   }
 
   function buildFinaleRound() {
-    // Phase 1 keeps multiple compact banks in play. New hubs rise on a fixed
-    // cadence instead of waiting for the previous expansion to be cleared.
-    [0, 3.8, 7.6, 11.4, 15.2].forEach((at, wave) => {
-      spawnFinaleStaticWave(wave, at);
-    });
+    // Phase 1 starts with two compact banks. Each cleared bank immediately
+    // earns its own replacement, so pacing is controlled by player action.
+    spawnFinaleStaticWave(0, 0);
+    spawnFinaleStaticWave(1, 0);
+    state.finaleWave = 2;
 
     // Phase 2: a deliberately paced left-to-right pass. Targets are smaller,
     // staggered across lanes, and still unfold for players who track a bank.
@@ -1741,7 +1741,12 @@
   }
 
   function processFinaleStaticWaves() {
-    for (let wave = 0; wave < 5; wave += 1) {
+    const liveWaves = [...new Set(
+      state.targets
+        .filter(target => target.kind === 'revealPanel' && target.finalePhase === 0)
+        .map(target => target.wave)
+    )];
+    for (const wave of liveWaves) {
       const bank = state.targets.filter(target =>
         target.kind === 'revealPanel' &&
         target.finalePhase === 0 &&
@@ -1753,11 +1758,17 @@
         bank.some(target => target.bankClearAwarded)
       ) continue;
       bank.forEach(target => { target.bankClearAwarded = true; });
-      const clearBonus = 2000 + wave * 500;
+      const clearBonus = 2000 + Math.floor(wave / 2) * 500;
       state.score += clearBonus;
       addLabel(state.width * .5, state.height * .45, `BANK ${wave + 1} CLEAR +${clearBonus}`, '#ffcf4a', 30);
       burst(state.width * .5, state.height * .45, '#b991ff', 28, 1.18);
       try { SFX.mysteryGood(); } catch (e) {}
+      if (state.elapsed < FINALE_PHASE_SECONDS - .55) {
+        const replacementWave = state.finaleWave;
+        state.finaleWave += 1;
+        spawnFinaleStaticWave(replacementWave, state.elapsed + .08);
+        showToast('BANK CLEAR · NEW BLUE TARGET!', true, 850);
+      }
     }
   }
 
