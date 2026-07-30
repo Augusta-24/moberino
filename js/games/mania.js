@@ -622,9 +622,9 @@
 
   function buildDamRound() {
     const tiers = [
-      { type: 'standard', base: 250, openWindow: 1.8, period: 4.2, size: 1.04, transition: .38, warning: .72 },
-      { type: 'foreman', base: 700, openWindow: 1.15, period: 4.8, size: .8, transition: .3, warning: .62 },
-      { type: 'expert', base: 1600, openWindow: .65, period: 5.6, size: .56, transition: .18, warning: .52 },
+      { type: 'standard', base: 250, openWindow: 2.15, period: 4.2, size: 1.04, transition: .38, warning: .72 },
+      { type: 'foreman', base: 700, openWindow: 1.45, period: 4.8, size: .92, transition: .3, warning: .62 },
+      { type: 'expert', base: 1600, openWindow: .85, period: 5.6, size: .56, transition: .18, warning: .52 },
     ];
 
     const stations = [
@@ -705,7 +705,7 @@
         duration: ROUND_SECONDS,
         anchorX: anchor[0],
         anchorY: anchor[1],
-        base: 75,
+        base: Math.round(200 + Math.random() * 200),
         hue: i % 3,
         repeatable: true,
         hit: false,
@@ -736,7 +736,7 @@
         stageTarget: true,
         enterFrom: i % 2 ? 1 : -1,
         vent: true,
-        base: 450 + stageIndex * 200 + i * 100,
+        base: Math.round(50 + Math.random() * 50),
         hue: 3 + stageIndex,
         hit: false,
       });
@@ -1229,12 +1229,13 @@
   }
 
   function hitVolcanoDecoy(target, pos) {
-    awardTargetHit(target, pos, target.base, false);
+    const gained = awardTargetHit(target, pos, target.base, false);
     volcanoSpray(pos.x, pos.y, false);
     target.cooldownUntil = state.elapsed + .7 + Math.random() * .65;
     target.respawnAt = target.cooldownUntil;
     target.hue = (target.hue + 1 + Math.floor(Math.random() * 2)) % 3;
-    addLabel(pos.x, pos.y - pos.r, 'BAIT +75', '#fff7d9', 16);
+    target.base = Math.round(200 + Math.random() * 200);
+    addLabel(pos.x, pos.y - pos.r, `BAIT +${gained}`, '#fff7d9', 16);
     updateHud();
   }
 
@@ -1851,7 +1852,7 @@
       target.popWarning = !target.spent && phase >= warningStart && phase < openStart;
       scale *= target.targetScale;
       growth = openAmount;
-      const revealTravel = clamp(h * (.11 - target.tier * .018), 42, 82);
+      const revealTravel = clamp(h * (.11 - target.tier * .018) * (target.tier === 1 ? 1.2 : 1), 42, 82);
       const coverY = homeY + 30 * scale;
       y = homeY + (1 - openAmount) * revealTravel;
       return {
