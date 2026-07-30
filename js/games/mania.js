@@ -13,7 +13,6 @@
   const WORLD_LENGTH = 5600;
   const FINALE_WORLD_LENGTH = 2400;
   const ORBIT_FREEZE_SECONDS = 5.25;
-  const BEST_KEY = 'moberino-mania-circuit-best-v1';
   const BOOTHS = [
     {
       id: 'farm',
@@ -22,8 +21,8 @@
       accent: '#ffcf4a',
       hudLabel: 'BARN HITS',
       goal: 3,
-      intro: 'Pop foreground animals, track the sliding middle lane, and pick off small high-value hill targets. Hit the barn door 3 times to open its prize.',
-      prompt: 'POP · TRACK · HIT THE BARN 3 TIMES!',
+      intro: 'Toss eggs at foreground animals, track the sliding middle lane, and pick off small high-value hill targets. Hit the barn door 3 times to open its prize.',
+      prompt: 'TOSS EGGS · TRACK · HIT THE BARN 3 TIMES!',
     },
     {
       id: 'orbit',
@@ -52,8 +51,8 @@
       accent: '#ff5d9d',
       hudLabel: 'ERUPTION STEPS',
       goal: 3,
-      intro: 'Dinosaurs parade past with balloons in tow. Pop balloons first for maximum points, or hit the dinosaur for a quick chain pop. Clear each three-comet wave to erupt the volcano.',
-      prompt: 'BALLOONS OR DINO · CLEAR 3 COMETS!',
+      intro: 'Throw darts at balloons to score maximum points, or hit the dinosaur for a quick chain pop. Clear each three-comet wave to erupt the volcano.',
+      prompt: 'DART BALLOONS OR DINO · CLEAR 3 COMETS!',
     },
     {
       id: 'finale',
@@ -906,14 +905,24 @@
   }
 
   function spawnFinaleStaticWave(wave, at) {
-    const anchorX = wave % 2 ? .7 : .3;
+    // Banks occupy distinct stage regions so phase one uses the full booth
+    // instead of stacking every grouping across the upper third. The initial
+    // pair reads top-left / bottom-right; replacements alternate through the
+    // other two quadrants while each bank keeps its internal formation.
+    const bankPositions = [
+      [.3, .36],
+      [.7, .72],
+      [.28, .7],
+      [.72, .38],
+    ];
+    const [anchorX, lane] = bankPositions[wave % bankPositions.length];
     state.targets.push({
       kind: 'revealPanel',
       type: 'jewelTarget',
       at,
       duration: Math.max(.1, FINALE_PHASE_SECONDS - at),
       anchorX,
-      lane: wave % 3 === 2 ? .5 : .46,
+      lane,
       finalePhase: 0,
       wave,
       waveBornAt: at,
@@ -1444,7 +1453,7 @@
       state.barnDoorCooldown = ROUND_SECONDS + 1;
       const bonus = {
         kind: 'farmBarnBonus',
-        type: 'cow',
+        type: 'fox',
         barn: target.barn,
         at: state.elapsed + .2,
         duration: 3.4,
@@ -2107,8 +2116,10 @@
         ? easeOut(clamp(returnAge / .32, 0, 1))
         : 1;
       x = g.x;
-      y = g.groundY - g.h * .35 + (1 - rise) * g.h * .28;
-      scale = g.scale * .66;
+      // Keep the chicken seated inside the doorway instead of floating above
+      // the sill; the feet should remain hidden even at full rise.
+      y = g.groundY - g.h * .29 + (1 - rise) * g.h * .28;
+      scale = g.scale * .58;
       visibility = rise;
     } else if (target.kind === 'farmBarnBonus') {
       const g = barnGeometry(w * target.barn.anchorX, target.barn.groundY);
@@ -2493,9 +2504,17 @@
     }
     if (
       phoneStage &&
+      ['dinosaur', 'dinoBalloon', 'balloonTree', 'lavaBalloon', 'volcanoDecoy', 'volcanoComet'].includes(target.kind)
+    ) {
+      scale *= 1.12;
+    }
+    if (
+      phoneStage &&
       ['balloonTree', 'lavaBalloon', 'volcanoDecoy'].includes(target.kind)
     ) {
-      scale *= 1.3;
+      // Preserve the existing large stationary-balloon footprint after the
+      // booth-wide phone enlargement above.
+      scale *= 1.16;
       const balloonInset = clamp(w * .12, 40, 58);
       x = clamp(x, balloonInset, w - balloonInset);
     }
@@ -3046,16 +3065,32 @@
     ctx.fill();
     ctx.fillStyle = '#25202b';
     ctx.fillRect(0, h * .73, w, h * .27);
-    if (state.bonusTriggered) {
-      ctx.strokeStyle = 'rgba(255,223,85,.6)';
-      ctx.lineWidth = 5;
-      for (let i = 0; i < 7; i += 1) {
-        ctx.beginPath();
-        ctx.moveTo(w * .52, h * .35);
-        ctx.quadraticCurveTo(w * (.28 + i * .08), h * .12, w * (.12 + i * .13), -10);
-        ctx.stroke();
-      }
+    if (state.bonusTriggered) drawCompactVolcanoEruption(w * .52, h * .35, Math.min(w, h), state.elapsed % 1.2, .72);
+  }
+
+  function drawCompactVolcanoEruption(baseX, baseY, sceneSize, age, strength) {
+    const progress = clamp(age / 1.2, 0, 1);
+    const glowRadius = sceneSize * (.055 + progress * .035);
+    ctx.save();
+    ctx.globalAlpha *= strength * (1 - progress * .48);
+    const glow = ctx.createRadialGradient(baseX, baseY, 0, baseX, baseY, glowRadius);
+    glow.addColorStop(0, 'rgba(255,244,174,.95)');
+    glow.addColorStop(.38, 'rgba(255,177,67,.72)');
+    glow.addColorStop(1, 'rgba(255,93,77,0)');
+    ctx.fillStyle = glow;
+    circle(baseX, baseY, glowRadius, false);
+
+    const colors = ['#fff0a4', '#ffcf4a', '#ff755d', '#ff5d9d'];
+    for (let i = 0; i < 9; i += 1) {
+      const spread = (i - 4) / 4;
+      const drift = Math.sin(i * 2.17 + age * 3.2) * sceneSize * .008;
+      const travel = sceneSize * (.025 + progress * (.08 + (i % 3) * .012));
+      const x = baseX + spread * sceneSize * (.035 + progress * .06) + drift;
+      const y = baseY - travel + Math.cos(i * 1.63) * sceneSize * .009;
+      ctx.fillStyle = colors[i % colors.length];
+      circle(x, y, sceneSize * (.006 + (i % 3) * .002) * (1 - progress * .35), false);
     }
+    ctx.restore();
   }
 
   function drawVolcanoParallax(w, h) {
@@ -3076,25 +3111,7 @@
       const age = state.elapsed - state.eruptionAt;
       const strength = clamp(1 - age / 4.4, 0, 1);
       if (strength > 0) {
-        ctx.globalAlpha = strength;
-        const baseX = w * .5;
-        const baseY = h * .37;
-        const colors = ['#ffcf4a', '#ff755d', '#ff5d9d', '#fff0a4'];
-        for (let i = 0; i < 11; i += 1) {
-          const spread = (i - 5) / 5;
-          const crest = Math.sin(clamp(age / 1.5, 0, 1) * Math.PI);
-          ctx.strokeStyle = colors[i % colors.length];
-          ctx.lineWidth = 3 + (i % 3);
-          ctx.beginPath();
-          ctx.moveTo(baseX, baseY);
-          ctx.quadraticCurveTo(
-            baseX + spread * w * .16,
-            baseY - h * (.12 + crest * .18),
-            baseX + spread * w * (.2 + age * .035),
-            baseY - h * (.08 + age * .11) + (i % 2) * 22,
-          );
-          ctx.stroke();
-        }
+        drawCompactVolcanoEruption(w * .5, h * .37, Math.min(w, h), age, strength);
       }
     }
     ctx.restore();
@@ -3700,25 +3717,60 @@
     drawBeaverTarget(target, false);
   }
 
+  function drawDamForegroundWaterMask(backdrop, w, h) {
+    const waterline = h * .585;
+    const amplitude = clamp(h * .008, 3, 7);
+    const segment = clamp(w * .11, 42, 68);
+    const drift = mod(state.elapsed * 9, segment);
+
+    function traceWaterline(closeShape) {
+      ctx.beginPath();
+      ctx.moveTo(-segment + drift, waterline);
+      for (let x = -segment + drift; x < w + segment; x += segment) {
+        ctx.quadraticCurveTo(
+          x + segment * .25,
+          waterline - amplitude,
+          x + segment * .5,
+          waterline
+        );
+        ctx.quadraticCurveTo(
+          x + segment * .75,
+          waterline + amplitude,
+          x + segment,
+          waterline
+        );
+      }
+      if (closeShape) {
+        ctx.lineTo(w + segment, h * .715);
+        ctx.lineTo(-segment, h * .715);
+        ctx.closePath();
+      }
+    }
+
+    ctx.save();
+    traceWaterline(true);
+    ctx.clip();
+    ctx.filter = 'saturate(.66) brightness(.86) contrast(.9)';
+    drawImageCover(backdrop, w, h);
+    ctx.restore();
+
+    ctx.save();
+    traceWaterline(false);
+    ctx.strokeStyle = 'rgba(231,255,245,.52)';
+    ctx.lineWidth = clamp(w * .004, 1.5, 3);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   function drawDamMiddleRailMask(w, h) {
     const backdrop = typeof _getImg === 'function'
       ? _getImg('assets/mania/dam/dam-backdrop-v2.png')
       : null;
     if (!backdrop?.complete || !backdrop.naturalWidth) return;
 
-    // Repaint the exact authored log rail over the lower portion of the live
-    // beavers. Because this is the same cover-scaled backdrop, the mask stays
-    // aligned in portrait, landscape, tablet, and desktop layouts.
-    ctx.save();
-    ctx.restore();
-    drawSourceAlignedMask(
-      backdrop,
-      w,
-      h,
-      .555,
-      .715,
-      'saturate(.66) brightness(.86) contrast(.9)'
-    );
+    // Repaint the exact authored foreground water over the beavers, using a
+    // moving wave boundary instead of a flat rectangular crop.
+    drawDamForegroundWaterMask(backdrop, w, h);
 
     const activeBank = state.damGoldActive
       ? state.targets.filter(target => target.kind === 'goldBeaver')
@@ -5033,10 +5085,6 @@ function drawEnchantedFarmDust(target, now) {
     }
 
     const allRounds = state.rounds.concat(summary);
-    const previous = Number(localStorage.getItem(BEST_KEY) || 0);
-    const isBest = circuitTotal > previous;
-    const best = Math.max(previous, circuitTotal);
-    localStorage.setItem(BEST_KEY, String(best));
     const totalHits = allRounds.reduce((sum, round) => sum + round.hits, 0);
     const hiddenMobes = allRounds.reduce((sum, round) => sum + round.hiddenMobes, 0);
     const hiddenMobeTotal = allRounds.reduce((sum, round) => sum + round.hiddenMobeTotal, 0);
@@ -5055,10 +5103,27 @@ function drawEnchantedFarmDust(target, now) {
           ${allRounds.map((round, index) => `<div style="--round-color:${round.accent}"><span>${index + 1}</span><b>${round.score.toLocaleString()}</b><small>${round.title}</small></div>`).join('')}
         </div>
         <div class="mania-hidden-result">HIDDEN MOBERINOS · <b>${hiddenMobes}/${hiddenMobeTotal}</b></div>
-        <div class="mania-result-best">${isBest ? '★ NEW MANIA RECORD!' : `MANIA RECORD · ${best.toLocaleString()}`}</div>
+        <div class="mania-final-leaderboard">
+          <div class="arcade-result-board" id="mania-final-board"></div>
+          <div class="arcade-result-save-label">ENTER A NAME FOR THE FINAL SCORE</div>
+          <div class="arcade-result-save" data-save-row="arcade">
+            <input id="mania-final-name" data-arcade-name="1" maxlength="12" autocomplete="off" spellcheck="false"
+              placeholder="ARCADE NAME" aria-label="Leaderboard name">
+            <button id="mania-final-name-save" type="button" aria-label="Submit final score" data-arcade-save="1"
+              data-board-key="mania" data-local-score="${circuitTotal}" data-remote-score="${circuitTotal}"
+              data-seconds="0" data-extra="5 BOOTHS · ${averageAccuracy}% ACCURACY" data-ascending="false"
+              data-input-id="mania-final-name" data-status-id="mania-final-status"
+              data-board-target-id="mania-final-board" data-neon-color="#ff5b68" data-field="score"
+              data-art-target-id="" data-art-game="mania" data-eligible="true">▶</button>
+          </div>
+          <div class="mania-final-status" id="mania-final-status" role="status" aria-live="polite"></div>
+        </div>
         <button class="mania-btn" type="button" onclick="maniaStart()">RIDE AGAIN</button>
         <button class="mania-result-back" type="button" onclick="nav('lobby')">◀ ARCADE MENU</button>
       </section>`;
+    if (typeof loadRemoteBoard === 'function') {
+      loadRemoteBoard('mania', 'mania-final-board', '#ff5b68', 'score');
+    }
   }
 
   function clearIntermission() {
@@ -5206,16 +5271,56 @@ function drawEnchantedFarmDust(target, now) {
         ctx.fillStyle = '#c58a4e';
         circle(-17, 0, 5, true);
         circle(17, 0, 5, true);
-      } else if (shot.kind === 'volcano') {
-        ctx.globalAlpha = 1 - p;
-        ctx.strokeStyle = '#fff0d8';
-        ctx.lineWidth = 5;
+      } else if (shot.kind === 'farm') {
+        ctx.globalAlpha = clamp(1 - Math.max(0, p - .78) / .22, 0, 1);
+        ctx.strokeStyle = 'rgba(255,244,213,.44)';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.moveTo(lerp(startX, endX, .7), lerp(startY, endY, .7));
+        ctx.moveTo(lerp(startX, endX, .62), lerp(startY, endY, .62));
         ctx.lineTo(endX, endY);
         ctx.stroke();
+        ctx.translate(endX, endY);
+        ctx.rotate(p * Math.PI * 4 + (shot.x - startX) * .006);
+        ctx.shadowColor = 'rgba(255,207,74,.65)';
+        ctx.shadowBlur = 7;
+        ctx.fillStyle = '#fff4d5';
+        ctx.strokeStyle = '#8b6038';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 8, 11, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,.75)';
+        ctx.beginPath();
+        ctx.ellipse(-2.5, -3.5, 2, 3.5, -.35, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (shot.kind === 'volcano') {
+        ctx.globalAlpha = 1 - p;
+        const dartAngle = Math.atan2(endY - startY, endX - startX);
+        ctx.strokeStyle = 'rgba(255,240,216,.48)';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(lerp(startX, endX, .64), lerp(startY, endY, .64));
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+        ctx.translate(endX, endY);
+        ctx.rotate(dartAngle);
+        if (state.width <= 520) ctx.scale(1.12, 1.12);
+        ctx.shadowColor = '#ff5d9d';
+        ctx.shadowBlur = 8;
+        ctx.strokeStyle = '#fff0d8';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-17, 0);
+        ctx.lineTo(10, 0);
+        ctx.stroke();
         ctx.fillStyle = '#ff5d9d';
-        triangle(endX - 6, endY + 4, endX + 8, endY, endX - 5, endY - 5, false);
+        triangle(9, -5, 21, 0, 9, 5, false);
+        ctx.fillStyle = '#ffcf4a';
+        triangle(-18, 0, -26, -8, -12, -3, false);
+        triangle(-18, 0, -26, 8, -12, 3, false);
       } else {
         ctx.globalAlpha = 1 - p;
         ctx.strokeStyle = shot.kind === 'finale' ? '#b991ff' : '#fff7c2';

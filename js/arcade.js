@@ -915,15 +915,21 @@ const LB = (() => {
 
 function fmtTimeG(s) { s = Math.max(0, Math.round(s)); return Math.floor(s/60)+':'+(s%60<10?'0':'')+s%60; }
 
+function escapeLeaderboardText(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[character]));
+}
+
 function renderLbRows(rows, neonColor) {
   if (!rows || !rows.length) return '<div style="font-size:18px;letter-spacing:2px;opacity:0.4;text-align:center;padding:24px 0">NO SCORES YET</div>';
   return `<table style="width:100%;border-collapse:collapse;font-family:VCR,monospace;font-size:18px">` +
     rows.slice(0,5).map((r,i)=>
       `<tr>
         <td style="padding:4px 8px;color:${i===0?neonColor:'rgba(242,239,232,0.6)'}">${i===0?'👑':'#'+(i+1)}</td>
-        <td style="padding:4px 8px;color:${i===0?neonColor:'rgba(242,239,232,0.8)'};letter-spacing:2px">${r.name}</td>
+        <td style="padding:4px 8px;color:${i===0?neonColor:'rgba(242,239,232,0.8)'};letter-spacing:2px">${escapeLeaderboardText(r.name)}</td>
         <td style="padding:4px 8px;text-align:right;color:${i===0?neonColor:'rgba(242,239,232,0.7)'}">${r.displayScore}</td>
-        <td style="padding:4px 8px;text-align:right;color:rgba(242,239,232,0.35);font-size:13px">${r.extra||''}</td>
+        <td style="padding:4px 8px;text-align:right;color:rgba(242,239,232,0.35);font-size:13px">${escapeLeaderboardText(r.extra || '')}</td>
       </tr>`
     ).join('') + '</table>';
 }
@@ -978,6 +984,7 @@ function getLeaderboardBoards() {
     { key: 'match-challenge', label: 'MEMORY MOBE · CHALLENGE', color: '#ff9933', field: 'seconds' },
     { key: 'match-impossible', label: 'MEMORY MOBE · IMPOSSIBLE', color: '#ff4444', field: 'score' },
     { key: 'space', label: 'SPACE MOBE', color: '#33ff66', field: 'score' },
+    { key: 'mania', label: 'MOBERINO MANIA · FINAL CIRCUIT', color: '#ff5b68', field: 'score' },
     { key: 'snoob', label: 'SNOOB', color: '#e4b65f', field: 'score' },
     { key: 'consume', label: 'TILE SWAP · GRID', color: '#ff7180', field: 'score' },
     { key: 'consume-words', label: 'TILE SWAP · WORDS', color: '#ff7180', field: 'score' },
@@ -991,6 +998,7 @@ function getLeaderboardGroups() {
     { id: 'whack', tab: 'WHACK', title: 'WHACK-A-MOBE', color: '#b884ff', keys: ['whack-classic-easy', 'whack-classic-hard', 'whack-frenzy-easy', 'whack-frenzy-hard'] },
     { id: 'memory', tab: 'MEMORY', title: 'MEMORY MOBE', color: '#ffe61a', keys: ['match-hard', 'match-challenge', 'match-impossible'] },
     { id: 'space', tab: 'SPACE', title: 'SPACE MOBE', color: '#33ff66', keys: ['space'] },
+    { id: 'mania', tab: 'MANIA', title: 'MOBERINO MANIA', color: '#ff5b68', keys: ['mania'] },
     { id: 'snoob', tab: 'SNOOB', title: 'SNOOB', color: '#e4b65f', keys: ['snoob'] },
     { id: 'tile', tab: 'TILE SWAP', title: 'TILE SWAP', color: '#ff7180', keys: ['consume', 'consume-words', 'consume-numbers'] },
   ].map(group => ({ ...group, boards: group.keys.map(key => boards.find(b => b.key === key)).filter(Boolean) }));
@@ -1191,6 +1199,7 @@ const RemoteLB = (() => {
     'match-impossible':  { col: 'score',   dir: 'asc'  },
     space:                { col: 'score',   dir: 'desc' },
     signal:               { col: 'score',   dir: 'desc' },
+    mania:                { col: 'score',   dir: 'desc' },
     snoob:                { col: 'score',   dir: 'desc' },
     'snoob-journey':      { col: 'score',   dir: 'desc' },
     word:                 { col: 'score',   dir: 'desc' },
@@ -1847,13 +1856,14 @@ window.openLeaderboard = function() {
   const ov = document.getElementById('lb-overlay');
   if (!ov) return;
   ov.style.display = 'flex';
-  const active = window._lbActiveTab || (
+  const contextualBoard =
     document.body.classList.contains('on-match') ? getMatchLeaderboardKey()
       : document.body.classList.contains('on-space') ? 'space'
-            : document.body.classList.contains('on-snoob') ? 'snoob'
+        : document.body.classList.contains('on-mania') ? 'mania'
+          : document.body.classList.contains('on-snoob') ? 'snoob'
             : document.body.classList.contains('on-consume') ? 'consume'
-              : getWhackLeaderboardKey()
-  );
+              : null;
+  const active = contextualBoard || window._lbActiveTab || getWhackLeaderboardKey();
   renderLbTabs(active);
 };
 window.closeLbOverlay = function() {

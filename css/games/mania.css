@@ -648,10 +648,53 @@ body.on-mania.mania-phone-landscape #arcade-game-exit {
   font: 7px/1.2 'VCR', monospace;
   letter-spacing: 1px;
 }
-.mania-result-best {
-  color: #8de37f;
-  font: 10px/1.4 'VCR', monospace;
-  letter-spacing: 2px;
+.mania-final-leaderboard {
+  width: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255,91,104,.34);
+  border-radius: 10px;
+  background: rgba(5,10,7,.42);
+}
+.mania-final-leaderboard .arcade-result-board {
+  box-sizing: border-box;
+  padding-top: 8px;
+  overflow: visible;
+}
+.mania-final-leaderboard .arcade-result-save-label {
+  margin: 10px auto 8px;
+}
+.mania-final-leaderboard .arcade-result-save input {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1.5px solid #ff5b68;
+  border-radius: 4px;
+  padding: 10px 12px;
+  background: #0e0b22;
+  color: #fff;
+  outline: none;
+  text-align: center;
+  text-transform: uppercase;
+  font: 15px/1 'VCR', monospace;
+  letter-spacing: 3px;
+}
+.mania-final-leaderboard .arcade-result-save button {
+  flex: 0 0 44px;
+  width: 44px;
+  border: 1.5px solid #ff5b68;
+  border-radius: 4px;
+  background: rgba(255,91,104,.14);
+  color: #ff5b68;
+  font-size: 18px;
+  cursor: pointer;
+}
+.mania-final-status {
+  min-height: 12px;
+  margin-top: 7px;
+  color: #ff5b68;
+  font: 8px/1.2 'VCR', monospace;
+  letter-spacing: 1px;
 }
 .mania-auto-next {
   position: relative;
