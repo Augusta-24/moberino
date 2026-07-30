@@ -91,15 +91,17 @@ test('Farm Frenzy uses three depth layers and a repeatable three-hit barn prize'
   assert.match(source, /assets\/mania\/farm\/farm-backdrop-v1\.png/);
   assert.match(source, /saturate\(\.66\) brightness\(\.92\) contrast\(\.9\)/);
   assert.match(source, /assets\/mania\/farm\/barn-v1\.png/);
-  assert.match(source, /const birdPasses = \[/);
-  assert.match(source, /kind: 'flyer'/);
-  assert.match(source, /duration: 4\.15/);
-  assert.match(source, /drawLayer: 0/);
+  assert.match(source, /function spawnFarmAnimal\(slot, at\)/);
+  assert.match(source, /for \(let slot = 0; slot < 6; slot \+= 1\) spawnFarmAnimal\(slot, 0\)/);
+  assert.match(source, /clearReplace: true/);
+  assert.match(source, /spawnFarmAnimal\(target\.farmSlot, nowSeconds \+ \.12\)/);
+  assert.doesNotMatch(source, /function processFarmActivity\(/);
   assert.match(source, /pig: \[106, 65\]/);
   assert.match(source, /farmAnimal[\s\S]*small \? 36 : 46/);
-  for (const kind of ['farmPop', 'farmSlide', 'farmHill', 'farmBarnDoor', 'farmBarnBonus']) {
+  for (const kind of ['farmBarnDoor', 'farmBarnBonus']) {
     assert.match(source, new RegExp(`kind: '${kind}'`));
   }
+  assert.match(source, /\['farmPop', 'farmPop', 'farmSlide', 'farmSlide', 'farmHill', 'flyer'\]/);
   assert.match(source, /function hitFarmBarnDoor\(/);
   assert.match(source, /state\.barnHits = Math\.min\(3, state\.barnHits \+ 1\)/);
   assert.match(source, /kind: 'farmBarnBonus',\s*type: 'fox'/);
@@ -108,11 +110,9 @@ test('Farm Frenzy uses three depth layers and a repeatable three-hit barn prize'
   assert.match(source, /base: 1800 \+ state\.barnTier \* 400/);
   assert.match(source, /function processFarmBarn\(/);
   assert.match(source, /function drawBarnProgress\(/);
-  assert.match(source, /const waveTimes = \[\.55, 5\.15, 9\.75, 14\.35\]/);
-  assert.match(source, /const fillDuration = Math\.max\(\.55, Math\.min/);
-  assert.match(source, /lane: \.75 \+ \(slot % 2\) \* \.025/);
-  assert.match(source, /lane: \.5 \+ \(slot % 2\) \* \.025/);
-  assert.match(source, /\['farmSlide', leftSide \? \.63 : \.37, \.52, 350, 3\]/);
+  assert.match(source, /const kind = \['farmPop', 'farmPop', 'farmSlide', 'farmSlide', 'farmHill', 'flyer'\]\[slot\]/);
+  assert.match(source, /const anchors = \[\.18, \.38, \.61, \.82\]/);
+  assert.match(source, /const anchors = \[\.14, \.37, \.61, \.87\]/);
   assert.doesNotMatch(source, /function drawFarmDetails\(/);
   assert.match(source, /function drawFarmLayerMask\(/);
   assert.match(source, /function drawSourceAlignedMask\(/);
@@ -180,6 +180,7 @@ test('Beaver Bonanza uses rear pop-ups, clearable banks, runners, gold frenzy, a
   assert.match(source, /BANK \$\{wave \+ 1\} CLEAR/);
   assert.match(source, /GOLD BONANZA \+3000/);
   assert.match(source, /function drawDamBeaver\(/);
+  assert.match(source, /if \(pos\.hittable\) \{[\s\S]*drawBeaverTarget\(target, false\)/);
   assert.match(source, /const revealTravel = clamp/);
   assert.match(source, /target\.popWarning/);
   assert.match(source, /'HIDING!'/);
@@ -222,9 +223,15 @@ test('Beaver Bonanza uses rear pop-ups, clearable banks, runners, gold frenzy, a
   assert.match(source, /const cleared = !!target\?\.hit/);
   assert.match(source, /function targetVisualLayer\(/);
   assert.match(source, /if \(target\.kind === 'damBeaver'\) return 1/);
+  assert.match(source, /boothId === 'plates' && !damMiddleMaskDrawn && visualLayer >= 3/);
   assert.match(source, /if \(target\.kind === 'beaverRunner' \|\| target\.kind === 'beaverPeek'\) return 5/);
   assert.match(source, /CLEAR 3 ROWS → UNLOCK GOLD BEAVERS/);
   assert.match(source, /if \(currentBooth\(\)\.id === 'plates'\) \{[\s\S]*return 0/);
+});
+
+test('Mania shots use hit feedback only', () => {
+  const source = read('js/games/mania.js');
+  assert.doesNotMatch(source, /SFX\.miss\(/);
 });
 
 test('Volcano runs a two-lane dinosaur balloon parade with comet-triggered eruptions', () => {
@@ -498,7 +505,7 @@ test('Orbit uses authored booth art and resolves rings after a physical flight',
   assert.match(source, /formation\.length !== 6/);
   assert.match(source, /const cornerLaunches = \[1, 5\.8, 10\.6, 15\.4\]/);
   assert.match(source, /\['left', 'right'\]\.forEach/);
-  assert.match(source, /duration: 4\.15/);
+  assert.match(source, /duration: Math\.min\(4\.15, Math\.max\(\.6, ROUND_SECONDS - at\)\)/);
   assert.match(source, /cornerTease: true/);
   assert.match(source, /base: 2500/);
   assert.match(source, /const edgeInset = clamp\(w \* \.105, 50, 106\)/);

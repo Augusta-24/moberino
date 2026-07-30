@@ -258,8 +258,7 @@
       barnDoorCooldown: 0,
       barnBonusActive: false,
       barnBonusTarget: null,
-      farmActivityWave: 0,
-      farmNextFillAt: 0,
+      farmAnimalCycle: 0,
       damBankWave: 0,
       damBankRespawnAt: 0,
       damProgressPulseAt: 0,
@@ -480,94 +479,10 @@
   }
 
   function buildFarmRound() {
-    const animals = ['pig', 'cow', 'sheep', 'duck', 'chicken'];
-    const popAnchors = [.18, .38, .61, .82];
-    const midAnchors = [.14, .37, .61, .87];
-    const hillAnchors = [.17, .43, .87];
-    const waveTimes = [.55, 5.15, 9.75, 14.35];
-
-    // The farm now runs as four readable arrangements instead of three
-    // unrelated continuous streams. Each wave reveals from physical scenery,
-    // holds long enough for a choice, then fully retreats before the next one.
-    waveTimes.forEach((waveAt, wave) => {
-      const foregroundSlots = wave % 2 ? [1, 3] : [0, 2];
-      foregroundSlots.forEach((slot, index) => {
-        const type = animals[(wave * 2 + index) % animals.length];
-        state.targets.push({
-          kind: 'farmPop',
-          type,
-          at: waveAt + index * .12,
-          duration: 3.15,
-          anchorX: popAnchors[slot],
-          lane: .75 + (slot % 2) * .025,
-          base: type === 'duck' || type === 'chicken' ? 150 : 100,
-          drawLayer: 4,
-          wave,
-          hit: false,
-        });
-      });
-
-      const middleSlots = wave % 2 ? [0, 2] : [1, 3];
-      middleSlots.forEach((slot, index) => {
-        const type = animals[(wave * 3 + index + 2) % animals.length];
-        state.targets.push({
-          kind: 'farmSlide',
-          type,
-          at: waveAt + .58 + index * .16,
-          duration: 2.75,
-          anchorX: midAnchors[slot],
-          slideFrom: index % 2 ? .055 : -.055,
-          lane: .5 + (slot % 2) * .025,
-          base: type === 'duck' || type === 'chicken' ? 350 : 300,
-          drawLayer: 3,
-          wave,
-          hit: false,
-        });
-      });
-
-      const distantCount = wave === 2 ? 2 : 1;
-      for (let index = 0; index < distantCount; index += 1) {
-        const slot = (wave + index * 2) % hillAnchors.length;
-        const golden = wave === 2 && index === 1;
-        state.targets.push({
-          kind: 'farmHill',
-          type: animals[(wave + index + 1) % animals.length],
-          at: waveAt + 1.08 + index * .18,
-          duration: 2.3,
-          anchorX: hillAnchors[slot],
-          lane: .31 + (slot % 2) * .035,
-          base: golden ? 1000 : 650,
-          golden,
-          drawLayer: 1,
-          wave,
-          hit: false,
-        });
-      }
-    });
-
-    // Keep one deliberate aerial choice moving through the open sky between
-    // the paddock reveals. These slower passes restore the birds without
-    // turning the layered farm back into a screen-wide frenzy.
-    const birdPasses = [
-      [1.05, .17, 'right', 'bird', 500],
-      [5.45, .24, 'left', 'bluebird', 650],
-      [9.85, .15, 'right', 'bird', 500],
-      [14.25, .22, 'left', 'bluebird', 1000],
-    ];
-    birdPasses.forEach((pass, index) => {
-      state.targets.push({
-        kind: 'flyer',
-        type: pass[3],
-        at: pass[0],
-        duration: 4.15,
-        direction: pass[2],
-        lane: pass[1],
-        base: pass[4],
-        golden: index === birdPasses.length - 1,
-        drawLayer: 0,
-        hit: false,
-      });
-    });
+    // Farm animals stay available until cleared. A cleared station replaces
+    // itself in a rotated location, so deliberate players never lose a target
+    // to a timer and quick players never drain the whole field.
+    for (let slot = 0; slot < 6; slot += 1) spawnFarmAnimal(slot, 0);
 
     // The single barn stays in the back for the entire booth. Its door target
     // returns after each hit; three hits replace it with a brief gold prize.
@@ -590,42 +505,47 @@
       });
   }
 
-  function spawnFarmActivityFill(at) {
-    const wave = 100 + state.farmActivityWave;
-    state.farmActivityWave += 1;
+  function spawnFarmAnimal(slot, at) {
+    const cycle = state.farmAnimalCycle++;
     const animals = ['pig', 'cow', 'sheep', 'duck', 'chicken'];
-    const leftSide = wave % 2 === 0;
-    const nextScheduledAt = state.targets
-      .filter(target =>
-        !target.activityFill &&
-        ['farmPop', 'farmSlide', 'farmHill', 'flyer'].includes(target.kind) &&
-        target.at > at
-      )
-      .reduce((next, target) => Math.min(next, target.at), ROUND_SECONDS);
-    const fillDuration = Math.max(.55, Math.min(
-      2.2,
-      nextScheduledAt - at - .18,
-      ROUND_SECONDS - at
-    ));
-    [
-      ['farmPop', leftSide ? .24 : .76, .75, 150, 4],
-      ['farmSlide', leftSide ? .63 : .37, .52, 350, 3],
-    ].forEach((slot, index) => {
-      state.targets.push({
-        kind: slot[0],
-        type: animals[(wave + index) % animals.length],
-        at: at + index * .1,
-        duration: fillDuration,
-        anchorX: slot[1],
-        lane: slot[2],
-        slideFrom: index ? (leftSide ? .05 : -.05) : undefined,
-        base: slot[3],
-        drawLayer: slot[4],
-        wave,
-        activityFill: true,
-        hit: false,
-      });
-    });
+    const kind = ['farmPop', 'farmPop', 'farmSlide', 'farmSlide', 'farmHill', 'flyer'][slot];
+    const target = {
+      kind,
+      type: kind === 'flyer' ? (cycle % 2 ? 'bluebird' : 'bird') : animals[(cycle + slot) % animals.length],
+      at,
+      duration: Math.max(.5, ROUND_SECONDS - at),
+      farmSlot: slot,
+      clearReplace: true,
+      hit: false,
+    };
+    if (kind === 'farmPop') {
+      const anchors = [.18, .38, .61, .82];
+      target.anchorX = anchors[(cycle + slot) % anchors.length];
+      target.lane = .75 + ((cycle + slot) % 2) * .025;
+      target.base = ['duck', 'chicken'].includes(target.type) ? 150 : 100;
+      target.drawLayer = 4;
+    } else if (kind === 'farmSlide') {
+      const anchors = [.14, .37, .61, .87];
+      target.anchorX = anchors[(cycle + slot) % anchors.length];
+      target.slideFrom = (cycle + slot) % 2 ? .055 : -.055;
+      target.lane = .5 + ((cycle + slot) % 2) * .025;
+      target.base = ['duck', 'chicken'].includes(target.type) ? 350 : 300;
+      target.drawLayer = 3;
+    } else if (kind === 'farmHill') {
+      const anchors = [.17, .43, .87];
+      target.anchorX = anchors[cycle % anchors.length];
+      target.lane = .31 + (cycle % 2) * .035;
+      target.base = cycle % 7 === 6 ? 1000 : 650;
+      target.golden = cycle % 7 === 6;
+      target.drawLayer = 1;
+    } else {
+      target.direction = cycle % 2 ? 'left' : 'right';
+      target.anchorX = [.18, .36, .64, .82][cycle % 4];
+      target.lane = .15 + (cycle % 3) * .045;
+      target.base = target.type === 'bluebird' ? 650 : 500;
+      target.drawLayer = 0;
+    }
+    state.targets.push(target);
   }
 
   function buildOrbitRound() {
@@ -1168,7 +1088,6 @@
       const hiding = !!hiddenBeaver;
       addLabel(x, y, hiding ? 'HIDING!' : 'MISS', hiding ? '#b8f3ef' : '#fff4d5', hiding ? 18 : 15);
       burst(x, y, hiding ? '#65d6d1' : '#e7d8b1', hiding ? 8 : 5, .75);
-      try { SFX.miss(); } catch (e) {}
       return;
     }
 
@@ -1244,7 +1163,6 @@
       } else {
         addLabel(flight.x, flight.y - 8, 'SPLASH!', '#fff4d5', 17);
         burst(flight.x, flight.y, '#d6a565', 8, .82);
-        try { SFX.miss(); } catch (e) {}
       }
     }
     state.logFlights = state.logFlights.filter(flight => state.elapsed - flight.landsAt < .24);
@@ -1277,7 +1195,6 @@
       } else {
         addLabel(flight.x, flight.y - 8, 'BOUNCE!', '#fff4d5', 17);
         burst(flight.x, flight.y, '#6de8ff', 7, .78);
-        try { SFX.miss(); } catch (e) {}
       }
     }
     state.ringFlights = state.ringFlights.filter(flight => state.elapsed - flight.landsAt < .55);
@@ -1331,6 +1248,9 @@
     const nowSeconds = state.elapsed;
     target.hit = true;
     target.hitAt = nowSeconds;
+    if (target.clearReplace && currentBooth().id === 'farm' && nowSeconds < ROUND_SECONDS - .25) {
+      spawnFarmAnimal(target.farmSlot, nowSeconds + .12);
+    }
     if (target.repeatable) {
       target.hits = (target.hits || 0) + 1;
       target.hit = false;
@@ -1753,7 +1673,6 @@
   function processTimedMechanics() {
     if (currentBooth().id === 'farm') {
       processFarmBarn();
-      processFarmActivity();
       return;
     }
     if (currentBooth().id === 'orbit') {
@@ -1796,27 +1715,6 @@
     state.damBankWave = state.special;
     spawnDamBank(state.damBankWave, state.elapsed + .08);
     showToast(`ROW ${state.damBankWave + 1}/3 · CLEAR FIVE TO REACH GOLD!`, true, 1050);
-  }
-
-  function processFarmActivity() {
-    if (state.elapsed >= ROUND_SECONDS - .6 || state.elapsed < state.farmNextFillAt) return;
-    const activeKinds = new Set(['farmPop', 'farmSlide', 'farmHill', 'flyer']);
-    const active = state.targets.filter(target =>
-      activeKinds.has(target.kind) &&
-      !target.hit &&
-      target.at <= state.elapsed + .05 &&
-      state.elapsed <= target.at + target.duration
-    );
-    const arrivingSoon = state.targets.some(target =>
-      activeKinds.has(target.kind) &&
-      !target.hit &&
-      target.at > state.elapsed &&
-      target.at <= state.elapsed + .4
-    );
-    if (active.length >= 2 || arrivingSoon) return;
-    spawnFarmActivityFill(state.elapsed + .08);
-    state.farmNextFillAt = state.elapsed + .45;
-    state.targets.sort((a, b) => a.at - b.at);
   }
 
   function processFarmBarn() {
@@ -1988,7 +1886,6 @@
         addLabel(pos.x, pos.y - pos.r, 'POP!', '#ff8aa8', 21);
         burst(pos.x, pos.y, '#ff5d9d', 10, .82);
       }
-      try { SFX.miss(); } catch (e) {}
     }
   }
 
@@ -2071,25 +1968,23 @@
     };
 
     if (target.kind === 'farmPop') {
-      const p = clamp(local / target.duration, 0, 1);
-      const rise = p < .18
-        ? easeOut(p / .18)
-        : p > .76
-          ? easeInOut((1 - p) / .24)
-          : 1;
+      const p = target.clearReplace ? clamp(local / .22, 0, 1) : clamp(local / target.duration, 0, 1);
+      const rise = target.clearReplace
+        ? easeOut(p)
+        : p < .18
+          ? easeOut(p / .18)
+          : p > .76 ? easeInOut((1 - p) / .24) : 1;
       x = w * target.anchorX;
       y = lerp(h * .94, h * target.lane, rise);
       scale *= 1.08;
       visibility = clamp(rise * 1.8, 0, 1);
       hittable = rise > .55;
     } else if (target.kind === 'farmSlide') {
-      const p = clamp(local / target.duration, 0, 1);
-      const reveal = p < .2
-        ? easeOut(p / .2)
-        : p > .76
-          ? easeInOut((1 - p) / .24)
-          : 1;
-      const slide = easeInOut(clamp(p / .7, 0, 1));
+      const p = target.clearReplace ? clamp(local / .24, 0, 1) : clamp(local / target.duration, 0, 1);
+      const reveal = target.clearReplace
+        ? easeOut(p)
+        : p < .2 ? easeOut(p / .2) : p > .76 ? easeInOut((1 - p) / .24) : 1;
+      const slide = target.clearReplace ? easeInOut(p) : easeInOut(clamp(p / .7, 0, 1));
       x = w * (target.anchorX + target.slideFrom * (1 - slide))
         + Math.sin(p * Math.PI) * w * target.slideFrom * .35;
       y = lerp(h * .69, h * target.lane, reveal);
@@ -2097,12 +1992,10 @@
       visibility = clamp(reveal * 1.7, 0, 1);
       hittable = reveal > .55;
     } else if (target.kind === 'farmHill') {
-      const p = clamp(local / target.duration, 0, 1);
-      const reveal = p < .22
-        ? easeOut(p / .22)
-        : p > .72
-          ? easeInOut((1 - p) / .28)
-          : 1;
+      const p = target.clearReplace ? clamp(local / .26, 0, 1) : clamp(local / target.duration, 0, 1);
+      const reveal = target.clearReplace
+        ? easeOut(p)
+        : p < .22 ? easeOut(p / .22) : p > .72 ? easeInOut((1 - p) / .28) : 1;
       x = w * target.anchorX + Math.sin(p * Math.PI * 2) * w * .012;
       y = lerp(h * .47, h * target.lane, reveal);
       scale *= .48;
@@ -2134,8 +2027,16 @@
       y = ground + (h - ground) * target.lane + Math.sin(local * 12 + target.at) * 5;
       scale *= target.type === 'duck' || target.type === 'chicken' ? .87 : 1;
     } else if (target.kind === 'flyer') {
-      x = travel();
-      y = h * target.lane + Math.sin(local * 5.4 + target.at) * h * .055;
+      if (target.clearReplace) {
+        const reveal = easeOut(clamp(local / .22, 0, 1));
+        x = w * target.anchorX;
+        y = h * target.lane + Math.sin(local * 3.4 + target.at) * h * .018 - (1 - reveal) * h * .08;
+        visibility = reveal;
+        hittable = reveal > .55;
+      } else {
+        x = travel();
+        y = h * target.lane + Math.sin(local * 5.4 + target.at) * h * .055;
+      }
       scale *= .82;
     } else if (target.kind === 'peek') {
       const barn = barnGeometry(target.barn.worldX - cameraX());
@@ -2604,11 +2505,18 @@
       .map(target => ({ target, pos: targetPosition(target, state.elapsed) }))
       .filter(item => item.pos);
     let farmMiddleMaskDrawn = false;
+    let damMiddleMaskDrawn = false;
     for (const target of targetsToDraw) {
       const visualLayer = targetVisualLayer(target, boothId);
       if (boothId === 'farm' && !farmMiddleMaskDrawn && visualLayer >= 4) {
         drawFarmLayerMask(w, h, .6, .72);
         farmMiddleMaskDrawn = true;
+      }
+      // The middle rail belongs in front of the rear pop-up stations only.
+      // Bank beavers, runners, and hidden Moberinos stay fully above it.
+      if (boothId === 'plates' && !damMiddleMaskDrawn && visualLayer >= 3) {
+        drawDamMiddleRailMask(w, h);
+        damMiddleMaskDrawn = true;
       }
       const pos = targetPosition(target, state.elapsed);
       if (!pos) continue;
@@ -2667,7 +2575,7 @@
       drawFarmLayerMask(w, h, .84, 1);
       drawFarmPointOverlays(now);
     }
-    if (boothId === 'plates') drawDamMiddleRailMask(w, h);
+    if (boothId === 'plates' && !damMiddleMaskDrawn) drawDamMiddleRailMask(w, h);
     drawStageFrame(w, h, boothId);
     drawShots(now);
     drawParticles(now);
@@ -3808,14 +3716,16 @@
     const tierColors = ['#76d9a6', '#f2b94e', '#e76791'];
     const accent = tierColors[target.tier] || tierColors[0];
     ctx.save();
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(-72, -104, 144, coverY + 108);
-    ctx.clip();
-    ctx.globalAlpha *= clamp(open * 1.65, 0, 1);
-    if (target.tier === 2) ctx.translate(0, -15);
-    drawBeaverTarget(target, false);
-    ctx.restore();
+    if (pos.hittable) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(-72, -104, 144, coverY + 108);
+      ctx.clip();
+      ctx.globalAlpha *= clamp(open * 1.65, 0, 1);
+      if (target.tier === 2) ctx.translate(0, -15);
+      drawBeaverTarget(target, false);
+      ctx.restore();
+    }
 
     // Each depth tier uses a quiet physical hiding edge instead of a door:
     // foreground logs, a lodge opening, or a foamy spillway lip.
@@ -3875,7 +3785,6 @@
       circle(20, -28, 3, true);
       ctx.shadowBlur = 0;
     }
-    ctx.restore();
     ctx.restore();
   }
 
