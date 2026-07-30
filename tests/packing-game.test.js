@@ -73,6 +73,11 @@ test('Packing Game runtime does not depend on Journey or Grid Lock globals', () 
   assert.doesNotMatch(progressionSource, /journey|gridlock/i);
 });
 
+test('campaign runtime gives constrained generators enough attempts to avoid a dead-end screen', () => {
+  assert.match(uiSource, /maxAttempts:\s*1800/);
+  assert.match(engineSource, /maxAttempts:\s*nextConfig\.maxAttempts == null \? 600 : nextConfig\.maxAttempts/);
+});
+
 test('Shape Mobe celebrates the solved board before opening its completion panel', () => {
   assert.match(engineSource, /stageHost\.classList\.add\('is-completing'\)/);
   assert.match(engineSource, /node\.classList\.add\('is-victory-lit'\)/);

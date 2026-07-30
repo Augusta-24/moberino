@@ -44,6 +44,70 @@
   };
   function displayNameFor(worldId) { return WORLD_DISPLAY[worldId] || 'Unknown'; }
 
+  const WORLD_INTROS = {
+    'training-array': {
+      fact: 'TAP THE CENTER CONDUIT TO ROTATE IT',
+      demo: 'rotate',
+      second: true
+    },
+    'sliding-array': {
+      fact: 'DRAG A BAY CONDUIT INTO THE EMPTY CELL',
+      demo: 'slide'
+    },
+    'obstacle-array': {
+      fact: 'ICE CELLS CANNOT HOLD CONDUITS',
+      demo: 'barrier',
+      second: true
+    },
+    'router-array': {
+      fact: 'CYAN USES ONE CHANNEL · GREEN USES THE OTHER',
+      demo: 'router'
+    },
+    'command-array': {
+      fact: 'TAP A BOLT TO SET IT TO CYAN OR GREEN'
+    }
+  };
+
+  function introDemoMarkup(kind) {
+    if (kind === 'rotate') {
+      return `<div class="gridlock-intro-demo is-rotate" aria-hidden="true">
+        <i></i><i></i><i></i><span></span>
+      </div>`;
+    }
+    if (kind === 'slide') {
+      return `<div class="gridlock-intro-demo is-slide" aria-hidden="true">
+        <span></span><span></span><i></i>
+      </div>`;
+    }
+    if (kind === 'barrier') {
+      return `<div class="gridlock-intro-demo is-barrier" aria-hidden="true"><i></i></div>`;
+    }
+    if (kind === 'router') {
+      return `<div class="gridlock-intro-demo is-router" aria-hidden="true">
+        <i></i><i></i><em></em><span></span><b></b>
+      </div>`;
+    }
+    return '';
+  }
+
+  function statusIntroMarkup() {
+    return `
+      <strong>READ THE GRID STATE</strong>
+      <div class="gridlock-status-demo" aria-hidden="true">
+        <div class="is-unpowered"><span><i></i><i></i></span><b>CONNECTED</b><small>NO POWER</small></div>
+        <div class="is-leaking"><span><i></i><i></i><em></em></span><b>POWERED</b><small>LINK MISSING</small></div>
+        <div class="is-complete"><span><i></i><i></i></span><b>CONNECTED</b><small>FULL POWER</small></div>
+      </div>
+      <b>GOT IT</b>`;
+  }
+
+  function lockedIntroMarkup() {
+    return `
+      <strong>GOLD CONDUITS CANNOT ROTATE OR SLIDE</strong>
+      <div class="gridlock-intro-demo is-locked" aria-hidden="true"><i></i><span></span></div>
+      <b>GOT IT</b>`;
+  }
+
 
   // Level-intro teaching moment: instead of an abstract diagram, dim the
   // real board via an SVG mask and cut a bright hole over whatever the
@@ -70,10 +134,9 @@
       const progSink = puzzleLayout.sinks.find(s => s.programmable);
       if (progSink) return { rect: { x: progSink.x - 24, y: progSink.y - 34, w: 48, h: 50 }, kind: 'switch' };
     }
-    if (level.worldId === 'router-array') {
-      const routers = level.modifiers.specialTiles.filter(t => t.type === 'router');
-      if (routers.length) return { rect: cellRectFor(routers), kind: 'router' };
-    }
+    if (level.worldId === 'router-array') return null;
+    if (level.worldId === 'obstacle-array') return null;
+    if (level.worldId === 'sliding-array') return null;
     const sliding = level.modifiers.slidingPieces;
     if (sliding.enabled && sliding.movementCells.length) {
       return { rect: cellRectFor(sliding.movementCells), kind: 'slide', cell: board.cellSize };
@@ -84,20 +147,16 @@
   function spotlightDemoMarkup(spotlight) {
     const { rect, kind, cell } = spotlight;
     const cx = rect.x + rect.w / 2, cy = rect.y + rect.h / 2;
-    if (kind === 'slide') {
-      const half = Math.min(rect.w, rect.h) / 2;
-      const travel = Math.max(10, (cell || half) * .7);
-      return `<rect class="gl-spot-demo-slide" x="${cx - half * .55}" y="${cy - half - travel / 2}" width="${half * 1.1}" height="${half * 1.1}" rx="5" fill="#e0a542" style="--gl-travel:${travel}px"/>`;
-    }
-    if (kind === 'router') {
-      return `
-        <circle class="gl-spot-demo-pulse-a" cx="${rect.x}" cy="${cy - rect.h * .25}" r="4.5" fill="#8ddcff" style="--gl-travel:${rect.w}px"/>
-        <circle class="gl-spot-demo-pulse-b" cx="${rect.x}" cy="${cy + rect.h * .25}" r="4.5" fill="#9dfcc0" style="--gl-travel:${rect.w}px"/>`;
-    }
     if (kind === 'switch') {
       return `<g transform="translate(${cx},${cy})">
         <rect x="-11" y="-6" width="22" height="12" rx="6" fill="#111923" stroke="#d2dbe0" stroke-width="1.4"/>
         <circle class="gl-spot-demo-knob" cx="-4" cy="0" r="4" fill="#d2dbe0"/>
+      </g>`;
+    }
+    if (kind === 'rotate') {
+      return `<g class="gl-spot-demo-rotate" transform="translate(${cx},${cy})">
+        <rect x="-18" y="-18" width="36" height="36" rx="6" fill="#101c29" stroke="#8ddcff" stroke-width="2"/>
+        <path d="M0 0V-16M0 0H16" fill="none" stroke="#8ddcff" stroke-width="7" stroke-linecap="round"/>
       </g>`;
     }
     return '';
@@ -492,6 +551,7 @@
     const puzzleLayout = GridLock.layoutFor({ ...level, presentation });
     const canvasHeight = puzzleLayout.presentation.height;
     const introSpot = showWorldIntro ? introSpotlightMarkup(level, puzzleLayout) : { markup: '', active: false };
+    const intro = WORLD_INTROS[level.worldId] || WORLD_INTROS['training-array'];
     const sourceMarkup = puzzleLayout.sources.map((source, sourceIndex) => `
       <g id="gridlock-source-${sourceIndex}" class="gridlock-source-port ${puzzleLayout.systems[sourceIndex].color === 'green' ? 'is-green' : 'is-cyan'}"
         transform="translate(${source.x},${puzzleLayout.board.y + puzzleLayout.board.height + 31})">
@@ -814,10 +874,10 @@
           <div class="gridlock-motif" aria-hidden="true"></div>
           <div class="gridlock-vig" aria-hidden="true"></div>
 
-          ${showWorldIntro ? `<button id="gridlock-start" class="gridlock-start" type="button" onclick="gridLockBeginPuzzle()">
-            <strong>SEAL THE GRID</strong>
-            <small>${level.briefing}</small>
-            <b>BOARD THE GRID →</b>
+          ${showWorldIntro ? `<button id="gridlock-start" class="gridlock-start${level.worldId === 'command-array' ? ' is-command-intro' : ''}" data-step="1" type="button" onclick="gridLockAdvanceIntro()">
+            <strong>${intro.fact}</strong>
+            ${introDemoMarkup(intro.demo)}
+            <b>${intro.second ? 'NEXT' : 'GOT IT'}</b>
           </button>` : ''}
         </div>
         <section class="gridlock-status-board" aria-label="Grid status">
@@ -869,6 +929,25 @@
   }
 
   // ---- Global handlers (called from rendered markup) -----------------------
+
+  window.gridLockAdvanceIntro = function () {
+    if (!active) return;
+    const overlay = document.getElementById('gridlock-start');
+    const level = selectedLevel();
+    const intro = level && WORLD_INTROS[level.worldId];
+    if (overlay && intro && intro.second && overlay.dataset.step === '1') {
+      playMenuSound();
+      overlay.dataset.step = '2';
+      if (level.worldId === 'training-array') {
+        overlay.classList.add('has-status-demo');
+        overlay.innerHTML = statusIntroMarkup();
+      } else if (level.worldId === 'obstacle-array') {
+        overlay.innerHTML = lockedIntroMarkup();
+      }
+      return;
+    }
+    window.gridLockBeginPuzzle();
+  };
 
   window.gridLockBeginPuzzle = function () {
     if (!active) return;

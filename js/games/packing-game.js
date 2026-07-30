@@ -40,6 +40,51 @@
       'overlap-nodes': '#0b1720'
     }[worldId] || '#07120f';
   }
+
+  const WORLD_INTROS = {
+    'classic-packing': {
+      fact: 'DRAG THE PIECE · THEN TAP IT TO ROTATE',
+      demo: 'pack'
+    },
+    'linked-pieces': {
+      fact: 'MATCHING DOTS MUST SHARE AN EDGE',
+      demo: 'link'
+    },
+    'overlap-nodes': {
+      fact: 'PLACE TWO DIFFERENT PIECES ON EACH 2 CELL',
+      demo: 'overlap'
+    },
+    'utility-pieces': {
+      fact: 'TAP A PINNED PIECE TO ROTATE IT AROUND THE GOLD X',
+      demo: 'anchor'
+    },
+    'expanding-containers': {
+      fact: 'After the board completes, remaining pieces fill this space again.'
+    }
+  };
+
+  function introDemo(kind) {
+    if (kind === 'pack') {
+      return `<div class="packing-intro-demo is-pack" aria-hidden="true">
+        <div class="packing-pack-piece"><i></i><i></i><i></i></div>
+        <span></span>
+      </div>`;
+    }
+    if (kind === 'overlap') {
+      return `<div class="packing-intro-demo is-overlap" aria-hidden="true">
+        <span>2</span><i></i><b></b>
+      </div>`;
+    }
+    if (kind === 'anchor') {
+      return `<div class="packing-intro-demo is-anchor" aria-hidden="true">
+        <span>×</span>
+        <div class="packing-anchor-piece"><i></i><i></i><i></i></div>
+      </div>`;
+    }
+    return `<div class="packing-intro-demo is-${kind}" aria-hidden="true">
+      <i></i><i></i><i></i><i></i><b></b><b></b>
+    </div>`;
+  }
   function worldIcon(index) {
     const common = 'viewBox="0 0 64 64" aria-hidden="true"';
     const icons = [
@@ -139,7 +184,9 @@
     if (!root || !active) return;
     const level = selectedLevel();
     const worldIndex = PackingGameLevels.worlds.findIndex(world => world.id === level.worldId);
-    const showIntro = !debugMode && level.order === 1;
+    const levelWorld = PackingGameLevels.worlds[worldIndex];
+    const showIntro = Boolean(levelWorld && levelWorld.levels[0] && levelWorld.levels[0].id === level.id);
+    const intro = WORLD_INTROS[level.worldId] || WORLD_INTROS['classic-packing'];
     const anchorHelp = level.generator.anchorCount ? ' · X=PIVOT' : '';
     const linkedHelp = level.generator.anchorGroupCount ? ' · CYAN X=LINKED' : '';
     const zoneHelp = level.generator.overlapZoneSize ? ' · SAVE PIECES FOR LAYER 2' : '';
@@ -345,11 +392,11 @@
             <text id="packing-rack-mobile-hint" x="36" y="705" class="packing-rack-mobile-hint" aria-hidden="true">DRAG TO MOVE · TAP PIECE TO ROTATE</text>
             <g id="packing-tray"></g>
           </svg>
-          ${showIntro ? `<button id="packing-start" class="packing-start" type="button" onclick="packingGameBegin()">
-            <span>${level.name.toUpperCase()}</span>
-            <strong>FILL THE CONTAINER</strong>
-            <small>${level.briefing}</small>
-            <b>START PACKING →</b>
+          ${showIntro && !level.generator.overlapZoneSize ? '<div class="packing-intro-shade" aria-hidden="true"></div>' : ''}
+          ${showIntro ? `<button id="packing-start" class="packing-start${level.generator.overlapZoneSize ? ' is-zone-intro' : ''}" type="button" onclick="packingGameBegin()">
+            <strong>${intro.fact}</strong>
+            ${level.generator.overlapZoneSize ? '' : introDemo(intro.demo)}
+            <b>GOT IT</b>
           </button>` : ''}
         </div>
       </main>`;
@@ -395,6 +442,9 @@
       trayCellSize: 26,
       trayCols: 5,
       regionBackgroundFill: boardFillFor(level.worldId),
+      // Constraint-heavy opening levels have a long random tail. Keep a
+      // valid recipe from occasionally exhausting the generator first.
+      maxAttempts: 1800,
       pieceCount: level.generator.pieceCount,
       pieceIndexList: level.generator.pieceIndexList,
       targetMin: level.generator.targetMin,
@@ -416,7 +466,43 @@
     });
     if (!ok) {
       document.getElementById('packing-stage').insertAdjacentHTML('beforeend', '<div class="packing-error">COULD NOT GENERATE THIS PUZZLE.<button onclick="packingGameReset()">TRY AGAIN</button></div>');
+      return;
     }
+    // Layered boards add their chamber overlay during engine startup. Restore
+    // the explicit Level 1 presentation state afterward so every world's
+    // first generated board, including World 5, opens behind its intro.
+    if (showIntro) {
+      const stage = document.getElementById('packing-stage');
+      if (stage) stage.classList.add('is-paused');
+      if (level.generator.overlapZoneSize) positionZoneIntro();
+    }
+  }
+
+  function positionZoneIntro() {
+    const stage = document.getElementById('packing-stage');
+    const panel = document.getElementById('packing-start');
+    const cells = [...document.querySelectorAll('.pge-overlap-zone-cell')];
+    if (!stage || !panel || !cells.length) return;
+    const stageRect = stage.getBoundingClientRect();
+    const rects = cells.map(cell => cell.getBoundingClientRect());
+    const left = Math.min(...rects.map(rect => rect.left)) - stageRect.left;
+    const top = Math.min(...rects.map(rect => rect.top)) - stageRect.top;
+    const right = Math.max(...rects.map(rect => rect.right)) - stageRect.left;
+    const bottom = Math.max(...rects.map(rect => rect.bottom)) - stageRect.top;
+    const focus = document.createElement('div');
+    focus.className = 'packing-zone-intro-focus';
+    focus.style.left = `${left - 5}px`;
+    focus.style.top = `${top - 5}px`;
+    focus.style.width = `${right - left + 10}px`;
+    focus.style.height = `${bottom - top + 10}px`;
+    stage.appendChild(focus);
+
+    const panelWidth = Math.min(360, Math.max(250, stageRect.width - 24));
+    const panelLeft = Math.max(12, Math.min(stageRect.width - panelWidth - 12, (left + right - panelWidth) / 2));
+    const placeBelow = bottom + 124 < stageRect.height;
+    panel.style.width = `${panelWidth}px`;
+    panel.style.left = `${panelLeft}px`;
+    panel.style.top = `${placeBelow ? bottom + 22 : Math.max(12, top - 116)}px`;
   }
 
   function updateLayerUI(phase) {
@@ -473,6 +559,8 @@
     sound();
     const overlay = document.getElementById('packing-start');
     if (overlay) overlay.remove();
+    const focus = document.querySelector('.packing-zone-intro-focus');
+    if (focus) focus.remove();
     const stage = document.getElementById('packing-stage');
     if (stage) stage.classList.remove('is-paused');
     PackingGameEngine.begin();

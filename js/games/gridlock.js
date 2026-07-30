@@ -917,6 +917,7 @@
     });
     const onlineSinks = SINKS.filter(sink => {
       const sinkTile = tileAt(sink.r, sink.c);
+      if (!sinkTile || !effConns(sinkTile).has(sink.side)) return false;
       const node = graphNodeKey(sinkTile, sink.side);
       return sink.assignedSystem !== null
         && sink.assignedSystem === colorChoiceForSystem(sink.system)

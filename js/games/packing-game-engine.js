@@ -1936,6 +1936,7 @@
     puzzle = generate({
       pieceCount: nextConfig.pieceCount == null ? 8 : nextConfig.pieceCount,
       pieceIndexList: nextConfig.pieceIndexList,
+      maxAttempts: nextConfig.maxAttempts == null ? 600 : nextConfig.maxAttempts,
       targetMin: nextConfig.targetMin == null ? 3 : nextConfig.targetMin,
       targetMax: nextConfig.targetMax == null ? 4 : nextConfig.targetMax,
       maxDimension: nextConfig.maxDimension == null ? 8 : nextConfig.maxDimension,

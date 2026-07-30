@@ -2015,7 +2015,7 @@
   function createRainEye(now, rescue) {
     return {
       x: W * 0.5, fromX: W * 0.5, toX: W * 0.5, lane: 2,
-      radius: Math.max(64, Math.min(72, W * 0.19)),
+      radius: Math.max(56, Math.min(64, W * 0.17)),
       tellAt: now + 900, moveAt: 0, arriveAt: 0, nextMoveAt: now + 900,
       step: 0, sequence: rescue ? [3, 2, 1, 2] : [1, 2, 3, 2], seed: rescue ? 7 : 3,
     };
@@ -2100,8 +2100,30 @@
     const cloud = encounter.cloud;
     if (!cloud || cloud.alive === false) return;
     const margin = cloud.r + 12;
-    const amplitude = Math.max(0, (W - margin * 2) / 2);
-    cloud.x = W / 2 + Math.sin((now - cloud.danceStartedAt) * 0.0009 + (cloud.dancePhase || 0)) * amplitude;
+    // Keep the cloud moving enough to demand aim, but not so quickly that a whole
+    // dry opening can pass without the player ever getting a clean firing lane.
+    const amplitude = Math.max(0, (W - margin * 2) * 0.34);
+    cloud.x = W / 2 + Math.sin((now - cloud.danceStartedAt) * 0.00062 + (cloud.dancePhase || 0)) * amplitude;
+  }
+
+  const RAIN_WARNING_MS = 420;
+  const RAIN_FALL_MS = 980;
+  const RAIN_DRY_MS = 1120;
+  const RAIN_CYCLE_MS = RAIN_WARNING_MS + RAIN_FALL_MS + RAIN_DRY_MS;
+
+  function rainBandPhase(encounter, now) {
+    const start = encounter.rainCycleStartedAt || encounter.startedAt || now;
+    if (now < start) return 'dry';
+    const t = (now - start) % RAIN_CYCLE_MS;
+    if (t < RAIN_WARNING_MS) return 'warning';
+    if (t < RAIN_WARNING_MS + RAIN_FALL_MS) return 'falling';
+    return 'dry';
+  }
+
+  function playerCoveredByRainEye(encounter) {
+    if (!player || !encounter || !encounter.eye) return false;
+    const shipRadius = player.r * 0.8;
+    return Math.abs(player.x - encounter.eye.x) + shipRadius <= encounter.eye.radius;
   }
 
   function fireRainGuardianShot(guardian, targetX, targetY, now) {
@@ -2125,10 +2147,21 @@
     updateRainCloudDance(encounter, now);
     if (!encounter.rainActive) return;
 
-    const safe = player && Math.abs(player.x - encounter.eye.x) <= encounter.eye.radius - 4;
-    if (safe) encounter.outsideEyeSince = 0;
+    const phase = rainBandPhase(encounter, now);
+    if (phase !== encounter.rainBandPhase) {
+      encounter.rainBandPhase = phase;
+      encounter.outsideEyeSince = 0;
+      if (phase === 'warning') playPurpleRainWarningCue();
+      if (phase === 'dry' && !encounter.firstDryGapShown) {
+        encounter.firstDryGapShown = true;
+        addFloatText('DRY GAP — FLY OUT & FIRE!', W / 2, H * 0.42, '#baffd4', 18, { vy: 0, holdMs: 900, fade: 0.014 });
+      }
+    }
+
+    const covered = playerCoveredByRainEye(encounter);
+    if (covered || phase !== 'falling') encounter.outsideEyeSince = 0;
     else if (!encounter.outsideEyeSince) encounter.outsideEyeSince = now;
-    if (now >= (encounter.rainArmedAt || 0) && !safe && now - encounter.outsideEyeSince >= 110 && now >= (encounter.nextRainDamageAt || 0)) {
+    if (phase === 'falling' && !covered && now - encounter.outsideEyeSince >= 110 && now >= (encounter.nextRainDamageAt || 0)) {
       takeDamage(5, 'PURPLE RAIN');
       encounter.nextRainDamageAt = now + 450;
     }
@@ -2668,6 +2701,7 @@
       kind: 'rescue', phase: 'rain', ringOpenUntil: 0,
       eye: createRainEye(now, true), rainActive: true, rainArmedAt: now + 1500,
       nextRainDamageAt: now + 1500, outsideEyeSince: 0,
+      rainCycleStartedAt: now + 900, rainBandPhase: 'dry', firstDryGapShown: false,
       cloudIndex: 1, guardians: [], guardianTurn: 0,
       nextGuardianShotAt: now + 2100, pendingGuardianShot: null,
       nextAttackAt: 0, attackPending: false,
@@ -4563,6 +4597,7 @@
       wave: 3, kind: 'purpleStorm', phase: 'storm', finished: false,
       eye: createRainEye(now, false), rainActive: true, rainArmedAt: now + 1500,
       nextRainDamageAt: now + 1500, outsideEyeSince: 0,
+      rainCycleStartedAt: now + 900, rainBandPhase: 'dry', firstDryGapShown: false,
       cloudIndex: 1, cloud: null, guardians: [], guardianTurn: 0,
       nextGuardianShotAt: now + 2100, nextGuardianSpawnAt: now + 420, pendingGuardianShot: null,
       startedAt: now,
@@ -4757,6 +4792,9 @@
           earlyEncounter.rainArmedAt = now + 650;
           earlyEncounter.nextRainDamageAt = now + 650;
           earlyEncounter.outsideEyeSince = 0;
+          earlyEncounter.rainCycleStartedAt = now + 500;
+          earlyEncounter.rainBandPhase = 'dry';
+          earlyEncounter.firstDryGapShown = false;
           earlyEncounter.nextGuardianShotAt = now + 900;
           earlyEncounter.nextGuardianSpawnAt = now + 220;
           spawnRainGuardianForEncounter(earlyEncounter, 0.18, 0.28, 10);
@@ -6273,7 +6311,8 @@ function nextWave() {
     if (!encounter || !encounter.eye) return;
     const now = Date.now();
     const eyeY = player ? player.y : H * 0.82;
-    if (encounter.rainActive) {
+    const phase = rainBandPhase(encounter, now);
+    if (encounter.rainActive && phase === 'falling') {
       ctx.save();
       ctx.strokeStyle = 'rgba(194,143,255,0.66)';
       ctx.lineWidth = 2.2;
@@ -6282,9 +6321,20 @@ function nextWave() {
       for (let i = 0; i < count; i++) {
         const x = ((i * 47.3 + (i % 4) * 13.7) % (W + 30)) - 15;
         const y = ((now * (0.42 + (i % 5) * 0.035) + i * 83) % (H + 70)) - 35;
+        if (Math.hypot(x - encounter.eye.x, y - eyeY) < encounter.eye.radius + 8) continue;
         ctx.globalAlpha = 0.42 + (i % 4) * 0.11;
         ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 5, y + 23 + (i % 3) * 5); ctx.stroke();
       }
+      ctx.restore();
+    } else if (encounter.rainActive && phase === 'warning') {
+      ctx.save();
+      const pulse = 0.08 + Math.abs(Math.sin(now * 0.025)) * 0.10;
+      ctx.fillStyle = `rgba(194,143,255,${pulse})`;
+      ctx.fillRect(0, 0, W, H);
+      ctx.font = `bold 14px 'Bebas Neue', cursive`;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#e7c8ff';
+      ctx.fillText('RAIN BAND INCOMING', W / 2, eyeY - encounter.eye.radius - 18);
       ctx.restore();
     }
 
@@ -6307,11 +6357,11 @@ function nextWave() {
     }
 
     ctx.save();
-    const safe = player && Math.abs(player.x - eye.x) <= eye.radius - 4;
-    ctx.fillStyle = safe ? 'rgba(80,255,160,0.18)' : 'rgba(80,230,170,0.11)';
-    ctx.strokeStyle = safe ? '#66ffad' : '#92ffd0';
+    const covered = playerCoveredByRainEye(encounter);
+    ctx.fillStyle = covered ? 'rgba(80,255,160,0.18)' : 'rgba(80,230,170,0.11)';
+    ctx.strokeStyle = covered ? '#66ffad' : '#92ffd0';
     ctx.shadowColor = '#55ffad';
-    ctx.shadowBlur = safe ? 18 : 10;
+    ctx.shadowBlur = covered ? 18 : 10;
     ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(eye.x, eyeY, eye.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.restore();
@@ -6777,8 +6827,9 @@ function nextWave() {
     }
     const _frozen = _now < buffFrozenUntil, _zapped = _now < buffZappedUntil, _blasterJammed = _now < blasterDisabledUntil;
     const _pizza = _now < buffPizzaUntil;
+    const _rainCoverBlocksFire = playerCoveredByRainEye(activeRainEncounter());
     const curFireMs = _now < buffGunUntil ? AUTO_FIRE_MS * 0.4 : AUTO_FIRE_MS;
-    if (!waveTransitioning && !_blasterJammed && _pizza) {
+    if (!waveTransitioning && !_blasterJammed && !_rainCoverBlocksFire && _pizza) {
       // Its own much slower, separate cadence — a deliberate pump-shotgun rhythm,
       // not rapid fire — plus slower bullets so each blast reads as heavy rather
       // than just "more bullets at the normal speed."
@@ -6790,7 +6841,7 @@ function nextWave() {
         SFX.bomberDive();
         lastPizzaFire = ts;
       }
-    } else if(!waveTransitioning && !_blasterJammed && ts-lastAutoFire>curFireMs){
+    } else if(!waveTransitioning && !_blasterJammed && !_rainCoverBlocksFire && ts-lastAutoFire>curFireMs){
       bullets.push({x:player.x,y:player.y-player.r*1.2,vy:-B_SPEED});
       if (_zapped) SFX.fart(); else playNormalInstrumentSfx('blaster');
       lastAutoFire=ts;

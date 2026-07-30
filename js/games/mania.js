@@ -42,8 +42,8 @@
       accent: '#ff8c68',
       hudLabel: 'BONANZA HITS',
       goal: 5,
-      intro: 'Large foreground beavers rise slowly from the log bank. Lodge beavers are quicker. Tiny spillway beavers appear briefly for the highest score. Riverbank beavers tease, hold, then retreat.',
-      prompt: 'LOG BANK SLOW · LODGE QUICK · SPILLWAY FLASH!',
+      intro: 'Logs land exactly where you tap, but distant throws take a much larger curved path before impact. Clear three five-beaver banks to summon the golden bonanza while tracking foreground runners and two covered spillway experts.',
+      prompt: 'TAP THE TARGET · WATCH THE CURVE · CLEAR 3 BANKS!',
     },
     {
       id: 'volcano',
@@ -52,8 +52,8 @@
       accent: '#ff5d9d',
       hudLabel: 'ERUPTION STEPS',
       goal: 3,
-      intro: 'Clear every glowing balloon in 3 formations to erupt the volcano. Dim edge balloons are optional low-score bait.',
-      prompt: 'CLEAR 3 GLOWING FORMATIONS TO ERUPT!',
+      intro: 'Dinosaurs parade past with balloons in tow. Pop balloons first for maximum points, or hit the dinosaur for a quick chain pop. Clear each three-comet wave to erupt the volcano.',
+      prompt: 'BALLOONS OR DINO · CLEAR 3 COMETS!',
     },
     {
       id: 'finale',
@@ -80,6 +80,8 @@
   let ctx = null;
   let stage = null;
   let toastTimer = 0;
+  let intermissionTimer = 0;
+  let intermissionTicker = 0;
   let resizeObserver = null;
   let state = null;
 
@@ -93,6 +95,7 @@
     const visibleHeight = Math.max(1, Math.floor(viewport?.height || window.innerHeight || 1));
     const visibleWidth = Math.max(1, Math.floor(viewport?.width || window.innerWidth || 1));
     const landscape = visibleWidth > visibleHeight;
+    const phoneLandscape = landscape && visibleHeight <= 500 && visibleWidth <= 950;
     document.documentElement.style.setProperty('--mania-vh', `${visibleHeight}px`);
     document.documentElement.style.setProperty(
       '--mania-game-height',
@@ -103,6 +106,7 @@
       'mania-compact-landscape',
       landscape && visibleHeight <= 700
     );
+    document.body.classList.toggle('mania-phone-landscape', phoneLandscape);
   }
 
   window.addEventListener('resize', syncManiaViewportHeight);
@@ -221,13 +225,13 @@
       startAt: 0,
       elapsed: 0,
       score: 0,
-      combo: 0,
-      bestCombo: 0,
       hits: 0,
       taps: 0,
       special: 0,
       hiddenMobesFound: 0,
       hiddenMobeTotal: 2,
+      hiddenMobesAssigned: 0,
+      hiddenCharacterPool: [],
       bonusTriggered: false,
       eruptionAt: 0,
       volcanoStage: 0,
@@ -237,6 +241,7 @@
       labels: [],
       shots: [],
       ringFlights: [],
+      logFlights: [],
       formationWave: 0,
       formationRespawnAt: 0,
       orbitBossActive: false,
@@ -252,10 +257,13 @@
       barnDoorCooldown: 0,
       barnBonusActive: false,
       barnBonusTarget: null,
+      damBankWave: 0,
+      damBankRespawnAt: 0,
+      damGoldActive: false,
+      damGoldCleared: false,
       barns: [],
       props: [],
       direction: 1,
-      lastHitAt: -99,
       width: 0,
       height: 0,
       dpr: 1,
@@ -277,6 +285,7 @@
 
   window.initMania = function initMania() {
     cancelAnimationFrame(frame);
+    clearIntermission();
     frame = 0;
     state = initialState();
     syncManiaViewportHeight();
@@ -290,6 +299,7 @@
     cancelAnimationFrame(frame);
     frame = 0;
     clearTimeout(toastTimer);
+    clearIntermission();
     ManiaMusic.stop();
     if (resizeObserver) resizeObserver.disconnect();
     resizeObserver = null;
@@ -298,6 +308,7 @@
     stage = null;
     document.body?.classList.remove('mania-compact-landscape');
     document.body?.classList.remove('mania-landscape');
+    document.body?.classList.remove('mania-phone-landscape');
     document.documentElement.style.removeProperty('--mania-vh');
     document.documentElement.style.removeProperty('--mania-game-height');
   };
@@ -322,6 +333,7 @@
 
   function startBooth(boothIndex, totalScore, rounds, practice = false) {
     cancelAnimationFrame(frame);
+    clearIntermission();
     ManiaMusic.start();
     if (resizeObserver) resizeObserver.disconnect();
     const booth = BOOTHS[boothIndex];
@@ -403,56 +415,64 @@
   }
 
   function buildHiddenMobes(boothId) {
-    const placements = {
-      farm: [
-        { anchorX: .12, lane: .58, cover: 'hay' },
-        { anchorX: .89, lane: .42, cover: 'bush' },
-      ],
-      orbit: [
-        { progress: .27, lane: .34, cover: 'moonRock' },
-        { progress: .73, lane: .61, cover: 'satellite' },
-      ],
-      plates: [
-        { anchorX: .18, lane: .28, cover: 'canoe' },
-        { anchorX: .82, lane: .28, cover: 'cattails' },
-      ],
-      volcano: [
-        { anchorX: .13, lane: .59, cover: 'lavaRock' },
-        { anchorX: .87, lane: .34, cover: 'balloonBush' },
-      ],
-      finale: [
-        { progress: .21, lane: .36, cover: 'window' },
-        { progress: .79, lane: .61, cover: 'neonSign' },
-      ],
+    state.hiddenMobesAssigned = 0;
+    state.hiddenCharacterPool = shuffledHiddenCharacters();
+    if (boothId === 'finale') {
+      state.hiddenMobeTotal = 0;
+      return;
+    }
+
+    const eligibleKinds = {
+      farm: ['farmPop', 'farmSlide', 'farmHill', 'flyer'],
+      orbit: ['phaseFlyer'],
+      plates: ['beaverRunner'],
+      volcano: ['dinosaur'],
     };
-    (placements[boothId] || []).forEach((placement, index) => {
-      const character = hiddenCharacterFor(boothId, index);
-      state.targets.push({
-        kind: 'hiddenMobe',
-        type: 'hiddenMoberino',
-        at: 0,
-        duration: roundDuration(boothId),
-        worldX: Number.isFinite(placement.progress)
-          ? (boothId === 'finale' ? FINALE_WORLD_LENGTH : WORLD_LENGTH) * placement.progress
-          : undefined,
-        anchorX: placement.anchorX,
-        lane: placement.lane,
-        cover: placement.cover,
-        variant: index,
-        character,
-        base: 1000,
-        hiddenMobe: true,
-        hit: false,
-      });
+    const candidates = state.targets.filter(target =>
+      eligibleKinds[boothId]?.includes(target.kind) &&
+      !target.golden &&
+      !target.repeatable
+    );
+    if (!candidates.length) return;
+
+    // One discovery in each half keeps both cameos surprising without allowing
+    // random selection to clump them into a single unreadable moment.
+    const midpoint = roundDuration(boothId) / 2;
+    const early = candidates.filter(target => target.at < midpoint);
+    const late = candidates.filter(target => target.at >= midpoint);
+    const pools = boothId === 'volcano' ? [early] : [early, late.length ? late : early];
+    pools.forEach(pool => {
+      const available = pool.filter(target => !target.hiddenMobe);
+      if (!available.length) return;
+      makeHiddenMobeReplacement(available[Math.floor(Math.random() * available.length)], boothId);
     });
+  }
+
+  function makeHiddenMobeReplacement(target, boothId = currentBooth()?.id) {
+    if (!target || target.hiddenMobe || state.hiddenMobesAssigned >= state.hiddenMobeTotal) return;
+    const index = state.hiddenMobesAssigned;
+    target.hiddenMobe = true;
+    target.originalType = target.type;
+    target.type = 'hiddenMoberino';
+    target.character = hiddenCharacterFor(boothId, index);
+    target.variant = index;
+    target.base = 1000;
+    state.hiddenMobesAssigned += 1;
   }
 
   function hiddenCharacterFor(boothId, index) {
     if (typeof GAME_CHARS === 'undefined' || !GAME_CHARS.length) return null;
-    const playerIndex = typeof getGlobalChar === 'function' ? getGlobalChar() : -1;
-    const pool = GAME_CHARS.filter((character, characterIndex) => characterIndex !== playerIndex);
-    const boothIndex = Math.max(0, BOOTHS.findIndex(booth => booth.id === boothId));
-    return pool[(boothIndex * 3 + index * 7) % pool.length] || GAME_CHARS[0];
+    return state.hiddenCharacterPool[index % state.hiddenCharacterPool.length] || GAME_CHARS[0];
+  }
+
+  function shuffledHiddenCharacters() {
+    if (typeof GAME_CHARS === 'undefined' || !GAME_CHARS.length) return [];
+    const pool = [...GAME_CHARS];
+    for (let index = pool.length - 1; index > 0; index -= 1) {
+      const swapIndex = Math.floor(Math.random() * (index + 1));
+      [pool[index], pool[swapIndex]] = [pool[swapIndex], pool[index]];
+    }
+    return pool;
   }
 
   function buildFarmRound() {
@@ -621,66 +641,91 @@
   }
 
   function buildDamRound() {
-    const tiers = [
-      { type: 'standard', base: 250, openWindow: 2.15, period: 4.2, size: 1.04, transition: .38, warning: .72 },
-      { type: 'foreman', base: 700, openWindow: 1.45, period: 4.8, size: .92, transition: .3, warning: .62 },
-      { type: 'expert', base: 1600, openWindow: .85, period: 5.6, size: .56, transition: .18, warning: .52 },
-    ];
-
-    const stations = [
-      // Back spillway: two rare, tiny, high-value appearances.
-      [.38, .29, 2], [.64, .29, 2],
-      // Middle lodge: three quicker natural openings.
-      [.25, .51, 1], [.5, .48, 1], [.75, .51, 1],
-      // Foreground log bank: two large, slow, readable targets.
-      [.32, .73, 0], [.68, .73, 0],
-    ];
-
-    // Beavers physically rise from scenery, hold, then duck away. Perspective,
-    // scale, and exposure time create the economy without permanent door slabs.
-    stations.forEach((station, i) => {
-      const tierIndex = station[2];
-      const tier = tiers[tierIndex];
-      const depthScale = station[1] < .3 ? .82 : station[1] < .5 ? .9 : 1;
+    // Only the two distant spillway experts keep the cover-and-pop timing.
+    // They are the booth's precision layer, not its dominant interaction.
+    [[.38, .29], [.64, .29]].forEach((station, i) => {
       state.targets.push({
         kind: 'damBeaver',
-        type: tier.type,
+        type: 'expert',
         at: 0,
         duration: ROUND_SECONDS,
         anchorX: station[0],
         anchorY: station[1],
-        base: tier.base,
-        openWindow: tier.openWindow,
-        popPeriod: tier.period,
-        doorTransition: tier.transition,
-        warningWindow: tier.warning,
-        cycleOffset: (i * .73) % tier.period,
-        targetScale: tier.size * depthScale,
-        tier: tierIndex,
+        base: 2000,
+        openWindow: 1.05,
+        popPeriod: 4.8,
+        doorTransition: .2,
+        warningWindow: .58,
+        cycleOffset: i * 1.9,
+        targetScale: .58,
+        tier: 2,
         spent: false,
         hit: false,
       });
     });
 
-    // Five authored edge teases leave recovery space between appearances.
-    // Each beaver peeks perpendicular to the frame, holds, then retreats.
-    const edgePeeks = [
-      [2.0, 'left', .23],
-      [5.7, 'right', .39],
-      [9.4, 'left', .55],
-      [13.1, 'right', .27],
-      [16.8, 'left', .46],
+    spawnDamBank(0, 0);
+
+    // Foreground runners provide constant motion and a second attention lane.
+    const runnerPasses = [
+      [.65, 'right'], [2.75, 'left'], [4.85, 'right'], [6.95, 'left'],
+      [9.05, 'right'], [11.15, 'left'], [13.25, 'right'], [15.35, 'left'], [17.45, 'right'],
     ];
-    edgePeeks.forEach((peek, i) => {
+    runnerPasses.forEach((pass, i) => {
       state.targets.push({
-        kind: 'beaverPeek',
+        kind: 'beaverRunner',
         type: i % 4 === 3 ? 'foreman' : 'standard',
-        at: peek[0],
-        duration: i % 4 === 3 ? 3.05 : 3.35,
-        side: peek[1],
-        lane: peek[2],
-        base: i % 4 === 3 ? 850 : 400,
-        targetScale: i % 4 === 3 ? .72 : .82,
+        at: pass[0],
+        duration: 4.1,
+        direction: pass[1],
+        lane: .79 + (i % 2) * .055,
+        base: i % 4 === 3 ? 1200 : 600,
+        targetScale: i % 4 === 3 ? .88 : 1,
+        hit: false,
+      });
+    });
+  }
+
+  function spawnDamBank(wave, at) {
+    const positions = [
+      [.14, .525], [.32, .525], [.5, .525], [.68, .525], [.86, .525],
+    ];
+    // Set one clean horizontal rack from left to right so every target shares
+    // the same visual and aiming line.
+    const setDelays = [0, .08, .16, .24, .32];
+    positions.forEach((position, index) => {
+      state.targets.push({
+        kind: 'damBank',
+        type: (wave + index) % 3 === 0 ? 'foreman' : 'standard',
+        at: at + setDelays[index],
+        duration: Math.max(.5, ROUND_SECONDS - at - setDelays[index]),
+        anchorX: position[0],
+        anchorY: position[1],
+        bankWave: wave,
+        base: 700 + wave * 200,
+        targetScale: position[1] > .54 ? .78 : .7,
+        hit: false,
+      });
+    });
+  }
+
+  function spawnGoldenBeavers(at) {
+    state.damGoldActive = true;
+    const positions = [
+      [.14, .525], [.32, .525], [.5, .525], [.68, .525], [.86, .525],
+    ];
+    const setDelays = [0, .08, .16, .24, .32];
+    positions.forEach((position, index) => {
+      state.targets.push({
+        kind: 'goldBeaver',
+        type: index % 2 ? 'foreman' : 'expert',
+        at: at + setDelays[index],
+        duration: Math.max(.5, ROUND_SECONDS - at - setDelays[index]),
+        anchorX: position[0],
+        anchorY: position[1],
+        base: 1000,
+        targetScale: position[1] > .5 ? .82 : .68,
+        golden: true,
         hit: false,
       });
     });
@@ -689,64 +734,76 @@
   function buildVolcanoRound() {
     state.volcanoStage = 0;
     state.volcanoStageReadyAt = 0;
-    spawnVolcanoStage(0, .45);
-
-    // Low-score balloons are intentionally permanent bait. They vanish briefly
-    // when popped, then refill the lower and side lanes throughout all stages.
-    const decoys = [
-      [.08, .72], [.21, .81], [.79, .81], [.92, .72],
-      [.09, .48], [.91, .48],
+    const passes = [
+      [.35, 'right', .79, 2], [2.8, 'left', .59, 2],
+      [5.2, 'right', .79, 3], [7.6, 'left', .59, 2],
+      [10, 'right', .79, 3], [12.4, 'left', .59, 3],
+      [14.7, 'right', .79, 3], [16.8, 'left', .59, 3],
+      [18.4, 'right', .79, 3],
     ];
-    decoys.forEach((anchor, i) => {
+    passes.forEach((pass, index) => spawnVolcanoDinosaur(
+      index,
+      pass[0],
+      pass[1],
+      pass[2],
+      pass[3]
+    ));
+    spawnVolcanoStage(0, .55);
+  }
+
+  function spawnVolcanoDinosaur(index, at, direction, lane, balloonCount) {
+    const dinosaur = {
+      kind: 'dinosaur',
+      type: index % 3 === 1 ? 'triceratops' : 'trex',
+      at,
+      duration: lane < .7 ? 9.2 : 8.4,
+      direction,
+      lane,
+      dinoIndex: index,
+      base: 400,
+      targetScale: lane < .7 ? .72 : .94,
+      hit: false,
+    };
+    state.targets.push(dinosaur);
+    for (let balloonIndex = 0; balloonIndex < balloonCount; balloonIndex += 1) {
       state.targets.push({
-        kind: 'volcanoDecoy',
+        kind: 'dinoBalloon',
         type: 'treeBalloon',
-        at: 0,
-        duration: ROUND_SECONDS,
-        anchorX: anchor[0],
-        anchorY: anchor[1],
-        base: Math.round(200 + Math.random() * 200),
-        hue: i % 3,
-        repeatable: true,
+        at,
+        duration: dinosaur.duration,
+        parent: dinosaur,
+        balloonIndex,
+        balloonCount,
+        hue: (index + balloonIndex) % 3,
+        base: 300,
         hit: false,
       });
-    });
-
+    }
   }
 
   function spawnVolcanoStage(stageIndex, at) {
-    // Required skinny lava balloons sit directly on the volcano instead of
-    // floating among decorative tree balloons. Each step adds another piece
-    // to the readable lava formation.
-    const formations = [
-      [[.41,.48],[.5,.37],[.59,.48]],
-      [[.36,.56],[.44,.43],[.56,.43],[.64,.56]],
-      [[.32,.62],[.39,.51],[.46,.39],[.54,.39],[.61,.51],[.68,.62]],
-    ];
-    const formation = formations[stageIndex] || formations[formations.length - 1];
-    formation.forEach((anchor, i) => {
+    [.27, .5, .73].forEach((anchorX, index) => {
       state.targets.push({
-        kind: 'lavaBalloon',
-        type: 'lavaStream',
+        kind: 'volcanoComet',
+        type: 'cometTarget',
         at,
         duration: Math.max(.5, ROUND_SECONDS - at),
-        anchorX: anchor[0],
-        anchorY: anchor[1],
+        anchorX,
+        anchorY: .23 + (index % 2) * .035,
         stageIndex,
         stageTarget: true,
-        enterFrom: i % 2 ? 1 : -1,
-        vent: true,
-        base: Math.round(50 + Math.random() * 50),
-        hue: 3 + stageIndex,
+        base: 750 + stageIndex * 250,
         hit: false,
       });
     });
   }
 
   function buildFinaleRound() {
-    // Phase 1 starts with one central decision. Its unfolded bank adapts to
-    // phone space while larger stages keep the broad scattered arrangement.
-    spawnFinaleStaticWave(0, 0);
+    // Phase 1 keeps multiple compact banks in play. New hubs rise on a fixed
+    // cadence instead of waiting for the previous expansion to be cleared.
+    [0, 3.8, 7.6, 11.4, 15.2].forEach((at, wave) => {
+      spawnFinaleStaticWave(wave, at);
+    });
 
     // Phase 2: a deliberately paced left-to-right pass. Targets are smaller,
     // staggered across lanes, and still unfold for players who track a bank.
@@ -792,19 +849,21 @@
   }
 
   function spawnFinaleStaticWave(wave, at) {
+    const anchorX = wave % 2 ? .7 : .3;
     state.targets.push({
       kind: 'revealPanel',
       type: 'jewelTarget',
       at,
       duration: Math.max(.1, FINALE_PHASE_SECONDS - at),
-      anchorX: .5,
-      lane: .43,
+      anchorX,
+      lane: wave % 3 === 2 ? .5 : .46,
       finalePhase: 0,
       wave,
       waveBornAt: at,
       tier: 0,
       branch: wave * 100,
       base: 500 + wave * 100,
+      targetScale: .72,
       unfoldHub: true,
       hit: false,
     });
@@ -812,22 +871,15 @@
 
   function unfoldFinaleBank(target) {
     const phoneLayout = state.width <= 520;
-    // Phones get one high premium choice and one lower, safer choice. Larger
-    // stages retain the scattered bank that rewards scanning and precision.
-    const unfoldedTargets = phoneLayout
-      ? [
-          [.5, .25, 1750],
-          [.5, .64, 750],
-        ]
-      : [
-          [.13, .43, 750],
-          [.27, .25, 1250],
-          [.43, .17, 1750],
-          [.57, .17, 1750],
-          [.73, .25, 1250],
-          [.87, .43, 750],
-          [.5, .58, 500],
-        ];
+    const clusterWidth = phoneLayout ? .135 : .12;
+    const clusterHeight = phoneLayout ? .115 : .1;
+    const unfoldedTargets = [
+      [target.anchorX - clusterWidth, target.lane - clusterHeight * .2, 750],
+      [target.anchorX - clusterWidth * .72, target.lane - clusterHeight, 1250],
+      [target.anchorX, target.lane - clusterHeight * 1.18, 1750],
+      [target.anchorX + clusterWidth * .72, target.lane - clusterHeight, 1250],
+      [target.anchorX + clusterWidth, target.lane - clusterHeight * .2, 750],
+    ];
     unfoldedTargets.forEach((option, i) => {
       const targetValue = option[2] + target.wave * 100;
       state.targets.push({
@@ -847,14 +899,13 @@
         parentLane: target.lane,
         openingSide: Math.sign(option[0] - target.anchorX),
         base: targetValue,
+        targetScale: phoneLayout ? .58 : .62,
         unfoldLeaf: true,
         hit: false,
       });
     });
     showToast(
-      phoneLayout
-        ? 'TARGET BANK UNFOLDS · CLEAR HIGH + LOW!'
-        : 'TARGET BANK UNFOLDS · CLEAR THE SCATTERED BANK!',
+      'TARGET BANK UNFOLDS · KEEP SCANNING!',
       true,
       1050
     );
@@ -863,6 +914,16 @@
 
   function loop(now) {
     if (!state || !ctx || !canvas) return;
+    if (document.body?.classList.contains('mania-phone-landscape')) {
+      if (state.phase === 'countdown') {
+        state.countdownAt = now;
+        state.startAt = now + 2800;
+      } else if (state.phase === 'playing') {
+        state.startAt = now - state.elapsed * 1000;
+      }
+      frame = requestAnimationFrame(loop);
+      return;
+    }
     if (state.phase === 'countdown') updateCountdown(now);
     if (state.phase === 'playing') {
       state.elapsed = Math.max(0, (now - state.startAt) / 1000);
@@ -875,6 +936,7 @@
       }
       processTimedMechanics();
       processRingFlights();
+      processLogFlights();
       updateHud();
     }
     draw(now);
@@ -961,7 +1023,6 @@
       score: state.score,
       hits: state.hits,
       accuracy,
-      combo: state.bestCombo,
       hiddenMobes: state.hiddenMobesFound,
       hiddenMobeTotal: state.hiddenMobeTotal,
       accent: currentBooth().accent,
@@ -980,10 +1041,20 @@
       launchRing(x, y);
       return;
     }
+    if (currentBooth().id === 'plates') {
+      launchLog(x, y);
+      return;
+    }
 
-    state.shots.push({ x, y, born: performance.now(), kind: currentBooth().id });
+    state.shots.push({
+      x,
+      y,
+      born: performance.now(),
+      kind: currentBooth().id,
+    });
 
     let best = null;
+    let hiddenBest = null;
     let bestDistance = Infinity;
     let hiddenBeaver = null;
     for (const target of state.targets) {
@@ -996,13 +1067,17 @@
       }
       if (pos.hittable === false) continue;
       if (distance <= pos.r * 1.12 && distance < bestDistance) {
-        best = { target, pos };
-        bestDistance = distance;
+        if (target.hiddenMobe) {
+          hiddenBest = { target, pos };
+        } else if (!hiddenBest) {
+          best = { target, pos };
+          bestDistance = distance;
+        }
       }
     }
 
+    if (hiddenBest) best = hiddenBest;
     if (!best) {
-      state.combo = 0;
       const hiding = !!hiddenBeaver;
       addLabel(x, y, hiding ? 'HIDING!' : 'MISS', hiding ? '#b8f3ef' : '#fff4d5', hiding ? 18 : 15);
       burst(x, y, hiding ? '#65d6d1' : '#e7d8b1', hiding ? 8 : 5, .75);
@@ -1031,6 +1106,63 @@
     try { SFX.menuSelect(); } catch (e) {}
   }
 
+  function launchLog(aimX, aimY) {
+    const depth = clamp((state.height - aimY) / Math.max(1, state.height), 0, 1);
+    const foregroundThrow = aimY >= state.height * .68;
+    const flightDuration = foregroundThrow ? .14 : .464;
+    const curveOffset = foregroundThrow
+      ? 0
+      : clamp(
+        8 + Math.pow(depth, 1.7) * Math.min(84, state.width * .13),
+        8,
+        92
+      );
+    const flight = {
+      aimX,
+      x: aimX,
+      y: aimY,
+      born: performance.now(),
+      launchedAt: state.elapsed,
+      landsAt: state.elapsed + flightDuration,
+      flightDuration,
+      arcHeight: clamp(state.height * .2, 72, 148),
+      curveOffset,
+      resolved: false,
+      kind: 'plates',
+    };
+    state.logFlights.push(flight);
+    state.shots.push(flight);
+    try { SFX.menuSelect(); } catch (e) {}
+  }
+
+  function processLogFlights() {
+    if (currentBooth().id !== 'plates' || !state.logFlights.length) return;
+    for (const flight of state.logFlights) {
+      if (flight.resolved || state.elapsed < flight.landsAt) continue;
+      flight.resolved = true;
+      let best = null;
+      let bestDistance = Infinity;
+      for (const target of state.targets) {
+        const pos = targetPosition(target, state.elapsed);
+        if (!pos || (target.hit && !target.repeatable) || pos.hittable === false) continue;
+        const distance = Math.hypot(flight.x - pos.x, flight.y - pos.y);
+        if (distance <= pos.r * 1.12 && distance < bestDistance) {
+          best = { target, pos };
+          bestDistance = distance;
+        }
+      }
+      if (best) {
+        flight.landed = true;
+        hitTarget(best.target, best.pos);
+      } else {
+        addLabel(flight.x, flight.y - 8, 'SPLASH!', '#fff4d5', 17);
+        burst(flight.x, flight.y, '#d6a565', 8, .82);
+        try { SFX.miss(); } catch (e) {}
+      }
+    }
+    state.logFlights = state.logFlights.filter(flight => state.elapsed - flight.landsAt < .24);
+  }
+
   function processRingFlights() {
     if (currentBooth().id !== 'orbit' || !state.ringFlights.length) return;
     for (const flight of state.ringFlights) {
@@ -1056,7 +1188,6 @@
         flight.landingY = best.pos.y;
         hitTarget(best.target, best.pos);
       } else {
-        state.combo = 0;
         addLabel(flight.x, flight.y - 8, 'BOUNCE!', '#fff4d5', 17);
         burst(flight.x, flight.y, '#6de8ff', 7, .78);
         try { SFX.miss(); } catch (e) {}
@@ -1068,6 +1199,10 @@
   function hitTarget(target, pos) {
     if (target.kind === 'damBeaver') {
       hitDamBeaver(target, pos);
+      return;
+    }
+    if (target.kind === 'damBank' || target.kind === 'goldBeaver') {
+      hitDamBankTarget(target, pos);
       return;
     }
     if (target.kind === 'farmBarnDoor') {
@@ -1094,6 +1229,10 @@
       hitPlateRack(target, pos);
       return;
     }
+    if (target.kind === 'dinosaur') {
+      hitDinosaur(target, pos);
+      return;
+    }
     if (target.kind === 'volcanoDecoy') {
       hitVolcanoDecoy(target, pos);
       return;
@@ -1112,10 +1251,10 @@
 
     if (target.hiddenMobe) {
       state.hiddenMobesFound += 1;
-      addLabel(pos.x, pos.y - pos.r * 1.35, 'WHACK!', '#fff7d9', 44);
+      addLabel(pos.x, pos.y - pos.r * 1.35, 'FOUND!', '#fff7d9', 44);
       burst(pos.x, pos.y, '#ffcf4a', 28, 1.35);
       const foundName = target.character?.name ? ` · ${target.character.name}` : '';
-      showToast(`WHACK!${foundName} ${state.hiddenMobesFound}/${state.hiddenMobeTotal}`, true, 1700);
+      showToast(`DIAMOND FIND!${foundName} ${state.hiddenMobesFound}/${state.hiddenMobeTotal}`, true, 1700);
     }
     if (target.gold && currentBooth().id === 'plates') collectBoothSpecial('GOLD PLATE', triggerPlatterBlimp);
     if (currentBooth().id === 'volcano' && (target.stageTarget || target.kind === 'volcanoComet')) {
@@ -1145,6 +1284,49 @@
       try { SFX.score(); } catch (e) {}
     }
     updateHud();
+  }
+
+  function hitDamBankTarget(target, pos) {
+    target.hit = true;
+    target.hitAt = state.elapsed;
+    awardTargetHit(target, pos, target.base, target.golden);
+    if (target.kind === 'goldBeaver') {
+      burst(pos.x, pos.y, '#ffcf4a', 22, 1.18);
+      checkGoldenBeaverClear();
+    } else {
+      checkDamBankClear(target.bankWave);
+    }
+    updateHud();
+  }
+
+  function checkDamBankClear(wave) {
+    const bank = state.targets.filter(target => target.kind === 'damBank' && target.bankWave === wave);
+    if (bank.length !== 5 || bank.some(target => !target.hit) || state.damBankRespawnAt) return;
+    const clearBonus = 1500 + wave * 500;
+    state.score += clearBonus;
+    state.special = Math.min(3, wave + 1);
+    addLabel(state.width * .5, state.height * .48, `BANK ${wave + 1} CLEAR +${clearBonus}`, '#fff1a3', 30);
+    burst(state.width * .5, state.height * .5, '#ff8c68', 28, 1.2);
+    if (wave < 2) {
+      state.damBankRespawnAt = state.elapsed + .45;
+      showToast(`BANK ${wave + 1}/3 CLEAR · NEXT FIVE!`, true, 900);
+    } else {
+      state.damBankRespawnAt = state.elapsed + .5;
+      showToast('THREE BANKS CLEAR · GOLD BEAVERS INBOUND!', true, 1200);
+    }
+    try { SFX.mysteryGood(); } catch (e) {}
+  }
+
+  function checkGoldenBeaverClear() {
+    if (state.damGoldCleared) return;
+    const gold = state.targets.filter(target => target.kind === 'goldBeaver');
+    if (gold.length !== 5 || gold.some(target => !target.hit)) return;
+    state.damGoldCleared = true;
+    state.score += 3000;
+    addLabel(state.width * .5, state.height * .46, 'GOLD BONANZA +3000', '#ffcf4a', 38);
+    burst(state.width * .5, state.height * .48, '#ffcf4a', 46, 1.45);
+    showToast('★ GOLD BONANZA CLEARED! ★', true, 1700);
+    try { SFX.mysteryGood(); } catch (e) {}
   }
 
   function hitFarmBarnDoor(target, pos) {
@@ -1213,9 +1395,6 @@
     target.base = rapidTapValue(target.hits);
     target.pulseAt = state.elapsed;
     state.hits += 1;
-    state.combo = target.hits;
-    state.bestCombo = Math.max(state.bestCombo, state.combo);
-    state.lastHitAt = state.elapsed;
     state.score += target.base;
     addLabel(pos.x, pos.y - pos.r, `+${target.base} · TAP ${target.hits}`, '#ffcf4a', 24);
     burst(pos.x, pos.y, target.hits >= 21 ? '#ffcf4a' : '#b991ff', 12 + Math.min(18, target.hits), 1.05);
@@ -1234,20 +1413,48 @@
     target.cooldownUntil = state.elapsed + .7 + Math.random() * .65;
     target.respawnAt = target.cooldownUntil;
     target.hue = (target.hue + 1 + Math.floor(Math.random() * 2)) % 3;
-    target.base = Math.round(200 + Math.random() * 200);
     addLabel(pos.x, pos.y - pos.r, `BAIT +${gained}`, '#fff7d9', 16);
     updateHud();
   }
 
+  function hitDinosaur(target, pos) {
+    const attached = state.targets.filter(balloon =>
+      balloon.kind === 'dinoBalloon' && balloon.parent === target && !balloon.hit
+    );
+    const carefulClear = attached.length === 0;
+    target.hit = true;
+    target.hitAt = state.elapsed;
+    awardTargetHit(target, pos, carefulClear ? 700 : target.base, carefulClear || target.hiddenMobe);
+    if (attached.length) {
+      let cascadeScore = 0;
+      attached.forEach((balloon, index) => {
+        const balloonPos = targetPosition(balloon, state.elapsed);
+        balloon.hit = true;
+        balloon.hitAt = state.elapsed + index * .025;
+        cascadeScore += 50;
+        if (balloonPos) {
+          burst(balloonPos.x, balloonPos.y, targetColor(balloon), 9, .88);
+          addLabel(balloonPos.x, balloonPos.y - 18, '+50', '#fff7d9', 16);
+        }
+      });
+      state.score += cascadeScore;
+      showToast(`QUICK POP · ${attached.length} BALLOONS +${cascadeScore}`, false, 760);
+    } else {
+      showToast('CLEAN SWEEP · DINO +700', true, 850);
+    }
+    if (target.hiddenMobe) {
+      state.hiddenMobesFound += 1;
+      addLabel(pos.x, pos.y - pos.r * 1.3, 'FOUND!', '#fff7d9', 38);
+      burst(pos.x, pos.y, '#ffcf4a', 26, 1.3);
+    }
+    updateHud();
+  }
+
   function awardTargetHit(target, pos, base, specialHit, sizeBonus = 1) {
-    const nowSeconds = state.elapsed;
     state.hits += 1;
-    state.combo = nowSeconds - state.lastHitAt <= 1.35 ? Math.min(5, state.combo + 1) : 1;
-    state.bestCombo = Math.max(state.bestCombo, state.combo);
-    state.lastHitAt = nowSeconds;
-    const gained = base * state.combo * sizeBonus;
+    const gained = base * sizeBonus;
     state.score += gained;
-    addLabel(pos.x, pos.y - pos.r, `+${gained}${state.combo > 1 ? `  x${state.combo}` : ''}`, specialHit ? currentBooth().accent : '#fff7d9', specialHit ? 25 : 20);
+    addLabel(pos.x, pos.y - pos.r, `+${gained}`, specialHit ? currentBooth().accent : '#fff7d9', specialHit ? 25 : 20);
     burst(pos.x, pos.y, specialHit ? currentBooth().accent : targetColor(target), specialHit ? 18 : 11, 1);
     // Every direct target impact uses the same warm confirmation sample. Booth
     // bonuses may still play a flourish after their larger state change, but a
@@ -1334,9 +1541,6 @@
   function hitOrbitBoss(target, pos) {
     const nowSeconds = state.elapsed;
     state.hits += 1;
-    state.combo = nowSeconds - state.lastHitAt <= .9 ? Math.min(12, state.combo + 1) : 1;
-    state.bestCombo = Math.max(state.bestCombo, state.combo);
-    state.lastHitAt = nowSeconds;
     state.score += target.base;
     target.hits = (target.hits || 0) + 1;
     target.pulseAt = nowSeconds;
@@ -1445,6 +1649,10 @@
       processOrbitFormation();
       return;
     }
+    if (currentBooth().id === 'plates') {
+      processDamBank();
+      return;
+    }
     if (currentBooth().id === 'finale') {
       processFinalePhases();
       return;
@@ -1467,6 +1675,18 @@
     }
   }
 
+  function processDamBank() {
+    if (!state.damBankRespawnAt || state.elapsed < state.damBankRespawnAt) return;
+    state.damBankRespawnAt = 0;
+    if (state.special >= 3) {
+      if (!state.damGoldActive) spawnGoldenBeavers(state.elapsed + .08);
+      return;
+    }
+    state.damBankWave = state.special;
+    spawnDamBank(state.damBankWave, state.elapsed + .08);
+    showToast(`BANK ${state.damBankWave + 1}/3 · CLEAR ALL FIVE!`, true, 950);
+  }
+
   function processFarmBarn() {
     if (!state.barnBonusActive || !state.barnBonusTarget) return;
     const target = state.barnBonusTarget;
@@ -1480,7 +1700,6 @@
     const phase = Math.min(2, Math.floor(state.elapsed / FINALE_PHASE_SECONDS));
     if (phase !== state.finalePhase) {
       state.finalePhase = phase;
-      state.combo = 0;
       state.finaleRespawnAt = 0;
       const messages = [
         'PHASE 1 · OPEN & CLEAR THE BANK',
@@ -1522,29 +1741,24 @@
   }
 
   function processFinaleStaticWaves() {
-    if (state.finaleRespawnAt) {
-      if (state.elapsed < state.finaleRespawnAt) return;
-      state.finaleRespawnAt = 0;
-      state.finaleWave += 1;
-      spawnFinaleStaticWave(state.finaleWave, state.elapsed);
-      showToast(`TARGET BANK ${state.finaleWave + 1} RISES!`, true, 950);
-      return;
+    for (let wave = 0; wave < 5; wave += 1) {
+      const bank = state.targets.filter(target =>
+        target.kind === 'revealPanel' &&
+        target.finalePhase === 0 &&
+        target.wave === wave
+      );
+      if (
+        !bank.length ||
+        bank.some(target => !target.hit) ||
+        bank.some(target => target.bankClearAwarded)
+      ) continue;
+      bank.forEach(target => { target.bankClearAwarded = true; });
+      const clearBonus = 2000 + wave * 500;
+      state.score += clearBonus;
+      addLabel(state.width * .5, state.height * .45, `BANK ${wave + 1} CLEAR +${clearBonus}`, '#ffcf4a', 30);
+      burst(state.width * .5, state.height * .45, '#b991ff', 28, 1.18);
+      try { SFX.mysteryGood(); } catch (e) {}
     }
-    const active = state.targets.filter(target =>
-      target.kind === 'revealPanel' &&
-      target.finalePhase === 0 &&
-      target.wave === state.finaleWave
-    );
-    if (!active.length || active.some(target => !target.hit) || state.finaleClearedWave === state.finaleWave) return;
-    state.finaleClearedWave = state.finaleWave;
-    const clearBonus = 2000 + state.finaleWave * 500;
-    state.score += clearBonus;
-    addLabel(state.width * .5, state.height * .45, `BANK CLEAR +${clearBonus}`, '#ffcf4a', 30);
-    burst(state.width * .5, state.height * .45, '#b991ff', 28, 1.18);
-    if (state.elapsed < FINALE_PHASE_SECONDS - .55) {
-      state.finaleRespawnAt = state.elapsed + .42;
-    }
-    try { SFX.mysteryGood(); } catch (e) {}
   }
 
   function processVolcanoStages() {
@@ -1558,7 +1772,7 @@
       }
       state.volcanoStage = state.special;
       spawnVolcanoStage(state.volcanoStage, state.elapsed + .08);
-      showToast(`FORMATION ${state.volcanoStage + 1}/3 · CLEAR EVERY GLOWING BALLOON`, true, 1450);
+      showToast(`COMET WAVE ${state.volcanoStage + 1}/3`, true, 1100);
       return;
     }
     const active = state.targets.filter(target =>
@@ -1567,8 +1781,11 @@
     );
     if (!active.length || active.some(target => !target.hit)) return;
     state.special = state.volcanoStage + 1;
+    state.eruptionAt = state.elapsed;
+    const clearBonus = 750 * state.special;
+    state.score += clearBonus;
     state.volcanoStageReadyAt = state.elapsed + .72;
-    showToast(`★ FORMATION ${state.special}/3 CLEARED! ★`, true, 1200);
+    showToast(`★ ERUPTION ${state.special}/3 · +${clearBonus} ★`, true, 1200);
     try { SFX.score(); } catch (e) {}
     updateHud();
   }
@@ -1831,6 +2048,41 @@
         hittable,
         mouthOpen,
       };
+    } else if (target.kind === 'damBank' || target.kind === 'goldBeaver') {
+      const arrival = easeOut(clamp(local / .46, 0, 1));
+      x = w * target.anchorX;
+      const homeY = h * target.anchorY;
+      y = lerp(homeY + clamp(h * .16, 72, 118), homeY, arrival);
+      scale *= target.targetScale * (.72 + arrival * .28);
+      visibility = arrival;
+      growth = arrival;
+      return {
+        x,
+        y,
+        r: 48 * scale,
+        scale,
+        visibility,
+        growth,
+        bushOffsetY: (homeY - y) / Math.max(.01, scale),
+        hittable: arrival > .82,
+      };
+    } else if (target.kind === 'beaverRunner') {
+      const p = easeInOut(clamp(local / target.duration, 0, 1));
+      x = target.direction === 'left'
+        ? w + 80 - p * (w + 160)
+        : -80 + p * (w + 160);
+      y = h * target.lane - Math.abs(Math.sin(local * 7.4)) * 7;
+      scale *= target.targetScale;
+      visibility = clamp(Math.sin(p * Math.PI) * 1.7, 0, 1);
+      return {
+        x,
+        y,
+        r: 46 * scale,
+        scale,
+        visibility,
+        growth: 1,
+        hittable: visibility > .55,
+      };
     } else if (target.kind === 'damBeaver') {
       if (target.spent && elapsed >= target.spentUntil) {
         target.spent = false;
@@ -1914,6 +2166,23 @@
       x = travel();
       y = h * (.18 + target.lane * .62) - (target.toss ? Math.sin((local / target.duration) * Math.PI) * h * .18 : 0);
       scale *= target.gold || target.golden ? .92 : 1;
+    } else if (target.kind === 'dinosaur') {
+      x = travel();
+      y = h * target.lane + Math.sin(local * 9 + target.dinoIndex) * 3;
+      scale *= target.targetScale;
+    } else if (target.kind === 'dinoBalloon') {
+      const parentPos = targetPosition(target.parent, elapsed);
+      if (
+        !parentPos ||
+        (target.parent.hit && elapsed - target.parent.hitAt > .38)
+      ) return null;
+      const directionSign = target.parent.direction === 'left' ? -1 : 1;
+      const spread = (target.balloonIndex - (target.balloonCount - 1) / 2) * 42;
+      const sway = Math.sin(local * 3.7 + target.balloonIndex * 1.9) * 10;
+      x = parentPos.x + directionSign * spread + sway;
+      y = parentPos.y - 92 * parentPos.scale - target.balloonIndex * 13
+        + Math.sin(local * 4.4 + target.balloonIndex) * 7;
+      scale = parentPos.scale * .7;
     } else if (target.kind === 'balloonTree' || target.kind === 'lavaBalloon' || target.kind === 'volcanoDecoy') {
       if (target.cooldownUntil && elapsed < target.cooldownUntil) return null;
       if (target.type === 'eruptionBalloon' && Number.isFinite(target.anchorX)) {
@@ -1922,8 +2191,10 @@
         y = lerp(h * .37, h * target.anchorY, p) - Math.sin(clamp(local / target.duration, 0, 1) * Math.PI) * h * .16;
       } else if (Number.isFinite(target.anchorX)) {
         const entrance = easeOut(clamp(local / .48, 0, 1));
-        x = w * target.anchorX + (target.enterFrom || 0) * (1 - entrance) * w * .22;
-        y = h * target.anchorY + (1 - entrance) * h * .22;
+        x = w * target.anchorX;
+        y = lerp(h * .79, h * target.anchorY, entrance);
+        growth = entrance;
+        visibility = clamp(entrance * 1.7, 0, 1);
       } else {
         x = Number.isFinite(target.worldX)
           ? target.worldX - cameraX() + w * .5
@@ -1941,15 +2212,19 @@
         const wobble = 1 - (elapsed - target.wobbleAt) / .55;
         x += Math.sin((elapsed - target.wobbleAt) * 42) * 12 * wobble;
       }
-      scale *= target.type === 'lavaStream' ? .94 : target.kind === 'lavaBalloon' ? .86 : target.kind === 'volcanoDecoy' ? .72 : 1;
+      scale *= target.type === 'lavaStream'
+        ? (.7 + growth * .24)
+        : target.kind === 'lavaBalloon'
+          ? .86
+          : target.kind === 'volcanoDecoy'
+            ? .72
+            : 1;
     } else if (target.kind === 'volcanoComet') {
-      const p = easeInOut(clamp(local / target.duration, 0, 1));
-      x = target.direction === 'left'
-        ? w * 1.08 - p * w * 1.16
-        : -w * .08 + p * w * 1.16;
-      y = h * target.lane + Math.sin(p * Math.PI) * h * .075;
-      scale *= .52;
-      visibility = .58 + Math.sin(p * Math.PI) * .35;
+      const settle = easeOut(clamp(local / .42, 0, 1));
+      x = lerp(w * (target.anchorX - .12), w * target.anchorX, settle);
+      y = lerp(-70, h * target.anchorY, settle) + Math.sin(local * 2.8 + target.stageIndex) * 3;
+      scale *= .54;
+      visibility = settle;
     } else if (target.kind === 'revealPanel') {
       x = Number.isFinite(target.anchorX)
         ? w * target.anchorX
@@ -1972,7 +2247,7 @@
         x += Math.sin(opening * Math.PI) * (target.openingSide || 0) * 24;
         growth *= opening;
       }
-      scale *= growth;
+      scale *= growth * (target.targetScale || 1);
     } else if (target.kind === 'finalePopup') {
       const p = clamp(local / target.duration, 0, 1);
       const rise = p < .24 ? easeOut(p / .24) : p > .78 ? easeInOut((1 - p) / .22) : 1;
@@ -2027,13 +2302,15 @@
     if (x < -100 || x > w + 100) return null;
     const small = ['chicken', 'duck', 'bird', 'bluebird'].includes(target.type);
     const farmAnimal = ['farmPop', 'farmSlide', 'farmHill', 'farmBarnDoor', 'farmBarnBonus', 'runner', 'peek'].includes(target.kind);
-    const balloonTarget = target.kind === 'balloonTree' || target.kind === 'lavaBalloon' || target.kind === 'volcanoDecoy';
+    const balloonTarget = target.kind === 'balloonTree' || target.kind === 'lavaBalloon' || target.kind === 'volcanoDecoy' || target.kind === 'dinoBalloon';
     const targetRadius = target.kind === 'ringPost'
       ? 44
       : balloonTarget
         ? target.type === 'lavaStream' ? 38 : target.vent || target.golden ? 45 : target.kind === 'volcanoDecoy' ? 31 : 42
       : target.kind === 'volcanoComet'
-        ? 31
+        ? 42
+      : target.kind === 'dinosaur'
+        ? 54
       : target.kind === 'revealPanel'
         ? 50 - target.tier * 5
       : target.kind === 'finalePopup'
@@ -2046,6 +2323,8 @@
         ? 50
       : target.kind === 'damBeaver'
         ? 48
+      : target.kind === 'damBank' || target.kind === 'goldBeaver' || target.kind === 'beaverRunner'
+        ? 46
       : target.kind === 'beaverPeek'
         ? 39
       : target.kind === 'farmHill'
@@ -2085,19 +2364,51 @@
     // Barn targets sit in the dark doors. Drawing the buildings first lets the
     // animal remain readable while the rising motion still explains "hidden."
     if (boothId === 'farm') for (const barn of state.barns) drawBarn(barn);
+    if (boothId === 'volcano') drawDinosaurTethers();
 
     const targetsToDraw = boothId === 'farm' || boothId === 'orbit'
       ? [...state.targets].sort((a, b) => (a.drawLayer || 3) - (b.drawLayer || 3))
-      : state.targets;
+      : [...state.targets];
+    // Collectibles are exclusive replacements. Draw them last and suppress any
+    // ordinary target that happens to occupy the same live slot.
+    targetsToDraw.sort((a, b) => Number(!!a.hiddenMobe) - Number(!!b.hiddenMobe));
+    const visibleHiddenPositions = targetsToDraw
+      .filter(target => target.hiddenMobe && !target.hit)
+      .map(target => ({ target, pos: targetPosition(target, state.elapsed) }))
+      .filter(item => item.pos);
     for (const target of targetsToDraw) {
       const pos = targetPosition(target, state.elapsed);
       if (!pos) continue;
+      if (
+        !target.hiddenMobe &&
+        visibleHiddenPositions.some(hidden =>
+          Math.hypot(pos.x - hidden.pos.x, pos.y - hidden.pos.y) <
+          Math.min(pos.r, hidden.pos.r) * .62
+        )
+      ) continue;
       const hitAge = target.hit ? state.elapsed - target.hitAt : 0;
       ctx.save();
       if (target.hit && !target.formation) {
-        ctx.globalAlpha = clamp(1 - hitAge / .42, 0, 1);
-        ctx.translate(0, -hitAge * 70);
-        ctx.scale(1 + hitAge * .6, 1 + hitAge * .6);
+        if (target.kind === 'revealPanel') {
+          const knockback = clamp(hitAge / .42, 0, 1);
+          const kick = easeOut(clamp(knockback / .34, 0, 1));
+          const tumbleSide = Math.sign(pos.x - state.width * .5) || 1;
+          ctx.globalAlpha = clamp((1 - knockback) * 3, 0, 1);
+          ctx.translate(pos.x, pos.y);
+          ctx.translate(
+            tumbleSide * 20 * kick,
+            -68 * kick + 84 * knockback * knockback
+          );
+          ctx.rotate(tumbleSide * knockback * Math.PI * 4.3);
+          const depthScale = 1 - knockback * .5;
+          const endOverEndSquash = 1 - Math.abs(Math.sin(knockback * Math.PI * 4.3)) * .18;
+          ctx.scale(depthScale, depthScale * endOverEndSquash);
+          ctx.translate(-pos.x, -pos.y);
+        } else {
+          ctx.globalAlpha = clamp(1 - hitAge / .42, 0, 1);
+          ctx.translate(0, -hitAge * 70);
+          ctx.scale(1 + hitAge * .6, 1 + hitAge * .6);
+        }
       }
       drawTarget(target, pos, now);
       ctx.restore();
@@ -2372,13 +2683,16 @@
       : null;
     if (backdrop?.complete && backdrop.naturalWidth) {
       ctx.save();
-      ctx.filter = 'saturate(.76) brightness(.94) contrast(.9)';
+      // Hold the illustrated dam one value-step behind the live targets. The
+      // scene stays colorful, but its brown/green midtones no longer swallow
+      // the similarly colored beaver sprites.
+      ctx.filter = 'saturate(.66) brightness(.86) contrast(.9)';
       drawImageCover(backdrop, w, h);
       ctx.restore();
       const glaze = ctx.createLinearGradient(0, 0, 0, h);
-      glaze.addColorStop(0, 'rgba(247,239,210,.08)');
-      glaze.addColorStop(.58, 'rgba(72,128,112,.025)');
-      glaze.addColorStop(1, 'rgba(22,65,69,.1)');
+      glaze.addColorStop(0, 'rgba(19,45,43,.08)');
+      glaze.addColorStop(.58, 'rgba(17,52,49,.1)');
+      glaze.addColorStop(1, 'rgba(10,37,39,.16)');
       ctx.fillStyle = glaze;
       ctx.fillRect(0, 0, w, h);
       drawDamWater(w, h);
@@ -2417,11 +2731,11 @@
 
   function drawVolcanoScene(w, h) {
     const backdrop = typeof _getImg === 'function'
-      ? _getImg('assets/mania/volcano/volcano-backdrop-v1.png')
+      ? _getImg('assets/mania/volcano/volcano-parade-backdrop-v1.png')
       : null;
     if (backdrop?.complete && backdrop.naturalWidth) {
       ctx.save();
-      ctx.filter = 'saturate(.58) brightness(.9) contrast(.88)';
+      ctx.filter = 'saturate(.78) brightness(.92) contrast(.92)';
       drawImageCover(backdrop, w, h);
       ctx.restore();
       ctx.fillStyle = 'rgba(245,232,214,.07)';
@@ -2480,22 +2794,6 @@
   function drawVolcanoParallax(w, h) {
     const cam = cameraX();
     ctx.save();
-
-    // Layered paper-rock flats drift at different rates so the booth still
-    // reads as a traveling midway scene over its authored static foundation.
-    ctx.fillStyle = 'rgba(16,21,31,.36)';
-    for (let i = -2; i < Math.ceil(w / 180) + 3; i += 1) {
-      const x = mod(i * 210 - cam * .18, w + 420) - 210;
-      const rockH = 28 + (i % 3 + 3) % 3 * 12;
-      ctx.beginPath();
-      ctx.moveTo(x - 44, h * .73);
-      ctx.lineTo(x - 18, h * .73 - rockH * .55);
-      ctx.lineTo(x + 2, h * .73 - rockH);
-      ctx.lineTo(x + 24, h * .73 - rockH * .42);
-      ctx.lineTo(x + 48, h * .73);
-      ctx.closePath();
-      ctx.fill();
-    }
 
     drawVolcanoObjective(w, h);
 
@@ -2556,7 +2854,7 @@
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(
-      erupted ? 'VOLCANO ERUPTED · BONUS BALLOONS!' : 'CLEAR 3 GLOWING FORMATIONS TO ERUPT',
+      erupted ? 'VOLCANO ERUPTED · BONUS BALLOONS!' : `CLEAR COMETS · WAVE ${Math.min(3, state.special + 1)}/3`,
       w * .5,
       y + 17
     );
@@ -2980,9 +3278,19 @@
     ctx.translate(pos.x, pos.y);
     ctx.scale(pos.scale, pos.scale);
     ctx.globalAlpha *= pos.visibility;
-    if (target.direction === 'right') ctx.scale(-1, 1);
+    const mirrorTarget = target.kind === 'dinosaur'
+      ? target.direction === 'left'
+      : target.direction === 'right';
+    if (mirrorTarget) ctx.scale(-1, 1);
 
-    if (['farmPop', 'farmSlide', 'farmHill', 'farmBarnDoor', 'farmBarnBonus', 'runner', 'peek'].includes(target.kind)) {
+    if (target.hiddenMobe) {
+      drawHiddenMoberino(target, now);
+      ctx.restore();
+      return;
+    }
+    if (target.kind === 'dinosaur') {
+      drawDinosaurTarget(target, now);
+    } else if (['farmPop', 'farmSlide', 'farmHill', 'farmBarnDoor', 'farmBarnBonus', 'runner', 'peek'].includes(target.kind)) {
       ctx.fillStyle = 'rgba(35,25,16,.25)';
       ctx.beginPath();
       ctx.ellipse(0, 30, 38, 9, 0, 0, Math.PI * 2);
@@ -3015,18 +3323,21 @@
     }
     else if (target.kind === 'orbitBoss') drawOrbitBoss(target);
     else if (target.kind === 'damBeaver') drawDamBeaver(target, pos, now);
+    else if (target.kind === 'damBank' || target.kind === 'goldBeaver' || target.kind === 'beaverRunner') {
+      if (target.kind === 'beaverRunner') drawBeaverTarget(target, false);
+      else drawBankBeaver(target, pos);
+    }
     else if (target.kind === 'beaverPeek') drawEdgeBeaver(target);
     else if (target.kind === 'plateRack') drawPlateRackTarget(target);
     else if (target.kind === 'platePop' || target.kind === 'plateFlyby') drawHighPlateTarget(target);
     else if (target.kind === 'plate') drawPlate(target);
-    else if (target.kind === 'balloonTree' || target.kind === 'lavaBalloon' || target.kind === 'volcanoDecoy') drawBalloonTarget(target);
+    else if (target.kind === 'balloonTree' || target.kind === 'lavaBalloon' || target.kind === 'volcanoDecoy' || target.kind === 'dinoBalloon') drawBalloonTarget(target);
     else if (target.kind === 'volcanoComet') drawVolcanoComet(target, now);
     else if (target.kind === 'revealPanel') drawFinalePanel(target);
     else if (target.kind === 'finalePopup') drawFinalePopup(target);
     else if (target.kind === 'finaleGate') drawFinalePopup(target);
     else if (target.kind === 'rapidTarget') drawNeonTarget(target);
     else if (target.kind === 'jackpot') drawNeonTarget(target);
-    else if (target.kind === 'hiddenMobe') drawHiddenMoberino(target, now);
     if (!isFarmScoreTarget(target)) drawPointValue(target);
     ctx.restore();
   }
@@ -3035,17 +3346,19 @@
     // Secrets stay secret, and finale pop-ups already carry a large integrated
     // value plate. Every other hittable target shows its base point value.
     if (
-      target.kind === 'hiddenMobe' ||
+      target.hiddenMobe ||
       target.kind === 'finalePopup' ||
       target.kind === 'finaleGate' ||
       target.kind === 'orbitBoss' ||
       (target.kind === 'damBeaver' && target.visualOpen < .72) ||
+      ((target.kind === 'damBank' || target.kind === 'goldBeaver') && target.hit) ||
       (target.kind === 'beaverPeek' && target.visualReveal < .62) ||
       !Number.isFinite(target.base)
     ) return;
     const balloon = ['balloonTree', 'lavaBalloon', 'volcanoDecoy'].includes(target.kind);
+    const dinosaurBadge = target.kind === 'dinosaur' || target.kind === 'dinoBalloon';
     const farmBadge = ['farmPop', 'farmSlide', 'farmHill', 'farmBarnDoor', 'farmBarnBonus'].includes(target.kind);
-    const animalScoreBadge = farmBadge || target.kind === 'damBeaver' || target.kind === 'beaverPeek';
+    const animalScoreBadge = farmBadge || ['damBeaver', 'damBank', 'goldBeaver', 'beaverRunner', 'beaverPeek'].includes(target.kind);
     const positions = {
       farmPop: -50,
       farmSlide: -50,
@@ -3059,29 +3372,38 @@
       phaseFlyer: 35,
       orbiter: 35,
       damBeaver: 47,
+      damBank: 45,
+      goldBeaver: 45,
+      beaverRunner: 43,
       beaverPeek: 36,
       plateRack: 34,
       platePop: 35,
       plateFlyby: 35,
       plate: 35,
       volcanoComet: 25,
+      dinosaur: -34,
       revealPanel: 58,
       rapidTarget: 58,
       jackpot: 48,
     };
-    const y = balloon ? -2 : (positions[target.kind] ?? 34);
+    const y = target.kind === 'dinoBalloon' ? -2 : balloon ? -2 : (positions[target.kind] ?? 34);
     const label = Math.round(target.base).toLocaleString('en-US');
-    const badgeW = animalScoreBadge
+    const badgeW = dinosaurBadge
+      ? clamp(42 + label.length * 11, 72, 96)
+      : animalScoreBadge
       ? clamp(30 + label.length * 9, 52, 76)
       : clamp(22 + label.length * 7, 42, 68);
-    const badgeH = animalScoreBadge ? 27 : 21;
+    const badgeH = dinosaurBadge ? 34 : animalScoreBadge ? 27 : 21;
     const accent = target.stageTarget
       ? '#6de8ff'
       : target.gold || target.golden
         ? '#ffcf4a'
         : targetColor(target);
     ctx.save();
-    if (target.direction === 'right') ctx.scale(-1, 1);
+    const undoMirror = target.kind === 'dinosaur'
+      ? target.direction === 'left'
+      : target.direction === 'right';
+    if (undoMirror) ctx.scale(-1, 1);
     ctx.translate(0, y);
     if (target.kind === 'farmHill') ctx.scale(1.7, 1.7);
     if (target.kind === 'damBeaver' && target.tier === 2) ctx.scale(1.42, 1.42);
@@ -3106,7 +3428,11 @@
     ctx.stroke();
     ctx.shadowBlur = 0;
     ctx.fillStyle = '#fff4d5';
-    ctx.font = animalScoreBadge ? '700 16px Arial, sans-serif' : '12px "VCR", monospace';
+    ctx.font = dinosaurBadge
+      ? '800 22px Arial, sans-serif'
+      : animalScoreBadge
+        ? '700 16px Arial, sans-serif'
+        : '12px "VCR", monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(label, 0, 1);
@@ -3203,12 +3529,19 @@
   function drawBeaverTarget(target, headOnly = false) {
     const sprite = beaverSprite(target);
     if (sprite?.complete && sprite.naturalWidth) {
+      ctx.save();
+      ctx.filter = target.golden
+        ? 'sepia(.38) brightness(1.28) saturate(1.45) contrast(1.08)'
+        : 'brightness(1.12) saturate(1.08) contrast(1.06)';
+      ctx.shadowColor = target.golden ? 'rgba(255,207,74,.92)' : 'rgba(255,236,186,.55)';
+      ctx.shadowBlur = target.golden ? 18 : 8;
       if (headOnly) {
         const sx = sprite.naturalWidth * .17;
         const sy = sprite.naturalHeight * .02;
         const sw = sprite.naturalWidth * .66;
         const sh = sprite.naturalHeight * (target.type === 'expert' ? .49 : .61);
         ctx.drawImage(sprite, sx, sy, sw, sh, -48, -48, 96, 88);
+        ctx.restore();
         return;
       }
       const boxW = target.type === 'expert' ? 88 : 112;
@@ -3217,6 +3550,7 @@
       const drawW = Math.min(boxW, boxH * ratio);
       const drawH = drawW / ratio;
       ctx.drawImage(sprite, -drawW / 2, -drawH * .5, drawW, drawH);
+      ctx.restore();
       return;
     }
 
@@ -3232,6 +3566,39 @@
     ctx.fillStyle = '#211c18';
     circle(-12, -10, 3, false);
     circle(12, -10, 3, false);
+  }
+
+  function drawBankBeaver(target, pos) {
+    drawBeaverTarget(target, false);
+    ctx.save();
+    // The bush remains fixed in the authored scenery while the beaver travels
+    // upward behind it, so the reveal reads as a physical set rather than an
+    // alpha-faded overlay.
+    ctx.translate(0, (pos.bushOffsetY || 0) + 34);
+    ctx.fillStyle = '#243f31';
+    ctx.strokeStyle = '#14281f';
+    ctx.lineWidth = 3;
+    for (const leaf of [[-34,3,22],[-15,-7,25],[8,-9,27],[31,2,22]]) {
+      ctx.beginPath();
+      ctx.ellipse(leaf[0], leaf[1], leaf[2], leaf[2] * .7, -.18 + leaf[0] * .004, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.fillStyle = target.golden ? '#d6a43f' : '#4f7652';
+    ctx.globalAlpha = target.golden ? .9 : .72;
+    for (const leaf of [[-27,-1,12],[-7,-13,14],[17,-12,14],[35,1,11]]) {
+      ctx.beginPath();
+      ctx.ellipse(leaf[0], leaf[1], leaf[2], leaf[2] * .58, leaf[0] * .01, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = 'rgba(210,225,170,.34)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-42, 13);
+    ctx.quadraticCurveTo(0, 21, 43, 12);
+    ctx.stroke();
+    ctx.restore();
   }
 
   function drawDamBeaver(target, pos, now) {
@@ -3389,13 +3756,37 @@
     const characterImage = characterSrc && typeof _getImg === 'function' ? _getImg(characterSrc) : null;
     if (characterImage?.complete && characterImage.naturalWidth) {
       const size = target.hit ? 112 : 88;
+      const drawX = -size / 2;
+      const drawY = -58;
+      // A tight silhouette trim keeps the collectible legible without adding
+      // a separate badge or sticker shape behind the character.
+      ctx.save();
+      ctx.filter = 'brightness(0) invert(1)';
+      const trim = target.hit ? 2.8 : 2.2;
+      for (let index = 0; index < 8; index += 1) {
+        const angle = index * Math.PI / 4;
+        ctx.drawImage(
+          characterImage,
+          drawX + Math.cos(angle) * trim,
+          drawY + Math.sin(angle) * trim,
+          size,
+          size
+        );
+      }
+      ctx.restore();
       ctx.drawImage(characterImage, -size / 2, -58, size, size);
-      if (!target.hit) drawHiddenCover(target.cover);
+      ctx.save();
+      ctx.globalAlpha *= .12;
+      ctx.globalCompositeOperation = 'screen';
+      ctx.filter = `hue-rotate(${Math.round(now / 18 + target.variant * 80)}deg) saturate(1.8)`;
+      ctx.drawImage(characterImage, drawX, drawY, size, size);
+      ctx.restore();
+      drawHiddenMobeGlint(now, target.variant);
       return;
     }
 
-    // A tiny antenna and bean-shaped head keep the cameo recognizable, while
-    // booth-specific foreground props make finding it a deliberate scan.
+    // Keep the cameo fully visible. Its tucked-away placement supplies the
+    // discovery challenge without scenery obscuring the character art.
     ctx.strokeStyle = '#261f2b';
     ctx.lineWidth = 3;
     ctx.beginPath();
@@ -3422,8 +3813,31 @@
     ctx.stroke();
     ctx.fillStyle = 'rgba(255,255,255,.58)';
     ellipse(-9, -21, 6, 9, false);
+    drawHiddenMobeGlint(now, target.variant);
 
-    drawHiddenCover(target.cover);
+  }
+
+  function drawHiddenMobeGlint(now, variant = 0) {
+    const cycle = mod(now / 1800 + variant * .37, 1);
+    if (cycle > .16) return;
+    const phase = cycle / .16;
+    const pulse = Math.sin(phase * Math.PI);
+    const x = lerp(-25, 24, phase);
+    const y = lerp(12, -47, phase);
+    const r = 4 + pulse * 3;
+    ctx.save();
+    ctx.globalAlpha *= pulse;
+    ctx.fillStyle = '#fff';
+    ctx.translate(x, y);
+    ctx.rotate(now / 900);
+    ctx.beginPath();
+    ctx.moveTo(0, -r);
+    ctx.quadraticCurveTo(r * .16, -r * .16, r, 0);
+    ctx.quadraticCurveTo(r * .16, r * .16, 0, r);
+    ctx.quadraticCurveTo(-r * .16, r * .16, -r, 0);
+    ctx.quadraticCurveTo(-r * .16, -r * .16, 0, -r);
+    ctx.fill();
+    ctx.restore();
   }
 
   function drawHiddenCover(cover) {
@@ -3885,6 +4299,47 @@
     ctx.stroke();
   }
 
+  function drawDinosaurTethers() {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,220,145,.9)';
+    ctx.lineWidth = clamp(Math.min(state.width, state.height) * .004, 1.5, 3);
+    for (const target of state.targets) {
+      if (target.kind !== 'dinoBalloon' || target.hit || target.parent.hit) continue;
+      const balloonPos = targetPosition(target, state.elapsed);
+      const parentPos = targetPosition(target.parent, state.elapsed);
+      if (!balloonPos || !parentPos) continue;
+      const knotX = parentPos.x;
+      const knotY = parentPos.y - 36 * parentPos.scale;
+      const controlX = lerp(balloonPos.x, knotX, .55)
+        + Math.sin(state.elapsed * 3.7 + target.balloonIndex) * 9;
+      ctx.beginPath();
+      ctx.moveTo(balloonPos.x, balloonPos.y + 31 * balloonPos.scale);
+      ctx.quadraticCurveTo(controlX, lerp(balloonPos.y, knotY, .58), knotX, knotY);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawDinosaurTarget(target, now) {
+    const assetName = target.type === 'triceratops'
+      ? 'dinosaur-triceratops-v1.png'
+      : 'dinosaur-trex-v1.png';
+    const sprite = typeof _getImg === 'function'
+      ? _getImg(`assets/mania/volcano/${assetName}`)
+      : null;
+    if (!sprite?.complete || !sprite.naturalWidth) return;
+    const width = target.type === 'triceratops' ? 176 : 184;
+    const height = width * (sprite.naturalHeight / sprite.naturalWidth);
+    const stride = Math.sin((state.elapsed - target.at) * 10 + target.dinoIndex);
+    ctx.save();
+    ctx.translate(0, Math.abs(stride) * -2);
+    ctx.rotate(stride * .012);
+    ctx.filter = 'drop-shadow(0 7px 5px rgba(18,8,20,.52))';
+    ctx.drawImage(sprite, -width / 2, -height * .72, width, height);
+    ctx.filter = 'none';
+    ctx.restore();
+  }
+
   function drawBalloonTarget(target) {
     const balloonAssets = [
       'tree-balloon-raspberry',
@@ -3950,27 +4405,15 @@
 
   function drawVolcanoComet(target, now) {
     const pulse = 1 + Math.sin(now / 140 + target.at) * .08;
+    const sprite = typeof _getImg === 'function'
+      ? _getImg('assets/mania/volcano/comet-target-v1.png')
+      : null;
+    if (!sprite?.complete || !sprite.naturalWidth) return;
     ctx.save();
     ctx.scale(pulse, pulse);
-    ctx.rotate(target.direction === 'left' ? -.36 : Math.PI + .36);
-    const tail = ctx.createLinearGradient(-62, 0, 8, 0);
-    tail.addColorStop(0, 'rgba(255,93,157,0)');
-    tail.addColorStop(.45, 'rgba(255,117,93,.45)');
-    tail.addColorStop(1, 'rgba(255,225,130,.9)');
-    ctx.fillStyle = tail;
-    ctx.beginPath();
-    ctx.moveTo(-68, 0);
-    ctx.quadraticCurveTo(-24, -13, 7, -8);
-    ctx.quadraticCurveTo(-18, 12, -68, 0);
-    ctx.fill();
-    ctx.fillStyle = '#ffcf4a';
-    ctx.strokeStyle = '#6d3046';
-    ctx.lineWidth = 4;
-    circle(10, 0, 15, true);
-    ctx.fillStyle = '#fff1ad';
-    circle(5, -5, 4.5, false);
-    ctx.fillStyle = '#c64d59';
-    circle(15, 5, 3, false);
+    ctx.filter = 'drop-shadow(0 0 4px #fff2aa) drop-shadow(0 0 12px rgba(255,117,93,.9))';
+    ctx.drawImage(sprite, -52, -52, 104, 104);
+    ctx.filter = 'none';
     ctx.restore();
   }
 
@@ -4283,7 +4726,7 @@
   function targetColor(target) {
     if (target.kind === 'hiddenMobe') return '#ffcf4a';
     if (['runner', 'peek', 'flyer'].includes(target.kind)) return animalColor(target.type);
-    if (target.kind === 'damBeaver' || target.kind === 'beaverPeek') {
+    if (['damBeaver', 'damBank', 'goldBeaver', 'beaverRunner', 'beaverPeek'].includes(target.kind)) {
       return target.type === 'expert' ? '#ff647f' : target.type === 'foreman' ? '#ffbf4d' : '#76f0ad';
     }
     if (target.kind === 'orbiter') return '#6de8ff';
@@ -4313,7 +4756,7 @@
           <div class="mania-result-stats">
             <div class="mania-result-stat"><b>${summary.hits}</b><span>HITS</span></div>
             <div class="mania-result-stat"><b>${summary.accuracy}%</b><span>ACCURACY</span></div>
-            <div class="mania-result-stat"><b>x${summary.combo}</b><span>BEST COMBO</span></div>
+            <div class="mania-result-stat"><b>${Math.max(0, state.taps - summary.hits)}</b><span>MISSES</span></div>
           </div>
           <div class="mania-hidden-result">HIDDEN MOBERINOS · <b>${summary.hiddenMobes}/${summary.hiddenMobeTotal}</b></div>
           <button class="mania-btn" type="button" onclick="maniaPractice(${state.boothIndex})">PRACTICE AGAIN</button>
@@ -4330,12 +4773,13 @@
           <div class="mania-result-stats">
             <div class="mania-result-stat"><b>${summary.hits}</b><span>HITS</span></div>
             <div class="mania-result-stat"><b>${summary.accuracy}%</b><span>ACCURACY</span></div>
-            <div class="mania-result-stat"><b>x${summary.combo}</b><span>BEST COMBO</span></div>
+            <div class="mania-result-stat"><b>${Math.max(0, state.taps - summary.hits)}</b><span>MISSES</span></div>
           </div>
           <div class="mania-hidden-result">HIDDEN MOBERINOS · <b>${summary.hiddenMobes}/${summary.hiddenMobeTotal}</b></div>
-          <button class="mania-btn" type="button" onclick="maniaNextBooth()">PLAY NEXT BOOTH</button>
+          <button class="mania-btn mania-auto-next" id="mania-auto-next" type="button" onclick="maniaNextBooth()">NEXT BOOTH · 4</button>
           <button class="mania-result-back" type="button" onclick="nav('lobby')">QUIT GAME</button>
         </section>`;
+      scheduleNextBooth();
       return;
     }
 
@@ -4366,6 +4810,27 @@
         <button class="mania-btn" type="button" onclick="maniaStart()">RIDE AGAIN</button>
         <button class="mania-result-back" type="button" onclick="nav('lobby')">◀ ARCADE MENU</button>
       </section>`;
+  }
+
+  function clearIntermission() {
+    clearTimeout(intermissionTimer);
+    clearInterval(intermissionTicker);
+    intermissionTimer = 0;
+    intermissionTicker = 0;
+  }
+
+  function scheduleNextBooth() {
+    clearIntermission();
+    let remaining = 4;
+    const button = document.getElementById('mania-auto-next');
+    intermissionTicker = setInterval(() => {
+      remaining -= 1;
+      if (button) button.textContent = remaining > 0 ? `NEXT BOOTH · ${remaining}` : 'NEXT BOOTH';
+    }, 1000);
+    intermissionTimer = setTimeout(() => {
+      clearIntermission();
+      if (state?.phase === 'results' && !state.practice) window.maniaNextBooth();
+    }, 4000);
   }
 
   function addLabel(x, y, text, color, size) {
@@ -4410,16 +4875,29 @@
   }
 
   function drawShots(now) {
-    state.shots = state.shots.filter(shot => now - shot.born < (shot.kind === 'orbit' ? shot.flightDuration * 1000 + 340 : 210));
+    state.shots = state.shots.filter(shot => now - shot.born < (
+      shot.kind === 'orbit' ? shot.flightDuration * 1000 + 340 :
+      shot.kind === 'plates' ? shot.flightDuration * 1000 + 90 :
+      210
+    ));
     for (const shot of state.shots) {
-      const flightMs = shot.kind === 'orbit' ? shot.flightDuration * 1000 : 210;
+      const flightMs = shot.kind === 'orbit' || shot.kind === 'plates'
+        ? shot.flightDuration * 1000
+        : 210;
       const rawProgress = (now - shot.born) / flightMs;
       const p = clamp(rawProgress, 0, 1);
       const startX = state.width / 2;
       const startY = state.height + 22;
-      const endX = lerp(startX, shot.x, shot.kind === 'orbit' ? p : Math.min(1, p * 2.8));
+      const curveControlX = (shot.aimX || shot.x) + (shot.curveOffset || 0) * 1.8;
+      const endX = shot.kind === 'plates'
+        ? shot.curveOffset
+          ? (1 - p) * (1 - p) * startX + 2 * (1 - p) * p * curveControlX + p * p * shot.x
+          : lerp(startX, shot.x, p)
+        : lerp(startX, shot.x, shot.kind === 'orbit' ? p : Math.min(1, p * 2.8));
       const endY = shot.kind === 'orbit'
         ? lerp(startY, shot.y, p) - Math.sin(p * Math.PI) * shot.arcHeight
+        : shot.kind === 'plates'
+          ? lerp(startY, shot.y, p) - Math.sin(p * Math.PI) * shot.arcHeight
         : lerp(startY, shot.y, Math.min(1, p * 2.8));
       ctx.save();
       if (shot.kind === 'orbit') {
@@ -4439,14 +4917,46 @@
         ctx.ellipse(endX, ringY, 15 + p * 10, 6 + p * 4, -.3 + p * .2, 0, Math.PI * 2);
         ctx.stroke();
       } else if (shot.kind === 'plates') {
-        ctx.globalAlpha = 1 - p;
-        ctx.strokeStyle = '#dffbf2';
-        ctx.lineWidth = 3;
+        ctx.globalAlpha = clamp(1 - Math.max(0, p - .86) / .14, 0, 1);
+        // A short retained trail makes the rightward overshoot and left hook
+        // legible even when the spinning log itself is visually busy.
+        const trailStart = 0;
+        ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.ellipse(endX, endY, 8 + p * 14, 4 + p * 7, 0, 0, Math.PI * 2);
+        for (let step = 0; step <= 7; step += 1) {
+          const t = lerp(trailStart, p, step / 7);
+          const trailX = shot.curveOffset
+            ? (1 - t) * (1 - t) * startX + 2 * (1 - t) * t * curveControlX + t * t * shot.x
+            : lerp(startX, shot.x, t);
+          const trailY = lerp(startY, shot.y, t) - Math.sin(t * Math.PI) * shot.arcHeight;
+          if (step === 0) ctx.moveTo(trailX, trailY);
+          else ctx.lineTo(trailX, trailY);
+        }
+        ctx.strokeStyle = 'rgba(49,31,22,.68)';
+        ctx.lineWidth = 10;
         ctx.stroke();
-        ctx.fillStyle = '#65d6d1';
-        circle(endX, endY, 5 + p, false);
+        ctx.strokeStyle = 'rgba(255,224,164,.76)';
+        ctx.lineWidth = 5;
+        ctx.stroke();
+        ctx.translate(endX, endY);
+        ctx.rotate(-p * Math.PI * 4.5);
+        ctx.shadowColor = 'rgba(255,220,150,.52)';
+        ctx.shadowBlur = 7;
+        ctx.fillStyle = '#8a5a32';
+        ctx.strokeStyle = '#3d2b20';
+        ctx.lineWidth = 3;
+        roundRect(-19, -7, 38, 14, 7);
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = '#d6a565';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-11, -6); ctx.lineTo(-11, 6);
+        ctx.moveTo(11, -6); ctx.lineTo(11, 6);
+        ctx.stroke();
+        ctx.fillStyle = '#c58a4e';
+        circle(-17, 0, 5, true);
+        circle(17, 0, 5, true);
       } else if (shot.kind === 'volcano') {
         ctx.globalAlpha = 1 - p;
         ctx.strokeStyle = '#fff0d8';
