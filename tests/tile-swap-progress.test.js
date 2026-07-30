@@ -28,10 +28,20 @@ test('leaderboard recovery writes into the current Tile Swap stores', () => {
 test('existing and newly entered player codes both repair missing progression', () => {
   assert.match(
     arcade,
-    /const profile = await ArcadeProfiles\.activate\(playerTag, \{ create: true \}\);[\s\S]*?await restorePlayerProgress\(playerTag\);[\s\S]*?await ArcadeProfiles\.syncNow\(playerTag\)/
+    /ArcadeProfiles\.activate\(playerTag, \{ create: true \}\)[\s\S]*?const profile = await profilePromise;[\s\S]*?await restorePlayerProgress\(playerTag\);[\s\S]*?await ArcadeProfiles\.syncNow\(playerTag\)/
   );
   assert.match(
     arcade,
     /if \(restore\) \{\s*await restorePlayerProgress\(tag\);[\s\S]*?await ArcadeProfiles\.syncNow\(tag\)/
   );
+});
+
+test('the lobby paints before existing-player network restoration', () => {
+  const startup = arcade.slice(
+    arcade.indexOf("document.addEventListener('DOMContentLoaded'"),
+    arcade.indexOf('// ══════════════════════════════════════\n//  SHARED AUDIO CONTEXT')
+  );
+  assert.ok(startup.indexOf("nav('lobby')") < startup.indexOf('await profilePromise'));
+  assert.ok(startup.indexOf("nav('lobby')") < startup.indexOf('await restorePlayerProgress(playerTag)'));
+  assert.ok(startup.indexOf("nav('lobby')") < startup.indexOf('await ArcadeProfiles.syncNow(playerTag)'));
 });

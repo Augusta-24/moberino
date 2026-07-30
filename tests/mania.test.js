@@ -195,6 +195,7 @@ test('Beaver Bonanza uses rear pop-ups, clearable banks, runners, gold frenzy, a
   assert.match(source, /ctx\.rotate\(tumbleSide \* knockback \* Math\.PI \* 2\.35\)/);
   assert.match(source, /const beaverDepth = 1 - knockback \* \.56/);
   assert.match(source, /function drawDamMiddleRailMask\(/);
+  assert.match(source, /const phoneRailFootOffset = w <= 620/);
   assert.match(source, /drawSourceAlignedMask\([\s\S]*\.555,[\s\S]*\.715/);
   assert.match(source, /drawImageCover\(backdrop, w, h\)/);
   assert.match(source, /const cleared = !!target\?\.hit/);

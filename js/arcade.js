@@ -306,23 +306,44 @@
     if (!onPet && typeof petBack === 'function') petBack();
   };
 
-  document.addEventListener('DOMContentLoaded', async () => {
+  document.addEventListener('DOMContentLoaded', () => {
     document.documentElement.classList.add('arcade-root');
     let playerTag = typeof PlayerID !== 'undefined' ? PlayerID.get() : null;
     if (playerTag && typeof ArcadeProfiles !== 'undefined' && !ArcadeProfiles.valid(playerTag)) {
       ArcadeProfiles.discardLocalProfile(playerTag);
       PlayerID.clear();
       playerTag = null;
-    } else if (playerTag && typeof ArcadeProfiles !== 'undefined') {
-      const profile = await ArcadeProfiles.activate(playerTag, { create: true });
-      if (profile.ok) {
-        await restorePlayerProgress(playerTag);
-        await ArcadeProfiles.syncNow(playerTag);
-      }
     }
+
+    // Paint from local state immediately. Profile activation applies any cached
+    // snapshot synchronously before its first network await, so starting it first
+    // preserves the newest local lobby state without making the first visible
+    // frame wait for Supabase, leaderboard recovery, or the follow-up upload.
+    const profilePromise = playerTag && typeof ArcadeProfiles !== 'undefined'
+      ? ArcadeProfiles.activate(playerTag, { create: true })
+      : null;
     nav('lobby');
     updateArcadeInstallPrompt();
     updateArcadeMusicPrompt();
+
+    if (profilePromise) void (async () => {
+      const startedInCharacterSetup = document.body.classList.contains('on-char');
+      const profile = await profilePromise;
+      if (profile.ok) {
+        await restorePlayerProgress(playerTag);
+        await ArcadeProfiles.syncNow(playerTag);
+        // A returning player may have had their character only in the remote
+        // profile. Once it arrives, leave the temporary setup screen unless the
+        // player has already navigated elsewhere or begun choosing a character.
+        if (startedInCharacterSetup &&
+            document.body.classList.contains('on-char') &&
+            typeof hasPlayerCharacter === 'function' &&
+            hasPlayerCharacter(playerTag)) {
+          window._arcadeSessionStarted = false;
+          nav('lobby');
+        }
+      }
+    })();
   });
 })();
 

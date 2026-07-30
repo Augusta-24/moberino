@@ -2210,7 +2210,13 @@
     } else if (target.kind === 'damBank' || target.kind === 'goldBeaver') {
       const arrival = easeOut(clamp(local / .46, 0, 1));
       x = w * target.anchorX;
-      const homeY = h * target.anchorY;
+      // Narrow iPhone canvases shrink the authored beaver more than the
+      // backdrop rail. Lower the center so the sprite remains planted by its
+      // feet instead of hovering above the source-aligned log mask.
+      const phoneRailFootOffset = w <= 620
+        ? clamp(h * .032, 14, 25)
+        : 0;
+      const homeY = h * target.anchorY + phoneRailFootOffset;
       y = lerp(homeY + clamp(h * .16, 72, 118), homeY, arrival);
       scale *= target.targetScale * (.72 + arrival * .28);
       visibility = arrival;
@@ -3418,7 +3424,10 @@
       ctx.fill();
     }
 
-    const bob = target.kind === 'damBeaver' || target.kind === 'orbitBoss'
+    const bob = target.kind === 'damBeaver' ||
+      target.kind === 'damBank' ||
+      target.kind === 'goldBeaver' ||
+      target.kind === 'orbitBoss'
       ? 0
       : Math.sin((now + target.at * 1000) / 115) * 1.6;
     ctx.translate(0, bob);
