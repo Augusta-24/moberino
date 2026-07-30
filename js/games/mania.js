@@ -32,8 +32,8 @@
       accent: '#6de8ff',
       hudLabel: 'FORMATIONS',
       goal: 1,
-      intro: 'Four rings freezes a Moon Mobe. Freeze all 5 at once to summon the Ringmaster Robot, then rapid-fire rings into its mouth.',
-      prompt: 'CLEAR THE 5 · THEN FEED THE ROBOT!',
+      intro: 'Four rings freezes a Moon Mobe. Freeze all 6 at once to summon the Ringmaster Robot, then rapid-fire rings into its mouth.',
+      prompt: 'CLEAR THE 6 · THEN FEED THE ROBOT!',
     },
     {
       id: 'plates',
@@ -43,7 +43,7 @@
       hudLabel: 'BONANZA HITS',
       goal: 5,
       intro: 'Logs land exactly where you tap, but distant throws take a much larger curved path before impact. Clear three five-beaver banks to summon the golden bonanza while tracking foreground runners and two covered spillway experts.',
-      prompt: 'TAP THE TARGET · WATCH THE CURVE · CLEAR 3 BANKS!',
+      prompt: 'CLEAR 3 ROWS → UNLOCK GOLD BEAVERS!',
     },
     {
       id: 'volcano',
@@ -250,6 +250,8 @@
       finaleWave: 0,
       finaleRespawnAt: 0,
       finaleClearedWave: -1,
+      finalePrecisionWave: 0,
+      finalePrecisionNextAt: 0,
       rapidUnlocked: false,
       rapidTapCount: 0,
       barnHits: 0,
@@ -261,6 +263,7 @@
       farmNextFillAt: 0,
       damBankWave: 0,
       damBankRespawnAt: 0,
+      damProgressPulseAt: 0,
       damGoldActive: false,
       damGoldCleared: false,
       barns: [],
@@ -488,7 +491,7 @@
     // unrelated continuous streams. Each wave reveals from physical scenery,
     // holds long enough for a choice, then fully retreats before the next one.
     waveTimes.forEach((waveAt, wave) => {
-      const foregroundSlots = wave % 2 ? [1, 3, 0] : [0, 2, 3];
+      const foregroundSlots = wave % 2 ? [1, 3] : [0, 2];
       foregroundSlots.forEach((slot, index) => {
         const type = animals[(wave * 2 + index) % animals.length];
         state.targets.push({
@@ -497,7 +500,7 @@
           at: waveAt + index * .12,
           duration: 3.15,
           anchorX: popAnchors[slot],
-          lane: .79 + (slot % 2) * .035,
+          lane: .75 + (slot % 2) * .025,
           base: type === 'duck' || type === 'chicken' ? 150 : 100,
           drawLayer: 4,
           wave,
@@ -515,7 +518,7 @@
           duration: 2.75,
           anchorX: midAnchors[slot],
           slideFrom: index % 2 ? .055 : -.055,
-          lane: .55 + (slot % 2) * .045,
+          lane: .5 + (slot % 2) * .025,
           base: type === 'duck' || type === 'chicken' ? 350 : 300,
           drawLayer: 3,
           wave,
@@ -593,15 +596,27 @@
     state.farmActivityWave += 1;
     const animals = ['pig', 'cow', 'sheep', 'duck', 'chicken'];
     const leftSide = wave % 2 === 0;
+    const nextScheduledAt = state.targets
+      .filter(target =>
+        !target.activityFill &&
+        ['farmPop', 'farmSlide', 'farmHill', 'flyer'].includes(target.kind) &&
+        target.at > at
+      )
+      .reduce((next, target) => Math.min(next, target.at), ROUND_SECONDS);
+    const fillDuration = Math.max(.55, Math.min(
+      2.2,
+      nextScheduledAt - at - .18,
+      ROUND_SECONDS - at
+    ));
     [
-      ['farmPop', leftSide ? .24 : .76, .81, 150, 4],
-      ['farmSlide', leftSide ? .63 : .37, .59, 350, 3],
+      ['farmPop', leftSide ? .24 : .76, .75, 150, 4],
+      ['farmSlide', leftSide ? .63 : .37, .52, 350, 3],
     ].forEach((slot, index) => {
       state.targets.push({
         kind: slot[0],
         type: animals[(wave + index) % animals.length],
         at: at + index * .1,
-        duration: Math.max(.5, ROUND_SECONDS - at),
+        duration: fillDuration,
         anchorX: slot[1],
         lane: slot[2],
         slideFrom: index ? (leftSide ? .05 : -.05) : undefined,
@@ -615,10 +630,10 @@
   }
 
   function buildOrbitRound() {
-    // Five large targets remain together as one readable formation. Three
-    // landed rings freezes one target; all five must be frozen simultaneously.
+    // Six large targets remain together as one readable formation. Four
+    // landed rings freezes one target; all six must be frozen simultaneously.
     const formation = [
-      [.34, .51], [.66, .51],
+      [.24, .51], [.5, .49], [.76, .51],
       [.18, .75], [.5, .73], [.82, .75],
     ];
     for (let i = 0; i < formation.length; i += 1) {
@@ -685,7 +700,7 @@
         doorTransition: .2,
         warningWindow: .58,
         cycleOffset: i * 1.9,
-        targetScale: .58,
+        targetScale: .68,
         tier: 2,
         spent: false,
         hit: false,
@@ -696,15 +711,15 @@
 
     // Foreground runners provide constant motion and a second attention lane.
     const runnerPasses = [
-      [.65, 'right'], [2.75, 'left'], [4.85, 'right'], [6.95, 'left'],
-      [9.05, 'right'], [11.15, 'left'], [13.25, 'right'], [15.35, 'left'], [17.45, 'right'],
+      [.65, 'right'], [4.2, 'left'], [7.75, 'right'],
+      [11.3, 'left'], [14.85, 'right'], [18.4, 'left'],
     ];
     runnerPasses.forEach((pass, i) => {
       state.targets.push({
         kind: 'beaverRunner',
         type: i % 4 === 3 ? 'foreman' : 'standard',
         at: pass[0],
-        duration: 4.1,
+        duration: 6.2,
         direction: pass[1],
         lane: .79 + (i % 2) * .055,
         base: i % 4 === 3 ? 1200 : 600,
@@ -716,7 +731,7 @@
 
   function spawnDamBank(wave, at) {
     const positions = [
-      [.14, .525], [.32, .525], [.5, .525], [.68, .525], [.86, .525],
+      [.14, .505], [.32, .505], [.5, .505], [.68, .505], [.86, .505],
     ];
     // Set one clean horizontal rack from left to right so every target shares
     // the same visual and aiming line.
@@ -740,7 +755,7 @@
   function spawnGoldenBeavers(at) {
     state.damGoldActive = true;
     const positions = [
-      [.14, .525], [.32, .525], [.5, .525], [.68, .525], [.86, .525],
+      [.14, .505], [.32, .505], [.5, .505], [.68, .505], [.86, .505],
     ];
     const setDelays = [0, .08, .16, .24, .32];
     positions.forEach((position, index) => {
@@ -837,22 +852,14 @@
     // Phase 2: a deliberately paced left-to-right pass. Targets are smaller,
     // staggered across lanes, and still unfold for players who track a bank.
     for (let i = 0; i < 9; i += 1) {
-      state.targets.push({
-        kind: 'revealPanel',
-        type: 'neonTarget',
-        at: FINALE_PHASE_SECONDS,
-        duration: FINALE_PHASE_SECONDS,
-        worldX: 140 + i * ((FINALE_WORLD_LENGTH - 280) / 8),
-        lane: .22 + (i % 3) * .18,
-        finalePhase: 1,
-        tier: 0,
-        branch: 10 + i,
-        base: 300,
-        precisionMoving: true,
-        armorStage: 0,
-        hit: false,
-      });
+      spawnFinalePrecisionTarget(
+        i,
+        FINALE_PHASE_SECONDS,
+        140 + i * ((FINALE_WORLD_LENGTH - 280) / 8),
+        .22 + (i % 3) * .18
+      );
     }
+    state.finalePrecisionWave = 9;
 
     // Phase 3 is shorter and requires an eight-target precision bank before
     // the escalating rapid-fire target appears.
@@ -915,6 +922,24 @@
       base: 500 + wave * 100,
       targetScale: .72,
       unfoldHub: true,
+      hit: false,
+    });
+  }
+
+  function spawnFinalePrecisionTarget(index, at, worldX, lane) {
+    state.targets.push({
+      kind: 'revealPanel',
+      type: 'neonTarget',
+      at,
+      duration: Math.max(.5, FINALE_PHASE_SECONDS * 2 - at),
+      worldX,
+      lane,
+      finalePhase: 1,
+      tier: 0,
+      branch: 10 + index,
+      base: 300,
+      precisionMoving: true,
+      armorStage: 0,
       hit: false,
     });
   }
@@ -1062,6 +1087,9 @@
     const booth = currentBooth();
     if (booth.id === 'finale') return ['EXPAND', 'SCROLL', 'POP-UPS'][Math.min(2, Math.floor((state?.elapsed || 0) / FINALE_PHASE_SECONDS))];
     const value = state?.special || 0;
+    if (booth.id === 'plates') {
+      return state.damGoldActive ? '★ GOLD BEAVERS ★' : `GOLD AFTER ${Math.max(0, 3 - value)} ROW${3 - value === 1 ? '' : 'S'}`;
+    }
     return Array.from({ length: booth.goal }, (_, i) => i < value ? '★' : '☆').join(' ');
   }
 
@@ -1376,11 +1404,13 @@
     const clearBonus = 1500 + wave * 500;
     state.score += clearBonus;
     state.special = Math.min(3, wave + 1);
+    state.damProgressPulseAt = state.elapsed;
     addLabel(state.width * .5, state.height * .48, `BANK ${wave + 1} CLEAR +${clearBonus}`, '#fff1a3', 30);
     burst(state.width * .5, state.height * .5, '#ff8c68', 28, 1.2);
     if (wave < 2) {
       state.damBankRespawnAt = state.elapsed + .12;
-      showToast(`BANK ${wave + 1}/3 CLEAR · NEXT FIVE!`, true, 900);
+      const rowsToGold = 2 - wave;
+      showToast(`ROW ${wave + 1}/3 CLEAR · ${rowsToGold} TO GOLD BEAVERS!`, true, 1050);
     } else {
       state.damBankRespawnAt = state.elapsed + .15;
       showToast('THREE BANKS CLEAR · GOLD BEAVERS INBOUND!', true, 1200);
@@ -1545,7 +1575,7 @@
       target.completed = true;
       target.frozenUntil = state.elapsed + target.freezeWindow;
       const frozen = orbitFormationTargets().filter(item => item.completed).length;
-      showToast(`FROZEN ${frozen}/5 · ${target.freezeWindow.toFixed(1)}s TO CLEAR!`, true, 900);
+      showToast(`FROZEN ${frozen}/6 · ${target.freezeWindow.toFixed(1)}s TO CLEAR!`, true, 900);
       checkOrbitFormation();
     } else {
       showToast(`RINGS ${target.rings}/${target.requiredRings} · KEEP GOING!`, true, 720);
@@ -1561,7 +1591,7 @@
     const formation = orbitFormationTargets();
     if (
       state.orbitBossActive ||
-      formation.length !== 5 ||
+      formation.length !== 6 ||
       formation.some(target => !target.completed)
     ) return;
     state.special += 1;
@@ -1756,7 +1786,7 @@
     }
     state.damBankWave = state.special;
     spawnDamBank(state.damBankWave, state.elapsed + .08);
-    showToast(`BANK ${state.damBankWave + 1}/3 · CLEAR ALL FIVE!`, true, 950);
+    showToast(`ROW ${state.damBankWave + 1}/3 · CLEAR FIVE TO REACH GOLD!`, true, 1050);
   }
 
   function processFarmActivity() {
@@ -1806,7 +1836,38 @@
       }
     }
     if (phase === 0) processFinaleStaticWaves();
+    if (phase === 1) processFinalePrecisionScroll();
     if (phase === 2) processFinaleRapidFire();
+  }
+
+  function processFinalePrecisionScroll() {
+    if (
+      state.elapsed >= FINALE_PHASE_SECONDS * 2 - .65 ||
+      state.elapsed < state.finalePrecisionNextAt
+    ) return;
+    const live = state.targets.filter(target =>
+      target.precisionMoving &&
+      !target.hit &&
+      target.at <= state.elapsed + .4 &&
+      state.elapsed <= target.at + target.duration &&
+      target.worldX - cameraX() + state.width * .5 > -100 &&
+      target.worldX - cameraX() + state.width * .5 < state.width * 1.7
+    );
+    if (live.length >= 3) return;
+    const needed = 3 - live.length;
+    const cam = cameraX();
+    for (let index = 0; index < needed; index += 1) {
+      const wave = state.finalePrecisionWave;
+      state.finalePrecisionWave += 1;
+      spawnFinalePrecisionTarget(
+        wave,
+        state.elapsed + .08 + index * .1,
+        cam + state.width * (.28 + index * .18),
+        .23 + (wave % 3) * .18
+      );
+    }
+    state.finalePrecisionNextAt = state.elapsed + .48;
+    state.targets.sort((a, b) => a.at - b.at);
   }
 
   function processFinaleRapidFire() {
@@ -2421,6 +2482,8 @@
       ['farmPop', 'farmSlide', 'farmHill', 'farmBarnDoor', 'farmBarnBonus', 'runner', 'peek'].includes(target.kind)
     ) {
       scale *= 1.2;
+      if (target.kind === 'farmPop') y -= clamp(h * .04, 12, 20);
+      if (target.kind === 'farmSlide') y -= clamp(h * .025, 8, 14);
     }
     if (
       phoneStage &&
@@ -2429,6 +2492,11 @@
       scale *= 1.3;
       const balloonInset = clamp(w * .12, 40, 58);
       x = clamp(x, balloonInset, w - balloonInset);
+    }
+    if (target.hiddenMobe) {
+      // Collectibles keep one screen-space footprint regardless of whether
+      // they replace a distant hill target, runner, dinosaur, or other slot.
+      scale = phoneStage ? .82 : .9;
     }
     if (x < -100 || x > w + 100) return null;
     const small = ['chicken', 'duck', 'bird', 'bluebird'].includes(target.type);
@@ -2483,7 +2551,6 @@
     const boothId = currentBooth().id;
     if (boothId === 'farm') {
       drawFarmScene(w, h);
-      drawFarmDetails(w, h);
     } else if (boothId === 'orbit') {
       drawOrbitScene(w, h);
     } else if (boothId === 'plates') {
@@ -2498,18 +2565,26 @@
     // animal remain readable while the rising motion still explains "hidden."
     if (boothId === 'farm') for (const barn of state.barns) drawBarn(barn);
     if (boothId === 'volcano') drawDinosaurTethers();
+    if (boothId === 'plates') drawDamGoldProgress(w, h);
 
-    const targetsToDraw = boothId === 'farm' || boothId === 'orbit'
-      ? [...state.targets].sort((a, b) => (a.drawLayer || 3) - (b.drawLayer || 3))
-      : [...state.targets];
-    // Collectibles are exclusive replacements. Draw them last and suppress any
-    // ordinary target that happens to occupy the same live slot.
-    targetsToDraw.sort((a, b) => Number(!!a.hiddenMobe) - Number(!!b.hiddenMobe));
+    const targetsToDraw = [...state.targets].sort((a, b) => {
+      const layerOrder = targetVisualLayer(a, boothId) - targetVisualLayer(b, boothId);
+      if (layerOrder) return layerOrder;
+      // Collectibles sit above ordinary targets within their physical layer.
+      const collectibleOrder = Number(!!a.hiddenMobe) - Number(!!b.hiddenMobe);
+      return collectibleOrder;
+    });
     const visibleHiddenPositions = targetsToDraw
       .filter(target => target.hiddenMobe && !target.hit)
       .map(target => ({ target, pos: targetPosition(target, state.elapsed) }))
       .filter(item => item.pos);
+    let farmMiddleMaskDrawn = false;
     for (const target of targetsToDraw) {
+      const visualLayer = targetVisualLayer(target, boothId);
+      if (boothId === 'farm' && !farmMiddleMaskDrawn && visualLayer >= 4) {
+        drawFarmLayerMask(w, h, .6, .72);
+        farmMiddleMaskDrawn = true;
+      }
       const pos = targetPosition(target, state.elapsed);
       if (!pos) continue;
       if (
@@ -2537,10 +2612,25 @@
           const endOverEndSquash = 1 - Math.abs(Math.sin(knockback * Math.PI * 4.3)) * .18;
           ctx.scale(depthScale, depthScale * endOverEndSquash);
           ctx.translate(-pos.x, -pos.y);
+        } else if (['damBank', 'goldBeaver', 'beaverRunner', 'beaverPeek'].includes(target.kind)) {
+          const knockback = clamp(hitAge / .42, 0, 1);
+          const tumbleSide = Math.sign(pos.x - state.width * .5) || 1;
+          ctx.globalAlpha = clamp((1 - knockback) * 2.7, 0, 1);
+          ctx.translate(pos.x, pos.y);
+          ctx.translate(
+            tumbleSide * 16 * easeOut(knockback),
+            -54 * easeOut(knockback) + 68 * knockback * knockback
+          );
+          ctx.rotate(tumbleSide * knockback * Math.PI * 2.35);
+          const beaverDepth = 1 - knockback * .56;
+          ctx.scale(beaverDepth, beaverDepth);
+          ctx.translate(-pos.x, -pos.y);
         } else {
           ctx.globalAlpha = clamp(1 - hitAge / .42, 0, 1);
+          ctx.translate(pos.x, pos.y);
           ctx.translate(0, -hitAge * 70);
           ctx.scale(1 + hitAge * .6, 1 + hitAge * .6);
+          ctx.translate(-pos.x, -pos.y);
         }
       }
       drawTarget(target, pos, now);
@@ -2548,14 +2638,33 @@
     }
 
     if (boothId === 'farm') {
-      drawFarmTargetMasks(w, h);
-      drawForeground(w, h);
+      if (!farmMiddleMaskDrawn) drawFarmLayerMask(w, h, .6, .72);
+      drawFarmLayerMask(w, h, .84, 1);
       drawFarmPointOverlays(now);
     }
+    if (boothId === 'plates') drawDamMiddleRailMask(w, h);
     drawStageFrame(w, h, boothId);
     drawShots(now);
     drawParticles(now);
     drawLabels(now);
+  }
+
+  function targetVisualLayer(target, boothId) {
+    if (boothId === 'farm' || boothId === 'orbit') return target.drawLayer || 3;
+    if (boothId === 'plates') {
+      if (target.kind === 'damBeaver') return 1;
+      if (target.kind === 'damBank' || target.kind === 'goldBeaver') return 3;
+      if (target.kind === 'beaverRunner' || target.kind === 'beaverPeek') return 5;
+      return 3;
+    }
+    if (boothId === 'volcano') {
+      if (target.kind === 'volcanoComet') return 1;
+      if (target.kind === 'dinosaur') return target.lane < .7 ? 2 : 4;
+      if (target.kind === 'dinoBalloon') return target.parent?.lane < .7 ? 3 : 5;
+      return 3;
+    }
+    if (target.kind === 'finaleBat') return 6;
+    return target.drawLayer || 3;
   }
 
   function isFarmScoreTarget(target) {
@@ -2808,6 +2917,25 @@
     const sourceX = (image.naturalWidth - sourceW) * .5;
     const sourceY = (image.naturalHeight - sourceH) * .5;
     ctx.drawImage(image, sourceX, sourceY, sourceW, sourceH, 0, 0, w, h);
+  }
+
+  function drawSourceAlignedMask(image, w, h, topRatio, bottomRatio, filter) {
+    const feather = .012;
+    [
+      [topRatio, .2],
+      [topRatio + feather * .5, .46],
+      [topRatio + feather, 1],
+    ].forEach(pass => {
+      const passTop = h * pass[0];
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, passTop, w, h * bottomRatio - passTop);
+      ctx.clip();
+      ctx.globalAlpha = pass[1];
+      ctx.filter = filter;
+      drawImageCover(image, w, h);
+      ctx.restore();
+    });
   }
 
   function drawDamScene(w, h) {
@@ -3114,163 +3242,13 @@
     ctx.globalAlpha = 1;
   }
 
-  function drawFarmDetails(w, h) {
-    const fenceY = h * .67;
-    ctx.save();
-    // Three physical rails divide distant precision, midground tracking, and
-    // close pop-up targets without covering the authored farm landscape.
-    ctx.fillStyle = 'rgba(77,117,51,.42)';
-    ctx.beginPath();
-    ctx.moveTo(0, h * .44);
-    ctx.quadraticCurveTo(w * .24, h * .39, w * .5, h * .45);
-    ctx.quadraticCurveTo(w * .75, h * .5, w, h * .42);
-    ctx.lineTo(w, h * .52);
-    ctx.quadraticCurveTo(w * .72, h * .57, w * .48, h * .51);
-    ctx.quadraticCurveTo(w * .23, h * .46, 0, h * .53);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.strokeStyle = '#704829';
-    ctx.lineWidth = Math.max(6, h * .014);
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(-20, fenceY + 10);
-    ctx.lineTo(w + 20, fenceY + 10);
-    ctx.moveTo(-20, fenceY + 34);
-    ctx.lineTo(w + 20, fenceY + 34);
-    ctx.stroke();
-    ctx.strokeStyle = '#e4c27d';
-    ctx.lineWidth = Math.max(4, h * .011);
-    ctx.beginPath();
-    ctx.moveTo(-20, fenceY + 7);
-    ctx.lineTo(w + 20, fenceY + 7);
-    ctx.moveTo(-20, fenceY + 31);
-    ctx.lineTo(w + 20, fenceY + 31);
-    ctx.stroke();
-
-    for (let x = -10; x < w + 50; x += Math.max(84, w / 8)) {
-      ctx.fillStyle = '#774929';
-      ctx.strokeStyle = '#3f291e';
-      ctx.lineWidth = 2;
-      roundRect(x - 8, fenceY - 12, 16, 72, 5);
-      ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#d8aa5c';
-      roundRect(x - 4, fenceY - 9, 7, 65, 3);
-      ctx.fill();
-      ctx.fillStyle = '#f3c44f';
-      circle(x, fenceY + 6, 2.6, true);
-      circle(x, fenceY + 31, 2.6, true);
-    }
-
-    // Brass suspension rods establish that the target banks are floating
-    // mechanical scenery rather than painted bands in the backdrop.
-    ctx.strokeStyle = 'rgba(89,52,32,.72)';
-    ctx.lineWidth = 5;
-    for (const x of [.14, .37, .61, .87]) {
-      ctx.beginPath();
-      ctx.moveTo(w * x, h * .61);
-      ctx.lineTo(w * x, h * .72);
-      ctx.stroke();
-      ctx.fillStyle = '#e0a449';
-      circle(w * x, h * .63, 4, true);
-    }
-    ctx.restore();
-  }
-
-  function drawFarmTargetMasks(w, h) {
-    ctx.save();
-
-    // Small distant hill pockets hide the high-value animals completely
-    // between reveals. Separate silhouettes keep the layer feeling airborne.
-    for (const anchor of [.17, .43, .87]) {
-      const x = w * anchor;
-      const panelW = clamp(w * .18, 76, 145);
-      const panelY = h * .405;
-      ctx.fillStyle = 'rgba(35,24,16,.28)';
-      ctx.beginPath();
-      ctx.ellipse(x, panelY + 18, panelW * .48, 13, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#56813c';
-      ctx.strokeStyle = '#d69e46';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(x - panelW / 2, panelY + 22);
-      ctx.quadraticCurveTo(x - panelW * .3, panelY - 11, x - panelW * .08, panelY + 2);
-      ctx.quadraticCurveTo(x + panelW * .16, panelY - 17, x + panelW * .34, panelY + 1);
-      ctx.quadraticCurveTo(x + panelW * .46, panelY + 4, x + panelW / 2, panelY + 22);
-      ctx.lineTo(x + panelW / 2, panelY + 38);
-      ctx.lineTo(x - panelW / 2, panelY + 38);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = '#f1bd4e';
-      circle(x - panelW * .34, panelY + 26, 3, true);
-      circle(x + panelW * .34, panelY + 26, 3, true);
-    }
-
-    // Four wave-shaped troughs form the dominant middle target bank. The
-    // alternating crests visibly swallow animals as each arrangement ends.
-    const midAnchors = [.14, .37, .61, .87];
-    midAnchors.forEach((anchor, index) => {
-      const x = w * anchor;
-      const panelW = clamp(w * .205, 96, 170);
-      const y = h * .625;
-      const panelH = clamp(h * .105, 58, 92);
-      ctx.fillStyle = 'rgba(24,17,30,.32)';
-      ctx.beginPath();
-      ctx.ellipse(x, y + panelH - 8, panelW * .45, 12, 0, 0, Math.PI * 2);
-      ctx.fill();
-      const wave = ctx.createLinearGradient(0, y, 0, y + 55);
-      wave.addColorStop(0, index % 2 ? '#426f86' : '#4f5d96');
-      wave.addColorStop(1, index % 2 ? '#233b5b' : '#2d315f');
-      ctx.fillStyle = wave;
-      ctx.strokeStyle = '#d7a353';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(x - panelW / 2, y + 5);
-      for (let step = 0; step < 4; step += 1) {
-        const startX = x - panelW / 2 + step * panelW / 4;
-        ctx.quadraticCurveTo(startX + panelW / 8, y - 12, startX + panelW / 4, y + 5);
-      }
-      ctx.lineTo(x + panelW / 2, y + panelH);
-      ctx.lineTo(x - panelW / 2, y + panelH);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.strokeStyle = '#8fd1d2';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(x - panelW * .42, y + 18);
-      ctx.quadraticCurveTo(x - panelW * .2, y + 4, x, y + 19);
-      ctx.quadraticCurveTo(x + panelW * .22, y + 32, x + panelW * .42, y + 17);
-      ctx.stroke();
-      ctx.fillStyle = '#ffcf4a';
-      circle(x - panelW * .4, y + panelH - 12, 3, true);
-      circle(x + panelW * .4, y + panelH - 12, 3, true);
-    });
-
-    // Foreground mound doors remain the easiest bank, but now share the same
-    // raised brass-rimmed construction language as the floating scenery.
-    for (const anchor of [.18, .38, .61, .82]) {
-      const x = w * anchor;
-      const moundW = clamp(w * .15, 78, 138);
-      const y = h * .88;
-      ctx.fillStyle = '#49331e';
-      ctx.strokeStyle = '#d69e46';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.ellipse(x, y, moundW / 2, clamp(h * .032, 15, 28), 0, Math.PI, Math.PI * 2);
-      ctx.lineTo(x + moundW / 2, y + 22);
-      ctx.lineTo(x - moundW / 2, y + 22);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = '#7b552b';
-      ctx.beginPath();
-      ctx.ellipse(x, y + 3, moundW * .36, 8, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.restore();
+  function drawFarmLayerMask(w, h, topRatio, bottomRatio) {
+    const backdrop = typeof _getImg === 'function'
+      ? _getImg('assets/mania/farm/farm-backdrop-v1.png')
+      : null;
+    if (!backdrop?.complete || !backdrop.naturalWidth) return;
+    const filter = 'saturate(.66) brightness(.92) contrast(.9)';
+    drawSourceAlignedMask(backdrop, w, h, topRatio, bottomRatio, filter);
   }
 
   function drawTree(x, y, scale) {
@@ -3446,6 +3424,11 @@
     ctx.translate(0, bob);
     if (['farmPop', 'farmSlide', 'farmHill', 'farmBarnDoor', 'farmBarnBonus', 'runner', 'peek'].includes(target.kind)) {
       const animalKind = target.kind === 'farmBarnDoor' || target.kind === 'farmBarnBonus' ? 'peek' : target.kind;
+      if (target.kind === 'farmHill') {
+        const spellSeed = target.branch || target.wave || 0;
+        drawEnchantedFarmDust(target, now);
+        ctx.rotate(mod(now / 1050 + spellSeed * .37, Math.PI * 2));
+      }
       drawAnimal(target.type, !!target.golden, animalKind);
     }
     else if (target.kind === 'flyer') drawBird(target.type, !!target.golden, now);
@@ -3481,6 +3464,7 @@
     // value plate. Every other hittable target shows its base point value.
     if (
       target.hiddenMobe ||
+      (target.hit && !target.repeatable) ||
       target.kind === 'finaleBat' ||
       target.kind === 'finalePopup' ||
       target.kind === 'finaleGate' ||
@@ -3507,9 +3491,9 @@
       phaseFlyer: 35,
       orbiter: 35,
       damBeaver: 47,
-      damBank: 45,
-      goldBeaver: 45,
-      beaverRunner: 43,
+      damBank: -58,
+      goldBeaver: -58,
+      beaverRunner: -66,
       beaverPeek: 36,
       plateRack: 34,
       platePop: 35,
@@ -3705,35 +3689,56 @@
 
   function drawBankBeaver(target, pos) {
     drawBeaverTarget(target, false);
+  }
+
+  function drawDamMiddleRailMask(w, h) {
+    const backdrop = typeof _getImg === 'function'
+      ? _getImg('assets/mania/dam/dam-backdrop-v2.png')
+      : null;
+    if (!backdrop?.complete || !backdrop.naturalWidth) return;
+
+    // Repaint the exact authored log rail over the lower portion of the live
+    // beavers. Because this is the same cover-scaled backdrop, the mask stays
+    // aligned in portrait, landscape, tablet, and desktop layouts.
     ctx.save();
-    // The bush remains fixed in the authored scenery while the beaver travels
-    // upward behind it, so the reveal reads as a physical set rather than an
-    // alpha-faded overlay.
-    ctx.translate(0, (pos.bushOffsetY || 0) + 34);
-    ctx.fillStyle = '#243f31';
-    ctx.strokeStyle = '#14281f';
-    ctx.lineWidth = 3;
-    for (const leaf of [[-34,3,22],[-15,-7,25],[8,-9,27],[31,2,22]]) {
-      ctx.beginPath();
-      ctx.ellipse(leaf[0], leaf[1], leaf[2], leaf[2] * .7, -.18 + leaf[0] * .004, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-    }
-    ctx.fillStyle = target.golden ? '#d6a43f' : '#4f7652';
-    ctx.globalAlpha = target.golden ? .9 : .72;
-    for (const leaf of [[-27,-1,12],[-7,-13,14],[17,-12,14],[35,1,11]]) {
-      ctx.beginPath();
-      ctx.ellipse(leaf[0], leaf[1], leaf[2], leaf[2] * .58, leaf[0] * .01, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-    ctx.strokeStyle = 'rgba(210,225,170,.34)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(-42, 13);
-    ctx.quadraticCurveTo(0, 21, 43, 12);
-    ctx.stroke();
     ctx.restore();
+    drawSourceAlignedMask(
+      backdrop,
+      w,
+      h,
+      .555,
+      .715,
+      'saturate(.66) brightness(.86) contrast(.9)'
+    );
+
+    const activeBank = state.damGoldActive
+      ? state.targets.filter(target => target.kind === 'goldBeaver')
+      : state.targets.filter(target =>
+        target.kind === 'damBank' && target.bankWave === state.damBankWave
+      );
+    const indicatorY = h * .58;
+    for (const anchorX of [.14, .32, .5, .68, .86]) {
+      const target = activeBank.find(item => Math.abs(item.anchorX - anchorX) < .01);
+      const cleared = !!target?.hit;
+      const active = !!target && !target.hit && state.elapsed >= target.at;
+      ctx.save();
+      ctx.translate(w * anchorX, indicatorY);
+      ctx.shadowColor = active ? '#ffcf4a' : 'transparent';
+      ctx.shadowBlur = active ? 12 : 0;
+      ctx.fillStyle = cleared ? '#202829' : active ? '#ffcf4a' : '#59615a';
+      ctx.strokeStyle = cleared ? '#87918a' : '#fff0c2';
+      ctx.lineWidth = 2;
+      circle(0, 0, clamp(w * .009, 5, 9), true);
+      if (cleared) {
+        ctx.strokeStyle = '#9ba39d';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-4, -4); ctx.lineTo(4, 4);
+        ctx.moveTo(4, -4); ctx.lineTo(-4, 4);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
   }
 
   function drawDamBeaver(target, pos, now) {
@@ -3747,6 +3752,7 @@
     ctx.rect(-72, -104, 144, coverY + 108);
     ctx.clip();
     ctx.globalAlpha *= clamp(open * 1.65, 0, 1);
+    if (target.tier === 2) ctx.translate(0, -15);
     drawBeaverTarget(target, false);
     ctx.restore();
 
@@ -3808,6 +3814,56 @@
       circle(20, -28, 3, true);
       ctx.shadowBlur = 0;
     }
+    ctx.restore();
+    ctx.restore();
+  }
+
+  function drawDamGoldProgress(w, h) {
+    const compact = w <= 520;
+    const centerX = w * .5;
+    const y = clamp(h * .095, 38, 70);
+    const gap = compact ? 28 : 34;
+    const startX = centerX - gap * 2.05;
+    const pulseAge = state.damProgressPulseAt
+      ? state.elapsed - state.damProgressPulseAt
+      : 9;
+    ctx.save();
+    ctx.globalAlpha = .96;
+    ctx.fillStyle = 'rgba(13,18,20,.76)';
+    ctx.strokeStyle = 'rgba(255,240,194,.42)';
+    ctx.lineWidth = 2;
+    roundRect(startX - 22, y - 18, gap * 4.4, 38, 16);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(255,207,74,.5)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(startX, y);
+    ctx.lineTo(startX + gap * 3.15, y);
+    ctx.stroke();
+
+    for (let index = 0; index < 3; index += 1) {
+      const lit = index < state.special;
+      const justLit = lit && index === state.special - 1 && pulseAge < .5;
+      const radius = 9 + (justLit ? (1 - pulseAge / .5) * 4 : 0);
+      ctx.shadowColor = lit ? '#ffcf4a' : 'transparent';
+      ctx.shadowBlur = lit ? 14 : 0;
+      ctx.fillStyle = lit ? '#ffcf4a' : '#30383a';
+      ctx.strokeStyle = lit ? '#fff1a3' : '#778080';
+      ctx.lineWidth = 2.5;
+      circle(startX + index * gap, y, radius, true);
+    }
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = state.damGoldActive ? '#ffcf4a' : 'rgba(255,207,74,.48)';
+    triangle(startX + gap * 2.55, y - 7, startX + gap * 2.9, y, startX + gap * 2.55, y + 7, true);
+
+    ctx.save();
+    ctx.translate(startX + gap * 3.55, y - 1);
+    ctx.scale(.32, .32);
+    ctx.globalAlpha = state.special >= 3 ? 1 : .48;
+    drawBeaverTarget({ type: 'expert', golden: state.special >= 3 }, true);
     ctx.restore();
     ctx.restore();
   }
@@ -3890,16 +3946,16 @@
       : target.character?.img;
     const characterImage = characterSrc && typeof _getImg === 'function' ? _getImg(characterSrc) : null;
     if (characterImage?.complete && characterImage.naturalWidth) {
-      const size = target.hit ? 112 : 88;
+      const size = 88;
       const drawX = -size / 2;
       const drawY = -58;
       // A tight silhouette trim keeps the collectible legible without adding
       // a separate badge or sticker shape behind the character.
       ctx.save();
       ctx.filter = 'brightness(0) invert(1)';
-      const trim = target.hit ? 2.8 : 2.2;
-      for (let index = 0; index < 8; index += 1) {
-        const angle = index * Math.PI / 4;
+      const trim = target.hit ? 4.6 : 3.8;
+      for (let index = 0; index < 16; index += 1) {
+        const angle = index * Math.PI / 8;
         ctx.drawImage(
           characterImage,
           drawX + Math.cos(angle) * trim,
@@ -3911,9 +3967,23 @@
       ctx.restore();
       ctx.drawImage(characterImage, -size / 2, -58, size, size);
       ctx.save();
-      ctx.globalAlpha *= .12;
+      ctx.globalAlpha *= .34;
       ctx.globalCompositeOperation = 'screen';
-      ctx.filter = `hue-rotate(${Math.round(now / 18 + target.variant * 80)}deg) saturate(1.8)`;
+      ctx.filter = `hue-rotate(${Math.round(now / 11 + target.variant * 80)}deg) saturate(2.8) brightness(1.2)`;
+      ctx.drawImage(characterImage, drawX, drawY, size, size);
+      ctx.restore();
+      ctx.save();
+      const sheenX = lerp(drawX - size * .25, drawX + size * 1.15, mod(now / 1450 + target.variant * .31, 1));
+      ctx.beginPath();
+      ctx.moveTo(sheenX - 13, drawY);
+      ctx.lineTo(sheenX + 6, drawY);
+      ctx.lineTo(sheenX - 18, drawY + size);
+      ctx.lineTo(sheenX - 37, drawY + size);
+      ctx.closePath();
+      ctx.clip();
+      ctx.globalAlpha *= .52;
+      ctx.globalCompositeOperation = 'screen';
+      ctx.filter = `hue-rotate(${Math.round(now / 9)}deg) brightness(1.85) saturate(1.75)`;
       ctx.drawImage(characterImage, drawX, drawY, size, size);
       ctx.restore();
       drawHiddenMobeGlint(now, target.variant);
@@ -3972,6 +4042,22 @@
     ctx.quadraticCurveTo(-r * .16, r * .16, -r, 0);
     ctx.quadraticCurveTo(-r * .16, -r * .16, 0, -r);
     ctx.fill();
+    ctx.restore();
+  }
+
+function drawEnchantedFarmDust(target, now) {
+  const spellSeed = target.branch || target.wave || 0;
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  for (let index = 0; index < 14; index += 1) {
+    const phase = now / 720 + index * .88 + spellSeed * .31;
+      const orbitX = Math.sin(phase * 1.13) * (30 + index % 4 * 7);
+      const orbitY = Math.cos(phase * .91) * (20 + index % 3 * 6);
+      const shimmer = .28 + (Math.sin(phase * 2.7) + 1) * .24;
+      ctx.globalAlpha = shimmer;
+      ctx.fillStyle = index % 3 === 0 ? '#dffaff' : index % 2 ? '#ffcf4a' : '#f6d8ff';
+      circle(orbitX, orbitY, index % 4 === 0 ? 2.2 : 1.25, false);
+    }
     ctx.restore();
   }
 
