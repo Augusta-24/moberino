@@ -31,7 +31,7 @@
       accent: '#6de8ff',
       hudLabel: 'FORMATIONS',
       goal: 1,
-      intro: 'Four rings freezes a Moon Mobe. Freeze all 6 at once to summon the Ringmaster Robot, then rapid-fire rings into its mouth.',
+      intro: 'Five rings freezes a Moon Mobe. Freeze all 6 at once to summon the Ringmaster Robot, then rapid-fire rings into its mouth.',
       prompt: 'CLEAR THE 6 · THEN FEED THE ROBOT!',
     },
     {
@@ -73,6 +73,18 @@
     green: '#3f7d36',
     ink: '#211c18',
   };
+  const FARM_SPOTS = [
+    { kind: 'farmSlide', anchorX: .12, lane: .59 },
+    { kind: 'farmPop', anchorX: .5, lane: .78 },
+    { kind: 'farmHill', anchorX: .88, lane: .34 },
+    { kind: 'farmSlide', anchorX: .2, lane: .51 },
+    { kind: 'farmSlide', anchorX: .42, lane: .54 },
+    { kind: 'farmSlide', anchorX: .64, lane: .51 },
+    { kind: 'farmPop', anchorX: .16, lane: .75 },
+    { kind: 'farmPop', anchorX: .38, lane: .79 },
+    { kind: 'farmPop', anchorX: .61, lane: .76 },
+    { kind: 'farmPop', anchorX: .82, lane: .79 },
+  ];
 
   let frame = 0;
   let canvas = null;
@@ -535,33 +547,28 @@
   function spawnFarmAnimal(slot, at) {
     const cycle = state.farmAnimalCycle++;
     const animals = ['pig', 'cow', 'sheep', 'duck', 'chicken'];
-    const kind = ['farmPop', 'farmPop', 'farmSlide', 'farmSlide', 'farmHill', 'farmHill'][slot];
+    const farmSpot = chooseFarmSpot(cycle + slot);
+    const kind = farmSpot.kind;
     const target = {
       kind,
       type: animals[(cycle + slot) % animals.length],
       at,
       duration: Math.max(.5, ROUND_SECONDS - at),
       farmSlot: slot,
+      farmSpot: farmSpot.index,
+      anchorX: farmSpot.anchorX,
+      lane: farmSpot.lane,
       clearReplace: true,
       hit: false,
     };
     if (kind === 'farmPop') {
-      const anchors = [.27, .4, .54, .67];
-      target.anchorX = chooseFarmAnchor(kind, anchors, cycle + slot);
-      target.lane = .75 + ((cycle + slot) % 2) * .025;
       target.base = ['duck', 'chicken'].includes(target.type) ? 150 : 100;
       target.drawLayer = 4;
     } else if (kind === 'farmSlide') {
-      const anchors = [.25, .39, .53, .66];
-      target.anchorX = chooseFarmAnchor(kind, anchors, cycle + slot);
       target.slideFrom = (cycle + slot) % 2 ? .055 : -.055;
-      target.lane = .5 + ((cycle + slot) % 2) * .025;
       target.base = ['duck', 'chicken'].includes(target.type) ? 350 : 300;
       target.drawLayer = 3;
     } else if (kind === 'farmHill') {
-      const anchors = [.31, .47, .62];
-      target.anchorX = chooseFarmAnchor(kind, anchors, cycle);
-      target.lane = .31 + (cycle % 2) * .035;
       target.base = cycle % 7 === 6 ? 1000 : 650;
       target.golden = cycle % 7 === 6;
       target.drawLayer = 1;
@@ -569,27 +576,28 @@
     state.targets.push(target);
   }
 
-  function chooseFarmAnchor(kind, anchors, seed) {
+  function chooseFarmSpot(seed) {
     const occupied = new Set(state.targets
       .filter(target =>
-        target.kind === kind &&
+        target.clearReplace &&
         !target.hit &&
-        Number.isFinite(target.anchorX)
+        Number.isInteger(target.farmSpot)
       )
-      .map(target => target.anchorX));
-    for (let offset = 0; offset < anchors.length; offset += 1) {
-      const candidate = anchors[(seed + offset) % anchors.length];
-      if (!occupied.has(candidate)) return candidate;
+      .map(target => target.farmSpot));
+    for (let offset = 0; offset < FARM_SPOTS.length; offset += 1) {
+      const index = (seed + offset) % FARM_SPOTS.length;
+      if (!occupied.has(index)) return { ...FARM_SPOTS[index], index };
     }
-    return anchors[seed % anchors.length];
+    const index = seed % FARM_SPOTS.length;
+    return { ...FARM_SPOTS[index], index };
   }
 
   function buildOrbitRound() {
-    // Six large targets remain together as one readable formation. Four
+    // Six large targets remain together as one readable formation. Five
     // landed rings freezes one target; all six must be frozen simultaneously.
     const formation = [
-      [.24, .51], [.5, .49], [.76, .51],
-      [.18, .75], [.5, .73], [.82, .75],
+      [.24, .36], [.5, .34], [.76, .36],
+      [.18, .62], [.5, .6], [.82, .62],
     ];
     for (let i = 0; i < formation.length; i += 1) {
       state.targets.push({
@@ -601,7 +609,7 @@
         formationIndex: i,
         anchorX: formation[i][0],
         anchorY: formation[i][1],
-        requiredRings: 4,
+        requiredRings: 5,
         rings: 0,
         ringWindow: 2.35,
         freezeWindow: ORBIT_FREEZE_SECONDS,
@@ -733,10 +741,10 @@
     state.volcanoStage = 0;
     state.volcanoStageReadyAt = 0;
     const passes = [
-      [.35, 'right', .79, 2], [2.8, 'left', .59, 2],
-      [5.2, 'right', .79, 3], [7.6, 'left', .59, 2],
-      [10, 'right', .79, 3], [12.4, 'left', .59, 3],
-      [14.7, 'right', .79, 3], [16.8, 'left', .59, 3],
+      [.35, 'right', .79, 2], [2.8, 'left', .55, 2],
+      [5.2, 'right', .79, 3], [7.6, 'left', .55, 2],
+      [10, 'right', .79, 3], [12.4, 'left', .55, 3],
+      [14.7, 'right', .79, 3], [16.8, 'left', .55, 3],
       [18.4, 'right', .79, 3],
     ];
     passes.forEach((pass, index) => spawnVolcanoDinosaur(
@@ -1392,6 +1400,10 @@
     addLabel(state.width * .5, state.height * .46, 'GOLD BONANZA +3000', '#ffcf4a', 38);
     burst(state.width * .5, state.height * .48, '#ffcf4a', 46, 1.45);
     showToast('★ GOLD BONANZA CLEARED! ★', true, 1700);
+    state.damGoldActive = false;
+    state.special = 0;
+    state.damBankWave += 1;
+    state.damBankRespawnAt = state.elapsed + .18;
     try { SFX.mysteryGood(); } catch (e) {}
   }
 
@@ -1748,7 +1760,8 @@
       if (!state.damGoldActive) spawnGoldenBeavers(state.elapsed + .08);
       return;
     }
-    state.damBankWave = state.special;
+    if (state.damGoldCleared) state.damGoldCleared = false;
+    else state.damBankWave = state.special;
     spawnDamBank(state.damBankWave, state.elapsed + .08);
     showToast(`ROW ${state.damBankWave + 1}/3 · CLEAR FIVE TO REACH GOLD!`, true, 1050);
   }
@@ -2525,9 +2538,18 @@
 
     // Barn targets sit in the dark doors. Drawing the buildings first lets the
     // animal remain readable while the rising motion still explains "hidden."
-    if (boothId === 'farm') for (const barn of state.barns) drawBarn(barn);
-    if (boothId === 'volcano') drawDinosaurTethers();
-    if (boothId === 'plates') drawDamGoldProgress(w, h);
+    if (boothId === 'farm') {
+      for (const barn of state.barns) drawBarn(barn);
+      drawBackdropReadabilityWash(w, h, 'farm');
+    }
+    if (boothId === 'volcano') {
+      drawDinosaurTethers();
+      drawBackdropReadabilityWash(w, h, 'volcano');
+    }
+    if (boothId === 'plates') {
+      drawBackdropReadabilityWash(w, h, 'plates');
+      drawDamGoldProgress(w, h);
+    }
 
     const targetsToDraw = [...state.targets].sort((a, b) => {
       const layerOrder = targetVisualLayer(a, boothId) - targetVisualLayer(b, boothId);
@@ -2604,11 +2626,17 @@
       }
       drawTarget(target, pos, now);
       ctx.restore();
+      if (boothId === 'plates' && target.kind === 'damBeaver') {
+        drawDamRearWaterMask(pos);
+        drawDamBeaverBadge(target, pos);
+      }
     }
 
     if (boothId === 'farm') {
       if (!farmMiddleMaskDrawn) drawFarmLayerMask(w, h, .6, .72);
-      drawFarmLayerMask(w, h, .84, 1);
+      // Keep only the animals' feet behind the nearest field ridge. The old
+      // .84 boundary crossed their bodies on iPad's wide, shallow canvas.
+      drawFarmLayerMask(w, h, .89, 1);
       drawFarmPointOverlays(now);
     }
     if (boothId === 'plates' && !damMiddleMaskDrawn) drawDamMiddleRailMask(w, h);
@@ -2737,7 +2765,7 @@
       : null;
     if (backdrop?.complete && backdrop.naturalWidth) {
       ctx.save();
-      ctx.filter = 'saturate(.66) brightness(.92) contrast(.9)';
+      ctx.filter = 'saturate(.32) brightness(.8) contrast(.64)';
       drawFarmBackdrop(backdrop, w, h);
       ctx.restore();
       ctx.fillStyle = 'rgba(245,239,216,.08)';
@@ -2748,6 +2776,9 @@
       glaze.addColorStop(1, 'rgba(52,35,12,.14)');
       ctx.fillStyle = glaze;
       ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = 'rgba(176,167,145,.1)';
+      ctx.fillRect(0, 0, w, h);
+      drawWornBackdropTexture(w, h, '#705b38');
       drawFarmDust(w, h);
       return;
     }
@@ -2768,6 +2799,44 @@
     ctx.restore();
   }
 
+  function drawWornBackdropTexture(w, h, tint) {
+    // A fixed, low-opacity print texture makes the booth art feel gently used
+    // without animating behind or competing with live targets.
+    ctx.save();
+    ctx.globalAlpha = .035;
+    ctx.fillStyle = tint;
+    for (let i = 0; i < 54; i += 1) {
+      const x = mod(i * 137 + (i % 5) * 29, w);
+      const y = mod(i * 83 + (i % 7) * 17, h);
+      ctx.fillRect(x, y, i % 4 === 0 ? 2 : 1, i % 3 === 0 ? 2 : 1);
+    }
+    ctx.globalAlpha = .028;
+    ctx.strokeStyle = tint;
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 7; i += 1) {
+      const x = w * (.08 + i * .145);
+      const y = h * (.16 + (i % 4) * .19);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + clamp(w * .035, 12, 28), y - 3 + (i % 3) * 3);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawBackdropReadabilityWash(w, h, boothId) {
+    // Canvas filters are inconsistently honored by embedded/mobile browsers.
+    // This real paint layer reliably pulls scenery toward a neutral midpoint,
+    // lowering both saturation and contrast before any live targets are drawn.
+    const washes = {
+      farm: 'rgba(105,105,94,.34)',
+      plates: 'rgba(72,82,78,.42)',
+      volcano: 'rgba(75,68,72,.34)',
+    };
+    ctx.fillStyle = washes[boothId];
+    ctx.fillRect(0, 0, w, h);
+  }
+
   function drawCloud(x, y, scale) {
     ctx.save();
     ctx.translate(x, y);
@@ -2785,7 +2854,10 @@
   function drawOrbitScene(w, h) {
     const backdrop = typeof _getImg === 'function' ? _getImg('assets/mania/orbit-backdrop-v2.png') : null;
     if (backdrop?.complete && backdrop.naturalWidth) {
+      ctx.save();
+      ctx.filter = 'saturate(.48) brightness(.76) contrast(.88)';
       drawImageCover(backdrop, w, h);
+      ctx.restore();
       const glaze = ctx.createLinearGradient(0, 0, 0, h);
       glaze.addColorStop(0, 'rgba(4,6,34,.08)');
       glaze.addColorStop(.58, 'rgba(10,7,43,.02)');
@@ -2928,7 +3000,7 @@
       // Hold the illustrated dam one value-step behind the live targets. The
       // scene stays colorful, but its brown/green midtones no longer swallow
       // the similarly colored beaver sprites.
-      ctx.filter = 'saturate(.66) brightness(.86) contrast(.9)';
+      ctx.filter = 'saturate(.28) brightness(.7) contrast(.58)';
       drawImageCover(backdrop, w, h);
       ctx.restore();
       const glaze = ctx.createLinearGradient(0, 0, 0, h);
@@ -2937,6 +3009,9 @@
       glaze.addColorStop(1, 'rgba(10,37,39,.16)');
       ctx.fillStyle = glaze;
       ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = 'rgba(137,145,132,.1)';
+      ctx.fillRect(0, 0, w, h);
+      drawWornBackdropTexture(w, h, '#c7b58c');
       drawDamWater(w, h);
       return;
     }
@@ -2977,7 +3052,7 @@
       : null;
     if (backdrop?.complete && backdrop.naturalWidth) {
       ctx.save();
-      ctx.filter = 'saturate(.78) brightness(.92) contrast(.92)';
+      ctx.filter = 'saturate(.34) brightness(.78) contrast(.66)';
       drawImageCover(backdrop, w, h);
       ctx.restore();
       ctx.fillStyle = 'rgba(245,232,214,.07)';
@@ -2988,6 +3063,9 @@
       glaze.addColorStop(1, 'rgba(22,8,20,.18)');
       ctx.fillStyle = glaze;
       ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = 'rgba(157,137,132,.09)';
+      ctx.fillRect(0, 0, w, h);
+      drawWornBackdropTexture(w, h, '#d5b29a');
       drawVolcanoParallax(w, h);
       return;
     }
@@ -3131,7 +3209,7 @@
       : null;
     if (backdrop?.complete && backdrop.naturalWidth) {
       ctx.save();
-      ctx.filter = 'saturate(.6) brightness(.9) contrast(.88)';
+      ctx.filter = 'saturate(.44) brightness(.78) contrast(.84)';
       drawImageCover(backdrop, w, h);
       ctx.restore();
       ctx.fillStyle = 'rgba(238,232,218,.055)';
@@ -3226,7 +3304,7 @@
       ? _getImg('assets/mania/farm/farm-backdrop-v2.png')
       : null;
     if (!backdrop?.complete || !backdrop.naturalWidth) return;
-    const filter = 'saturate(.66) brightness(.92) contrast(.9)';
+    const filter = 'saturate(.32) brightness(.8) contrast(.64)';
     const feather = .012;
     [
       [topRatio, .2],
@@ -3241,6 +3319,8 @@
       ctx.globalAlpha = pass[1];
       ctx.filter = filter;
       drawFarmBackdrop(backdrop, w, h);
+      ctx.fillStyle = 'rgba(105,105,94,.34)';
+      ctx.fillRect(0, passTop, w, h * bottomRatio - passTop);
       ctx.restore();
     });
   }
@@ -3291,7 +3371,10 @@
       ctx.beginPath();
       ctx.ellipse(0, 5, 91, 15, 0, 0, Math.PI * 2);
       ctx.fill();
+      ctx.save();
+      ctx.filter = 'saturate(.38) brightness(.82) contrast(.68)';
       ctx.drawImage(barnImage, -90, -143, 180, 143);
+      ctx.restore();
       drawBarnProgress();
       ctx.restore();
       return;
@@ -3452,7 +3535,16 @@
     else if (target.kind === 'finaleGate') drawFinalePopup(target);
     else if (target.kind === 'rapidTarget') drawNeonTarget(target);
     else if (target.kind === 'jackpot') drawNeonTarget(target);
-    if (!isFarmScoreTarget(target)) drawPointValue(target);
+    if (!isFarmScoreTarget(target) && target.kind !== 'damBeaver') drawPointValue(target);
+    ctx.restore();
+  }
+
+  function drawDamBeaverBadge(target, pos) {
+    ctx.save();
+    ctx.translate(pos.x, pos.y);
+    ctx.scale(pos.scale, pos.scale);
+    ctx.globalAlpha *= pos.visibility;
+    drawPointValue(target);
     ctx.restore();
   }
 
@@ -3660,11 +3752,11 @@
         ctx.restore();
         return;
       }
-      const boxW = target.type === 'expert' ? 88 : 112;
-      const boxH = 112;
       const ratio = sprite.naturalWidth / sprite.naturalHeight;
-      const drawW = Math.min(boxW, boxH * ratio);
-      const drawH = drawW / ratio;
+      // Size from height and derive width from the source aspect ratio. This
+      // keeps every responsive scale uniform instead of stretching the art.
+      const drawH = target.type === 'expert' ? 104 : 96;
+      const drawW = drawH * ratio;
       ctx.drawImage(sprite, -drawW / 2, -drawH * .5, drawW, drawH);
       ctx.restore();
       return;
@@ -3721,8 +3813,10 @@
     ctx.save();
     traceWaterline(true);
     ctx.clip();
-    ctx.filter = 'saturate(.66) brightness(.86) contrast(.9)';
+    ctx.filter = 'saturate(.28) brightness(.7) contrast(.58)';
     drawImageCover(backdrop, w, h);
+    ctx.fillStyle = 'rgba(72,82,78,.42)';
+    ctx.fillRect(0, waterline - amplitude, w, h * .715 - waterline + amplitude);
     ctx.restore();
 
     ctx.save();
@@ -3775,79 +3869,54 @@
 
   function drawDamBeaver(target, pos, now) {
     const open = pos.openAmount || 0;
-    const coverY = (pos.coverY || pos.y + 28) - pos.y;
-    const tierColors = ['#76d9a6', '#f2b94e', '#e76791'];
-    const accent = tierColors[target.tier] || tierColors[0];
     ctx.save();
-    if (pos.hittable) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(-72, -104, 144, coverY + 108);
-      ctx.clip();
+    if (open > .02) {
       ctx.globalAlpha *= clamp(open * 1.65, 0, 1);
-      if (target.tier === 2) ctx.translate(0, -15);
       drawBeaverTarget(target, false);
-      ctx.restore();
     }
+    ctx.restore();
+  }
 
-    // Each depth tier uses a quiet physical hiding edge instead of a door:
-    // foreground logs, a lodge opening, or a foamy spillway lip.
+  function drawDamRearWaterMask(pos) {
+    const backdrop = typeof _getImg === 'function'
+      ? _getImg('assets/mania/dam/dam-backdrop-v2.png')
+      : null;
+    if (!backdrop?.complete || !backdrop.naturalWidth || (pos.openAmount || 0) <= .02) return;
+    const w = state.width;
+    const h = state.height;
+    const halfWidth = clamp(pos.r * 1.35, w * .035, w * .085);
+    const waterY = pos.coverY || pos.y + pos.r * .58;
+    const amplitude = clamp(h * .006, 3, 7);
+    const maskDepth = clamp(pos.r * 1.2, h * .055, h * .14);
+    const left = pos.x - halfWidth;
+    const right = pos.x + halfWidth;
+
+    const traceRearWater = closeShape => {
+      ctx.beginPath();
+      ctx.moveTo(left, waterY);
+      ctx.quadraticCurveTo(pos.x - halfWidth * .5, waterY - amplitude, pos.x, waterY);
+      ctx.quadraticCurveTo(pos.x + halfWidth * .5, waterY + amplitude, right, waterY);
+      if (closeShape) {
+        ctx.lineTo(right, waterY + maskDepth);
+        ctx.lineTo(left, waterY + maskDepth);
+        ctx.closePath();
+      }
+    };
+
     ctx.save();
-    ctx.translate(0, coverY);
-    if (target.tier === 0) {
-      ctx.fillStyle = '#755238';
-      ctx.strokeStyle = '#3c2b23';
-      ctx.lineWidth = 3;
-      for (const log of [[-54,-1,108,18],[-48,13,96,17]]) {
-        roundRect(log[0], log[1], log[2], log[3], 9);
-        ctx.fill(); ctx.stroke();
-      }
-      ctx.strokeStyle = 'rgba(242,210,151,.32)';
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(-42, 6); ctx.lineTo(38, 6); ctx.stroke();
-    } else if (target.tier === 1) {
-      ctx.fillStyle = '#32291f';
-      ctx.strokeStyle = '#8a633e';
-      ctx.lineWidth = 7;
-      ctx.beginPath();
-      ctx.arc(0, 9, 46, Math.PI, 0);
-      ctx.lineTo(46, 24);
-      ctx.lineTo(-46, 24);
-      ctx.closePath();
-      ctx.fill(); ctx.stroke();
-      ctx.strokeStyle = '#c49b60';
-      ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(0, 9, 35, Math.PI, 0); ctx.stroke();
-    } else {
-      ctx.fillStyle = '#7e7669';
-      ctx.strokeStyle = '#433f39';
-      ctx.lineWidth = 3;
-      for (const rock of [[-43,5,23],[-18,1,25],[9,3,27],[37,7,21]]) {
-        ctx.beginPath();
-        ctx.ellipse(rock[0], rock[1], rock[2], 13, 0, 0, Math.PI * 2);
-        ctx.fill(); ctx.stroke();
-      }
-      ctx.strokeStyle = '#efffe9';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(-53, 16);
-      ctx.quadraticCurveTo(-28, 8, -6, 16);
-      ctx.quadraticCurveTo(20, 23, 52, 14);
-      ctx.stroke();
-    }
-    ctx.fillStyle = target.spent ? '#576761' : accent;
-    ctx.strokeStyle = '#fff0c9';
-    ctx.lineWidth = 2;
-    circle(0, target.tier === 1 ? 25 : 22, 4.5, true);
-    if (target.popWarning) {
-      ctx.fillStyle = Math.floor(now / 120) % 2 ? '#fff7d8' : accent;
-      ctx.shadowColor = accent;
-      ctx.shadowBlur = 12;
-      circle(-13, -8, 4, true);
-      circle(10, -15, 5, true);
-      circle(20, -28, 3, true);
-      ctx.shadowBlur = 0;
-    }
+    traceRearWater(true);
+    ctx.clip();
+    ctx.filter = 'saturate(.28) brightness(.7) contrast(.58)';
+    drawImageCover(backdrop, w, h);
+    ctx.fillStyle = 'rgba(72,82,78,.42)';
+    ctx.fillRect(left, waterY - amplitude, halfWidth * 2, maskDepth + amplitude);
+    ctx.restore();
+
+    ctx.save();
+    traceRearWater(false);
+    ctx.strokeStyle = 'rgba(225,246,235,.42)';
+    ctx.lineWidth = clamp(w * .002, 1.5, 2.5);
+    ctx.stroke();
     ctx.restore();
   }
 
