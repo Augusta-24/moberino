@@ -426,7 +426,10 @@
     }
 
     const eligibleKinds = {
-      farm: ['farmPop', 'farmSlide', 'farmHill', 'flyer'],
+      // Farm's clear-and-replace stations all begin together. Keep hidden
+      // Moberinos on the spaced bird passes so they never remove two ground
+      // animals from the field at the same time.
+      farm: ['flyer'],
       orbit: ['phaseFlyer'],
       plates: ['beaverRunner'],
       volcano: ['dinosaur'],
@@ -482,7 +485,31 @@
     // Farm animals stay available until cleared. A cleared station replaces
     // itself in a rotated location, so deliberate players never lose a target
     // to a timer and quick players never drain the whole field.
-    for (let slot = 0; slot < 6; slot += 1) spawnFarmAnimal(slot, 0);
+    const stationArrivals = [0, .08, .5, .62, .96, 1.08];
+    stationArrivals.forEach((at, slot) => spawnFarmAnimal(slot, at));
+
+    // Birds remain timed sky passes: they are a moving bonus, not one of the
+    // clear-and-replace animal stations on the farm itself.
+    const birdPasses = [
+      [1.05, .17, 'right', 'bird', 500],
+      [5.45, .24, 'left', 'bluebird', 650],
+      [9.85, .15, 'right', 'bird', 500],
+      [14.25, .22, 'left', 'bluebird', 1000],
+    ];
+    birdPasses.forEach((pass, index) => {
+      state.targets.push({
+        kind: 'flyer',
+        type: pass[3],
+        at: pass[0],
+        duration: 4.15,
+        direction: pass[2],
+        lane: pass[1],
+        base: pass[4],
+        golden: index === birdPasses.length - 1,
+        drawLayer: 0,
+        hit: false,
+      });
+    });
 
     // The single barn stays in the back for the entire booth. Its door target
     // returns after each hit; three hits replace it with a brief gold prize.
@@ -508,10 +535,10 @@
   function spawnFarmAnimal(slot, at) {
     const cycle = state.farmAnimalCycle++;
     const animals = ['pig', 'cow', 'sheep', 'duck', 'chicken'];
-    const kind = ['farmPop', 'farmPop', 'farmSlide', 'farmSlide', 'farmHill', 'flyer'][slot];
+    const kind = ['farmPop', 'farmPop', 'farmSlide', 'farmSlide', 'farmHill', 'farmHill'][slot];
     const target = {
       kind,
-      type: kind === 'flyer' ? (cycle % 2 ? 'bluebird' : 'bird') : animals[(cycle + slot) % animals.length],
+      type: animals[(cycle + slot) % animals.length],
       at,
       duration: Math.max(.5, ROUND_SECONDS - at),
       farmSlot: slot,
@@ -519,33 +546,42 @@
       hit: false,
     };
     if (kind === 'farmPop') {
-      const anchors = [.18, .38, .61, .82];
-      target.anchorX = anchors[(cycle + slot) % anchors.length];
+      const anchors = [.27, .4, .54, .67];
+      target.anchorX = chooseFarmAnchor(kind, anchors, cycle + slot);
       target.lane = .75 + ((cycle + slot) % 2) * .025;
       target.base = ['duck', 'chicken'].includes(target.type) ? 150 : 100;
       target.drawLayer = 4;
     } else if (kind === 'farmSlide') {
-      const anchors = [.14, .37, .61, .87];
-      target.anchorX = anchors[(cycle + slot) % anchors.length];
+      const anchors = [.25, .39, .53, .66];
+      target.anchorX = chooseFarmAnchor(kind, anchors, cycle + slot);
       target.slideFrom = (cycle + slot) % 2 ? .055 : -.055;
       target.lane = .5 + ((cycle + slot) % 2) * .025;
       target.base = ['duck', 'chicken'].includes(target.type) ? 350 : 300;
       target.drawLayer = 3;
     } else if (kind === 'farmHill') {
-      const anchors = [.17, .43, .87];
-      target.anchorX = anchors[cycle % anchors.length];
+      const anchors = [.31, .47, .62];
+      target.anchorX = chooseFarmAnchor(kind, anchors, cycle);
       target.lane = .31 + (cycle % 2) * .035;
       target.base = cycle % 7 === 6 ? 1000 : 650;
       target.golden = cycle % 7 === 6;
       target.drawLayer = 1;
-    } else {
-      target.direction = cycle % 2 ? 'left' : 'right';
-      target.anchorX = [.18, .36, .64, .82][cycle % 4];
-      target.lane = .15 + (cycle % 3) * .045;
-      target.base = target.type === 'bluebird' ? 650 : 500;
-      target.drawLayer = 0;
     }
     state.targets.push(target);
+  }
+
+  function chooseFarmAnchor(kind, anchors, seed) {
+    const occupied = new Set(state.targets
+      .filter(target =>
+        target.kind === kind &&
+        !target.hit &&
+        Number.isFinite(target.anchorX)
+      )
+      .map(target => target.anchorX));
+    for (let offset = 0; offset < anchors.length; offset += 1) {
+      const candidate = anchors[(seed + offset) % anchors.length];
+      if (!occupied.has(candidate)) return candidate;
+    }
+    return anchors[seed % anchors.length];
   }
 
   function buildOrbitRound() {
@@ -2697,12 +2733,12 @@
 
   function drawFarmScene(w, h) {
     const backdrop = typeof _getImg === 'function'
-      ? _getImg('assets/mania/farm/farm-backdrop-v1.png')
+      ? _getImg('assets/mania/farm/farm-backdrop-v2.png')
       : null;
     if (backdrop?.complete && backdrop.naturalWidth) {
       ctx.save();
       ctx.filter = 'saturate(.66) brightness(.92) contrast(.9)';
-      drawImageCover(backdrop, w, h);
+      drawFarmBackdrop(backdrop, w, h);
       ctx.restore();
       ctx.fillStyle = 'rgba(245,239,216,.08)';
       ctx.fillRect(0, 0, w, h);
@@ -2845,6 +2881,18 @@
 
   function drawImageCover(image, w, h) {
     const scale = Math.max(w / image.naturalWidth, h / image.naturalHeight);
+    const sourceW = w / scale;
+    const sourceH = h / scale;
+    const sourceX = (image.naturalWidth - sourceW) * .5;
+    const sourceY = (image.naturalHeight - sourceH) * .5;
+    ctx.drawImage(image, sourceX, sourceY, sourceW, sourceH, 0, 0, w, h);
+  }
+
+  function drawFarmBackdrop(image, w, h) {
+    // The farm's side machinery is decorative rather than playable. A small
+    // farm-only push-in keeps it as a frame without letting it dominate the
+    // open field or invite targets onto visually busy edges.
+    const scale = Math.max(w / image.naturalWidth, h / image.naturalHeight) * 1.025;
     const sourceW = w / scale;
     const sourceH = h / scale;
     const sourceX = (image.naturalWidth - sourceW) * .5;
@@ -3079,7 +3127,7 @@
 
   function drawFinaleScene(w, h) {
     const backdrop = typeof _getImg === 'function'
-      ? _getImg('assets/mania/finale/finale-backdrop-v1.png')
+      ? _getImg('assets/mania/finale/finale-backdrop-v2.png')
       : null;
     if (backdrop?.complete && backdrop.naturalWidth) {
       ctx.save();
@@ -3175,11 +3223,26 @@
 
   function drawFarmLayerMask(w, h, topRatio, bottomRatio) {
     const backdrop = typeof _getImg === 'function'
-      ? _getImg('assets/mania/farm/farm-backdrop-v1.png')
+      ? _getImg('assets/mania/farm/farm-backdrop-v2.png')
       : null;
     if (!backdrop?.complete || !backdrop.naturalWidth) return;
     const filter = 'saturate(.66) brightness(.92) contrast(.9)';
-    drawSourceAlignedMask(backdrop, w, h, topRatio, bottomRatio, filter);
+    const feather = .012;
+    [
+      [topRatio, .2],
+      [topRatio + feather * .5, .46],
+      [topRatio + feather, 1],
+    ].forEach(pass => {
+      const passTop = h * pass[0];
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, passTop, w, h * bottomRatio - passTop);
+      ctx.clip();
+      ctx.globalAlpha = pass[1];
+      ctx.filter = filter;
+      drawFarmBackdrop(backdrop, w, h);
+      ctx.restore();
+    });
   }
 
   function drawTree(x, y, scale) {
@@ -4834,7 +4897,9 @@ function drawEnchantedFarmDust(target, now) {
       };
       const [width, height] = sizes[type] || [84, 60];
       ctx.save();
-      if (golden) ctx.filter = 'sepia(.32) saturate(1.45) brightness(1.13)';
+      ctx.filter = golden
+        ? 'sepia(.32) saturate(1.32) brightness(1.08) contrast(.96)'
+        : 'saturate(.86) brightness(.96) contrast(.92)';
       if (kind === 'peek') {
         ctx.beginPath();
         ctx.rect(-50, -55, 100, 82);

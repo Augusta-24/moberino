@@ -82,17 +82,20 @@ test('Moberino Mania runs four 20-second booths and a shortened three-phase show
 
 test('Farm Frenzy uses three depth layers and a repeatable three-hit barn prize', () => {
   const source = read('js/games/mania.js');
-  assert.ok(fs.existsSync(path.join(root, 'assets/mania/farm/farm-backdrop-v1.png')));
+  assert.ok(fs.existsSync(path.join(root, 'assets/mania/farm/farm-backdrop-v2.png')));
   for (const asset of ['pig', 'cow', 'sheep', 'duck', 'chicken', 'fox']) {
     assert.ok(fs.existsSync(path.join(root, `assets/mania/farm/${asset}-target-v1.png`)));
   }
   assert.ok(fs.existsSync(path.join(root, 'assets/mania/farm/barn-v1.png')));
   assert.match(source, /function drawFarmScene\(/);
-  assert.match(source, /assets\/mania\/farm\/farm-backdrop-v1\.png/);
+  assert.match(source, /assets\/mania\/farm\/farm-backdrop-v2\.png/);
   assert.match(source, /saturate\(\.66\) brightness\(\.92\) contrast\(\.9\)/);
   assert.match(source, /assets\/mania\/farm\/barn-v1\.png/);
   assert.match(source, /function spawnFarmAnimal\(slot, at\)/);
-  assert.match(source, /for \(let slot = 0; slot < 6; slot \+= 1\) spawnFarmAnimal\(slot, 0\)/);
+  assert.match(source, /const stationArrivals = \[0, \.08, \.5, \.62, \.96, 1\.08\]/);
+  assert.match(source, /stationArrivals\.forEach\(\(at, slot\) => spawnFarmAnimal\(slot, at\)\)/);
+  assert.match(source, /const birdPasses = \[/);
+  assert.match(source, /duration: 4\.15/);
   assert.match(source, /clearReplace: true/);
   assert.match(source, /spawnFarmAnimal\(target\.farmSlot, nowSeconds \+ \.12\)/);
   assert.doesNotMatch(source, /function processFarmActivity\(/);
@@ -101,7 +104,7 @@ test('Farm Frenzy uses three depth layers and a repeatable three-hit barn prize'
   for (const kind of ['farmBarnDoor', 'farmBarnBonus']) {
     assert.match(source, new RegExp(`kind: '${kind}'`));
   }
-  assert.match(source, /\['farmPop', 'farmPop', 'farmSlide', 'farmSlide', 'farmHill', 'flyer'\]/);
+  assert.match(source, /\['farmPop', 'farmPop', 'farmSlide', 'farmSlide', 'farmHill', 'farmHill'\]/);
   assert.match(source, /function hitFarmBarnDoor\(/);
   assert.match(source, /state\.barnHits = Math\.min\(3, state\.barnHits \+ 1\)/);
   assert.match(source, /kind: 'farmBarnBonus',\s*type: 'fox'/);
@@ -110,11 +113,14 @@ test('Farm Frenzy uses three depth layers and a repeatable three-hit barn prize'
   assert.match(source, /base: 1800 \+ state\.barnTier \* 400/);
   assert.match(source, /function processFarmBarn\(/);
   assert.match(source, /function drawBarnProgress\(/);
-  assert.match(source, /const kind = \['farmPop', 'farmPop', 'farmSlide', 'farmSlide', 'farmHill', 'flyer'\]\[slot\]/);
-  assert.match(source, /const anchors = \[\.18, \.38, \.61, \.82\]/);
-  assert.match(source, /const anchors = \[\.14, \.37, \.61, \.87\]/);
+  assert.match(source, /const kind = \['farmPop', 'farmPop', 'farmSlide', 'farmSlide', 'farmHill', 'farmHill'\]\[slot\]/);
+  assert.match(source, /const anchors = \[\.27, \.4, \.54, \.67\]/);
+  assert.match(source, /const anchors = \[\.25, \.39, \.53, \.66\]/);
+  assert.match(source, /function chooseFarmAnchor\(kind, anchors, seed\)/);
+  assert.match(source, /if \(!occupied\.has\(candidate\)\) return candidate/);
   assert.doesNotMatch(source, /function drawFarmDetails\(/);
   assert.match(source, /function drawFarmLayerMask\(/);
+  assert.match(source, /function drawFarmBackdrop\(/);
   assert.match(source, /function drawSourceAlignedMask\(/);
   assert.match(source, /visualLayer >= 4/);
   assert.match(source, /drawFarmLayerMask\(w, h, \.6, \.72\)/);
@@ -129,6 +135,7 @@ test('Farm Frenzy uses three depth layers and a repeatable three-hit barn prize'
   assert.match(source, /BARN OPEN! GOLD PRIZE/);
   assert.match(source, /if \(currentBooth\(\)\.id === 'farm'\) \{[\s\S]*return 0/);
   assert.match(source, /pointerdown/);
+  assert.match(source, /saturate\(\.86\) brightness\(\.96\) contrast\(\.92\)/);
   assert.match(source, /\['farmPop', 'farmSlide', 'farmHill'[\s\S]*scale \*= 1\.2/);
 });
 
@@ -309,7 +316,7 @@ test('Every visible Mania target carries a consistent base-point badge', () => {
 test('Target Showdown uses authored artwork across static, scrolling, and precision phases', () => {
   const source = read('js/games/mania.js');
   for (const asset of [
-    'finale-backdrop-v1.png',
+    'finale-backdrop-v2.png',
     'base-panel-v1.png',
     'open-star-panel-v1.png',
     'jewel-target-v1.png',
@@ -317,7 +324,7 @@ test('Target Showdown uses authored artwork across static, scrolling, and precis
   ]) {
     assert.ok(fs.existsSync(path.join(root, `assets/mania/finale/${asset}`)));
   }
-  assert.match(source, /assets\/mania\/finale\/finale-backdrop-v1\.png/);
+  assert.match(source, /assets\/mania\/finale\/finale-backdrop-v2\.png/);
   assert.match(source, /saturate\(\.6\) brightness\(\.9\) contrast\(\.88\)/);
   assert.match(source, /function drawFinaleMotion\(/);
   assert.match(source, /assets\/mania\/finale\/\$\{panelName\}-v1\.png/);
@@ -535,7 +542,7 @@ test('Moberino Mania provides touch-safe responsive play, transitions, and resul
   assert.match(source, /window\.visualViewport\?\.addEventListener\('resize', syncManiaViewportHeight\)/);
   assert.match(source, /--mania-vh/);
   assert.match(source, /--mania-game-height/);
-  assert.match(css, /finale\/finale-backdrop-v1\.png/);
+  assert.match(css, /finale\/finale-backdrop-v2\.png/);
   assert.match(css, /\.mania-menu \.mania-btn/);
   assert.doesNotMatch(source, /START THE CIRCUIT/);
   assert.match(source, />PLAY<\/button>/);

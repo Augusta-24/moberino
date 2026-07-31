@@ -257,7 +257,7 @@ body.on-mania.mania-phone-landscape #arcade-game-exit {
   border-radius: clamp(14px, 3vw, 28px);
   background:
     linear-gradient(180deg, rgba(12,5,28,.15), rgba(10,4,24,.32) 56%, rgba(8,3,18,.8)),
-    url("../../assets/mania/finale/finale-backdrop-v1.png") center / cover no-repeat;
+    url("../../assets/mania/finale/finale-backdrop-v2.png") center / cover no-repeat;
   box-shadow:
     0 24px 70px rgba(0,0,0,.52),
     inset 0 0 0 4px rgba(89,52,86,.5),
@@ -510,7 +510,7 @@ body.on-mania.mania-phone-landscape #arcade-game-exit {
 .mania-theme-orbit { --mania-curtain-art: url("../../assets/mania/orbit-backdrop-v2.png"); }
 .mania-theme-plates { --mania-curtain-art: url("../../assets/mania/dam/dam-backdrop-v2.png"); }
 .mania-theme-volcano { --mania-curtain-art: url("../../assets/mania/volcano/volcano-backdrop-v1.png"); }
-.mania-theme-finale { --mania-curtain-art: url("../../assets/mania/finale/finale-backdrop-v1.png"); }
+.mania-theme-finale { --mania-curtain-art: url("../../assets/mania/finale/finale-backdrop-v2.png"); }
 .mania-booth-curtain span,
 .mania-booth-curtain small {
   font: 9px/1.4 'VCR', monospace;
