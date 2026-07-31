@@ -39,10 +39,10 @@
       title: 'BEAVER BONANZA',
       short: 'BEAVERS',
       accent: '#ff8c68',
-      hudLabel: 'BONANZA HITS',
+      hudLabel: 'DAM BREAKS',
       goal: 5,
-      intro: 'Logs land exactly where you tap, but distant throws take a much larger curved path before impact. Clear three five-beaver banks to summon the golden bonanza while tracking foreground runners and two covered spillway experts.',
-      prompt: 'CLEAR 3 ROWS → UNLOCK GOLD BEAVERS!',
+      intro: 'Break any dam face with 5, 10, or 15 log hits, then rapid-fire the beavers it reveals. Higher sections take longer and pay more; the middle hides a golden trio.',
+      prompt: 'BREAK A DAM · RAPID-FIRE THE REVEAL!',
     },
     {
       id: 'volcano',
@@ -84,6 +84,26 @@
     { kind: 'farmPop', anchorX: .38, lane: .79 },
     { kind: 'farmPop', anchorX: .61, lane: .76 },
     { kind: 'farmPop', anchorX: .82, lane: .79 },
+  ];
+  const DAM_SECTION_CONFIG = [
+    {
+      id: 'top', requiredHits: 15, base: 2400,
+      surface: [.25, .19, .5, .12],
+      beavers: [[.42, .335], [.58, .335]],
+      type: 'expert', scale: .62,
+    },
+    {
+      id: 'middle', requiredHits: 10, base: 1500,
+      surface: [.19, .39, .62, .14],
+      beavers: [[.39, .565], [.5, .565], [.61, .565]],
+      type: 'foreman', scale: .7, golden: true,
+    },
+    {
+      id: 'bottom', requiredHits: 5, base: 700,
+      surface: [.14, .65, .72, .19],
+      beavers: [[.22, .875], [.36, .875], [.5, .875], [.64, .875], [.78, .875]],
+      type: 'standard', scale: .78,
+    },
   ];
 
   let frame = 0;
@@ -276,6 +296,7 @@
       damProgressPulseAt: 0,
       damGoldActive: false,
       damGoldCleared: false,
+      damSections: [],
       barns: [],
       props: [],
       direction: 1,
@@ -647,49 +668,13 @@
   }
 
   function buildDamRound() {
-    // Only the two distant spillway experts keep the cover-and-pop timing.
-    // They are the booth's precision layer, not its dominant interaction.
-    [[.38, .29], [.64, .29]].forEach((station, i) => {
-      state.targets.push({
-        kind: 'damBeaver',
-        type: 'expert',
-        at: 0,
-        duration: ROUND_SECONDS,
-        anchorX: station[0],
-        anchorY: station[1],
-        base: 2000,
-        openWindow: 1.05,
-        popPeriod: 4.8,
-        doorTransition: .2,
-        warningWindow: .58,
-        cycleOffset: i * 1.9,
-        targetScale: .68,
-        tier: 2,
-        spent: false,
-        hit: false,
-      });
-    });
-
-    spawnDamBank(0, 0);
-
-    // Foreground runners provide constant motion and a second attention lane.
-    const runnerPasses = [
-      [.65, 'right'], [4.2, 'left'], [7.75, 'right'],
-      [11.3, 'left'], [14.85, 'right'], [18.4, 'left'],
-    ];
-    runnerPasses.forEach((pass, i) => {
-      state.targets.push({
-        kind: 'beaverRunner',
-        type: i % 4 === 3 ? 'foreman' : 'standard',
-        at: pass[0],
-        duration: 6.2,
-        direction: pass[1],
-        lane: .79 + (i % 2) * .055,
-        base: i % 4 === 3 ? 1200 : 600,
-        targetScale: i % 4 === 3 ? .88 : 1,
-        hit: false,
-      });
-    });
+    state.damSections = DAM_SECTION_CONFIG.map(section => ({
+      ...section,
+      hits: 0,
+      open: false,
+      clearCount: 0,
+      resetAt: 0,
+    }));
   }
 
   function spawnDamBank(wave, at) {
@@ -869,16 +854,13 @@
   }
 
   function spawnFinaleStaticWave(wave, at) {
-    // Banks occupy distinct stage regions so phase one uses the full booth
-    // instead of stacking every grouping across the upper third. The initial
-    // pair reads top-left / bottom-right; replacements alternate through the
-    // other two quadrants while each bank keeps its internal formation.
-    const bankPositions = [
-      [.3, .36],
-      [.7, .72],
-      [.28, .7],
-      [.72, .38],
-    ];
+    // Phase one is a mounted shooting-gallery wall, not a hunt across the
+    // whole canvas. Desktop banks overlap into one broad stepped composition;
+    // portrait banks stack into two compact mechanisms with a clear thumb path.
+    const phoneLayout = state.width <= 520;
+    const bankPositions = phoneLayout
+      ? [[.5, .34], [.5, .61], [.5, .48], [.5, .68]]
+      : [[.39, .46], [.61, .58], [.42, .62], [.58, .42]];
     const [anchorX, lane] = bankPositions[wave % bankPositions.length];
     state.targets.push({
       kind: 'revealPanel',
@@ -919,8 +901,8 @@
 
   function unfoldFinaleBank(target) {
     const phoneLayout = state.width <= 520;
-    const clusterWidth = phoneLayout ? .135 : .12;
-    const clusterHeight = phoneLayout ? .115 : .1;
+    const clusterWidth = phoneLayout ? .21 : .115;
+    const clusterHeight = phoneLayout ? .085 : .105;
     const unfoldedTargets = [
       [target.anchorX - clusterWidth, target.lane - clusterHeight * .2, 750],
       [target.anchorX - clusterWidth * .72, target.lane - clusterHeight, 1250],
@@ -946,6 +928,7 @@
         parentAnchorX: target.anchorX,
         parentLane: target.lane,
         openingSide: Math.sign(option[0] - target.anchorX),
+        connectionIndex: i,
         base: targetValue,
         targetScale: phoneLayout ? .58 : .62,
         unfoldLeaf: true,
@@ -1061,7 +1044,10 @@
     if (booth.id === 'finale') return ['EXPAND', 'SCROLL', 'POP-UPS'][Math.min(2, Math.floor((state?.elapsed || 0) / FINALE_PHASE_SECONDS))];
     const value = state?.special || 0;
     if (booth.id === 'plates') {
-      return state.damGoldActive ? '★ GOLD BEAVERS ★' : `GOLD AFTER ${Math.max(0, 3 - value)} ROW${3 - value === 1 ? '' : 'S'}`;
+      const sections = state?.damSections || [];
+      return sections.map(section =>
+        `${section.id[0].toUpperCase()} ${section.open ? 'OPEN' : `${section.hits}/${section.requiredHits}`}`
+      ).join(' · ');
     }
     return Array.from({ length: booth.goal }, (_, i) => i < value ? '★' : '☆').join(' ');
   }
@@ -1204,6 +1190,8 @@
       if (best) {
         flight.landed = true;
         hitTarget(best.target, best.pos);
+      } else if (hitDamSectionAt(flight.x, flight.y)) {
+        flight.landed = true;
       } else {
         addLabel(flight.x, flight.y - 8, 'SPLASH!', '#fff4d5', 17);
         burst(flight.x, flight.y, '#d6a565', 8, .82);
@@ -1251,6 +1239,19 @@
     }
     if (target.kind === 'damBank' || target.kind === 'goldBeaver') {
       hitDamBankTarget(target, pos);
+      return;
+    }
+    if (target.kind === 'damSectionBeaver') {
+      target.hit = true;
+      target.hitAt = state.elapsed;
+      awardTargetHit(target, pos, target.base, target.golden);
+      if (target.hiddenMobe) {
+        state.hiddenMobesFound += 1;
+        addLabel(pos.x, pos.y - pos.r * 1.3, 'FOUND!', '#fff7d9', 38);
+        burst(pos.x, pos.y, '#ffcf4a', 26, 1.3);
+      }
+      checkDamSectionClear(target.sectionId);
+      updateHud();
       return;
     }
     if (target.kind === 'farmBarnDoor') {
@@ -1754,6 +1755,15 @@
   }
 
   function processDamBank() {
+    if (state.damSections.length) {
+      for (const section of state.damSections) {
+        if (!section.resetAt || state.elapsed < section.resetAt) continue;
+        section.resetAt = 0;
+        section.open = false;
+        section.hits = 0;
+      }
+      return;
+    }
     if (!state.damBankRespawnAt || state.elapsed < state.damBankRespawnAt) return;
     state.damBankRespawnAt = 0;
     if (state.special >= 3) {
@@ -1764,6 +1774,111 @@
     else state.damBankWave = state.special;
     spawnDamBank(state.damBankWave, state.elapsed + .08);
     showToast(`ROW ${state.damBankWave + 1}/3 · CLEAR FIVE TO REACH GOLD!`, true, 1050);
+  }
+
+  function damBackdropImage() {
+    return typeof _getImg === 'function'
+      ? _getImg('assets/mania/dam/dam-backdrop-v3.png')
+      : null;
+  }
+
+  function damSourceRectToCanvas(sourceRect) {
+    const image = damBackdropImage();
+    const w = state.width;
+    const h = state.height;
+    if (!image?.complete || !image.naturalWidth) {
+      return {
+        x: sourceRect[0] * w,
+        y: sourceRect[1] * h,
+        w: sourceRect[2] * w,
+        h: sourceRect[3] * h,
+      };
+    }
+    const scale = Math.max(w / image.naturalWidth, h / image.naturalHeight);
+    const sourceW = w / scale;
+    const sourceH = h / scale;
+    const sourceX = (image.naturalWidth - sourceW) * .5;
+    const sourceY = (image.naturalHeight - sourceH) * .5;
+    return {
+      x: (sourceRect[0] * image.naturalWidth - sourceX) * scale,
+      y: (sourceRect[1] * image.naturalHeight - sourceY) * scale,
+      w: sourceRect[2] * image.naturalWidth * scale,
+      h: sourceRect[3] * image.naturalHeight * scale,
+    };
+  }
+
+  function damSourcePointToCanvas(anchorX, anchorY) {
+    const point = damSourceRectToCanvas([anchorX, anchorY, 0, 0]);
+    return { x: point.x, y: point.y };
+  }
+
+  function hitDamSectionAt(x, y) {
+    const closed = state.damSections
+      .map(section => ({ section, rect: damSourceRectToCanvas(section.surface) }))
+      .filter(item => !item.section.open && !item.section.resetAt)
+      .find(item =>
+        x >= item.rect.x && x <= item.rect.x + item.rect.w &&
+        y >= item.rect.y && y <= item.rect.y + item.rect.h
+      );
+    if (!closed) return false;
+    const { section, rect } = closed;
+    section.hits = Math.min(section.requiredHits, section.hits + 1);
+    state.hits += 1;
+    state.score += 50;
+    const centerX = clamp(x, rect.x, rect.x + rect.w);
+    const centerY = clamp(y, rect.y, rect.y + rect.h);
+    addLabel(centerX, centerY - 18, `${section.hits}/${section.requiredHits}`, '#fff1a3', 19);
+    burst(centerX, centerY, '#b9874e', 8, .7);
+    try { SFX.hit(); } catch (e) {}
+    if (section.hits >= section.requiredHits) openDamSection(section);
+    updateHud();
+    return true;
+  }
+
+  function openDamSection(section) {
+    section.open = true;
+    section.openedAt = state.elapsed;
+    const bonus = section.requiredHits * 100;
+    state.score += bonus;
+    const rect = damSourceRectToCanvas(section.surface);
+    addLabel(rect.x + rect.w * .5, rect.y + rect.h * .5, `${section.id.toUpperCase()} BREAK +${bonus}`, '#ffcf4a', 28);
+    burst(rect.x + rect.w * .5, rect.y + rect.h * .5, '#ffcf4a', 28, 1.2);
+    section.beavers.forEach((anchor, index) => {
+      const beaver = {
+        kind: 'damSectionBeaver',
+        type: section.type,
+        golden: !!section.golden,
+        sectionId: section.id,
+        sourceAnchorX: anchor[0],
+        sourceAnchorY: anchor[1],
+        at: state.elapsed + index * .055,
+        duration: Math.max(.5, ROUND_SECONDS - state.elapsed),
+        base: section.base,
+        targetScale: section.scale,
+        hit: false,
+      };
+      state.targets.push(beaver);
+      if (!section.golden && index === 0 && state.hiddenMobesAssigned < state.hiddenMobeTotal) {
+        makeHiddenMobeReplacement(beaver, 'plates');
+      }
+    });
+    showToast(`${section.id.toUpperCase()} DAM OPEN · RAPID FIRE!`, true, 900);
+    try { SFX.mysteryGood(); } catch (e) {}
+  }
+
+  function checkDamSectionClear(sectionId) {
+    const section = state.damSections.find(item => item.id === sectionId);
+    if (!section || section.resetAt) return;
+    const beavers = state.targets.filter(target =>
+      target.kind === 'damSectionBeaver' && target.sectionId === sectionId
+    );
+    if (!beavers.length || beavers.some(target => !target.hit)) return;
+    section.clearCount += 1;
+    section.resetAt = state.elapsed + .3;
+    const bonus = section.requiredHits * 150;
+    state.score += bonus;
+    showToast(`${section.id.toUpperCase()} CLEAR +${bonus} · REBUILDING!`, true, 950);
+    updateHud();
   }
 
   function processFarmBarn() {
@@ -1809,17 +1924,24 @@
       target.worldX - cameraX() + state.width * .5 > -100 &&
       target.worldX - cameraX() + state.width * .5 < state.width * 1.7
     );
-    if (live.length >= 3) return;
-    const needed = 3 - live.length;
+    const phoneLayout = state.width <= 520;
+    const liveTargetCount = phoneLayout ? 2 : 3;
+    if (live.length >= liveTargetCount) return;
+    const needed = liveTargetCount - live.length;
     const cam = cameraX();
     for (let index = 0; index < needed; index += 1) {
       const wave = state.finalePrecisionWave;
       state.finalePrecisionWave += 1;
+      const screenX = phoneLayout
+        ? (index === 0 ? .31 : .69)
+        : .28 + index * .18;
       spawnFinalePrecisionTarget(
         wave,
         state.elapsed + .08 + index * .1,
-        cam + state.width * (.28 + index * .18),
-        .23 + (wave % 3) * .18
+        cam + state.width * screenX,
+        phoneLayout
+          ? [.3, .49, .66][wave % 3]
+          : .23 + (wave % 3) * .18
       );
     }
     state.finalePrecisionNextAt = state.elapsed + .48;
@@ -2168,6 +2290,27 @@
         hittable,
         mouthOpen,
       };
+    } else if (target.kind === 'damSectionBeaver') {
+      const arrival = easeOut(clamp(local / .22, 0, 1));
+      target.visualOpen = arrival;
+      const anchor = damSourcePointToCanvas(target.sourceAnchorX, target.sourceAnchorY);
+      x = anchor.x;
+      const homeY = anchor.y;
+      y = lerp(homeY + clamp(h * .09, 34, 72), homeY, arrival);
+      scale *= target.targetScale * (.74 + arrival * .26);
+      visibility = arrival;
+      growth = arrival;
+      return {
+        x,
+        y,
+        r: 46 * scale,
+        scale,
+        visibility,
+        growth,
+        openAmount: arrival,
+        coverY: homeY + 25 * scale,
+        hittable: arrival > .72,
+      };
     } else if (target.kind === 'damBank' || target.kind === 'goldBeaver') {
       const arrival = easeOut(clamp(local / .46, 0, 1));
       x = w * target.anchorX;
@@ -2499,7 +2642,7 @@
         ? 50
       : target.kind === 'damBeaver'
         ? 48
-      : target.kind === 'damBank' || target.kind === 'goldBeaver' || target.kind === 'beaverRunner'
+      : target.kind === 'damBank' || target.kind === 'goldBeaver' || target.kind === 'beaverRunner' || target.kind === 'damSectionBeaver'
         ? 46
       : target.kind === 'beaverPeek'
         ? 39
@@ -2548,8 +2691,9 @@
     }
     if (boothId === 'plates') {
       drawBackdropReadabilityWash(w, h, 'plates');
-      drawDamGoldProgress(w, h);
+      drawDamSectionDamage(w, h);
     }
+    if (boothId === 'finale') drawFinaleBankConnections(w, h);
 
     const targetsToDraw = [...state.targets].sort((a, b) => {
       const layerOrder = targetVisualLayer(a, boothId) - targetVisualLayer(b, boothId);
@@ -2572,7 +2716,7 @@
       }
       // The middle rail belongs in front of the rear pop-up stations only.
       // Bank beavers, runners, and hidden Moberinos stay fully above it.
-      if (boothId === 'plates' && !damMiddleMaskDrawn && visualLayer >= 3) {
+      if (boothId === 'plates' && !state.damSections.length && !damMiddleMaskDrawn && visualLayer >= 3) {
         drawDamMiddleRailMask(w, h);
         damMiddleMaskDrawn = true;
       }
@@ -2626,7 +2770,7 @@
       }
       drawTarget(target, pos, now);
       ctx.restore();
-      if (boothId === 'plates' && target.kind === 'damBeaver') {
+      if (boothId === 'plates' && ['damBeaver', 'damSectionBeaver'].includes(target.kind)) {
         drawDamRearWaterMask(pos);
         drawDamBeaverBadge(target, pos);
       }
@@ -2639,7 +2783,7 @@
       drawFarmLayerMask(w, h, .89, 1);
       drawFarmPointOverlays(now);
     }
-    if (boothId === 'plates' && !damMiddleMaskDrawn) drawDamMiddleRailMask(w, h);
+    if (boothId === 'plates' && !state.damSections.length && !damMiddleMaskDrawn) drawDamMiddleRailMask(w, h);
     drawStageFrame(w, h, boothId);
     drawShots(now);
     drawParticles(now);
@@ -2993,7 +3137,7 @@
 
   function drawDamScene(w, h) {
     const backdrop = typeof _getImg === 'function'
-      ? _getImg('assets/mania/dam/dam-backdrop-v2.png')
+      ? _getImg('assets/mania/dam/dam-backdrop-v3.png')
       : null;
     if (backdrop?.complete && backdrop.naturalWidth) {
       ctx.save();
@@ -3269,6 +3413,89 @@
     ctx.restore();
   }
 
+  function drawFinaleBankConnections(w, h) {
+    if (state.elapsed >= FINALE_PHASE_SECONDS) return;
+    const banks = new Map();
+    for (const target of state.targets) {
+      if (
+        target.kind !== 'revealPanel' ||
+        target.finalePhase !== 0 ||
+        !target.unfoldLeaf
+      ) continue;
+      if (!banks.has(target.wave)) banks.set(target.wave, []);
+      banks.get(target.wave).push(target);
+    }
+
+    for (const leaves of banks.values()) {
+      if (!leaves.length) continue;
+      const parentX = w * leaves[0].parentAnchorX;
+      const parentY = h * leaves[0].parentLane;
+      const sortedLeaves = [...leaves].sort((a, b) => a.connectionIndex - b.connectionIndex);
+
+      // A shallow steel bridge makes the five targets read as one mounted bank.
+      // Its low-saturation metal and small electrical edge match the authored
+      // finale panels without introducing cartoon outlines or elastic motion.
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      for (const leaf of sortedLeaves) {
+        const pos = targetPosition(leaf, state.elapsed);
+        if (!pos) continue;
+        const opening = leaf.openingAt
+          ? easeOut(clamp((state.elapsed - leaf.openingAt) / .38, 0, 1))
+          : 1;
+        const endX = lerp(parentX, pos.x, opening);
+        const endY = lerp(parentY, pos.y, opening);
+        const elbowX = lerp(parentX, endX, .52);
+        const elbowY = Math.min(parentY, endY) - clamp(h * .025, 8, 16) * opening;
+        const cleared = !!leaf.hit;
+
+        ctx.globalAlpha = cleared ? .32 : .88;
+        ctx.beginPath();
+        ctx.moveTo(parentX, parentY);
+        ctx.lineTo(elbowX, elbowY);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = '#17131d';
+        ctx.lineWidth = 11;
+        ctx.stroke();
+        ctx.strokeStyle = cleared ? '#4a3c3e' : '#8c684b';
+        ctx.lineWidth = 6;
+        ctx.stroke();
+        ctx.strokeStyle = cleared ? 'rgba(185,145,102,.18)' : 'rgba(238,204,146,.5)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = cleared ? '#241e27' : '#3a2b31';
+        ctx.strokeStyle = cleared ? '#66504d' : '#bd8c58';
+        ctx.lineWidth = 2;
+        circle(elbowX, elbowY, 7, true);
+        ctx.fillStyle = cleared ? '#574543' : '#d4a35f';
+        circle(elbowX, elbowY, 2.25, false);
+
+        if (cleared && state.elapsed - leaf.hitAt < .32) {
+          const pulse = clamp(1 - (state.elapsed - leaf.hitAt) / .32, 0, 1);
+          const pulseX = lerp(endX, parentX, 1 - pulse);
+          const pulseY = lerp(endY, parentY, 1 - pulse);
+          ctx.globalAlpha = pulse * .8;
+          ctx.fillStyle = '#ffcf4a';
+          ctx.shadowColor = '#ffcf4a';
+          ctx.shadowBlur = 12;
+          circle(pulseX, pulseY, 3.5, false);
+          ctx.shadowBlur = 0;
+        }
+      }
+
+      ctx.globalAlpha = .96;
+      ctx.fillStyle = '#211923';
+      ctx.strokeStyle = '#b58351';
+      ctx.lineWidth = 3;
+      circle(parentX, parentY, 14, true);
+      ctx.fillStyle = '#d6aa68';
+      circle(parentX, parentY, 4, false);
+      ctx.restore();
+    }
+  }
+
   function drawFields(w, h) {
     const ground = h * .62;
     const field = ctx.createLinearGradient(0, ground, 0, h);
@@ -3519,6 +3746,7 @@
     }
     else if (target.kind === 'orbitBoss') drawOrbitBoss(target);
     else if (target.kind === 'damBeaver') drawDamBeaver(target, pos, now);
+    else if (target.kind === 'damSectionBeaver') drawBeaverTarget(target, false);
     else if (target.kind === 'damBank' || target.kind === 'goldBeaver' || target.kind === 'beaverRunner') {
       if (target.kind === 'beaverRunner') drawBeaverTarget(target, false);
       else drawBankBeaver(target, pos);
@@ -3535,7 +3763,7 @@
     else if (target.kind === 'finaleGate') drawFinalePopup(target);
     else if (target.kind === 'rapidTarget') drawNeonTarget(target);
     else if (target.kind === 'jackpot') drawNeonTarget(target);
-    if (!isFarmScoreTarget(target) && target.kind !== 'damBeaver') drawPointValue(target);
+    if (!isFarmScoreTarget(target) && !['damBeaver', 'damSectionBeaver'].includes(target.kind)) drawPointValue(target);
     ctx.restore();
   }
 
@@ -3559,6 +3787,7 @@
       target.kind === 'finaleGate' ||
       target.kind === 'orbitBoss' ||
       (target.kind === 'damBeaver' && target.visualOpen < .72) ||
+      (target.kind === 'damSectionBeaver' && target.visualOpen < .72) ||
       ((target.kind === 'damBank' || target.kind === 'goldBeaver') && target.hit) ||
       (target.kind === 'beaverPeek' && target.visualReveal < .62) ||
       !Number.isFinite(target.base)
@@ -3566,7 +3795,7 @@
     const balloon = ['balloonTree', 'lavaBalloon', 'volcanoDecoy'].includes(target.kind);
     const dinosaurBadge = target.kind === 'dinosaur' || target.kind === 'dinoBalloon';
     const farmBadge = ['farmPop', 'farmSlide', 'farmHill', 'farmBarnDoor', 'farmBarnBonus'].includes(target.kind);
-    const animalScoreBadge = farmBadge || ['damBeaver', 'damBank', 'goldBeaver', 'beaverRunner', 'beaverPeek'].includes(target.kind);
+    const animalScoreBadge = farmBadge || ['damBeaver', 'damSectionBeaver', 'damBank', 'goldBeaver', 'beaverRunner', 'beaverPeek'].includes(target.kind);
     const positions = {
       farmPop: -50,
       farmSlide: -50,
@@ -3580,6 +3809,7 @@
       phaseFlyer: 35,
       orbiter: 35,
       damBeaver: 47,
+      damSectionBeaver: 47,
       damBank: -58,
       goldBeaver: -58,
       beaverRunner: -66,
@@ -3734,6 +3964,22 @@
     return typeof _getImg === 'function' ? _getImg(`assets/mania/dam/${name}`) : null;
   }
 
+  function drawBeaverGlow(drawW, drawH, golden = false) {
+    ctx.save();
+    ctx.shadowBlur = 0;
+    ctx.scale(drawW / drawH, 1);
+    const radius = drawH * .56;
+    const glow = ctx.createRadialGradient(0, 0, radius * .18, 0, 0, radius);
+    glow.addColorStop(0, golden ? 'rgba(255,207,74,.16)' : 'rgba(224,255,235,.12)');
+    glow.addColorStop(.62, golden ? 'rgba(255,207,74,.08)' : 'rgba(164,235,219,.055)');
+    glow.addColorStop(1, 'rgba(164,235,219,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   function drawBeaverTarget(target, headOnly = false) {
     const sprite = beaverSprite(target);
     if (sprite?.complete && sprite.naturalWidth) {
@@ -3742,13 +3988,16 @@
         ? 'sepia(.38) brightness(1.28) saturate(1.45) contrast(1.08)'
         : 'brightness(1.12) saturate(1.08) contrast(1.06)';
       ctx.shadowColor = target.golden ? 'rgba(255,207,74,.92)' : 'rgba(255,236,186,.55)';
-      ctx.shadowBlur = target.golden ? 18 : 8;
+      ctx.shadowBlur = target.golden ? 10 : 5;
       if (headOnly) {
         const sx = sprite.naturalWidth * .17;
         const sy = sprite.naturalHeight * .02;
         const sw = sprite.naturalWidth * .66;
         const sh = sprite.naturalHeight * (target.type === 'expert' ? .49 : .61);
-        ctx.drawImage(sprite, sx, sy, sw, sh, -48, -48, 96, 88);
+        const drawH = 88;
+        const drawW = drawH * (sw / sh);
+        drawBeaverGlow(drawW, drawH, target.golden);
+        ctx.drawImage(sprite, sx, sy, sw, sh, -drawW / 2, -drawH / 2, drawW, drawH);
         ctx.restore();
         return;
       }
@@ -3757,6 +4006,7 @@
       // keeps every responsive scale uniform instead of stretching the art.
       const drawH = target.type === 'expert' ? 104 : 96;
       const drawW = drawH * ratio;
+      drawBeaverGlow(drawW, drawH, target.golden);
       ctx.drawImage(sprite, -drawW / 2, -drawH * .5, drawW, drawH);
       ctx.restore();
       return;
@@ -3829,7 +4079,7 @@
 
   function drawDamMiddleRailMask(w, h) {
     const backdrop = typeof _getImg === 'function'
-      ? _getImg('assets/mania/dam/dam-backdrop-v2.png')
+      ? _getImg('assets/mania/dam/dam-backdrop-v3.png')
       : null;
     if (!backdrop?.complete || !backdrop.naturalWidth) return;
 
@@ -3877,9 +4127,78 @@
     ctx.restore();
   }
 
+  function drawDamSectionDamage(w, h) {
+    if (!state.damSections.length) return;
+    const cracks = typeof _getImg === 'function'
+      ? _getImg('assets/mania/dam/dam-cracks-v1.png')
+      : null;
+    for (const section of state.damSections) {
+      const rect = damSourceRectToCanvas(section.surface);
+      const progress = clamp(section.hits / section.requiredHits, 0, 1);
+      const centerX = rect.x + rect.w * .5;
+      const centerY = rect.y + rect.h * .5;
+
+      if (section.open || section.resetAt) {
+        const opening = ctx.createRadialGradient(
+          centerX, centerY, rect.h * .08,
+          centerX, centerY, Math.max(rect.w * .43, rect.h)
+        );
+        opening.addColorStop(0, 'rgba(11,18,17,.94)');
+        opening.addColorStop(.7, 'rgba(22,29,25,.8)');
+        opening.addColorStop(1, 'rgba(18,24,21,.12)');
+        ctx.save();
+        ctx.fillStyle = opening;
+        roundRect(rect.x + rect.w * .08, rect.y + rect.h * .08, rect.w * .84, rect.h * .84, clamp(rect.h * .16, 8, 20));
+        ctx.fill();
+        ctx.restore();
+      }
+
+      if (progress > 0 && cracks?.complete && cracks.naturalWidth) {
+        const crackSize = Math.min(rect.w * .82, rect.h * 2.7);
+        const revealRadius = crackSize * (.12 + progress * .58);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(rect.x, rect.y, rect.w, rect.h);
+        ctx.clip();
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, revealRadius, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.globalAlpha = .52 + progress * .38;
+        ctx.drawImage(cracks, centerX - crackSize / 2, centerY - crackSize / 2, crackSize, crackSize);
+        ctx.restore();
+      }
+
+      if (!section.open && !section.resetAt) {
+        const plateW = clamp(rect.w * .14, 54, 86);
+        const plateH = clamp(rect.h * .3, 24, 34);
+        // Keep authored right-edge labels visible when cover-cropping the wide
+        // backdrop into portrait phone and tablet canvases.
+        const plateX = clamp(
+          rect.x + rect.w - plateW - clamp(rect.w * .025, 8, 18),
+          10,
+          w - plateW - 10
+        );
+        const plateY = centerY - plateH / 2;
+        ctx.save();
+        ctx.fillStyle = 'rgba(13,18,17,.82)';
+        ctx.strokeStyle = section.golden ? '#ffcf4a' : 'rgba(238,223,183,.72)';
+        ctx.lineWidth = 2;
+        roundRect(plateX, plateY, plateW, plateH, 6);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#fff4d5';
+        ctx.font = `${clamp(plateH * .43, 10, 14)}px VCR, monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${section.hits}/${section.requiredHits}`, plateX + plateW / 2, centerY + 1);
+        ctx.restore();
+      }
+    }
+  }
+
   function drawDamRearWaterMask(pos) {
     const backdrop = typeof _getImg === 'function'
-      ? _getImg('assets/mania/dam/dam-backdrop-v2.png')
+      ? _getImg('assets/mania/dam/dam-backdrop-v3.png')
       : null;
     if (!backdrop?.complete || !backdrop.naturalWidth || (pos.openAmount || 0) <= .02) return;
     const w = state.width;
@@ -5070,7 +5389,7 @@ function drawEnchantedFarmDust(target, now) {
   function targetColor(target) {
     if (target.kind === 'hiddenMobe') return '#ffcf4a';
     if (['runner', 'peek', 'flyer'].includes(target.kind)) return animalColor(target.type);
-    if (['damBeaver', 'damBank', 'goldBeaver', 'beaverRunner', 'beaverPeek'].includes(target.kind)) {
+    if (['damBeaver', 'damSectionBeaver', 'damBank', 'goldBeaver', 'beaverRunner', 'beaverPeek'].includes(target.kind)) {
       return target.type === 'expert' ? '#ff647f' : target.type === 'foreman' ? '#ffbf4d' : '#76f0ad';
     }
     if (target.kind === 'orbiter') return '#6de8ff';

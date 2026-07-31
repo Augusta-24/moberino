@@ -74,7 +74,7 @@ test('Moberino Mania runs four 20-second booths and a shortened three-phase show
   assert.match(source, /loadRemoteBoard\('mania', 'mania-final-board'/);
   assert.ok(source.indexOf('data-board-key="mania"') > source.indexOf('if (state.boothIndex < BOOTHS.length - 1)'));
   assert.doesNotMatch(source, /MANIA RECORD|NEW MANIA RECORD|moberino-mania-circuit-best/);
-  assert.match(source, /const bankPositions = \[\s*\[\.3, \.36\],\s*\[\.7, \.72\],\s*\[\.28, \.7\],\s*\[\.72, \.38\]/);
+  assert.match(source, /const bankPositions = phoneLayout/);
   assert.match(source, /const \[anchorX, lane\] = bankPositions\[wave % bankPositions\.length\]/);
   assert.doesNotMatch(source, /const clusteredCenter/);
   assert.doesNotMatch(source, /clusterSpreadDuration/);
@@ -146,7 +146,7 @@ test('Farm Frenzy uses three depth layers and a repeatable three-hit barn prize'
 
 test('Every new booth has a distinct target and bonus contract', () => {
   const source = read('js/games/mania.js');
-  for (const kind of ['ringPost', 'phaseFlyer', 'damBeaver', 'damBank', 'beaverRunner', 'goldBeaver', 'revealPanel', 'finaleGate', 'rapidTarget']) {
+  for (const kind of ['ringPost', 'phaseFlyer', 'damSectionBeaver', 'revealPanel', 'finaleGate', 'rapidTarget']) {
     assert.match(source, new RegExp(`kind: '${kind}'`));
   }
   assert.match(source, /function spawnVolcanoStage\(/);
@@ -156,10 +156,11 @@ test('Every new booth has a distinct target and bonus contract', () => {
   assert.match(source, /target\.repeatable/);
 });
 
-test('Beaver Bonanza uses rear pop-ups, clearable banks, runners, gold frenzy, and curved logs', () => {
+test('Beaver Bonanza uses three responsive breakable dam tiers and masked beaver reveals', () => {
   const source = read('js/games/mania.js');
   for (const asset of [
-    'dam-backdrop-v2.png',
+    'dam-backdrop-v3.png',
+    'dam-cracks-v1.png',
     'beaver-standard-target-v1.png',
     'beaver-foreman-target-v1.png',
     'beaver-expert-target-v1.png',
@@ -167,7 +168,8 @@ test('Beaver Bonanza uses rear pop-ups, clearable banks, runners, gold frenzy, a
     assert.ok(fs.existsSync(path.join(root, `assets/mania/dam/${asset}`)));
   }
   assert.match(source, /title: 'BEAVER BONANZA'/);
-  assert.match(source, /assets\/mania\/dam\/dam-backdrop-v2\.png/);
+  assert.match(source, /assets\/mania\/dam\/dam-backdrop-v3\.png/);
+  assert.match(source, /assets\/mania\/dam\/dam-cracks-v1\.png/);
   assert.match(source, /saturate\(\.28\) brightness\(\.7\) contrast\(\.58\)/);
   assert.match(source, /brightness\(1\.12\) saturate\(1\.08\) contrast\(1\.06\)/);
   assert.match(source, /target\.golden \? 'rgba\(255,207,74,\.92\)' : 'rgba\(255,236,186,\.55\)'/);
@@ -176,33 +178,20 @@ test('Beaver Bonanza uses rear pop-ups, clearable banks, runners, gold frenzy, a
   assert.match(source, /drawBackdropReadabilityWash\(w, h, 'plates'\)/);
   assert.doesNotMatch(source, /function drawToyTank\(/);
   assert.doesNotMatch(source, /function drawTankRails\(/);
-  assert.match(source, /kind: 'damBeaver'/);
-  assert.match(source, /kind: 'damBank'/);
-  assert.match(source, /kind: 'beaverRunner'/);
-  assert.match(source, /kind: 'goldBeaver'/);
-  assert.match(source, /openWindow: 1\.05/);
-  assert.match(source, /popPeriod: 4\.8/);
-  assert.match(source, /base: 2000/);
-  assert.match(source, /CLEAR 3 ROWS → UNLOCK GOLD BEAVERS/);
-  assert.match(source, /hittable: !target\.spent && openAmount > \.72/);
-  assert.match(source, /function hitDamBeaver\(/);
-  assert.match(source, /function hitDamBankTarget\(/);
-  assert.match(source, /function spawnDamBank\(/);
+  assert.match(source, /const DAM_SECTION_CONFIG = \[/);
+  assert.match(source, /id: 'top', requiredHits: 15/);
+  assert.match(source, /id: 'middle', requiredHits: 10/);
+  assert.match(source, /id: 'bottom', requiredHits: 5/);
+  assert.match(source, /golden: true/);
+  assert.match(source, /kind: 'damSectionBeaver'/);
+  assert.match(source, /function hitDamSectionAt\(/);
+  assert.match(source, /function openDamSection\(/);
+  assert.match(source, /function checkDamSectionClear\(/);
   assert.match(source, /function processDamBank\(/);
-  assert.match(source, /function spawnGoldenBeavers\(/);
-  assert.match(source, /BANK \$\{wave \+ 1\} CLEAR/);
-  assert.match(source, /GOLD BONANZA \+3000/);
-  assert.match(source, /state\.damGoldActive = false;[\s\S]*state\.damBankRespawnAt = state\.elapsed \+ \.18/);
-  assert.match(source, /function drawDamBeaver\(/);
-  assert.match(source, /if \(open > \.02\) \{[\s\S]*drawBeaverTarget\(target, false\)/);
-  assert.match(source, /const revealTravel = clamp/);
-  assert.match(source, /target\.popWarning/);
-  assert.match(source, /'HIDING!'/);
   assert.match(source, /assets\/mania\/dam\/\$\{name\}/);
-  assert.match(source, /target\.cycleOffset = mod\(\.18 - elapsed/);
-  assert.match(source, /plates: \['beaverRunner'\]/);
   assert.match(source, /function launchLog\(/);
   assert.match(source, /function processLogFlights\(/);
+  assert.match(source, /else if \(hitDamSectionAt\(flight\.x, flight\.y\)\)/);
   assert.match(source, /const foregroundThrow = aimY >= state\.height \* \.68/);
   assert.match(source, /const flightDuration = foregroundThrow \? \.14 : \.464/);
   assert.match(source, /const curveOffset = foregroundThrow[\s\S]*\? 0/);
@@ -213,37 +202,23 @@ test('Beaver Bonanza uses rear pop-ups, clearable banks, runners, gold frenzy, a
   assert.match(source, /curveControlX = \(shot\.aimX \|\| shot\.x\) \+ \(shot\.curveOffset \|\| 0\) \* 1\.8/);
   assert.match(source, /const trailStart = 0/);
   assert.match(source, /strokeStyle = 'rgba\(49,31,22,\.68\)'/);
-  assert.match(source, /function drawBankBeaver\(/);
-  assert.match(source, /const setDelays = \[0, \.08, \.16, \.24, \.32\]/);
-  assert.match(source, /\[\.14, \.505\], \[\.32, \.505\], \[\.5, \.505\], \[\.68, \.505\], \[\.86, \.505\]/);
-  assert.match(source, /duration: 6\.2/);
-  assert.match(source, /targetScale: \.68/);
-  assert.match(source, /GOLD AFTER \$\{Math\.max\(0, 3 - value\)\} ROW/);
-  assert.match(source, /ROW \$\{wave \+ 1\}\/3 CLEAR · \$\{rowsToGold\} TO GOLD BEAVERS!/);
   assert.match(source, /const drawW = drawH \* ratio/);
+  assert.match(source, /const drawW = drawH \* \(sw \/ sh\)/);
+  assert.match(source, /function drawBeaverGlow\(drawW, drawH, golden = false\)/);
+  assert.match(source, /const radius = drawH \* \.56/);
+  assert.match(source, /drawBeaverGlow\(drawW, drawH, target\.golden\)/);
+  assert.doesNotMatch(source, /-48, -48, 96, 88/);
   assert.match(source, /function drawDamRearWaterMask\(pos\)/);
   assert.match(source, /const halfWidth = clamp\(pos\.r \* 1\.35, w \* \.035, w \* \.085\)/);
   assert.match(source, /const maskDepth = clamp\(pos\.r \* 1\.2, h \* \.055, h \* \.14\)/);
   assert.doesNotMatch(source, /foamy spillway lip/);
-  assert.match(source, /function drawDamGoldProgress\(/);
-  assert.match(source, /index < state\.special/);
-  assert.match(source, /drawBeaverTarget\(\{ type: 'expert', golden: state\.special >= 3 \}, true\)/);
-  assert.match(source, /\['damBank', 'goldBeaver', 'beaverRunner', 'beaverPeek'\]\.includes\(target\.kind\)/);
-  assert.match(source, /ctx\.rotate\(tumbleSide \* knockback \* Math\.PI \* 2\.35\)/);
-  assert.match(source, /const beaverDepth = 1 - knockback \* \.56/);
-  assert.match(source, /function drawDamMiddleRailMask\(/);
-  assert.match(source, /function drawDamForegroundWaterMask\(/);
-  assert.match(source, /const phoneRailFootOffset = w <= 620/);
-  assert.match(source, /const waterline = h \* \.585/);
-  assert.match(source, /waterline - amplitude/);
-  assert.match(source, /drawDamForegroundWaterMask\(backdrop, w, h\)/);
+  assert.match(source, /function drawDamSectionDamage\(w, h\)/);
+  assert.match(source, /const revealRadius = crackSize \* \(\.12 \+ progress \* \.58\)/);
+  assert.match(source, /function damSourceRectToCanvas\(sourceRect\)/);
+  assert.match(source, /const scale = Math\.max\(w \/ image\.naturalWidth, h \/ image\.naturalHeight\)/);
+  assert.match(source, /const halfWidth = clamp\(pos\.r \* 1\.35, w \* \.035, w \* \.085\)/);
   assert.match(source, /drawImageCover\(backdrop, w, h\)/);
-  assert.match(source, /const cleared = !!target\?\.hit/);
-  assert.match(source, /function targetVisualLayer\(/);
-  assert.match(source, /if \(target\.kind === 'damBeaver'\) return 1/);
-  assert.match(source, /boothId === 'plates' && !damMiddleMaskDrawn && visualLayer >= 3/);
-  assert.match(source, /if \(target\.kind === 'beaverRunner' \|\| target\.kind === 'beaverPeek'\) return 5/);
-  assert.match(source, /CLEAR 3 ROWS → UNLOCK GOLD BEAVERS/);
+  assert.match(source, /BREAK A DAM · RAPID-FIRE THE REVEAL!/);
   assert.match(source, /if \(currentBooth\(\)\.id === 'plates'\) \{[\s\S]*return 0/);
 });
 
@@ -314,13 +289,13 @@ test('Every visible Mania target carries a consistent base-point badge', () => {
   assert.match(source, /Math\.round\(target\.base\)\.toLocaleString\('en-US'\)/);
   assert.match(source, /ctx\.fillStyle = 'rgba\(8,8,20,\.9\)'/);
   assert.match(source, /ctx\.font = '12px "VCR", monospace'/);
-  assert.match(source, /const animalScoreBadge = farmBadge \|\| \['damBeaver', 'damBank', 'goldBeaver', 'beaverRunner', 'beaverPeek'\]\.includes\(target\.kind\)/);
+  assert.match(source, /const animalScoreBadge = farmBadge \|\| \['damBeaver', 'damSectionBeaver', 'damBank', 'goldBeaver', 'beaverRunner', 'beaverPeek'\]\.includes\(target\.kind\)/);
   assert.match(source, /const dinosaurBadge = target\.kind === 'dinosaur' \|\| target\.kind === 'dinoBalloon'/);
   assert.match(source, /dinosaurBadge[\s\S]*'800 22px Arial, sans-serif'/);
   assert.match(source, /const badgeH = dinosaurBadge \? 34 : animalScoreBadge \? 27 : 21/);
   assert.match(source, /function drawFarmPointOverlays\(/);
   assert.match(source, /drawFarmLayerMask\(w, h, \.89, 1\);[\s\S]*drawFarmPointOverlays\(now\)/);
-  assert.match(source, /if \(!isFarmScoreTarget\(target\) && target\.kind !== 'damBeaver'\) drawPointValue\(target\)/);
+  assert.match(source, /if \(!isFarmScoreTarget\(target\) && !\['damBeaver', 'damSectionBeaver'\]\.includes\(target\.kind\)\) drawPointValue\(target\)/);
   assert.match(source, /function drawDamBeaverBadge\(target, pos\)/);
   assert.match(source, /target\.kind === 'hiddenMobe'/);
   assert.match(source, /target\.kind === 'finalePopup'/);
@@ -351,15 +326,19 @@ test('Target Showdown uses authored artwork across static, scrolling, and precis
   assert.match(source, /spawnFinaleStaticWave\(0, 0\)/);
   assert.match(source, /spawnFinaleStaticWave\(1, 0\)/);
   assert.match(source, /state\.finaleWave = 2/);
-  assert.match(source, /\[\.3, \.36\],[\s\S]*\[\.7, \.72\]/);
+  assert.match(source, /const phoneLayout = state\.width <= 520;[\s\S]*\[\.5, \.34\][\s\S]*\[\.39, \.46\]/);
   assert.match(source, /targetScale: \.72/);
   assert.match(source, /function unfoldFinaleBank\(/);
-  assert.match(source, /const phoneLayout = state\.width <= 520/);
-  assert.match(source, /const clusterWidth = phoneLayout \? \.135 : \.12/);
-  assert.match(source, /const clusterHeight = phoneLayout \? \.115 : \.1/);
+  assert.match(source, /const clusterWidth = phoneLayout \? \.21 : \.115/);
+  assert.match(source, /const clusterHeight = phoneLayout \? \.085 : \.105/);
   assert.doesNotMatch(source, /\[target\.anchorX, target\.lane \+ clusterHeight, 500\]/);
   assert.match(source, /targetScale: phoneLayout \? \.58 : \.62/);
   assert.match(source, /unfoldLeaf: true/);
+  assert.match(source, /connectionIndex: i/);
+  assert.match(source, /function drawFinaleBankConnections\(w, h\)/);
+  assert.match(source, /drawFinaleBankConnections\(w, h\)/);
+  assert.match(source, /ctx\.strokeStyle = cleared \? '#4a3c3e' : '#8c684b'/);
+  assert.match(source, /circle\(elbowX, elbowY, 7, true\)/);
   assert.match(source, /TARGET BANK UNFOLDS · KEEP SCANNING!/);
   assert.match(source, /const knockback = clamp\(hitAge \/ \.42, 0, 1\)/);
   assert.match(source, /const tumbleSide = Math\.sign\(pos\.x - state\.width \* \.5\) \|\| 1/);
@@ -394,9 +373,11 @@ test('Target Showdown uses authored artwork across static, scrolling, and precis
   assert.match(source, /VALUE RISES AT 6, 13, 21 & 31/);
   assert.match(source, /function processFinalePhases\(/);
   assert.match(source, /function processFinalePrecisionScroll\(/);
-  assert.match(source, /if \(live\.length >= 3\) return/);
+  assert.match(source, /const liveTargetCount = phoneLayout \? 2 : 3/);
+  assert.match(source, /if \(live\.length >= liveTargetCount\) return/);
   assert.match(source, /target\.worldX - cameraX\(\) \+ state\.width \* \.5 < state\.width \* 1\.7/);
-  assert.match(source, /const needed = 3 - live\.length/);
+  assert.match(source, /const needed = liveTargetCount - live\.length/);
+  assert.match(source, /index === 0 \? \.31 : \.69/);
   assert.match(source, /spawnFinalePrecisionTarget\(/);
   assert.match(source, /PHASE 1 · OPEN & CLEAR THE BANK/);
   assert.match(source, /PHASE 2 · BREAK THE PLATE · HIT THE CENTER/);
@@ -460,8 +441,8 @@ test('Booths teach persistent stacking, priority, chains, and reveals', () => {
   assert.match(source, /FROZEN \$\{frozen\}\/6/);
   assert.match(source, /FORMATION CLEAR!/);
   assert.match(source, /function processOrbitFormation\(/);
-  assert.match(source, /openWindow: 1\.05/);
-  assert.match(source, /function hitDamBeaver\(/);
+  assert.match(source, /requiredHits: 15/);
+  assert.match(source, /function hitDamSectionAt\(/);
   assert.match(source, /function triggerBalloonChain\(/);
   assert.match(source, /RICOCHET \+\$\{gained\}/);
   assert.match(source, /function openFinalePanel\(/);
