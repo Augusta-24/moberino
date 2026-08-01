@@ -45,13 +45,15 @@ test('Moberino Mania is registered as an isolated arcade page', () => {
   assert.match(arcade, /const goodHitPool = Array\.from\(\{ length: 8 \}/);
 });
 
-test('Moberino Mania runs four 20-second booths and a shortened three-phase showdown', () => {
+test('Moberino Mania runs four 20-second booths and a 10/10/15-second showdown', () => {
   const arcade = read('js/arcade.js');
   const source = read('js/games/mania.js');
   assert.match(source, /const ROUND_SECONDS = 20/);
-  assert.match(source, /const FINALE_PHASE_SECONDS = 20/);
-  assert.match(source, /const FINALE_RAPID_SECONDS = 10/);
-  assert.match(source, /const FINALE_SECONDS = FINALE_PHASE_SECONDS \* 2 \+ FINALE_RAPID_SECONDS/);
+  assert.match(source, /const FINALE_EXPAND_SECONDS = 10/);
+  assert.match(source, /const FINALE_SCROLL_SECONDS = 10/);
+  assert.match(source, /const FINALE_RAPID_SECONDS = 15/);
+  assert.match(source, /const FINALE_SCROLL_END = FINALE_EXPAND_SECONDS \+ FINALE_SCROLL_SECONDS/);
+  assert.match(source, /const FINALE_SECONDS = FINALE_SCROLL_END \+ FINALE_RAPID_SECONDS/);
   assert.match(source, /return boothId === 'finale' \? FINALE_SECONDS : ROUND_SECONDS/);
   assert.match(source, /const WORLD_LENGTH = 5600/);
   assert.match(source, /const FINALE_WORLD_LENGTH = 2400/);
@@ -152,7 +154,7 @@ test('Every new booth has a distinct target and bonus contract', () => {
   assert.match(source, /function spawnVolcanoStage\(/);
   assert.match(source, /stageTarget: true/);
   assert.match(source, /function triggerEruption\(/);
-  assert.match(source, /state\.elapsed < FINALE_PHASE_SECONDS \* 2/);
+  assert.match(source, /state\.elapsed < FINALE_SCROLL_END/);
   assert.match(source, /target\.repeatable/);
 });
 
@@ -179,9 +181,9 @@ test('Beaver Bonanza uses three responsive breakable dam tiers and masked beaver
   assert.doesNotMatch(source, /function drawToyTank\(/);
   assert.doesNotMatch(source, /function drawTankRails\(/);
   assert.match(source, /const DAM_SECTION_CONFIG = \[/);
-  assert.match(source, /id: 'top', requiredHits: 15/);
-  assert.match(source, /id: 'middle', requiredHits: 10/);
-  assert.match(source, /id: 'bottom', requiredHits: 5/);
+  assert.match(source, /id: 'top', requiredHits: 12/);
+  assert.match(source, /id: 'middle', requiredHits: 8/);
+  assert.match(source, /id: 'bottom', requiredHits: 4/);
   assert.match(source, /golden: true/);
   assert.match(source, /kind: 'damSectionBeaver'/);
   assert.match(source, /function hitDamSectionAt\(/);
@@ -212,7 +214,11 @@ test('Beaver Bonanza uses three responsive breakable dam tiers and masked beaver
   assert.match(source, /const halfWidth = clamp\(pos\.r \* 1\.35, w \* \.035, w \* \.085\)/);
   assert.match(source, /const maskDepth = clamp\(pos\.r \* 1\.2, h \* \.055, h \* \.14\)/);
   assert.doesNotMatch(source, /foamy spillway lip/);
-  assert.match(source, /function drawDamSectionDamage\(w, h\)/);
+  assert.match(source, /function drawDamSectionDamage\(w, h, layer = 'back'\)/);
+  assert.match(source, /at: Infinity/);
+  assert.match(source, /beaver\.at = state\.elapsed \+ \.24/);
+  assert.match(source, /h \* \.38 \* fall \* fall/);
+  assert.match(source, /saturate\(1\.5\) brightness\(1\.08\) contrast\(1\.12\)/);
   assert.match(source, /const revealRadius = crackSize \* \(\.12 \+ progress \* \.58\)/);
   assert.match(source, /function damSourceRectToCanvas\(sourceRect\)/);
   assert.match(source, /const scale = Math\.max\(w \/ image\.naturalWidth, h \/ image\.naturalHeight\)/);
@@ -326,13 +332,13 @@ test('Target Showdown uses authored artwork across static, scrolling, and precis
   assert.match(source, /spawnFinaleStaticWave\(0, 0\)/);
   assert.match(source, /spawnFinaleStaticWave\(1, 0\)/);
   assert.match(source, /state\.finaleWave = 2/);
-  assert.match(source, /const phoneLayout = state\.width <= 520;[\s\S]*\[\.5, \.34\][\s\S]*\[\.39, \.46\]/);
-  assert.match(source, /targetScale: \.72/);
+  assert.match(source, /const phoneLayout = state\.width <= 520;[\s\S]*\[\.16, \.35\][\s\S]*\[\.39, \.46\]/);
+  assert.match(source, /targetScale: phoneLayout \? \.9 : \.72/);
   assert.match(source, /function unfoldFinaleBank\(/);
-  assert.match(source, /const clusterWidth = phoneLayout \? \.21 : \.115/);
-  assert.match(source, /const clusterHeight = phoneLayout \? \.085 : \.105/);
+  assert.match(source, /const side = target\.anchorX < \.5 \? 1 : -1/);
+  assert.match(source, /target\.anchorX \+ side \* \.3, target\.lane, 1750/);
   assert.doesNotMatch(source, /\[target\.anchorX, target\.lane \+ clusterHeight, 500\]/);
-  assert.match(source, /targetScale: phoneLayout \? \.58 : \.62/);
+  assert.match(source, /targetScale: phoneLayout \? \.78 : \.62/);
   assert.match(source, /unfoldLeaf: true/);
   assert.match(source, /connectionIndex: i/);
   assert.match(source, /function drawFinaleBankConnections\(w, h\)/);
@@ -378,6 +384,8 @@ test('Target Showdown uses authored artwork across static, scrolling, and precis
   assert.match(source, /target\.worldX - cameraX\(\) \+ state\.width \* \.5 < state\.width \* 1\.7/);
   assert.match(source, /const needed = liveTargetCount - live\.length/);
   assert.match(source, /index === 0 \? \.31 : \.69/);
+  assert.match(source, /scale \*= w <= 520 \? \.9 : \.72/);
+  assert.match(source, /if \(w <= 520\) scale \*= 1\.12/);
   assert.match(source, /spawnFinalePrecisionTarget\(/);
   assert.match(source, /PHASE 1 · OPEN & CLEAR THE BANK/);
   assert.match(source, /PHASE 2 · BREAK THE PLATE · HIT THE CENTER/);
@@ -441,7 +449,7 @@ test('Booths teach persistent stacking, priority, chains, and reveals', () => {
   assert.match(source, /FROZEN \$\{frozen\}\/6/);
   assert.match(source, /FORMATION CLEAR!/);
   assert.match(source, /function processOrbitFormation\(/);
-  assert.match(source, /requiredHits: 15/);
+  assert.match(source, /requiredHits: 12/);
   assert.match(source, /function hitDamSectionAt\(/);
   assert.match(source, /function triggerBalloonChain\(/);
   assert.match(source, /RICOCHET \+\$\{gained\}/);

@@ -7,9 +7,11 @@
   'use strict';
 
   const ROUND_SECONDS = 20;
-  const FINALE_PHASE_SECONDS = 20;
-  const FINALE_RAPID_SECONDS = 10;
-  const FINALE_SECONDS = FINALE_PHASE_SECONDS * 2 + FINALE_RAPID_SECONDS;
+  const FINALE_EXPAND_SECONDS = 10;
+  const FINALE_SCROLL_SECONDS = 10;
+  const FINALE_RAPID_SECONDS = 15;
+  const FINALE_SCROLL_END = FINALE_EXPAND_SECONDS + FINALE_SCROLL_SECONDS;
+  const FINALE_SECONDS = FINALE_SCROLL_END + FINALE_RAPID_SECONDS;
   const WORLD_LENGTH = 5600;
   const FINALE_WORLD_LENGTH = 2400;
   const ORBIT_FREEZE_SECONDS = 5.25;
@@ -41,7 +43,7 @@
       accent: '#ff8c68',
       hudLabel: 'DAM BREAKS',
       goal: 5,
-      intro: 'Break any dam face with 5, 10, or 15 log hits, then rapid-fire the beavers it reveals. Higher sections take longer and pay more; the middle hides a golden trio.',
+      intro: 'Break any colorful dam face with 4, 8, or 12 log hits. The barrier falls away to reveal the beavers waiting beneath it; higher sections pay more and the middle hides a golden trio.',
       prompt: 'BREAK A DAM · RAPID-FIRE THE REVEAL!',
     },
     {
@@ -87,19 +89,19 @@
   ];
   const DAM_SECTION_CONFIG = [
     {
-      id: 'top', requiredHits: 15, base: 2400,
+      id: 'top', requiredHits: 12, base: 2400,
       surface: [.25, .19, .5, .12],
       beavers: [[.42, .335], [.58, .335]],
       type: 'expert', scale: .62,
     },
     {
-      id: 'middle', requiredHits: 10, base: 1500,
+      id: 'middle', requiredHits: 8, base: 1500,
       surface: [.19, .39, .62, .14],
       beavers: [[.39, .565], [.5, .565], [.61, .565]],
       type: 'foreman', scale: .7, golden: true,
     },
     {
-      id: 'bottom', requiredHits: 5, base: 700,
+      id: 'bottom', requiredHits: 4, base: 700,
       surface: [.14, .65, .72, .19],
       beavers: [[.22, .875], [.36, .875], [.5, .875], [.64, .875], [.78, .875]],
       type: 'standard', scale: .78,
@@ -675,6 +677,31 @@
       clearCount: 0,
       resetAt: 0,
     }));
+    // Stage every beaver behind its dam at round start. Breaking a face only
+    // reveals this existing group; it never creates a surprise target in open
+    // space after the fact.
+    state.damSections.forEach(section => {
+      section.beavers.forEach((anchor, index) => {
+        const beaver = {
+          kind: 'damSectionBeaver',
+          type: section.type,
+          golden: !!section.golden,
+          sectionId: section.id,
+          sourceAnchorX: anchor[0],
+          sourceAnchorY: anchor[1],
+          at: Infinity,
+          duration: ROUND_SECONDS,
+          base: section.base,
+          targetScale: section.scale,
+          revealIndex: index,
+          hit: false,
+        };
+        state.targets.push(beaver);
+        if (!section.golden && index === 0 && state.hiddenMobesAssigned < state.hiddenMobeTotal) {
+          makeHiddenMobeReplacement(beaver, 'plates');
+        }
+      });
+    });
   }
 
   function spawnDamBank(wave, at) {
@@ -802,7 +829,7 @@
     for (let i = 0; i < 9; i += 1) {
       spawnFinalePrecisionTarget(
         i,
-        FINALE_PHASE_SECONDS,
+        FINALE_EXPAND_SECONDS,
         140 + i * ((FINALE_WORLD_LENGTH - 280) / 8),
         .22 + (i % 3) * .18
       );
@@ -819,7 +846,7 @@
       state.targets.push({
         kind: 'finaleGate',
         type: lock[2] >= 4000 ? 'jewelTarget' : lock[2] >= 2000 ? 'starTarget' : 'neonTarget',
-        at: FINALE_PHASE_SECONDS * 2 + .25,
+        at: FINALE_SCROLL_END + .25,
         duration: FINALE_RAPID_SECONDS - .25,
         anchorX: lock[0],
         anchorY: lock[1],
@@ -840,7 +867,7 @@
       state.targets.push({
         kind: 'finaleBat',
         type: 'bonusBat',
-        at: FINALE_PHASE_SECONDS * 2 + bat[0],
+        at: FINALE_SCROLL_END + bat[0],
         duration: 3.35,
         direction: bat[1],
         lane: bat[2],
@@ -855,18 +882,18 @@
 
   function spawnFinaleStaticWave(wave, at) {
     // Phase one is a mounted shooting-gallery wall, not a hunt across the
-    // whole canvas. Desktop banks overlap into one broad stepped composition;
-    // portrait banks stack into two compact mechanisms with a clear thumb path.
+    // whole canvas. Portrait hubs mount at opposite sides and open inward as
+    // tall arches, giving larger targets enough room to keep distinct hit areas.
     const phoneLayout = state.width <= 520;
     const bankPositions = phoneLayout
-      ? [[.5, .34], [.5, .61], [.5, .48], [.5, .68]]
+      ? [[.16, .35], [.84, .67], [.16, .66], [.84, .34]]
       : [[.39, .46], [.61, .58], [.42, .62], [.58, .42]];
     const [anchorX, lane] = bankPositions[wave % bankPositions.length];
     state.targets.push({
       kind: 'revealPanel',
       type: 'jewelTarget',
       at,
-      duration: Math.max(.1, FINALE_PHASE_SECONDS - at),
+      duration: Math.max(.1, FINALE_EXPAND_SECONDS - at),
       anchorX,
       lane,
       finalePhase: 0,
@@ -875,7 +902,7 @@
       tier: 0,
       branch: wave * 100,
       base: 500 + wave * 100,
-      targetScale: .72,
+      targetScale: phoneLayout ? .9 : .72,
       unfoldHub: true,
       hit: false,
     });
@@ -886,7 +913,7 @@
       kind: 'revealPanel',
       type: 'neonTarget',
       at,
-      duration: Math.max(.5, FINALE_PHASE_SECONDS * 2 - at),
+      duration: Math.max(.5, FINALE_SCROLL_END - at),
       worldX,
       lane,
       finalePhase: 1,
@@ -901,22 +928,29 @@
 
   function unfoldFinaleBank(target) {
     const phoneLayout = state.width <= 520;
-    const clusterWidth = phoneLayout ? .21 : .115;
-    const clusterHeight = phoneLayout ? .085 : .105;
-    const unfoldedTargets = [
-      [target.anchorX - clusterWidth, target.lane - clusterHeight * .2, 750],
-      [target.anchorX - clusterWidth * .72, target.lane - clusterHeight, 1250],
-      [target.anchorX, target.lane - clusterHeight * 1.18, 1750],
-      [target.anchorX + clusterWidth * .72, target.lane - clusterHeight, 1250],
-      [target.anchorX + clusterWidth, target.lane - clusterHeight * .2, 750],
-    ];
+    const side = target.anchorX < .5 ? 1 : -1;
+    const unfoldedTargets = phoneLayout
+      ? [
+        [target.anchorX, target.lane - .16, 750],
+        [target.anchorX + side * .18, target.lane - .1, 1250],
+        [target.anchorX + side * .3, target.lane, 1750],
+        [target.anchorX + side * .18, target.lane + .1, 1250],
+        [target.anchorX, target.lane + .16, 750],
+      ]
+      : [
+        [target.anchorX - .115, target.lane - .021, 750],
+        [target.anchorX - .083, target.lane - .105, 1250],
+        [target.anchorX, target.lane - .124, 1750],
+        [target.anchorX + .083, target.lane - .105, 1250],
+        [target.anchorX + .115, target.lane - .021, 750],
+      ];
     unfoldedTargets.forEach((option, i) => {
       const targetValue = option[2] + target.wave * 100;
       state.targets.push({
         kind: 'revealPanel',
         type: targetValue >= 1700 ? 'jewelTarget' : targetValue >= 1000 ? 'starTarget' : 'neonTarget',
         at: state.elapsed + .06,
-        duration: Math.max(.5, FINALE_PHASE_SECONDS - state.elapsed),
+        duration: Math.max(.5, FINALE_EXPAND_SECONDS - state.elapsed),
         anchorX: option[0],
         lane: option[1],
         finalePhase: 0,
@@ -930,7 +964,7 @@
         openingSide: Math.sign(option[0] - target.anchorX),
         connectionIndex: i,
         base: targetValue,
-        targetScale: phoneLayout ? .58 : .62,
+        targetScale: phoneLayout ? .78 : .62,
         unfoldLeaf: true,
         hit: false,
       });
@@ -1021,13 +1055,13 @@
       return 0;
     }
     if (currentBooth().id === 'finale') {
-      if (state.elapsed < FINALE_PHASE_SECONDS) {
+      if (state.elapsed < FINALE_EXPAND_SECONDS) {
         state.direction = 0;
         return 0;
       }
-      if (state.elapsed < FINALE_PHASE_SECONDS * 2) {
+      if (state.elapsed < FINALE_SCROLL_END) {
         state.direction = 1;
-        const within = (state.elapsed - FINALE_PHASE_SECONDS) / FINALE_PHASE_SECONDS;
+        const within = (state.elapsed - FINALE_EXPAND_SECONDS) / FINALE_SCROLL_SECONDS;
         return easeInOut(within) * FINALE_WORLD_LENGTH;
       }
       state.direction = 0;
@@ -1039,9 +1073,19 @@
 
   function currentBooth() { return BOOTHS[state?.boothIndex || 0]; }
 
+  function finalePhaseAt(elapsed = state?.elapsed || 0) {
+    if (elapsed < FINALE_EXPAND_SECONDS) return 0;
+    if (elapsed < FINALE_SCROLL_END) return 1;
+    return 2;
+  }
+
+  function finalePhaseEnd(phase) {
+    return [FINALE_EXPAND_SECONDS, FINALE_SCROLL_END, FINALE_SECONDS][phase] || FINALE_SECONDS;
+  }
+
   function specialHud() {
     const booth = currentBooth();
-    if (booth.id === 'finale') return ['EXPAND', 'SCROLL', 'POP-UPS'][Math.min(2, Math.floor((state?.elapsed || 0) / FINALE_PHASE_SECONDS))];
+    if (booth.id === 'finale') return ['EXPAND', 'SCROLL', 'POP-UPS'][finalePhaseAt()];
     const value = state?.special || 0;
     if (booth.id === 'plates') {
       const sections = state?.damSections || [];
@@ -1656,7 +1700,7 @@
         at: state.elapsed + .06,
         duration: Math.max(.5, Math.min(
           duration - state.elapsed,
-          (target.finalePhase + 1) * FINALE_PHASE_SECONDS - state.elapsed
+          finalePhaseEnd(target.finalePhase) - state.elapsed
         )),
         worldX: Number.isFinite(target.worldX)
           ? clamp(target.worldX + side * spreadX, 80, FINALE_WORLD_LENGTH - 80)
@@ -1843,25 +1887,16 @@
     const rect = damSourceRectToCanvas(section.surface);
     addLabel(rect.x + rect.w * .5, rect.y + rect.h * .5, `${section.id.toUpperCase()} BREAK +${bonus}`, '#ffcf4a', 28);
     burst(rect.x + rect.w * .5, rect.y + rect.h * .5, '#ffcf4a', 28, 1.2);
-    section.beavers.forEach((anchor, index) => {
-      const beaver = {
-        kind: 'damSectionBeaver',
-        type: section.type,
-        golden: !!section.golden,
-        sectionId: section.id,
-        sourceAnchorX: anchor[0],
-        sourceAnchorY: anchor[1],
-        at: state.elapsed + index * .055,
-        duration: Math.max(.5, ROUND_SECONDS - state.elapsed),
-        base: section.base,
-        targetScale: section.scale,
-        hit: false,
-      };
-      state.targets.push(beaver);
-      if (!section.golden && index === 0 && state.hiddenMobesAssigned < state.hiddenMobeTotal) {
-        makeHiddenMobeReplacement(beaver, 'plates');
-      }
-    });
+    state.targets
+      .filter(target => target.kind === 'damSectionBeaver' && target.sectionId === section.id)
+      .forEach(beaver => {
+        beaver.hit = false;
+        beaver.hitAt = 0;
+        // Let the timber visibly fall first, then expose the beavers that were
+        // already waiting beneath it.
+        beaver.at = state.elapsed + .24 + beaver.revealIndex * .045;
+        beaver.duration = Math.max(.5, ROUND_SECONDS - beaver.at);
+      });
     showToast(`${section.id.toUpperCase()} DAM OPEN · RAPID FIRE!`, true, 900);
     try { SFX.mysteryGood(); } catch (e) {}
   }
@@ -1891,7 +1926,7 @@
   }
 
   function processFinalePhases() {
-    const phase = Math.min(2, Math.floor(state.elapsed / FINALE_PHASE_SECONDS));
+    const phase = finalePhaseAt();
     if (phase !== state.finalePhase) {
       state.finalePhase = phase;
       state.finaleRespawnAt = 0;
@@ -1913,7 +1948,7 @@
 
   function processFinalePrecisionScroll() {
     if (
-      state.elapsed >= FINALE_PHASE_SECONDS * 2 - .65 ||
+      state.elapsed >= FINALE_SCROLL_END - .65 ||
       state.elapsed < state.finalePrecisionNextAt
     ) return;
     const live = state.targets.filter(target =>
@@ -1995,7 +2030,7 @@
       addLabel(state.width * .5, state.height * .45, `BANK ${wave + 1} CLEAR +${clearBonus}`, '#ffcf4a', 30);
       burst(state.width * .5, state.height * .45, '#b991ff', 28, 1.18);
       try { SFX.mysteryGood(); } catch (e) {}
-      if (state.elapsed < FINALE_PHASE_SECONDS - .55) {
+      if (state.elapsed < FINALE_EXPAND_SECONDS - .55) {
         const replacementWave = state.finaleWave;
         state.finaleWave += 1;
         spawnFinaleStaticWave(replacementWave, state.elapsed + .08);
@@ -2547,7 +2582,7 @@
           growth *= .68;
           hittable = exposedAge >= .18 && exposedAge <= 1.05;
         }
-        scale *= .72;
+        scale *= w <= 520 ? .9 : .72;
       }
       scale *= growth * (target.targetScale || 1);
     } else if (target.kind === 'finalePopup') {
@@ -2564,6 +2599,7 @@
       y = lerp(h * .84, h * target.anchorY, rise);
       growth = (.78 + rise * .22) * target.precision;
       scale *= growth;
+      if (w <= 520) scale *= 1.12;
       visibility = rise;
     } else if (target.kind === 'rapidTarget') {
       x = w * .5;
@@ -2691,7 +2727,7 @@
     }
     if (boothId === 'plates') {
       drawBackdropReadabilityWash(w, h, 'plates');
-      drawDamSectionDamage(w, h);
+      drawDamSectionDamage(w, h, 'back');
     }
     if (boothId === 'finale') drawFinaleBankConnections(w, h);
 
@@ -2784,6 +2820,7 @@
       drawFarmPointOverlays(now);
     }
     if (boothId === 'plates' && !state.damSections.length && !damMiddleMaskDrawn) drawDamMiddleRailMask(w, h);
+    if (boothId === 'plates' && state.damSections.length) drawDamSectionDamage(w, h, 'front');
     drawStageFrame(w, h, boothId);
     drawShots(now);
     drawParticles(now);
@@ -3383,12 +3420,12 @@
   }
 
   function drawFinaleMotion(w, h) {
-    const phase = Math.min(2, Math.floor(state.elapsed / FINALE_PHASE_SECONDS));
+    const phase = finalePhaseAt();
     const directionColor = ['#b991ff', '#6de8ff', '#ffcf4a'][phase];
     ctx.save();
 
     // The final choice phase gets a warm theatrical center spotlight.
-    if (state.elapsed >= FINALE_PHASE_SECONDS * 2) {
+    if (state.elapsed >= FINALE_SCROLL_END) {
       const pulse = .12 + Math.abs(Math.sin(state.elapsed * 3.2)) * .09;
       const spot = ctx.createRadialGradient(w * .5, h * .46, 10, w * .5, h * .46, Math.min(w, h) * .33);
       spot.addColorStop(0, `rgba(255,220,116,${pulse})`);
@@ -3414,7 +3451,7 @@
   }
 
   function drawFinaleBankConnections(w, h) {
-    if (state.elapsed >= FINALE_PHASE_SECONDS) return;
+    if (state.elapsed >= FINALE_EXPAND_SECONDS) return;
     const banks = new Map();
     for (const target of state.targets) {
       if (
@@ -4127,8 +4164,11 @@
     ctx.restore();
   }
 
-  function drawDamSectionDamage(w, h) {
+  function drawDamSectionDamage(w, h, layer = 'back') {
     if (!state.damSections.length) return;
+    const backdrop = typeof _getImg === 'function'
+      ? _getImg('assets/mania/dam/dam-backdrop-v3.png')
+      : null;
     const cracks = typeof _getImg === 'function'
       ? _getImg('assets/mania/dam/dam-cracks-v1.png')
       : null;
@@ -4138,7 +4178,7 @@
       const centerX = rect.x + rect.w * .5;
       const centerY = rect.y + rect.h * .5;
 
-      if (section.open || section.resetAt) {
+      if (layer === 'back' && (section.open || section.resetAt)) {
         const opening = ctx.createRadialGradient(
           centerX, centerY, rect.h * .08,
           centerX, centerY, Math.max(rect.w * .43, rect.h)
@@ -4150,6 +4190,39 @@
         ctx.fillStyle = opening;
         roundRect(rect.x + rect.w * .08, rect.y + rect.h * .08, rect.w * .84, rect.h * .84, clamp(rect.h * .16, 8, 20));
         ctx.fill();
+        ctx.restore();
+      }
+
+      if (layer !== 'front') continue;
+      const breakAge = section.open ? Math.max(0, state.elapsed - section.openedAt) : 0;
+      const fall = section.open ? easeInOut(clamp(breakAge / .46, 0, 1)) : 0;
+      if (fall >= 1) continue;
+
+      ctx.save();
+      if (fall > 0) {
+        const fallSide = section.id === 'middle' ? -1 : 1;
+        ctx.globalAlpha = clamp(1 - fall * .92, 0, 1);
+        ctx.translate(centerX, centerY);
+        ctx.translate(fallSide * rect.w * .045 * fall, h * .38 * fall * fall);
+        ctx.rotate(fallSide * fall * .16);
+        ctx.translate(-centerX, -centerY);
+      }
+
+      // Repaint only the intact timber face in full, warm color. Saturation is
+      // the shared Mania cue that this foreground layer can be hit; everything
+      // behind it remains deliberately quiet for target contrast.
+      if (backdrop?.complete && backdrop.naturalWidth) {
+        const sx = section.surface[0] * backdrop.naturalWidth;
+        const sy = section.surface[1] * backdrop.naturalHeight;
+        const sw = section.surface[2] * backdrop.naturalWidth;
+        const sh = section.surface[3] * backdrop.naturalHeight;
+        ctx.save();
+        ctx.filter = 'saturate(1.5) brightness(1.08) contrast(1.12)';
+        ctx.drawImage(backdrop, sx, sy, sw, sh, rect.x, rect.y, rect.w, rect.h);
+        ctx.fillStyle = section.golden
+          ? 'rgba(208,147,45,.12)'
+          : 'rgba(125,86,38,.08)';
+        ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
         ctx.restore();
       }
 
@@ -4193,6 +4266,7 @@
         ctx.fillText(`${section.hits}/${section.requiredHits}`, plateX + plateW / 2, centerY + 1);
         ctx.restore();
       }
+      ctx.restore();
     }
   }
 
