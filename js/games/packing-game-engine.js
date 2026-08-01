@@ -793,6 +793,7 @@
   let overlapZoneKeys = new Set();
   let overlapNodeKeys = new Set();
   let occupancyByCell = new Map();
+  let connectedLinkIds = new Set();
 
   function element(id) { return document.getElementById(id); }
   function svg(tag, attrs) { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; }
@@ -943,7 +944,7 @@
     return true;
   }
 
-  function renderPieceShape(g, cells, cellSize, colorId) {
+  function renderPieceShape(g, cells, cellSize, colorId, isRackPiece) {
     while (g.firstChild) g.removeChild(g.firstChild);
     const color = PIECE_COLORS[colorId] || '#8a9fc9';
     g.setAttribute('style', `--pge-piece-color:${color}`);
@@ -954,10 +955,10 @@
     // because a transparent fill is otherwise not hit-testable in SVG.
     const minR = Math.min(...cells.map(([r]) => r)), maxR = Math.max(...cells.map(([r]) => r));
     const minC = Math.min(...cells.map(([, c]) => c)), maxC = Math.max(...cells.map(([, c]) => c));
-    // kept modest (not a generous 0.4+) because tray pieces sit close enough
-    // together (see the host's trayOrigin/traySpacing tuning) that a larger
-    // pad would make adjacent pieces' hit-rects overlap.
-    const pad = cellSize * .25;
+    // Rack previews are small, so give them a full half-cell of forgiveness.
+    // Board pieces are already larger but still need enough margin for a thumb.
+    // The rack's slot layout keeps these bounds inside each piece's own lane.
+    const pad = cellSize * (isRackPiece ? .5 : .38);
     g.appendChild(svg('rect', {
       x: minC * cellSize - pad, y: minR * cellSize - pad,
       width: (maxC - minC + 1) * cellSize + pad * 2, height: (maxR - minR + 1) * cellSize + pad * 2,
@@ -978,7 +979,15 @@
   function renderPiece(piece, cellSize) {
     piece.renderCellSize = cellSize;
     const cells = ORIENTATION_CACHE[piece.pieceIndex][piece.orientIdx];
-    piece.cellNodes = renderPieceShape(piece.g, cells, cellSize, PIECE_LIBRARY[piece.pieceIndex].id);
+    piece.cellNodes = renderPieceShape(
+      piece.g,
+      cells,
+      cellSize,
+      PIECE_LIBRARY[piece.pieceIndex].id,
+      !piece.placedAt && !piece.floating
+    );
+    piece.linkPips = new Map();
+    piece.linkCells = new Map();
     const pieceLinks = (puzzle && puzzle.links ? puzzle.links : [])
       .map((link, index) => ({ link, index }))
       .filter(({ link }) => link.pieceSlots.includes(piece.slot));
@@ -994,16 +1003,53 @@
       const detail = currentOrientationDetail(piece);
       const markedCell = marker == null ? null : detail.find(cell => cell.source === marker.source);
       const [r, c] = markedCell ? [markedCell.r, markedCell.c] : cells[markerIndex % cells.length];
+      const markedNode = piece.cellNodes.find(node =>
+        Number(node.getAttribute('data-cell-r')) === r && Number(node.getAttribute('data-cell-c')) === c
+      );
+      if (markedNode) piece.linkCells.set(link.id, markedNode);
       const pipCount = Math.min(5, index + 1);
       pipLayouts[pipCount].forEach(([px, py]) => {
-        piece.g.appendChild(svg('circle', {
+        const pip = svg('circle', {
           cx: (c + px) * cellSize,
           cy: (r + py) * cellSize,
           r: Math.max(2.1, cellSize * .065),
-          class: 'pge-link-pip'
-        }));
+          class: 'pge-link-pip', 'data-link-id': link.id
+        });
+        piece.g.appendChild(pip);
+        if (!piece.linkPips.has(link.id)) piece.linkPips.set(link.id, []);
+        piece.linkPips.get(link.id).push(pip);
       });
     });
+  }
+
+  function refreshLinkConnections() {
+    const nextConnected = new Set();
+    (puzzle && puzzle.links ? puzzle.links : []).forEach(link => {
+      const markedCells = (link.contacts || []).map(marker => {
+        const piece = trayPieces[marker.slot];
+        return piece && currentDetailedCells(piece).find(cell => cell.source === marker.source);
+      });
+      if (markedCells.length !== 2 || !markedCells.every(Boolean)) return;
+      const [first, second] = markedCells;
+      const shareEdge = neighbours(first.r, first.c).some(([r, c]) => r === second.r && c === second.c);
+      const shareNode = first.r === second.r && first.c === second.c &&
+        (overlapNodeKeys.has(key(first.r, first.c)) || overlapZoneKeys.has(key(first.r, first.c)));
+      if (shareEdge || shareNode) nextConnected.add(link.id);
+    });
+    trayPieces.forEach(piece => {
+      (piece.linkPips || new Map()).forEach((nodes, linkId) =>
+        nodes.forEach(node => node.classList.toggle('is-connected', nextConnected.has(linkId)))
+      );
+      (piece.linkCells || new Map()).forEach((node, linkId) =>
+        node.classList.toggle('is-link-connected', nextConnected.has(linkId))
+      );
+    });
+    const madeConnection = Array.from(nextConnected).some(id => !connectedLinkIds.has(id));
+    connectedLinkIds = nextConnected;
+    if (madeConnection) {
+      playTone(520, 880, .16, .025, 'sine');
+      haptic([5, 18, 9]);
+    }
   }
 
   function renderAnchorPin(piece) {
@@ -1074,6 +1120,7 @@
         indicator.label.textContent = '';
       }
     });
+    refreshLinkConnections();
   }
 
   function mountOverlapZoneIndicators() {
@@ -2239,6 +2286,7 @@
     clearLandingGhost();
     config = null; stage = null; puzzle = null; trayPieces = []; dragging = null; selectedPiece = null; rackArea = null; floatingCellSize = 0;
     regionCellKeys = new Set(); overlapZoneKeys = new Set(); overlapNodeKeys = new Set(); occupancyByCell = new Map();
+    connectedLinkIds = new Set();
     lastTapPiece = null; lastTapAt = -Infinity;
   }
 
