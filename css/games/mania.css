@@ -507,10 +507,10 @@ body.on-mania.mania-phone-landscape #arcade-game-exit {
   z-index: 2;
 }
 .mania-theme-farm { --mania-curtain-art: url("../../assets/mania/farm/farm-backdrop-v1.png"); }
-.mania-theme-orbit { --mania-curtain-art: url("../../assets/mania/orbit-backdrop-v2.png"); }
+.mania-theme-orbit { --mania-curtain-art: url("../../assets/mania/orbit-backdrop-v3.png"); }
 .mania-theme-plates { --mania-curtain-art: url("../../assets/mania/dam/dam-backdrop-v3.png"); }
-.mania-theme-volcano { --mania-curtain-art: url("../../assets/mania/volcano/volcano-backdrop-v1.png"); }
-.mania-theme-finale { --mania-curtain-art: url("../../assets/mania/finale/finale-backdrop-v2.png"); }
+.mania-theme-volcano { --mania-curtain-art: url("../../assets/mania/volcano/volcano-parade-backdrop-v3.png"); }
+.mania-theme-finale { --mania-curtain-art: url("../../assets/mania/finale/finale-backdrop-v3.png"); }
 .mania-booth-curtain span,
 .mania-booth-curtain small {
   font: 9px/1.4 'VCR', monospace;

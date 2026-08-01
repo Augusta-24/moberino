@@ -89,21 +89,23 @@
   ];
   const DAM_SECTION_CONFIG = [
     {
-      id: 'top', requiredHits: 12, base: 2400,
+      id: 'top', requiredHits: 12, hitValue: 600, base: 2400,
       surface: [.25, .19, .5, .12],
-      beavers: [[.42, .335], [.58, .335]],
+      beavers: [[.42, .23], [.58, .23]],
       type: 'expert', scale: .62,
     },
     {
-      id: 'middle', requiredHits: 8, base: 1500,
+      id: 'middle', requiredHits: 8, hitValue: 400, base: 1500,
       surface: [.19, .39, .62, .14],
-      beavers: [[.39, .565], [.5, .565], [.61, .565]],
-      type: 'foreman', scale: .7, golden: true,
+      // Plant the trio inside the dark recess covered by this timber face.
+      // The old .565 row put them in the bright water below the falling layer.
+      beavers: [[.39, .42], [.5, .42], [.61, .42]],
+      type: 'foreman', scale: .7, goldenAfterClears: 2,
     },
     {
-      id: 'bottom', requiredHits: 4, base: 700,
+      id: 'bottom', requiredHits: 4, hitValue: 200, base: 700,
       surface: [.14, .65, .72, .19],
-      beavers: [[.22, .875], [.36, .875], [.5, .875], [.64, .875], [.78, .875]],
+      beavers: [[.22, .73], [.36, .73], [.5, .73], [.64, .73], [.78, .73]],
       type: 'standard', scale: .78,
     },
   ];
@@ -1881,10 +1883,16 @@
     const { section, rect } = closed;
     section.hits = Math.min(section.requiredHits, section.hits + 1);
     state.hits += 1;
-    state.score += 50;
+    state.score += section.hitValue;
     const centerX = clamp(x, rect.x, rect.x + rect.w);
     const centerY = clamp(y, rect.y, rect.y + rect.h);
-    addLabel(centerX, centerY - 18, `${section.hits}/${section.requiredHits}`, '#fff1a3', 19);
+    addLabel(
+      centerX,
+      centerY - 18,
+      `+${section.hitValue} · ${section.hits}/${section.requiredHits}`,
+      '#fff1a3',
+      19
+    );
     burst(centerX, centerY, '#b9874e', 8, .7);
     try { SFX.hit(); } catch (e) {}
     if (section.hits >= section.requiredHits) openDamSection(section);
@@ -1895,6 +1903,7 @@
   function openDamSection(section) {
     section.open = true;
     section.openedAt = state.elapsed;
+    const goldReady = damSectionGoldReady(section);
     const bonus = section.requiredHits * 100;
     state.score += bonus;
     const rect = damSourceRectToCanvas(section.surface);
@@ -1905,6 +1914,7 @@
       .forEach(beaver => {
         beaver.hit = false;
         beaver.hitAt = 0;
+        beaver.golden = goldReady;
         // Let the timber visibly fall first, then expose the beavers that were
         // already waiting beneath it.
         beaver.at = state.elapsed + .24 + beaver.revealIndex * .045;
@@ -1921,12 +1931,33 @@
       target.kind === 'damSectionBeaver' && target.sectionId === sectionId
     );
     if (!beavers.length || beavers.some(target => !target.hit)) return;
-    section.clearCount += 1;
+    const clearedGold = beavers.some(target => target.golden);
+    section.clearCount = clearedGold ? 0 : section.clearCount + 1;
     section.resetAt = state.elapsed + .3;
     const bonus = section.requiredHits * 150;
     state.score += bonus;
-    showToast(`${section.id.toUpperCase()} CLEAR +${bonus} · REBUILDING!`, true, 950);
+    if (clearedGold) {
+      showToast(`GOLD TRIO CLEAR +${bonus} · MIDDLE RESET!`, true, 1200);
+    } else if (section.goldenAfterClears) {
+      const ready = damSectionGoldReady(section);
+      showToast(
+        ready
+          ? `MIDDLE CLEAR +${bonus} · GOLD TRIO READY!`
+          : `MIDDLE CLEAR +${bonus} · GOLD TRIO ${section.clearCount}/${section.goldenAfterClears}`,
+        true,
+        ready ? 1200 : 950
+      );
+    } else {
+      showToast(`${section.id.toUpperCase()} CLEAR +${bonus} · REBUILDING!`, true, 950);
+    }
     updateHud();
+  }
+
+  function damSectionGoldReady(section) {
+    return !!section.golden || (
+      Number.isFinite(section.goldenAfterClears) &&
+      section.clearCount >= section.goldenAfterClears
+    );
   }
 
   function processFarmBarn() {
@@ -2821,7 +2852,6 @@
       ctx.restore();
       if (boothId === 'plates' && ['damBeaver', 'damSectionBeaver'].includes(target.kind)) {
         drawDamRearWaterMask(pos);
-        drawDamBeaverBadge(target, pos);
       }
     }
 
@@ -2834,6 +2864,10 @@
     }
     if (boothId === 'plates' && !state.damSections.length && !damMiddleMaskDrawn) drawDamMiddleRailMask(w, h);
     if (boothId === 'plates' && state.damSections.length) drawDamSectionDamage(w, h, 'front');
+    // Point badges are UI, not scenery. Draw them after every timber/water
+    // mask so a foreground dam face can hide a beaver's feet without cutting
+    // the value the player needs to read.
+    if (boothId === 'plates') drawDamPointOverlays();
     drawStageFrame(w, h, boothId);
     drawShots(now);
     drawParticles(now);
@@ -2875,6 +2909,15 @@
       ctx.translate(0, bob);
       drawPointValue(target);
       ctx.restore();
+    }
+  }
+
+  function drawDamPointOverlays() {
+    for (const target of state.targets) {
+      if (!['damBeaver', 'damSectionBeaver'].includes(target.kind)) continue;
+      const pos = targetPosition(target, state.elapsed);
+      if (!pos || pos.visibility < .12) continue;
+      drawDamBeaverBadge(target, pos);
     }
   }
 
@@ -3024,8 +3067,8 @@
     // lowering both saturation and contrast before any live targets are drawn.
     const washes = {
       farm: 'rgba(105,105,94,.34)',
-      plates: 'rgba(72,82,78,.42)',
-      volcano: 'rgba(75,68,72,.34)',
+      plates: 'rgba(72,82,78,.16)',
+      volcano: 'rgba(75,68,72,.16)',
     };
     ctx.fillStyle = washes[boothId];
     ctx.fillRect(0, 0, w, h);
@@ -3046,7 +3089,7 @@
   }
 
   function drawOrbitScene(w, h) {
-    const backdrop = typeof _getImg === 'function' ? _getImg('assets/mania/orbit-backdrop-v2.png') : null;
+    const backdrop = typeof _getImg === 'function' ? _getImg('assets/mania/orbit-backdrop-v3.png') : null;
     if (backdrop?.complete && backdrop.naturalWidth) {
       ctx.save();
       ctx.filter = 'saturate(.48) brightness(.76) contrast(.88)';
@@ -3194,7 +3237,7 @@
       // Hold the illustrated dam one value-step behind the live targets. The
       // scene stays colorful, but its brown/green midtones no longer swallow
       // the similarly colored beaver sprites.
-      ctx.filter = 'saturate(.28) brightness(.7) contrast(.58)';
+      ctx.filter = 'saturate(.72) brightness(.84) contrast(.86)';
       drawImageCover(backdrop, w, h);
       ctx.restore();
       const glaze = ctx.createLinearGradient(0, 0, 0, h);
@@ -3203,7 +3246,7 @@
       glaze.addColorStop(1, 'rgba(10,37,39,.16)');
       ctx.fillStyle = glaze;
       ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = 'rgba(137,145,132,.1)';
+      ctx.fillStyle = 'rgba(137,145,132,.03)';
       ctx.fillRect(0, 0, w, h);
       drawWornBackdropTexture(w, h, '#c7b58c');
       drawDamWater(w, h);
@@ -3242,14 +3285,14 @@
 
   function drawVolcanoScene(w, h) {
     const backdrop = typeof _getImg === 'function'
-      ? _getImg('assets/mania/volcano/volcano-parade-backdrop-v1.png')
+      ? _getImg('assets/mania/volcano/volcano-parade-backdrop-v3.png')
       : null;
     if (backdrop?.complete && backdrop.naturalWidth) {
       ctx.save();
-      ctx.filter = 'saturate(.34) brightness(.78) contrast(.66)';
+      ctx.filter = 'saturate(.72) brightness(.86) contrast(.88)';
       drawImageCover(backdrop, w, h);
       ctx.restore();
-      ctx.fillStyle = 'rgba(245,232,214,.07)';
+      ctx.fillStyle = 'rgba(245,232,214,.025)';
       ctx.fillRect(0, 0, w, h);
       const glaze = ctx.createLinearGradient(0, 0, 0, h);
       glaze.addColorStop(0, 'rgba(31,8,52,.06)');
@@ -3257,7 +3300,7 @@
       glaze.addColorStop(1, 'rgba(22,8,20,.18)');
       ctx.fillStyle = glaze;
       ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = 'rgba(157,137,132,.09)';
+      ctx.fillStyle = 'rgba(157,137,132,.03)';
       ctx.fillRect(0, 0, w, h);
       drawWornBackdropTexture(w, h, '#d5b29a');
       drawVolcanoParallax(w, h);
@@ -3399,7 +3442,7 @@
 
   function drawFinaleScene(w, h) {
     const backdrop = typeof _getImg === 'function'
-      ? _getImg('assets/mania/finale/finale-backdrop-v2.png')
+      ? _getImg('assets/mania/finale/finale-backdrop-v3.png')
       : null;
     if (backdrop?.complete && backdrop.naturalWidth) {
       ctx.save();
@@ -4051,13 +4094,18 @@
         ctx.restore();
         return;
       }
-      const ratio = sprite.naturalWidth / sprite.naturalHeight;
-      // Size from height and derive width from the source aspect ratio. This
-      // keeps every responsive scale uniform instead of stretching the art.
-      const drawH = target.type === 'expert' ? 104 : 96;
-      const drawW = drawH * ratio;
+      // The expert file is a naturally narrow 400x600 pedestal portrait while
+      // the other beavers are square. Crop its long lower plinth instead of
+      // squeezing the full file into the target slot or widening the artwork.
+      const expertCrop = target.type === 'expert';
+      const sx = expertCrop ? sprite.naturalWidth * .04 : 0;
+      const sy = expertCrop ? sprite.naturalHeight * .02 : 0;
+      const sw = expertCrop ? sprite.naturalWidth * .92 : sprite.naturalWidth;
+      const sh = expertCrop ? sprite.naturalHeight * .72 : sprite.naturalHeight;
+      const drawH = expertCrop ? 92 : 96;
+      const drawW = drawH * (sw / sh);
       drawBeaverGlow(drawW, drawH, target.golden);
-      ctx.drawImage(sprite, -drawW / 2, -drawH * .5, drawW, drawH);
+      ctx.drawImage(sprite, sx, sy, sw, sh, -drawW / 2, -drawH * .5, drawW, drawH);
       ctx.restore();
       return;
     }
@@ -4113,7 +4161,7 @@
     ctx.save();
     traceWaterline(true);
     ctx.clip();
-    ctx.filter = 'saturate(.28) brightness(.7) contrast(.58)';
+    ctx.filter = 'saturate(.72) brightness(.84) contrast(.86)';
     drawImageCover(backdrop, w, h);
     ctx.fillStyle = 'rgba(72,82,78,.42)';
     ctx.fillRect(0, waterline - amplitude, w, h * .715 - waterline + amplitude);
@@ -4232,7 +4280,7 @@
         ctx.save();
         ctx.filter = 'saturate(1.5) brightness(1.08) contrast(1.12)';
         ctx.drawImage(backdrop, sx, sy, sw, sh, rect.x, rect.y, rect.w, rect.h);
-        ctx.fillStyle = section.golden
+        ctx.fillStyle = damSectionGoldReady(section)
           ? 'rgba(208,147,45,.12)'
           : 'rgba(125,86,38,.08)';
         ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
@@ -4255,19 +4303,19 @@
       }
 
       if (!section.open && !section.resetAt) {
-        const plateW = clamp(rect.w * .14, 54, 86);
+        const plateW = clamp(rect.w * .22, 88, 132);
         const plateH = clamp(rect.h * .3, 24, 34);
-        // Keep authored right-edge labels visible when cover-cropping the wide
-        // backdrop into portrait phone and tablet canvases.
+        // Keep the value/progress plate on the physical center of the dam so
+        // the three risk/reward choices can be compared before the first hit.
         const plateX = clamp(
-          rect.x + rect.w - plateW - clamp(rect.w * .025, 8, 18),
+          centerX - plateW / 2,
           10,
           w - plateW - 10
         );
         const plateY = centerY - plateH / 2;
         ctx.save();
         ctx.fillStyle = 'rgba(13,18,17,.82)';
-        ctx.strokeStyle = section.golden ? '#ffcf4a' : 'rgba(238,223,183,.72)';
+        ctx.strokeStyle = damSectionGoldReady(section) ? '#ffcf4a' : 'rgba(238,223,183,.72)';
         ctx.lineWidth = 2;
         roundRect(plateX, plateY, plateW, plateH, 6);
         ctx.fill();
@@ -4276,7 +4324,11 @@
         ctx.font = `${clamp(plateH * .43, 10, 14)}px VCR, monospace`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(`${section.hits}/${section.requiredHits}`, plateX + plateW / 2, centerY + 1);
+        ctx.fillText(
+          `+${section.hitValue} · ${section.hits}/${section.requiredHits}`,
+          plateX + plateW / 2,
+          centerY + 1
+        );
         ctx.restore();
       }
       ctx.restore();
@@ -4312,7 +4364,7 @@
     ctx.save();
     traceRearWater(true);
     ctx.clip();
-    ctx.filter = 'saturate(.28) brightness(.7) contrast(.58)';
+    ctx.filter = 'saturate(.72) brightness(.84) contrast(.86)';
     drawImageCover(backdrop, w, h);
     ctx.fillStyle = 'rgba(72,82,78,.42)';
     ctx.fillRect(left, waterY - amplitude, halfWidth * 2, maskDepth + amplitude);

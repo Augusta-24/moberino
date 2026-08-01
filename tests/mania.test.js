@@ -172,7 +172,8 @@ test('Beaver Bonanza uses three responsive breakable dam tiers and masked beaver
   assert.match(source, /title: 'BEAVER BONANZA'/);
   assert.match(source, /assets\/mania\/dam\/dam-backdrop-v3\.png/);
   assert.match(source, /assets\/mania\/dam\/dam-cracks-v1\.png/);
-  assert.match(source, /saturate\(\.28\) brightness\(\.7\) contrast\(\.58\)/);
+  assert.equal((source.match(/saturate\(\.72\) brightness\(\.84\) contrast\(\.86\)/g) || []).length, 3);
+  assert.match(source, /plates: 'rgba\(72,82,78,\.16\)'/);
   assert.match(source, /brightness\(1\.12\) saturate\(1\.08\) contrast\(1\.06\)/);
   assert.match(source, /target\.golden \? 'rgba\(255,207,74,\.92\)' : 'rgba\(255,236,186,\.55\)'/);
   assert.match(source, /function drawDamScene\(/);
@@ -181,17 +182,29 @@ test('Beaver Bonanza uses three responsive breakable dam tiers and masked beaver
   assert.doesNotMatch(source, /function drawToyTank\(/);
   assert.doesNotMatch(source, /function drawTankRails\(/);
   assert.match(source, /const DAM_SECTION_CONFIG = \[/);
-  assert.match(source, /id: 'top', requiredHits: 12/);
-  assert.match(source, /id: 'middle', requiredHits: 8/);
-  assert.match(source, /id: 'bottom', requiredHits: 4/);
+  assert.match(source, /id: 'top', requiredHits: 12, hitValue: 600/);
+  assert.match(source, /beavers: \[\[\.42, \.23\], \[\.58, \.23\]\]/);
+  assert.match(source, /id: 'middle', requiredHits: 8, hitValue: 400/);
+  assert.match(source, /beavers: \[\[\.39, \.42\], \[\.5, \.42\], \[\.61, \.42\]\]/);
+  assert.match(source, /type: 'foreman', scale: \.7, goldenAfterClears: 2/);
+  assert.match(source, /id: 'bottom', requiredHits: 4, hitValue: 200/);
+  assert.match(source, /beavers: \[\[\.22, \.73\], \[\.36, \.73\], \[\.5, \.73\], \[\.64, \.73\], \[\.78, \.73\]\]/);
   assert.match(source, /golden: true/);
   assert.match(source, /kind: 'damSectionBeaver'/);
   assert.match(source, /section\.id === 'bottom' && index === 0/);
   assert.doesNotMatch(source, /section\.id === 'top'[\s\S]{0,100}makeHiddenMobeReplacement/);
   assert.match(source, /wave === 0 && index === positions\.length - 1[\s\S]{0,120}makeHiddenMobeReplacement\(beaver, 'plates'\)/);
   assert.match(source, /function hitDamSectionAt\(/);
+  assert.match(source, /state\.score \+= section\.hitValue/);
+  assert.match(source, /`\+\$\{section\.hitValue\} · \$\{section\.hits\}\/\$\{section\.requiredHits\}`/);
   assert.match(source, /function openDamSection\(/);
   assert.match(source, /function checkDamSectionClear\(/);
+  assert.match(source, /function damSectionGoldReady\(section\)/);
+  assert.match(source, /section\.clearCount = clearedGold \? 0 : section\.clearCount \+ 1/);
+  assert.match(source, /GOLD TRIO READY!/);
+  assert.match(source, /GOLD TRIO \$\{section\.clearCount\}\/\$\{section\.goldenAfterClears\}/);
+  assert.match(source, /const plateX = clamp\(\s*centerX - plateW \/ 2/);
+  assert.match(source, /`\+\$\{section\.hitValue\} · \$\{section\.hits\}\/\$\{section\.requiredHits\}`/);
   assert.match(source, /function processDamBank\(/);
   assert.match(source, /assets\/mania\/dam\/\$\{name\}/);
   assert.match(source, /function launchLog\(/);
@@ -207,7 +220,6 @@ test('Beaver Bonanza uses three responsive breakable dam tiers and masked beaver
   assert.match(source, /curveControlX = \(shot\.aimX \|\| shot\.x\) \+ \(shot\.curveOffset \|\| 0\) \* 1\.8/);
   assert.match(source, /const trailStart = 0/);
   assert.match(source, /strokeStyle = 'rgba\(49,31,22,\.68\)'/);
-  assert.match(source, /const drawW = drawH \* ratio/);
   assert.match(source, /const drawW = drawH \* \(sw \/ sh\)/);
   assert.match(source, /function drawBeaverGlow\(drawW, drawH, golden = false\)/);
   assert.match(source, /const radius = drawH \* \.56/);
@@ -239,7 +251,7 @@ test('Mania shots use hit feedback only', () => {
 test('Volcano runs a two-lane dinosaur balloon parade with comet-triggered eruptions', () => {
   const source = read('js/games/mania.js');
   for (const asset of [
-    'volcano-parade-backdrop-v1.png',
+    'volcano-parade-backdrop-v3.png',
     'dinosaur-trex-v1.png',
     'dinosaur-triceratops-v1.png',
     'comet-target-v1.png',
@@ -250,8 +262,9 @@ test('Volcano runs a two-lane dinosaur balloon parade with comet-triggered erupt
   ]) {
     assert.ok(fs.existsSync(path.join(root, `assets/mania/volcano/${asset}`)));
   }
-  assert.match(source, /assets\/mania\/volcano\/volcano-parade-backdrop-v1\.png/);
-  assert.match(source, /saturate\(\.34\) brightness\(\.78\) contrast\(\.66\)/);
+  assert.match(source, /assets\/mania\/volcano\/volcano-parade-backdrop-v3\.png/);
+  assert.match(source, /saturate\(\.72\) brightness\(\.86\) contrast\(\.88\)/);
+  assert.match(source, /volcano: 'rgba\(75,68,72,\.16\)'/);
   assert.match(source, /drawBackdropReadabilityWash\(w, h, 'volcano'\)/);
   assert.match(source, /function drawVolcanoParallax\(/);
   assert.match(source, /function spawnVolcanoDinosaur\(/);
@@ -306,6 +319,11 @@ test('Every visible Mania target carries a consistent base-point badge', () => {
   assert.match(source, /drawFarmLayerMask\(w, h, \.89, 1\);[\s\S]*drawFarmPointOverlays\(now\)/);
   assert.match(source, /if \(!isFarmScoreTarget\(target\) && !\['damBeaver', 'damSectionBeaver'\]\.includes\(target\.kind\)\) drawPointValue\(target\)/);
   assert.match(source, /function drawDamBeaverBadge\(target, pos\)/);
+  assert.match(source, /function drawDamPointOverlays\(\)/);
+  assert.match(source, /drawDamSectionDamage\(w, h, 'front'\);[\s\S]{0,280}drawDamPointOverlays\(\)/);
+  assert.match(source, /const expertCrop = target\.type === 'expert'/);
+  assert.match(source, /const sh = expertCrop \? sprite\.naturalHeight \* \.72 : sprite\.naturalHeight/);
+  assert.match(source, /ctx\.drawImage\(sprite, sx, sy, sw, sh, -drawW \/ 2, -drawH \* \.5, drawW, drawH\)/);
   assert.match(source, /target\.kind === 'hiddenMobe'/);
   assert.match(source, /target\.kind === 'finalePopup'/);
   assert.match(source, /target\.kind === 'finaleGate'/);
@@ -314,7 +332,7 @@ test('Every visible Mania target carries a consistent base-point badge', () => {
 test('Target Showdown uses authored artwork across static, scrolling, and precision phases', () => {
   const source = read('js/games/mania.js');
   for (const asset of [
-    'finale-backdrop-v2.png',
+    'finale-backdrop-v3.png',
     'base-panel-v1.png',
     'open-star-panel-v1.png',
     'jewel-target-v1.png',
@@ -322,7 +340,7 @@ test('Target Showdown uses authored artwork across static, scrolling, and precis
   ]) {
     assert.ok(fs.existsSync(path.join(root, `assets/mania/finale/${asset}`)));
   }
-  assert.match(source, /assets\/mania\/finale\/finale-backdrop-v2\.png/);
+  assert.match(source, /assets\/mania\/finale\/finale-backdrop-v3\.png/);
   assert.match(source, /saturate\(\.44\) brightness\(\.78\) contrast\(\.84\)/);
   assert.match(source, /function drawFinaleMotion\(/);
   assert.match(source, /assets\/mania\/finale\/\$\{panelName\}-v1\.png/);
@@ -479,13 +497,13 @@ test('Farm throws eggs and Volcano throws visible darts', () => {
 
 test('Orbit uses authored booth art and resolves rings after a physical flight', () => {
   const source = read('js/games/mania.js');
-  assert.ok(fs.existsSync(path.join(root, 'assets/mania/orbit-backdrop-v2.png')));
+  assert.ok(fs.existsSync(path.join(root, 'assets/mania/orbit-backdrop-v3.png')));
   assert.ok(fs.existsSync(path.join(root, 'assets/mania/orbit-robot-boss-v1.png')));
   assert.ok(fs.existsSync(path.join(root, 'assets/mania/orbit-robot-boss-closed-v2.png')));
   for (const sprite of ['moon-mobe', 'ghost-mobe', 'comet-mobe']) {
     assert.ok(fs.existsSync(path.join(root, `assets/mania/characters/${sprite}-sprite-v2.png`)));
   }
-  assert.match(source, /assets\/mania\/orbit-backdrop-v2\.png/);
+  assert.match(source, /assets\/mania\/orbit-backdrop-v3\.png/);
   assert.match(source, /function launchRing\(/);
   assert.match(source, /function processRingFlights\(/);
   assert.match(source, /landsAt: state\.elapsed \+ flightDuration/);
@@ -567,7 +585,7 @@ test('Moberino Mania provides touch-safe responsive play, transitions, and resul
   assert.match(source, /function scheduleNextBooth\(/);
   assert.match(source, /}, 4000\)/);
   assert.match(source, /QUIT GAME/);
-  for (const art of ['farm-backdrop', 'orbit-backdrop', 'dam-backdrop', 'volcano-backdrop', 'finale-backdrop']) {
+  for (const art of ['farm-backdrop', 'orbit-backdrop', 'dam-backdrop', 'volcano-parade-backdrop', 'finale-backdrop']) {
     assert.match(css, new RegExp(art));
   }
   assert.match(source, /window\.maniaPractice/);
