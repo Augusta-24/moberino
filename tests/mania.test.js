@@ -186,6 +186,9 @@ test('Beaver Bonanza uses three responsive breakable dam tiers and masked beaver
   assert.match(source, /id: 'bottom', requiredHits: 4/);
   assert.match(source, /golden: true/);
   assert.match(source, /kind: 'damSectionBeaver'/);
+  assert.match(source, /section\.id === 'bottom' && index === 0/);
+  assert.doesNotMatch(source, /section\.id === 'top'[\s\S]{0,100}makeHiddenMobeReplacement/);
+  assert.match(source, /wave === 0 && index === positions\.length - 1[\s\S]{0,120}makeHiddenMobeReplacement\(beaver, 'plates'\)/);
   assert.match(source, /function hitDamSectionAt\(/);
   assert.match(source, /function openDamSection\(/);
   assert.match(source, /function checkDamSectionClear\(/);
@@ -332,10 +335,12 @@ test('Target Showdown uses authored artwork across static, scrolling, and precis
   assert.match(source, /spawnFinaleStaticWave\(0, 0\)/);
   assert.match(source, /spawnFinaleStaticWave\(1, 0\)/);
   assert.match(source, /state\.finaleWave = 2/);
-  assert.match(source, /const phoneLayout = state\.width <= 520;[\s\S]*\[\.16, \.35\][\s\S]*\[\.39, \.46\]/);
+  assert.match(source, /const phoneLayout = state\.width <= 520;[\s\S]*\[\.16, \.35\][\s\S]*\[\.29, \.43\]/);
   assert.match(source, /targetScale: phoneLayout \? \.9 : \.72/);
   assert.match(source, /function unfoldFinaleBank\(/);
   assert.match(source, /const side = target\.anchorX < \.5 \? 1 : -1/);
+  assert.match(source, /const fanX = clamp\(84 \/ state\.width, \.072, \.12\)/);
+  assert.match(source, /const fanY = clamp\(72 \/ state\.height, \.095, \.15\)/);
   assert.match(source, /target\.anchorX \+ side \* \.3, target\.lane, 1750/);
   assert.doesNotMatch(source, /\[target\.anchorX, target\.lane \+ clusterHeight, 500\]/);
   assert.match(source, /targetScale: phoneLayout \? \.78 : \.62/);

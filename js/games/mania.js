@@ -466,7 +466,10 @@
       // animals from the field at the same time.
       farm: ['flyer'],
       orbit: ['phaseFlyer'],
-      plates: ['beaverRunner'],
+      // Beaver Bonanza assigns its cameos explicitly: one behind the bottom
+      // dam and one in the first open bank. The expert top section always
+      // reveals the beavers its artwork promises.
+      plates: [],
       volcano: ['dinosaur'],
     };
     const candidates = state.targets.filter(target =>
@@ -697,7 +700,7 @@
           hit: false,
         };
         state.targets.push(beaver);
-        if (!section.golden && index === 0 && state.hiddenMobesAssigned < state.hiddenMobeTotal) {
+        if (section.id === 'bottom' && index === 0 && state.hiddenMobesAssigned < state.hiddenMobeTotal) {
           makeHiddenMobeReplacement(beaver, 'plates');
         }
       });
@@ -712,7 +715,7 @@
     // the same visual and aiming line.
     const setDelays = [0, .08, .16, .24, .32];
     positions.forEach((position, index) => {
-      state.targets.push({
+      const beaver = {
         kind: 'damBank',
         type: (wave + index) % 3 === 0 ? 'foreman' : 'standard',
         at: at + setDelays[index],
@@ -723,7 +726,11 @@
         base: 700 + wave * 200,
         targetScale: position[1] > .54 ? .78 : .7,
         hit: false,
-      });
+      };
+      state.targets.push(beaver);
+      if (wave === 0 && index === positions.length - 1 && state.hiddenMobesAssigned < state.hiddenMobeTotal) {
+        makeHiddenMobeReplacement(beaver, 'plates');
+      }
     });
   }
 
@@ -882,12 +889,13 @@
 
   function spawnFinaleStaticWave(wave, at) {
     // Phase one is a mounted shooting-gallery wall, not a hunt across the
-    // whole canvas. Portrait hubs mount at opposite sides and open inward as
-    // tall arches, giving larger targets enough room to keep distinct hit areas.
+    // whole canvas. Keep the banks far enough apart for their unfolded target
+    // footprints; percentages alone caused them to collide on wide, short
+    // stages even though most of the booth was empty.
     const phoneLayout = state.width <= 520;
     const bankPositions = phoneLayout
       ? [[.16, .35], [.84, .67], [.16, .66], [.84, .34]]
-      : [[.39, .46], [.61, .58], [.42, .62], [.58, .42]];
+      : [[.29, .43], [.71, .57], [.31, .62], [.69, .38]];
     const [anchorX, lane] = bankPositions[wave % bankPositions.length];
     state.targets.push({
       kind: 'revealPanel',
@@ -929,6 +937,11 @@
   function unfoldFinaleBank(target) {
     const phoneLayout = state.width <= 520;
     const side = target.anchorX < .5 ? 1 : -1;
+    // The panels have a mostly fixed screen-space footprint. Convert a safe
+    // pixel separation back into canvas ratios so the fan remains airy on
+    // both wide/short and near-square stages.
+    const fanX = clamp(84 / state.width, .072, .12);
+    const fanY = clamp(72 / state.height, .095, .15);
     const unfoldedTargets = phoneLayout
       ? [
         [target.anchorX, target.lane - .16, 750],
@@ -938,11 +951,11 @@
         [target.anchorX, target.lane + .16, 750],
       ]
       : [
-        [target.anchorX - .115, target.lane - .021, 750],
-        [target.anchorX - .083, target.lane - .105, 1250],
-        [target.anchorX, target.lane - .124, 1750],
-        [target.anchorX + .083, target.lane - .105, 1250],
-        [target.anchorX + .115, target.lane - .021, 750],
+        [target.anchorX - fanX * 1.5, target.lane, 750],
+        [target.anchorX - fanX * .76, target.lane - fanY * .86, 1250],
+        [target.anchorX, target.lane - fanY * 1.12, 1750],
+        [target.anchorX + fanX * .76, target.lane - fanY * .86, 1250],
+        [target.anchorX + fanX * 1.5, target.lane, 750],
       ];
     unfoldedTargets.forEach((option, i) => {
       const targetValue = option[2] + target.wave * 100;
