@@ -948,22 +948,28 @@
     while (g.firstChild) g.removeChild(g.firstChild);
     const color = PIECE_COLORS[colorId] || '#8a9fc9';
     g.setAttribute('style', `--pge-piece-color:${color}`);
-    // A padded, invisible hit-rect sized to the piece's bounding box (not just
-    // its painted cells) makes tap-to-rotate forgiving for small/thin pieces
-    // (a 2-cell domino is otherwise a tiny, easy-to-miss target) and for taps
-    // that land just outside a cell's edge. `pointer-events:all` is required
-    // because a transparent fill is otherwise not hit-testable in SVG.
-    const minR = Math.min(...cells.map(([r]) => r)), maxR = Math.max(...cells.map(([r]) => r));
-    const minC = Math.min(...cells.map(([, c]) => c)), maxC = Math.max(...cells.map(([, c]) => c));
-    // Rack previews are small, so give them a full half-cell of forgiveness.
-    // Board pieces are already larger but still need enough margin for a thumb.
-    // The rack's slot layout keeps these bounds inside each piece's own lane.
-    const pad = cellSize * (isRackPiece ? .5 : .38);
-    g.appendChild(svg('rect', {
-      x: minC * cellSize - pad, y: minR * cellSize - pad,
-      width: (maxC - minC + 1) * cellSize + pad * 2, height: (maxR - minR + 1) * cellSize + pad * 2,
-      fill: 'transparent', 'pointer-events': 'all', class: 'pge-piece-hit'
-    }));
+    // Rack previews are small, so give them a padded bounding-box target. On
+    // the board, a padded bounding box can spill into a neighboring piece's
+    // cells (especially for L/S/T silhouettes), causing SVG to send the touch
+    // to the neighbor instead. Give board pieces one full hit cell per painted
+    // cell instead; the cells tile the grid without overlapping one another.
+    if (isRackPiece) {
+      const minR = Math.min(...cells.map(([r]) => r)), maxR = Math.max(...cells.map(([r]) => r));
+      const minC = Math.min(...cells.map(([, c]) => c)), maxC = Math.max(...cells.map(([, c]) => c));
+      const pad = cellSize * .5;
+      g.appendChild(svg('rect', {
+        x: minC * cellSize - pad, y: minR * cellSize - pad,
+        width: (maxC - minC + 1) * cellSize + pad * 2, height: (maxR - minR + 1) * cellSize + pad * 2,
+        fill: 'transparent', 'pointer-events': 'all', class: 'pge-piece-hit'
+      }));
+    } else {
+      cells.forEach(([r, c]) => {
+        g.appendChild(svg('rect', {
+          x: c * cellSize, y: r * cellSize, width: cellSize, height: cellSize,
+          fill: 'transparent', 'pointer-events': 'all', class: 'pge-piece-hit'
+        }));
+      });
+    }
     const cellNodes = [];
     cells.forEach(([r, c]) => {
       const rect = svg('rect', {
@@ -1844,7 +1850,18 @@
     if (stage.classList) stage.classList.toggle('is-horizontal-layout', useHorizontal);
 
     if (useHorizontal) {
-      const logicalHeight = Number(opts.horizontalHeight) || 620;
+      // In a horizontal layout the board reaches close to the logical bottom.
+      // Touch pickup intentionally lifts the piece above the finger, so an
+      // iPad can otherwise require the finger to travel below the stage to
+      // reach the board's bottom row. Reserve extra logical space only for
+      // coarse-pointer devices; mouse layouts keep their existing proportions.
+      const coarsePointer = typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(pointer: coarse)').matches;
+      const touchBottomBuffer = coarsePointer
+        ? Math.max(0, Number(opts.horizontalTouchBuffer) || 160)
+        : 0;
+      const logicalHeight = (Number(opts.horizontalHeight) || 620) + touchBottomBuffer;
       stage.setAttribute('viewBox', `0 0 ${logicalWidth} ${logicalHeight}`);
       stage.setAttribute('preserveAspectRatio', 'xMidYMid meet');
       stage.querySelectorAll('.packing-stage-bg, .packing-space-scenery > rect, .packing-jungle-scenery > rect, .packing-ice-scenery > rect, .packing-ocean-scenery > rect, .packing-magic-scenery > rect').forEach(node => {

@@ -113,6 +113,23 @@ test('wide landscape stages place the rack left and board right', () => {
   assert.equal(pieces.every(piece => piece.home.x < 440), true);
 });
 
+test('coarse horizontal stages reserve finger clearance below the board', () => {
+  const engine = loadEngine();
+  packingWindow.matchMedia = query => ({ matches: query === '(pointer: coarse)' });
+  packingStage.getBoundingClientRect = () => ({ left: 0, top: 0, width: 1024, height: 700 });
+  assert.equal(engine.start({
+    stageId: 'stage', regionGroupId: 'region', trayGroupId: 'tray',
+    pieceCount: 6, verifySolutions: false, maxDimension: 8,
+    autoLayout: {
+      enabled: true, width: 560, minHeight: 660, maxHeight: 980,
+      horizontalMinWidth: 900, horizontalMinAspect: 1.2,
+      horizontalWidth: 960, horizontalHeight: 620, horizontalTouchBuffer: 160
+    }
+  }), true);
+  assert.equal(packingStage.getAttribute('viewBox'), '0 0 960 780');
+  assert.equal(packingStage.classList.contains('is-horizontal-layout'), true);
+});
+
 test('campaign declares five cumulative worlds and a playable ten-level World 1', () => {
   const { levels } = loadCampaign();
   assert.equal(levels.worlds.length, 5);
@@ -353,6 +370,55 @@ test('engine lifecycle starts in the Packing Game stage without persistence', ()
   assert.equal(typeof engine.begin, 'function');
   assert.equal(typeof engine.destroy, 'function');
   assert.doesNotMatch(engineSource, /localStorage/);
+});
+
+test('board pieces use cell-sized hit targets so neighbors cannot steal touches', () => {
+  const engine = loadEngine();
+  const regionArea = { x: 20, y: 20, width: 500, height: 500, maxCellSize: 80 };
+  assert.equal(engine.start({
+    stageId: 'stage', regionGroupId: 'region', trayGroupId: 'tray',
+    pieceCount: 4, verifySolutions: false, maxDimension: 7,
+    regionArea,
+    rackArea: { x: 20, y: 600, width: 500, height: 260 },
+    trayCellSize: 24, trayCols: 4
+  }), true);
+  engine.begin();
+
+  const puzzle = engine.getPuzzle();
+  const piece = engine.getTrayPieces()[0];
+  const solution = puzzle.solution[0];
+  const rows = puzzle.region.map(([r]) => r), cols = puzzle.region.map(([, c]) => c);
+  const minR = Math.min(...rows), maxR = Math.max(...rows);
+  const minC = Math.min(...cols), maxC = Math.max(...cols);
+  const cellSize = Math.floor(Math.min(
+    regionArea.width / (maxC - minC + 1),
+    regionArea.height / (maxR - minR + 1),
+    regionArea.maxCellSize
+  ));
+  const origin = {
+    x: regionArea.x + (regionArea.width - (maxC - minC + 1) * cellSize) / 2 - minC * cellSize,
+    y: regionArea.y + (regionArea.height - (maxR - minR + 1) * cellSize) / 2 - minR * cellSize
+  };
+  const hitRects = () => piece.g.children.filter(child =>
+    String(child.getAttribute('class') || '').includes('pge-piece-hit'));
+
+  assert.equal(hitRects().length, 1, 'rack keeps its forgiving bounding-box target');
+  piece.orientIdx = solution.orientIdx;
+  piece.g.emit('pointerdown', { clientX: piece.home.x, clientY: piece.home.y, pointerId: 1 });
+  const dropPoint = {
+    clientX: origin.x + solution.origin[1] * cellSize,
+    clientY: origin.y + solution.origin[0] * cellSize,
+    pointerId: 1
+  };
+  packingStage.emit('pointermove', dropPoint);
+  packingStage.emit('pointerup', dropPoint);
+
+  assert.equal(piece.placedAt.join(','), solution.origin.join(','));
+  assert.equal(hitRects().length, engine.PIECE_LIBRARY[piece.pieceIndex].cells.length);
+  assert.ok(hitRects().every(rect =>
+    Number(rect.getAttribute('width')) === cellSize &&
+    Number(rect.getAttribute('height')) === cellSize
+  ));
 });
 
 test('a held piece lifts immediately, rotates from a second tap, and restores on an invalid release', () => {

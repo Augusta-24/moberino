@@ -430,7 +430,8 @@
         horizontalMinWidth: 900,
         horizontalMinAspect: 1.2,
         horizontalWidth: 960,
-        horizontalHeight: 620
+        horizontalHeight: 620,
+        horizontalTouchBuffer: 160
       },
       rackGap: 24,
       rackBottom: 900,
