@@ -43,8 +43,8 @@
       accent: '#ff8c68',
       hudLabel: 'DAM BREAKS',
       goal: 5,
-      intro: 'Break any colorful dam face with 4, 8, or 12 log hits. The barrier falls away to reveal the beavers waiting beneath it; higher sections pay more and the middle hides a golden trio.',
-      prompt: 'BREAK A DAM · RAPID-FIRE THE REVEAL!',
+      intro: 'Two banks are already open. Spend a few throws on the sealed middle bank to catch its flashing weak planks and break it open for the big reveal.',
+      prompt: 'HIT THE WEAK PLANKS · BREAK THE BANK!',
     },
     {
       id: 'volcano',
@@ -78,7 +78,9 @@
   const FARM_SPOTS = [
     { kind: 'farmSlide', anchorX: .12, lane: .59 },
     { kind: 'farmPop', anchorX: .5, lane: .78 },
-    { kind: 'farmHill', anchorX: .88, lane: .34 },
+    { kind: 'farmHill', anchorX: .18, lane: .35 },
+    { kind: 'farmHill', anchorX: .52, lane: .31 },
+    { kind: 'farmHill', anchorX: .86, lane: .34 },
     { kind: 'farmSlide', anchorX: .2, lane: .51 },
     { kind: 'farmSlide', anchorX: .42, lane: .54 },
     { kind: 'farmSlide', anchorX: .64, lane: .51 },
@@ -87,6 +89,11 @@
     { kind: 'farmPop', anchorX: .61, lane: .76 },
     { kind: 'farmPop', anchorX: .82, lane: .79 },
   ];
+  const FARM_ROUTE_KINDS = ['farmPop', 'farmSlide', 'farmHill'];
+  const FARM_DELIVERY_BONUSES = [2500, 5000, 8000];
+  const FARM_BARN_PRIZE_BASE = 6000;
+  const FARM_BARN_PRIZE_STEP = 1000;
+  const VOLCANO_DINO_SPEED = 1.25;
   const DAM_SECTION_CONFIG = [
     {
       id: 'top', requiredHits: 12, hitValue: 600, base: 2400,
@@ -95,12 +102,19 @@
       type: 'expert', scale: .62,
     },
     {
-      id: 'middle', requiredHits: 8, hitValue: 400, base: 1500,
+      id: 'middle', requiredHits: 6, hitValue: 400, base: 1500,
       surface: [.19, .39, .62, .14],
       // Plant the trio inside the dark recess covered by this timber face.
       // The old .565 row put them in the bright water below the falling layer.
       beavers: [[.39, .42], [.5, .42], [.61, .42]],
       type: 'foreman', scale: .7, goldenAfterClears: 2,
+      weakPointValue: 500,
+      chipValue: 80,
+      breakBonus: 3000,
+      // Keep the large hardware clear of the centered score plate and the
+      // narrow timber edges. It chooses a new one of these positions after
+      // each successful hit, then stays put until the player finds it.
+      weakPoints: [[.16, .5], [.26, .5], [.74, .5], [.84, .5], [.22, .5], [.78, .5]],
     },
     {
       id: 'bottom', requiredHits: 4, hitValue: 200, base: 700,
@@ -114,6 +128,10 @@
   let canvas = null;
   let ctx = null;
   let stage = null;
+  let farmShineCanvas = null;
+  let farmShineCtx = null;
+  let rainbowShimmerCanvas = null;
+  let rainbowShimmerCtx = null;
   let toastTimer = 0;
   let intermissionTimer = 0;
   let intermissionTicker = 0;
@@ -294,10 +312,16 @@
       barnDoorCooldown: 0,
       barnBonusActive: false,
       barnBonusTarget: null,
+      farmRouteStage: 0,
+      farmTargetSequence: 0,
+      farmRouteTargetId: null,
+      barnDeliveryAt: 0,
+      barnDeliveryLevel: 0,
       farmAnimalCycle: 0,
       damBankWave: 0,
       damBankRespawnAt: 0,
       damProgressPulseAt: 0,
+      damChallengeSectionId: 'middle',
       damGoldActive: false,
       damGoldCleared: false,
       damSections: [],
@@ -448,6 +472,7 @@
     if (id === 'finale') buildFinaleRound();
     buildHiddenMobes(id);
     state.targets.sort((a, b) => a.at - b.at);
+    if (id === 'farm') armFarmRouteTarget();
   }
 
   function roundDuration(boothId = currentBooth()?.id) {
@@ -552,7 +577,9 @@
     });
 
     // The single barn stays in the back for the entire booth. Its door target
-    // returns after each hit; three hits replace it with a brief gold prize.
+    // returns after each hit; three completed Pop -> Slide -> Hill routes
+    // replace it with a brief gold prize. Direct barn taps still score, but do
+    // not advance the prize without the route.
     const barn = {
       anchorX: .72,
       groundY: .51,
@@ -583,6 +610,7 @@
       at,
       duration: Math.max(.5, ROUND_SECONDS - at),
       farmSlot: slot,
+      farmTargetId: state.farmTargetSequence++,
       farmSpot: farmSpot.index,
       anchorX: farmSpot.anchorX,
       lane: farmSpot.lane,
@@ -678,9 +706,14 @@
     state.damSections = DAM_SECTION_CONFIG.map(section => ({
       ...section,
       hits: 0,
-      open: false,
+      open: section.id !== state.damChallengeSectionId,
       clearCount: 0,
       resetAt: 0,
+      weakPointIndex: -1,
+      weakPointHits: 0,
+      weakPointPosition: null,
+      weakPointHit: false,
+      weakPointFlashAt: 0,
     }));
     // Stage every beaver behind its dam at round start. Breaking a face only
     // reveals this existing group; it never creates a surprise target in open
@@ -707,6 +740,11 @@
         }
       });
     });
+    state.damSections
+      .filter(section => section.open)
+      .forEach(section => openDamSection(section, true));
+    const challengeSection = state.damSections.find(section => section.id === state.damChallengeSectionId);
+    if (challengeSection) armDamWeakPoint(challengeSection);
   }
 
   function spawnDamBank(wave, at) {
@@ -783,7 +821,9 @@
       kind: 'dinosaur',
       type: index % 3 === 1 ? 'triceratops' : 'trex',
       at,
-      duration: lane < .7 ? 9.2 : 8.4,
+      // Keep the hitboxes and authored scale intact; the sequence gets its
+      // urgency from a shorter pass instead of a smaller, harder target.
+      duration: (lane < .7 ? 9.2 : 8.4) / VOLCANO_DINO_SPEED,
       direction,
       lane,
       dinoIndex: index,
@@ -1204,7 +1244,7 @@
   function launchLog(aimX, aimY) {
     const depth = clamp((state.height - aimY) / Math.max(1, state.height), 0, 1);
     const foregroundThrow = aimY >= state.height * .68;
-    const flightDuration = foregroundThrow ? .14 : .464;
+    const flightDuration = foregroundThrow ? .1 : .32;
     const curveOffset = foregroundThrow
       ? 0
       : clamp(
@@ -1349,6 +1389,10 @@
       hitVolcanoDecoy(target, pos);
       return;
     }
+    if (currentBooth().id === 'farm' && FARM_ROUTE_KINDS.includes(target.kind)) {
+      hitFarmAnimal(target, pos);
+      return;
+    }
     const nowSeconds = state.elapsed;
     target.hit = true;
     target.hitAt = nowSeconds;
@@ -1382,6 +1426,58 @@
     if (target.kind === 'revealPanel') openFinalePanel(target);
     if (target.kind === 'finalePopup' && target.base >= 4000) showToast(`PRECISION ${target.base}!`, true, 560);
     if (target.kind === 'jackpot') showToast(`JACKPOT x${target.hits}!`, true, 420);
+    updateHud();
+  }
+
+  function farmRouteExpectedKind() {
+    return FARM_ROUTE_KINDS[state.farmRouteStage] || 'farmBarnDoor';
+  }
+
+  function armFarmRouteTarget() {
+    const expectedKind = FARM_ROUTE_KINDS[state.farmRouteStage];
+    if (!expectedKind) {
+      state.farmRouteTargetId = null;
+      return null;
+    }
+    const candidates = state.targets
+      .filter(target => target.kind === expectedKind && !target.hit)
+      .sort((a, b) => a.at - b.at);
+    const next = candidates.find(target => {
+      const pos = targetPosition(target, state.elapsed);
+      return pos && pos.visibility > .35;
+    }) || candidates[0];
+    state.farmRouteTargetId = next?.farmTargetId ?? null;
+    return next || null;
+  }
+
+  function farmRouteTarget() {
+    if (state.farmRouteTargetId === null) return armFarmRouteTarget();
+    const target = state.targets.find(item =>
+      item.farmTargetId === state.farmRouteTargetId && !item.hit
+    );
+    return target && target.kind === FARM_ROUTE_KINDS[state.farmRouteStage]
+      ? target
+      : armFarmRouteTarget();
+  }
+
+  function hitFarmAnimal(target, pos) {
+    const nowSeconds = state.elapsed;
+    const correct = target === farmRouteTarget();
+    target.hit = true;
+    target.hitAt = nowSeconds;
+    if (target.clearReplace && nowSeconds < ROUND_SECONDS - .25) {
+      spawnFarmAnimal(target.farmSlot, nowSeconds + .12);
+    }
+    awardTargetHit(target, pos, target.base, correct || target.golden);
+    if (correct) {
+      state.farmRouteStage = Math.min(FARM_ROUTE_KINDS.length, state.farmRouteStage + 1);
+      armFarmRouteTarget();
+      burst(pos.x, pos.y, '#ffcf4a', 15, 1.05);
+    } else {
+      state.farmRouteStage = 0;
+      armFarmRouteTarget();
+      burst(pos.x, pos.y, '#ff8c68', 8, .78);
+    }
     updateHud();
   }
 
@@ -1468,15 +1564,30 @@
   }
 
   function hitFarmBarnDoor(target, pos) {
-    awardTargetHit(target, pos, target.base, true);
-    state.barnHits = Math.min(3, state.barnHits + 1);
-    state.special = state.barnHits;
-    state.barnDoorCooldown = state.elapsed + .75;
+    const routeReady = state.farmRouteStage === FARM_ROUTE_KINDS.length;
+    const deliveryIndex = Math.min(2, state.barnHits);
+    const deliveryBonus = routeReady ? FARM_DELIVERY_BONUSES[deliveryIndex] : 0;
+    awardTargetHit(target, pos, target.base + deliveryBonus, routeReady);
+    state.farmRouteStage = 0;
+    if (routeReady) {
+      state.barnHits = Math.min(3, state.barnHits + 1);
+      state.special = state.barnHits;
+      state.barnDeliveryAt = state.elapsed;
+      state.barnDeliveryLevel = deliveryIndex + 1;
+    }
+    armFarmRouteTarget();
+    state.barnDoorCooldown = state.elapsed + (routeReady ? .75 : .35);
     target.hit = false;
     target.hitAt = state.elapsed;
-    burst(pos.x, pos.y, '#ffcf4a', 18, 1.1);
+    burst(
+      pos.x,
+      pos.y,
+      routeReady ? '#ffcf4a' : '#ff8c68',
+      routeReady ? 22 + deliveryIndex * 10 : 10,
+      routeReady ? 1.15 + deliveryIndex * .12 : .82
+    );
 
-    if (state.barnHits >= 3) {
+    if (routeReady && state.barnHits >= 3) {
       state.barnBonusActive = true;
       state.barnDoorCooldown = ROUND_SECONDS + 1;
       const bonus = {
@@ -1485,7 +1596,7 @@
         barn: target.barn,
         at: state.elapsed + .2,
         duration: 3.4,
-        base: 1800 + state.barnTier * 400,
+        base: FARM_BARN_PRIZE_BASE + state.barnTier * FARM_BARN_PRIZE_STEP,
         golden: true,
         drawLayer: 2,
         hit: false,
@@ -1494,8 +1605,6 @@
       state.targets.push(bonus);
       showToast(`BARN OPEN! GOLD PRIZE ${bonus.base}!`, true, 1200);
       try { SFX.mysteryGood(); } catch (e) {}
-    } else {
-      showToast(`BARN HIT ${state.barnHits}/3 · HIT IT AGAIN!`, true, 760);
     }
     updateHud();
   }
@@ -1507,7 +1616,7 @@
     addLabel(pos.x, pos.y - pos.r * 1.25, 'BARN PRIZE!', '#fff1a3', 28);
     state.barnTier += 1;
     resetFarmBarn(.8);
-    showToast(`GOLD BARN CLEARED · NEXT PRIZE ${1800 + state.barnTier * 400}!`, true, 1200);
+    showToast(`GOLD BARN CLEARED · NEXT PRIZE ${FARM_BARN_PRIZE_BASE + state.barnTier * FARM_BARN_PRIZE_STEP}!`, true, 1200);
     updateHud();
   }
 
@@ -1562,6 +1671,7 @@
     const carefulClear = attached.length === 0;
     target.hit = true;
     target.hitAt = state.elapsed;
+    target.rainbowAt = state.elapsed;
     awardTargetHit(target, pos, carefulClear ? 700 : target.base, carefulClear || target.hiddenMobe);
     if (attached.length) {
       let cascadeScore = 0;
@@ -1580,12 +1690,32 @@
     } else {
       showToast('CLEAN SWEEP · DINO +700', true, 850);
     }
+    advanceVolcanoDinoSchedule(target);
     if (target.hiddenMobe) {
       state.hiddenMobesFound += 1;
       addLabel(pos.x, pos.y - pos.r * 1.3, 'FOUND!', '#fff7d9', 38);
       burst(pos.x, pos.y, '#ffcf4a', 26, 1.3);
     }
     updateHud();
+  }
+
+  function advanceVolcanoDinoSchedule(cleared) {
+    if (currentBooth().id !== 'volcano') return;
+    const next = state.targets
+      .filter(target =>
+        target.kind === 'dinosaur' &&
+        target !== cleared &&
+        !target.hit &&
+        target.at > state.elapsed + .02
+      )
+      .sort((a, b) => a.at - b.at)[0];
+    if (!next) return;
+    const nextAt = Math.min(next.at, state.elapsed + .16);
+    next.at = nextAt;
+    for (const balloon of state.targets) {
+      if (balloon.kind === 'dinoBalloon' && balloon.parent === next) balloon.at = nextAt;
+    }
+    showToast('NEXT DINO INBOUND!', false, 620);
   }
 
   function awardTargetHit(target, pos, base, specialHit, sizeBonus = 1) {
@@ -1820,6 +1950,11 @@
         section.resetAt = 0;
         section.open = false;
         section.hits = 0;
+        section.weakPointHits = 0;
+        section.weakPointIndex = -1;
+        section.weakPointPosition = null;
+        section.weakPointHit = false;
+        if (section.id === state.damChallengeSectionId) armDamWeakPoint(section);
       }
       return;
     }
@@ -1875,12 +2010,40 @@
     const closed = state.damSections
       .map(section => ({ section, rect: damSourceRectToCanvas(section.surface) }))
       .filter(item => !item.section.open && !item.section.resetAt)
-      .find(item =>
+      .filter(item =>
         x >= item.rect.x && x <= item.rect.x + item.rect.w &&
         y >= item.rect.y && y <= item.rect.y + item.rect.h
       );
-    if (!closed) return false;
-    const { section, rect } = closed;
+    if (!closed.length) return false;
+    const challenge = closed.find(item => item.section.id === state.damChallengeSectionId);
+    if (challenge) {
+      const { section, rect } = challenge;
+      const point = damWeakPointPosition(section, rect);
+      const valid = !section.weakPointHit &&
+        Math.hypot(x - point.x, y - point.y) <= point.radius * 1.18;
+      const points = valid ? section.weakPointValue : section.chipValue;
+      state.hits += 1;
+      state.score += points;
+      addLabel(x, y - 18, `+${points}`, valid ? '#ffcf4a' : '#fff1a3', valid ? 22 : 16);
+      burst(x, y, valid ? '#6de8ff' : '#b9874e', valid ? 15 : 7, valid ? .95 : .7);
+      try { SFX.hit(); } catch (e) {}
+      if (valid) {
+        section.weakPointHit = true;
+        section.weakPointHits += 1;
+        section.hits = Math.min(section.requiredHits, section.weakPointHits);
+        section.weakPointFlashAt = state.elapsed;
+        state.damProgressPulseAt = state.elapsed;
+        if (section.weakPointHits >= section.requiredHits) {
+          openDamSection(section);
+        } else {
+          armDamWeakPoint(section);
+        }
+      }
+      updateHud();
+      return true;
+    }
+
+    const { section, rect } = closed[0];
     section.hits = Math.min(section.requiredHits, section.hits + 1);
     state.hits += 1;
     state.score += section.hitValue;
@@ -1900,15 +2063,39 @@
     return true;
   }
 
-  function openDamSection(section) {
+  function damWeakPointPosition(section, rect) {
+    const points = section.weakPoints || [];
+    const point = section.weakPointPosition || points[0] || [.5, .5];
+    return {
+      x: rect.x + point[0] * rect.w,
+      y: rect.y + point[1] * rect.h,
+      radius: clamp(Math.min(rect.w, rect.h) * .3, 28, 46),
+    };
+  }
+
+  function armDamWeakPoint(section) {
+    const points = section.weakPoints || [];
+    if (!points.length) return null;
+    const choices = points.filter((point, index) => index !== section.weakPointIndex);
+    const next = choices[Math.floor(Math.random() * choices.length)] || points[0];
+    section.weakPointPosition = next;
+    section.weakPointIndex = points.indexOf(next);
+    section.weakPointHit = false;
+    return next;
+  }
+
+  function openDamSection(section, initial = false) {
     section.open = true;
-    section.openedAt = state.elapsed;
+    section.openedAt = initial ? state.elapsed - 1 : state.elapsed;
     const goldReady = damSectionGoldReady(section);
-    const bonus = section.requiredHits * 100;
-    state.score += bonus;
+    const bonus = section.breakBonus || section.requiredHits * 100;
     const rect = damSourceRectToCanvas(section.surface);
-    addLabel(rect.x + rect.w * .5, rect.y + rect.h * .5, `${section.id.toUpperCase()} BREAK +${bonus}`, '#ffcf4a', 28);
-    burst(rect.x + rect.w * .5, rect.y + rect.h * .5, '#ffcf4a', 28, 1.2);
+    if (!initial) {
+      state.score += bonus;
+      addLabel(rect.x + rect.w * .5, rect.y + rect.h * .5, `+${bonus}`, '#ffcf4a', 30);
+      burst(rect.x + rect.w * .5, rect.y + rect.h * .5, '#ffcf4a', 34, 1.25);
+      state.damProgressPulseAt = state.elapsed;
+    }
     state.targets
       .filter(target => target.kind === 'damSectionBeaver' && target.sectionId === section.id)
       .forEach(beaver => {
@@ -1920,7 +2107,7 @@
         beaver.at = state.elapsed + .24 + beaver.revealIndex * .045;
         beaver.duration = Math.max(.5, ROUND_SECONDS - beaver.at);
       });
-    showToast(`${section.id.toUpperCase()} DAM OPEN · RAPID FIRE!`, true, 900);
+    if (!initial) showToast(`${section.id.toUpperCase()} DAM OPEN · RAPID FIRE!`, true, 900);
     try { SFX.mysteryGood(); } catch (e) {}
   }
 
@@ -2912,6 +3099,126 @@
     }
   }
 
+  function drawFarmRouteCue(target, now) {
+    const expectedTarget = target.kind === 'farmBarnDoor'
+      ? farmRouteExpectedKind() === 'farmBarnDoor'
+      : target === farmRouteTarget();
+    if (currentBooth().id !== 'farm' || !expectedTarget) return;
+    const pulse = .72 + Math.sin(now / 115) * .18;
+    const seed = (target.at || 0) * 7.3 + (target.farmSpot || 0) * .91;
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    if (target.kind === 'farmPop') {
+      for (let index = 0; index < 7; index += 1) {
+        const phase = now / 650 + index * .7 + seed;
+        const x = Math.sin(phase * 1.17) * (18 + index * 3);
+        const y = -20 - mod(phase * 17, 34) - index * 2;
+        drawFarmMagicSpark(x, y, 3.8 + (index % 2) * 1.8, index % 2 ? '#fff1a3' : '#f6d8ff', phase);
+      }
+    } else if (target.kind === 'farmSlide') {
+      const direction = target.slideFrom < 0 ? -1 : 1;
+      ctx.strokeStyle = `rgba(255,207,74,${.28 + pulse * .18})`;
+      ctx.shadowColor = '#ffcf4a';
+      ctx.shadowBlur = 12;
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      for (let index = 0; index < 5; index += 1) {
+        const phase = mod(now / 620 + index * .21 + seed, 1);
+        const x = direction * (24 + phase * 52);
+        const y = -10 + Math.sin(phase * Math.PI * 2 + index) * 8;
+        ctx.globalAlpha = (1 - phase) * .95;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - direction * (16 + phase * 12), y);
+        ctx.stroke();
+        drawFarmMagicSpark(x, y, 3.2, '#fff1a3', phase + index);
+      }
+    } else if (target.kind === 'farmHill') {
+      for (let index = 0; index < 8; index += 1) {
+        const phase = now / 980 + index * .43 + seed;
+        const orbitX = Math.cos(phase * 1.13) * (22 + index % 3 * 8);
+        const orbitY = -30 + Math.sin(phase * .91) * (16 + index % 2 * 7);
+        drawFarmMagicSpark(orbitX, orbitY, 3.2 + (index % 3) * 1.2, index % 2 ? '#6de8ff' : '#ffcf4a', phase);
+      }
+      ctx.globalAlpha = .82;
+      drawFarmMagicSpark(0, -62, 11 + pulse * 4, '#fff1a3', now / 450);
+    } else if (target.kind === 'farmBarnDoor') {
+      for (let index = 0; index < 7; index += 1) {
+        const phase = now / 760 + index * .51 + seed;
+        const orbitX = Math.sin(phase * 1.2) * (26 + index % 2 * 8);
+        const orbitY = -30 + Math.cos(phase * .8) * (20 + index % 3 * 5);
+        drawFarmMagicSpark(orbitX, orbitY, 3.5 + (index % 2) * 1.3, index % 2 ? '#fff1a3' : '#f6d8ff', phase);
+      }
+      ctx.globalAlpha = .9;
+      drawFarmMagicSpark(0, -62, 12 + pulse * 4, '#ffcf4a', now / 380);
+    }
+    ctx.restore();
+  }
+
+  function drawFarmMagicSpark(x, y, radius, color, rotation) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.fillStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = radius * 2.8;
+    starPath(0, 0, radius, radius * .22, 4);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawFarmTargetShine(target, now) {
+    const phase = mod(now / 980 + (target.at || 0) * .17, 1);
+    const shineX = -115 + phase * 230;
+    const sprite = typeof _getImg === 'function'
+      ? _getImg(`assets/mania/farm/${target.type}-target-v1.png`)
+      : null;
+    const sizes = {
+      pig: [106, 65],
+      cow: [108, 78],
+      sheep: [108, 71],
+      duck: [86, 70],
+      chicken: [82, 78],
+      fox: [108, 76],
+    };
+    const [width, height] = sizes[target.type] || [96, 70];
+    const drawX = 120 - width / 2;
+    const drawY = target.kind === 'farmBarnDoor' || target.kind === 'farmBarnBonus'
+      ? 90 - height * .64
+      : 90 + 35 - height;
+    if (!sprite?.complete || !sprite.naturalWidth) return;
+    if (!farmShineCanvas) {
+      farmShineCanvas = document.createElement('canvas');
+      farmShineCtx = farmShineCanvas.getContext('2d');
+    }
+    farmShineCanvas.width = 240;
+    farmShineCanvas.height = 180;
+    farmShineCtx.clearRect(0, 0, 240, 180);
+    const shine = farmShineCtx.createLinearGradient(
+      120 + shineX - 18,
+      10,
+      120 + shineX + 18,
+      170
+    );
+    shine.addColorStop(0, 'rgba(255,255,255,0)');
+    shine.addColorStop(.38, 'rgba(96,235,255,.06)');
+    shine.addColorStop(.44, 'rgba(197,131,255,.28)');
+    shine.addColorStop(.5, 'rgba(255,255,255,.92)');
+    shine.addColorStop(.54, 'rgba(255,225,124,.52)');
+    shine.addColorStop(.6, 'rgba(255,111,196,.24)');
+    shine.addColorStop(1, 'rgba(255,255,255,0)');
+    farmShineCtx.fillStyle = shine;
+    farmShineCtx.fillRect(0, 0, 240, 180);
+    farmShineCtx.globalCompositeOperation = 'destination-in';
+    farmShineCtx.drawImage(sprite, drawX, drawY, width, height);
+    farmShineCtx.globalCompositeOperation = 'source-over';
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha = .74;
+    ctx.drawImage(farmShineCanvas, -120, -90);
+    ctx.restore();
+  }
+
   function drawDamPointOverlays() {
     for (const target of state.targets) {
       if (!['damBeaver', 'damSectionBeaver'].includes(target.kind)) continue;
@@ -3695,6 +4002,7 @@
       ctx.filter = 'saturate(.38) brightness(.82) contrast(.68)';
       ctx.drawImage(barnImage, -90, -143, 180, 143);
       ctx.restore();
+      drawBarnDeliveryGlow();
       drawBarnProgress();
       ctx.restore();
       return;
@@ -3738,6 +4046,8 @@
     ctx.lineTo(-27, 0);
     ctx.stroke();
 
+    drawBarnDeliveryGlow();
+
     ctx.fillStyle = '#f0d9a6';
     ctx.beginPath();
     ctx.arc(0, -94, 13, 0, Math.PI * 2);
@@ -3747,6 +4057,23 @@
     ctx.fill();
     drawBarnProgress();
     ctx.restore();
+  }
+
+  function drawBarnDeliveryGlow() {
+    if (!state.barnDeliveryAt) return;
+    const age = state.elapsed - state.barnDeliveryAt;
+    if (age < 0 || age > .9) return;
+    const level = Math.max(1, state.barnDeliveryLevel || 1);
+    const progress = clamp(age / .9, 0, 1);
+    const radius = 84 + level * 15 + progress * 22;
+    const glow = ctx.createRadialGradient(0, -70, 8, 0, -70, radius);
+    glow.addColorStop(0, `rgba(255,241,163,${.42 * (1 - progress)})`);
+    glow.addColorStop(.42, `rgba(255,207,74,${.2 * (1 - progress)})`);
+    glow.addColorStop(1, 'rgba(255,207,74,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(0, -70, radius, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   function drawBarnProgress() {
@@ -3805,6 +4132,10 @@
       ctx.fill();
     }
 
+    if (['farmPop', 'farmSlide', 'farmHill', 'farmBarnDoor'].includes(target.kind)) {
+      drawFarmRouteCue(target, now);
+    }
+
     if (target.golden) {
       const glow = ctx.createRadialGradient(0, 0, 5, 0, 0, 58);
       glow.addColorStop(0, 'rgba(255,230,104,.5)');
@@ -3856,6 +4187,12 @@
     else if (target.kind === 'finaleGate') drawFinalePopup(target);
     else if (target.kind === 'rapidTarget') drawNeonTarget(target);
     else if (target.kind === 'jackpot') drawNeonTarget(target);
+    if (
+      currentBooth().id === 'farm' &&
+      (target.kind === 'farmBarnDoor' ? farmRouteExpectedKind() === 'farmBarnDoor' : target === farmRouteTarget())
+    ) {
+      drawFarmTargetShine(target, now);
+    }
     if (!isFarmScoreTarget(target) && !['damBeaver', 'damSectionBeaver'].includes(target.kind)) drawPointValue(target);
     ctx.restore();
   }
@@ -4302,6 +4639,10 @@
         ctx.restore();
       }
 
+      if (!section.open && !section.resetAt && section.id === state.damChallengeSectionId) {
+        drawDamWeakPoint(section, rect);
+      }
+
       if (!section.open && !section.resetAt) {
         const plateW = clamp(rect.w * .22, 88, 132);
         const plateH = clamp(rect.h * .3, 24, 34);
@@ -4320,19 +4661,117 @@
         roundRect(plateX, plateY, plateW, plateH, 6);
         ctx.fill();
         ctx.stroke();
-        ctx.fillStyle = '#fff4d5';
-        ctx.font = `${clamp(plateH * .43, 10, 14)}px VCR, monospace`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(
-          `+${section.hitValue} · ${section.hits}/${section.requiredHits}`,
-          plateX + plateW / 2,
-          centerY + 1
-        );
+        if (section.id === state.damChallengeSectionId && section.weakPoints?.length) {
+          const pipGap = plateW / (section.requiredHits + 1);
+          for (let index = 0; index < section.requiredHits; index += 1) {
+            const lit = index < section.weakPointHits;
+            ctx.fillStyle = lit ? '#ffcf4a' : '#334447';
+            ctx.strokeStyle = lit ? '#fff1a3' : '#8da0a0';
+            ctx.lineWidth = 1.5;
+            circle(plateX + pipGap * (index + 1), centerY, 4.5, true);
+          }
+        } else {
+          ctx.fillStyle = '#fff4d5';
+          ctx.font = `${clamp(plateH * .43, 10, 14)}px VCR, monospace`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(
+            `+${section.hitValue} · ${section.hits}/${section.requiredHits}`,
+            plateX + plateW / 2,
+            centerY + 1
+          );
+        }
         ctx.restore();
       }
       ctx.restore();
     }
+  }
+
+  function drawDamWeakPoint(section, rect) {
+    const point = damWeakPointPosition(section, rect);
+    const flashAge = section.weakPointFlashAt
+      ? state.elapsed - section.weakPointFlashAt
+      : 9;
+    if (section.weakPointHit && flashAge > .34) return;
+    const pulse = section.weakPointHit
+      ? clamp(1 - flashAge / .34, 0, 1)
+      : .96;
+    const hardware = typeof _getImg === 'function'
+      ? _getImg('assets/mania/dam/dam-weak-point-v2.png')
+      : null;
+    if (!hardware?.complete || !hardware.naturalWidth) return;
+    const size = clamp(point.radius * 2.7, 88, 128);
+    ctx.save();
+    ctx.globalAlpha = pulse;
+    ctx.translate(point.x, point.y);
+    // A shallow dark pressure ring and contact shadow make the plate feel
+    // seated in the timber instead of pasted over it.
+    ctx.fillStyle = 'rgba(21,24,21,.46)';
+    ctx.shadowColor = 'rgba(9,13,11,.72)';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, size * .45, size * .42, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(42,31,23,.8)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, size * .44, size * .4, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.drawImage(hardware, -size / 2, -size / 2, size, size);
+    if (section.weakPointFlashAt && flashAge < .5) {
+      drawRainbowObjectShimmer(
+        hardware,
+        -size / 2,
+        -size / 2,
+        size,
+        size,
+        state.elapsed,
+        section.weakPointHits,
+        clamp(1 - flashAge / .5, 0, 1)
+      );
+    }
+    ctx.restore();
+  }
+
+  function drawRainbowObjectShimmer(sprite, drawX, drawY, width, height, now, seed = 0, alpha = 1) {
+    if (!sprite?.complete || !sprite.naturalWidth || alpha <= .01) return;
+    if (!rainbowShimmerCanvas) {
+      rainbowShimmerCanvas = document.createElement('canvas');
+      rainbowShimmerCtx = rainbowShimmerCanvas.getContext('2d');
+    }
+    const pad = 30;
+    const canvasWidth = Math.max(64, Math.ceil(width + pad * 2));
+    const canvasHeight = Math.max(64, Math.ceil(height + pad * 2));
+    rainbowShimmerCanvas.width = canvasWidth;
+    rainbowShimmerCanvas.height = canvasHeight;
+    rainbowShimmerCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+    const centerX = canvasWidth / 2;
+    const centerY = canvasHeight / 2;
+    const sweep = mod(now / 920 + seed * .19, 1) * (canvasWidth + 70) - 35;
+    const shine = rainbowShimmerCtx.createLinearGradient(
+      sweep - 24,
+      0,
+      sweep + 24,
+      canvasHeight
+    );
+    shine.addColorStop(0, 'rgba(255,255,255,0)');
+    shine.addColorStop(.38, 'rgba(96,235,255,.08)');
+    shine.addColorStop(.44, 'rgba(197,131,255,.34)');
+    shine.addColorStop(.5, 'rgba(255,255,255,.95)');
+    shine.addColorStop(.54, 'rgba(255,225,124,.62)');
+    shine.addColorStop(.6, 'rgba(255,111,196,.3)');
+    shine.addColorStop(1, 'rgba(255,255,255,0)');
+    rainbowShimmerCtx.fillStyle = shine;
+    rainbowShimmerCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+    rainbowShimmerCtx.globalCompositeOperation = 'destination-in';
+    rainbowShimmerCtx.drawImage(sprite, centerX + drawX, centerY + drawY, width, height);
+    rainbowShimmerCtx.globalCompositeOperation = 'source-over';
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha *= .82 * alpha;
+    ctx.drawImage(rainbowShimmerCanvas, -canvasWidth / 2, -canvasHeight / 2);
+    ctx.restore();
   }
 
   function drawDamRearWaterMask(pos) {
@@ -5118,6 +5557,19 @@ function drawEnchantedFarmDust(target, now) {
     ctx.filter = 'drop-shadow(0 7px 5px rgba(18,8,20,.52))';
     ctx.drawImage(sprite, -width / 2, -height * .72, width, height);
     ctx.filter = 'none';
+    const rainbowAge = target.rainbowAt ? state.elapsed - target.rainbowAt : 9;
+    if (rainbowAge >= 0 && rainbowAge < .72) {
+      drawRainbowObjectShimmer(
+        sprite,
+        -width / 2,
+        -height * .72,
+        width,
+        height,
+        now,
+        target.dinoIndex,
+        clamp(1 - rainbowAge / .72, 0, 1)
+      );
+    }
     ctx.restore();
   }
 

@@ -111,13 +111,35 @@ test('Farm Frenzy uses three depth layers and a repeatable three-hit barn prize'
     assert.match(source, new RegExp(`kind: '${kind}'`));
   }
   assert.match(source, /const FARM_SPOTS = \[/);
-  assert.equal((source.match(/\{ kind: 'farm(?:Pop|Slide|Hill)', anchorX:/g) || []).length, 10);
+  assert.equal((source.match(/\{ kind: 'farm(?:Pop|Slide|Hill)', anchorX:/g) || []).length, 12);
   assert.match(source, /function hitFarmBarnDoor\(/);
+  assert.match(source, /const FARM_ROUTE_KINDS = \['farmPop', 'farmSlide', 'farmHill'\]/);
+  assert.match(source, /function farmRouteExpectedKind\(/);
+  assert.match(source, /function hitFarmAnimal\(/);
+  assert.match(source, /state\.farmRouteStage = Math\.min\(FARM_ROUTE_KINDS\.length, state\.farmRouteStage \+ 1\)/);
+  assert.match(source, /const routeReady = state\.farmRouteStage === FARM_ROUTE_KINDS\.length/);
+  assert.match(source, /const FARM_DELIVERY_BONUSES = \[2500, 5000, 8000\]/);
+  assert.match(source, /const deliveryBonus = routeReady \? FARM_DELIVERY_BONUSES\[deliveryIndex\] : 0/);
+  assert.match(source, /state\.barnDeliveryLevel = deliveryIndex \+ 1/);
+  assert.match(source, /function drawBarnDeliveryGlow\(/);
+  assert.match(source, /drawBarnDeliveryGlow\(\)/);
+  assert.match(source, /farmTargetId: state\.farmTargetSequence\+\+/);
+  assert.match(source, /function armFarmRouteTarget\(/);
+  assert.match(source, /function farmRouteTarget\(/);
+  assert.match(source, /function drawFarmRouteCue\(/);
+  assert.match(source, /function drawFarmMagicSpark\(/);
+  assert.match(source, /drawFarmMagicSpark\(x, y/);
+  assert.match(source, /drawFarmRouteCue\(target, now\)/);
+  assert.match(source, /function drawFarmTargetShine\(/);
+  assert.match(source, /farmShineCtx\.createLinearGradient\(/);
+  assert.match(source, /farmShineCtx\.globalCompositeOperation = 'destination-in'/);
   assert.match(source, /state\.barnHits = Math\.min\(3, state\.barnHits \+ 1\)/);
   assert.match(source, /kind: 'farmBarnBonus',\s*type: 'fox'/);
   assert.match(source, /y = g\.groundY - g\.h \* \.29/);
   assert.match(source, /scale = g\.scale \* \.58/);
-  assert.match(source, /base: 1800 \+ state\.barnTier \* 400/);
+  assert.match(source, /const FARM_BARN_PRIZE_BASE = 6000/);
+  assert.match(source, /const FARM_BARN_PRIZE_STEP = 1000/);
+  assert.match(source, /base: FARM_BARN_PRIZE_BASE \+ state\.barnTier \* FARM_BARN_PRIZE_STEP/);
   assert.match(source, /function processFarmBarn\(/);
   assert.match(source, /function drawBarnProgress\(/);
   assert.match(source, /const farmSpot = chooseFarmSpot\(cycle \+ slot\)/);
@@ -163,6 +185,7 @@ test('Beaver Bonanza uses three responsive breakable dam tiers and masked beaver
   for (const asset of [
     'dam-backdrop-v3.png',
     'dam-cracks-v1.png',
+    'dam-weak-point-v2.png',
     'beaver-standard-target-v1.png',
     'beaver-foreman-target-v1.png',
     'beaver-expert-target-v1.png',
@@ -184,9 +207,13 @@ test('Beaver Bonanza uses three responsive breakable dam tiers and masked beaver
   assert.match(source, /const DAM_SECTION_CONFIG = \[/);
   assert.match(source, /id: 'top', requiredHits: 12, hitValue: 600/);
   assert.match(source, /beavers: \[\[\.42, \.23\], \[\.58, \.23\]\]/);
-  assert.match(source, /id: 'middle', requiredHits: 8, hitValue: 400/);
+  assert.match(source, /id: 'middle', requiredHits: 6, hitValue: 400/);
   assert.match(source, /beavers: \[\[\.39, \.42\], \[\.5, \.42\], \[\.61, \.42\]\]/);
   assert.match(source, /type: 'foreman', scale: \.7, goldenAfterClears: 2/);
+  assert.match(source, /weakPointValue: 500/);
+  assert.match(source, /chipValue: 80/);
+  assert.match(source, /breakBonus: 3000/);
+  assert.match(source, /weakPoints: \[\[\.16, \.5\], \[\.26, \.5\], \[\.74, \.5\], \[\.84, \.5\], \[\.22, \.5\], \[\.78, \.5\]\]/);
   assert.match(source, /id: 'bottom', requiredHits: 4, hitValue: 200/);
   assert.match(source, /beavers: \[\[\.22, \.73\], \[\.36, \.73\], \[\.5, \.73\], \[\.64, \.73\], \[\.78, \.73\]\]/);
   assert.match(source, /golden: true/);
@@ -195,6 +222,13 @@ test('Beaver Bonanza uses three responsive breakable dam tiers and masked beaver
   assert.doesNotMatch(source, /section\.id === 'top'[\s\S]{0,100}makeHiddenMobeReplacement/);
   assert.match(source, /wave === 0 && index === positions\.length - 1[\s\S]{0,120}makeHiddenMobeReplacement\(beaver, 'plates'\)/);
   assert.match(source, /function hitDamSectionAt\(/);
+  assert.match(source, /const challenge = closed\.find\(item => item\.section\.id === state\.damChallengeSectionId\)/);
+  assert.match(source, /function damWeakPointPosition\(/);
+  assert.match(source, /section\.weakPointHits \+= 1/);
+  assert.match(source, /if \(section\.weakPointHits >= section\.requiredHits\) \{[\s\S]*openDamSection\(section\)/);
+  assert.match(source, /function armDamWeakPoint\(section\)/);
+  assert.match(source, /const next = choices\[Math\.floor\(Math\.random\(\) \* choices\.length\)\]/);
+  assert.match(source, /drawRainbowObjectShimmer\(\s*hardware,/);
   assert.match(source, /state\.score \+= section\.hitValue/);
   assert.match(source, /`\+\$\{section\.hitValue\} · \$\{section\.hits\}\/\$\{section\.requiredHits\}`/);
   assert.match(source, /function openDamSection\(/);
@@ -206,12 +240,13 @@ test('Beaver Bonanza uses three responsive breakable dam tiers and masked beaver
   assert.match(source, /const plateX = clamp\(\s*centerX - plateW \/ 2/);
   assert.match(source, /`\+\$\{section\.hitValue\} · \$\{section\.hits\}\/\$\{section\.requiredHits\}`/);
   assert.match(source, /function processDamBank\(/);
+  assert.doesNotMatch(source, /function processDamWeakPoint\(/);
   assert.match(source, /assets\/mania\/dam\/\$\{name\}/);
   assert.match(source, /function launchLog\(/);
   assert.match(source, /function processLogFlights\(/);
   assert.match(source, /else if \(hitDamSectionAt\(flight\.x, flight\.y\)\)/);
   assert.match(source, /const foregroundThrow = aimY >= state\.height \* \.68/);
-  assert.match(source, /const flightDuration = foregroundThrow \? \.14 : \.464/);
+  assert.match(source, /const flightDuration = foregroundThrow \? \.1 : \.32/);
   assert.match(source, /const curveOffset = foregroundThrow[\s\S]*\? 0/);
   assert.match(source, /shot\.curveOffset[\s\S]*lerp\(startX, shot\.x, p\)/);
   assert.match(source, /const depth = clamp\(\(state\.height - aimY\) \/ Math\.max\(1, state\.height\), 0, 1\)/);
@@ -230,6 +265,12 @@ test('Beaver Bonanza uses three responsive breakable dam tiers and masked beaver
   assert.match(source, /const maskDepth = clamp\(pos\.r \* 1\.2, h \* \.055, h \* \.14\)/);
   assert.doesNotMatch(source, /foamy spillway lip/);
   assert.match(source, /function drawDamSectionDamage\(w, h, layer = 'back'\)/);
+  assert.match(source, /function drawDamWeakPoint\(section, rect\)/);
+  assert.match(source, /drawDamWeakPoint\(section, rect\)/);
+  assert.match(source, /assets\/mania\/dam\/dam-weak-point-v2\.png/);
+  assert.match(source, /const size = clamp\(point\.radius \* 2\.7, 88, 128\)/);
+  assert.match(source, /ctx\.drawImage\(hardware, -size \/ 2, -size \/ 2, size, size\)/);
+  assert.match(source, /A shallow dark pressure ring and contact shadow/);
   assert.match(source, /at: Infinity/);
   assert.match(source, /beaver\.at = state\.elapsed \+ \.24/);
   assert.match(source, /h \* \.38 \* fall \* fall/);
@@ -239,7 +280,7 @@ test('Beaver Bonanza uses three responsive breakable dam tiers and masked beaver
   assert.match(source, /const scale = Math\.max\(w \/ image\.naturalWidth, h \/ image\.naturalHeight\)/);
   assert.match(source, /const halfWidth = clamp\(pos\.r \* 1\.35, w \* \.035, w \* \.085\)/);
   assert.match(source, /drawImageCover\(backdrop, w, h\)/);
-  assert.match(source, /BREAK A DAM · RAPID-FIRE THE REVEAL!/);
+  assert.match(source, /HIT THE WEAK PLANKS · BREAK THE BANK!/);
   assert.match(source, /if \(currentBooth\(\)\.id === 'plates'\) \{[\s\S]*return 0/);
 });
 
@@ -268,6 +309,8 @@ test('Volcano runs a two-lane dinosaur balloon parade with comet-triggered erupt
   assert.match(source, /drawBackdropReadabilityWash\(w, h, 'volcano'\)/);
   assert.match(source, /function drawVolcanoParallax\(/);
   assert.match(source, /function spawnVolcanoDinosaur\(/);
+  assert.match(source, /const VOLCANO_DINO_SPEED = 1\.25/);
+  assert.match(source, /duration: \(lane < \.7 \? 9\.2 : 8\.4\) \/ VOLCANO_DINO_SPEED/);
   assert.equal((source.match(/'left', \.55/g) || []).length, 4);
   assert.match(source, /kind: 'dinosaur'/);
   assert.match(source, /kind: 'dinoBalloon'/);
@@ -275,7 +318,14 @@ test('Volcano runs a two-lane dinosaur balloon parade with comet-triggered erupt
   assert.match(source, /if \(target\.kind === 'dinosaur'\) return target\.lane < \.7 \? 2 : 4/);
   assert.match(source, /if \(target\.kind === 'dinoBalloon'\) return target\.parent\?\.lane < \.7 \? 3 : 5/);
   assert.match(source, /function drawDinosaurTarget\(/);
+  assert.match(source, /function drawRainbowObjectShimmer\(/);
   assert.match(source, /function hitDinosaur\(/);
+  assert.match(source, /function advanceVolcanoDinoSchedule\(/);
+  assert.match(source, /advanceVolcanoDinoSchedule\(target\)/);
+  assert.match(source, /target\.at > state\.elapsed \+ \.02/);
+  assert.match(source, /const nextAt = Math\.min\(next\.at, state\.elapsed \+ \.16\)/);
+  assert.match(source, /target\.rainbowAt = state\.elapsed/);
+  assert.match(source, /drawRainbowObjectShimmer\(\s*sprite,/);
   assert.match(source, /carefulClear \? 700 : target\.base/);
   assert.match(source, /cascadeScore \+= 50/);
   assert.match(source, /assets\/mania\/volcano\/\$\{balloonName\}-v1\.png/);
