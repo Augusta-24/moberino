@@ -94,19 +94,21 @@
   const FARM_BARN_PRIZE_BASE = 6000;
   const FARM_BARN_PRIZE_STEP = 1000;
   const VOLCANO_DINO_SPEED = 1.25;
+  const FARM_HILL_TARGET_SCALE = .58;
+  const FARM_BIRD_TARGET_SCALE = .76;
   const DAM_SECTION_CONFIG = [
     {
       id: 'top', requiredHits: 12, hitValue: 600, base: 2400,
       surface: [.25, .19, .5, .12],
       beavers: [[.42, .23], [.58, .23]],
       type: 'expert', scale: .62,
+      breakable: false,
     },
     {
-      id: 'middle', requiredHits: 6, hitValue: 400, base: 1500,
+      id: 'middle', requiredHits: 4, hitValue: 400, base: 1500,
       surface: [.19, .39, .62, .14],
-      // Plant the trio inside the dark recess covered by this timber face.
-      // The old .565 row put them in the bright water below the falling layer.
-      beavers: [[.39, .42], [.5, .42], [.61, .42]],
+      // Keep the reveal as a clean four-beaver row inside the dark recess.
+      beavers: [[.3, .42], [.43, .42], [.57, .42], [.7, .42]],
       type: 'foreman', scale: .7, goldenAfterClears: 2,
       weakPointValue: 500,
       chipValue: 80,
@@ -114,13 +116,15 @@
       // Keep the large hardware clear of the centered score plate and the
       // narrow timber edges. It chooses a new one of these positions after
       // each successful hit, then stays put until the player finds it.
-      weakPoints: [[.16, .5], [.26, .5], [.74, .5], [.84, .5], [.22, .5], [.78, .5]],
+      weakPoints: [[.2, .5], [.34, .5], [.66, .5], [.8, .5]],
+      breakable: true,
     },
     {
       id: 'bottom', requiredHits: 4, hitValue: 200, base: 700,
       surface: [.14, .65, .72, .19],
       beavers: [[.22, .73], [.36, .73], [.5, .73], [.64, .73], [.78, .73]],
       type: 'standard', scale: .78,
+      breakable: false,
     },
   ];
 
@@ -556,10 +560,10 @@
     // Birds remain timed sky passes: they are a moving bonus, not one of the
     // clear-and-replace animal stations on the farm itself.
     const birdPasses = [
-      [1.05, .17, 'right', 'bird', 500],
-      [5.45, .24, 'left', 'bluebird', 650],
-      [9.85, .15, 'right', 'bird', 500],
-      [14.25, .22, 'left', 'bluebird', 1000],
+      [1.05, .12, 'right', 'bird', 500],
+      [5.45, .19, 'left', 'bluebird', 650],
+      [9.85, .10, 'right', 'bird', 500],
+      [14.25, .17, 'left', 'bluebird', 1000],
     ];
     birdPasses.forEach((pass, index) => {
       state.targets.push({
@@ -813,7 +817,9 @@
       pass[2],
       pass[3]
     ));
-    [0, 6, 12].forEach((at, stageIndex) => spawnVolcanoStage(stageIndex, at + .18));
+    // Comet waves are action-gated: later waves do not enter the playfield
+    // until the previous three-comet wave has been cleared.
+    spawnVolcanoStage(0, .18);
   }
 
   function spawnVolcanoDinosaur(index, at, direction, lane, balloonCount) {
@@ -2288,6 +2294,10 @@
       state.score += clearBonus;
       showToast(`★ COMET WAVE ${stageIndex + 1}/3 · +${clearBonus} ★`, true, 1200);
       try { SFX.score(); } catch (e) {}
+      if (stageIndex < 2) {
+        state.volcanoStageReadyAt = state.elapsed + .18;
+        spawnVolcanoStage(stageIndex + 1, state.volcanoStageReadyAt);
+      }
       updateHud();
     }
     if (state.special >= 3) triggerEruption();
@@ -2435,7 +2445,7 @@
         : p < .22 ? easeOut(p / .22) : p > .72 ? easeInOut((1 - p) / .28) : 1;
       x = w * target.anchorX + Math.sin(p * Math.PI * 2) * w * .012;
       y = lerp(h * .47, h * target.lane, reveal);
-      scale *= .48;
+      scale *= FARM_HILL_TARGET_SCALE;
       visibility = clamp(reveal * 1.9, 0, 1);
       hittable = reveal > .58;
     } else if (target.kind === 'farmBarnDoor') {
@@ -2474,7 +2484,7 @@
         x = travel();
         y = h * target.lane + Math.sin(local * 5.4 + target.at) * h * .055;
       }
-      scale *= .82;
+      scale *= FARM_BIRD_TARGET_SCALE;
     } else if (target.kind === 'peek') {
       const barn = barnGeometry(target.barn.worldX - cameraX());
       const open = Math.min(1, local / .5, (target.duration - local) / .55);
@@ -3194,6 +3204,14 @@
     farmShineCanvas.width = 240;
     farmShineCanvas.height = 180;
     farmShineCtx.clearRect(0, 0, 240, 180);
+    const spectrum = farmShineCtx.createLinearGradient(0, 20, 240, 160);
+    spectrum.addColorStop(0, 'rgba(74,224,255,.2)');
+    spectrum.addColorStop(.28, 'rgba(168,118,255,.28)');
+    spectrum.addColorStop(.52, 'rgba(255,226,105,.24)');
+    spectrum.addColorStop(.76, 'rgba(255,99,188,.25)');
+    spectrum.addColorStop(1, 'rgba(92,239,224,.18)');
+    farmShineCtx.fillStyle = spectrum;
+    farmShineCtx.fillRect(0, 0, 240, 180);
     const shine = farmShineCtx.createLinearGradient(
       120 + shineX - 18,
       10,
@@ -3201,11 +3219,11 @@
       170
     );
     shine.addColorStop(0, 'rgba(255,255,255,0)');
-    shine.addColorStop(.38, 'rgba(96,235,255,.06)');
-    shine.addColorStop(.44, 'rgba(197,131,255,.28)');
-    shine.addColorStop(.5, 'rgba(255,255,255,.92)');
-    shine.addColorStop(.54, 'rgba(255,225,124,.52)');
-    shine.addColorStop(.6, 'rgba(255,111,196,.24)');
+    shine.addColorStop(.34, 'rgba(96,235,255,.16)');
+    shine.addColorStop(.43, 'rgba(197,131,255,.55)');
+    shine.addColorStop(.5, 'rgba(255,255,255,1)');
+    shine.addColorStop(.57, 'rgba(255,225,124,.82)');
+    shine.addColorStop(.66, 'rgba(255,111,196,.5)');
     shine.addColorStop(1, 'rgba(255,255,255,0)');
     farmShineCtx.fillStyle = shine;
     farmShineCtx.fillRect(0, 0, 240, 180);
@@ -3214,7 +3232,7 @@
     farmShineCtx.globalCompositeOperation = 'source-over';
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha = .74;
+    ctx.globalAlpha = .94;
     ctx.drawImage(farmShineCanvas, -120, -90);
     ctx.restore();
   }
@@ -3537,7 +3555,7 @@
 
   function drawDamScene(w, h) {
     const backdrop = typeof _getImg === 'function'
-      ? _getImg('assets/mania/dam/dam-backdrop-v3.png')
+      ? _getImg('assets/mania/dam/dam-backdrop-rocks-v1.png')
       : null;
     if (backdrop?.complete && backdrop.naturalWidth) {
       ctx.save();
@@ -4514,7 +4532,7 @@
 
   function drawDamMiddleRailMask(w, h) {
     const backdrop = typeof _getImg === 'function'
-      ? _getImg('assets/mania/dam/dam-backdrop-v3.png')
+      ? _getImg('assets/mania/dam/dam-backdrop-rocks-v1.png')
       : null;
     if (!backdrop?.complete || !backdrop.naturalWidth) return;
 
@@ -4576,25 +4594,16 @@
       const centerX = rect.x + rect.w * .5;
       const centerY = rect.y + rect.h * .5;
 
-      if (layer === 'back' && (section.open || section.resetAt)) {
-        const opening = ctx.createRadialGradient(
-          centerX, centerY, rect.h * .08,
-          centerX, centerY, Math.max(rect.w * .43, rect.h)
-        );
-        opening.addColorStop(0, 'rgba(11,18,17,.94)');
-        opening.addColorStop(.7, 'rgba(22,29,25,.8)');
-        opening.addColorStop(1, 'rgba(18,24,21,.12)');
-        ctx.save();
-        ctx.fillStyle = opening;
-        roundRect(rect.x + rect.w * .08, rect.y + rect.h * .08, rect.w * .84, rect.h * .84, clamp(rect.h * .16, 8, 20));
-        ctx.fill();
-        ctx.restore();
-      }
-
       if (layer !== 'front') continue;
+      if (!section.breakable) continue;
       const breakAge = section.open ? Math.max(0, state.elapsed - section.openedAt) : 0;
       const fall = section.open ? easeInOut(clamp(breakAge / .46, 0, 1)) : 0;
       if (fall >= 1) continue;
+
+      if (section.id === 'middle' && section.open && fall > 0) {
+        drawDamSplitFace(section, rect, backdrop, cracks, progress, centerX, centerY, fall);
+        continue;
+      }
 
       ctx.save();
       if (fall > 0) {
@@ -4687,22 +4696,62 @@
     }
   }
 
+  function drawDamSplitFace(section, rect, backdrop, cracks, progress, centerX, centerY, fall) {
+    const crackSize = Math.min(rect.w * .82, rect.h * 2.7);
+    const revealRadius = crackSize * (.12 + progress * .58);
+    const drawPiece = (topPiece) => {
+      const clipY = topPiece ? rect.y : centerY;
+      const clipH = topPiece ? centerY - rect.y : rect.y + rect.h - centerY;
+      const direction = topPiece ? -1 : 1;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(rect.x, clipY, rect.w, clipH);
+      ctx.clip();
+      ctx.globalAlpha = clamp(1 - fall * .92, 0, 1);
+      ctx.translate(direction * rect.w * .028 * fall, direction * rect.h * 1.05 * fall);
+      ctx.rotate(direction * .08 * fall);
+      if (backdrop?.complete && backdrop.naturalWidth) {
+        const sx = section.surface[0] * backdrop.naturalWidth;
+        const sy = section.surface[1] * backdrop.naturalHeight;
+        const sw = section.surface[2] * backdrop.naturalWidth;
+        const sh = section.surface[3] * backdrop.naturalHeight;
+        ctx.save();
+        ctx.filter = 'saturate(1.5) brightness(1.08) contrast(1.12)';
+        ctx.drawImage(backdrop, sx, sy, sw, sh, rect.x, rect.y, rect.w, rect.h);
+        ctx.fillStyle = damSectionGoldReady(section)
+          ? 'rgba(208,147,45,.12)'
+          : 'rgba(125,86,38,.08)';
+        ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+        ctx.restore();
+      }
+      if (progress > 0 && cracks?.complete && cracks.naturalWidth) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, revealRadius, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.globalAlpha = .52 + progress * .38;
+        ctx.drawImage(cracks, centerX - crackSize / 2, centerY - crackSize / 2, crackSize, crackSize);
+        ctx.restore();
+      }
+      ctx.restore();
+    };
+    drawPiece(true);
+    drawPiece(false);
+  }
+
   function drawDamWeakPoint(section, rect) {
     const point = damWeakPointPosition(section, rect);
     const flashAge = section.weakPointFlashAt
       ? state.elapsed - section.weakPointFlashAt
       : 9;
-    if (section.weakPointHit && flashAge > .34) return;
-    const pulse = section.weakPointHit
-      ? clamp(1 - flashAge / .34, 0, 1)
-      : .96;
     const hardware = typeof _getImg === 'function'
       ? _getImg('assets/mania/dam/dam-weak-point-v2.png')
       : null;
     if (!hardware?.complete || !hardware.naturalWidth) return;
     const size = clamp(point.radius * 2.7, 88, 128);
+    const freshHit = flashAge >= 0 && flashAge < .9;
     ctx.save();
-    ctx.globalAlpha = pulse;
+    ctx.globalAlpha = freshHit ? 1 : .96;
     ctx.translate(point.x, point.y);
     // A shallow dark pressure ring and contact shadow make the plate feel
     // seated in the timber instead of pasted over it.
@@ -4719,18 +4768,19 @@
     ctx.ellipse(0, 0, size * .44, size * .4, 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.drawImage(hardware, -size / 2, -size / 2, size, size);
-    if (section.weakPointFlashAt && flashAge < .5) {
-      drawRainbowObjectShimmer(
-        hardware,
-        -size / 2,
-        -size / 2,
-        size,
-        size,
-        state.elapsed,
-        section.weakPointHits,
-        clamp(1 - flashAge / .5, 0, 1)
-      );
-    }
+    // The active bolt carries the same prismatic language as the farm animal:
+    // it stays readable between hits, then brightens when the previous hit
+    // hands the sequence to this new location.
+    drawRainbowObjectShimmer(
+      hardware,
+      -size / 2,
+      -size / 2,
+      size,
+      size,
+      state.elapsed,
+      section.weakPointHits,
+      freshHit ? 1 : .68
+    );
     ctx.restore();
   }
 
@@ -4748,19 +4798,27 @@
     rainbowShimmerCtx.clearRect(0, 0, canvasWidth, canvasHeight);
     const centerX = canvasWidth / 2;
     const centerY = canvasHeight / 2;
-    const sweep = mod(now / 920 + seed * .19, 1) * (canvasWidth + 70) - 35;
+    const sweep = mod(now / 820 + seed * .19, 1) * (canvasWidth + 86) - 43;
+    const spectrum = rainbowShimmerCtx.createLinearGradient(0, 20, canvasWidth, canvasHeight - 20);
+    spectrum.addColorStop(0, 'rgba(74,224,255,.18)');
+    spectrum.addColorStop(.28, 'rgba(168,118,255,.24)');
+    spectrum.addColorStop(.52, 'rgba(255,226,105,.22)');
+    spectrum.addColorStop(.76, 'rgba(255,99,188,.24)');
+    spectrum.addColorStop(1, 'rgba(92,239,224,.16)');
+    rainbowShimmerCtx.fillStyle = spectrum;
+    rainbowShimmerCtx.fillRect(0, 0, canvasWidth, canvasHeight);
     const shine = rainbowShimmerCtx.createLinearGradient(
-      sweep - 24,
+      sweep - 30,
       0,
-      sweep + 24,
+      sweep + 30,
       canvasHeight
     );
     shine.addColorStop(0, 'rgba(255,255,255,0)');
-    shine.addColorStop(.38, 'rgba(96,235,255,.08)');
-    shine.addColorStop(.44, 'rgba(197,131,255,.34)');
-    shine.addColorStop(.5, 'rgba(255,255,255,.95)');
-    shine.addColorStop(.54, 'rgba(255,225,124,.62)');
-    shine.addColorStop(.6, 'rgba(255,111,196,.3)');
+    shine.addColorStop(.34, 'rgba(96,235,255,.13)');
+    shine.addColorStop(.42, 'rgba(197,131,255,.48)');
+    shine.addColorStop(.5, 'rgba(255,255,255,1)');
+    shine.addColorStop(.56, 'rgba(255,225,124,.78)');
+    shine.addColorStop(.64, 'rgba(255,111,196,.44)');
     shine.addColorStop(1, 'rgba(255,255,255,0)');
     rainbowShimmerCtx.fillStyle = shine;
     rainbowShimmerCtx.fillRect(0, 0, canvasWidth, canvasHeight);
@@ -4769,14 +4827,14 @@
     rainbowShimmerCtx.globalCompositeOperation = 'source-over';
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha *= .82 * alpha;
+    ctx.globalAlpha *= .98 * alpha;
     ctx.drawImage(rainbowShimmerCanvas, -canvasWidth / 2, -canvasHeight / 2);
     ctx.restore();
   }
 
   function drawDamRearWaterMask(pos) {
     const backdrop = typeof _getImg === 'function'
-      ? _getImg('assets/mania/dam/dam-backdrop-v3.png')
+      ? _getImg('assets/mania/dam/dam-backdrop-rocks-v1.png')
       : null;
     if (!backdrop?.complete || !backdrop.naturalWidth || (pos.openAmount || 0) <= .02) return;
     const w = state.width;
@@ -5558,18 +5616,20 @@ function drawEnchantedFarmDust(target, now) {
     ctx.drawImage(sprite, -width / 2, -height * .72, width, height);
     ctx.filter = 'none';
     const rainbowAge = target.rainbowAt ? state.elapsed - target.rainbowAt : 9;
-    if (rainbowAge >= 0 && rainbowAge < .72) {
-      drawRainbowObjectShimmer(
-        sprite,
-        -width / 2,
-        -height * .72,
-        width,
-        height,
-        now,
-        target.dinoIndex,
-        clamp(1 - rainbowAge / .72, 0, 1)
-      );
-    }
+    const freshHit = rainbowAge >= 0 && rainbowAge < 1.05;
+    // Keep the dino's prismatic sheen alive during the pass, then make the
+    // successful quick-pop chain visibly surge instead of disappearing after
+    // the first frame.
+    drawRainbowObjectShimmer(
+      sprite,
+      -width / 2,
+      -height * .72,
+      width,
+      height,
+      now,
+      target.dinoIndex,
+      freshHit ? clamp(1 - rainbowAge / 1.05, .62, 1) : .42
+    );
     ctx.restore();
   }
 
