@@ -89,6 +89,8 @@ test('Farm Frenzy uses three depth layers and a repeatable three-hit barn prize'
     assert.ok(fs.existsSync(path.join(root, `assets/mania/farm/${asset}-target-v1.png`)));
   }
   assert.ok(fs.existsSync(path.join(root, 'assets/mania/farm/barn-v1.png')));
+  assert.ok(fs.existsSync(path.join(root, 'assets/mania/farm/spoiled-hay-target-v1.png')));
+  assert.ok(fs.existsSync(path.join(root, 'assets/mania/farm/farm-bomb-target-v2.png')));
   assert.match(source, /function drawFarmScene\(/);
   assert.match(source, /assets\/mania\/farm\/farm-backdrop-v2\.png/);
   assert.match(source, /saturate\(\.32\) brightness\(\.8\) contrast\(\.64\)/);
@@ -133,6 +135,25 @@ test('Farm Frenzy uses three depth layers and a repeatable three-hit barn prize'
   assert.match(source, /function drawFarmTargetShine\(/);
   assert.match(source, /const FARM_HILL_TARGET_SCALE = \.58/);
   assert.match(source, /const FARM_BIRD_TARGET_SCALE = \.76/);
+  assert.match(source, /const FARM_HAZARD_KINDS = \['farmDud', 'farmBomb'\]/);
+  assert.match(source, /const FARM_HAZARD_PENALTY = 250/);
+  assert.match(source, /kind: 'farmDud'/);
+  assert.match(source, /kind: 'farmBomb'/);
+  assert.match(source, /duration: 5\.25/);
+  assert.match(source, /drawLayer: 5/);
+  assert.doesNotMatch(source, /\[8, \.16, 'right'\]/);
+  assert.match(source, /\[8, \.16, 'left'\]/);
+  assert.match(source, /function hitFarmHazard\(/);
+  assert.match(source, /state\.score = Math\.max\(0, state\.score - \(target\.penalty \|\| FARM_HAZARD_PENALTY\)\)/);
+  assert.match(source, /try \{ SFX\.mismatch\(\); \} catch \(e\) \{\}/);
+  assert.match(source, /function drawFarmSpoiledHay\(/);
+  assert.match(source, /assets\/mania\/farm\/spoiled-hay-target-v1\.png/);
+  assert.match(source, /function drawFarmBomb\(/);
+  assert.match(source, /assets\/mania\/farm\/farm-bomb-target-v2\.png/);
+  assert.match(source, /function drawFarmHazardOverlay\(/);
+  assert.match(source, /ctx\.globalCompositeOperation = 'source-atop'/);
+  assert.doesNotMatch(source, /function drawFarmHazardWarning\(/);
+  assert.match(source, /if \(FARM_HAZARD_KINDS\.includes\(target\.kind\)\) return;/);
   assert.match(source, /\[1\.05, \.12, 'right', 'bird', 500\]/);
   assert.match(source, /\[5\.45, \.19, 'left', 'bluebird', 650\]/);
   assert.match(source, /farmShineCtx\.createLinearGradient\(/);
@@ -234,6 +255,9 @@ test('Beaver Bonanza uses three responsive breakable dam tiers and masked beaver
   assert.match(source, /function hitDamSectionAt\(/);
   assert.match(source, /const challenge = closed\.find\(item => item\.section\.id === state\.damChallengeSectionId\)/);
   assert.match(source, /function damWeakPointPosition\(/);
+  assert.match(source, /const rawX = rect\.x \+ point\[0\] \* rect\.w/);
+  assert.match(source, /const phoneLayout = state\.width <= 520/);
+  assert.match(source, /x: phoneLayout \? clamp\(rawX, safeX, state\.width - safeX\) : rawX/);
   assert.match(source, /section\.weakPointHits \+= 1/);
   assert.match(source, /if \(section\.weakPointHits >= section\.requiredHits\) \{[\s\S]*openDamSection\(section\)/);
   assert.match(source, /function armDamWeakPoint\(section\)/);

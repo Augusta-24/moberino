@@ -96,6 +96,8 @@
   const VOLCANO_DINO_SPEED = 1.25;
   const FARM_HILL_TARGET_SCALE = .58;
   const FARM_BIRD_TARGET_SCALE = .76;
+  const FARM_HAZARD_KINDS = ['farmDud', 'farmBomb'];
+  const FARM_HAZARD_PENALTY = 250;
   const DAM_SECTION_CONFIG = [
     {
       id: 'top', requiredHits: 12, hitValue: 600, base: 2400,
@@ -575,6 +577,54 @@
         lane: pass[1],
         base: pass[4],
         golden: index === birdPasses.length - 1,
+        drawLayer: 0,
+        hit: false,
+      });
+    });
+
+    // A few quiet hazards make the farm reward aim without turning the booth
+    // into a waiting game. The spoiled bales are stationary; the bombs cross
+    // the same sky lane as the birds and are safest to ignore.
+    const dudPasses = [
+      [2.9, .34, .67],
+      [8.15, .66, .7],
+      [13.5, .28, .64],
+      [17.1, .58, .68],
+    ];
+    dudPasses.forEach(([at, anchorX, lane], index) => {
+      state.targets.push({
+        kind: 'farmDud',
+        type: 'spoiledHay',
+        at,
+        duration: 2.25,
+        anchorX,
+        lane,
+        base: -FARM_HAZARD_PENALTY,
+        penalty: FARM_HAZARD_PENALTY,
+        hazardIndex: index,
+        // The field mask covers the middle farm depth; keep the dud in the
+        // nearest playable layer so its penalty is always visually legible.
+        drawLayer: 5,
+        hit: false,
+      });
+    });
+
+    const bombPasses = [
+      [2.25, .13, 'left'],
+      [8, .16, 'left'],
+      [14.75, .12, 'left'],
+    ];
+    bombPasses.forEach(([at, lane, direction], index) => {
+      state.targets.push({
+        kind: 'farmBomb',
+        type: 'skyBomb',
+        at,
+        duration: 5.25,
+        direction,
+        lane,
+        base: -FARM_HAZARD_PENALTY,
+        penalty: FARM_HAZARD_PENALTY,
+        hazardIndex: index,
         drawLayer: 0,
         hit: false,
       });
@@ -1367,6 +1417,10 @@
       hitFarmBarnBonus(target, pos);
       return;
     }
+    if (currentBooth().id === 'farm' && FARM_HAZARD_KINDS.includes(target.kind)) {
+      hitFarmHazard(target, pos);
+      return;
+    }
     if (target.kind === 'revealPanel' && target.precisionMoving) {
       hitFinalePrecisionTarget(target, pos);
       return;
@@ -1484,6 +1538,15 @@
       armFarmRouteTarget();
       burst(pos.x, pos.y, '#ff8c68', 8, .78);
     }
+    updateHud();
+  }
+
+  function hitFarmHazard(target, pos) {
+    target.hit = true;
+    target.hitAt = state.elapsed;
+    state.score = Math.max(0, state.score - (target.penalty || FARM_HAZARD_PENALTY));
+    burst(pos.x, pos.y, target.kind === 'farmBomb' ? '#d84b4b' : '#71834a', 16, 1.05);
+    try { SFX.mismatch(); } catch (e) {}
     updateHud();
   }
 
@@ -2072,10 +2135,20 @@
   function damWeakPointPosition(section, rect) {
     const points = section.weakPoints || [];
     const point = section.weakPointPosition || points[0] || [.5, .5];
+    const radius = clamp(Math.min(rect.w, rect.h) * .3, 28, 46);
+    const rawX = rect.x + point[0] * rect.w;
+    const rawY = rect.y + point[1] * rect.h;
+    // The authored dam is wider than a phone viewport, so its source crop can
+    // place an edge weak point outside the visible canvas. Keep the hardware
+    // and its hitbox fully reachable on narrow screens without changing the
+    // desktop composition.
+    const phoneLayout = state.width <= 520;
+    const safeX = Math.min(54, state.width * .22);
+    const safeY = Math.min(48, state.height * .18);
     return {
-      x: rect.x + point[0] * rect.w,
-      y: rect.y + point[1] * rect.h,
-      radius: clamp(Math.min(rect.w, rect.h) * .3, 28, 46),
+      x: phoneLayout ? clamp(rawX, safeX, state.width - safeX) : rawX,
+      y: phoneLayout ? clamp(rawY, safeY, state.height - safeY) : rawY,
+      radius,
     };
   }
 
@@ -2485,6 +2558,22 @@
         y = h * target.lane + Math.sin(local * 5.4 + target.at) * h * .055;
       }
       scale *= FARM_BIRD_TARGET_SCALE;
+    } else if (target.kind === 'farmDud') {
+      const reveal = easeOut(clamp(local / .2, 0, 1));
+      x = w * target.anchorX + Math.sin(local * 2.2 + target.hazardIndex) * 3;
+      y = h * target.lane + Math.sin(local * 3.3 + target.hazardIndex) * 2;
+      scale *= .78;
+      visibility = reveal;
+      hittable = reveal > .55;
+    } else if (target.kind === 'farmBomb') {
+      const p = easeInOut(clamp(local / target.duration, 0, 1));
+      x = target.direction === 'left'
+        ? w + 64 - p * (w + 128)
+        : -64 + p * (w + 128);
+      y = h * target.lane + Math.sin(local * 7.5 + target.hazardIndex) * h * .018;
+      scale *= .67;
+      visibility = clamp(Math.sin(p * Math.PI) * 1.7, 0, 1);
+      hittable = visibility > .55;
     } else if (target.kind === 'peek') {
       const barn = barnGeometry(target.barn.worldX - cameraX());
       const open = Math.min(1, local / .5, (target.duration - local) / .55);
@@ -2925,6 +3014,8 @@
         ? 39
       : target.kind === 'farmHill'
         ? small ? 31 : 38
+      : FARM_HAZARD_KINDS.includes(target.kind)
+        ? 38
       : target.kind === 'farmBarnDoor'
         ? 42
       : target.kind === 'farmBarnBonus'
@@ -4133,6 +4224,8 @@
     ctx.globalAlpha *= pos.visibility;
     const mirrorTarget = target.kind === 'dinosaur'
       ? target.direction === 'left'
+      : target.kind === 'farmBomb'
+        ? target.direction === 'left'
       : target.direction === 'right';
     if (mirrorTarget) ctx.scale(-1, 1);
 
@@ -4181,6 +4274,8 @@
       drawAnimal(target.type, !!target.golden, animalKind);
     }
     else if (target.kind === 'flyer') drawBird(target.type, !!target.golden, now);
+    else if (target.kind === 'farmDud') drawFarmSpoiledHay(target, now);
+    else if (target.kind === 'farmBomb') drawFarmBomb(target, now);
     else if (target.kind === 'ringPost') drawRingPost(target);
     else if (target.kind === 'phaseFlyer') {
       drawAlienLaunchExhaust(target);
@@ -4225,6 +4320,7 @@
   }
 
   function drawPointValue(target) {
+    if (FARM_HAZARD_KINDS.includes(target.kind)) return;
     // Secrets stay secret, and finale pop-ups already carry a large integrated
     // value plate. Every other hittable target shows its base point value.
     if (
@@ -5315,6 +5411,127 @@ function drawEnchantedFarmDust(target, now) {
     ctx.fill(); ctx.stroke();
   }
 
+  function drawFarmSpoiledHay(target, now) {
+    const sprite = typeof _getImg === 'function'
+      ? _getImg('assets/mania/farm/spoiled-hay-target-v1.png')
+      : null;
+    if (sprite?.complete && sprite.naturalWidth) {
+      ctx.save();
+      ctx.rotate(Math.sin(now / 240 + target.hazardIndex) * .025);
+      ctx.filter = 'saturate(.86) contrast(1.06)';
+      ctx.drawImage(sprite, -72, -50, 144, 100);
+      drawFarmHazardOverlay(target, now, -72, -50, 144, 100);
+      ctx.restore();
+      return;
+    }
+    const wobble = Math.sin(now / 240 + target.hazardIndex) * .035;
+    ctx.save();
+    ctx.rotate(wobble);
+    ctx.shadowColor = 'rgba(12,9,8,.58)';
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = '#4e4333';
+    ctx.strokeStyle = '#241d19';
+    ctx.lineWidth = 3;
+    roundRect(-34, -23, 68, 46, 7);
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#9a7040';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(-13, -21); ctx.lineTo(-13, 21);
+    ctx.moveTo(13, -21); ctx.lineTo(13, 21);
+    ctx.stroke();
+    ctx.fillStyle = '#718049';
+    circle(-21, -8, 5, true);
+    circle(-5, 10, 4, true);
+    circle(18, -10, 5, true);
+    circle(7, 16, 3, true);
+    ctx.fillStyle = '#b4cf70';
+    circle(-20, -9, 1.8, true);
+    circle(17, -11, 1.6, true);
+    ctx.strokeStyle = '#17221a';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(-3, -29, 5, Math.PI * 1.1, Math.PI * 1.9);
+    ctx.arc(7, -27, 4, Math.PI * 1.1, Math.PI * 1.9);
+    ctx.stroke();
+    drawFarmHazardOverlay(target, now, -34, -23, 68, 46);
+    ctx.restore();
+  }
+
+  function drawFarmBomb(target, now) {
+    const sprite = typeof _getImg === 'function'
+      ? _getImg('assets/mania/farm/farm-bomb-target-v2.png')
+      : null;
+    if (sprite?.complete && sprite.naturalWidth) {
+      ctx.save();
+      ctx.rotate(Math.sin(now / 110 + target.hazardIndex) * .025);
+      ctx.filter = 'saturate(.92) contrast(1.04)';
+      ctx.drawImage(sprite, -68, -46, 136, 92);
+      ctx.restore();
+      return;
+    }
+    const wobble = Math.sin(now / 110 + target.hazardIndex) * .045;
+    ctx.save();
+    ctx.rotate(wobble);
+    ctx.shadowColor = 'rgba(8,7,12,.72)';
+    ctx.shadowBlur = 9;
+    ctx.fillStyle = '#25272d';
+    ctx.strokeStyle = '#111318';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(0, 1, 27, 16, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#59636b';
+    ctx.strokeStyle = '#16191d';
+    roundRect(-11, -7, 20, 14, 4);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#a47a43';
+    ctx.strokeStyle = '#5b4028';
+    ctx.lineWidth = 2;
+    circle(22, 0, 5, true);
+    ctx.strokeStyle = '#d1a35b';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(21, -8);
+    ctx.lineTo(32, -18);
+    ctx.stroke();
+    ctx.fillStyle = '#ff5d4e';
+    circle(35, -21, 4, true);
+    ctx.fillStyle = 'rgba(78,82,88,.52)';
+    circle(-32, -3, 6, true);
+    circle(-42, -8, 4, true);
+    ctx.restore();
+  }
+
+  function drawFarmHazardOverlay(target, now, drawX, drawY, width, height) {
+    const flash = .5 + Math.sin(now / 105 + target.hazardIndex * 1.7) * .5;
+    const sweep = mod(now / 520 + target.hazardIndex * .27, 1);
+    const warning = ctx.createLinearGradient(
+      drawX + width * (sweep - .28),
+      drawY,
+      drawX + width * (sweep + .28),
+      drawY + height
+    );
+    warning.addColorStop(0, 'rgba(118,10,18,0)');
+    warning.addColorStop(.38, `rgba(205,22,29,${.2 + flash * .22})`);
+    warning.addColorStop(.5, `rgba(255,70,54,${.42 + flash * .28})`);
+    warning.addColorStop(.62, `rgba(205,22,29,${.2 + flash * .22})`);
+    warning.addColorStop(1, 'rgba(118,10,18,0)');
+    ctx.save();
+    // Tint only the already-drawn object. This keeps the warning integrated
+    // with the hay's silhouette instead of adding a separate graphic shape.
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.globalAlpha = .34 + flash * .34;
+    ctx.fillStyle = warning;
+    ctx.fillRect(drawX, drawY, width, height);
+    ctx.restore();
+  }
+
   function drawMoonMobe(target) {
     const comet = target.type === 'cometMobe';
     const ghost = target.type === 'ghostMobe';
@@ -6039,6 +6256,8 @@ function drawEnchantedFarmDust(target, now) {
 
   function targetColor(target) {
     if (target.kind === 'hiddenMobe') return '#ffcf4a';
+    if (target.kind === 'farmDud') return '#71834a';
+    if (target.kind === 'farmBomb') return '#d84b4b';
     if (['runner', 'peek', 'flyer'].includes(target.kind)) return animalColor(target.type);
     if (['damBeaver', 'damSectionBeaver', 'damBank', 'goldBeaver', 'beaverRunner', 'beaverPeek'].includes(target.kind)) {
       return target.type === 'expert' ? '#ff647f' : target.type === 'foreman' ? '#ffbf4d' : '#76f0ad';
