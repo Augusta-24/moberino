@@ -1386,12 +1386,8 @@
       };
       dragging.previewPlacement = null;
       dragging.previewFits = false;
-      const placement = magneticPlacement(piece, piece.floatPosition, null);
-      dragging.previewPlacement = placement;
-      dragging.previewFits = placement.fits;
-      piece.g.classList.toggle('is-valid-drop', placement.fits);
-      piece.g.classList.toggle('is-invalid-drop', !placement.fits);
-      showLandingGhost(piece, placement);
+      dragging.lastProbePosition = null;
+      updatePlacementPreview(dragging, piece.floatPosition, true);
     }
     playTone(260 + Math.random() * 30, 320, .06, .02);
   }
@@ -1607,10 +1603,15 @@
       currentPoint: point,
       clientPoint: { x: event.clientX || 0, y: event.clientY || 0 },
       stageMetrics: metrics,
-      pendingEvent: null,
+      pendingSample: null,
       frameRequest: null,
       previewPlacement: null,
       previewFits: false,
+      // Input sampling and puzzle validation deliberately run independently.
+      // The piece gets every animation-frame position immediately; the more
+      // expensive board probe only updates when it can change what is shown.
+      // That keeps a dense SVG board from steering the piece under the player.
+      lastProbePosition: null,
       // Preserve the exact point the player grabbed as a piece changes from
       // rack-preview scale to board scale. Re-centering on the pointer caused
       // the piece to visibly jump sideways on the first movement.
@@ -1689,24 +1690,59 @@
     return nearest || { ...placementAtGrid(piece, centerR, centerC), distance: Math.hypot(rawR - centerR, rawC - centerC) };
   }
 
-  function applyDragEvent(drag, event) {
-    if (!dragging || dragging !== drag) return;
-    const point = pointFromEvent(event, drag.stageMetrics);
-    drag.currentPoint = point;
-    const position = dragPosition(point, drag);
-    const clientX = event.clientX || 0;
-    const clientY = event.clientY || 0;
-    if (Math.hypot(clientX - drag.clientPoint.x, clientY - drag.clientPoint.y) >= 6) drag.moved = true;
-    moveFloatingPiece(drag.piece, position);
+  function sampleDragEvent(event, metrics) {
+    // A fast finger can deliver several hardware samples in one browser event.
+    // Use the newest sample, rather than walking every intermediate one and
+    // making the visual position lag a frame behind the finger.
+    const coalesced = typeof event.getCoalescedEvents === 'function' ? event.getCoalescedEvents() : null;
+    const latest = coalesced && coalesced.length ? coalesced[coalesced.length - 1] : event;
+    return {
+      point: pointFromEvent(latest, metrics),
+      clientX: latest.clientX || 0,
+      clientY: latest.clientY || 0
+    };
+  }
+
+  function shouldProbePlacement(drag, position) {
+    if (!drag.previewPlacement || !drag.lastProbePosition) return true;
+    const rawR = (position.y - regionOrigin.y) / regionCellSize;
+    const rawC = (position.x - regionOrigin.x) / regionCellSize;
+    const previous = drag.previewPlacement;
+    // Keep a valid target steady until the player clearly leaves its magnetic
+    // neighborhood. Invalid probes are refreshed at small grid intervals so a
+    // nearby valid target appears promptly without rebuilding the SVG overlay
+    // on every pointer sample.
+    if (previous.fits && Math.hypot(rawR - previous.r, rawC - previous.c) <= .84) return false;
+    return Math.hypot(position.x - drag.lastProbePosition.x, position.y - drag.lastProbePosition.y) >= regionCellSize * .18;
+  }
+
+  function updatePlacementPreview(drag, position, force) {
+    if (!force && !shouldProbePlacement(drag, position)) return;
     const previousPlacement = drag.previewPlacement;
-    const placement = magneticPlacement(drag.piece, drag.piece.floatPosition, previousPlacement);
+    const placement = magneticPlacement(drag.piece, position, previousPlacement);
     const acquiredValidTarget = placement.fits && !drag.previewFits;
     drag.previewPlacement = placement;
     drag.previewFits = placement.fits;
+    drag.lastProbePosition = { ...position };
     drag.piece.g.classList.toggle('is-valid-drop', placement.fits);
     drag.piece.g.classList.toggle('is-invalid-drop', !placement.fits);
     showLandingGhost(drag.piece, placement);
     if (acquiredValidTarget) haptic(4);
+  }
+
+  function applyDragSample(drag, sample) {
+    if (!dragging || dragging !== drag) return;
+    const point = sample.point;
+    drag.currentPoint = point;
+    const position = dragPosition(point, drag);
+    const clientX = sample.clientX;
+    const clientY = sample.clientY;
+    if (Math.hypot(clientX - drag.clientPoint.x, clientY - drag.clientPoint.y) >= 6) drag.moved = true;
+    // This is the only per-frame visual write during a drag. Placement work is
+    // intentionally downstream, so a board with links/overlaps cannot make the
+    // piece hesitate or jump while the pointer is moving.
+    const visualPosition = moveFloatingPiece(drag.piece, position);
+    updatePlacementPreview(drag, visualPosition, false);
   }
 
   function moveDrag(event) {
@@ -1714,21 +1750,22 @@
     if (dragging.pointerId != null && event.pointerId != null && event.pointerId !== dragging.pointerId) return;
     if (event.preventDefault) event.preventDefault();
     const drag = dragging;
-    drag.pendingEvent = event;
+    drag.pendingSample = sampleDragEvent(event, drag.stageMetrics);
     const requestFrame = typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function'
       ? window.requestAnimationFrame.bind(window)
       : null;
     if (!requestFrame) {
-      drag.pendingEvent = null;
-      applyDragEvent(drag, event);
+      const sample = drag.pendingSample;
+      drag.pendingSample = null;
+      if (sample) applyDragSample(drag, sample);
       return;
     }
     if (drag.frameRequest != null) return;
     drag.frameRequest = requestFrame(() => {
       drag.frameRequest = null;
-      const latest = drag.pendingEvent;
-      drag.pendingEvent = null;
-      if (latest) applyDragEvent(drag, latest);
+      const sample = drag.pendingSample;
+      drag.pendingSample = null;
+      if (sample) applyDragSample(drag, sample);
     });
   }
 
@@ -1743,15 +1780,19 @@
     if (dragging.pointerId != null && event.pointerId != null && event.pointerId !== dragging.pointerId) return;
     if (event.preventDefault) event.preventDefault();
     const drag = dragging;
-    if (drag.pendingEvent) {
-      const latest = drag.pendingEvent;
-      drag.pendingEvent = null;
-      applyDragEvent(drag, latest);
+    if (drag.pendingSample) {
+      const sample = drag.pendingSample;
+      drag.pendingSample = null;
+      applyDragSample(drag, sample);
     }
     if (drag.frameRequest != null && typeof window !== 'undefined' && typeof window.cancelAnimationFrame === 'function') {
       window.cancelAnimationFrame(drag.frameRequest);
       drag.frameRequest = null;
     }
+    // A preview can be intentionally throttled while moving. Always take one
+    // final exact reading before deciding the drop, so visual smoothness never
+    // trades away a valid placement at release.
+    updatePlacementPreview(drag, drag.piece.floatPosition, true);
     const { piece, moved, rotated } = drag;
     if (piece.g.releasePointerCapture && event.pointerId != null) {
       try { piece.g.releasePointerCapture(event.pointerId); } catch (error) {}
