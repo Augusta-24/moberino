@@ -406,7 +406,6 @@ const SFX = (() => {
         miss()     { tone(220,'sawtooth',0,0.14,0.07,100); },
     match()    { tone(523,'triangle',0,0.10,0.06); tone(659,'triangle',0.08,0.10,0.06); tone(784,'sine',0.16,0.14,0.06); },
     mismatch() { tone(300,'sawtooth',0,0.08,0.06); tone(220,'sawtooth',0.06,0.14,0.07,140); },
-    farmHazard() { tone(260,'square',0,0.12,0.13,120); tone(150,'sawtooth',0.08,0.22,0.11,70); },
     farmBird() { tone(640,'triangle',0,0.07,0.09); tone(960,'sine',0.035,0.09,0.07); },
     win()      { [523,659,784,1047].forEach((f,i)=>tone(f,'triangle',i*0.09,0.13,0.06)); },
     over()     { tone(330,'sawtooth',0,0.17,0.07,200); tone(200,'sawtooth',0.12,0.26,0.08,80); },

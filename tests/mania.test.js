@@ -146,8 +146,7 @@ test('Farm Frenzy uses three depth layers and a repeatable three-hit barn prize'
   assert.match(source, /function hitFarmHazard\(/);
   assert.match(source, /state\.score = Math\.max\(0, state\.score - \(target\.penalty \|\| FARM_HAZARD_PENALTY\)\)/);
   assert.match(source, /addLabel\(pos\.x, pos\.y - pos\.r \* 1\.15, `-\$\{target\.penalty \|\| FARM_HAZARD_PENALTY\}`, '#ff5d4d', 42\)/);
-  assert.match(source, /if \(SFX\.farmHazard\) SFX\.farmHazard\(\);/);
-  assert.match(source, /else SFX\.mismatch\(\);/);
+  assert.match(source, /try \{ SFX\.mismatch\(\); \} catch \(e\) \{\}/);
   assert.match(source, /function drawFarmRottenPumpkin\(/);
   assert.match(source, /assets\/mania\/farm\/rotten-pumpkin-target-v1\.png/);
   assert.match(source, /function drawFarmBomb\(/);
@@ -155,7 +154,7 @@ test('Farm Frenzy uses three depth layers and a repeatable three-hit barn prize'
   assert.match(source, /function drawFarmHazardOverlay\(/);
   assert.match(source, /farmHazardCtx\.globalCompositeOperation = 'source-atop'/);
   assert.doesNotMatch(source, /function drawFarmHazardWarning\(/);
-  assert.match(source, /if \(FARM_HAZARD_KINDS\.includes\(target\.kind\)\) return;/);
+  assert.match(source, /if \(FARM_HAZARD_KINDS\.includes\(target\.kind\) \|\| target\.kind === 'damTrap'\) return;/);
   assert.match(source, /\[1\.05, \.12, 'right', 'bird', 500\]/);
   assert.match(source, /\[6\.1, \.19, 'left', 'bluebird', 650\]/);
   assert.match(source, /farmShineCtx\.createLinearGradient\(/);
@@ -215,6 +214,7 @@ test('Beaver Bonanza uses three responsive breakable dam tiers and masked beaver
     'dam-backdrop-rocks-v1.png',
     'dam-cracks-v1.png',
     'dam-weak-point-v2.png',
+    'dam-trap-target-v1.png',
     'beaver-standard-target-v1.png',
     'beaver-foreman-target-v1.png',
     'beaver-expert-target-v1.png',
@@ -237,8 +237,10 @@ test('Beaver Bonanza uses three responsive breakable dam tiers and masked beaver
   assert.match(source, /const DAM_SECTION_CONFIG = \[/);
   assert.match(source, /id: 'top', requiredHits: 12, hitValue: 600/);
   assert.match(source, /beavers: \[\[\.42, \.23\], \[\.58, \.23\]\]/);
+  assert.match(source, /trapAnchors: \[\[\.5, \.23\]\]/);
   assert.match(source, /id: 'middle', requiredHits: 4, hitValue: 400/);
   assert.match(source, /beavers: \[\[\.3, \.42\], \[\.43, \.42\], \[\.57, \.42\], \[\.7, \.42\]\]/);
+  assert.doesNotMatch(source, /id: 'middle'[\s\S]*?trapAnchors:[\s\S]*?id: 'bottom'/);
   assert.match(source, /id: 'top'[\s\S]*breakable: false/);
   assert.match(source, /id: 'middle'[\s\S]*breakable: true/);
   assert.match(source, /id: 'bottom'[\s\S]*breakable: false/);
@@ -249,6 +251,14 @@ test('Beaver Bonanza uses three responsive breakable dam tiers and masked beaver
   assert.match(source, /weakPoints: \[\[\.2, \.5\], \[\.34, \.5\], \[\.66, \.5\], \[\.8, \.5\]\]/);
   assert.match(source, /id: 'bottom', requiredHits: 4, hitValue: 200/);
   assert.match(source, /beavers: \[\[\.22, \.73\], \[\.36, \.73\], \[\.5, \.73\], \[\.64, \.73\], \[\.78, \.73\]\]/);
+  assert.match(source, /trapAnchors: \[\[\.29, \.73\], \[\.43, \.73\], \[\.57, \.73\], \[\.71, \.73\]\]/);
+  assert.match(source, /const DAM_TRAP_PENALTY = 3000/);
+  assert.match(source, /kind: 'damTrap'/);
+  assert.match(source, /if \(section\.id === 'middle' \|\| !section\.trapAnchors\?\.length\) return/);
+  assert.match(source, /function hitDamTrap\(target, pos\)/);
+  assert.match(source, /state\.score = Math\.max\(0, state\.score - DAM_TRAP_PENALTY\)/);
+  assert.match(source, /assets\/mania\/dam\/dam-trap-target-v1\.png/);
+  assert.match(source, /function drawDamTrap\(target, now\)/);
   assert.match(source, /golden: true/);
   assert.match(source, /kind: 'damSectionBeaver'/);
   assert.match(source, /section\.id === 'bottom' && index === 0/);
@@ -270,6 +280,8 @@ test('Beaver Bonanza uses three responsive breakable dam tiers and masked beaver
   assert.match(source, /`\+\$\{section\.hitValue\} · \$\{section\.hits\}\/\$\{section\.requiredHits\}`/);
   assert.match(source, /function openDamSection\(/);
   assert.match(source, /function checkDamSectionClear\(/);
+  assert.match(source, /function respawnDamSectionBeavers\(section\)/);
+  assert.match(source, /if \(!section\.breakable\) \{[\s\S]*respawnDamSectionBeavers\(section\)/);
   assert.match(source, /function damSectionGoldReady\(section\)/);
   assert.match(source, /section\.clearCount = clearedGold \? 0 : section\.clearCount \+ 1/);
   assert.match(source, /GOLD TRIO READY!/);
@@ -330,7 +342,7 @@ test('Mania shots use hit feedback only', () => {
   assert.doesNotMatch(source, /SFX\.miss\(/);
 });
 
-test('Volcano runs a two-lane dinosaur balloon parade with comet-triggered eruptions', () => {
+test('Volcano keeps dinosaurs in the middle and releases anchored balloons from three-hit crates', () => {
   const source = read('js/games/mania.js');
   for (const asset of [
     'volcano-parade-backdrop-v3.png',
@@ -341,6 +353,7 @@ test('Volcano runs a two-lane dinosaur balloon parade with comet-triggered erupt
     'tree-balloon-gold-v1.png',
     'tree-balloon-teal-v1.png',
     'eruption-balloon-v1.png',
+    'volcano-balloon-crate-v1.png',
   ]) {
     assert.ok(fs.existsSync(path.join(root, `assets/mania/volcano/${asset}`)));
   }
@@ -350,9 +363,33 @@ test('Volcano runs a two-lane dinosaur balloon parade with comet-triggered erupt
   assert.match(source, /drawBackdropReadabilityWash\(w, h, 'volcano'\)/);
   assert.match(source, /function drawVolcanoParallax\(/);
   assert.match(source, /function spawnVolcanoDinosaur\(/);
-  assert.match(source, /const VOLCANO_DINO_SPEED = 1\.25/);
+  assert.match(source, /const VOLCANO_CRATE_ANCHORS = \[\.2, \.5, \.8\]/);
+  assert.match(source, /const VOLCANO_CRATE_REQUIRED_HITS = 3/);
+  assert.match(source, /const VOLCANO_CRATE_SCALE = \.405/);
+  assert.match(source, /function spawnVolcanoCrates\(/);
+  assert.match(source, /kind: 'volcanoCrate'/);
+  assert.match(source, /function hitVolcanoCrate\(/);
+  assert.match(source, /target\.nextHitAt = state\.elapsed \+ \.14/);
+  assert.match(source, /target\.hits = Math\.min\(target\.requiredHits, target\.hits \+ 1\)/);
+  assert.match(source, /function spawnVolcanoCrateBalloons\(/);
+  assert.match(source, /kind: 'volcanoCrateBalloon'/);
+  assert.match(source, /function drawVolcanoCrate\(/);
+  assert.match(source, /assets\/mania\/volcano\/volcano-balloon-crate-v1\.png/);
+  assert.match(source, /function drawVolcanoCrateTether\(/);
+  assert.match(source, /try \{ SFX\.boxOpen\(\); \} catch \(e\) \{\}/);
+  assert.match(source, /const VOLCANO_DINO_SPEED = \.9/);
+  assert.match(source, /const VOLCANO_BOTTOM_ROW_SOURCE_Y = 787/);
+  assert.match(source, /const VOLCANO_BALLOON_TETHER_SOURCE_Y = 757/);
+  assert.match(source, /anchorY: \.84/);
+  assert.match(source, /function volcanoBottomRowY\(w, h\)/);
+  assert.match(source, /target\.kind === 'volcanoCrate'[\s\S]*?y = volcanoBottomRowY\(w, h\) - 116 \* scale/);
+  assert.match(source, /function volcanoBalloonAnchorY\(w, h\)/);
+  assert.match(source, /target\.kind === 'volcanoCrateBalloon'[\s\S]*?floorOffsetY = \(volcanoBalloonAnchorY\(w, h\) - y\)/);
+  assert.match(source, /target\.kind === 'volcanoCrate'[\s\S]*?\? 118/);
   assert.match(source, /duration: \(lane < \.7 \? 9\.2 : 8\.4\) \/ VOLCANO_DINO_SPEED/);
   assert.equal((source.match(/'left', \.55/g) || []).length, 4);
+  assert.equal((source.match(/'right', \.55/g) || []).length, 5);
+  assert.doesNotMatch(source, /'right', \.79/);
   assert.match(source, /kind: 'dinosaur'/);
   assert.match(source, /kind: 'dinoBalloon'/);
   assert.match(source, /function drawDinosaurTethers\(/);
@@ -410,7 +447,7 @@ test('Every visible Mania target carries a consistent base-point badge', () => {
   assert.match(source, /const badgeH = dinosaurBadge \? 34 : animalScoreBadge \? 27 : 21/);
   assert.match(source, /function drawFarmPointOverlays\(/);
   assert.match(source, /drawFarmLayerMask\(w, h, \.89, 1\);[\s\S]*drawFarmPointOverlays\(now\)/);
-  assert.match(source, /if \(!isFarmScoreTarget\(target\) && !\['damBeaver', 'damSectionBeaver'\]\.includes\(target\.kind\)\) drawPointValue\(target\)/);
+  assert.match(source, /if \(!isFarmScoreTarget\(target\) && !\['damBeaver', 'damSectionBeaver', 'damTrap', 'volcanoCrate'\]\.includes\(target\.kind\)\) drawPointValue\(target\)/);
   assert.match(source, /function drawDamBeaverBadge\(target, pos\)/);
   assert.match(source, /function drawDamPointOverlays\(\)/);
   assert.match(source, /drawDamSectionDamage\(w, h, 'front'\);[\s\S]{0,280}drawDamPointOverlays\(\)/);
@@ -583,7 +620,7 @@ test('Farm throws eggs and Volcano throws visible darts', () => {
   assert.match(source, /shot\.kind === 'volcano'/);
   assert.match(source, /const dartAngle = Math\.atan2/);
   assert.match(source, /triangle\(9, -5, 21, 0, 9, 5/);
-  assert.match(source, /\['dinosaur', 'dinoBalloon', 'balloonTree', 'lavaBalloon', 'volcanoDecoy', 'volcanoComet'\]\.includes\(target\.kind\)/);
+  assert.match(source, /\['dinosaur', 'dinoBalloon', 'balloonTree', 'lavaBalloon', 'volcanoDecoy', 'volcanoComet', 'volcanoCrate', 'volcanoCrateBalloon'\]\.includes\(target\.kind\)/);
   assert.match(source, /scale \*= 1\.12/);
   assert.match(source, /if \(state\.width <= 520\) ctx\.scale\(1\.12, 1\.12\)/);
 });

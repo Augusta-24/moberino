@@ -93,16 +93,28 @@
   const FARM_DELIVERY_BONUSES = [2500, 5000, 8000];
   const FARM_BARN_PRIZE_BASE = 6000;
   const FARM_BARN_PRIZE_STEP = 1000;
-  const VOLCANO_DINO_SPEED = 1.25;
+  const VOLCANO_DINO_SPEED = .9;
   const FARM_HILL_TARGET_SCALE = .58;
   const FARM_BIRD_TARGET_SCALE = .76;
   const FARM_HAZARD_KINDS = ['farmDud', 'farmBomb'];
   const FARM_HAZARD_PENALTY = 3000;
+  const DAM_TRAP_PENALTY = 3000;
+  const VOLCANO_CRATE_ANCHORS = [.2, .5, .8];
+  const VOLCANO_CRATE_REQUIRED_HITS = 3;
+  const VOLCANO_CRATE_SCALE = .405;
+  // The crate rests on the foreground shelf built into the authored backdrop,
+  // not on the canvas edge. Keep this in source-image coordinates because the
+  // backdrop uses `cover` and can crop differently on phones and desktops.
+  const VOLCANO_BACKDROP_WIDTH = 1672;
+  const VOLCANO_BACKDROP_HEIGHT = 941;
+  const VOLCANO_BOTTOM_ROW_SOURCE_Y = 787;
+  const VOLCANO_BALLOON_TETHER_SOURCE_Y = 757;
   const DAM_SECTION_CONFIG = [
     {
       id: 'top', requiredHits: 12, hitValue: 600, base: 2400,
       surface: [.25, .19, .5, .12],
       beavers: [[.42, .23], [.58, .23]],
+      trapAnchors: [[.5, .23]],
       type: 'expert', scale: .62,
       breakable: false,
     },
@@ -125,6 +137,7 @@
       id: 'bottom', requiredHits: 4, hitValue: 200, base: 700,
       surface: [.14, .65, .72, .19],
       beavers: [[.22, .73], [.36, .73], [.5, .73], [.64, .73], [.78, .73]],
+      trapAnchors: [[.29, .73], [.43, .73], [.57, .73], [.71, .73]],
       type: 'standard', scale: .78,
       breakable: false,
     },
@@ -855,12 +868,13 @@
   function buildVolcanoRound() {
     state.volcanoStage = 0;
     state.volcanoStageReadyAt = 0;
+    spawnVolcanoCrates(.08);
     const passes = [
-      [.35, 'right', .79, 2], [2.8, 'left', .55, 2],
-      [5.2, 'right', .79, 3], [7.6, 'left', .55, 2],
-      [10, 'right', .79, 3], [12.4, 'left', .55, 3],
-      [14.7, 'right', .79, 3], [16.8, 'left', .55, 3],
-      [18.4, 'right', .79, 3],
+      [.35, 'right', .55, 2], [2.8, 'left', .55, 2],
+      [5.2, 'right', .55, 3], [7.6, 'left', .55, 2],
+      [10, 'right', .55, 3], [12.4, 'left', .55, 3],
+      [14.7, 'right', .55, 3], [16.8, 'left', .55, 3],
+      [18.4, 'right', .55, 3],
     ];
     passes.forEach((pass, index) => spawnVolcanoDinosaur(
       index,
@@ -874,13 +888,33 @@
     spawnVolcanoStage(0, .18);
   }
 
+  function spawnVolcanoCrates(at) {
+    VOLCANO_CRATE_ANCHORS.forEach((anchorX, index) => {
+      state.targets.push({
+        kind: 'volcanoCrate',
+        type: 'balloonCrate',
+        at,
+        duration: Math.max(.5, ROUND_SECONDS - at),
+        anchorX,
+        anchorY: .84,
+        crateIndex: index,
+        requiredHits: VOLCANO_CRATE_REQUIRED_HITS,
+        hits: 0,
+        latchIndex: 0,
+        base: 220,
+        targetScale: VOLCANO_CRATE_SCALE,
+        hit: false,
+      });
+    });
+  }
+
   function spawnVolcanoDinosaur(index, at, direction, lane, balloonCount) {
     const dinosaur = {
       kind: 'dinosaur',
       type: index % 3 === 1 ? 'triceratops' : 'trex',
       at,
-      // Keep the hitboxes and authored scale intact; the sequence gets its
-      // urgency from a shorter pass instead of a smaller, harder target.
+      // Keep the hitboxes and authored scale intact; the slower pass gives the
+      // player time to read the dinosaur and its attached balloons.
       duration: (lane < .7 ? 9.2 : 8.4) / VOLCANO_DINO_SPEED,
       direction,
       lane,
@@ -1398,6 +1432,10 @@
       hitDamBankTarget(target, pos);
       return;
     }
+    if (target.kind === 'damTrap') {
+      hitDamTrap(target, pos);
+      return;
+    }
     if (target.kind === 'damSectionBeaver') {
       target.hit = true;
       target.hitAt = state.elapsed;
@@ -1449,6 +1487,10 @@
     }
     if (target.kind === 'volcanoDecoy') {
       hitVolcanoDecoy(target, pos);
+      return;
+    }
+    if (target.kind === 'volcanoCrate') {
+      hitVolcanoCrate(target, pos);
       return;
     }
     if (currentBooth().id === 'farm' && FARM_ROUTE_KINDS.includes(target.kind)) {
@@ -1549,10 +1591,17 @@
     state.score = Math.max(0, state.score - (target.penalty || FARM_HAZARD_PENALTY));
     addLabel(pos.x, pos.y - pos.r * 1.15, `-${target.penalty || FARM_HAZARD_PENALTY}`, '#ff5d4d', 42);
     burst(pos.x, pos.y, target.kind === 'farmBomb' ? '#d84b4b' : '#71834a', 16, 1.05);
-    try {
-      if (SFX.farmHazard) SFX.farmHazard();
-      else SFX.mismatch();
-    } catch (e) {}
+    try { SFX.mismatch(); } catch (e) {}
+    updateHud();
+  }
+
+  function hitDamTrap(target, pos) {
+    target.hit = true;
+    target.hitAt = state.elapsed;
+    state.score = Math.max(0, state.score - DAM_TRAP_PENALTY);
+    addLabel(pos.x, pos.y - pos.r * 1.15, `-${DAM_TRAP_PENALTY}`, '#ff5d4d', 42);
+    burst(pos.x, pos.y, '#d84b4b', 18, 1.08);
+    try { SFX.mismatch(); } catch (e) {}
     updateHud();
   }
 
@@ -1737,6 +1786,49 @@
     target.hue = (target.hue + 1 + Math.floor(Math.random() * 2)) % 3;
     addLabel(pos.x, pos.y - pos.r, `BAIT +${gained}`, '#fff7d9', 16);
     updateHud();
+  }
+
+  function hitVolcanoCrate(target, pos) {
+    if (state.elapsed < (target.nextHitAt || 0)) return;
+    target.nextHitAt = state.elapsed + .14;
+    target.hits = Math.min(target.requiredHits, target.hits + 1);
+    target.latchIndex = Math.min(target.requiredHits - 1, target.hits);
+    target.shakeAt = state.elapsed;
+    awardTargetHit(target, pos, target.base, false);
+    if (target.hits < target.requiredHits) {
+      updateHud();
+      return;
+    }
+
+    target.hit = true;
+    target.hitAt = state.elapsed;
+    const breakBonus = 900;
+    state.score += breakBonus;
+    addLabel(pos.x, pos.y - pos.r * 1.4, `+${breakBonus}`, '#ffcf4a', 26);
+    burst(pos.x, pos.y, '#ffcf4a', 24, 1.25);
+    spawnVolcanoCrateBalloons(target, state.elapsed + .16);
+    try { SFX.boxOpen(); } catch (e) {}
+    showToast('CRATE OPEN · BALLOONS RELEASED!', true, 900);
+    updateHud();
+  }
+
+  function spawnVolcanoCrateBalloons(crate, at) {
+    [0, 1, 2].forEach(index => {
+      state.targets.push({
+        kind: 'volcanoCrateBalloon',
+        type: 'treeBalloon',
+        at,
+        duration: Math.max(.5, ROUND_SECONDS - at),
+        anchorX: crate.anchorX,
+        anchorY: .7,
+        crateIndex: crate.crateIndex,
+        balloonIndex: index,
+        balloonCount: 3,
+        hue: (crate.crateIndex + index) % 3,
+        base: 420 + index * 80,
+        hit: false,
+      });
+    });
   }
 
   function hitDinosaur(target, pos) {
@@ -2026,6 +2118,10 @@
       for (const section of state.damSections) {
         if (!section.resetAt || state.elapsed < section.resetAt) continue;
         section.resetAt = 0;
+        if (!section.breakable) {
+          respawnDamSectionBeavers(section);
+          continue;
+        }
         section.open = false;
         section.hits = 0;
         section.weakPointHits = 0;
@@ -2046,6 +2142,61 @@
     else state.damBankWave = state.special;
     spawnDamBank(state.damBankWave, state.elapsed + .08);
     showToast(`ROW ${state.damBankWave + 1}/3 · CLEAR FIVE TO REACH GOLD!`, true, 1050);
+  }
+
+  function respawnDamSectionBeavers(section) {
+    section.open = true;
+    section.hits = 0;
+    section.weakPointHits = 0;
+    section.weakPointIndex = -1;
+    section.weakPointPosition = null;
+    section.weakPointHit = false;
+    const goldReady = damSectionGoldReady(section);
+    state.targets
+      .filter(target => target.kind === 'damSectionBeaver' && target.sectionId === section.id)
+      .forEach(beaver => {
+        beaver.hit = false;
+        beaver.hitAt = 0;
+        beaver.golden = goldReady;
+        beaver.at = state.elapsed + .24 + beaver.revealIndex * .045;
+        beaver.duration = Math.max(.5, ROUND_SECONDS - beaver.at);
+      });
+
+    // The middle row stays trap-free. Open top/bottom rows get one rotating
+    // decoy in an interstitial slot after each clear, so it never replaces a
+    // beaver or blocks the row's clear condition.
+    if (section.id === 'middle' || !section.trapAnchors?.length) return;
+    const trapIndex = Math.max(0, section.clearCount - 1) % section.trapAnchors.length;
+    const [trapX, trapY] = section.trapAnchors[trapIndex];
+    let trap = state.targets.find(target =>
+      target.kind === 'damTrap' && target.sectionId === section.id
+    );
+    if (!trap) {
+      trap = {
+        kind: 'damTrap',
+        type: 'bearTrap',
+        sectionId: section.id,
+        sourceAnchorX: trapX,
+        sourceAnchorY: trapY,
+        at: state.elapsed + .24,
+        duration: Math.max(.5, ROUND_SECONDS - state.elapsed - .24),
+        base: -DAM_TRAP_PENALTY,
+        penalty: DAM_TRAP_PENALTY,
+        targetScale: section.scale * 1.05,
+        drawLayer: 5,
+        hazardIndex: section.clearCount,
+        hit: false,
+      };
+      state.targets.push(trap);
+    } else {
+      trap.sourceAnchorX = trapX;
+      trap.sourceAnchorY = trapY;
+      trap.at = state.elapsed + .24;
+      trap.duration = Math.max(.5, ROUND_SECONDS - trap.at);
+      trap.hitAt = 0;
+      trap.hazardIndex = section.clearCount;
+      trap.hit = false;
+    }
   }
 
   function damBackdropImage() {
@@ -2487,6 +2638,9 @@
     let scale = clamp(Math.min(w, h) / 520, .72, 1.35);
     let visibility = 1;
     let hittable = true;
+    let crateOffsetX = 0;
+    let crateOffsetY = 0;
+    let floorOffsetY = 0;
 
     let growth = 1;
     const travel = () => {
@@ -2664,7 +2818,7 @@
         hittable,
         mouthOpen,
       };
-    } else if (target.kind === 'damSectionBeaver') {
+    } else if (target.kind === 'damSectionBeaver' || target.kind === 'damTrap') {
       const arrival = easeOut(clamp(local / .22, 0, 1));
       target.visualOpen = arrival;
       const anchor = damSourcePointToCanvas(target.sourceAnchorX, target.sourceAnchorY);
@@ -2677,7 +2831,7 @@
       return {
         x,
         y,
-        r: 46 * scale,
+        r: (target.kind === 'damTrap' ? 52 : 46) * scale,
         scale,
         visibility,
         growth,
@@ -2809,6 +2963,21 @@
       x = travel();
       y = h * (.18 + target.lane * .62) - (target.toss ? Math.sin((local / target.duration) * Math.PI) * h * .18 : 0);
       scale *= target.gold || target.golden ? .92 : 1;
+    } else if (target.kind === 'volcanoCrate') {
+      scale *= target.targetScale || VOLCANO_CRATE_SCALE;
+      x = w * target.anchorX;
+      y = h * target.anchorY;
+      visibility = easeOut(clamp(local / .24, 0, 1));
+      hittable = visibility > .72;
+    } else if (target.kind === 'volcanoCrateBalloon') {
+      const arrival = easeOut(clamp(local / .22, 0, 1));
+      const spread = (target.balloonIndex - (target.balloonCount - 1) / 2) * 44;
+      x = w * target.anchorX + spread;
+      y = h * target.anchorY + Math.sin(local * 3.2 + target.balloonIndex) * 2;
+      scale *= .76;
+      growth = arrival;
+      visibility = clamp(arrival * 1.7, 0, 1);
+      hittable = arrival > .58;
     } else if (target.kind === 'dinosaur') {
       x = travel();
       y = h * target.lane + Math.sin(local * 9 + target.dinoIndex) * 3;
@@ -2972,19 +3141,30 @@
     }
     if (
       phoneStage &&
-      ['dinosaur', 'dinoBalloon', 'balloonTree', 'lavaBalloon', 'volcanoDecoy', 'volcanoComet'].includes(target.kind)
+      ['dinosaur', 'dinoBalloon', 'balloonTree', 'lavaBalloon', 'volcanoDecoy', 'volcanoComet', 'volcanoCrate', 'volcanoCrateBalloon'].includes(target.kind)
     ) {
       scale *= 1.12;
     }
     if (
       phoneStage &&
-      ['balloonTree', 'lavaBalloon', 'volcanoDecoy'].includes(target.kind)
+      ['balloonTree', 'lavaBalloon', 'volcanoDecoy', 'volcanoCrateBalloon'].includes(target.kind)
     ) {
       // Preserve the existing large stationary-balloon footprint after the
       // booth-wide phone enlargement above.
       scale *= 1.16;
       const balloonInset = clamp(w * .12, 40, 58);
       x = clamp(x, balloonInset, w - balloonInset);
+    }
+    if (target.kind === 'volcanoCrate') {
+      x = w * target.anchorX;
+      // Match the lower platform in the cover-fitted backdrop. This preserves
+      // the physical contact point through every responsive canvas ratio.
+      y = volcanoBottomRowY(w, h) - 116 * scale;
+    }
+    if (target.kind === 'volcanoCrateBalloon') {
+      // Rest the tether base on the shelf surface, just in front of its back
+      // edge, rather than on the lower front lip.
+      floorOffsetY = (volcanoBalloonAnchorY(w, h) - y) / Math.max(.01, scale);
     }
     if (target.hiddenMobe) {
       // Collectibles keep one screen-space footprint regardless of whether
@@ -2994,13 +3174,15 @@
     if (x < -100 || x > w + 100) return null;
     const small = ['chicken', 'duck', 'bird', 'bluebird'].includes(target.type);
     const farmAnimal = ['farmPop', 'farmSlide', 'farmHill', 'farmBarnDoor', 'farmBarnBonus', 'runner', 'peek'].includes(target.kind);
-    const balloonTarget = target.kind === 'balloonTree' || target.kind === 'lavaBalloon' || target.kind === 'volcanoDecoy' || target.kind === 'dinoBalloon';
+    const balloonTarget = target.kind === 'balloonTree' || target.kind === 'lavaBalloon' || target.kind === 'volcanoDecoy' || target.kind === 'dinoBalloon' || target.kind === 'volcanoCrateBalloon';
     const targetRadius = target.kind === 'ringPost'
       ? 44
       : balloonTarget
         ? target.type === 'lavaStream' ? 38 : target.vent || target.golden ? 45 : target.kind === 'volcanoDecoy' ? 31 : 42
       : target.kind === 'volcanoComet'
         ? 42
+      : target.kind === 'volcanoCrate'
+        ? 118
       : target.kind === 'finaleBat'
         ? 42
       : target.kind === 'dinosaur'
@@ -3019,6 +3201,8 @@
         ? 48
       : target.kind === 'damBank' || target.kind === 'goldBeaver' || target.kind === 'beaverRunner' || target.kind === 'damSectionBeaver'
         ? 46
+      : target.kind === 'damTrap'
+        ? 52
       : target.kind === 'beaverPeek'
         ? 39
       : target.kind === 'farmHill'
@@ -3035,7 +3219,22 @@
           ? 36
           : small ? 29 : 36;
     const r = targetRadius * scale * Math.max(.45, visibility);
-    return { x, y, r, scale, visibility, growth, hittable };
+    return { x, y, r, scale, visibility, growth, hittable, crateOffsetX, crateOffsetY, floorOffsetY };
+  }
+
+  function volcanoBottomRowY(w, h) {
+    return volcanoBackdropY(w, h, VOLCANO_BOTTOM_ROW_SOURCE_Y);
+  }
+
+  function volcanoBalloonAnchorY(w, h) {
+    return volcanoBackdropY(w, h, VOLCANO_BALLOON_TETHER_SOURCE_Y);
+  }
+
+  function volcanoBackdropY(w, h, sourceY) {
+    const coverScale = Math.max(w / VOLCANO_BACKDROP_WIDTH, h / VOLCANO_BACKDROP_HEIGHT);
+    const visibleSourceHeight = h / coverScale;
+    const sourceTop = (VOLCANO_BACKDROP_HEIGHT - visibleSourceHeight) * .5;
+    return (sourceY - sourceTop) * coverScale;
   }
 
   function draw(now) {
@@ -3147,7 +3346,7 @@
       }
       drawTarget(target, pos, now);
       ctx.restore();
-      if (boothId === 'plates' && ['damBeaver', 'damSectionBeaver'].includes(target.kind)) {
+      if (boothId === 'plates' && ['damBeaver', 'damSectionBeaver', 'damTrap'].includes(target.kind)) {
         drawDamRearWaterMask(pos);
       }
     }
@@ -3176,6 +3375,7 @@
     if (boothId === 'plates') {
       if (target.kind === 'damBeaver') return 1;
       if (target.kind === 'damBank' || target.kind === 'goldBeaver') return 3;
+      if (target.kind === 'damTrap') return 5;
       if (target.kind === 'beaverRunner' || target.kind === 'beaverPeek') return 5;
       return 3;
     }
@@ -3183,6 +3383,8 @@
       if (target.kind === 'volcanoComet') return 1;
       if (target.kind === 'dinosaur') return target.lane < .7 ? 2 : 4;
       if (target.kind === 'dinoBalloon') return target.parent?.lane < .7 ? 3 : 5;
+      if (target.kind === 'volcanoCrate') return 3;
+      if (target.kind === 'volcanoCrateBalloon') return 5;
       return 3;
     }
     if (target.kind === 'finaleBat') return 6;
@@ -4293,6 +4495,12 @@
     else if (target.kind === 'orbitBoss') drawOrbitBoss(target);
     else if (target.kind === 'damBeaver') drawDamBeaver(target, pos, now);
     else if (target.kind === 'damSectionBeaver') drawBeaverTarget(target, false);
+    else if (target.kind === 'damTrap') drawDamTrap(target, now);
+    else if (target.kind === 'volcanoCrate') drawVolcanoCrate(target, pos, now);
+    else if (target.kind === 'volcanoCrateBalloon') {
+      drawVolcanoCrateTether(target, pos);
+      drawBalloonTarget(target);
+    }
     else if (target.kind === 'damBank' || target.kind === 'goldBeaver' || target.kind === 'beaverRunner') {
       if (target.kind === 'beaverRunner') drawBeaverTarget(target, false);
       else drawBankBeaver(target, pos);
@@ -4315,7 +4523,7 @@
     ) {
       drawFarmTargetShine(target, now);
     }
-    if (!isFarmScoreTarget(target) && !['damBeaver', 'damSectionBeaver'].includes(target.kind)) drawPointValue(target);
+    if (!isFarmScoreTarget(target) && !['damBeaver', 'damSectionBeaver', 'damTrap', 'volcanoCrate'].includes(target.kind)) drawPointValue(target);
     ctx.restore();
   }
 
@@ -4329,7 +4537,7 @@
   }
 
   function drawPointValue(target) {
-    if (FARM_HAZARD_KINDS.includes(target.kind)) return;
+    if (FARM_HAZARD_KINDS.includes(target.kind) || target.kind === 'damTrap') return;
     // Secrets stay secret, and finale pop-ups already carry a large integrated
     // value plate. Every other hittable target shows its base point value.
     if (
@@ -4339,13 +4547,14 @@
       target.kind === 'finalePopup' ||
       target.kind === 'finaleGate' ||
       target.kind === 'orbitBoss' ||
+      target.kind === 'volcanoCrate' ||
       (target.kind === 'damBeaver' && target.visualOpen < .72) ||
       (target.kind === 'damSectionBeaver' && target.visualOpen < .72) ||
       ((target.kind === 'damBank' || target.kind === 'goldBeaver') && target.hit) ||
       (target.kind === 'beaverPeek' && target.visualReveal < .62) ||
       !Number.isFinite(target.base)
     ) return;
-    const balloon = ['balloonTree', 'lavaBalloon', 'volcanoDecoy'].includes(target.kind);
+    const balloon = ['balloonTree', 'lavaBalloon', 'volcanoDecoy', 'volcanoCrateBalloon'].includes(target.kind);
     const dinosaurBadge = target.kind === 'dinosaur' || target.kind === 'dinoBalloon';
     const farmBadge = ['farmPop', 'farmSlide', 'farmHill', 'farmBarnDoor', 'farmBarnBonus'].includes(target.kind);
     const animalScoreBadge = farmBadge || ['damBeaver', 'damSectionBeaver', 'damBank', 'goldBeaver', 'beaverRunner', 'beaverPeek'].includes(target.kind);
@@ -4682,6 +4891,51 @@
       ctx.globalAlpha *= clamp(open * 1.65, 0, 1);
       drawBeaverTarget(target, false);
     }
+    ctx.restore();
+  }
+
+  function drawDamTrap(target, now) {
+    const sprite = typeof _getImg === 'function'
+      ? _getImg('assets/mania/dam/dam-trap-target-v1.png')
+      : null;
+    if (sprite?.complete && sprite.naturalWidth) {
+      const width = 116;
+      const height = 86;
+      ctx.save();
+      ctx.rotate(Math.sin(now / 180 + target.hazardIndex) * .018);
+      ctx.filter = 'saturate(.9) contrast(1.06)';
+      ctx.drawImage(sprite, -width / 2, -height / 2, width, height);
+      drawFarmHazardOverlay(target, now, sprite, -width / 2, -height / 2, width, height);
+      ctx.restore();
+      return;
+    }
+
+    // Keep a readable fallback while the generated asset is loading.
+    ctx.save();
+    ctx.rotate(Math.sin(now / 180 + target.hazardIndex) * .018);
+    ctx.shadowColor = 'rgba(8, 9, 10, .62)';
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = '#30373a';
+    ctx.strokeStyle = '#a9844a';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(-48, 14);
+    ctx.lineTo(-26, -18);
+    ctx.lineTo(0, 1);
+    ctx.lineTo(26, -18);
+    ctx.lineTo(48, 14);
+    ctx.lineTo(27, 28);
+    ctx.lineTo(0, 17);
+    ctx.lineTo(-27, 28);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#b18a4b';
+    circle(0, 10, 11, true);
+    ctx.fillStyle = '#ef5148';
+    circle(0, -7, 5, true);
+    drawFarmHazardOverlay(target, now, null, -58, -43, 116, 86);
     ctx.restore();
   }
 
@@ -5876,6 +6130,62 @@ function drawEnchantedFarmDust(target, now) {
     ctx.restore();
   }
 
+  function drawVolcanoCrate(target, pos, now) {
+    const sprite = typeof _getImg === 'function'
+      ? _getImg('assets/mania/volcano/volcano-balloon-crate-v1.png')
+      : null;
+    const width = 232;
+    const height = 232;
+    const shakeAge = target.shakeAt ? state.elapsed - target.shakeAt : 9;
+    const shake = shakeAge >= 0 && shakeAge < .22
+      ? Math.sin(shakeAge * 88) * (1 - shakeAge / .22) * 4
+      : 0;
+    ctx.save();
+    ctx.translate(pos.crateOffsetX + shake, pos.crateOffsetY);
+    if (sprite?.complete && sprite.naturalWidth) {
+      ctx.filter = 'saturate(.92) contrast(1.08)';
+      ctx.drawImage(sprite, -width / 2, -height / 2, width, height);
+      ctx.filter = 'none';
+    } else {
+      ctx.fillStyle = '#5a211d';
+      ctx.strokeStyle = '#c18c43';
+      ctx.lineWidth = 5;
+      roundRect(-width / 2, -height / 2, width, height, 14);
+      ctx.fill();
+      ctx.stroke();
+    }
+    const latchOffsets = [-70, 0, 70];
+    latchOffsets.forEach((offset, index) => {
+      const lit = index < target.hits;
+      const active = index === target.latchIndex && !lit;
+      ctx.save();
+      if (active) {
+        ctx.shadowColor = '#ffcf4a';
+        ctx.shadowBlur = 18 + Math.sin(now / 95) * 5;
+      }
+      ctx.fillStyle = lit ? '#6de8ff' : active ? '#ffcf4a' : '#3b4547';
+      ctx.strokeStyle = lit ? '#d9ffff' : active ? '#fff2aa' : '#a47b43';
+      ctx.lineWidth = 2.5;
+      circle(offset, 76, active ? 8 : 6, true);
+      ctx.restore();
+    });
+    ctx.restore();
+  }
+
+  function drawVolcanoCrateTether(target, pos) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(246, 196, 91, .94)';
+    ctx.shadowColor = 'rgba(255, 151, 48, .45)';
+    ctx.shadowBlur = 5;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(0, 40);
+    ctx.lineTo(0, pos.floorOffsetY);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   function drawBalloonTarget(target) {
     const balloonAssets = [
       'tree-balloon-raspberry',
@@ -6284,6 +6594,9 @@ function drawEnchantedFarmDust(target, now) {
     if (target.kind === 'hiddenMobe') return '#ffcf4a';
     if (target.kind === 'farmDud') return '#71834a';
     if (target.kind === 'farmBomb') return '#d84b4b';
+    if (target.kind === 'damTrap') return '#d84b4b';
+    if (target.kind === 'volcanoCrate') return '#ffcf4a';
+    if (target.kind === 'volcanoCrateBalloon') return ['#ff5d9d', '#ff785d', '#ffcf4a'][target.hue % 3];
     if (['runner', 'peek', 'flyer'].includes(target.kind)) return animalColor(target.type);
     if (['damBeaver', 'damSectionBeaver', 'damBank', 'goldBeaver', 'beaverRunner', 'beaverPeek'].includes(target.kind)) {
       return target.type === 'expert' ? '#ff647f' : target.type === 'foreman' ? '#ffbf4d' : '#76f0ad';
