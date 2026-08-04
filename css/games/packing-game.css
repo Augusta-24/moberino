@@ -782,7 +782,8 @@ transition: filter .45s ease;
   fill:rgba(117,245,163,.34);
   stroke:#b7ffd0;
   filter:drop-shadow(0 0 7px rgba(117,245,163,.62));
-  animation:pge-landing-breathe .5s ease-in-out infinite alternate;
+  /* A fixed cue is easier to track than a rapid peripheral pulse during drag. */
+  opacity:.84;
 }
 .pge-landing-ghost.is-invalid {
   fill:rgba(255,107,82,.16);
@@ -795,10 +796,6 @@ transition: filter .45s ease;
   animation:pge-cell-settle .16s cubic-bezier(.18,.9,.3,1.35);
 }
 .pge-piece.is-returning-invalid { animation:pge-invalid-bump .19s ease-out; }
-@keyframes pge-landing-breathe {
-  from { opacity:.66; }
-  to { opacity:1; }
-}
 @keyframes pge-cell-settle {
   0% { transform:scale(.9); filter:brightness(1.5); }
   100% { transform:scale(1); }

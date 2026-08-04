@@ -421,6 +421,11 @@ body.on-timeline #collage::after {
      smaller overall) on tablets/desktop. Tune side-padding by editing this one line —
      each breakpoint just overrides --hero-w. */
   --hero-w: min(88vw, 560px);
+  /* Keep recommendation scrolling below the shared header. Reserving this gutter
+     here prevents the hero controls themselves from shifting when it opens. */
+  overflow-x: hidden;
+  overflow-y: hidden;
+  scrollbar-gutter: stable both-edges;
 }
 /* The anchor pattern: equal flex:1 on both sides of .hero-search means whatever
    vertical space is left over after the search bar's own height splits evenly above
@@ -724,14 +729,18 @@ body.on-timeline #collage::after {
   padding-top: 6px;
 }
 #memories.open { display: block; }
-/* Allow memories to overflow pg-home's clipping area */
+/* Recommendations scroll inside the hero only. The page/header frame must never
+   become a scroll container, or its desktop navigation will recenter. */
 #pg-home.rec-open {
-  overflow-y: auto;
+  overflow: hidden;
 }
 #pg-home.rec-open .home-hero {
   padding-top: 0;
+  overflow-y: auto;
 }
-body.rec-open { overflow-y: auto; }
+/* Do not unlock the document here: toggling the browser scrollbar changes the
+   desktop layout viewport width and makes the centered header/CTA controls jump. */
+body.rec-open { overflow: hidden; }
 @keyframes fadeUp {
   from { opacity:0; transform:translateY(8px); }
   to   { opacity:1; transform:translateY(0); }

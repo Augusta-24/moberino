@@ -778,6 +778,11 @@
   let selectedPiece = null;
   let selectionGhosts = [];
   let landingGhosts = [];
+  // The landing preview is rendered as SVG nodes. Keep it intact while the
+  // pointer remains over the same candidate cell instead of rebuilding it on
+  // every pointer frame, which can make an otherwise frame-synced drag feel
+  // visually uneven on high-density displays.
+  let landingGhostKey = '';
   let overlapZoneLayer = null;
   let overlapZoneIndicators = new Map();
   let overlapZoneBanner = null;
@@ -944,7 +949,7 @@
     return true;
   }
 
-  function renderPieceShape(g, cells, cellSize, colorId, isRackPiece) {
+  function renderPieceShape(g, cells, cellSize, colorId, isRackPiece, rackHitBox) {
     while (g.firstChild) g.removeChild(g.firstChild);
     const color = PIECE_COLORS[colorId] || '#8a9fc9';
     g.setAttribute('style', `--pge-piece-color:${color}`);
@@ -957,9 +962,18 @@
       const minR = Math.min(...cells.map(([r]) => r)), maxR = Math.max(...cells.map(([r]) => r));
       const minC = Math.min(...cells.map(([, c]) => c)), maxC = Math.max(...cells.map(([, c]) => c));
       const pad = cellSize * .5;
+      // A rack slot is intentionally a much more forgiving target than the
+      // painted silhouette. Its bounds stop short of neighboring slots, unlike
+      // a simple per-shape padding which can become tiny or overlap at compact
+      // layouts.
+      const hitBox = rackHitBox || {
+        x: minC * cellSize - pad,
+        y: minR * cellSize - pad,
+        width: (maxC - minC + 1) * cellSize + pad * 2,
+        height: (maxR - minR + 1) * cellSize + pad * 2
+      };
       g.appendChild(svg('rect', {
-        x: minC * cellSize - pad, y: minR * cellSize - pad,
-        width: (maxC - minC + 1) * cellSize + pad * 2, height: (maxR - minR + 1) * cellSize + pad * 2,
+        x: hitBox.x, y: hitBox.y, width: hitBox.width, height: hitBox.height,
         fill: 'transparent', 'pointer-events': 'all', class: 'pge-piece-hit'
       }));
     } else {
@@ -990,7 +1004,8 @@
       cells,
       cellSize,
       PIECE_LIBRARY[piece.pieceIndex].id,
-      !piece.placedAt && !piece.floating
+      !piece.placedAt && !piece.floating,
+      !piece.placedAt && !piece.floating ? piece.rackHitBox : null
     );
     piece.linkPips = new Map();
     piece.linkCells = new Map();
@@ -1222,11 +1237,18 @@
       if (node.parentNode) node.parentNode.removeChild(node);
     });
     landingGhosts = [];
+    landingGhostKey = '';
   }
 
   function showLandingGhost(piece, placement) {
+    if (!piece || !placement || !piece.regionGroup) {
+      clearLandingGhost();
+      return;
+    }
+    const nextKey = [piece.slot, piece.orientIdx, placement.r, placement.c, placement.fits, layerPhase].join(':');
+    if (nextKey === landingGhostKey) return;
     clearLandingGhost();
-    if (!piece || !placement || !piece.regionGroup) return;
+    landingGhostKey = nextKey;
     const className = `pge-landing-ghost ${placement.fits ? 'is-valid' : 'is-invalid'}`;
     currentDetailedCells(piece, [placement.r, placement.c]).forEach(cell => {
       const cellKey = key(cell.r, cell.c);
@@ -2185,7 +2207,15 @@
         physicalTurn, homePhysicalTurn: physicalTurn, lastValidPhysicalTurn: null,
         initialHomePhysicalTurn: physicalTurn,
         g, home, placedAt: null, lastValidAt: null, lastValidOrientIdx: null,
-        floating: false, floatPosition: null, regionGroup, anchor
+        floating: false, floatPosition: null, regionGroup, anchor,
+        // Give every rack piece its own easy-to-grab area without spilling into
+        // the adjacent slot. The small inset preserves a clear gap between them.
+        rackHitBox: {
+          x: -((slotWidth - shapeCols * trayCellSize) / 2) + 4,
+          y: -((slotHeight - shapeRows * trayCellSize) / 2) + 4,
+          width: Math.max(1, slotWidth - 8),
+          height: Math.max(1, slotHeight - 8)
+        }
       };
       trayPieces.push(piece);
       renderPiece(piece, trayCellSize);
