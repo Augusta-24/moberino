@@ -89,7 +89,7 @@ test('Farm Frenzy uses three depth layers and a repeatable three-hit barn prize'
     assert.ok(fs.existsSync(path.join(root, `assets/mania/farm/${asset}-target-v1.png`)));
   }
   assert.ok(fs.existsSync(path.join(root, 'assets/mania/farm/barn-v1.png')));
-  assert.ok(fs.existsSync(path.join(root, 'assets/mania/farm/spoiled-hay-target-v1.png')));
+  assert.ok(fs.existsSync(path.join(root, 'assets/mania/farm/rotten-pumpkin-target-v1.png')));
   assert.ok(fs.existsSync(path.join(root, 'assets/mania/farm/farm-bomb-target-v2.png')));
   assert.match(source, /function drawFarmScene\(/);
   assert.match(source, /assets\/mania\/farm\/farm-backdrop-v2\.png/);
@@ -103,7 +103,7 @@ test('Farm Frenzy uses three depth layers and a repeatable three-hit barn prize'
   assert.match(source, /const stationArrivals = \[0, \.08, \.5, \.62, \.96, 1\.08\]/);
   assert.match(source, /stationArrivals\.forEach\(\(at, slot\) => spawnFarmAnimal\(slot, at\)\)/);
   assert.match(source, /const birdPasses = \[/);
-  assert.match(source, /duration: 4\.15/);
+  assert.match(source, /duration: 5\.05/);
   assert.match(source, /clearReplace: true/);
   assert.match(source, /spawnFarmAnimal\(target\.farmSlot, nowSeconds \+ \.12\)/);
   assert.doesNotMatch(source, /function processFarmActivity\(/);
@@ -136,7 +136,7 @@ test('Farm Frenzy uses three depth layers and a repeatable three-hit barn prize'
   assert.match(source, /const FARM_HILL_TARGET_SCALE = \.58/);
   assert.match(source, /const FARM_BIRD_TARGET_SCALE = \.76/);
   assert.match(source, /const FARM_HAZARD_KINDS = \['farmDud', 'farmBomb'\]/);
-  assert.match(source, /const FARM_HAZARD_PENALTY = 250/);
+  assert.match(source, /const FARM_HAZARD_PENALTY = 3000/);
   assert.match(source, /kind: 'farmDud'/);
   assert.match(source, /kind: 'farmBomb'/);
   assert.match(source, /duration: 5\.25/);
@@ -145,17 +145,19 @@ test('Farm Frenzy uses three depth layers and a repeatable three-hit barn prize'
   assert.match(source, /\[8, \.16, 'left'\]/);
   assert.match(source, /function hitFarmHazard\(/);
   assert.match(source, /state\.score = Math\.max\(0, state\.score - \(target\.penalty \|\| FARM_HAZARD_PENALTY\)\)/);
-  assert.match(source, /try \{ SFX\.mismatch\(\); \} catch \(e\) \{\}/);
-  assert.match(source, /function drawFarmSpoiledHay\(/);
-  assert.match(source, /assets\/mania\/farm\/spoiled-hay-target-v1\.png/);
+  assert.match(source, /addLabel\(pos\.x, pos\.y - pos\.r \* 1\.15, `-\$\{target\.penalty \|\| FARM_HAZARD_PENALTY\}`, '#ff5d4d', 42\)/);
+  assert.match(source, /if \(SFX\.farmHazard\) SFX\.farmHazard\(\);/);
+  assert.match(source, /else SFX\.mismatch\(\);/);
+  assert.match(source, /function drawFarmRottenPumpkin\(/);
+  assert.match(source, /assets\/mania\/farm\/rotten-pumpkin-target-v1\.png/);
   assert.match(source, /function drawFarmBomb\(/);
   assert.match(source, /assets\/mania\/farm\/farm-bomb-target-v2\.png/);
   assert.match(source, /function drawFarmHazardOverlay\(/);
-  assert.match(source, /ctx\.globalCompositeOperation = 'source-atop'/);
+  assert.match(source, /farmHazardCtx\.globalCompositeOperation = 'source-atop'/);
   assert.doesNotMatch(source, /function drawFarmHazardWarning\(/);
   assert.match(source, /if \(FARM_HAZARD_KINDS\.includes\(target\.kind\)\) return;/);
   assert.match(source, /\[1\.05, \.12, 'right', 'bird', 500\]/);
-  assert.match(source, /\[5\.45, \.19, 'left', 'bluebird', 650\]/);
+  assert.match(source, /\[6\.1, \.19, 'left', 'bluebird', 650\]/);
   assert.match(source, /farmShineCtx\.createLinearGradient\(/);
   assert.match(source, /const spectrum = farmShineCtx\.createLinearGradient\(/);
   assert.match(source, /farmShineCtx\.globalCompositeOperation = 'destination-in'/);

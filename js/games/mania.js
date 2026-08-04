@@ -97,7 +97,7 @@
   const FARM_HILL_TARGET_SCALE = .58;
   const FARM_BIRD_TARGET_SCALE = .76;
   const FARM_HAZARD_KINDS = ['farmDud', 'farmBomb'];
-  const FARM_HAZARD_PENALTY = 250;
+  const FARM_HAZARD_PENALTY = 3000;
   const DAM_SECTION_CONFIG = [
     {
       id: 'top', requiredHits: 12, hitValue: 600, base: 2400,
@@ -136,6 +136,8 @@
   let stage = null;
   let farmShineCanvas = null;
   let farmShineCtx = null;
+  let farmHazardCanvas = null;
+  let farmHazardCtx = null;
   let rainbowShimmerCanvas = null;
   let rainbowShimmerCtx = null;
   let toastTimer = 0;
@@ -563,16 +565,16 @@
     // clear-and-replace animal stations on the farm itself.
     const birdPasses = [
       [1.05, .12, 'right', 'bird', 500],
-      [5.45, .19, 'left', 'bluebird', 650],
-      [9.85, .10, 'right', 'bird', 500],
-      [14.25, .17, 'left', 'bluebird', 1000],
+      [6.1, .19, 'left', 'bluebird', 650],
+      [11.15, .10, 'right', 'bird', 500],
+      [16.2, .17, 'left', 'bluebird', 1000],
     ];
     birdPasses.forEach((pass, index) => {
       state.targets.push({
         kind: 'flyer',
         type: pass[3],
         at: pass[0],
-        duration: 4.15,
+        duration: 5.05,
         direction: pass[2],
         lane: pass[1],
         base: pass[4],
@@ -594,7 +596,7 @@
     dudPasses.forEach(([at, anchorX, lane], index) => {
       state.targets.push({
         kind: 'farmDud',
-        type: 'spoiledHay',
+        type: 'rottenPumpkin',
         at,
         duration: 2.25,
         anchorX,
@@ -1545,8 +1547,12 @@
     target.hit = true;
     target.hitAt = state.elapsed;
     state.score = Math.max(0, state.score - (target.penalty || FARM_HAZARD_PENALTY));
+    addLabel(pos.x, pos.y - pos.r * 1.15, `-${target.penalty || FARM_HAZARD_PENALTY}`, '#ff5d4d', 42);
     burst(pos.x, pos.y, target.kind === 'farmBomb' ? '#d84b4b' : '#71834a', 16, 1.05);
-    try { SFX.mismatch(); } catch (e) {}
+    try {
+      if (SFX.farmHazard) SFX.farmHazard();
+      else SFX.mismatch();
+    } catch (e) {}
     updateHud();
   }
 
@@ -1796,7 +1802,10 @@
     // Every direct target impact uses the same warm confirmation sample. Booth
     // bonuses may still play a flourish after their larger state change, but a
     // glowing lava balloon or secret Moberino no longer gets a metallic ping.
-    try { SFX.hit(); } catch (e) {}
+    try {
+      if (currentBooth().id === 'farm' && target.kind === 'flyer' && SFX.farmBird) SFX.farmBird();
+      else SFX.hit();
+    } catch (e) {}
     return gained;
   }
 
@@ -4274,7 +4283,7 @@
       drawAnimal(target.type, !!target.golden, animalKind);
     }
     else if (target.kind === 'flyer') drawBird(target.type, !!target.golden, now);
-    else if (target.kind === 'farmDud') drawFarmSpoiledHay(target, now);
+    else if (target.kind === 'farmDud') drawFarmRottenPumpkin(target, now);
     else if (target.kind === 'farmBomb') drawFarmBomb(target, now);
     else if (target.kind === 'ringPost') drawRingPost(target);
     else if (target.kind === 'phaseFlyer') {
@@ -5411,16 +5420,16 @@ function drawEnchantedFarmDust(target, now) {
     ctx.fill(); ctx.stroke();
   }
 
-  function drawFarmSpoiledHay(target, now) {
+  function drawFarmRottenPumpkin(target, now) {
     const sprite = typeof _getImg === 'function'
-      ? _getImg('assets/mania/farm/spoiled-hay-target-v1.png')
+      ? _getImg('assets/mania/farm/rotten-pumpkin-target-v1.png')
       : null;
     if (sprite?.complete && sprite.naturalWidth) {
       ctx.save();
       ctx.rotate(Math.sin(now / 240 + target.hazardIndex) * .025);
-      ctx.filter = 'saturate(.86) contrast(1.06)';
+      ctx.filter = 'saturate(.88) contrast(1.06)';
       ctx.drawImage(sprite, -72, -50, 144, 100);
-      drawFarmHazardOverlay(target, now, -72, -50, 144, 100);
+      drawFarmHazardOverlay(target, now, sprite, -72, -50, 144, 100);
       ctx.restore();
       return;
     }
@@ -5456,7 +5465,6 @@ function drawEnchantedFarmDust(target, now) {
     ctx.arc(-3, -29, 5, Math.PI * 1.1, Math.PI * 1.9);
     ctx.arc(7, -27, 4, Math.PI * 1.1, Math.PI * 1.9);
     ctx.stroke();
-    drawFarmHazardOverlay(target, now, -34, -23, 68, 46);
     ctx.restore();
   }
 
@@ -5508,27 +5516,45 @@ function drawEnchantedFarmDust(target, now) {
     ctx.restore();
   }
 
-  function drawFarmHazardOverlay(target, now, drawX, drawY, width, height) {
+  function drawFarmHazardOverlay(target, now, sprite, drawX, drawY, width, height) {
+    if (!sprite?.complete || !sprite.naturalWidth) return;
     const flash = .5 + Math.sin(now / 105 + target.hazardIndex * 1.7) * .5;
     const sweep = mod(now / 520 + target.hazardIndex * .27, 1);
-    const warning = ctx.createLinearGradient(
-      drawX + width * (sweep - .28),
-      drawY,
-      drawX + width * (sweep + .28),
-      drawY + height
+    if (!farmHazardCanvas) {
+      farmHazardCanvas = document.createElement('canvas');
+      farmHazardCtx = farmHazardCanvas.getContext('2d');
+    }
+    const pad = 24;
+    const canvasWidth = Math.ceil(width + pad * 2);
+    const canvasHeight = Math.ceil(height + pad * 2);
+    farmHazardCanvas.width = canvasWidth;
+    farmHazardCanvas.height = canvasHeight;
+    farmHazardCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+    const spriteX = pad;
+    const spriteY = pad;
+    farmHazardCtx.drawImage(sprite, spriteX, spriteY, width, height);
+    const warning = farmHazardCtx.createLinearGradient(
+      canvasWidth * (sweep - .28),
+      0,
+      canvasWidth * (sweep + .28),
+      canvasHeight
     );
     warning.addColorStop(0, 'rgba(118,10,18,0)');
     warning.addColorStop(.38, `rgba(205,22,29,${.2 + flash * .22})`);
     warning.addColorStop(.5, `rgba(255,70,54,${.42 + flash * .28})`);
     warning.addColorStop(.62, `rgba(205,22,29,${.2 + flash * .22})`);
     warning.addColorStop(1, 'rgba(118,10,18,0)');
+    farmHazardCtx.globalCompositeOperation = 'source-atop';
+    farmHazardCtx.globalAlpha = .34 + flash * .34;
+    farmHazardCtx.fillStyle = warning;
+    farmHazardCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+    farmHazardCtx.globalCompositeOperation = 'source-over';
+    farmHazardCtx.globalAlpha = 1;
     ctx.save();
-    // Tint only the already-drawn object. This keeps the warning integrated
-    // with the hay's silhouette instead of adding a separate graphic shape.
-    ctx.globalCompositeOperation = 'source-atop';
-    ctx.globalAlpha = .34 + flash * .34;
-    ctx.fillStyle = warning;
-    ctx.fillRect(drawX, drawY, width, height);
+    // The offscreen pass makes the red warning follow the sprite alpha rather
+    // than tinting its rectangular draw bounds against the farm backdrop.
+    ctx.globalAlpha = .95;
+    ctx.drawImage(farmHazardCanvas, drawX - pad, drawY - pad);
     ctx.restore();
   }
 
