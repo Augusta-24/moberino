@@ -768,7 +768,10 @@ transition: filter .45s ease;
   filter: brightness(1.2) drop-shadow(0 0 7px var(--pg-c1-glow,rgba(98,217,144,.35)));
 }
 .pge-piece.is-floating { filter:drop-shadow(0 14px 10px rgba(0,0,0,.72)) drop-shadow(0 0 8px rgba(129,239,166,.7)); }
-.pge-piece.is-floating.is-dragging { filter:drop-shadow(0 10px 5px rgba(0,0,0,.64)); }
+/* SVG filters are repainted with every transform. Keeping the shadow while a
+   piece moves made the drag feel uneven on touch hardware; restore it as soon
+   as the piece is released. */
+.pge-piece.is-floating.is-dragging { filter:none; }
 .pge-piece.is-floating .pge-cell { stroke:#d8ffe4; stroke-width:3; }
 .pge-piece.is-valid-drop .pge-cell { stroke:#75f5a3; }
 .pge-piece.is-invalid-drop .pge-cell { stroke:#ff986e; }

@@ -1590,7 +1590,14 @@
     const position = piecePosition(piece);
     const sourceCellSize = piece.renderCellSize || trayCellSize;
     const liftScale = floatingCellSize / sourceCellSize;
+    const sourceDimensions = pieceDimensions(piece, sourceCellSize);
     const touchLift = event.pointerType === 'touch' ? regionCellSize * 1.7 : 0;
+    // Rack pieces deliberately have generous invisible hit boxes. Do not let
+    // a touch in that padding become a huge scaled grab offset when the piece
+    // grows to board size: it made the same drag start in a different place
+    // depending on where within the forgiving rack target it began.
+    const localGrabX = Math.max(0, Math.min(sourceDimensions.width, point.x - position.x));
+    const localGrabY = Math.max(0, Math.min(sourceDimensions.height, point.y - position.y));
     dragging = {
       piece,
       startedAt: performance.now(),
@@ -1613,11 +1620,11 @@
       // That keeps a dense SVG board from steering the piece under the player.
       lastProbePosition: null,
       // Preserve the exact point the player grabbed as a piece changes from
-      // rack-preview scale to board scale. Re-centering on the pointer caused
-      // the piece to visibly jump sideways on the first movement.
+      // rack-preview scale to board scale, bounded to the visible shape rather
+      // than its padded rack hit target.
       grabOffset: {
-        x: (point.x - position.x) * liftScale,
-        y: (point.y - position.y) * liftScale + touchLift
+        x: localGrabX * liftScale,
+        y: localGrabY * liftScale + touchLift
       }
     };
     if (piece.g.setPointerCapture && event.pointerId != null) {
