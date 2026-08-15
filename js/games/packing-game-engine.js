@@ -1792,6 +1792,11 @@
       drag.pendingSample = null;
       applyDragSample(drag, sample);
     }
+    // Pointer-up can arrive between animation frames (especially on touch),
+    // after the last pointer-move sample. Apply its final position before
+    // judging the drop so the visible location under the piece—not a stale
+    // location from the previous frame—gets the chance to snap into place.
+    applyDragSample(drag, sampleDragEvent(event, drag.stageMetrics));
     if (drag.frameRequest != null && typeof window !== 'undefined' && typeof window.cancelAnimationFrame === 'function') {
       window.cancelAnimationFrame(drag.frameRequest);
       drag.frameRequest = null;
