@@ -305,7 +305,7 @@ html.site-theme-retro .search-wrap,
 html.site-theme-retro .srch-box,
 html.site-theme-retro .spot-box,
 html.site-theme-retro .hero-cta-btn,
-html.site-theme-retro .inline-shuffle-btn,
+html.site-theme-retro .inline-icon-btn,
 html.site-theme-retro #map-places-tab,
 html.site-theme-retro .map-location-close,
 html.site-theme-retro .decade-chip,
@@ -350,7 +350,7 @@ html.site-theme-retro .search-wrap,
 html.site-theme-retro .srch-box,
 html.site-theme-retro .spot-box,
 html.site-theme-retro .hero-cta-btn,
-html.site-theme-retro .inline-shuffle-btn {
+html.site-theme-retro .inline-icon-btn {
   color: #111318;
 }
 
@@ -369,7 +369,7 @@ html.site-theme-retro .spot-box input::placeholder {
 }
 
 html.site-theme-retro .hero-cta-btn,
-html.site-theme-retro .inline-shuffle-btn,
+html.site-theme-retro .inline-icon-btn,
 html.site-theme-retro .search-wrap,
 html.site-theme-retro .srch-box {
   position: relative;
@@ -392,7 +392,7 @@ html.site-theme-retro .srch-box::before {
 
 html.site-theme-retro .search-wrap > *,
 html.site-theme-retro .srch-box > *,
-html.site-theme-retro .inline-shuffle-btn > *,
+html.site-theme-retro .inline-icon-btn > *,
 html.site-theme-retro .hero-cta-btn > * {
   position: relative;
   z-index: 1;
@@ -434,7 +434,7 @@ html.site-theme-retro .page-nav-btn {
 }
 
 html.site-theme-retro .page-nav-btn svg,
-html.site-theme-retro .inline-shuffle-btn svg,
+html.site-theme-retro .inline-icon-btn svg,
 html.site-theme-retro .search-play-btn svg,
 html.site-theme-retro .search-clear-btn svg,
 html.site-theme-retro .srch-box svg,

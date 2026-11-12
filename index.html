@@ -605,7 +605,7 @@ body.on-timeline #collage::after {
 .nav-icon-btn:active { transform: scale(0.88); color: var(--white); }
 .nav-icon-btn svg { width: 22px; height: 22px; }
 .nav-icon-btn .nav-icon-img { width: 22px; height: 22px; object-fit: contain; }
-.inline-shuffle-btn {
+.inline-icon-btn {
   flex: 0 0 52px;
   width: 52px;
   min-height: 100%;
@@ -621,9 +621,9 @@ body.on-timeline #collage::after {
   box-shadow: 0 12px 30px rgba(0,0,0,0.16), inset 0 1px 0 var(--theme-highlight-low);
   transition: transform 0.12s, background 0.16s, border-color 0.16s, color 0.16s;
 }
-.inline-shuffle-btn:hover { color: var(--white); border-color: var(--theme-line-34); background: var(--theme-panel-bg-strong); }
-.inline-shuffle-btn:active { transform: scale(0.96); }
-.inline-shuffle-btn svg { width: 22px; height: 22px; }
+.inline-icon-btn:hover { color: var(--white); border-color: var(--theme-line-34); background: var(--theme-panel-bg-strong); }
+.inline-icon-btn:active { transform: scale(0.96); }
+.inline-icon-btn svg { width: 22px; height: 22px; }
 .search-wrap:focus-within {
   background: var(--theme-panel-bg-focus);
   border-color: var(--theme-focus-line);
@@ -3031,7 +3031,7 @@ body.on-home #back-top, body.on-map #back-top,
   root.classList.add('site-theme-' + saved);
 })();
 </script>
-<link rel="stylesheet" href="css/site-themes.css?v=retro-theme-controls">
+<link rel="stylesheet" href="css/site-themes.css?v=arcade-shortcut">
 <script>
 // Locks #pg-home's height to a JS-measured pixel value instead of letting the browser
 // recompute 100svh on every paint. Mobile browsers (especially iOS Safari) recalculate
@@ -3173,7 +3173,7 @@ body.on-home #back-top, body.on-map #back-top,
             <svg viewBox="0 0 10 12" fill="currentColor"><polygon points="0,0 10,6 0,12"/></svg>
           </button>
         </div>
-        <button class="inline-shuffle-btn" onclick="enableShake()" aria-label="Shuffle">
+        <button class="inline-icon-btn" onclick="enableShake()" aria-label="Shuffle">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"><path d="M4 7h5l6 10h5"/><path d="M17 14l3 3-3 3"/><path d="M4 17h5l6-10h5"/><path d="M17 4l3 3-3 3"/></svg>
         </button>
       </div>
@@ -3183,6 +3183,12 @@ body.on-home #back-top, body.on-map #back-top,
         <div class="hero-cta-row">
           <button class="hero-cta-btn" id="recBtn" onclick="toggleRec()">WATCH RECOMMENDED</button>
           <button class="hero-cta-btn" onclick="navToCats()">BROWSE CATEGORIES</button>
+          <a class="inline-icon-btn" href="arcade.html" aria-label="Arcade" title="Arcade">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M8 7h8a5 5 0 0 1 4.9 4l1 4.7a2.7 2.7 0 0 1-4.5 2.5L15 16H9l-2.4 2.2a2.7 2.7 0 0 1-4.5-2.5l1-4.7A5 5 0 0 1 8 7Z"/>
+              <path d="M8 10v4m-2-2h4m5-1h.01m3 2h.01"/>
+            </svg>
+          </a>
         </div>
         <div id="memories">
           <div class="season-header">
@@ -3422,7 +3428,7 @@ body.on-home #back-top, body.on-map #back-top,
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
-      <button class="inline-shuffle-btn" onclick="enableShake()" aria-label="Shuffle">
+      <button class="inline-icon-btn" onclick="enableShake()" aria-label="Shuffle">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"><path d="M4 7h5l6 10h5"/><path d="M17 14l3 3-3 3"/><path d="M4 17h5l6-10h5"/><path d="M17 4l3 3-3 3"/></svg>
       </button>
     </div>
