@@ -646,11 +646,47 @@ body.on-timeline #collage::after {
   width: var(--hero-w);
 }
 
-/* Buttons row — each half width */
 .hero-cta-row {
   display: flex;
   gap: 8px;
   width: 100%;
+}
+.arcade-shortcut {
+  position: relative;
+}
+.hero-cta-row .arcade-shortcut .arcade-new {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 5px;
+  border: 1px solid #53391e;
+  border-radius: 999px;
+  background: #ffe38c;
+  color: #342511;
+  font: 700 10px/1.1 var(--theme-font-body-alt);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.arcade-new::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  background: currentColor;
+  clip-path: polygon(50% 0, 64% 36%, 100% 50%, 64% 64%, 50% 100%, 36% 64%, 0 50%, 36% 36%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .arcade-new::before {
+    animation: arcade-sparkle 2.8s ease-in-out infinite;
+  }
+}
+@keyframes arcade-sparkle {
+  0%, 100% { transform: scale(0.85); opacity: 0.65; }
+  35% { transform: scale(1.25) rotate(20deg); opacity: 1; }
+  65% { transform: scale(1); opacity: 0.85; }
 }
 @media (min-width: 1024px) {
   /* One desktop header ruler for the whole main website. Home/Search used to have
@@ -3183,11 +3219,12 @@ body.on-home #back-top, body.on-map #back-top,
         <div class="hero-cta-row">
           <button class="hero-cta-btn" id="recBtn" onclick="toggleRec()">WATCH RECOMMENDED</button>
           <button class="hero-cta-btn" onclick="navToCats()">BROWSE CATEGORIES</button>
-          <a class="inline-icon-btn" href="arcade.html" aria-label="Arcade" title="Arcade">
+          <a class="inline-icon-btn arcade-shortcut" href="arcade.html" aria-label="Arcade (New!)" title="Arcade">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M8 7h8a5 5 0 0 1 4.9 4l1 4.7a2.7 2.7 0 0 1-4.5 2.5L15 16H9l-2.4 2.2a2.7 2.7 0 0 1-4.5-2.5l1-4.7A5 5 0 0 1 8 7Z"/>
               <path d="M8 10v4m-2-2h4m5-1h.01m3 2h.01"/>
             </svg>
+            <span class="arcade-new" aria-hidden="true">New!</span>
           </a>
         </div>
         <div id="memories">
