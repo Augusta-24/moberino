@@ -3067,7 +3067,7 @@ body.on-home #back-top, body.on-map #back-top,
   root.classList.add('site-theme-' + saved);
 })();
 </script>
-<link rel="stylesheet" href="css/site-themes.css?v=arcade-shortcut">
+<link rel="stylesheet" href="css/site-themes.css?v=retro-liberty-map">
 <script>
 // Locks #pg-home's height to a JS-measured pixel value instead of letting the browser
 // recompute 100svh on every paint. Mobile browsers (especially iOS Safari) recalculate
@@ -4108,6 +4108,10 @@ function buildShelf() {
 // ── MAP ──
 let mapInited = false;
 let glMap = null;
+function getBasemapStyle() {
+  const style = document.documentElement.dataset.siteTheme === 'retro' ? 'liberty' : 'dark';
+  return `https://tiles.openfreemap.org/styles/${style}`;
+}
 function initMap() {
   if (mapInited) {
     // Re-entering the Places page after the container's size changed (e.g. a
@@ -4121,10 +4125,25 @@ function initMap() {
   requestAnimationFrame(() => {
     window._map = glMap = new maplibregl.Map({
       container: 'map-container',
-      style: 'https://tiles.openfreemap.org/styles/dark',
+      style: getBasemapStyle(),
       center: [-73.411011, 40.821365],
       zoom: 9.5,
       attributionControl: false
+    });
+
+    window.addEventListener('moberino:site-theme-change', () => {
+      glMap.setStyle(getBasemapStyle(), { diff: false });
+    });
+
+    glMap.on('style.load', () => {
+      if (document.documentElement.dataset.siteTheme === 'retro') return;
+      // The Classic canvas filter adds a blue tint, so start with warm, light text.
+      for (const layer of glMap.getStyle().layers) {
+        if (layer.type !== 'symbol' || layer['source-layer'] !== 'place') continue;
+        glMap.setPaintProperty(layer.id, 'text-color', '#eee4d4');
+        glMap.setPaintProperty(layer.id, 'text-halo-color', '#151820');
+        glMap.setPaintProperty(layer.id, 'text-halo-width', 1);
+      }
     });
 
     // Keeps the canvas matched to its container at all times — covers the

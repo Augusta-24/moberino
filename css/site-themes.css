@@ -517,19 +517,9 @@ html.site-theme-retro .map-place-count {
   border: 1px solid rgba(17,19,24,0.18);
 }
 
-/* Retro-only map canvas retint — warmer/lighter "paper map" feel instead of
-   the classic theme's navy retint above (index.html). The source tiles are
-   near-black (dark style) with BRIGHT roads/labels (the opposite of what we
-   want), so invert() flips that relationship — but the source contrast is
-   narrow, so contrast() > 1 here pushes roads/labels lighter, not darker.
-   Going the other way (contrast < 1, brightness boosted to compensate) is
-   what actually pulls roads toward a darker, more legible tone while keeping
-   the base a light cream. Selector is a strict superset of the classic one so
-   it wins on specificity regardless of load order, and only the canvas paints
-   into this filter — markers, popups, the places drawer, and zoom buttons are
-   separate DOM elements, unaffected. */
+/* Liberty supplies its own light palette for Retro. */
 html.site-theme-retro #map-container canvas.maplibregl-canvas {
-  filter: invert(0.95) sepia(0.5) saturate(1.3) hue-rotate(345deg) brightness(1.08) contrast(0.6);
+  filter: none;
 }
 
 html.site-theme-retro #home-drop-meta,
